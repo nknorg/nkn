@@ -5,6 +5,7 @@ import (
 	. "DNA/errors"
 	"errors"
 	"io"
+	"bytes"
 )
 
 //AssetType
@@ -97,4 +98,11 @@ func (a *Asset) Deserialize(r io.Reader) error {
 		return NewDetailErr(errors.New("[Asset], RecordType deserialize failed."), ErrNoCode, "")
 	}
 	return nil
+}
+
+
+func (a *Asset) ToArray() ([]byte) {
+	b := new(bytes.Buffer)
+	a.Serialize(b)
+	return b.Bytes()
 }

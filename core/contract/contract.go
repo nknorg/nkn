@@ -1,18 +1,17 @@
 package contract
 
 import (
-	"bytes"
-	"errors"
-	"io"
-
 	. "DNA/common"
 	"DNA/common/serialization"
 	. "DNA/errors"
-	"DNA/vm"
+	"bytes"
+	"errors"
+	"io"
+	"DNA/vm/avm"
 )
 
 //Contract address is the hash of contract program .
-//which be used to control asset or indicate the smart contract address
+//which be used to control asset or indicate the smart contract address �?
 
 //Contract include the program codes with parameters which can be executed on specific evnrioment
 type Contract struct {
@@ -35,7 +34,7 @@ func (c *Contract) IsStandard() bool {
 	if len(c.Code) != 35 {
 		return false
 	}
-	if c.Code[0] != 33 || c.Code[34] != byte(vm.CHECKSIG) {
+	if c.Code[0] != 33 || c.Code[34] != byte(avm.CHECKSIG) {
 		return false
 	}
 	return true
@@ -49,10 +48,10 @@ func (c *Contract) IsMultiSigContract() bool {
 	if len(c.Code) < 37 {
 		return false
 	}
-	if c.Code[i] > byte(vm.PUSH16) {
+	if c.Code[i] > byte(avm.PUSH16) {
 		return false
 	}
-	if c.Code[i] < byte(vm.PUSH1) && c.Code[i] != 1 && c.Code[i] != 2 {
+	if c.Code[i] < byte(avm.PUSH1) && c.Code[i] != 1 && c.Code[i] != 2 {
 		return false
 	}
 
@@ -111,7 +110,7 @@ func (c *Contract) IsMultiSigContract() bool {
 		break
 	}
 
-	if c.Code[i] != byte(vm.CHECKMULTISIG) {
+	if c.Code[i] != byte(avm.CHECKMULTISIG) {
 		return false
 	}
 	i++

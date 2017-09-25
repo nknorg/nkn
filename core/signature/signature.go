@@ -6,7 +6,7 @@ import (
 	"DNA/core/contract/program"
 	"DNA/crypto"
 	. "DNA/errors"
-	"DNA/vm/interfaces"
+	"DNA/vm/avm/interfaces"
 	"bytes"
 	"crypto/sha256"
 	"io"
@@ -14,7 +14,7 @@ import (
 
 //SignableData describe the data need be signed.
 type SignableData interface {
-	interfaces.ISignableObject
+	interfaces.ICodeContainer
 
 	//Get the the SignableData's program hashes
 	GetProgramHashes() ([]common.Uint160, error)

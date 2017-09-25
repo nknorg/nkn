@@ -6,6 +6,8 @@ import (
 	"DNA/core/contract/program"
 	"DNA/core/transaction/payload"
 	"DNA/crypto"
+	"DNA/core/code"
+	"DNA/smartcontract/types"
 )
 
 //initial a new transaction with asset registration payload
@@ -143,3 +145,46 @@ func NewDataFileTransaction(path string, fileName string, note string, issuer *c
 		Programs:      []*program.Program{},
 	}, nil
 }
+
+//initial a new transaction with publish payload
+func NewDeployTransaction(fc *code.FunctionCode, programHash common.Uint160, name, codeversion, author, email, desp string, language types.LangType) (*Transaction, error) {
+	//TODO: check arguments
+	DeployCodePayload := &payload.DeployCode{
+		Code:        fc,
+		Name:        name,
+		CodeVersion: codeversion,
+		Author:      author,
+		Email:       email,
+		Description: desp,
+		Language: language,
+		ProgramHash: programHash,
+	}
+
+	return &Transaction{
+		TxType:        DeployCode,
+		Payload:       DeployCodePayload,
+		Attributes:    []*TxAttribute{},
+		UTXOInputs:    []*UTXOTxInput{},
+		BalanceInputs: []*BalanceTxInput{},
+		Programs:      []*program.Program{},
+	}, nil
+}
+
+//initial a new transaction with invoke payload
+func NewInvokeTransaction(fc []byte, codeHash common.Uint160) (*Transaction, error) {
+	//TODO: check arguments
+	InvokeCodePayload := &payload.InvokeCode{
+		Code: fc,
+		CodeHash: codeHash,
+	}
+
+	return &Transaction{
+		TxType:        InvokeCode,
+		Payload:       InvokeCodePayload,
+		Attributes:    []*TxAttribute{},
+		UTXOInputs:    []*UTXOTxInput{},
+		BalanceInputs: []*BalanceTxInput{},
+		Programs:      []*program.Program{},
+	}, nil
+}
+

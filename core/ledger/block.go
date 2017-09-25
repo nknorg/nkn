@@ -10,9 +10,10 @@ import (
 	"DNA/core/transaction/payload"
 	"DNA/crypto"
 	. "DNA/errors"
-	"DNA/vm"
+	"DNA/vm/avm"
 	"io"
 	"time"
+	"bytes"
 )
 
 const BlockVersion uint32 = 0
@@ -116,6 +117,12 @@ func (b *Block) GetMessage() []byte {
 	return sig.GetHashData(b)
 }
 
+func (b *Block) ToArray() ([]byte) {
+	bf := new(bytes.Buffer)
+	b.Serialize(bf)
+	return bf.Bytes()
+}
+
 func (b *Block) GetProgramHashes() ([]Uint160, error) {
 
 	return b.Blockdata.GetProgramHashes()
@@ -164,7 +171,7 @@ func GenesisBlockInit(defaultBookKeeper []*crypto.PubKey) (*Block, error) {
 		NextBookKeeper:   nextBookKeeper,
 		Program: &program.Program{
 			Code:      []byte{},
-			Parameter: []byte{byte(vm.PUSHT)},
+			Parameter: []byte{byte(avm.PUSHT)},
 		},
 	}
 	//transaction

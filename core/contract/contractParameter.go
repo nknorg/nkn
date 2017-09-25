@@ -10,4 +10,9 @@ const (
 	Hash160
 	Hash256
 	ByteArray
+	PublicKey
+	String
+	Object
+	Array = 0x10
+	Void = 0xff
 )

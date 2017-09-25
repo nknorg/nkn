@@ -1,20 +1,23 @@
 package payload
 
 import (
-	"DNA/common/serialization"
 	. "DNA/core/code"
+	"DNA/common/serialization"
 	"io"
+	"DNA/smartcontract/types"
+	"DNA/common"
 )
-
-const DeployCodePayloadVersion byte = 0x00
 
 type DeployCode struct {
 	Code        *FunctionCode
+	Params      []byte
 	Name        string
 	CodeVersion string
 	Author      string
 	Email       string
 	Description string
+	Language    types.LangType
+	ProgramHash common.Uint160
 }
 
 func (dc *DeployCode) Data(version byte) []byte {
@@ -26,6 +29,12 @@ func (dc *DeployCode) Data(version byte) []byte {
 func (dc *DeployCode) Serialize(w io.Writer, version byte) error {
 
 	err := dc.Code.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteVarBytes(w, dc.Params)
+
 	if err != nil {
 		return err
 	}
@@ -55,11 +64,26 @@ func (dc *DeployCode) Serialize(w io.Writer, version byte) error {
 		return err
 	}
 
+	err = serialization.WriteByte(w, byte(dc.Language))
+	if err != nil {
+		return err
+	}
+
+	_, err = dc.ProgramHash.Serialize(w)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (dc *DeployCode) Deserialize(r io.Reader, version byte) error {
+	dc.Code = new(FunctionCode)
 	err := dc.Code.Deserialize(r)
+	if err != nil {
+		return err
+	}
+
+	dc.Params, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
@@ -89,5 +113,17 @@ func (dc *DeployCode) Deserialize(r io.Reader, version byte) error {
 		return err
 	}
 
+	l, err := serialization.ReadByte(r)
+	if err != nil {
+		return err
+	}
+	dc.Language = types.LangType(l)
+	u := new(common.Uint160)
+	err = u.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	dc.ProgramHash = *u
 	return nil
 }
+

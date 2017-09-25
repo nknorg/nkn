@@ -6,6 +6,7 @@ import (
 	. "DNA/core/asset"
 	tx "DNA/core/transaction"
 	"DNA/crypto"
+	"DNA/smartcontract/states"
 )
 
 // ILedgerStore provides func with store package.
@@ -27,7 +28,10 @@ type ILedgerStore interface {
 	SaveAsset(assetid Uint256, asset *Asset) error
 	GetAsset(hash Uint256) (*Asset, error)
 
+	GetContract(codeHash Uint160) ([]byte, error)
+	GetStorage(key []byte) ([]byte, error)
 	GetAccount(programHash Uint160) (*account.AccountState, error)
+	GetAssetState(assetId Uint256) (*states.AssetState, error)
 
 	GetCurrentBlockHash() Uint256
 	GetCurrentHeaderHash() Uint256

@@ -5,9 +5,9 @@ import (
 	pg "DNA/core/contract/program"
 	"DNA/crypto"
 	. "DNA/errors"
-	"DNA/vm"
 	"math/big"
 	"sort"
+	"DNA/vm/avm"
 )
 
 //create a Single Singature contract for owner
@@ -43,7 +43,7 @@ func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
 	}
 	sb := pg.NewProgramBuilder()
 	sb.PushData(temp)
-	sb.AddOp(vm.CHECKSIG)
+	sb.AddOp(avm.CHECKSIG)
 	return sb.ToArray(), nil
 }
 
@@ -90,6 +90,6 @@ func CreateMultiSigRedeemScript(m int, pubkeys []*crypto.PubKey) ([]byte, error)
 	}
 
 	sb.PushNumber(big.NewInt(int64(len(pubkeys))))
-	sb.AddOp(vm.CHECKMULTISIG)
+	sb.AddOp(avm.CHECKMULTISIG)
 	return sb.ToArray(), nil
 }

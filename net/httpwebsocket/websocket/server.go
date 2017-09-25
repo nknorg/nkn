@@ -131,6 +131,7 @@ func (ws *WsServer) registryMethod() {
 		"getblockbyhash":     {handler: GetBlockByHash},
 		"getblockheight":     {handler: GetBlockHeight},
 		"gettransaction":     {handler: GetTransactionByHash},
+		"getcontract":        {handler: GetContract},
 		"getasset":           {handler: GetAssetByHash},
 		"getunspendoutput":   {handler: GetUnspendOutput},
 
@@ -330,6 +331,7 @@ func (ws *WsServer) PushTxResult(txHashStr string, resp map[string]interface{}) 
 	if len(sSessionId) > 0 {
 		ws.response(sSessionId, resp)
 	}
+	ws.PushResult(resp)
 }
 func (ws *WsServer) PushResult(resp map[string]interface{}) {
 	resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]

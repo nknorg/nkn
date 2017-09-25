@@ -3,7 +3,6 @@ package httpjsonrpc
 import (
 	. "DNA/common"
 	"DNA/core/asset"
-	. "DNA/core/contract"
 	. "DNA/core/transaction"
 	"DNA/core/transaction/payload"
 	"bytes"
@@ -20,17 +19,20 @@ type BookKeepingInfo struct {
 //implement PayloadInfo define DeployCodeInfo
 type FunctionCodeInfo struct {
 	Code           string
-	ParameterTypes string
-	ReturnTypes    string
+	ParameterTypes []int
+	ReturnType    int
+	CodeHash       string
 }
 
 type DeployCodeInfo struct {
 	Code        *FunctionCodeInfo
 	Name        string
-	CodeVersion string
+	Version string
 	Author      string
 	Email       string
 	Description string
+	Language    int
+	ProgramHash string
 }
 
 //implement PayloadInfo define IssueAssetInfo
@@ -104,14 +106,23 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 	case *payload.TransferAsset:
 	case *payload.DeployCode:
 		obj := new(DeployCodeInfo)
+		obj.Code = new(FunctionCodeInfo)
 		obj.Code.Code = ToHexString(object.Code.Code)
-		obj.Code.ParameterTypes = ToHexString(ContractParameterTypeToByte(object.Code.ParameterTypes))
-		obj.Code.ReturnTypes = ToHexString(ContractParameterTypeToByte(object.Code.ReturnTypes))
+		var params []int
+		for _, v := range object.Code.ParameterTypes {
+			params = append(params, int(v))
+		}
+		obj.Code.ParameterTypes = params
+		obj.Code.ReturnType = int(object.Code.ReturnType)
+		codeHash := object.Code.CodeHash()
+		obj.Code.CodeHash = ToHexString(codeHash.ToArrayReverse())
 		obj.Name = object.Name
-		obj.CodeVersion = object.CodeVersion
+		obj.Version = object.CodeVersion
 		obj.Author = object.Author
 		obj.Email = object.Email
 		obj.Description = object.Description
+		obj.Language = int(object.Language)
+		obj.ProgramHash = ToHexString(object.ProgramHash.ToArrayReverse())
 		return obj
 	case *payload.RegisterAsset:
 		obj := new(RegisterAssetInfo)

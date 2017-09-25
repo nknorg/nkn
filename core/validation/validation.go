@@ -5,9 +5,10 @@ import (
 	sig "DNA/core/signature"
 	"DNA/crypto"
 	. "DNA/errors"
-	"DNA/vm"
-	"DNA/vm/interfaces"
+	"DNA/vm/avm"
 	"errors"
+	"DNA/vm/avm/interfaces"
+	"DNA/common"
 )
 
 func VerifySignableData(signableData sig.SignableData) (bool, error) {
@@ -31,13 +32,17 @@ func VerifySignableData(signableData sig.SignableData) (bool, error) {
 		}
 		//execute program on VM
 		var cryptos interfaces.ICrypto
-		cryptos = new(vm.ECDsaCrypto)
-		se := vm.NewExecutionEngine(signableData, cryptos, 1200, nil, nil)
-		se.LoadScript(programs[i].Code, false)
-		se.LoadScript(programs[i].Parameter, true)
-		se.Execute()
+		cryptos = new(avm.ECDsaCrypto)
+		se := avm.NewExecutionEngine(signableData, cryptos, nil, nil, common.Fixed64(0))
+		se.LoadCode(programs[i].Code, false)
+		se.LoadCode(programs[i].Parameter, true)
+		err := se.Execute()
 
-		if se.GetState() != vm.HALT {
+		if err != nil {
+			return false, NewDetailErr(err, ErrNoCode, "")
+		}
+
+		if se.GetState() != avm.HALT {
 			return false, NewDetailErr(errors.New("[VM] Finish State not equal to HALT."), ErrNoCode, "")
 		}
 

@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"DNA/smartcontract/states"
 )
 
 var node Noder
@@ -514,11 +515,38 @@ func GetContract(cmd map[string]interface{}) map[string]interface{} {
 		return resp
 	}
 	//TODO GetContract from store
-	//contract, err := ledger.DefaultLedger.Store.GetContract(hash)
-	//if err != nil {
-	//	resp["Error"] = Err.INVALID_PARAMS
-	//	return resp
-	//}
-	//resp["Result"] = string(contract)
+	contract, err := ledger.DefaultLedger.Store.GetContract(hash)
+	if err != nil {
+		resp["Error"] = Err.INVALID_PARAMS
+		return resp
+	}
+	c := new(states.ContractState)
+	b := bytes.NewBuffer(contract)
+	c.Deserialize(b)
+	var params []int
+	for _, v := range c.Code.ParameterTypes {
+		params = append(params, int(v))
+	}
+	codehash := c.Code.CodeHash()
+	funcCode := &FunctionCodeInfo{
+		Code:           ToHexString(c.Code.Code),
+		ParameterTypes: params,
+		ReturnType:     int(c.Code.ReturnType),
+		CodeHash:       ToHexString(codehash.ToArrayReverse()),
+	}
+	programHash := c.ProgramHash
+	result := DeployCodeInfo{
+		Name:        c.Name,
+		Author:      c.Author,
+		Email:       c.Email,
+		Version: c.Version,
+		Description: c.Description,
+		Language:    int(c.Language),
+		Code:        new(FunctionCodeInfo),
+		ProgramHash: ToHexString(programHash.ToArrayReverse()),
+	}
+
+	result.Code = funcCode
+	resp["Result"] = result
 	return resp
 }

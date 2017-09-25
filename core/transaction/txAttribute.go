@@ -5,6 +5,7 @@ import (
 	. "DNA/errors"
 	"errors"
 	"io"
+	"bytes"
 )
 
 type TransactionAttributeUsage byte
@@ -69,3 +70,11 @@ func (tx *TxAttribute) Deserialize(r io.Reader) error {
 	return nil
 
 }
+
+
+func (tx *TxAttribute) ToArray() ([]byte) {
+	b := new(bytes.Buffer)
+	tx.Serialize(b)
+	return b.Bytes()
+}
+

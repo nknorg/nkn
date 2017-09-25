@@ -48,6 +48,14 @@ func BytesToInt16(b []byte) int16 {
 	return int16(tmp)
 }
 
+func BytesToInt(b [] byte) []int {
+	i := make([]int, len(b))
+	for k,v := range b {
+		i[k] = int(v)
+	}
+	return i
+}
+
 func IsEqualBytes(b1 []byte, b2 []byte) bool {
 	len1 := len(b1)
 	len2 := len(b2)
@@ -70,6 +78,15 @@ func ToHexString(data []byte) string {
 
 func HexToBytes(value string) ([]byte, error) {
 	return hex.DecodeString(value)
+}
+
+func ToArrayReverse(arr []byte) []byte {
+	l := len(arr)
+	x := make([]byte, 0)
+	for i := l - 1; i >= 0 ;i--{
+		x = append(x, arr[i])
+	}
+	return x
 }
 
 func BytesReverse(u []byte) []byte {

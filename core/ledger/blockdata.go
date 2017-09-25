@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"io"
+	"bytes"
 )
 
 type Blockdata struct {
@@ -156,4 +157,10 @@ func (bd *Blockdata) Hash() Uint256 {
 
 func (bd *Blockdata) GetMessage() []byte {
 	return sig.GetHashData(bd)
+}
+
+func (bd *Blockdata) ToArray() ([]byte) {
+	b := new(bytes.Buffer)
+	bd.Serialize(b)
+	return b.Bytes()
 }
