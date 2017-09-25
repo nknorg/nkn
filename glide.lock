@@ -37,4 +37,10 @@ imports:
   version: f6e8084112db1c3aa9c1e4144f024ab549ea08c1
 - name: github.com/whyrusleeping/tar-utils
   version: e8a5890cfc9d59a203361237581468780d945b6e
+- name: github.com/ethereum/go-ethereum
+  version: 2b4a5f2677fdf0d8a34a2d19fddc203b973dfe02
+  subpackages:
+  - crypto/secp256k1
+  - crypto/sha3
+  - params
 testImports: []

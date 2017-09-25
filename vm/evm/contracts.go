@@ -6,7 +6,7 @@ import (
 	. "DNA/vm/evm/common"
 	"DNA/vm/evm/crypto"
 	"crypto/sha256"
-	"golang.org/x/crypto/ripemd160"
+	"github.com/golang/crypto/ripemd160"
 )
 
 type PrecompiledContract interface {

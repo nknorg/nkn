@@ -22,7 +22,6 @@ import:
   - crypto/secp256k1
   - crypto/sha3
   - params
-- package: golang.org/x/crypto/ripemd160
 ignore:
   - golang.org/x/sys/unix
 
