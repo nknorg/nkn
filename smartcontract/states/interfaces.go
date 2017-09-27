@@ -24,6 +24,7 @@ var (
 		store.ST_Storage: new(StorageItem),
 		store.ST_ACCOUNT: new(AccountState),
 		store.ST_AssetState: new(AssetState),
+		store.ST_Validator: new(ValidatorState),
 	}
 )
 
