@@ -19,14 +19,6 @@ func(v *ValidatorState) Serialize(w io.Writer) error {
 
 
 func(v *ValidatorState)Deserialize(r io.Reader) error {
-	
-	p := new(crypto.PubKey)
-	p.DeSerialize(r)
-	v.PublicKey = p
-	return nil
-}
-
-func(v *ValidatorState) ToArray() []byte {
 	stateBase := new(StateBase)
 	err := stateBase.Deserialize(r)
 	if err != nil {
@@ -47,3 +39,4 @@ func(v *ValidatorState) ToArray() []byte {
 	v.Serialize(b)
 	return b.Bytes()
 }
+
