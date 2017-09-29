@@ -11,6 +11,7 @@ import (
 )
 
 type ContractState struct {
+	StateBase
 	Code *code.FunctionCode
 	Name string
 	Version string
@@ -19,10 +20,10 @@ type ContractState struct {
 	Description string
 	Language types.LangType
 	ProgramHash common.Uint160
-	StateBase
 }
 
 func(contractState *ContractState) Serialize(w io.Writer) error {
+	contractState.StateBase.Serialize(w)
 	err := contractState.Code.Serialize(w)
 	if err != nil {
 		return err
@@ -59,8 +60,14 @@ func(contractState *ContractState) Serialize(w io.Writer) error {
 }
 
 func(contractState *ContractState) Deserialize(r io.Reader) error {
+	stateBase := new(StateBase)
+	err := stateBase.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	contractState.StateBase = *stateBase
 	f := new(code.FunctionCode)
-	err := f.Deserialize(r)
+	err = f.Deserialize(r)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "ContractState Code Deserialize fail.")
 	}
