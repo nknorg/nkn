@@ -41,3 +41,9 @@ func(v *ValidatorState) ToArray() []byte {
 	v.PublicKey = p
 	return nil
 }
+
+func(v *ValidatorState) ToArray() []byte {
+	b := new(bytes.Buffer)
+	v.Serialize(b)
+	return b.Bytes()
+}
