@@ -25,7 +25,7 @@ type AssetState struct {
 	Issuer common.Uint160
 	Expiration uint32
 	IsFrozen bool
-	*StateBase
+	StateBase
 }
 
 func(assetState *AssetState)Serialize(w io.Writer) error {
