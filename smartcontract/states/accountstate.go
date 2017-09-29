@@ -8,6 +8,7 @@ import (
 )
 
 type AccountState struct {
+	StateBase
 	ProgramHash common.Uint160
 	IsFrozen bool
 	Balances map[common.Uint256]common.Fixed64
@@ -22,6 +23,7 @@ func NewAccountState(programHash common.Uint160, balances map[common.Uint256]com
 }
 
 func(accountState *AccountState)Serialize(w io.Writer) error {
+	accountState.StateBase.Serialize(w)
 	accountState.ProgramHash.Serialize(w)
 	serialization.WriteBool(w, accountState.IsFrozen)
 	serialization.WriteUint64(w, uint64(len(accountState.Balances)))
@@ -33,12 +35,22 @@ func(accountState *AccountState)Serialize(w io.Writer) error {
 }
 
 func(accountState *AccountState)Deserialize(r io.Reader) error {
+	stateBase := new(StateBase)
+	err := stateBase.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	accountState.StateBase = *stateBase
 	accountState.ProgramHash.Deserialize(r)
 	isFrozen, err := serialization.ReadBool(r)
-	if err != nil { return err }
+	if err != nil { 
+		return err 
+	}
 	accountState.IsFrozen = isFrozen
 	l, err := serialization.ReadUint64(r)
-	if err != nil { return err }
+	if err != nil { 
+		return err 
+	}
 	balances := make(map[common.Uint256]common.Fixed64, 0)
 	u := new(common.Uint256)
 	f := new(common.Fixed64)
