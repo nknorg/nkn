@@ -11,6 +11,7 @@ import (
 )
 
 type AssetState struct {
+	StateBase
 	AssetId common.Uint256
 	AssetType asset.AssetType
 	Name string
@@ -29,6 +30,7 @@ type AssetState struct {
 }
 
 func(assetState *AssetState)Serialize(w io.Writer) error {
+	assetState.StateBase.Serialize(w)
 	assetState.AssetId.Serialize(w)
 	serialization.WriteVarString(w, assetState.Name)
 	assetState.Amount.Serialize(w)
@@ -50,6 +52,12 @@ func(assetState *AssetState)Deserialize(r io.Reader) error {
 	u160 := new(common.Uint160)
 	f := new(common.Fixed64)
 	pubkey := &crypto.PubKey{}
+	stateBase := new(StateBase)
+	err := stateBase.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	assetState.StateBase = *stateBase
 	err := u256.Deserialize(r)
 	if err != nil{
 		return NewDetailErr(err, ErrNoCode, "AssetState AssetId Deserialize fail.")
