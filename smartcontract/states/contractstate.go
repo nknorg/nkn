@@ -19,7 +19,7 @@ type ContractState struct {
 	Description string
 	Language types.LangType
 	ProgramHash common.Uint160
-	*StateBase
+	StateBase
 }
 
 func(contractState *ContractState) Serialize(w io.Writer) error {
