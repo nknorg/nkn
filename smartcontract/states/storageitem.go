@@ -8,8 +8,8 @@ import (
 )
 
 type StorageItem struct {
+	StateBase
 	Value []byte
-	*StateBase
 }
 
 func NewStorageItem(value []byte) *StorageItem {
@@ -19,11 +19,18 @@ func NewStorageItem(value []byte) *StorageItem {
 }
 
 func(storageItem *StorageItem)Serialize(w io.Writer) error {
+	storageItem.StateBase.Serialize(w)
 	serialization.WriteVarBytes(w, storageItem.Value)
 	return nil
 }
 
 func(storageItem *StorageItem)Deserialize(r io.Reader) error {
+	stateBase := new(StateBase)
+	err := stateBase.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	storageItem.StateBase = *stateBase
 	value, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "ContractState Code Deserialize fail.")
