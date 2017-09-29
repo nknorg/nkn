@@ -26,7 +26,6 @@ type AssetState struct {
 	Issuer common.Uint160
 	Expiration uint32
 	IsFrozen bool
-	StateBase
 }
 
 func(assetState *AssetState)Serialize(w io.Writer) error {
@@ -58,7 +57,7 @@ func(assetState *AssetState)Deserialize(r io.Reader) error {
 		return err
 	}
 	assetState.StateBase = *stateBase
-	err := u256.Deserialize(r)
+	err = u256.Deserialize(r)
 	if err != nil{
 		return NewDetailErr(err, ErrNoCode, "AssetState AssetId Deserialize fail.")
 	}
