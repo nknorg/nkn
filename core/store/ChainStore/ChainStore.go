@@ -1160,6 +1160,11 @@ func (bd *ChainStore) persist(b *Block) error {
 	// BATCH PUT VALUE
 	bd.st.BatchPut(currentBlockKey.Bytes(), currentBlock.Bytes())
 
+	err = dbCache.Commit()
+	if err != nil {
+		return err
+	}
+	
 	err = bd.st.BatchCommit()
 
 	if err != nil {
