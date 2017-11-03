@@ -195,8 +195,10 @@ func validatePickItem(e *ExecutionEngine) error {
 		return ErrBadValue
 	}
 	stackItem := item.GetStackItem()
-	if _, ok := stackItem.(*types.Array); !ok {
-		return ErrNotArray
+	if _, ok1 := stackItem.(*types.Array); !ok1 {
+		if _, ok2 := stackItem.(*types.ByteArray); !ok2 {
+			return ErrNotArray
+		}
 	}
 	if index >= len(stackItem.GetArray()) {
 		return ErrOverMaxArraySize
@@ -212,22 +214,17 @@ func validatorSetItem(e *ExecutionEngine) error {
 	if newItem == nil {
 		return ErrBadValue
 	}
-	fmt.Println("new item:", newItem)
 	index := PeekNInt(1, e)
 	if index < 0 {
 		return ErrBadValue
 	}
-	fmt.Println("index:", index)
 	arrItem := PeekN(2, e)
 	if arrItem == nil {
 		return ErrBadValue
 	}
-	fmt.Println("arrItem:", arrItem)
 	item := arrItem.GetStackItem()
 	if _, ok := item.(*types.Array); !ok {
 		if _, ok := item.(*types.ByteArray); ok {
-			fmt.Println("item:", item.GetByteArray())
-			fmt.Println("item length:", len(item.GetByteArray()))
 			l := len(item.GetByteArray())
 			if index >= l {
 				return ErrOverMaxArraySize
@@ -239,8 +236,6 @@ func validatorSetItem(e *ExecutionEngine) error {
 			return ErrBadValue
 		}
 	}else {
-		fmt.Println("item:", item.GetArray())
-		fmt.Println("item length:", len(item.GetArray()))
 		if index >= len(item.GetArray()) {
 			return ErrOverMaxArraySize
 		}
