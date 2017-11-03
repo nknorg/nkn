@@ -194,14 +194,20 @@ func validatePickItem(e *ExecutionEngine) error {
 		return ErrBadValue
 	}
 	stackItem := item.GetStackItem()
-	if _, ok1 := stackItem.(*types.Array); !ok1 {
-		if _, ok2 := stackItem.(*types.ByteArray); !ok2 {
+	if _, ok := stackItem.(*types.Array); !ok {
+		if _, ok := stackItem.(*types.ByteArray); !ok {
 			return ErrNotArray
+		} else {
+			if index >= len(stackItem.GetByteArray()) {
+				return ErrOverMaxArraySize
+			}
+		}
+	} else {
+		if index >= len(stackItem.GetArray()) {
+			return ErrOverMaxArraySize
 		}
 	}
-	if index >= len(stackItem.GetArray()) {
-		return ErrOverMaxArraySize
-	}
+
 	return nil
 }
 
@@ -232,7 +238,7 @@ func validatorSetItem(e *ExecutionEngine) error {
 				return ErrBadValue
 			}
 		} else {
-			return ErrBadValue
+			return ErrNotArray
 		}
 	}else {
 		if index >= len(item.GetArray()) {

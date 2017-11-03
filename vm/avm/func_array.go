@@ -37,8 +37,14 @@ func opUnpack(e *ExecutionEngine) (VMState, error) {
 
 func opPickItem(e *ExecutionEngine) (VMState, error) {
 	index := PopInt(e)
-	items := PopArray(e)
-	PushData(e, items[index])
+	itemArr := PopStackItem(e)
+	if _, ok := itemArr.(*types.Array); ok {
+		items := itemArr.GetArray()
+		PushData(e, items[index])
+	}else {
+		items := itemArr.GetByteArray()
+		PushData(e, items[index])
+	}
 	return NONE, nil
 }
 
