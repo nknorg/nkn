@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"DNA/vm/avm/types"
-	"fmt"
 )
 
 func validatorPushData4(e *ExecutionEngine) error {
