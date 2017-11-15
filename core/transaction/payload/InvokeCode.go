@@ -1,14 +1,14 @@
 package payload
 
 import (
-	"io"
-	"DNA/common/serialization"
 	"DNA/common"
+	"DNA/common/serialization"
+	"io"
 )
 
 type InvokeCode struct {
-	CodeHash common.Uint160
-	Code     []byte
+	CodeHash    common.Uint160
+	Code        []byte
 	ProgramHash common.Uint160
 }
 
@@ -42,7 +42,7 @@ func (ic *InvokeCode) Deserialize(r io.Reader, version byte) error {
 	ic.Code = code
 
 	p := new(common.Uint160)
-	err = u.Deserialize(r)
+	err = p.Deserialize(r)
 	if err != nil {
 		return err
 	}

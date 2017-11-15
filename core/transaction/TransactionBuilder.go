@@ -3,10 +3,10 @@ package transaction
 import (
 	"DNA/common"
 	"DNA/core/asset"
+	"DNA/core/code"
 	"DNA/core/contract/program"
 	"DNA/core/transaction/payload"
 	"DNA/crypto"
-	"DNA/core/code"
 	"DNA/smartcontract/types"
 )
 
@@ -156,7 +156,7 @@ func NewDeployTransaction(fc *code.FunctionCode, programHash common.Uint160, nam
 		Author:      author,
 		Email:       email,
 		Description: desp,
-		Language: language,
+		Language:    language,
 		ProgramHash: programHash,
 	}
 
@@ -171,11 +171,12 @@ func NewDeployTransaction(fc *code.FunctionCode, programHash common.Uint160, nam
 }
 
 //initial a new transaction with invoke payload
-func NewInvokeTransaction(fc []byte, codeHash common.Uint160) (*Transaction, error) {
+func NewInvokeTransaction(fc []byte, codeHash common.Uint160, programhash common.Uint160) (*Transaction, error) {
 	//TODO: check arguments
 	InvokeCodePayload := &payload.InvokeCode{
-		Code: fc,
-		CodeHash: codeHash,
+		Code:        fc,
+		CodeHash:    codeHash,
+		ProgramHash: programhash,
 	}
 
 	return &Transaction{
@@ -187,4 +188,3 @@ func NewInvokeTransaction(fc []byte, codeHash common.Uint160) (*Transaction, err
 		Programs:      []*program.Program{},
 	}, nil
 }
-

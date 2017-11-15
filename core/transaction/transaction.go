@@ -2,19 +2,19 @@ package transaction
 
 import (
 	. "DNA/common"
+	"DNA/common/log"
 	"DNA/common/serialization"
 	"DNA/core/contract"
 	"DNA/core/contract/program"
 	sig "DNA/core/signature"
 	"DNA/core/transaction/payload"
 	. "DNA/errors"
+	"bytes"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
 	"sort"
-	"bytes"
-	"DNA/common/log"
 )
 
 //for different transaction types with different payload format
@@ -341,6 +341,8 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	case Record:
 	case DeployCode:
 	case InvokeCode:
+		issuer := tx.Payload.(*payload.InvokeCode).ProgramHash
+		hashs = append(hashs, issuer)
 	case BookKeeper:
 		issuer := tx.Payload.(*payload.BookKeeper).Issuer
 		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
@@ -401,12 +403,11 @@ func (tx *Transaction) GetMessage() []byte {
 	return sig.GetHashData(tx)
 }
 
-func (tx *Transaction) ToArray() ([]byte) {
+func (tx *Transaction) ToArray() []byte {
 	b := new(bytes.Buffer)
 	tx.Serialize(b)
 	return b.Bytes()
 }
-
 
 func (tx *Transaction) Hash() Uint256 {
 	if tx.hash == nil {
