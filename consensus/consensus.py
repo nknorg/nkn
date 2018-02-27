@@ -89,7 +89,7 @@ for p in np.arange(0.1, 1.0, 0.1):
   run_simulation(random_state(N, p), w, 10)
 
 plt.tight_layout()
-plt.savefig('consensus_convergence.svg')
+plt.savefig('convergence.svg')
 
 # Tolerance to malicious nodes
 N = 1000000
@@ -116,4 +116,4 @@ for p in np.arange(0.6, 0.8, 0.02):
   )
 
 plt.tight_layout()
-plt.savefig('consensus_malicious.svg')
+plt.savefig('malicious.svg')
