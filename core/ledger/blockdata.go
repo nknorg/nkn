@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	. "DNA/common"
-	"DNA/common/serialization"
-	"DNA/core/contract/program"
-	sig "DNA/core/signature"
-	. "DNA/errors"
+	. "nkn-core/common"
+	"nkn-core/common/serialization"
+	"nkn-core/core/contract/program"
+	sig "nkn-core/core/signature"
+	. "nkn-core/errors"
 	"crypto/sha256"
 	"errors"
 	"io"

@@ -1,10 +1,10 @@
 package states
 
 import (
-	"DNA/common"
+	"nkn-core/common"
 	"io"
 	"bytes"
-	"DNA/common/serialization"
+	"nkn-core/common/serialization"
 )
 
 type AccountState struct {

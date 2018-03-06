@@ -1,11 +1,11 @@
 package node
 
 import (
-	"DNA/common/config"
-	"DNA/common/log"
-	"DNA/core/ledger"
-	. "DNA/net/message"
-	. "DNA/net/protocol"
+	"nkn-core/common/config"
+	"nkn-core/common/log"
+	"nkn-core/core/ledger"
+	. "nkn-core/net/message"
+	. "nkn-core/net/protocol"
 	"math/rand"
 	"net"
 	"strconv"

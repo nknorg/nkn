@@ -1,8 +1,8 @@
 package common
 
 import (
-	. "DNA/common/config"
-	Err "DNA/net/httprestful/error"
+	. "nkn-core/common/config"
+	Err "nkn-core/net/httprestful/error"
 	"bytes"
 	"encoding/json"
 	"io/ioutil"

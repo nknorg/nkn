@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"os"
 
-	"DNA/account"
-	. "DNA/cli/common"
-	. "DNA/common"
-	"DNA/common/password"
-	"DNA/core/contract"
-	"DNA/net/httpjsonrpc"
+	"nkn-core/account"
+	. "nkn-core/cli/common"
+	. "nkn-core/common"
+	"nkn-core/common/password"
+	"nkn-core/core/contract"
+	"nkn-core/net/httpjsonrpc"
 
 	"github.com/urfave/cli"
 )

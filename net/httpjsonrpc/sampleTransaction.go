@@ -1,13 +1,13 @@
 package httpjsonrpc
 
 import (
-	. "DNA/account"
-	. "DNA/common"
-	"DNA/common/log"
-	. "DNA/core/asset"
-	"DNA/core/contract"
-	"DNA/core/signature"
-	"DNA/core/transaction"
+	. "nkn-core/account"
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	. "nkn-core/core/asset"
+	"nkn-core/core/contract"
+	"nkn-core/core/signature"
+	"nkn-core/core/transaction"
 	"strconv"
 )
 

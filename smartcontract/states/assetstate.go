@@ -1,13 +1,13 @@
 package states
 
 import (
-	"DNA/common"
-	"DNA/crypto"
+	"nkn-core/common"
+	"nkn-core/crypto"
 	"io"
-	"DNA/common/serialization"
-	. "DNA/errors"
+	"nkn-core/common/serialization"
+	. "nkn-core/errors"
 	"bytes"
-	"DNA/core/asset"
+	"nkn-core/core/asset"
 )
 
 type AssetState struct {

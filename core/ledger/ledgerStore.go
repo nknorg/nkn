@@ -1,12 +1,12 @@
 package ledger
 
 import (
-	. "DNA/common"
-	"DNA/core/account"
-	. "DNA/core/asset"
-	tx "DNA/core/transaction"
-	"DNA/crypto"
-	"DNA/smartcontract/states"
+	. "nkn-core/common"
+	"nkn-core/core/account"
+	. "nkn-core/core/asset"
+	tx "nkn-core/core/transaction"
+	"nkn-core/crypto"
+	"nkn-core/smartcontract/states"
 )
 
 // ILedgerStore provides func with store package.

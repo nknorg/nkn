@@ -1,13 +1,13 @@
 package transaction
 
 import (
-	"DNA/common"
-	"DNA/core/asset"
-	"DNA/core/code"
-	"DNA/core/contract/program"
-	"DNA/core/transaction/payload"
-	"DNA/crypto"
-	"DNA/smartcontract/types"
+	"nkn-core/common"
+	"nkn-core/core/asset"
+	"nkn-core/core/code"
+	"nkn-core/core/contract/program"
+	"nkn-core/core/transaction/payload"
+	"nkn-core/crypto"
+	"nkn-core/smartcontract/types"
 )
 
 //initial a new transaction with asset registration payload

@@ -1,10 +1,10 @@
 package httpjsonrpc
 
 import (
-	. "DNA/common"
-	"DNA/core/asset"
-	. "DNA/core/transaction"
-	"DNA/core/transaction/payload"
+	. "nkn-core/common"
+	"nkn-core/core/asset"
+	. "nkn-core/core/transaction"
+	"nkn-core/core/transaction/payload"
 	"bytes"
 )
 

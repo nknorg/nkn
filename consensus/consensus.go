@@ -2,7 +2,7 @@ package consensus
 
 import (
 	"fmt"
-	"DNA/common/log"
+	"nkn-core/common/log"
 	"time"
 )
 

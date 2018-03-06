@@ -3,8 +3,8 @@ package abi
 import (
 	"reflect"
 	"math/big"
-	"DNA/vm/evm/common"
-	. "DNA/common"
+	"nkn-core/vm/evm/common"
+	. "nkn-core/common"
 )
 
 var (

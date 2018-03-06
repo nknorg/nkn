@@ -1,13 +1,13 @@
 package bookkeeper
 
 import (
-	"DNA/account"
-	. "DNA/cli/common"
-	"DNA/core/contract"
-	"DNA/core/signature"
-	"DNA/core/transaction"
-	"DNA/crypto"
-	"DNA/net/httpjsonrpc"
+	"nkn-core/account"
+	. "nkn-core/cli/common"
+	"nkn-core/core/contract"
+	"nkn-core/core/signature"
+	"nkn-core/core/transaction"
+	"nkn-core/crypto"
+	"nkn-core/net/httpjsonrpc"
 	"bytes"
 	"encoding/hex"
 	"fmt"

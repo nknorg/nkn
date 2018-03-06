@@ -1,8 +1,8 @@
 package payload
 
 import (
-	"DNA/common"
-	"DNA/common/serialization"
+	"nkn-core/common"
+	"nkn-core/common/serialization"
 	"io"
 )
 

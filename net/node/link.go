@@ -1,11 +1,11 @@
 package node
 
 import (
-	. "DNA/common/config"
-	"DNA/common/log"
-	"DNA/events"
-	msg "DNA/net/message"
-	. "DNA/net/protocol"
+	. "nkn-core/common/config"
+	"nkn-core/common/log"
+	"nkn-core/events"
+	msg "nkn-core/net/message"
+	. "nkn-core/net/protocol"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"

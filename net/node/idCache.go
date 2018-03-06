@@ -1,7 +1,7 @@
 package node
 
 import (
-	"DNA/common"
+	"nkn-core/common"
 	"sync"
 )
 

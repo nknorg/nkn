@@ -1,8 +1,8 @@
 package message
 
 import (
-	"DNA/common/log"
-	. "DNA/net/protocol"
+	"nkn-core/common/log"
+	. "nkn-core/net/protocol"
 	"encoding/hex"
 	"errors"
 	"strconv"

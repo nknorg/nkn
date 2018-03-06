@@ -1,7 +1,7 @@
 package httpjsonrpc
 
 import (
-	"DNA/common/log"
+	"nkn-core/common/log"
 	"bytes"
 	"context"
 	"encoding/json"

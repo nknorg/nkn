@@ -2,7 +2,7 @@ package test
 
 import (
 	"testing"
-	"DNA/vm/evm/test_case"
+	"nkn-core/vm/evm/test_case"
 )
 
 const (

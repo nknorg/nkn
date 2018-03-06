@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	. "DNA/common"
+	. "nkn-core/common"
 	"crypto/sha256"
 	"fmt"
 	"testing"

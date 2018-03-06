@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"DNA/core/store"
-	"DNA/smartcontract/states"
-	"DNA/common"
+	"nkn-core/core/store"
+	"nkn-core/smartcontract/states"
+	"nkn-core/common"
 	"math/big"
 )
 

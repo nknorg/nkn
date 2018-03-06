@@ -1,7 +1,7 @@
 package account
 
 import (
-	"DNA/crypto"
+	"nkn-core/crypto"
 	"fmt"
 	"os"
 	"path"

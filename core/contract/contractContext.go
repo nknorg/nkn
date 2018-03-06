@@ -1,12 +1,12 @@
 package contract
 
 import (
-	. "DNA/common"
-	"DNA/common/log"
-	pg "DNA/core/contract/program"
-	sig "DNA/core/signature"
-	"DNA/crypto"
-	_ "DNA/errors"
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	pg "nkn-core/core/contract/program"
+	sig "nkn-core/core/signature"
+	"nkn-core/crypto"
+	_ "nkn-core/errors"
 	"errors"
 	"math/big"
 	"sort"

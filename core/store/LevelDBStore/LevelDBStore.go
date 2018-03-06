@@ -1,7 +1,7 @@
 package LevelDBStore
 
 import (
-	. "DNA/core/store"
+	. "nkn-core/core/store"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"

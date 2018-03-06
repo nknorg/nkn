@@ -1,12 +1,12 @@
 package httprestful
 
 import (
-	. "DNA/common/config"
-	"DNA/core/ledger"
-	"DNA/events"
-	"DNA/net/httprestful/common"
-	. "DNA/net/httprestful/restful"
-	. "DNA/net/protocol"
+	. "nkn-core/common/config"
+	"nkn-core/core/ledger"
+	"nkn-core/events"
+	"nkn-core/net/httprestful/common"
+	. "nkn-core/net/httprestful/restful"
+	. "nkn-core/net/protocol"
 	"strconv"
 )
 

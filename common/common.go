@@ -1,8 +1,8 @@
 package common
 
 import (
-	"DNA/common/log"
-	. "DNA/errors"
+	"nkn-core/common/log"
+	. "nkn-core/errors"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

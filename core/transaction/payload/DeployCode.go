@@ -1,11 +1,11 @@
 package payload
 
 import (
-	. "DNA/core/code"
-	"DNA/common/serialization"
+	. "nkn-core/core/code"
+	"nkn-core/common/serialization"
 	"io"
-	"DNA/smartcontract/types"
-	"DNA/common"
+	"nkn-core/smartcontract/types"
+	"nkn-core/common"
 )
 
 type DeployCode struct {

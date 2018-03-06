@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"DNA/common"
+	"nkn-core/common"
 	"io"
 )
 

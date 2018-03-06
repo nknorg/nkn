@@ -4,9 +4,9 @@ import (
 	"math/rand"
 	"time"
 
-	"DNA/common/config"
-	"DNA/common/log"
-	"DNA/crypto"
+	"nkn-core/common/config"
+	"nkn-core/common/log"
+	"nkn-core/crypto"
 )
 
 func init() {

@@ -1,7 +1,7 @@
 package util
 
 import (
-	"DNA/crypto/sm3"
+	"nkn-core/crypto/sm3"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"

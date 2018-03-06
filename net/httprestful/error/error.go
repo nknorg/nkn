@@ -1,6 +1,6 @@
 package error
 
-import . "DNA/errors"
+import . "nkn-core/errors"
 
 const (
 	SUCCESS            int64 = 0

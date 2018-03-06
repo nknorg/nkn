@@ -1,11 +1,11 @@
 package common
 
 import (
-	. "DNA/common"
-	tx "DNA/core/transaction"
-	. "DNA/errors"
-	. "DNA/net/httpjsonrpc"
-	Err "DNA/net/httprestful/error"
+	. "nkn-core/common"
+	tx "nkn-core/core/transaction"
+	. "nkn-core/errors"
+	. "nkn-core/net/httpjsonrpc"
+	Err "nkn-core/net/httprestful/error"
 	"bytes"
 	"encoding/json"
 	"time"

@@ -1,14 +1,14 @@
 package transaction
 
 import (
-	. "DNA/common"
-	"DNA/common/log"
-	"DNA/common/serialization"
-	"DNA/core/contract"
-	"DNA/core/contract/program"
-	sig "DNA/core/signature"
-	"DNA/core/transaction/payload"
-	. "DNA/errors"
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	"nkn-core/common/serialization"
+	"nkn-core/core/contract"
+	"nkn-core/core/contract/program"
+	sig "nkn-core/core/signature"
+	"nkn-core/core/transaction/payload"
+	. "nkn-core/errors"
 	"bytes"
 	"crypto/sha256"
 	"errors"

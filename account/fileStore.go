@@ -1,8 +1,8 @@
 package account
 
 import (
-	ct "DNA/core/contract"
-	. "DNA/errors"
+	ct "nkn-core/core/contract"
+	. "nkn-core/errors"
 	"encoding/hex"
 	"encoding/json"
 	"errors"

@@ -1,9 +1,9 @@
 package httpnodeinfo
 
 import (
-	"DNA/common/config"
-	"DNA/core/ledger"
-	. "DNA/net/protocol"
+	"nkn-core/common/config"
+	"nkn-core/core/ledger"
+	. "nkn-core/net/protocol"
 	"fmt"
 	"html/template"
 	"net/http"

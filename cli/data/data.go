@@ -1,12 +1,12 @@
 package data
 
 import (
-	"DNA/account"
-	. "DNA/cli/common"
-	"DNA/core/contract"
-	"DNA/core/signature"
-	"DNA/core/transaction"
-	"DNA/net/httpjsonrpc"
+	"nkn-core/account"
+	. "nkn-core/cli/common"
+	"nkn-core/core/contract"
+	"nkn-core/core/signature"
+	"nkn-core/core/transaction"
+	"nkn-core/net/httpjsonrpc"
 	"bytes"
 	"encoding/hex"
 	"fmt"

@@ -1,6 +1,6 @@
 package avm
 
-import "DNA/vm/avm/types"
+import "nkn-core/vm/avm/types"
 
 type StackItem struct {
 	_object types.StackItemInterface

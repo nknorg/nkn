@@ -1,7 +1,7 @@
 package consensus
 
 import (
-	. "DNA/common"
+	. "nkn-core/common"
 )
 type Policy struct {
 	PolicyLevel PolicyLevel

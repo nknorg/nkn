@@ -1,12 +1,12 @@
 package avm
 
 import (
-	"DNA/vm/avm/interfaces"
+	"nkn-core/vm/avm/interfaces"
 	"io"
 	_ "math/big"
 	_ "sort"
-	. "DNA/vm/avm/errors"
-	"DNA/common"
+	. "nkn-core/vm/avm/errors"
+	"nkn-core/common"
 )
 
 const (

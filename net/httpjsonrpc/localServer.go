@@ -1,8 +1,8 @@
 package httpjsonrpc
 
 import (
-	"DNA/common/log"
-	. "DNA/common/config"
+	"nkn-core/common/log"
+	. "nkn-core/common/config"
 	"net/http"
 	"strconv"
 )

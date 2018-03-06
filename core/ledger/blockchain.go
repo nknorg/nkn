@@ -1,12 +1,12 @@
 package ledger
 
 import (
-	. "DNA/common"
-	"DNA/common/log"
-	tx "DNA/core/transaction"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/events"
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	tx "nkn-core/core/transaction"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
+	"nkn-core/events"
 	"sync"
 )
 

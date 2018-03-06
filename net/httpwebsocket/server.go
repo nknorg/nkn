@@ -1,14 +1,14 @@
 package httpwebsocket
 
 import (
-	. "DNA/common"
-	. "DNA/common/config"
-	"DNA/core/ledger"
-	"DNA/events"
-	"DNA/net/httprestful/common"
-	Err "DNA/net/httprestful/error"
-	"DNA/net/httpwebsocket/websocket"
-	. "DNA/net/protocol"
+	. "nkn-core/common"
+	. "nkn-core/common/config"
+	"nkn-core/core/ledger"
+	"nkn-core/events"
+	"nkn-core/net/httprestful/common"
+	Err "nkn-core/net/httprestful/error"
+	"nkn-core/net/httpwebsocket/websocket"
+	. "nkn-core/net/protocol"
 	"bytes"
 )
 

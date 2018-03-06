@@ -1,12 +1,12 @@
 package avm
 
 import (
-	"DNA/vm/avm/errors"
-	"DNA/vm/avm/types"
+	"nkn-core/vm/avm/errors"
+	"nkn-core/vm/avm/types"
 	"encoding/binary"
 	"math/big"
 	"reflect"
-	"DNA/vm/avm/interfaces"
+	"nkn-core/vm/avm/interfaces"
 	"hash"
 	"crypto/sha1"
 	"crypto/sha256"

@@ -1,14 +1,14 @@
 package validation
 
 import (
-	"DNA/common"
-	"DNA/common/log"
-	"DNA/core/asset"
-	"DNA/core/ledger"
-	tx "DNA/core/transaction"
-	"DNA/core/transaction/payload"
-	"DNA/crypto"
-	. "DNA/errors"
+	"nkn-core/common"
+	"nkn-core/common/log"
+	"nkn-core/core/asset"
+	"nkn-core/core/ledger"
+	tx "nkn-core/core/transaction"
+	"nkn-core/core/transaction/payload"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
 	"errors"
 	"fmt"
 	"math"

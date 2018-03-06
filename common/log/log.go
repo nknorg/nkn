@@ -1,7 +1,7 @@
 package log
 
 import (
-	"DNA/common/config"
+	"nkn-core/common/config"
 	"bytes"
 	"errors"
 	"fmt"

@@ -1,14 +1,14 @@
 package test_case
 
 import (
-	"DNA/core/ledger"
-	"DNA/crypto"
-	"DNA/core/store/ChainStore"
-	client "DNA/account"
-	"DNA/vm/evm"
+	"nkn-core/core/ledger"
+	"nkn-core/crypto"
+	"nkn-core/core/store/ChainStore"
+	client "nkn-core/account"
+	"nkn-core/vm/evm"
 	"strings"
-	"DNA/vm/evm/abi"
-	"DNA/common"
+	"nkn-core/vm/evm/abi"
+	"nkn-core/common"
 	"time"
 	"math/big"
 )

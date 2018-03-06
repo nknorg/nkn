@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	. "DNA/cli/common"
-	"DNA/net/httpjsonrpc"
+	. "nkn-core/cli/common"
+	"nkn-core/net/httpjsonrpc"
 
 	"github.com/urfave/cli"
 )

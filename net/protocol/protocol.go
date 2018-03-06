@@ -1,12 +1,12 @@
 package protocol
 
 import (
-	"DNA/common"
-	"DNA/core/ledger"
-	"DNA/core/transaction"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/events"
+	"nkn-core/common"
+	"nkn-core/core/ledger"
+	"nkn-core/core/transaction"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
+	"nkn-core/events"
 	"bytes"
 	"encoding/binary"
 	"time"

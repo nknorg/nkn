@@ -1,7 +1,7 @@
 package states
 
 import (
-	"DNA/crypto"
+	"nkn-core/crypto"
 	"io"
 	"bytes"
 )

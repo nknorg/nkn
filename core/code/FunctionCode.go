@@ -1,10 +1,10 @@
 package code
 
 import (
-	"DNA/common/log"
-	. "DNA/common"
-	. "DNA/core/contract"
-	"DNA/common/serialization"
+	"nkn-core/common/log"
+	. "nkn-core/common"
+	. "nkn-core/core/contract"
+	"nkn-core/common/serialization"
 	"fmt"
 	"io"
 )

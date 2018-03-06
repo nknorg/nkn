@@ -1,15 +1,15 @@
 package dbft
 
 import (
-	cl "DNA/account"
-	. "DNA/common"
-	"DNA/common/log"
-	ser "DNA/common/serialization"
-	"DNA/core/ledger"
-	tx "DNA/core/transaction"
-	"DNA/crypto"
-	"DNA/net"
-	msg "DNA/net/message"
+	cl "nkn-core/account"
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	ser "nkn-core/common/serialization"
+	"nkn-core/core/ledger"
+	tx "nkn-core/core/transaction"
+	"nkn-core/crypto"
+	"nkn-core/net"
+	msg "nkn-core/net/message"
 	"fmt"
 	"sync"
 )

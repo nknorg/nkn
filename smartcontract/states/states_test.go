@@ -2,12 +2,12 @@ package states
 
 import (
 	"testing"
-	"DNA/common"
+	"nkn-core/common"
 	"bytes"
 	"fmt"
-	"DNA/crypto"
+	"nkn-core/crypto"
 	"math/big"
-	"DNA/common/serialization"
+	"nkn-core/common/serialization"
 )
 
 func TestAccountState(t *testing.T) {
