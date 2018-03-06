@@ -1,12 +1,12 @@
 package signature
 
 import (
-	"DNA/common"
-	"DNA/common/log"
-	"DNA/core/contract/program"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/vm/avm/interfaces"
+	"nkn-core/common"
+	"nkn-core/common/log"
+	"nkn-core/core/contract/program"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
+	"nkn-core/vm/avm/interfaces"
 	"bytes"
 	"crypto/sha256"
 	"io"

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"DNA/crypto"
-	"DNA/core/ledger"
-	"DNA/core/store"
-	."DNA/common"
-	"DNA/common/log"
+	"nkn-core/crypto"
+	"nkn-core/core/ledger"
+	"nkn-core/core/store"
+	."nkn-core/common"
+	"nkn-core/common/log"
 	"encoding/hex"
 	"os"
 	"fmt"

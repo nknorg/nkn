@@ -1,7 +1,7 @@
 package service
 
 import (
-	"DNA/common"
+	"nkn-core/common"
 )
 
 type StorageContext struct {

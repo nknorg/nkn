@@ -1,8 +1,8 @@
 package ChainStore
 
 import (
-	"DNA/core/store"
-	"DNA/smartcontract/states"
+	"nkn-core/core/store"
+	"nkn-core/smartcontract/states"
 )
 
 type CacheCodeTable struct {

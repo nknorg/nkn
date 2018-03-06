@@ -1,11 +1,11 @@
 package message
 
 import (
-	"DNA/common"
-	"DNA/common/log"
-	"DNA/core/ledger"
-	"DNA/events"
-	. "DNA/net/protocol"
+	"nkn-core/common"
+	"nkn-core/common/log"
+	"nkn-core/core/ledger"
+	"nkn-core/events"
+	. "nkn-core/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

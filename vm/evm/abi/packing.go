@@ -2,7 +2,7 @@ package abi
 
 import (
 	"reflect"
-	"DNA/vm/evm/common"
+	"nkn-core/vm/evm/common"
 )
 
 func packBytesSlice(bytes []byte, l int) []byte {

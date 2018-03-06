@@ -1,7 +1,7 @@
 package p256r1
 
 import (
-	"DNA/crypto/util"
+	"nkn-core/crypto/util"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"

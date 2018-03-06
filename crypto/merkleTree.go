@@ -1,8 +1,8 @@
 package crypto
 
 import (
-	. "DNA/common"
-	. "DNA/errors"
+	. "nkn-core/common"
+	. "nkn-core/errors"
 	"bytes"
 	"crypto/sha256"
 	"errors"

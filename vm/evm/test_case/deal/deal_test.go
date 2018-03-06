@@ -2,8 +2,8 @@ package deal
 
 import (
 	"testing"
-	"DNA/vm/evm/test_case"
-	"DNA/common"
+	"nkn-core/vm/evm/test_case"
+	"nkn-core/common"
 	"fmt"
 )
 

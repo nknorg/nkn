@@ -1,14 +1,14 @@
 package validation
 
 import (
-	. "DNA/common"
-	sig "DNA/core/signature"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/vm/avm"
+	. "nkn-core/common"
+	sig "nkn-core/core/signature"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
+	"nkn-core/vm/avm"
 	"errors"
-	"DNA/vm/avm/interfaces"
-	"DNA/common"
+	"nkn-core/vm/avm/interfaces"
+	"nkn-core/common"
 )
 
 func VerifySignableData(signableData sig.SignableData) (bool, error) {

@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"DNA/common/serialization"
-	. "DNA/errors"
+	"nkn-core/common/serialization"
+	. "nkn-core/errors"
 	"errors"
 	"io"
 	"bytes"

@@ -13,17 +13,17 @@ import (
 	"sync"
 	"time"
 
-	. "DNA/common"
-	"DNA/common/config"
-	"DNA/common/log"
-	"DNA/common/password"
-	"DNA/core/contract"
-	ct "DNA/core/contract"
-	"DNA/core/ledger"
-	sig "DNA/core/signature"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/net/protocol"
+	. "nkn-core/common"
+	"nkn-core/common/config"
+	"nkn-core/common/log"
+	"nkn-core/common/password"
+	"nkn-core/core/contract"
+	ct "nkn-core/core/contract"
+	"nkn-core/core/ledger"
+	sig "nkn-core/core/signature"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
+	"nkn-core/net/protocol"
 )
 
 const (

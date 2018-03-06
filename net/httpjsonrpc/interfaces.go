@@ -1,13 +1,13 @@
 package httpjsonrpc
 
 import (
-	"DNA/account"
-	. "DNA/common"
-	"DNA/common/config"
-	"DNA/common/log"
-	"DNA/core/ledger"
-	tx "DNA/core/transaction"
-	. "DNA/errors"
+	"nkn-core/account"
+	. "nkn-core/common"
+	"nkn-core/common/config"
+	"nkn-core/common/log"
+	"nkn-core/core/ledger"
+	tx "nkn-core/core/transaction"
+	. "nkn-core/errors"
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"

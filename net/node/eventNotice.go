@@ -1,7 +1,7 @@
 package node
 
 import (
-	"DNA/events"
+	"nkn-core/events"
 	"fmt"
 )
 

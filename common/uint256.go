@@ -6,7 +6,7 @@ import (
 	"errors"
 	"io"
 
-	. "DNA/errors"
+	. "nkn-core/errors"
 )
 
 const UINT256SIZE int = 32

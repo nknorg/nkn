@@ -1,14 +1,14 @@
 package net
 
 import (
-	. "DNA/common"
-	"DNA/core/ledger"
-	"DNA/core/transaction"
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/events"
-	"DNA/net/node"
-	"DNA/net/protocol"
+	. "nkn-core/common"
+	"nkn-core/core/ledger"
+	"nkn-core/core/transaction"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
+	"nkn-core/events"
+	"nkn-core/net/node"
+	"nkn-core/net/protocol"
 )
 
 type Neter interface {

@@ -1,10 +1,10 @@
 package states
 
 import (
-	"DNA/common"
+	"nkn-core/common"
 	"io"
-	"DNA/common/serialization"
-	. "DNA/errors"
+	"nkn-core/common/serialization"
+	. "nkn-core/errors"
 )
 
 type StorageKey struct {

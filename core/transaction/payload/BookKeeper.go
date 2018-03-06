@@ -1,9 +1,9 @@
 package payload
 
 import (
-	"DNA/common/serialization"
-	"DNA/crypto"
-	. "DNA/errors"
+	"nkn-core/common/serialization"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
 	"bytes"
 	"io"
 )

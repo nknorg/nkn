@@ -1,7 +1,7 @@
 package evm
 
 import (
-	"DNA/common"
+	"nkn-core/common"
 	"math/big"
 )
 

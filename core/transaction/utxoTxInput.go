@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"DNA/common"
-	"DNA/common/serialization"
+	"nkn-core/common"
+	"nkn-core/common/serialization"
 	"fmt"
 	"io"
 	"bytes"

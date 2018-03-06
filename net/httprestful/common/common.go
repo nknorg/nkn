@@ -1,18 +1,18 @@
 package common
 
 import (
-	. "DNA/common"
-	"DNA/core/ledger"
-	tx "DNA/core/transaction"
-	. "DNA/errors"
-	. "DNA/net/httpjsonrpc"
-	Err "DNA/net/httprestful/error"
-	. "DNA/net/protocol"
+	. "nkn-core/common"
+	"nkn-core/core/ledger"
+	tx "nkn-core/core/transaction"
+	. "nkn-core/errors"
+	. "nkn-core/net/httpjsonrpc"
+	Err "nkn-core/net/httprestful/error"
+	. "nkn-core/net/protocol"
 	"bytes"
 	"fmt"
 	"math"
 	"strconv"
-	"DNA/smartcontract/states"
+	"nkn-core/smartcontract/states"
 )
 
 var node Noder

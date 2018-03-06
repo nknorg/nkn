@@ -1,13 +1,13 @@
 package service
 
 import (
-	. "DNA/common"
-	"DNA/core/asset"
-	"DNA/core/ledger"
-	"DNA/core/transaction"
-	. "DNA/net/httpjsonrpc"
-	"DNA/net/httprestful/common"
-	"DNA/smartcontract/states"
+	. "nkn-core/common"
+	"nkn-core/core/asset"
+	"nkn-core/core/ledger"
+	"nkn-core/core/transaction"
+	. "nkn-core/net/httpjsonrpc"
+	"nkn-core/net/httprestful/common"
+	"nkn-core/smartcontract/states"
 )
 
 type AccountInfo struct {

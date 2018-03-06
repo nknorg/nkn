@@ -1,9 +1,9 @@
 package message
 
 import (
-	"DNA/common"
-	"DNA/common/log"
-	. "DNA/net/protocol"
+	"nkn-core/common"
+	"nkn-core/common/log"
+	. "nkn-core/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

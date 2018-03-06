@@ -1,16 +1,16 @@
 package service
 
 import (
-	"DNA/common"
-	"DNA/core/contract"
-	"DNA/core/ledger"
-	"DNA/core/signature"
-	"DNA/core/transaction"
-	"DNA/crypto"
-	"DNA/errors"
-	"DNA/smartcontract/states"
-	"DNA/vm/avm"
-	"DNA/vm/avm/types"
+	"nkn-core/common"
+	"nkn-core/core/contract"
+	"nkn-core/core/ledger"
+	"nkn-core/core/signature"
+	"nkn-core/core/transaction"
+	"nkn-core/crypto"
+	"nkn-core/errors"
+	"nkn-core/smartcontract/states"
+	"nkn-core/vm/avm"
+	"nkn-core/vm/avm/types"
 	"fmt"
 	"math/big"
 )

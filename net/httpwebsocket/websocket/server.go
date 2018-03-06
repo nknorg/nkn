@@ -1,11 +1,11 @@
 package websocket
 
 import (
-	. "DNA/common/config"
-	"DNA/common/log"
-	. "DNA/net/httprestful/common"
-	Err "DNA/net/httprestful/error"
-	. "DNA/net/httpwebsocket/session"
+	. "nkn-core/common/config"
+	"nkn-core/common/log"
+	. "nkn-core/net/httprestful/common"
+	Err "nkn-core/net/httprestful/error"
+	. "nkn-core/net/httpwebsocket/session"
 	"context"
 	"crypto/tls"
 	"encoding/json"

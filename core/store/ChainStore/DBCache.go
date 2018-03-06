@@ -1,12 +1,12 @@
 package ChainStore
 
 import (
-	"DNA/smartcontract/storage"
+	"nkn-core/smartcontract/storage"
 	"bytes"
-	"DNA/smartcontract/states"
-	"DNA/core/store"
+	"nkn-core/smartcontract/states"
+	"nkn-core/core/store"
 	"math/big"
-	"DNA/common"
+	"nkn-core/common"
 )
 
 type DBCache struct {

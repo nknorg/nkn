@@ -1,11 +1,11 @@
 package avm
 
 import (
-	"DNA/crypto"
-	. "DNA/errors"
-	"DNA/common/log"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
+	"nkn-core/common/log"
 	"errors"
-	"DNA/common"
+	"nkn-core/common"
 )
 
 

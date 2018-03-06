@@ -4,12 +4,12 @@ import (
 	"testing"
 	"strings"
 	"fmt"
-	"DNA/common"
-	"DNA/vm/evm/abi"
-	"DNA/crypto"
-	"DNA/core/ledger"
-	"DNA/core/store/ChainStore"
-	"DNA/client"
+	"nkn-core/common"
+	"nkn-core/vm/evm/abi"
+	"nkn-core/crypto"
+	"nkn-core/core/ledger"
+	"nkn-core/core/store/ChainStore"
+	"nkn-core/client"
 )
 
 const (

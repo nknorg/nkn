@@ -3,7 +3,7 @@ package abi
 import (
 	"fmt"
 	"strings"
-	"DNA/vm/evm/crypto"
+	"nkn-core/vm/evm/crypto"
 	"reflect"
 )
 

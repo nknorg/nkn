@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"DNA/smartcontract/states"
+	"nkn-core/smartcontract/states"
 	"bytes"
-	"DNA/core/store"
+	"nkn-core/core/store"
 )
 
 type RWSet struct {

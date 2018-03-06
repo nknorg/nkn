@@ -1,10 +1,10 @@
 package payload
 
 import (
-	"DNA/common"
-	"DNA/core/asset"
-	"DNA/crypto"
-	. "DNA/errors"
+	"nkn-core/common"
+	"nkn-core/core/asset"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
 	"io"
 )
 

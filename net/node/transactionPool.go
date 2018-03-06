@@ -1,14 +1,14 @@
 package node
 
 import (
-	"DNA/common"
-	"DNA/common/config"
-	"DNA/common/log"
-	"DNA/core/ledger"
-	"DNA/core/transaction"
-	"DNA/core/transaction/payload"
-	va "DNA/core/validation"
-	. "DNA/errors"
+	"nkn-core/common"
+	"nkn-core/common/config"
+	"nkn-core/common/log"
+	"nkn-core/core/ledger"
+	"nkn-core/core/transaction"
+	"nkn-core/core/transaction/payload"
+	va "nkn-core/core/validation"
+	. "nkn-core/errors"
 	"fmt"
 	"sync"
 )

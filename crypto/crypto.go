@@ -1,10 +1,10 @@
 package crypto
 
 import (
-	"DNA/common/serialization"
-	"DNA/crypto/p256r1"
-	"DNA/crypto/sm2"
-	"DNA/crypto/util"
+	"nkn-core/common/serialization"
+	"nkn-core/crypto/p256r1"
+	"nkn-core/crypto/sm2"
+	"nkn-core/crypto/util"
 	"crypto/sha256"
 	"errors"
 	"fmt"

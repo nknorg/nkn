@@ -1,10 +1,10 @@
 package account
 
 import (
-	. "DNA/common"
-	"DNA/core/contract"
-	"DNA/crypto"
-	. "DNA/errors"
+	. "nkn-core/common"
+	"nkn-core/core/contract"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
 	"errors"
 )
 

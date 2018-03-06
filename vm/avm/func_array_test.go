@@ -3,7 +3,7 @@ package avm
 import (
 	"testing"
 	"math/big"
-	"DNA/vm/avm/types"
+	"nkn-core/vm/avm/types"
 )
 
 

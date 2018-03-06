@@ -1,9 +1,9 @@
 package validation
 
 import (
-	"DNA/core/ledger"
-	tx "DNA/core/transaction"
-	. "DNA/errors"
+	"nkn-core/core/ledger"
+	tx "nkn-core/core/transaction"
+	. "nkn-core/errors"
 	"errors"
 	"fmt"
 )

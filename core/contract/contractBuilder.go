@@ -1,13 +1,13 @@
 package contract
 
 import (
-	. "DNA/common"
-	pg "DNA/core/contract/program"
-	"DNA/crypto"
-	. "DNA/errors"
+	. "nkn-core/common"
+	pg "nkn-core/core/contract/program"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
 	"math/big"
 	"sort"
-	"DNA/vm/avm"
+	"nkn-core/vm/avm"
 )
 
 //create a Single Singature contract for owner

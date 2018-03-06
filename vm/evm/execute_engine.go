@@ -1,11 +1,11 @@
 package evm
 
 import (
-	"DNA/common"
+	"nkn-core/common"
 	"sync/atomic"
 	"fmt"
 	"math/big"
-	"DNA/smartcontract/storage"
+	"nkn-core/smartcontract/storage"
 )
 
 type ExecutionEngine struct {

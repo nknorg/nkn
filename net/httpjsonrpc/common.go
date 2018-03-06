@@ -1,13 +1,13 @@
 package httpjsonrpc
 
 import (
-	. "DNA/common"
-	"DNA/common/log"
-	"DNA/consensus/dbft"
-	. "DNA/core/transaction"
-	tx "DNA/core/transaction"
-	. "DNA/errors"
-	. "DNA/net/protocol"
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	"nkn-core/consensus/dbft"
+	. "nkn-core/core/transaction"
+	tx "nkn-core/core/transaction"
+	. "nkn-core/errors"
+	. "nkn-core/net/protocol"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

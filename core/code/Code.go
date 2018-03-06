@@ -1,8 +1,8 @@
 package code
 
 import (
-	. "DNA/common"
-	. "DNA/core/contract"
+	. "nkn-core/common"
+	. "nkn-core/core/contract"
 )
 //ICode is the abstract interface of smart contract code.
 type ICode interface {

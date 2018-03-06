@@ -2,10 +2,10 @@ package ballot
 
 import (
 	"testing"
-	"DNA/vm/evm/test_case"
+	"nkn-core/vm/evm/test_case"
 	"fmt"
 	"math/big"
-	"DNA/client"
+	"nkn-core/client"
 )
 
 const (

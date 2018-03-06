@@ -2,8 +2,8 @@ package states
 
 import (
 	"io"
-	"DNA/common/serialization"
-	. "DNA/errors"
+	"nkn-core/common/serialization"
+	. "nkn-core/errors"
 	"bytes"
 )
 
