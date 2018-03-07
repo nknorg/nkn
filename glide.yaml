@@ -1,4 +1,4 @@
-package: DNA
+package: nkn-core
 import:
 - package: github.com/golang/crypto
   subpackages:
@@ -17,7 +17,6 @@ import:
 - package: github.com/dnaproject/gopass
 - package: github.com/gorilla/websocket
 - package: github.com/pborman/uuid
-- package: github.com/ethereum/go-ethereum
   subpackages:
   - crypto/secp256k1
   - crypto/sha3

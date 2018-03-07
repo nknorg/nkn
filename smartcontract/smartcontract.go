@@ -16,8 +16,6 @@ import (
 	"nkn-core/vm/avm"
 	"nkn-core/vm/avm/interfaces"
 	. "nkn-core/vm/avm/types"
-	"nkn-core/vm/evm"
-	"nkn-core/vm/evm/abi"
 	"bytes"
 	"math/big"
 	"strconv"
@@ -28,7 +26,7 @@ type SmartContract struct {
 	Code           []byte
 	Input          []byte
 	ParameterTypes []contract.ContractParameterType
-	ABI            abi.ABI
+	//ABI            abi.ABI
 	Caller         common.Uint160
 	CodeHash       common.Uint160
 	VMType         types.VmType
@@ -69,8 +67,8 @@ func NewSmartContract(context *Context) (*SmartContract, error) {
 				context.StateMachine,
 				context.Gas,
 			)
-		case types.EVM:
-			e = evm.NewExecutionEngine(context.DBCache, context.Time, context.BlockNumber, context.Gas)
+		//case types.EVM:
+		//	e = evm.NewExecutionEngine(context.DBCache, context.Time, context.BlockNumber, context.Gas)
 		}
 
 		return &SmartContract{

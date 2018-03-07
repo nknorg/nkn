@@ -1,5 +1,5 @@
-hash: 2f1075f47c8df863bcabfbec42ce9f000dca85561e74147bb4144790d3728e43
-updated: 2017-07-04T18:08:50.5023931+08:00
+hash: 24abf52ae2075105cd7fa42a28d52c8c22716ab3a46f2d97a4f859fde0b5e4a7
+updated: 2018-03-07T17:27:34.978466+08:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: da1a8928f709389522c8023062a3739f3b4af419
@@ -18,6 +18,10 @@ imports:
   version: 4b24a7dfa1bfba3724ffb3598b1c6ded1cff087f
 - name: github.com/pborman/uuid
   version: 1b00554d822231195d1babd97ff4a781231955c9
+  subpackages:
+  - crypto/secp256k1
+  - crypto/sha3
+  - params
 - name: github.com/syndtr/goleveldb
   version: 3c5717caf1475fd25964109a0fc640bd150fce43
   subpackages:
@@ -37,10 +41,4 @@ imports:
   version: f6e8084112db1c3aa9c1e4144f024ab549ea08c1
 - name: github.com/whyrusleeping/tar-utils
   version: e8a5890cfc9d59a203361237581468780d945b6e
-- name: github.com/ethereum/go-ethereum
-  version: 2b4a5f2677fdf0d8a34a2d19fddc203b973dfe02
-  subpackages:
-  - crypto/secp256k1
-  - crypto/sha3
-  - params
 testImports: []
