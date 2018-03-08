@@ -141,7 +141,7 @@ func dataAction(c *cli.Context) error {
 		if name == "" {
 			rbuf := make([]byte, 4)
 			rand.Read(rbuf)
-			name = "DNA-" + hex.EncodeToString(rbuf)
+			name = "TEST-" + hex.EncodeToString(rbuf)
 		}
 		//create transaction
 		var tx *transaction.Transaction
