@@ -80,9 +80,8 @@ const page = `
 
 <table class="font" border="0" width="80%">
 	<tr>
-	<td width="26%" align="left"><a href="https://forum.dnaproject.org" class="site">forum : https://forum.dnaproject.org</a><br></td>
-	<td width="26%" align="center"><a href="https://www.dnaproject.org" class="site">site : https://www.dnaproject.org</a></td>
-	<td width="28%" align="right"><a href="https://wiki.dnaproject.org/docs/dnaproject" class="site">doc : https://wiki.dnaproject.org</a></td>
+	<td width="26%" align="left"><a href="https://forum.nkn.org" class="site">forum : https://forum.nkn.org</a><br></td>
+	<td width="26%" align="center"><a href="https://www.nkn.org" class="site">site : https://www.nkn.org</a></td>
 	</tr>
 </table>
 <br><br><br><br>

@@ -5,7 +5,6 @@ import (
 	. "nkn-core/common"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
-	con "nkn-core/consensus"
 	ct "nkn-core/core/contract"
 	"nkn-core/core/contract/program"
 	"nkn-core/core/ledger"
@@ -449,11 +448,6 @@ func (ds *DbftService) PrepareResponseReceived(payload *msg.ConsensusPayload, me
 		return
 	}
 	log.Info("Prepare Response finished")
-}
-
-func (ds *DbftService) RefreshPolicy() {
-	log.Debug()
-	con.DefaultPolicy.Refresh()
 }
 
 func (ds *DbftService) RequestChangeView() {

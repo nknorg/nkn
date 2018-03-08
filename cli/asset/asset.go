@@ -261,7 +261,7 @@ func assetAction(c *cli.Context) error {
 		if name == "" {
 			rbuf := make([]byte, RANDBYTELEN)
 			rand.Read(rbuf)
-			name = "DNA-" + ToHexString(rbuf)
+			name = "TEST-" + ToHexString(rbuf)
 		}
 		issuer := admin
 		description := "description"

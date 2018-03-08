@@ -1,21 +1,21 @@
 package httpjsonrpc
 
 var (
-	DnaRpcInvalidHash        = responsePacking("invalid hash")
-	DnaRpcInvalidBlock       = responsePacking("invalid block")
-	DnaRpcInvalidTransaction = responsePacking("invalid transaction")
-	DnaRpcInvalidParameter   = responsePacking("invalid parameter")
+	RpcResultInvalidHash        = responsePacking("invalid hash")
+	RpcResultInvalidBlock       = responsePacking("invalid block")
+	RpcResultInvalidTransaction = responsePacking("invalid transaction")
+	RpcResultInvalidParameter   = responsePacking("invalid parameter")
 
-	DnaRpcUnknownBlock       = responsePacking("unknown block")
-	DnaRpcUnknownTransaction = responsePacking("unknown transaction")
+	RpcResultUnknownBlock       = responsePacking("unknown block")
+	RpcResultUnknownTransaction = responsePacking("unknown transaction")
 
-	DnaRpcNil           = responsePacking(nil)
-	DnaRpcUnsupported   = responsePacking("Unsupported")
-	DnaRpcInternalError = responsePacking("internal error")
-	DnaRpcIOError       = responsePacking("internal IO error")
-	DnaRpcAPIError      = responsePacking("internal API error")
-	DnaRpcSuccess       = responsePacking(true)
-	DnaRpcFailed        = responsePacking(false)
+	RpcResultNil           = responsePacking(nil)
+	RpcResultUnsupported   = responsePacking("Unsupported")
+	RpcResultInternalError = responsePacking("internal error")
+	RpcResultIOError       = responsePacking("internal IO error")
+	RpcResultAPIError      = responsePacking("internal API error")
+	RpcResultSuccess       = responsePacking(true)
+	RpcResultFailed        = responsePacking(false)
 
-	DnaRpc = responsePacking
+	RpcResult = responsePacking
 )

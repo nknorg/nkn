@@ -1,13 +1,8 @@
-/idea/*
-/temp/*
 idea/*
 temp/*
-temp/
 idea/
-build/
 *.patch
 .idea/
-GoOnchain.iml
 .log
 .DS_Store
 *.orig
@@ -15,8 +10,6 @@ GoOnchain.iml
 Log
 vendor/*
 Chain/*
-/core/*/*_test.go
-/core/*/*/*_test.go
 /config/*
 node
 nodectl

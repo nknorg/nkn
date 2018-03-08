@@ -62,7 +62,7 @@ func BenchmarkSerialize(ben *testing.B) {
 	a6 := uint64(18446744073709551615)
 	a7 := uint64(18446744073709551615)
 	a8 := []byte{10, 11, 12}
-	a9 := "hello onchain."
+	a9 := "hello world."
 	for i := 0; i < ben.N; i++ {
 		b := new(bytes.Buffer)
 
@@ -103,7 +103,7 @@ func TestSerialize(t *testing.T) {
 	a6 := uint64(18446744073709551615)
 	a7 := uint64(18446744073709551615)
 	a8 := []byte{10, 11, 12}
-	a9 := "hello onchain."
+	a9 := "hello world."
 
 	WriteVarUint(b, uint64(a3))
 	WriteVarUint(b, uint64(a4))
