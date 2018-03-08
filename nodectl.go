@@ -25,7 +25,7 @@ func main() {
 	app.Name = "nodectl"
 	app.Version = Version
 	app.HelpName = "nodectl"
-	app.Usage = "command line tool for DNA blockchain"
+	app.Usage = "command line tool for blockchain"
 	app.UsageText = "nodectl [global options] command [command options] [args]"
 	app.HideHelp = false
 	app.HideVersion = false

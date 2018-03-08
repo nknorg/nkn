@@ -14,7 +14,6 @@ import (
 var DefaultLedger *Ledger
 var StandbyBookKeepers []*crypto.PubKey
 
-// Ledger - the struct for onchainDNA ledger
 type Ledger struct {
 	Blockchain *Blockchain
 	State      *State
