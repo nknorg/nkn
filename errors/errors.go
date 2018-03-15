@@ -21,20 +21,20 @@ func  NewErr(errmsg string) error {
 func NewDetailErr(err error,errcode ErrCode,errmsg string) DetailError{
 	if err == nil {return nil}
 
-	dnaerr, ok := err.(dnaError)
+	e, ok := err.(nknError)
 	if !ok {
-		dnaerr.root = err
-		dnaerr.errmsg = err.Error()
-		dnaerr.callstack = getCallStack(0, callStackDepth)
-		dnaerr.code = errcode
+		e.root = err
+		e.errmsg = err.Error()
+		e.callstack = getCallStack(0, callStackDepth)
+		e.code = errcode
 
 	}
 	if errmsg != "" {
-		dnaerr.errmsg = errmsg + ": " + dnaerr.errmsg
+		e.errmsg = errmsg + ": " + e.errmsg
 	}
 
 
-	return dnaerr
+	return e
 }
 
 func RootErr(err error) error {

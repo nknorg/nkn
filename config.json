@@ -3,9 +3,7 @@
     "Magic": 7630401,
     "Version": 23,
     "SeedList": [
-      "139.219.65.178:10338",
-      "139.219.99.201:10338",
-      "139.219.96.154:10338"
+      "127.0.0.1:10338"
     ],
     "BookKeepers": [
       "0322cfdb6a20401c2e44ede40b5282b2925fcff21cdc3814d782fd26026f1d023d",
@@ -13,15 +11,15 @@
       "032c842494feba4e3dec3b9b7d9ad080ce63c81a41f7d79d2bbb5d499d16322907",
       "03d36828a99547184452276116f1b5171861931ff439a6da2316fddf1f3f428850"
     ],
-    "HttpInfoPort": 20333,
+    "HttpInfoPort": 10333,
     "HttpInfoStart": true,
-    "HttpRestPort": 20334,
-    "HttpWsPort":20335,
-    "HttpJsonPort": 20336,
-    "HttpLocalPort": 20337,
+    "HttpRestPort": 10334,
+    "HttpWsPort":10335,
+    "HttpJsonPort": 10336,
+    "HttpLocalPort": 10337,
     "NoticeServerUrl":"",
     "OauthServerUrl":"",
-    "NodePort": 20338,
+    "NodePort": 10338,
     "PrintLevel": 1,
     "IsTLS": false,
     "CertPath": "./sample-cert.pem",

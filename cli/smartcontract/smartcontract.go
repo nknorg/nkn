@@ -78,7 +78,7 @@ func makeDeployContractTransaction(signer *account.Account, codeStr string, lang
 	}
 	fc.CodeHash()
 
-	tx, err := transaction.NewDeployTransaction(fc, signer.ProgramHash, "DNA", "1.0", "DNA user", "user@onchain.com", "test uint", types.LangType(byte(language)))
+	tx, err := transaction.NewDeployTransaction(fc, signer.ProgramHash, "TEST", "1.0", "user", "user@example.com", "test uint", types.LangType(byte(language)))
 	if err != nil {
 		return "Deploy smartcontract fail!", err
 	}
