@@ -163,7 +163,6 @@ func (rt *restServer) registryMethod() {
 	}
 	postMethodMap := map[string]Action{
 		Api_SendRawTx:         {name: "sendrawtransaction", handler: sendRawTransaction},
-		Api_SendRcdTxByTrans:  {name: "sendrecord", handler: SendRecord},
 		Api_NoticeServerState: {name: "setpostblock", handler: SetPushBlockFlag},
 		Api_WebsocketState:    {name: "setwebsocketstate", handler: rt.setWebsocketState},
 	}
