@@ -1,7 +1,7 @@
 ﻿{
   "Configuration": {
-    "Magic": 86427531,
-    "Version": 0,
+    "Magic": 879768,
+    "Version": 35,
     "SeedList": [
       ""
     ],
@@ -25,7 +25,7 @@
       "Switch": "enable",
       "PayToAddr": "",
       "ProtocolVersion":1,
-      "AutoMining": false,
+      "AutoMining": false
     }
   }
 }
