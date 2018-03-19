@@ -43,11 +43,6 @@ func main() {
 	var noder protocol.Noder
 	log.Trace("Node version: ", config.Version)
 
-	if len(config.Parameters.BookKeepers) < account.DefaultBookKeeperCount {
-		log.Fatal("At least ", account.DefaultBookKeeperCount, " BookKeepers should be set at config.json")
-		os.Exit(1)
-	}
-
 	log.Info("0. Loading the Ledger")
 	ledger.DefaultLedger = new(ledger.Ledger)
 	ledger.DefaultLedger.Store, err = ChainStore.NewLedgerStore()
@@ -71,8 +66,6 @@ func main() {
 		log.Fatal(err)
 		goto ERROR
 	}
-	log.Debug("The Node's PublicKey ", acct.PublicKey)
-	ledger.StandbyBookKeepers = account.GetBookKeepers()
 
 	log.Info("3. BlockChain init")
 	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)

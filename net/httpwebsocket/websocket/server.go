@@ -32,16 +32,14 @@ type WsServer struct {
 	SessionList      *SessionList
 	ActionMap        map[string]Handler
 	TxHashMap        map[string]string //key: txHash   value:sessionid
-	checkAccessToken func(auth_type, access_token string) (string, int64, interface{})
 }
 
-func InitWsServer(checkAccessToken func(string, string) (string, int64, interface{})) *WsServer {
+func InitWsServer() *WsServer {
 	ws := &WsServer{
 		Upgrader:    websocket.Upgrader{},
 		SessionList: NewSessionList(),
 		TxHashMap:   make(map[string]string),
 	}
-	ws.checkAccessToken = checkAccessToken
 	return ws
 }
 
@@ -270,24 +268,7 @@ func (ws *WsServer) OnDataHandle(curSession *Session, bysMsg []byte, r *http.Req
 	if raw, ok := req["Raw"].(float64); ok {
 		req["Raw"] = strconv.FormatInt(int64(raw), 10)
 	}
-	auth_type, ok := req["auth_type"].(string)
-	if !ok {
-		auth_type = ""
-	}
-	access_token, ok := req["access_token"].(string)
-	if !ok {
-		access_token = ""
-	}
-	if actionName != "heartbeat" {
-		CAkey, errCode, result := ws.checkAccessToken(auth_type, access_token)
-		if errCode > 0 {
-			resp := ResponsePack(errCode)
-			resp["Result"] = result
-			ws.response(curSession.GetSessionId(), resp)
-			return true
-		}
-		req["CAkey"] = CAkey
-	}
+
 	req["Userid"] = curSession.GetSessionId()
 	resp := action.handler(req)
 	resp["Action"] = actionName

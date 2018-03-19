@@ -24,7 +24,7 @@ func StartLocalServer() {
 	HandleFunc("setdebuginfo", setDebugInfo)
 
 	// TODO: only listen to local host
-	err := http.ListenAndServe(":"+strconv.Itoa(Parameters.HttpLocalPort), nil)
+	err := http.ListenAndServe(":"+strconv.Itoa(Parameters.Configuration.HttpJsonPort), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err.Error())
 	}

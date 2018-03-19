@@ -1,14 +1,12 @@
 package common
 
 import (
-	. "nkn-core/common/config"
 	Err "nkn-core/net/httprestful/error"
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"regexp"
 	"time"
 )
 
@@ -17,11 +15,7 @@ var pushBlockFlag bool = true
 func CheckPushBlock() bool {
 	return pushBlockFlag
 }
-func GetNoticeServerUrl(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(Err.SUCCESS)
-	resp["Result"] = Parameters.NoticeServerUrl
-	return resp
-}
+
 func SetPushBlockFlag(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(Err.SUCCESS)
 	open, ok := cmd["Open"].(bool)
@@ -31,25 +25,6 @@ func SetPushBlockFlag(cmd map[string]interface{}) map[string]interface{} {
 	}
 	pushBlockFlag = open
 	resp["Result"] = pushBlockFlag
-	return resp
-}
-func SetNoticeServerUrl(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(Err.SUCCESS)
-
-	addr, ok := cmd["Url"].(string)
-	if !ok || len(addr) == 0 {
-		resp["Error"] = Err.INVALID_PARAMS
-		return resp
-	}
-	var reg *regexp.Regexp
-	pattern := `((http|https)://)(([a-zA-Z0-9\._-]+\.[a-zA-Z]{2,6})|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}))(:[0-9]{1,4})*(/[a-zA-Z0-9\&%_\./-~-]*)?`
-	reg = regexp.MustCompile(pattern)
-	if !reg.Match([]byte(addr)) {
-		resp["Error"] = Err.INVALID_PARAMS
-		return resp
-	}
-	Parameters.NoticeServerUrl = addr
-	resp["Result"] = Parameters.NoticeServerUrl
 	return resp
 }
 

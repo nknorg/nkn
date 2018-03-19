@@ -1,10 +1,10 @@
 package httpjsonrpc
 
 import (
-	. "nkn-core/common/config"
 	"nkn-core/common/log"
 	"net/http"
 	"strconv"
+	"nkn-core/common/config"
 )
 
 func StartRPCServer() {
@@ -26,8 +26,14 @@ func StartRPCServer() {
 	HandleFunc("catdatarecord", catDataRecord)
 	HandleFunc("regdatafile", regDataFile)
 	HandleFunc("uploadDataFile", uploadDataFile)
+	HandleFunc("getneighbor", getNeighbor)
+	HandleFunc("getnodestate", getNodeState)
+	HandleFunc("startconsensus", startConsensus)
+	HandleFunc("stopconsensus", stopConsensus)
+	HandleFunc("sendsampletransaction", sendSampleTransaction)
+	HandleFunc("setdebuginfo", setDebugInfo)
 
-	err := http.ListenAndServe(":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
+	err := http.ListenAndServe(":"+strconv.Itoa(config.Parameters.HttpJsonPort), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err.Error())
 	}
