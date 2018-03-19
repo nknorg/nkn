@@ -1,8 +1,6 @@
 package ledger
 
 import (
-	"errors"
-
 	. "nkn-core/common"
 	"nkn-core/core/asset"
 	. "nkn-core/errors"
@@ -20,15 +18,6 @@ func (l *Ledger) IsDoubleSpend(Tx *Transaction) bool {
 	return DefaultLedger.Store.IsDoubleSpend(Tx)
 }
 
-//Get the DefaultLedger.
-//Note: the later version will support the mutiLedger.So this func mybe expired later.
-func GetDefaultLedger() (*Ledger, error) {
-	if DefaultLedger == nil {
-		return nil, NewDetailErr(errors.New("[Ledger], GetDefaultLedger failed, DefaultLedger not Exist."), ErrNoCode, "")
-	}
-	return DefaultLedger, nil
-}
-
 //Get the Asset from store.
 func (l *Ledger) GetAsset(assetId Uint256) (*asset.Asset, error) {
 	asset, err := l.Store.GetAsset(assetId)
@@ -40,7 +29,7 @@ func (l *Ledger) GetAsset(assetId Uint256) (*asset.Asset, error) {
 
 //Get Block With Height.
 func (l *Ledger) GetBlockWithHeight(height uint32) (*Block, error) {
-	temp, err := l.Store.GetBlockHash(height)
+	temp, err := l.Store.GetBlockHashByHeight(height)
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Ledger],GetBlockWithHeight failed with height="+string(height))
 	}
@@ -62,7 +51,12 @@ func (l *Ledger) GetBlockWithHash(hash Uint256) (*Block, error) {
 
 //BlockInLedger checks if the block existed in ledger
 func (l *Ledger) BlockInLedger(hash Uint256) bool {
-	return l.Store.IsBlockInStore(hash)
+	_, err := l.Store.GetBlock(hash)
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 //Get transaction with hash.

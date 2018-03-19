@@ -1,15 +1,15 @@
 package httpjsonrpc
 
 import (
-	. "nkn-core/common"
-	"nkn-core/common/log"
-	."nkn-core/core/ledger"
-	. "nkn-core/errors"
-	. "nkn-core/net/protocol"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	. "nkn-core/core/ledger"
+	. "nkn-core/errors"
+	. "nkn-core/net/protocol"
 	"os"
 	"strings"
 	"sync"
@@ -90,7 +90,7 @@ type BlockHead struct {
 	TransactionsRoot string
 	Timestamp        uint32
 	Height           uint32
-	Nonce    uint32
+	Nonce            uint32
 	Program          ProgramInfo
 
 	Hash string

@@ -1,6 +1,11 @@
 package message
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
+	"errors"
+	"io"
 	"nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/common/serialization"
@@ -12,11 +17,6 @@ import (
 	. "nkn-core/errors"
 	"nkn-core/events"
 	. "nkn-core/net/protocol"
-	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
-	"errors"
-	"io"
 )
 
 type ConsensusPayload struct {
@@ -104,7 +104,7 @@ func (cp *ConsensusPayload) GetMessage() []byte {
 	//return []byte{}
 }
 
-func (b *ConsensusPayload) ToArray() ([]byte) {
+func (b *ConsensusPayload) ToArray() []byte {
 	bf := new(bytes.Buffer)
 	b.Serialize(bf)
 	return bf.Bytes()

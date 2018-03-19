@@ -1,15 +1,15 @@
 package signature
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"io"
 	"nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/core/contract/program"
 	"nkn-core/crypto"
 	. "nkn-core/errors"
 	"nkn-core/vm/avm/interfaces"
-	"bytes"
-	"crypto/sha256"
-	"io"
 )
 
 //SignableData describe the data need be signed.

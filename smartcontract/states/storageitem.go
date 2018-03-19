@@ -1,10 +1,10 @@
 package states
 
 import (
+	"bytes"
 	"io"
 	"nkn-core/common/serialization"
 	. "nkn-core/errors"
-	"bytes"
 )
 
 type StorageItem struct {
@@ -18,13 +18,13 @@ func NewStorageItem(value []byte) *StorageItem {
 	return &storageItem
 }
 
-func(storageItem *StorageItem)Serialize(w io.Writer) error {
+func (storageItem *StorageItem) Serialize(w io.Writer) error {
 	storageItem.StateBase.Serialize(w)
 	serialization.WriteVarBytes(w, storageItem.Value)
 	return nil
 }
 
-func(storageItem *StorageItem)Deserialize(r io.Reader) error {
+func (storageItem *StorageItem) Deserialize(r io.Reader) error {
 	stateBase := new(StateBase)
 	err := stateBase.Deserialize(r)
 	if err != nil {
@@ -39,7 +39,7 @@ func(storageItem *StorageItem)Deserialize(r io.Reader) error {
 	return nil
 }
 
-func(storageItem *StorageItem) ToArray() []byte {
+func (storageItem *StorageItem) ToArray() []byte {
 	b := new(bytes.Buffer)
 	storageItem.Serialize(b)
 	return b.Bytes()

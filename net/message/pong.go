@@ -1,13 +1,13 @@
 package message
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
 	"nkn-core/common/log"
 	"nkn-core/common/serialization"
 	"nkn-core/core/ledger"
 	. "nkn-core/net/protocol"
-	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
 )
 
 type pong struct {

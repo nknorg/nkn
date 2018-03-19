@@ -1,25 +1,25 @@
 package storage
 
 import (
-	"nkn-core/smartcontract/states"
 	"bytes"
 	"nkn-core/core/store"
+	"nkn-core/smartcontract/states"
 )
 
 type RWSet struct {
-	ReadSet map[string]*Read
+	ReadSet  map[string]*Read
 	WriteSet map[string]*Write
 }
 
 type Write struct {
-	Prefix store.DataEntryPrefix
-	Key string
-	Item states.IStateValueInterface
+	Prefix    store.DataEntryPrefix
+	Key       string
+	Item      states.IStateValueInterface
 	IsDeleted bool
 }
 
 type Read struct {
-	Key states.IStateKeyInterface
+	Key     states.IStateKeyInterface
 	Version string
 }
 
@@ -30,26 +30,26 @@ func NewRWSet() *RWSet {
 	return &rwSet
 }
 
-func(rw *RWSet) Add(prefix store.DataEntryPrefix, key string, value states.IStateValueInterface) {
+func (rw *RWSet) Add(prefix store.DataEntryPrefix, key string, value states.IStateValueInterface) {
 	if _, ok := rw.WriteSet[key]; !ok {
 		rw.WriteSet[key] = &Write{
-			Prefix: prefix,
-			Key: key,
-			Item: value,
+			Prefix:    prefix,
+			Key:       key,
+			Item:      value,
 			IsDeleted: false,
 		}
 	}
 
 }
 
-func(rw *RWSet) Delete(key string){
+func (rw *RWSet) Delete(key string) {
 	if _, ok := rw.WriteSet[key]; ok {
 		rw.WriteSet[key].Item = nil
 		rw.WriteSet[key].IsDeleted = true
-	}else {
+	} else {
 		rw.WriteSet[key] = &Write{
-			Key: key,
-			Item: nil,
+			Key:       key,
+			Item:      nil,
 			IsDeleted: true,
 		}
 	}
@@ -60,6 +60,3 @@ func KeyToStr(key states.IStateKeyInterface) string {
 	key.Serialize(k)
 	return k.String()
 }
-
-
-

@@ -1,11 +1,6 @@
 package node
 
 import (
-	. "nkn-core/common/config"
-	"nkn-core/common/log"
-	"nkn-core/events"
-	msg "nkn-core/net/message"
-	. "nkn-core/net/protocol"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -13,6 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	. "nkn-core/common/config"
+	"nkn-core/common/log"
+	"nkn-core/events"
+	msg "nkn-core/net/message"
+	. "nkn-core/net/protocol"
 	"os"
 	"strconv"
 	"strings"

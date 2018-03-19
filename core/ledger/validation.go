@@ -1,14 +1,14 @@
 package ledger
 
 import (
+	"errors"
+	"nkn-core/common"
 	. "nkn-core/common"
 	sig "nkn-core/core/signature"
 	"nkn-core/crypto"
 	. "nkn-core/errors"
 	"nkn-core/vm/avm"
-	"errors"
 	"nkn-core/vm/avm/interfaces"
-	"nkn-core/common"
 )
 
 func VerifySignableData(signableData sig.SignableData) (bool, error) {

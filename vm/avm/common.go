@@ -1,16 +1,16 @@
 package avm
 
 import (
-	"nkn-core/vm/avm/errors"
-	"nkn-core/vm/avm/types"
-	"encoding/binary"
-	"math/big"
-	"reflect"
-	"nkn-core/vm/avm/interfaces"
-	"hash"
 	"crypto/sha1"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
+	"hash"
+	"math/big"
+	"nkn-core/vm/avm/errors"
+	"nkn-core/vm/avm/interfaces"
+	"nkn-core/vm/avm/types"
+	"reflect"
 )
 
 type BigIntSorter []big.Int
@@ -71,7 +71,7 @@ func SumBigInt(ints []big.Int) big.Int {
 	return *sum
 }
 
-func MinBigInt(ints []big.Int) big.Int{
+func MinBigInt(ints []big.Int) big.Int {
 	minimum := ints[0]
 
 	for _, d := range ints {
@@ -83,7 +83,7 @@ func MinBigInt(ints []big.Int) big.Int{
 	return minimum
 }
 
-func MaxBigInt(ints []big.Int) big.Int{
+func MaxBigInt(ints []big.Int) big.Int {
 	max := ints[0]
 
 	for _, d := range ints {
@@ -136,7 +136,6 @@ func Concat(array1 []byte, array2 []byte) []byte {
 	return array1
 }
 
-
 func BigIntOp(bi *big.Int, op OpCode) *big.Int {
 	nb := new(big.Int)
 	switch op {
@@ -181,7 +180,7 @@ func AsInt64(b []byte) (int64, error) {
 	return int64(res), nil
 }
 
-func ByteArrZip(s1 []byte, s2 []byte, op OpCode) []byte{
+func ByteArrZip(s1 []byte, s2 []byte, op OpCode) []byte {
 	var ns []byte
 	switch op {
 	case CAT:
@@ -391,19 +390,16 @@ func Hash(b []byte, e *ExecutionEngine) []byte {
 	return bt
 }
 
-
-
 func PopBigInt(e *ExecutionEngine) *big.Int {
 	x := PopStackItem(e)
 	return x.GetBigInteger()
 }
 
 func PopInt(e *ExecutionEngine) int {
-	x:= PopBigInt(e)
+	x := PopBigInt(e)
 	n := int(x.Int64())
 	return n
 }
-
 
 func PopBoolean(e *ExecutionEngine) bool {
 	x := PopStackItem(e)
@@ -502,6 +498,3 @@ func PushData(e *ExecutionEngine, data interface{}) {
 	d := NewStackItemInterface(data)
 	e.evaluationStack.Push(NewStackItem(d))
 }
-
-
-

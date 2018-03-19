@@ -1,17 +1,17 @@
 package states
 
 import (
-	"nkn-core/common"
-	"io"
 	"bytes"
+	"io"
+	"nkn-core/common"
 	"nkn-core/common/serialization"
 )
 
 type AccountState struct {
 	StateBase
 	ProgramHash common.Uint160
-	IsFrozen bool
-	Balances map[common.Uint256]common.Fixed64
+	IsFrozen    bool
+	Balances    map[common.Uint256]common.Fixed64
 }
 
 func NewAccountState(programHash common.Uint160, balances map[common.Uint256]common.Fixed64) *AccountState {
@@ -22,7 +22,7 @@ func NewAccountState(programHash common.Uint160, balances map[common.Uint256]com
 	return &accountState
 }
 
-func(accountState *AccountState)Serialize(w io.Writer) error {
+func (accountState *AccountState) Serialize(w io.Writer) error {
 	accountState.StateBase.Serialize(w)
 	accountState.ProgramHash.Serialize(w)
 	serialization.WriteBool(w, accountState.IsFrozen)
@@ -34,7 +34,7 @@ func(accountState *AccountState)Serialize(w io.Writer) error {
 	return nil
 }
 
-func(accountState *AccountState)Deserialize(r io.Reader) error {
+func (accountState *AccountState) Deserialize(r io.Reader) error {
 	stateBase := new(StateBase)
 	err := stateBase.Deserialize(r)
 	if err != nil {
@@ -43,32 +43,34 @@ func(accountState *AccountState)Deserialize(r io.Reader) error {
 	accountState.StateBase = *stateBase
 	accountState.ProgramHash.Deserialize(r)
 	isFrozen, err := serialization.ReadBool(r)
-	if err != nil { 
-		return err 
+	if err != nil {
+		return err
 	}
 	accountState.IsFrozen = isFrozen
 	l, err := serialization.ReadUint64(r)
-	if err != nil { 
-		return err 
+	if err != nil {
+		return err
 	}
 	balances := make(map[common.Uint256]common.Fixed64, 0)
 	u := new(common.Uint256)
 	f := new(common.Fixed64)
-	for i:=0; i<int(l); i++ {
+	for i := 0; i < int(l); i++ {
 		err = u.Deserialize(r)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		err = f.Deserialize(r)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		balances[*u] = *f
 	}
 	accountState.Balances = balances
 	return nil
 }
 
-func(accountState *AccountState) ToArray() []byte {
+func (accountState *AccountState) ToArray() []byte {
 	b := new(bytes.Buffer)
 	accountState.Serialize(b)
 	return b.Bytes()
 }
-
-

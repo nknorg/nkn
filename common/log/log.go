@@ -1,13 +1,13 @@
 package log
 
 import (
-	"nkn-core/common/config"
 	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"nkn-core/common/config"
 	"os"
 	"path/filepath"
 	"runtime"

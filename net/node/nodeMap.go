@@ -1,8 +1,8 @@
 package node
 
 import (
-	. "nkn-core/net/protocol"
 	"fmt"
+	. "nkn-core/net/protocol"
 	"sync"
 )
 

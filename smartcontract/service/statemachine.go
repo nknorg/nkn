@@ -1,6 +1,8 @@
 package service
 
 import (
+	"encoding/hex"
+	"fmt"
 	"nkn-core/common"
 	"nkn-core/core/code"
 	"nkn-core/core/contract"
@@ -9,8 +11,6 @@ import (
 	"nkn-core/smartcontract/states"
 	"nkn-core/smartcontract/storage"
 	"nkn-core/vm/avm"
-	"encoding/hex"
-	"fmt"
 )
 
 type StateMachine struct {

@@ -1,13 +1,13 @@
 package account
 
 import (
-	ct "nkn-core/core/contract"
-	. "nkn-core/errors"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	ct "nkn-core/core/contract"
+	. "nkn-core/errors"
 	"os"
 )
 

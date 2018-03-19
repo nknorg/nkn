@@ -1,15 +1,15 @@
 package message
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
+	"errors"
 	"nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
 	"nkn-core/events"
 	. "nkn-core/net/protocol"
-	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
-	"errors"
 )
 
 type blockReq struct {

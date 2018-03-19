@@ -1,8 +1,8 @@
 package avm
 
 import (
-	. "nkn-core/vm/avm/errors"
 	"nkn-core/common/log"
+	. "nkn-core/vm/avm/errors"
 )
 
 type IInteropService interface {

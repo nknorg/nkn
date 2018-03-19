@@ -1,16 +1,16 @@
 package ledger
 
 import (
-	. "nkn-core/errors"
 	"errors"
 	"fmt"
+	. "nkn-core/errors"
 )
 
-func VerifyBlock(block *Block, ld *Ledger, completely bool) error {
+func VerifyBlock(block *Block, completely bool) error {
 	if block.Header.Height == 0 {
 		return nil
 	}
-	err := VerifyHeader(block.Header, ld)
+	err := VerifyHeader(block.Header)
 	if err != nil {
 		return err
 	}
@@ -47,12 +47,9 @@ func VerifyBlock(block *Block, ld *Ledger, completely bool) error {
 	return nil
 }
 
-func VerifyHeader(bd *BlockHeader, ledger *Ledger) error {
-	if bd.Height == 0 {
-		return nil
-	}
+func VerifyHeader(bd *BlockHeader) error {
 
-	prevHeader, err := ledger.Blockchain.GetHeader(bd.PrevBlockHash)
+	prevHeader, err := DefaultLedger.Blockchain.GetHeader(bd.PrevBlockHash)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[BlockValidator], Cannnot find prevHeader..")
 	}

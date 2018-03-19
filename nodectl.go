@@ -4,13 +4,13 @@ import (
 	"os"
 	"sort"
 
+	"github.com/urfave/cli"
 	_ "nkn-core/cli"
 	. "nkn-core/cli/common"
 	"nkn-core/cli/debug"
 	"nkn-core/cli/info"
 	"nkn-core/cli/smartcontract"
 	"nkn-core/cli/wallet"
-	"github.com/urfave/cli"
 )
 
 var Version string

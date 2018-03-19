@@ -12,12 +12,12 @@ func NewTransferAssetTransaction(inputs []*UTXOTxInput, outputs []*TxOutput) (*T
 	assetRegPayload := &payload.TransferAsset{}
 
 	return &Transaction{
-		TxType:        TransferAsset,
-		Payload:       assetRegPayload,
-		Attributes:    []*TxAttribute{},
-		UTXOInputs:    inputs,
-		Outputs:       outputs,
-		Programs:      []*program.Program{},
+		TxType:     TransferAsset,
+		Payload:    assetRegPayload,
+		Attributes: []*TxAttribute{},
+		UTXOInputs: inputs,
+		Outputs:    outputs,
+		Programs:   []*program.Program{},
 	}, nil
 }
 
@@ -35,11 +35,11 @@ func NewDeployTransaction(fc *code.FunctionCode, programHash common.Uint160, nam
 	}
 
 	return &Transaction{
-		TxType:        DeployCode,
-		Payload:       DeployCodePayload,
-		Attributes:    []*TxAttribute{},
-		UTXOInputs:    []*UTXOTxInput{},
-		Programs:      []*program.Program{},
+		TxType:     DeployCode,
+		Payload:    DeployCodePayload,
+		Attributes: []*TxAttribute{},
+		UTXOInputs: []*UTXOTxInput{},
+		Programs:   []*program.Program{},
 	}, nil
 }
 
@@ -52,10 +52,10 @@ func NewInvokeTransaction(fc []byte, codeHash common.Uint160, programhash common
 	}
 
 	return &Transaction{
-		TxType:        InvokeCode,
-		Payload:       InvokeCodePayload,
-		Attributes:    []*TxAttribute{},
-		UTXOInputs:    []*UTXOTxInput{},
-		Programs:      []*program.Program{},
+		TxType:     InvokeCode,
+		Payload:    InvokeCodePayload,
+		Attributes: []*TxAttribute{},
+		UTXOInputs: []*UTXOTxInput{},
+		Programs:   []*program.Program{},
 	}, nil
 }

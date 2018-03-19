@@ -1,6 +1,7 @@
 package httpwebsocket
 
 import (
+	"bytes"
 	. "nkn-core/common"
 	. "nkn-core/common/config"
 	"nkn-core/core/ledger"
@@ -9,7 +10,6 @@ import (
 	Err "nkn-core/net/httprestful/error"
 	"nkn-core/net/httpwebsocket/websocket"
 	. "nkn-core/net/protocol"
-	"bytes"
 )
 
 var ws *websocket.WsServer

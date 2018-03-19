@@ -11,8 +11,8 @@ import (
 	"nkn-core/common/log"
 	"nkn-core/common/serialization"
 	"nkn-core/core/contract/program"
-	sig "nkn-core/core/signature"
 	"nkn-core/core/ledger/payload"
+	sig "nkn-core/core/signature"
 	. "nkn-core/errors"
 )
 
@@ -21,10 +21,10 @@ import (
 type TransactionType byte
 
 const (
-	BookKeeping    TransactionType = 0x00
-	TransferAsset  TransactionType = 0x01
-	DeployCode     TransactionType = 0x02
-	InvokeCode     TransactionType = 0x03
+	BookKeeping   TransactionType = 0x00
+	TransferAsset TransactionType = 0x01
+	DeployCode    TransactionType = 0x02
+	InvokeCode    TransactionType = 0x03
 )
 
 type TransactionResult map[Uint256]Fixed64

@@ -1,9 +1,9 @@
 package payload
 
 import (
+	"io"
 	"nkn-core/common"
 	"nkn-core/common/serialization"
-	"io"
 )
 
 type InvokeCode struct {

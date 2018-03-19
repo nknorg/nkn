@@ -1,14 +1,14 @@
 package httpjsonrpc
 
 import (
+	"bytes"
+	"encoding/hex"
+	"fmt"
 	. "nkn-core/common"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
 	. "nkn-core/errors"
-	"bytes"
-	"encoding/hex"
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -87,7 +87,7 @@ func getBlock(params []interface{}) map[string]interface{} {
 	// block height
 	case float64:
 		index := uint32(params[0].(float64))
-		hash, err = ledger.DefaultLedger.Store.GetBlockHash(index)
+		hash, err = ledger.DefaultLedger.Store.GetBlockHashByHeight(index)
 		if err != nil {
 			return RpcResultUnknownBlock
 		}
@@ -116,7 +116,7 @@ func getBlock(params []interface{}) map[string]interface{} {
 		TransactionsRoot: ToHexString(block.Header.TransactionsRoot.ToArray()),
 		Timestamp:        block.Header.Timestamp,
 		Height:           block.Header.Height,
-		Nonce:    block.Header.Nonce,
+		Nonce:            block.Header.Nonce,
 		Program: ProgramInfo{
 			Code:      ToHexString(block.Header.Program.Code),
 			Parameter: ToHexString(block.Header.Program.Parameter),
@@ -150,7 +150,7 @@ func getBlockHash(params []interface{}) map[string]interface{} {
 	switch params[0].(type) {
 	case float64:
 		height := uint32(params[0].(float64))
-		hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
+		hash, err := ledger.DefaultLedger.Store.GetBlockHashByHeight(height)
 		if err != nil {
 			return RpcResultUnknownBlock
 		}

@@ -1,8 +1,6 @@
 package common
 
 import (
-	"nkn-core/common/log"
-	. "nkn-core/errors"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
@@ -11,6 +9,8 @@ import (
 	"github.com/golang/crypto/ripemd160"
 	"io"
 	"math/rand"
+	"nkn-core/common/log"
+	. "nkn-core/errors"
 	"os"
 )
 
@@ -48,9 +48,9 @@ func BytesToInt16(b []byte) int16 {
 	return int16(tmp)
 }
 
-func BytesToInt(b [] byte) []int {
+func BytesToInt(b []byte) []int {
 	i := make([]int, len(b))
-	for k,v := range b {
+	for k, v := range b {
 		i[k] = int(v)
 	}
 	return i
@@ -83,7 +83,7 @@ func HexToBytes(value string) ([]byte, error) {
 func ToArrayReverse(arr []byte) []byte {
 	l := len(arr)
 	x := make([]byte, 0)
-	for i := l - 1; i >= 0 ;i--{
+	for i := l - 1; i >= 0; i-- {
 		x = append(x, arr[i])
 	}
 	return x

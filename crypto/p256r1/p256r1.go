@@ -1,13 +1,13 @@
 package p256r1
 
 import (
-	"nkn-core/crypto/util"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"errors"
 	"fmt"
 	"math/big"
+	"nkn-core/crypto/util"
 )
 
 func Init(algSet *util.CryptoAlgSet) {

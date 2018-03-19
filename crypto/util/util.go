@@ -1,11 +1,11 @@
 package util
 
 import (
-	"nkn-core/crypto/sm3"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"nkn-core/crypto/sm3"
 	//"math/big"
 )
 

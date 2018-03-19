@@ -1,10 +1,10 @@
 package states
 
 import (
-	"io"
-	"nkn-core/vm/avm/interfaces"
-	"nkn-core/core/store"
 	"bytes"
+	"io"
+	"nkn-core/core/store"
+	"nkn-core/vm/avm/interfaces"
 )
 
 type IStateValueInterface interface {
@@ -28,7 +28,7 @@ var (
 	}
 )
 
-func GetStateValue(prefix store.DataEntryPrefix, data []byte) (IStateValueInterface, error){
+func GetStateValue(prefix store.DataEntryPrefix, data []byte) (IStateValueInterface, error) {
 	r := bytes.NewBuffer(data)
 	state := StatesMap[prefix]
 	if err := state.Deserialize(r); err != nil {

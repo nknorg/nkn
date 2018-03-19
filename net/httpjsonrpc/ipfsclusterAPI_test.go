@@ -1,8 +1,8 @@
 package httpjsonrpc
 
 import (
-	"nkn-core/common/log"
 	"fmt"
+	"nkn-core/common/log"
 	"os"
 	"os/exec"
 	"testing"

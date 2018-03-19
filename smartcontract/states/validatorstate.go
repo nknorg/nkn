@@ -1,9 +1,9 @@
 package states
 
 import (
-	"nkn-core/crypto"
-	"io"
 	"bytes"
+	"io"
+	"nkn-core/crypto"
 )
 
 type ValidatorState struct {
@@ -11,14 +11,13 @@ type ValidatorState struct {
 	PublicKey *crypto.PubKey
 }
 
-func(v *ValidatorState) Serialize(w io.Writer) error {
+func (v *ValidatorState) Serialize(w io.Writer) error {
 	v.StateBase.Serialize(w)
 	v.PublicKey.Serialize(w)
 	return nil
 }
 
-
-func(v *ValidatorState)Deserialize(r io.Reader) error {
+func (v *ValidatorState) Deserialize(r io.Reader) error {
 	stateBase := new(StateBase)
 	err := stateBase.Deserialize(r)
 	if err != nil {
@@ -34,9 +33,8 @@ func(v *ValidatorState)Deserialize(r io.Reader) error {
 	return nil
 }
 
-func(v *ValidatorState) ToArray() []byte {
+func (v *ValidatorState) ToArray() []byte {
 	b := new(bytes.Buffer)
 	v.Serialize(b)
 	return b.Bytes()
 }
-

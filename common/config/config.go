@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"os"
 	"math/big"
+	"os"
 	"time"
 )
 
@@ -19,13 +19,13 @@ const (
 var Version string
 
 type PowConfiguration struct {
-	Switch           string `json:"Switch"`
-	PayToAddr        string `json:"PayToAddr"`
-	MiningSelfPort   int    `josn:"MiningSelfPort"`
-	ProtocolVersion  int    `json:"ProtocolVersion"`
-	Proxy            string `json:"Proxy"`
-	AutoMining       bool   `json:"AutoMining"`
-	MinTxFee         int    `json:"MinTxFee"`
+	Switch          string `json:"Switch"`
+	PayToAddr       string `json:"PayToAddr"`
+	MiningSelfPort  int    `josn:"MiningSelfPort"`
+	ProtocolVersion int    `json:"ProtocolVersion"`
+	Proxy           string `json:"Proxy"`
+	AutoMining      bool   `json:"AutoMining"`
+	MinTxFee        int    `json:"MinTxFee"`
 }
 
 type Configuration struct {
@@ -59,7 +59,7 @@ type Configuration struct {
 	DefaultMaxPeers     uint             `json:"DefaultMaxPeers"`
 	GetAddrMax          uint             `json:"GetAddrMax"`
 	MaxOutboundCnt      uint             `json:"MaxOutboundCnt"`
-	AddCheckpoints []string `json:"AddCheckpoints"`
+	AddCheckpoints      []string         `json:"AddCheckpoints"`
 }
 
 type ConfigFile struct {

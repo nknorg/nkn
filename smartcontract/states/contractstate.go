@@ -1,28 +1,28 @@
 package states
 
 import (
-	"io"
-	. "nkn-core/errors"
-	"nkn-core/core/code"
 	"bytes"
-	"nkn-core/common/serialization"
-	"nkn-core/smartcontract/types"
+	"io"
 	"nkn-core/common"
+	"nkn-core/common/serialization"
+	"nkn-core/core/code"
+	. "nkn-core/errors"
+	"nkn-core/smartcontract/types"
 )
 
 type ContractState struct {
 	StateBase
-	Code *code.FunctionCode
-	Name string
-	Version string
-	Author string
-	Email string
+	Code        *code.FunctionCode
+	Name        string
+	Version     string
+	Author      string
+	Email       string
 	Description string
-	Language types.LangType
+	Language    types.LangType
 	ProgramHash common.Uint160
 }
 
-func(contractState *ContractState) Serialize(w io.Writer) error {
+func (contractState *ContractState) Serialize(w io.Writer) error {
 	contractState.StateBase.Serialize(w)
 	err := contractState.Code.Serialize(w)
 	if err != nil {
@@ -59,7 +59,7 @@ func(contractState *ContractState) Serialize(w io.Writer) error {
 	return nil
 }
 
-func(contractState *ContractState) Deserialize(r io.Reader) error {
+func (contractState *ContractState) Deserialize(r io.Reader) error {
 	stateBase := new(StateBase)
 	err := stateBase.Deserialize(r)
 	if err != nil {
@@ -112,10 +112,8 @@ func(contractState *ContractState) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func(contractState *ContractState) ToArray() []byte {
+func (contractState *ContractState) ToArray() []byte {
 	b := new(bytes.Buffer)
 	contractState.Serialize(b)
 	return b.Bytes()
 }
-
-

@@ -1,11 +1,11 @@
 package payload
 
 import (
-	. "nkn-core/core/code"
-	"nkn-core/common/serialization"
 	"io"
-	"nkn-core/smartcontract/types"
 	"nkn-core/common"
+	"nkn-core/common/serialization"
+	. "nkn-core/core/code"
+	"nkn-core/smartcontract/types"
 )
 
 type DeployCode struct {
@@ -126,4 +126,3 @@ func (dc *DeployCode) Deserialize(r io.Reader, version byte) error {
 	dc.ProgramHash = *u
 	return nil
 }
-

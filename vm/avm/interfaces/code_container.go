@@ -1,6 +1,6 @@
 package interfaces
 
 type ICodeContainer interface {
-	GetMessage() ([]byte)
+	GetMessage() []byte
 	IInteropInterface
 }

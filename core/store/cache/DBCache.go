@@ -1,4 +1,5 @@
 package cache
+
 //
 //import (
 //	"nkn-core/smartcontract/storage"

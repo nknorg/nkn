@@ -1,11 +1,11 @@
 package account
 
 import (
+	"errors"
 	. "nkn-core/common"
 	"nkn-core/core/contract"
 	"nkn-core/crypto"
 	. "nkn-core/errors"
-	"errors"
 )
 
 type Account struct {

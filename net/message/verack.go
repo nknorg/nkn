@@ -1,10 +1,10 @@
 package message
 
 import (
-	"nkn-core/common/log"
-	. "nkn-core/net/protocol"
 	"encoding/hex"
 	"errors"
+	"nkn-core/common/log"
+	. "nkn-core/net/protocol"
 	"strconv"
 )
 

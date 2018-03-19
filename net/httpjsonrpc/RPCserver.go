@@ -1,10 +1,10 @@
 package httpjsonrpc
 
 import (
-	"nkn-core/common/log"
 	"net/http"
-	"strconv"
 	"nkn-core/common/config"
+	"nkn-core/common/log"
+	"strconv"
 )
 
 func StartRPCServer() {

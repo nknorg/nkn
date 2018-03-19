@@ -1,12 +1,12 @@
 package ledger
 
 import (
-	"nkn-core/common"
-	"nkn-core/common/log"
-	. "nkn-core/errors"
 	"errors"
 	"fmt"
 	"math"
+	"nkn-core/common"
+	"nkn-core/common/log"
+	. "nkn-core/errors"
 )
 
 // VerifyTransaction verifys received single transaction

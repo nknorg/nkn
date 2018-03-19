@@ -1,13 +1,13 @@
 package message
 
 import (
-	"nkn-core/common"
-	"nkn-core/common/log"
-	. "nkn-core/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"nkn-core/common"
+	"nkn-core/common/log"
+	. "nkn-core/net/protocol"
 )
 
 type notFound struct {

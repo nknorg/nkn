@@ -11,8 +11,8 @@ func opCat(e *ExecutionEngine) (VMState, error) {
 func opSubStr(e *ExecutionEngine) (VMState, error) {
 	count := PopInt(e)
 	index := PopInt(e)
-	arr  := PopByteArray(e)
-	b := arr[index: index + count]
+	arr := PopByteArray(e)
+	b := arr[index : index+count]
 	PushData(e, b)
 	return NONE, nil
 }

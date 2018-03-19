@@ -1,11 +1,11 @@
 package crypto
 
 import (
-	. "nkn-core/common"
-	. "nkn-core/errors"
 	"bytes"
 	"crypto/sha256"
 	"errors"
+	. "nkn-core/common"
+	. "nkn-core/errors"
 )
 
 var (

@@ -1,9 +1,9 @@
 package ledger
 
 import (
+	"io"
 	"nkn-core/common"
 	"nkn-core/common/serialization"
-	"io"
 )
 
 type UTXOUnspent struct {

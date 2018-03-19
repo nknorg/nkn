@@ -1,13 +1,13 @@
 package contract
 
 import (
+	"math/big"
 	. "nkn-core/common"
 	pg "nkn-core/core/contract/program"
 	"nkn-core/crypto"
 	. "nkn-core/errors"
-	"math/big"
-	"sort"
 	"nkn-core/vm/avm"
+	"sort"
 )
 
 //create a Single Singature contract for owner

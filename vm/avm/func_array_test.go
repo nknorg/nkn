@@ -1,11 +1,10 @@
 package avm
 
 import (
-	"testing"
 	"math/big"
 	"nkn-core/vm/avm/types"
+	"testing"
 )
-
 
 func TestOpArraySize(t *testing.T) {
 	engine.opCode = ARRAYSIZE
@@ -14,7 +13,7 @@ func TestOpArraySize(t *testing.T) {
 	i := big.NewInt(1)
 
 	is := []types.StackItemInterface{types.NewByteArray(bs), types.NewInteger(i)}
-	PushData(engine, is);
+	PushData(engine, is)
 
 	_, err := opArraySize(engine)
 
@@ -77,5 +76,3 @@ func TestOpPickItem(t *testing.T) {
 	t.Log(engine.GetEvaluationStack().Pop().GetStackItem().GetByteArray())
 
 }
-
-

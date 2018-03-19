@@ -1,17 +1,17 @@
 package restful
 
 import (
-	. "nkn-core/common/config"
-	"nkn-core/common/log"
-	. "nkn-core/net/httprestful/common"
-	Err "nkn-core/net/httprestful/error"
-	"nkn-core/net/httpwebsocket"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
 	"net"
 	"net/http"
+	. "nkn-core/common/config"
+	"nkn-core/common/log"
+	. "nkn-core/net/httprestful/common"
+	Err "nkn-core/net/httprestful/error"
+	"nkn-core/net/httpwebsocket"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,11 +25,11 @@ type Action struct {
 	handler handler
 }
 type restServer struct {
-	router           *Router
-	listener         net.Listener
-	server           *http.Server
-	postMap          map[string]Action
-	getMap           map[string]Action
+	router   *Router
+	listener net.Listener
+	server   *http.Server
+	postMap  map[string]Action
+	getMap   map[string]Action
 }
 
 const (

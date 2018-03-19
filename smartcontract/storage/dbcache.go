@@ -1,10 +1,10 @@
 package storage
 
 import (
+	"math/big"
+	"nkn-core/common"
 	"nkn-core/core/store"
 	"nkn-core/smartcontract/states"
-	"nkn-core/common"
-	"math/big"
 )
 
 type DBCache interface {
@@ -23,13 +23,13 @@ type DBCache interface {
 
 type CloneCache struct {
 	innerCache DBCache
-	dbCache DBCache
+	dbCache    DBCache
 }
 
 func NewCloneDBCache(innerCache DBCache, dbCache DBCache) *CloneCache {
 	return &CloneCache{
 		innerCache: innerCache,
-		dbCache: dbCache,
+		dbCache:    dbCache,
 	}
 }
 
@@ -41,7 +41,7 @@ func (cloneCache *CloneCache) Commit() {
 	for _, v := range cloneCache.innerCache.GetWriteSet().WriteSet {
 		if v.IsDeleted {
 			cloneCache.dbCache.GetWriteSet().Delete(v.Key)
-		}else {
+		} else {
 			cloneCache.dbCache.GetWriteSet().Add(v.Prefix, v.Key, v.Item)
 		}
 	}
@@ -50,9 +50,7 @@ func (cloneCache *CloneCache) Commit() {
 func (cloneCache *CloneCache) TryGet(prefix store.DataEntryPrefix, key string) (states.IStateValueInterface, error) {
 	if v, ok := cloneCache.innerCache.GetWriteSet().WriteSet[key]; ok {
 		return v.Item, nil
-	}else {
+	} else {
 		return cloneCache.dbCache.TryGet(prefix, key)
 	}
 }
-
-

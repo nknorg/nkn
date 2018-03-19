@@ -1,15 +1,15 @@
 package states
 
 import (
-	"nkn-core/common"
 	"io"
+	"nkn-core/common"
 	"nkn-core/common/serialization"
 	. "nkn-core/errors"
 )
 
 type StorageKey struct {
 	CodeHash *common.Uint160
-	Key []byte
+	Key      []byte
 }
 
 func NewStorageKey(codeHash *common.Uint160, key []byte) *StorageKey {
@@ -39,4 +39,3 @@ func (storageKey *StorageKey) Deserialize(r io.Reader) error {
 	storageKey.Key = key
 	return nil
 }
-

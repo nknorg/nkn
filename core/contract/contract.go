@@ -1,12 +1,12 @@
 package contract
 
 import (
-	. "nkn-core/common"
-	"nkn-core/common/serialization"
-	. "nkn-core/errors"
 	"bytes"
 	"errors"
 	"io"
+	. "nkn-core/common"
+	"nkn-core/common/serialization"
+	. "nkn-core/errors"
 	"nkn-core/vm/avm"
 )
 

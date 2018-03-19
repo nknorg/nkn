@@ -1,20 +1,20 @@
 package node
 
 import (
+	"fmt"
 	"nkn-core/common"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
 	. "nkn-core/errors"
-	"fmt"
 	"sync"
 )
 
 type TXNPool struct {
 	sync.RWMutex
-	txnCnt        uint64                                      // count
+	txnCnt        uint64                                 // count
 	txnList       map[common.Uint256]*ledger.Transaction // transaction which have been verifyed will put into this map
-	issueSummary  map[common.Uint256]common.Fixed64           // transaction which pass the verify will summary the amout to this map
+	issueSummary  map[common.Uint256]common.Fixed64      // transaction which pass the verify will summary the amout to this map
 	inputUTXOList map[string]*ledger.Transaction         // transaction which pass the verify will add the UTXO to this map
 }
 

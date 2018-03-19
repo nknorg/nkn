@@ -1,14 +1,14 @@
 package message
 
 import (
-	"nkn-core/common/log"
-	. "nkn-core/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"nkn-core/common/log"
+	. "nkn-core/net/protocol"
 )
 
 type Messager interface {
@@ -232,7 +232,7 @@ func ValidMsgHdr(buf []byte) bool {
 	return magicVerify(h.Magic)
 }
 
-func PayloadLen(buf []byte) (int) {
+func PayloadLen(buf []byte) int {
 	var h msgHdr
 	h.Deserialization(buf)
 	return int(h.Length)

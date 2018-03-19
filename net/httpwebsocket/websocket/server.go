@@ -1,11 +1,6 @@
 package websocket
 
 import (
-	. "nkn-core/common/config"
-	"nkn-core/common/log"
-	. "nkn-core/net/httprestful/common"
-	Err "nkn-core/net/httprestful/error"
-	. "nkn-core/net/httpwebsocket/session"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -13,6 +8,11 @@ import (
 	"github.com/gorilla/websocket"
 	"net"
 	"net/http"
+	. "nkn-core/common/config"
+	"nkn-core/common/log"
+	. "nkn-core/net/httprestful/common"
+	Err "nkn-core/net/httprestful/error"
+	. "nkn-core/net/httpwebsocket/session"
 	"strconv"
 	"sync"
 	"time"
@@ -26,12 +26,12 @@ type Handler struct {
 
 type WsServer struct {
 	sync.RWMutex
-	Upgrader         websocket.Upgrader
-	listener         net.Listener
-	server           *http.Server
-	SessionList      *SessionList
-	ActionMap        map[string]Handler
-	TxHashMap        map[string]string //key: txHash   value:sessionid
+	Upgrader    websocket.Upgrader
+	listener    net.Listener
+	server      *http.Server
+	SessionList *SessionList
+	ActionMap   map[string]Handler
+	TxHashMap   map[string]string //key: txHash   value:sessionid
 }
 
 func InitWsServer() *WsServer {

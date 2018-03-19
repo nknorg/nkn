@@ -1,13 +1,13 @@
 package node
 
 import (
+	"math/rand"
+	"net"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
 	. "nkn-core/net/message"
 	. "nkn-core/net/protocol"
-	"math/rand"
-	"net"
 	"strconv"
 	"time"
 )
@@ -62,19 +62,19 @@ func (node *node) SyncBlk() {
 		if count == 0 {
 			for _, f := range flights {
 				hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(f)
-				if ledger.DefaultLedger.Store.BlockInCache(hash) == false {
-					ReqBlkData(n, hash)
-				}
+				//if ledger.DefaultLedger.Store.BlockInCache(hash) == false {
+				ReqBlkData(n, hash)
+				//}
 			}
 
 		}
 		for i = 1; i <= count && dValue >= 0; i++ {
 			hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentBlkHeight + reqCnt)
 
-			if ledger.DefaultLedger.Store.BlockInCache(hash) == false {
-				ReqBlkData(n, hash)
-				n.StoreFlightHeight(currentBlkHeight + reqCnt)
-			}
+			//if ledger.DefaultLedger.Store.BlockInCache(hash) == false {
+			ReqBlkData(n, hash)
+			n.StoreFlightHeight(currentBlkHeight + reqCnt)
+			//}
 			reqCnt++
 			dValue--
 		}

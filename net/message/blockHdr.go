@@ -1,15 +1,15 @@
 package message
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
+	"errors"
 	"nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/common/serialization"
 	"nkn-core/core/ledger"
 	. "nkn-core/net/protocol"
-	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
-	"errors"
 )
 
 type headersReq struct {
@@ -248,7 +248,7 @@ func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]le
 
 	var i uint32
 	for i = 1; i <= count; i++ {
-		hash, err := ledger.DefaultLedger.Store.GetBlockHash(stopHeight + i)
+		hash, err := ledger.DefaultLedger.Store.GetBlockHashByHeight(stopHeight + i)
 		hd, err := ledger.DefaultLedger.Store.GetHeader(hash)
 		if err != nil {
 			log.Error("GetBlockWithHeight failed ", err.Error())

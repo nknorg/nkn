@@ -1,6 +1,9 @@
 package common
 
 import (
+	"bytes"
+	"fmt"
+	"math"
 	. "nkn-core/common"
 	"nkn-core/core/ledger"
 	tx "nkn-core/core/transaction"
@@ -8,11 +11,8 @@ import (
 	. "nkn-core/net/httpjsonrpc"
 	Err "nkn-core/net/httprestful/error"
 	. "nkn-core/net/protocol"
-	"bytes"
-	"fmt"
-	"math"
-	"strconv"
 	"nkn-core/smartcontract/states"
+	"strconv"
 )
 
 var node Noder
@@ -56,7 +56,7 @@ func GetBlockHash(cmd map[string]interface{}) map[string]interface{} {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
 	}
-	hash, err := ledger.DefaultLedger.Store.GetBlockHash(uint32(height))
+	hash, err := ledger.DefaultLedger.Store.GetBlockHashByHeight(uint32(height))
 	if err != nil {
 		resp["Error"] = Err.INVALID_PARAMS
 		return resp
@@ -73,7 +73,7 @@ func GetBlockInfo(block *ledger.Block) BlockInfo {
 		TransactionsRoot: ToHexString(block.Header.TransactionsRoot.ToArrayReverse()),
 		Timestamp:        block.Header.Timestamp,
 		Height:           block.Header.Height,
-		Nonce:    block.Header.Nonce,
+		Nonce:            block.Header.Nonce,
 		Program: ProgramInfo{
 			Code:      ToHexString(block.Header.Program.Code),
 			Parameter: ToHexString(block.Header.Program.Parameter),
@@ -164,7 +164,7 @@ func GetBlockTxsByHeight(cmd map[string]interface{}) map[string]interface{} {
 		return resp
 	}
 	index := uint32(height)
-	hash, err := ledger.DefaultLedger.Store.GetBlockHash(index)
+	hash, err := ledger.DefaultLedger.Store.GetBlockHashByHeight(index)
 	if err != nil {
 		resp["Error"] = Err.UNKNOWN_BLOCK
 		return resp
@@ -195,7 +195,7 @@ func GetBlockByHeight(cmd map[string]interface{}) map[string]interface{} {
 		return resp
 	}
 	index := uint32(height)
-	hash, err := ledger.DefaultLedger.Store.GetBlockHash(index)
+	hash, err := ledger.DefaultLedger.Store.GetBlockHashByHeight(index)
 	if err != nil {
 		resp["Error"] = Err.UNKNOWN_BLOCK
 		return resp
@@ -511,7 +511,7 @@ func GetContract(cmd map[string]interface{}) map[string]interface{} {
 		Name:        c.Name,
 		Author:      c.Author,
 		Email:       c.Email,
-		Version: c.Version,
+		Version:     c.Version,
 		Description: c.Description,
 		Language:    int(c.Language),
 		Code:        new(FunctionCodeInfo),

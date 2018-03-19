@@ -1,14 +1,14 @@
 package message
 
 import (
-	"nkn-core/common/log"
-	. "nkn-core/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"net"
+	"nkn-core/common/log"
+	. "nkn-core/net/protocol"
 	"strconv"
 )
 

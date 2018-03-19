@@ -1,24 +1,24 @@
 package smartcontract
 
 import (
-	"nkn-core/account"
-	. "nkn-core/cli/common"
-	"nkn-core/common"
-	"nkn-core/common/password"
-	"nkn-core/core/code"
-	"nkn-core/core/contract"
-	"nkn-core/core/signature"
-	httpjsonrpc "nkn-core/net/httpjsonrpc"
-	"nkn-core/smartcontract/types"
 	"bytes"
 	"encoding/hex"
 	"fmt"
 	"github.com/urfave/cli"
 	"io/ioutil"
 	"math/rand"
+	"nkn-core/account"
+	. "nkn-core/cli/common"
+	"nkn-core/common"
+	"nkn-core/common/password"
+	"nkn-core/core/code"
+	"nkn-core/core/contract"
+	"nkn-core/core/ledger"
+	"nkn-core/core/signature"
+	httpjsonrpc "nkn-core/net/httpjsonrpc"
+	"nkn-core/smartcontract/types"
 	"os"
 	"strconv"
-	"nkn-core/core/ledger"
 )
 
 func newContractContextWithoutProgramHashes(data signature.SignableData) *contract.ContractContext {

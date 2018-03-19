@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	"nkn-core/common/serialization"
-	. "nkn-core/errors"
+	"bytes"
 	"errors"
 	"io"
-	"bytes"
+	"nkn-core/common/serialization"
+	. "nkn-core/errors"
 )
 
 type TransactionAttributeUsage byte
@@ -71,10 +71,8 @@ func (tx *TxAttribute) Deserialize(r io.Reader) error {
 
 }
 
-
-func (tx *TxAttribute) ToArray() ([]byte) {
+func (tx *TxAttribute) ToArray() []byte {
 	b := new(bytes.Buffer)
 	tx.Serialize(b)
 	return b.Bytes()
 }
-

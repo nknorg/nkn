@@ -1,8 +1,8 @@
 package node
 
 import (
-	"nkn-core/events"
 	"fmt"
+	"nkn-core/events"
 )
 
 type eventQueue struct {

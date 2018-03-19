@@ -1,18 +1,18 @@
 package asset
 
 import (
-	"nkn-core/common/serialization"
-	. "nkn-core/errors"
+	"bytes"
 	"errors"
 	"io"
-	"bytes"
+	"nkn-core/common/serialization"
+	. "nkn-core/errors"
 )
 
 //AssetType
 type AssetType byte
 
 const (
-	Token    AssetType = 0x00
+	Token AssetType = 0x00
 )
 
 const (
@@ -77,8 +77,7 @@ func (a *Asset) Deserialize(r io.Reader) error {
 	return nil
 }
 
-
-func (a *Asset) ToArray() ([]byte) {
+func (a *Asset) ToArray() []byte {
 	b := new(bytes.Buffer)
 	a.Serialize(b)
 	return b.Bytes()

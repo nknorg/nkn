@@ -1,12 +1,12 @@
 package common
 
 import (
-	Err "nkn-core/net/httprestful/error"
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net"
 	"net/http"
+	Err "nkn-core/net/httprestful/error"
 	"time"
 )
 

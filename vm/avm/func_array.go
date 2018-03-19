@@ -6,9 +6,9 @@ import (
 
 func opArraySize(e *ExecutionEngine) (VMState, error) {
 	item := PopStackItem(e)
-	if _, ok := item.(*types.Array); ok{
+	if _, ok := item.(*types.Array); ok {
 		PushData(e, len(item.GetArray()))
-	}else {
+	} else {
 		PushData(e, len(item.GetByteArray()))
 	}
 
@@ -41,7 +41,7 @@ func opPickItem(e *ExecutionEngine) (VMState, error) {
 	if _, ok := itemArr.(*types.Array); ok {
 		items := itemArr.GetArray()
 		PushData(e, items[index])
-	}else {
+	} else {
 		items := itemArr.GetByteArray()
 		PushData(e, items[index])
 	}
@@ -55,7 +55,7 @@ func opSetItem(e *ExecutionEngine) (VMState, error) {
 	if _, ok := itemArr.(*types.Array); ok {
 		items := itemArr.GetArray()
 		items[index] = newItem
-	}else {
+	} else {
 		items := itemArr.GetByteArray()
 		items[index] = newItem.GetByteArray()[0]
 	}
@@ -64,12 +64,10 @@ func opSetItem(e *ExecutionEngine) (VMState, error) {
 
 func opNewArray(e *ExecutionEngine) (VMState, error) {
 	count := PopInt(e)
-	items := NewStackItems();
+	items := NewStackItems()
 	for i := 0; i < count; i++ {
 		items = append(items, types.NewBoolean(false))
 	}
 	PushData(e, items)
 	return NONE, nil
 }
-
-

@@ -3,7 +3,7 @@ package types
 type LangType byte
 
 const (
-	CSharp  LangType = iota
+	CSharp LangType = iota
 	Solidity
 )
 
@@ -16,7 +16,7 @@ const (
 
 var (
 	LangVm = map[LangType]VmType{
-		CSharp: AVM,
+		CSharp:   AVM,
 		Solidity: EVM,
 	}
 )

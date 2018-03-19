@@ -1,8 +1,8 @@
 package payload
 
 import (
-	"nkn-core/common/serialization"
 	"io"
+	"nkn-core/common/serialization"
 )
 
 const BookKeepingPayloadVersion byte = 0x03

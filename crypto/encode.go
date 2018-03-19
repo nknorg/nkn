@@ -1,12 +1,12 @@
 package crypto
 
 import (
-	. "nkn-core/errors"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"errors"
 	"math/big"
+	. "nkn-core/errors"
 )
 
 const (

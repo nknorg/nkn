@@ -1,7 +1,6 @@
 package httpjsonrpc
 
 import (
-	"nkn-core/common/log"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -12,6 +11,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"nkn-core/common/log"
 	"os"
 	"strings"
 	"time"

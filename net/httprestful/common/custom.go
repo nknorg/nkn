@@ -1,9 +1,9 @@
 package common
 
 import (
+	"encoding/json"
 	. "nkn-core/common"
 	Err "nkn-core/net/httprestful/error"
-	"encoding/json"
 	"time"
 )
 

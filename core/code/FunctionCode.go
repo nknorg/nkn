@@ -1,12 +1,12 @@
 package code
 
 import (
-	"nkn-core/common/log"
-	. "nkn-core/common"
-	. "nkn-core/core/contract"
-	"nkn-core/common/serialization"
 	"fmt"
 	"io"
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	"nkn-core/common/serialization"
+	. "nkn-core/core/contract"
 )
 
 type FunctionCode struct {
@@ -32,7 +32,7 @@ func (fc *FunctionCode) Serialize(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	err = serialization.WriteVarBytes(w,fc.Code)
+	err = serialization.WriteVarBytes(w, fc.Code)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (fc *FunctionCode) Deserialize(r io.Reader) error {
 	}
 	fc.ParameterTypes = ByteToContractParameterType(parameterTypes)
 
-	fc.Code,err = serialization.ReadVarBytes(r)
+	fc.Code, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func (fc *FunctionCode) CodeHash() Uint160 {
 	if fc.codeHash == u160 {
 		u160, err := ToCodeHash(fc.Code)
 		if err != nil {
-			log.Debug( fmt.Sprintf("[FunctionCode] ToCodeHash err=%s",err) )
+			log.Debug(fmt.Sprintf("[FunctionCode] ToCodeHash err=%s", err))
 			return u160
 		}
 		fc.codeHash = u160

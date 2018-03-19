@@ -1,13 +1,13 @@
 package states
 
 import (
-	"testing"
-	"nkn-core/common"
 	"bytes"
 	"fmt"
-	"nkn-core/crypto"
 	"math/big"
+	"nkn-core/common"
 	"nkn-core/common/serialization"
+	"nkn-core/crypto"
+	"testing"
 )
 
 func TestAccountState(t *testing.T) {
@@ -19,9 +19,9 @@ func TestAccountState(t *testing.T) {
 	m[k1] = common.Fixed64(1)
 	m[k2] = common.Fixed64(2)
 	accountState := &AccountState{
-		ProgramHash: [20]uint8{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-		IsFrozen: true,
-		Balances: m,
+		ProgramHash: [20]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+		IsFrozen:    true,
+		Balances:    m,
 	}
 	accountState.Serialize(b)
 	accountState = &AccountState{}
@@ -35,19 +35,19 @@ func TestAssetState(t *testing.T) {
 	b := new(bytes.Buffer)
 	pubkey := &crypto.PubKey{X: big.NewInt(1), Y: big.NewInt(2)}
 	assetState := &AssetState{
-		AssetId: [32]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-		Name: "AssetStateTest",
-		Amount: common.Fixed64(1),
-		Available: common.Fixed64(1),
-		Precision: byte(1),
-		FeeMode: byte(1),
-		Fee: common.Fixed64(1),
-		FeeAddress: [20]uint8{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-		Owner: pubkey,
-		Admin: [20]uint8{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-		Issuer: [20]uint8{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3},
+		AssetId:    [32]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+		Name:       "AssetStateTest",
+		Amount:     common.Fixed64(1),
+		Available:  common.Fixed64(1),
+		Precision:  byte(1),
+		FeeMode:    byte(1),
+		Fee:        common.Fixed64(1),
+		FeeAddress: [20]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+		Owner:      pubkey,
+		Admin:      [20]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+		Issuer:     [20]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3},
 		Expiration: uint64(123456789123),
-		IsFrozen: true,
+		IsFrozen:   true,
 	}
 	assetState.Serialize(b)
 	fmt.Printf("serialize assetstate:%+v\n", b.Bytes())
@@ -89,8 +89,8 @@ func TestStorageItem(t *testing.T) {
 func TestStorageKey(t *testing.T) {
 	b := new(bytes.Buffer)
 	storageKey := &StorageKey{
-		CodeHash: [20]uint8{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-		Key: []byte{10, 11, 12},
+		CodeHash: [20]uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
+		Key:      []byte{10, 11, 12},
 	}
 	storageKey.Serialize(b)
 	fmt.Printf("serialize storagekey:%+v\n", b.Bytes())
@@ -98,4 +98,3 @@ func TestStorageKey(t *testing.T) {
 	storageKey.Deserialize(b)
 	fmt.Printf("deserialize storagekey:%+v\n", storageKey)
 }
-

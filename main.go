@@ -44,7 +44,6 @@ func main() {
 	if err != nil {
 		log.Fatal("open LedgerStore err:", err)
 	}
-	ledger.DefaultLedger.Store.InitLedgerStore(ledger.DefaultLedger)
 	crypto.SetAlg(config.Parameters.EncryptAlg)
 
 	log.Info("3. BlockChain init")

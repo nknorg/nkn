@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	"nkn-core/common"
-	"nkn-core/common/serialization"
+	"bytes"
 	"fmt"
 	"io"
-	"bytes"
+	"nkn-core/common"
+	"nkn-core/common/serialization"
 )
 
 type UTXOTxInput struct {
@@ -39,7 +39,7 @@ func (ui *UTXOTxInput) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (ui *UTXOTxInput) ToArray() ([]byte) {
+func (ui *UTXOTxInput) ToArray() []byte {
 	b := new(bytes.Buffer)
 	ui.Serialize(b)
 	return b.Bytes()

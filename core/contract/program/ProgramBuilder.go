@@ -1,9 +1,9 @@
 package program
 
 import (
-	. "nkn-core/common"
 	"bytes"
 	"math/big"
+	. "nkn-core/common"
 	"nkn-core/vm/avm"
 )
 

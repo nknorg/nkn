@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+	"math/big"
 	"nkn-core/common"
 	"nkn-core/core/contract"
 	"nkn-core/core/ledger"
@@ -11,8 +13,6 @@ import (
 	"nkn-core/smartcontract/states"
 	"nkn-core/vm/avm"
 	"nkn-core/vm/avm/types"
-	"fmt"
-	"math/big"
 )
 
 type StateReader struct {
@@ -27,7 +27,7 @@ func NewStateReader() *StateReader {
 	stateReader.Register("Neo.Runtime.Notify", stateReader.RuntimeNotify)
 	stateReader.Register("Neo.Runtime.Log", stateReader.RuntimeLog)
 
-	stateReader.Register("Neo.Blockchain.GetHeight", stateReader.BlockChainGetHeight)
+	stateReader.Register("Neo.Blockchain.GetBlockHeight", stateReader.BlockChainGetHeight)
 	stateReader.Register("Neo.Blockchain.GetHeader", stateReader.BlockChainGetHeader)
 	stateReader.Register("Neo.Blockchain.GetBlock", stateReader.BlockChainGetBlock)
 	stateReader.Register("Neo.Blockchain.GetTransaction", stateReader.BlockChainGetTransaction)
@@ -157,7 +157,7 @@ func (s *StateReader) BlockChainGetHeight(e *avm.ExecutionEngine) (bool, error) 
 	if ledger.DefaultLedger == nil {
 		i = 0
 	} else {
-		i = ledger.DefaultLedger.Store.GetHeight()
+		i = ledger.DefaultLedger.Store.GetBlockHeight()
 	}
 	avm.PushData(e, i)
 	return true, nil
@@ -174,7 +174,7 @@ func (s *StateReader) BlockChainGetHeader(e *avm.ExecutionEngine) (bool, error) 
 		b := new(big.Int)
 		height := uint32(b.SetBytes(common.ToArrayReverse(data)).Int64())
 		if ledger.DefaultLedger != nil {
-			hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
+			hash, err := ledger.DefaultLedger.Store.GetBlockHashByHeight(height)
 			if err != nil {
 				return false, err
 			}
@@ -206,7 +206,7 @@ func (s *StateReader) BlockChainGetBlock(e *avm.ExecutionEngine) (bool, error) {
 		b := new(big.Int)
 		height := uint32(b.SetBytes(common.ToArrayReverse(data)).Int64())
 		if ledger.DefaultLedger != nil {
-			hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
+			hash, err := ledger.DefaultLedger.Store.GetBlockHashByHeight(height)
 			if err != nil {
 				return false, err
 			}

@@ -1,34 +1,34 @@
 package states
 
 import (
-	"nkn-core/common"
-	"nkn-core/crypto"
-	"io"
-	"nkn-core/common/serialization"
-	. "nkn-core/errors"
 	"bytes"
+	"io"
+	"nkn-core/common"
+	"nkn-core/common/serialization"
 	"nkn-core/core/asset"
+	"nkn-core/crypto"
+	. "nkn-core/errors"
 )
 
 type AssetState struct {
 	StateBase
-	AssetId common.Uint256
-	AssetType asset.AssetType
-	Name string
-	Amount common.Fixed64
-	Available common.Fixed64
-	Precision byte
-	FeeMode byte
-	Fee common.Fixed64
+	AssetId    common.Uint256
+	AssetType  asset.AssetType
+	Name       string
+	Amount     common.Fixed64
+	Available  common.Fixed64
+	Precision  byte
+	FeeMode    byte
+	Fee        common.Fixed64
 	FeeAddress *common.Uint160
-	Owner *crypto.PubKey
-	Admin common.Uint160
-	Issuer common.Uint160
+	Owner      *crypto.PubKey
+	Admin      common.Uint160
+	Issuer     common.Uint160
 	Expiration uint32
-	IsFrozen bool
+	IsFrozen   bool
 }
 
-func(assetState *AssetState)Serialize(w io.Writer) error {
+func (assetState *AssetState) Serialize(w io.Writer) error {
 	assetState.StateBase.Serialize(w)
 	assetState.AssetId.Serialize(w)
 	serialization.WriteVarString(w, assetState.Name)
@@ -46,7 +46,7 @@ func(assetState *AssetState)Serialize(w io.Writer) error {
 	return nil
 }
 
-func(assetState *AssetState)Deserialize(r io.Reader) error {
+func (assetState *AssetState) Deserialize(r io.Reader) error {
 	u256 := new(common.Uint256)
 	u160 := new(common.Uint160)
 	f := new(common.Fixed64)
@@ -58,24 +58,24 @@ func(assetState *AssetState)Deserialize(r io.Reader) error {
 	}
 	assetState.StateBase = *stateBase
 	err = u256.Deserialize(r)
-	if err != nil{
+	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "AssetState AssetId Deserialize fail.")
 	}
 	assetState.AssetId = *u256
 	name, err := serialization.ReadVarString(r)
-	if err != nil{
+	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "AssetState Name Deserialize fail.")
 
 	}
 	assetState.Name = name
 	err = f.Deserialize(r)
-	if err != nil{
+	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "AssetState Amount Deserialize fail.")
 
 	}
 	assetState.Amount = *f
 	err = f.Deserialize(r)
-	if err != nil{
+	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "AssetState Available Deserialize fail.")
 	}
 	assetState.Available = *f
@@ -90,12 +90,12 @@ func(assetState *AssetState)Deserialize(r io.Reader) error {
 	}
 	assetState.FeeMode = feeModes[0]
 	err = f.Deserialize(r)
-	if err != nil{
+	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "AssetState Fee Deserialize fail.")
 	}
 	assetState.Fee = *f
 	err = u160.Deserialize(r)
-	if err != nil{
+	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "AssetState FeeAddress Deserialize fail.")
 	}
 	assetState.FeeAddress = u160
@@ -127,7 +127,7 @@ func(assetState *AssetState)Deserialize(r io.Reader) error {
 	return nil
 }
 
-func(assetState *AssetState) ToArray() []byte {
+func (assetState *AssetState) ToArray() []byte {
 	b := new(bytes.Buffer)
 	assetState.Serialize(b)
 	return b.Bytes()

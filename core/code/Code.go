@@ -4,9 +4,9 @@ import (
 	. "nkn-core/common"
 	. "nkn-core/core/contract"
 )
+
 //ICode is the abstract interface of smart contract code.
 type ICode interface {
-
 	GetCode() []byte
 
 	GetParameterTypes() []ContractParameterType
@@ -14,6 +14,4 @@ type ICode interface {
 	GetReturnTypes() []ContractParameterType
 
 	CodeHash() Uint160
-
 }
-

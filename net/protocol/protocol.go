@@ -1,13 +1,13 @@
 package protocol
 
 import (
+	"bytes"
+	"encoding/binary"
 	"nkn-core/common"
 	"nkn-core/core/ledger"
 	"nkn-core/crypto"
 	. "nkn-core/errors"
 	"nkn-core/events"
-	"bytes"
-	"encoding/binary"
 	"time"
 )
 

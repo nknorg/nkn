@@ -1,9 +1,9 @@
 package program
 
 import (
+	"io"
 	"nkn-core/common/serialization"
 	. "nkn-core/errors"
-	"io"
 )
 
 type Program struct {

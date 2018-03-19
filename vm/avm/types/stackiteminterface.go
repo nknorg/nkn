@@ -13,4 +13,3 @@ type StackItemInterface interface {
 	GetInterface() interfaces.IInteropInterface
 	GetArray() []StackItemInterface
 }
-

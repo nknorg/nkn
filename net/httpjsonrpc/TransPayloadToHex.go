@@ -2,29 +2,29 @@ package httpjsonrpc
 
 import (
 	. "nkn-core/common"
-	"nkn-core/core/ledger/payload"
 	"nkn-core/core/ledger"
+	"nkn-core/core/ledger/payload"
 )
 
 type PayloadInfo interface{}
 
 //implement PayloadInfo define BookKeepingInfo
 type BookKeepingInfo struct {
-	Nonce  uint64
+	Nonce uint64
 }
 
 //implement PayloadInfo define DeployCodeInfo
 type FunctionCodeInfo struct {
 	Code           string
 	ParameterTypes []int
-	ReturnType    int
+	ReturnType     int
 	CodeHash       string
 }
 
 type DeployCodeInfo struct {
 	Code        *FunctionCodeInfo
 	Name        string
-	Version string
+	Version     string
 	Author      string
 	Email       string
 	Description string
