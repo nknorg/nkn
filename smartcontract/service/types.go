@@ -20,7 +20,6 @@ type AssetInfo struct {
 	Name       string
 	Precision  byte
 	AssetType  byte
-	RecordType byte
 }
 
 func GetHeaderInfo(header *ledger.Header) *BlockHead {
@@ -97,6 +96,5 @@ func GetAssetInfo(asset *asset.Asset) *AssetInfo {
 		Name:       asset.Name,
 		Precision:  asset.Precision,
 		AssetType:  byte(asset.AssetType),
-		RecordType: byte(asset.RecordType),
 	}
 }

@@ -46,7 +46,6 @@ func initPageInfo(blockHeight uint32, curNodeType string, ngbrCnt int, ngbrsInfo
 		HttpRestPort:  config.Parameters.HttpRestPort,
 		HttpWsPort:    config.Parameters.HttpWsPort,
 		HttpJsonPort:  config.Parameters.HttpJsonPort,
-		HttpLocalPort: config.Parameters.HttpLocalPort,
 		NodePort:      config.Parameters.NodePort,
 		NodeId:        id, NodeType: curNodeType}, nil
 }

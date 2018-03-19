@@ -36,16 +36,6 @@ func VerifyBlock(block *ledger.Block, ld *ledger.Ledger, completely bool) error 
 
 	//verfiy block's transactions
 	if completely {
-		/*
-			//TODO: NextBookKeeper Check.
-			bookKeeperaddress, err := ledger.GetBookKeeperAddress(ld.Blockchain.GetBookKeepersByTXs(block.Transactions))
-			if err != nil {
-				return errors.New(fmt.Sprintf("GetBookKeeperAddress Failed."))
-			}
-			if block.Blockdata.NextBookKeeper != bookKeeperaddress {
-				return errors.New(fmt.Sprintf("BookKeeper is not validate."))
-			}
-		*/
 		for _, txVerify := range block.Transactions {
 			if errCode := VerifyTransaction(txVerify); errCode != ErrNoError {
 				return errors.New(fmt.Sprintf("VerifyTransaction failed when verifiy block"))
@@ -53,9 +43,6 @@ func VerifyBlock(block *ledger.Block, ld *ledger.Ledger, completely bool) error 
 			if errCode := VerifyTransactionWithLedger(txVerify, ledger.DefaultLedger); errCode != ErrNoError {
 				return errors.New(fmt.Sprintf("VerifyTransactionWithLedger failed when verifiy block"))
 			}
-		}
-		if err := VerifyTransactionWithBlock(block.Transactions); err != nil {
-			return errors.New(fmt.Sprintf("VerifyTransactionWithBlock failed when verifiy block"))
 		}
 	}
 
