@@ -4,7 +4,6 @@ import (
 	"nkn-core/account"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
-	"nkn-core/consensus/dbft"
 	"nkn-core/core/ledger"
 	"nkn-core/core/store/ChainStore"
 	"nkn-core/core/transaction"
@@ -83,13 +82,6 @@ func main() {
 	noder.SyncNodeHeight()
 	noder.WaitForFourPeersStart()
 	noder.WaitForSyncBlkFinish()
-	if protocol.SERVICENODENAME != config.Parameters.NodeType {
-		log.Info("5. Start DBFT Services")
-		dbftServices := dbft.NewDbftService(client, "logdbft", noder)
-		httpjsonrpc.RegistDbftService(dbftServices)
-		go dbftServices.Start()
-		time.Sleep(5 * time.Second)
-	}
 
 	log.Info("--Start the RPC interface")
 	go httpjsonrpc.StartRPCServer()
@@ -101,7 +93,6 @@ func main() {
 
 
 	for {
-		time.Sleep(dbft.GenBlockTime)
 		log.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
 		isNeedNewFile := log.CheckIfNeedNewFile()
 		if isNeedNewFile == true {
