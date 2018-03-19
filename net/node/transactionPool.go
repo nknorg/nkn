@@ -6,7 +6,6 @@ import (
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
 	"nkn-core/core/transaction"
-	"nkn-core/core/transaction/payload"
 	va "nkn-core/core/validation"
 	. "nkn-core/errors"
 	"fmt"
@@ -78,7 +77,6 @@ func (this *TXNPool) GetTxnPool(byCount bool) map[common.Uint256]*transaction.Tr
 func (this *TXNPool) CleanSubmittedTransactions(block *ledger.Block) error {
 	this.cleanTransactionList(block.Transactions)
 	this.cleanUTXOList(block.Transactions)
-	this.cleanIssueSummary(block.Transactions)
 	return nil
 }
 
@@ -97,12 +95,6 @@ func (this *TXNPool) verifyTransactionWithTxnPool(txn *transaction.Transaction) 
 		log.Info(fmt.Sprintf("txn=%x duplicateTxn UTXO occurs with txn in pool=%x,keep the latest one.", txn.Hash(), duplicateTxn.Hash()))
 		this.removeTransaction(duplicateTxn)
 	}
-	//check issue transaction weather occur exceed issue range.
-	if ok := this.summaryAssetIssueAmount(txn); !ok {
-		log.Info(fmt.Sprintf("Check summary Asset Issue Amount failed with txn=%x", txn.Hash()))
-		this.removeTransaction(txn)
-		return false
-	}
 	return true
 }
 
@@ -118,10 +110,6 @@ func (this *TXNPool) removeTransaction(txn *transaction.Transaction) {
 	}
 	for UTXOTxInput, _ := range result {
 		this.delInputUTXOList(UTXOTxInput)
-	}
-	//3.remove From Asset Issue Summary map
-	if txn.TxType != transaction.IssueAsset {
-		return
 	}
 	transactionResult := txn.GetMergedAssetIDValueFromOutputs()
 	for k, delta := range transactionResult {
@@ -153,49 +141,6 @@ func (this *TXNPool) cleanUTXOList(txs []*transaction.Transaction) {
 			this.delInputUTXOList(Utxoinput)
 		}
 	}
-}
-
-//check and summary to issue amount Pool
-func (this *TXNPool) summaryAssetIssueAmount(txn *transaction.Transaction) bool {
-	if txn.TxType != transaction.IssueAsset {
-		return true
-	}
-	transactionResult := txn.GetMergedAssetIDValueFromOutputs()
-	for k, delta := range transactionResult {
-		//update the amount in txnPool
-		this.incrAssetIssueAmountSummary(k, delta)
-
-		//Check weather occur exceed the amount when RegisterAsseted
-		//1. Get the Asset amount when RegisterAsseted.
-		txn, err := transaction.TxStore.GetTransaction(k)
-		if err != nil {
-			return false
-		}
-		if txn.TxType != transaction.RegisterAsset {
-			return false
-		}
-		AssetReg := txn.Payload.(*payload.RegisterAsset)
-
-		//2. Get the amount has been issued of this assetID
-		var quantity_issued common.Fixed64
-		if AssetReg.Amount < common.Fixed64(0) {
-			continue
-		} else {
-			quantity_issued, err = transaction.TxStore.GetQuantityIssued(k)
-			if err != nil {
-				return false
-			}
-		}
-
-		//3. calc weather out off the amount when Registed.
-		//AssetReg.Amount : amount when RegisterAsset of this assedID
-		//quantity_issued : amount has been issued of this assedID
-		//txnPool.issueSummary[k] : amount in transactionPool of this assedID
-		if AssetReg.Amount-quantity_issued < this.getAssetIssueAmount(k) {
-			return false
-		}
-	}
-	return true
 }
 
 // clean the trasaction Pool with committed transactions.
@@ -305,21 +250,4 @@ func (this *TXNPool) decrAssetIssueAmountSummary(assetId common.Uint256, delta c
 		amount = common.Fixed64(0)
 	}
 	this.issueSummary[assetId] = amount
-}
-
-func (this *TXNPool) cleanIssueSummary(txs []*transaction.Transaction) {
-	for _, v := range txs {
-		if v.TxType == transaction.IssueAsset {
-			transactionResult := v.GetMergedAssetIDValueFromOutputs()
-			for k, delta := range transactionResult {
-				this.decrAssetIssueAmountSummary(k, delta)
-			}
-		}
-	}
-}
-
-func (this *TXNPool) getAssetIssueAmount(assetId common.Uint256) common.Fixed64 {
-	this.RLock()
-	defer this.RUnlock()
-	return this.issueSummary[assetId]
 }

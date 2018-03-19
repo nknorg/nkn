@@ -4,7 +4,6 @@ import (
 	. "nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/common/serialization"
-	"nkn-core/core/contract"
 	"nkn-core/core/contract/program"
 	sig "nkn-core/core/signature"
 	"nkn-core/core/transaction/payload"
@@ -12,7 +11,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"errors"
-	"fmt"
 	"io"
 	"sort"
 )
@@ -23,15 +21,9 @@ type TransactionType byte
 
 const (
 	BookKeeping    TransactionType = 0x00
-	IssueAsset     TransactionType = 0x01
-	BookKeeper     TransactionType = 0x02
-	PrivacyPayload TransactionType = 0x20
-	RegisterAsset  TransactionType = 0x40
-	TransferAsset  TransactionType = 0x80
-	Record         TransactionType = 0x81
-	DeployCode     TransactionType = 0xd0
-	InvokeCode     TransactionType = 0xd1
-	DataFile       TransactionType = 0x12
+	TransferAsset  TransactionType = 0x01
+	DeployCode     TransactionType = 0x02
+	InvokeCode     TransactionType = 0x03
 )
 
 //Payload define the func for loading the payload data
@@ -57,14 +49,8 @@ type Transaction struct {
 	Payload        Payload
 	Attributes     []*TxAttribute
 	UTXOInputs     []*UTXOTxInput
-	BalanceInputs  []*BalanceTxInput
 	Outputs        []*TxOutput
 	Programs       []*program.Program
-
-	//Inputs/Outputs map base on Asset (needn't serialize)
-	AssetOutputs      map[Uint256][]*TxOutput
-	AssetInputAmount  map[Uint256]Fixed64
-	AssetOutputAmount map[Uint256]Fixed64
 
 	hash *Uint256
 }
@@ -189,26 +175,15 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	//payload
 	//tx.Payload.Deserialize(r)
 	switch tx.TxType {
-	case RegisterAsset:
-		tx.Payload = new(payload.RegisterAsset)
-	case IssueAsset:
-		tx.Payload = new(payload.IssueAsset)
-	case TransferAsset:
-		tx.Payload = new(payload.TransferAsset)
 	case BookKeeping:
 		tx.Payload = new(payload.BookKeeping)
-	case Record:
-		tx.Payload = new(payload.Record)
-	case BookKeeper:
-		tx.Payload = new(payload.BookKeeper)
-	case PrivacyPayload:
-		tx.Payload = new(payload.PrivacyPayload)
+	case TransferAsset:
+		tx.Payload = new(payload.TransferAsset)
 	case DeployCode:
 		tx.Payload = new(payload.DeployCode)
 	case InvokeCode:
 		tx.Payload = new(payload.InvokeCode)
-	case DataFile:
-		tx.Payload = new(payload.DataFile)
+
 	default:
 		return errors.New("[Transaction],invalide transaction type.")
 	}
@@ -292,81 +267,11 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		}
 	}
 	switch tx.TxType {
-	case RegisterAsset:
-		issuer := tx.Payload.(*payload.RegisterAsset).Issuer
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
-
-		astHash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, astHash)
-	case IssueAsset:
-		result := tx.GetMergedAssetIDValueFromOutputs()
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetTransactionResults failed.")
-		}
-		for k := range result {
-			tx, err := TxStore.GetTransaction(k)
-			if err != nil {
-				return nil, NewDetailErr(err, ErrNoCode, fmt.Sprintf("[Transaction], GetTransaction failed With AssetID:=%x", k))
-			}
-			if tx.TxType != RegisterAsset {
-				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], Transaction Type ileage With AssetID:=%x", k))
-			}
-
-			switch v1 := tx.Payload.(type) {
-			case *payload.RegisterAsset:
-				hashs = append(hashs, v1.Controller)
-			default:
-				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], payload is illegal", k))
-			}
-		}
-	case DataFile:
-		issuer := tx.Payload.(*payload.DataFile).Issuer
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
-
-		astHash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, astHash)
 	case TransferAsset:
-	case Record:
 	case DeployCode:
 	case InvokeCode:
 		issuer := tx.Payload.(*payload.InvokeCode).ProgramHash
 		hashs = append(hashs, issuer)
-	case BookKeeper:
-		issuer := tx.Payload.(*payload.BookKeeper).Issuer
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction - BookKeeper], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
-
-		astHash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction - BookKeeper], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, astHash)
-	case PrivacyPayload:
-		issuer := tx.Payload.(*payload.PrivacyPayload).EncryptAttr.(*payload.EcdhAes256).FromPubkey
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
-
-		astHash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, astHash)
 	default:
 	}
 	//remove dupilicated hashes
@@ -433,9 +338,6 @@ func (tx *Transaction) Verify() error {
 }
 
 func (tx *Transaction) GetReference() (map[*UTXOTxInput]*TxOutput, error) {
-	if tx.TxType == RegisterAsset {
-		return nil, nil
-	}
 	//UTXO input /  Outputs
 	reference := make(map[*UTXOTxInput]*TxOutput)
 	// Key index，v UTXOInput

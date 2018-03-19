@@ -1,7 +1,6 @@
 package httpjsonrpc
 
 import (
-	"nkn-core/account"
 	. "nkn-core/common"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
@@ -9,13 +8,10 @@ import (
 	tx "nkn-core/core/transaction"
 	. "nkn-core/errors"
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
-	"strconv"
 )
 
 const (
@@ -46,15 +42,6 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	}
 
 	n = 0
-	trans.BalanceInputs = make([]BalanceTxInputInfo, len(ptx.BalanceInputs))
-	for _, v := range ptx.BalanceInputs {
-		trans.BalanceInputs[n].AssetID = ToHexString(v.AssetID.ToArray())
-		trans.BalanceInputs[n].Value = v.Value
-		trans.BalanceInputs[n].ProgramHash = ToHexString(v.ProgramHash.ToArray())
-		n++
-	}
-
-	n = 0
 	trans.Outputs = make([]TxoutputInfo, len(ptx.Outputs))
 	for _, v := range ptx.Outputs {
 		trans.Outputs[n].AssetID = ToHexString(v.AssetID.ToArray())
@@ -69,35 +56,6 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 		trans.Programs[n].Code = ToHexString(v.Code)
 		trans.Programs[n].Parameter = ToHexString(v.Parameter)
 		n++
-	}
-
-	n = 0
-	trans.AssetOutputs = make([]TxoutputMap, len(ptx.AssetOutputs))
-	for k, v := range ptx.AssetOutputs {
-		trans.AssetOutputs[n].Key = k
-		trans.AssetOutputs[n].Txout = make([]TxoutputInfo, len(v))
-		for m := 0; m < len(v); m++ {
-			trans.AssetOutputs[n].Txout[m].AssetID = ToHexString(v[m].AssetID.ToArray())
-			trans.AssetOutputs[n].Txout[m].Value = v[m].Value
-			trans.AssetOutputs[n].Txout[m].ProgramHash = ToHexString(v[m].ProgramHash.ToArray())
-		}
-		n += 1
-	}
-
-	n = 0
-	trans.AssetInputAmount = make([]AmountMap, len(ptx.AssetInputAmount))
-	for k, v := range ptx.AssetInputAmount {
-		trans.AssetInputAmount[n].Key = k
-		trans.AssetInputAmount[n].Value = v
-		n += 1
-	}
-
-	n = 0
-	trans.AssetOutputAmount = make([]AmountMap, len(ptx.AssetOutputAmount))
-	for k, v := range ptx.AssetOutputAmount {
-		trans.AssetInputAmount[n].Key = k
-		trans.AssetInputAmount[n].Value = v
-		n += 1
 	}
 
 	mhash := ptx.Hash()
@@ -277,107 +235,6 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 	return RpcResult(ToHexString(hash.ToArray()))
 }
 
-func getUnspendOutput(params []interface{}) map[string]interface{} {
-	if len(params) < 2 {
-		return RpcResultNil
-	}
-	var programHash Uint160
-	var assetHash Uint256
-	switch params[0].(type) {
-	case string:
-		str := params[0].(string)
-		hex, err := hex.DecodeString(str)
-		if err != nil {
-			return RpcResultInvalidParameter
-		}
-		if err := programHash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return RpcResultInvalidHash
-		}
-	default:
-		return RpcResultInvalidParameter
-	}
-
-	switch params[1].(type) {
-	case string:
-		str := params[1].(string)
-		hex, err := hex.DecodeString(str)
-		if err != nil {
-			return RpcResultInvalidParameter
-		}
-		if err := assetHash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return RpcResultInvalidHash
-		}
-	default:
-		return RpcResultInvalidParameter
-	}
-	type TxOutputInfo struct {
-		AssetID     string
-		Value       int64
-		ProgramHash string
-	}
-	outputs := make(map[string]*TxOutputInfo)
-	height := ledger.DefaultLedger.GetLocalBlockChainHeight()
-	var i uint32
-	// construct global UTXO table
-	for i = 0; i <= height; i++ {
-		block, err := ledger.DefaultLedger.GetBlockWithHeight(i)
-		if err != nil {
-			return RpcResultInternalError
-		}
-		// skip the bookkeeping transaction
-		for _, t := range block.Transactions[1:] {
-			// skip the register transaction
-			if t.TxType == tx.RegisterAsset {
-				continue
-			}
-			txHash := t.Hash()
-			txHashHex := ToHexString(txHash.ToArray())
-			for i, output := range t.Outputs {
-				if output.AssetID.CompareTo(assetHash) == 0 &&
-					output.ProgramHash.CompareTo(programHash) == 0 {
-					key := txHashHex + ":" + strconv.Itoa(i)
-					asset := ToHexString(output.AssetID.ToArray())
-					pHash := ToHexString(output.ProgramHash.ToArray())
-					value := int64(output.Value)
-					info := &TxOutputInfo{
-						asset,
-						value,
-						pHash,
-					}
-					outputs[key] = info
-				}
-			}
-		}
-	}
-	// delete spent output from global UTXO table
-	height = ledger.DefaultLedger.GetLocalBlockChainHeight()
-	for i = 0; i <= height; i++ {
-		block, err := ledger.DefaultLedger.GetBlockWithHeight(i)
-		if err != nil {
-			return RpcResultInternalError
-		}
-		// skip the bookkeeping transaction
-		for _, t := range block.Transactions[1:] {
-			// skip the register transaction
-			if t.TxType == tx.RegisterAsset {
-				continue
-			}
-			for _, input := range t.UTXOInputs {
-				refer := ToHexString(input.ReferTxID.ToArray())
-				index := strconv.Itoa(int(input.ReferTxOutputIndex))
-				key := refer + ":" + index
-				delete(outputs, key)
-			}
-		}
-	}
-	return RpcResult(outputs)
-}
-
-func getTxout(params []interface{}) map[string]interface{} {
-	//TODO
-	return RpcResultUnsupported
-}
-
 // A JSON example for submitblock method as following:
 //   {"jsonrpc": "2.0", "method": "submitblock", "params": ["raw block in hex"], "id": 0}
 func submitBlock(params []interface{}) map[string]interface{} {
@@ -425,60 +282,6 @@ func getNodeState(params []interface{}) map[string]interface{} {
 	return RpcResult(n)
 }
 
-func startConsensus(params []interface{}) map[string]interface{} {
-	if err := dBFT.Start(); err != nil {
-		return RpcResultFailed
-	}
-	return RpcResultSuccess
-}
-
-func stopConsensus(params []interface{}) map[string]interface{} {
-	if err := dBFT.Halt(); err != nil {
-		return RpcResultFailed
-	}
-	return RpcResultSuccess
-}
-
-func sendSampleTransaction(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return RpcResultNil
-	}
-	var txType string
-	switch params[0].(type) {
-	case string:
-		txType = params[0].(string)
-	default:
-		return RpcResultInvalidParameter
-	}
-
-	issuer, err := account.NewAccount()
-	if err != nil {
-		return RpcResult("Failed to create account")
-	}
-	admin := issuer
-
-	rbuf := make([]byte, RANDBYTELEN)
-	rand.Read(rbuf)
-	switch string(txType) {
-	case "perf":
-		num := 1
-		if len(params) == 2 {
-			switch params[1].(type) {
-			case float64:
-				num = int(params[1].(float64))
-			}
-		}
-		for i := 0; i < num; i++ {
-			regTx := NewRegTx(ToHexString(rbuf), i, admin, issuer)
-			SignTx(admin, regTx)
-			VerifyAndSendTx(regTx)
-		}
-		return RpcResult(fmt.Sprintf("%d transaction(s) was sent", num))
-	default:
-		return RpcResult("Invalid transacion type")
-	}
-}
-
 func setDebugInfo(params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
 		return RpcResultInvalidParameter
@@ -497,126 +300,4 @@ func setDebugInfo(params []interface{}) map[string]interface{} {
 
 func getVersion(params []interface{}) map[string]interface{} {
 	return RpcResult(config.Version)
-}
-
-func uploadDataFile(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return RpcResultNil
-	}
-
-	rbuf := make([]byte, 4)
-	rand.Read(rbuf)
-	tmpname := hex.EncodeToString(rbuf)
-
-	str := params[0].(string)
-
-	data, err := base64.StdEncoding.DecodeString(str)
-	if err != nil {
-		return RpcResultInvalidParameter
-	}
-	f, err := os.OpenFile(tmpname, os.O_WRONLY|os.O_CREATE, 0664)
-	if err != nil {
-		return RpcResultIOError
-	}
-	defer f.Close()
-	f.Write(data)
-
-	refpath, err := AddFileIPFS(tmpname, true)
-	if err != nil {
-		return RpcResultAPIError
-	}
-
-	return RpcResult(refpath)
-
-}
-
-func regDataFile(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return RpcResultNil
-	}
-	var hash Uint256
-	switch params[0].(type) {
-	case string:
-		str := params[0].(string)
-		hex, err := hex.DecodeString(str)
-		if err != nil {
-			return RpcResultInvalidParameter
-		}
-		var txn tx.Transaction
-		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
-			return RpcResultInvalidTransaction
-		}
-
-		hash = txn.Hash()
-		if errCode := VerifyAndSendTx(&txn); errCode != ErrNoError {
-			return RpcResultInternalError
-		}
-	default:
-		return RpcResultInvalidParameter
-	}
-	return RpcResult(ToHexString(hash.ToArray()))
-}
-
-func catDataRecord(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return RpcResultNil
-	}
-	switch params[0].(type) {
-	case string:
-		str := params[0].(string)
-		b, err := hex.DecodeString(str)
-		if err != nil {
-			return RpcResultInvalidParameter
-		}
-		var hash Uint256
-		err = hash.Deserialize(bytes.NewReader(b))
-		if err != nil {
-			return RpcResultInvalidTransaction
-		}
-		tx, err := ledger.DefaultLedger.Store.GetTransaction(hash)
-		if err != nil {
-			return RpcResultUnknownTransaction
-		}
-		tran := TransArryByteToHexString(tx)
-		info := tran.Payload.(*DataFileInfo)
-		//ref := string(record.RecordData[:])
-		return RpcResult(info)
-	default:
-		return RpcResultInvalidParameter
-	}
-}
-
-func getDataFile(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return RpcResultNil
-	}
-	switch params[0].(type) {
-	case string:
-		str := params[0].(string)
-		hex, err := hex.DecodeString(str)
-		if err != nil {
-			return RpcResultInvalidParameter
-		}
-		var hash Uint256
-		err = hash.Deserialize(bytes.NewReader(hex))
-		if err != nil {
-			return RpcResultInvalidTransaction
-		}
-		tx, err := ledger.DefaultLedger.Store.GetTransaction(hash)
-		if err != nil {
-			return RpcResultUnknownTransaction
-		}
-
-		tran := TransArryByteToHexString(tx)
-		info := tran.Payload.(*DataFileInfo)
-
-		err = GetFileIPFS(info.IPFSPath, info.Filename)
-		if err != nil {
-			return RpcResultAPIError
-		}
-		//TODO: shoud return download address
-		return RpcResultSuccess
-	default:
-		return RpcResultInvalidParameter
-	}
 }

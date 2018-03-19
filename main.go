@@ -4,7 +4,6 @@ import (
 	"nkn-core/account"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
-	"nkn-core/consensus/dbft"
 	"nkn-core/core/ledger"
 	"nkn-core/core/store/ChainStore"
 	"nkn-core/core/transaction"
@@ -43,11 +42,6 @@ func main() {
 	var noder protocol.Noder
 	log.Trace("Node version: ", config.Version)
 
-	if len(config.Parameters.BookKeepers) < account.DefaultBookKeeperCount {
-		log.Fatal("At least ", account.DefaultBookKeeperCount, " BookKeepers should be set at config.json")
-		os.Exit(1)
-	}
-
 	log.Info("0. Loading the Ledger")
 	ledger.DefaultLedger = new(ledger.Ledger)
 	ledger.DefaultLedger.Store, err = ChainStore.NewLedgerStore()
@@ -71,8 +65,6 @@ func main() {
 		log.Fatal(err)
 		goto ERROR
 	}
-	log.Debug("The Node's PublicKey ", acct.PublicKey)
-	ledger.StandbyBookKeepers = account.GetBookKeepers()
 
 	log.Info("3. BlockChain init")
 	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)
@@ -90,17 +82,9 @@ func main() {
 	noder.SyncNodeHeight()
 	noder.WaitForFourPeersStart()
 	noder.WaitForSyncBlkFinish()
-	if protocol.SERVICENODENAME != config.Parameters.NodeType {
-		log.Info("5. Start DBFT Services")
-		dbftServices := dbft.NewDbftService(client, "logdbft", noder)
-		httpjsonrpc.RegistDbftService(dbftServices)
-		go dbftServices.Start()
-		time.Sleep(5 * time.Second)
-	}
 
 	log.Info("--Start the RPC interface")
 	go httpjsonrpc.StartRPCServer()
-	go httpjsonrpc.StartLocalServer()
 	go httprestful.StartServer(noder)
 	go httpwebsocket.StartServer(noder)
 	if config.Parameters.HttpInfoStart {
@@ -109,7 +93,6 @@ func main() {
 
 
 	for {
-		time.Sleep(dbft.GenBlockTime)
 		log.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
 		isNeedNewFile := log.CheckIfNeedNewFile()
 		if isNeedNewFile == true {

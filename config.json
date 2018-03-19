@@ -3,19 +3,29 @@
     "Magic": 879768,
     "Version": 35,
     "SeedList": [
-      "127.0.0.1:10338"
+      ""
     ],
-    "HttpInfoPort": 10333,
+    "HttpInfoPort": 20333,
     "HttpInfoStart": true,
-    "HttpRestPort": 10334,
-    "HttpWsPort":10335,
-    "HttpJsonPort": 10336,
-    "HttpLocalPort": 10337,
-    "NoticeServerUrl":"",
-    "OauthServerUrl":"",
-    "NodePort": 10338,
+    "HttpRestPort": 20334,
+    "HttpWsPort":20335,
+    "WsHeartbeatInterval":60,
+    "HttpJsonPort": 20336,
+    "NodePort": 20338,
     "PrintLevel": 1,
     "IsTLS": false,
-    "MultiCoreNum": 4
+    "CertPath": "./sample-cert.pem",
+    "KeyPath": "./sample-cert-key.pem",
+    "CAPath": "./sample-ca.pem",
+    "MultiCoreNum": 4,
+    "MaxTransactionInBlock": 10000,
+    "MaxBlockSize": 1000000,
+    "ConsensusType": "pow",
+    "PowConfiguration":{
+      "Switch": "enable",
+      "PayToAddr": "",
+      "ProtocolVersion":1,
+      "AutoMining": false
+    }
   }
 }

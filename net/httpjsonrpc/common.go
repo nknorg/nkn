@@ -3,7 +3,6 @@ package httpjsonrpc
 import (
 	. "nkn-core/common"
 	"nkn-core/common/log"
-	"nkn-core/consensus/dbft"
 	. "nkn-core/core/transaction"
 	tx "nkn-core/core/transaction"
 	. "nkn-core/errors"
@@ -24,7 +23,6 @@ func init() {
 //an instance of the multiplexer
 var mainMux ServeMux
 var node Noder
-var dBFT *dbft.DbftService
 
 //multiplexer that keeps track of every function to be called on specific rpc call
 type ServeMux struct {
@@ -138,12 +136,6 @@ type ConsensusInfo struct {
 func RegistRpcNode(n Noder) {
 	if node == nil {
 		node = n
-	}
-}
-
-func RegistDbftService(d *dbft.DbftService) {
-	if dBFT == nil {
-		dBFT = d
 	}
 }
 
