@@ -12,10 +12,7 @@ import (
 type AssetType byte
 
 const (
-	Currency AssetType = 0x00
-	Share    AssetType = 0x01
-	Invoice  AssetType = 0x10
-	Token    AssetType = 0x11
+	Token    AssetType = 0x00
 )
 
 const (
@@ -23,19 +20,11 @@ const (
 	MinPrecision = 0
 )
 
-type AssetRecordType byte
-
-const (
-	UTXO    AssetRecordType = 0x00
-	Balance AssetRecordType = 0x01
-)
-
 type Asset struct {
 	Name        string
 	Description string
 	Precision   byte
 	AssetType   AssetType
-	RecordType  AssetRecordType
 }
 
 // Serialize is the implement of SignableData interface.
@@ -56,10 +45,7 @@ func (a *Asset) Serialize(w io.Writer) error {
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[Asset], AssetType serialize failed.")
 	}
-	_, err = w.Write([]byte{byte(a.RecordType)})
-	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "[Asset], RecordType serialize failed.")
-	}
+
 	return nil
 }
 
@@ -87,12 +73,6 @@ func (a *Asset) Deserialize(r io.Reader) error {
 		a.AssetType = AssetType(p[0])
 	} else {
 		return NewDetailErr(errors.New("[Asset], AssetType deserialize failed."), ErrNoCode, "")
-	}
-	n, err = r.Read(p)
-	if n > 0 {
-		a.RecordType = AssetRecordType(p[0])
-	} else {
-		return NewDetailErr(errors.New("[Asset], RecordType deserialize failed."), ErrNoCode, "")
 	}
 	return nil
 }

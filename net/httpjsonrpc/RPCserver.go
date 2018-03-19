@@ -28,9 +28,6 @@ func StartRPCServer() {
 	HandleFunc("uploadDataFile", uploadDataFile)
 	HandleFunc("getneighbor", getNeighbor)
 	HandleFunc("getnodestate", getNodeState)
-	HandleFunc("startconsensus", startConsensus)
-	HandleFunc("stopconsensus", stopConsensus)
-	HandleFunc("sendsampletransaction", sendSampleTransaction)
 	HandleFunc("setdebuginfo", setDebugInfo)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(config.Parameters.HttpJsonPort), nil)

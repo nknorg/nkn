@@ -1,7 +1,6 @@
 package httpjsonrpc
 
 import (
-	"nkn-core/account"
 	. "nkn-core/common"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
@@ -423,60 +422,6 @@ func getNodeState(params []interface{}) map[string]interface{} {
 		RxTxnCnt: node.GetRxTxnCnt(),
 	}
 	return RpcResult(n)
-}
-
-func startConsensus(params []interface{}) map[string]interface{} {
-	if err := dBFT.Start(); err != nil {
-		return RpcResultFailed
-	}
-	return RpcResultSuccess
-}
-
-func stopConsensus(params []interface{}) map[string]interface{} {
-	if err := dBFT.Halt(); err != nil {
-		return RpcResultFailed
-	}
-	return RpcResultSuccess
-}
-
-func sendSampleTransaction(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return RpcResultNil
-	}
-	var txType string
-	switch params[0].(type) {
-	case string:
-		txType = params[0].(string)
-	default:
-		return RpcResultInvalidParameter
-	}
-
-	issuer, err := account.NewAccount()
-	if err != nil {
-		return RpcResult("Failed to create account")
-	}
-	admin := issuer
-
-	rbuf := make([]byte, RANDBYTELEN)
-	rand.Read(rbuf)
-	switch string(txType) {
-	case "perf":
-		num := 1
-		if len(params) == 2 {
-			switch params[1].(type) {
-			case float64:
-				num = int(params[1].(float64))
-			}
-		}
-		for i := 0; i < num; i++ {
-			regTx := NewRegTx(ToHexString(rbuf), i, admin, issuer)
-			SignTx(admin, regTx)
-			VerifyAndSendTx(regTx)
-		}
-		return RpcResult(fmt.Sprintf("%d transaction(s) was sent", num))
-	default:
-		return RpcResult("Invalid transacion type")
-	}
 }
 
 func setDebugInfo(params []interface{}) map[string]interface{} {
