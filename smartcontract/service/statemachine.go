@@ -2,22 +2,15 @@ package service
 
 import (
 	"nkn-core/common"
-	"nkn-core/core/asset"
 	"nkn-core/core/code"
 	"nkn-core/core/contract"
-	"nkn-core/core/ledger"
 	"nkn-core/core/store"
-	"nkn-core/core/transaction"
-	"nkn-core/crypto"
 	"nkn-core/errors"
-	. "nkn-core/smartcontract/errors"
 	"nkn-core/smartcontract/states"
 	"nkn-core/smartcontract/storage"
 	"nkn-core/vm/avm"
-	"bytes"
 	"encoding/hex"
 	"fmt"
-	"math"
 )
 
 type StateMachine struct {
@@ -29,91 +22,14 @@ func NewStateMachine(dbCache storage.DBCache, innerCache storage.DBCache) *State
 	var stateMachine StateMachine
 	stateMachine.CloneCache = storage.NewCloneDBCache(innerCache, dbCache)
 	stateMachine.StateReader = NewStateReader()
-	stateMachine.StateReader.Register("Neo.Validator.Register", stateMachine.RegisterValidator)
-	stateMachine.StateReader.Register("Neo.Asset.Create", stateMachine.CreateAsset)
 	stateMachine.StateReader.Register("Neo.Contract.Create", stateMachine.CreateContract)
 	stateMachine.StateReader.Register("Neo.Blockchain.GetContract", stateMachine.GetContract)
-	stateMachine.StateReader.Register("Neo.Asset.Renew", stateMachine.AssetRenew)
 	stateMachine.StateReader.Register("Neo.Storage.Get", stateMachine.StorageGet)
 	stateMachine.StateReader.Register("Neo.Contract.Destroy", stateMachine.ContractDestory)
 	stateMachine.StateReader.Register("Neo.Storage.Put", stateMachine.StoragePut)
 	stateMachine.StateReader.Register("Neo.Storage.Delete", stateMachine.StorageDelete)
 	stateMachine.StateReader.Register("Neo.Contract.GetStorageContext", stateMachine.GetStorageContext)
 	return &stateMachine
-}
-
-func (s *StateMachine) RegisterValidator(engine *avm.ExecutionEngine) (bool, error) {
-	pubkeyByte := avm.PopByteArray(engine)
-	pubkey, err := crypto.DecodePoint(pubkeyByte)
-	if err != nil {
-		return false, err
-	}
-	if result, err := s.StateReader.CheckWitnessPublicKey(engine, pubkey); !result {
-		return result, err
-	}
-	b := new(bytes.Buffer)
-	pubkey.Serialize(b)
-	validatorState, err := s.CloneCache.GetInnerCache().GetOrAdd(store.ST_Validator, b.String(), &states.ValidatorState{PublicKey: pubkey})
-	if err != nil {
-		return false, err
-	}
-	avm.PushData(engine, validatorState)
-	return true, nil
-}
-
-func (s *StateMachine) CreateAsset(engine *avm.ExecutionEngine) (bool, error) {
-	tx := engine.GetCodeContainer().(*transaction.Transaction)
-	assetId := tx.Hash()
-	assertType := asset.AssetType(avm.PopInt(engine))
-	name := avm.PopByteArray(engine)
-	if len(name) > 1024 {
-		return false, ErrAssetNameInvalid
-	}
-	amount := avm.PopBigInt(engine)
-	if amount.Int64() == 0 {
-		return false, ErrAssetAmountInvalid
-	}
-	precision := avm.PopBigInt(engine)
-	if precision.Int64() > 8 {
-		return false, ErrAssetPrecisionInvalid
-	}
-	if amount.Int64()%int64(math.Pow(10, 8-float64(precision.Int64()))) != 0 {
-		return false, ErrAssetAmountInvalid
-	}
-	ownerByte := avm.PopByteArray(engine)
-	owner, err := crypto.DecodePoint(ownerByte)
-	if err != nil {
-		return false, err
-	}
-	if result, err := s.StateReader.CheckWitnessPublicKey(engine, owner); !result {
-		return result, err
-	}
-	adminByte := avm.PopByteArray(engine)
-	admin, err := common.Uint160ParseFromBytes(adminByte)
-	if err != nil {
-		return false, err
-	}
-	issueByte := avm.PopByteArray(engine)
-	issue, err := common.Uint160ParseFromBytes(issueByte)
-	if err != nil {
-		return false, err
-	}
-
-	assetState := &states.AssetState{
-		AssetId:    assetId,
-		AssetType:  asset.AssetType(assertType),
-		Name:       string(name),
-		Amount:     common.Fixed64(amount.Int64()),
-		Precision:  byte(precision.Int64()),
-		Admin:      admin,
-		Issuer:     issue,
-		Owner:      owner,
-		Expiration: ledger.DefaultLedger.Store.GetHeight() + 1 + 2000000,
-		IsFrozen:   false,
-	}
-	s.CloneCache.GetInnerCache().GetWriteSet().Add(store.ST_AssetState, string(assetId.ToArray()), assetState)
-	avm.PushData(engine, assetState)
-	return true, nil
 }
 
 func (s *StateMachine) CreateContract(engine *avm.ExecutionEngine) (bool, error) {
@@ -183,25 +99,6 @@ func (s *StateMachine) GetContract(engine *avm.ExecutionEngine) (bool, error) {
 		return false, err
 	}
 	avm.PushData(engine, item.(*states.ContractState))
-	return true, nil
-}
-
-func (s *StateMachine) AssetRenew(engine *avm.ExecutionEngine) (bool, error) {
-	data := avm.PopInteropInterface(engine)
-	years := avm.PopInt(engine)
-	at := data.(*states.AssetState)
-	height := ledger.DefaultLedger.Store.GetHeight() + 1
-	b := new(bytes.Buffer)
-	at.AssetId.Serialize(b)
-	state, err := s.CloneCache.TryGet(store.ST_AssetState, b.String())
-	if err != nil {
-		return false, err
-	}
-	assetState := state.(*states.AssetState)
-	if assetState.Expiration < height {
-		assetState.Expiration = height
-	}
-	assetState.Expiration += uint32(years) * 2000000
 	return true, nil
 }
 

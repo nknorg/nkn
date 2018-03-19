@@ -20,11 +20,11 @@ type IStateKeyInterface interface {
 
 var (
 	StatesMap = map[store.DataEntryPrefix]IStateValueInterface{
-		store.ST_Contract: new(ContractState),
-		store.ST_Storage: new(StorageItem),
-		store.ST_ACCOUNT: new(AccountState),
-		store.ST_AssetState: new(AssetState),
-		store.ST_Validator: new(ValidatorState),
+		//store.ST_Contract: new(ContractState),
+		//store.ST_Storage: new(StorageItem),
+		//store.ST_ACCOUNT: new(AccountState),
+		//store.ST_AssetState: new(AssetState),
+		//store.ST_Validator: new(ValidatorState),
 	}
 )
 

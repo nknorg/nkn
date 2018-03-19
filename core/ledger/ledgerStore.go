@@ -2,11 +2,8 @@ package ledger
 
 import (
 	. "nkn-core/common"
-	"nkn-core/core/account"
 	. "nkn-core/core/asset"
 	tx "nkn-core/core/transaction"
-	"nkn-core/crypto"
-	"nkn-core/smartcontract/states"
 )
 
 // ILedgerStore provides func with store package.
@@ -30,8 +27,6 @@ type ILedgerStore interface {
 
 	GetContract(codeHash Uint160) ([]byte, error)
 	GetStorage(key []byte) ([]byte, error)
-	GetAccount(programHash Uint160) (*account.AccountState, error)
-	GetAssetState(assetId Uint256) (*states.AssetState, error)
 
 	GetCurrentBlockHash() Uint256
 	GetCurrentHeaderHash() Uint256
@@ -39,10 +34,7 @@ type ILedgerStore interface {
 	GetHeight() uint32
 	GetHeaderHashByHeight(height uint32) Uint256
 
-	GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error)
 	InitLedgerStoreWithGenesisBlock(genesisblock *Block) (uint32, error)
-
-	GetQuantityIssued(assetid Uint256) (Fixed64, error)
 
 	GetUnspent(txid Uint256, index uint16) (*tx.TxOutput, error)
 	ContainsUnspent(txid Uint256, index uint16) (bool, error)

@@ -64,34 +64,7 @@ func GetBlockHash(cmd map[string]interface{}) map[string]interface{} {
 	resp["Result"] = ToHexString(hash.ToArrayReverse())
 	return resp
 }
-func GetTotalIssued(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(Err.SUCCESS)
-	assetid, ok := cmd["Assetid"].(string)
-	if !ok {
-		resp["Error"] = Err.INVALID_PARAMS
-		return resp
-	}
-	var assetHash Uint256
 
-	bys, err := HexToBytesReverse(assetid)
-	if err != nil {
-		resp["Error"] = Err.INVALID_PARAMS
-		return resp
-	}
-	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
-		resp["Error"] = Err.INVALID_PARAMS
-		return resp
-	}
-	amount, err := ledger.DefaultLedger.Store.GetQuantityIssued(assetHash)
-	if err != nil {
-		resp["Error"] = Err.INVALID_PARAMS
-		return resp
-	}
-	val := float64(amount) / math.Pow(10, 8)
-	//valStr := strconv.FormatFloat(val, 'f', -1, 64)
-	resp["Result"] = val
-	return resp
-}
 func GetBlockInfo(block *ledger.Block) BlockInfo {
 	hash := block.Hash()
 	blockHead := &BlockHead{

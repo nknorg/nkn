@@ -31,9 +31,6 @@ func NewStateReader() *StateReader {
 	stateReader.Register("Neo.Blockchain.GetHeader", stateReader.BlockChainGetHeader)
 	stateReader.Register("Neo.Blockchain.GetBlock", stateReader.BlockChainGetBlock)
 	stateReader.Register("Neo.Blockchain.GetTransaction", stateReader.BlockChainGetTransaction)
-	stateReader.Register("Neo.Blockchain.GetAccount", stateReader.BlockChainGetAccount)
-	stateReader.Register("Neo.Blockchain.GetValidators", stateReader.BlockChainGetValidators)
-	stateReader.Register("Neo.Blockchain.GetAsset", stateReader.BlockChainGetAsset)
 
 	stateReader.Register("Neo.Header.GetHash", stateReader.HeaderGetHash)
 	stateReader.Register("Neo.Header.GetVersion", stateReader.HeaderGetVersion)
@@ -245,48 +242,6 @@ func (s *StateReader) BlockChainGetTransaction(e *avm.ExecutionEngine) (bool, er
 	}
 
 	avm.PushData(e, tx)
-	return true, nil
-}
-
-func (s *StateReader) BlockChainGetAccount(e *avm.ExecutionEngine) (bool, error) {
-	d := avm.PopByteArray(e)
-	hash, err := common.Uint160ParseFromBytes(d)
-	if err != nil {
-		return false, err
-	}
-	account, err := ledger.DefaultLedger.Store.GetAccount(hash)
-	avm.PushData(e, account)
-	return true, nil
-}
-
-func (s *StateReader) BlockChainGetAsset(e *avm.ExecutionEngine) (bool, error) {
-	d := avm.PopByteArray(e)
-	hash, err := common.Uint256ParseFromBytes(d)
-	if err != nil {
-		return false, err
-	}
-	assetState, err := ledger.DefaultLedger.Store.GetAssetState(hash)
-	if err != nil {
-		return false, err
-	}
-	avm.PushData(e, assetState)
-	return true, nil
-}
-
-func (s *StateReader) BlockChainGetValidators(e *avm.ExecutionEngine) (bool, error) {
-	bookKeeperList, _, err := ledger.DefaultLedger.Store.GetBookKeeperList()
-	if err != nil {
-		return false, err
-	}
-	pkList := make([]types.StackItemInterface, 0)
-	for _, v := range bookKeeperList {
-		pk, err := v.EncodePoint(true)
-		if err != nil {
-			return false, err
-		}
-		pkList = append(pkList, types.NewByteArray(pk))
-	}
-	avm.PushData(e, pkList)
 	return true, nil
 }
 
