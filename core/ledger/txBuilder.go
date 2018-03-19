@@ -1,10 +1,10 @@
-package transaction
+package ledger
 
 import (
 	"nkn-core/common"
 	"nkn-core/core/code"
 	"nkn-core/core/contract/program"
-	"nkn-core/core/transaction/payload"
+	"nkn-core/core/ledger/payload"
 	"nkn-core/smartcontract/types"
 )
 

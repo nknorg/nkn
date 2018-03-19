@@ -3,7 +3,6 @@ package ledger
 import (
 	. "nkn-core/common"
 	. "nkn-core/core/asset"
-	tx "nkn-core/core/transaction"
 )
 
 // ILedgerStore provides func with store package.
@@ -14,13 +13,13 @@ type ILedgerStore interface {
 	BlockInCache(hash Uint256) bool
 	GetBlockHash(height uint32) (Uint256, error)
 	InitLedgerStore(ledger *Ledger) error
-	IsDoubleSpend(tx *tx.Transaction) bool
+	IsDoubleSpend(tx *Transaction) bool
 
 	//SaveHeader(header *Header,ledger *Ledger) error
 	AddHeaders(headers []BlockHeader, ledger *Ledger) error
 	GetHeader(hash Uint256) (*BlockHeader, error)
 
-	GetTransaction(hash Uint256) (*tx.Transaction, error)
+	GetTransaction(hash Uint256) (*Transaction, error)
 
 	SaveAsset(assetid Uint256, asset *Asset) error
 	GetAsset(hash Uint256) (*Asset, error)
@@ -36,10 +35,10 @@ type ILedgerStore interface {
 
 	InitLedgerStoreWithGenesisBlock(genesisblock *Block) (uint32, error)
 
-	GetUnspent(txid Uint256, index uint16) (*tx.TxOutput, error)
+	GetUnspent(txid Uint256, index uint16) (*TxOutput, error)
 	ContainsUnspent(txid Uint256, index uint16) (bool, error)
-	GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*tx.UTXOUnspent, error)
-	GetUnspentsFromProgramHash(programHash Uint160) (map[Uint256][]*tx.UTXOUnspent, error)
+	GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*UTXOUnspent, error)
+	GetUnspentsFromProgramHash(programHash Uint160) (map[Uint256][]*UTXOUnspent, error)
 	GetAssets() map[Uint256]*Asset
 
 	IsTxHashDuplicate(txhash Uint256) bool

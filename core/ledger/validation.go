@@ -1,4 +1,4 @@
-package validation
+package ledger
 
 import (
 	. "nkn-core/common"

@@ -1,4 +1,4 @@
-package transaction
+package ledger
 
 import (
 	"nkn-core/common"

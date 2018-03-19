@@ -1,18 +1,19 @@
-package transaction
+package ledger
 
 import (
-	. "nkn-core/common"
-	"nkn-core/common/log"
-	"nkn-core/common/serialization"
-	"nkn-core/core/contract/program"
-	sig "nkn-core/core/signature"
-	"nkn-core/core/transaction/payload"
-	. "nkn-core/errors"
 	"bytes"
 	"crypto/sha256"
 	"errors"
 	"io"
 	"sort"
+
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	"nkn-core/common/serialization"
+	"nkn-core/core/contract/program"
+	sig "nkn-core/core/signature"
+	"nkn-core/core/ledger/payload"
+	. "nkn-core/errors"
 )
 
 //for different transaction types with different payload format
@@ -25,6 +26,8 @@ const (
 	DeployCode     TransactionType = 0x02
 	InvokeCode     TransactionType = 0x03
 )
+
+type TransactionResult map[Uint256]Fixed64
 
 //Payload define the func for loading the payload data
 //base on payload type which have different struture
@@ -40,8 +43,6 @@ type Payload interface {
 
 //Transaction is used for carry information or action to Ledger
 //validated transaction will be added to block and updates state correspondingly
-
-var TxStore ILedgerStore
 
 type Transaction struct {
 	TxType         TransactionType
@@ -342,7 +343,7 @@ func (tx *Transaction) GetReference() (map[*UTXOTxInput]*TxOutput, error) {
 	reference := make(map[*UTXOTxInput]*TxOutput)
 	// Key index，v UTXOInput
 	for _, utxo := range tx.UTXOInputs {
-		transaction, err := TxStore.GetTransaction(utxo.ReferTxID)
+		transaction, err := DefaultLedger.Store.GetTransaction(utxo.ReferTxID)
 		if err != nil {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetReference failed.")
 		}
@@ -351,6 +352,7 @@ func (tx *Transaction) GetReference() (map[*UTXOTxInput]*TxOutput, error) {
 	}
 	return reference, nil
 }
+
 func (tx *Transaction) GetTransactionResults() (TransactionResult, error) {
 	result := make(map[Uint256]Fixed64)
 	outputResult := tx.GetMergedAssetIDValueFromOutputs()

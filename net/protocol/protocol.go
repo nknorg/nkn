@@ -3,7 +3,6 @@ package protocol
 import (
 	"nkn-core/common"
 	"nkn-core/core/ledger"
-	"nkn-core/core/transaction"
 	"nkn-core/crypto"
 	. "nkn-core/errors"
 	"nkn-core/events"
@@ -96,8 +95,8 @@ type Noder interface {
 	CloseConn()
 	GetHeight() uint64
 	GetConnectionCnt() uint
-	GetTxnPool(bool) map[common.Uint256]*transaction.Transaction
-	AppendTxnPool(*transaction.Transaction) ErrCode
+	GetTxnPool(bool) map[common.Uint256]*ledger.Transaction
+	AppendTxnPool(*ledger.Transaction) ErrCode
 	ExistedID(id common.Uint256) bool
 	ReqNeighborList()
 	DumpInfo()
@@ -110,7 +109,7 @@ type Noder interface {
 	NodeEstablished(uid uint64) bool
 	GetEvent(eventName string) *events.Event
 	GetNeighborAddrs() ([]NodeAddr, uint64)
-	GetTransaction(hash common.Uint256) *transaction.Transaction
+	GetTransaction(hash common.Uint256) *ledger.Transaction
 	IncRxTxnCnt()
 	GetTxnCnt() uint64
 	GetRxTxnCnt() uint64

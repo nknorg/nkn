@@ -4,7 +4,6 @@ import (
 	"nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
-	"nkn-core/core/transaction"
 	. "nkn-core/errors"
 	. "nkn-core/net/protocol"
 	"bytes"
@@ -24,7 +23,7 @@ type trn struct {
 	msgHdr
 	// TBD
 	//txn []byte
-	txn transaction.Transaction
+	txn ledger.Transaction
 	//hash common.Uint256
 }
 
@@ -92,7 +91,7 @@ func (msg *dataReq) Deserialization(p []byte) error {
 	return nil
 }
 
-func NewTxnFromHash(hash common.Uint256) (*transaction.Transaction, error) {
+func NewTxnFromHash(hash common.Uint256) (*ledger.Transaction, error) {
 	txn, err := ledger.DefaultLedger.GetTransactionWithHash(hash)
 	if err != nil {
 		log.Error("Get transaction with hash error: ", err.Error())
@@ -101,7 +100,7 @@ func NewTxnFromHash(hash common.Uint256) (*transaction.Transaction, error) {
 
 	return txn, nil
 }
-func NewTxn(txn *transaction.Transaction) ([]byte, error) {
+func NewTxn(txn *ledger.Transaction) ([]byte, error) {
 	log.Debug()
 	var msg trn
 

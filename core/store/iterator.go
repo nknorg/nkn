@@ -1,8 +1,19 @@
-package LevelDBStore
+package store
 
 import (
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 )
+
+type IIterator interface {
+	Next() bool
+	Prev() bool
+	First() bool
+	Last() bool
+	Seek(key []byte) bool
+	Key() []byte
+	Value() []byte
+	Release()
+}
 
 type Iterator struct {
 	iter iterator.Iterator

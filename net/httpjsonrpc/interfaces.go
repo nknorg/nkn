@@ -5,7 +5,6 @@ import (
 	"nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
-	tx "nkn-core/core/transaction"
 	. "nkn-core/errors"
 	"bytes"
 	"encoding/hex"
@@ -18,7 +17,7 @@ const (
 	RANDBYTELEN = 4
 )
 
-func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
+func TransArryByteToHexString(ptx *ledger.Transaction) *Transactions {
 
 	trans := new(Transactions)
 	trans.TxType = ptx.TxType
@@ -220,7 +219,7 @@ func sendRawTransaction(params []interface{}) map[string]interface{} {
 		if err != nil {
 			return RpcResultInvalidParameter
 		}
-		var txn tx.Transaction
+		var txn ledger.Transaction
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
 			return RpcResultInvalidTransaction
 		}

@@ -3,8 +3,7 @@ package httpjsonrpc
 import (
 	. "nkn-core/common"
 	"nkn-core/common/log"
-	. "nkn-core/core/transaction"
-	tx "nkn-core/core/transaction"
+	."nkn-core/core/ledger"
 	. "nkn-core/errors"
 	. "nkn-core/net/protocol"
 	"encoding/json"
@@ -112,7 +111,7 @@ type TxInfo struct {
 type TxoutInfo struct {
 	High  uint32
 	Low   uint32
-	Txout tx.TxOutput
+	Txout TxOutput
 }
 
 type NodeInfo struct {
@@ -260,7 +259,7 @@ func Call(address string, method string, id interface{}, params []interface{}) (
 	return body, nil
 }
 
-func VerifyAndSendTx(txn *tx.Transaction) ErrCode {
+func VerifyAndSendTx(txn *Transaction) ErrCode {
 	// if transaction is verified unsucessfully then will not put it into transaction pool
 	if errCode := node.AppendTxnPool(txn); errCode != ErrNoError {
 		log.Warn("Can NOT add the transaction to TxnPool")

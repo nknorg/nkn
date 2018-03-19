@@ -5,8 +5,7 @@ import (
 	"nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
-	"nkn-core/core/store/ChainStore"
-	"nkn-core/core/transaction"
+	"nkn-core/core/store"
 	"nkn-core/crypto"
 	"nkn-core/net"
 	"nkn-core/net/httpjsonrpc"
@@ -40,13 +39,12 @@ func main() {
 	log.Trace("Node version: ", config.Version)
 
 	ledger.DefaultLedger = new(ledger.Ledger)
-	ledger.DefaultLedger.Store, err = ChainStore.NewLedgerStore()
+	ledger.DefaultLedger.Store, err = store.NewLedgerStore()
 	defer ledger.DefaultLedger.Store.Close()
 	if err != nil {
 		log.Fatal("open LedgerStore err:", err)
 	}
 	ledger.DefaultLedger.Store.InitLedgerStore(ledger.DefaultLedger)
-	transaction.TxStore = ledger.DefaultLedger.Store
 	crypto.SetAlg(config.Parameters.EncryptAlg)
 
 	log.Info("3. BlockChain init")

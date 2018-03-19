@@ -2,8 +2,8 @@ package httpjsonrpc
 
 import (
 	. "nkn-core/common"
-	. "nkn-core/core/transaction"
-	"nkn-core/core/transaction/payload"
+	"nkn-core/core/ledger/payload"
+	"nkn-core/core/ledger"
 )
 
 type PayloadInfo interface{}
@@ -36,7 +36,7 @@ type DeployCodeInfo struct {
 type TransferAssetInfo struct {
 }
 
-func TransPayloadToHex(p Payload) PayloadInfo {
+func TransPayloadToHex(p ledger.Payload) PayloadInfo {
 	switch object := p.(type) {
 	case *payload.BookKeeping:
 		obj := new(BookKeepingInfo)

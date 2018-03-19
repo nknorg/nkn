@@ -11,7 +11,6 @@ import (
 	"time"
 
 	. "nkn-core/common"
-	"nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/common/password"
 	"nkn-core/core/contract"
@@ -20,12 +19,10 @@ import (
 	sig "nkn-core/core/signature"
 	"nkn-core/crypto"
 	. "nkn-core/errors"
-	"nkn-core/net/protocol"
 )
 
 const (
-	DefaultBookKeeperCount = 4
-	WalletFileName         = "wallet.dat"
+	WalletFileName = "wallet.dat"
 )
 
 type Client interface {
@@ -502,14 +499,6 @@ func (cl *ClientImpl) AddContract(ct *contract.Contract) error {
 
 	err := cl.SaveContractData(ct)
 	return err
-}
-
-func nodeType(typeName string) int {
-	if "service" == config.Parameters.NodeType {
-		return protocol.SERVICENODE
-	} else {
-		return protocol.VERIFYNODE
-	}
 }
 
 func GetClient() Client {

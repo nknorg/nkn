@@ -5,7 +5,6 @@ import (
 	. "nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
-	"nkn-core/core/transaction"
 	"nkn-core/crypto"
 	"nkn-core/events"
 	. "nkn-core/net/message"
@@ -315,9 +314,9 @@ func (node *node) Xmit(message interface{}) error {
 	var buffer []byte
 	var err error
 	switch message.(type) {
-	case *transaction.Transaction:
+	case *ledger.Transaction:
 		log.Debug("TX transaction message")
-		txn := message.(*transaction.Transaction)
+		txn := message.(*ledger.Transaction)
 		buffer, err = NewTxn(txn)
 		if err != nil {
 			log.Error("Error New Tx message: ", err)

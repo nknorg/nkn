@@ -1,10 +1,8 @@
-package validation
+package ledger
 
 import (
 	"nkn-core/common"
 	"nkn-core/common/log"
-	"nkn-core/core/ledger"
-	tx "nkn-core/core/transaction"
 	. "nkn-core/errors"
 	"errors"
 	"fmt"
@@ -12,7 +10,7 @@ import (
 )
 
 // VerifyTransaction verifys received single transaction
-func VerifyTransaction(Tx *tx.Transaction) ErrCode {
+func VerifyTransaction(Tx *Transaction) ErrCode {
 
 	if err := CheckDuplicateInput(Tx); err != nil {
 		log.Warn("[VerifyTransaction],", err)
@@ -43,7 +41,7 @@ func VerifyTransaction(Tx *tx.Transaction) ErrCode {
 }
 
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
-func VerifyTransactionWithLedger(Tx *tx.Transaction, ledger *ledger.Ledger) ErrCode {
+func VerifyTransactionWithLedger(Tx *Transaction, ledger *Ledger) ErrCode {
 	if IsDoubleSpend(Tx, ledger) {
 		log.Info("[VerifyTransactionWithLedger] IsDoubleSpend check faild.")
 		return ErrDoubleSpend
@@ -56,7 +54,7 @@ func VerifyTransactionWithLedger(Tx *tx.Transaction, ledger *ledger.Ledger) ErrC
 }
 
 //validate the transaction of duplicate UTXO input
-func CheckDuplicateInput(tx *tx.Transaction) error {
+func CheckDuplicateInput(tx *Transaction) error {
 	if len(tx.UTXOInputs) == 0 {
 		return nil
 	}
@@ -70,21 +68,21 @@ func CheckDuplicateInput(tx *tx.Transaction) error {
 	return nil
 }
 
-func IsDoubleSpend(tx *tx.Transaction, ledger *ledger.Ledger) bool {
+func IsDoubleSpend(tx *Transaction, ledger *Ledger) bool {
 	return ledger.IsDoubleSpend(tx)
 }
 
-func CheckAssetPrecision(Tx *tx.Transaction) error {
+func CheckAssetPrecision(Tx *Transaction) error {
 	if len(Tx.Outputs) == 0 {
 		return nil
 	}
-	assetOutputs := make(map[common.Uint256][]*tx.TxOutput, len(Tx.Outputs))
+	assetOutputs := make(map[common.Uint256][]*TxOutput, len(Tx.Outputs))
 
 	for _, v := range Tx.Outputs {
 		assetOutputs[v.AssetID] = append(assetOutputs[v.AssetID], v)
 	}
 	for k, outputs := range assetOutputs {
-		asset, err := ledger.DefaultLedger.GetAsset(k)
+		asset, err := DefaultLedger.GetAsset(k)
 		if err != nil {
 			return errors.New("The asset not exist in local blockchain.")
 		}
@@ -98,7 +96,7 @@ func CheckAssetPrecision(Tx *tx.Transaction) error {
 	return nil
 }
 
-func CheckTransactionBalance(Tx *tx.Transaction) error {
+func CheckTransactionBalance(Tx *Transaction) error {
 	for _, v := range Tx.Outputs {
 		if v.Value <= common.Fixed64(0) {
 			return errors.New("Invalide transaction UTXO output.")
@@ -117,12 +115,12 @@ func CheckTransactionBalance(Tx *tx.Transaction) error {
 	return nil
 }
 
-func CheckAttributeProgram(Tx *tx.Transaction) error {
+func CheckAttributeProgram(Tx *Transaction) error {
 	//TODO: implement CheckAttributeProgram
 	return nil
 }
 
-func CheckTransactionContracts(Tx *tx.Transaction) error {
+func CheckTransactionContracts(Tx *Transaction) error {
 	flag, err := VerifySignableData(Tx)
 	if flag && err == nil {
 		return nil

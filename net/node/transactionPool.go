@@ -5,8 +5,6 @@ import (
 	"nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/core/ledger"
-	"nkn-core/core/transaction"
-	va "nkn-core/core/validation"
 	. "nkn-core/errors"
 	"fmt"
 	"sync"
@@ -15,29 +13,29 @@ import (
 type TXNPool struct {
 	sync.RWMutex
 	txnCnt        uint64                                      // count
-	txnList       map[common.Uint256]*transaction.Transaction // transaction which have been verifyed will put into this map
+	txnList       map[common.Uint256]*ledger.Transaction // transaction which have been verifyed will put into this map
 	issueSummary  map[common.Uint256]common.Fixed64           // transaction which pass the verify will summary the amout to this map
-	inputUTXOList map[string]*transaction.Transaction         // transaction which pass the verify will add the UTXO to this map
+	inputUTXOList map[string]*ledger.Transaction         // transaction which pass the verify will add the UTXO to this map
 }
 
 func (this *TXNPool) init() {
 	this.Lock()
 	defer this.Unlock()
 	this.txnCnt = 0
-	this.inputUTXOList = make(map[string]*transaction.Transaction)
+	this.inputUTXOList = make(map[string]*ledger.Transaction)
 	this.issueSummary = make(map[common.Uint256]common.Fixed64)
-	this.txnList = make(map[common.Uint256]*transaction.Transaction)
+	this.txnList = make(map[common.Uint256]*ledger.Transaction)
 }
 
 //append transaction to txnpool when check ok.
 //1.check transaction. 2.check with ledger(db) 3.check with pool
-func (this *TXNPool) AppendTxnPool(txn *transaction.Transaction) ErrCode {
+func (this *TXNPool) AppendTxnPool(txn *ledger.Transaction) ErrCode {
 	//verify transaction with Concurrency
-	if errCode := va.VerifyTransaction(txn); errCode != ErrNoError {
+	if errCode := ledger.VerifyTransaction(txn); errCode != ErrNoError {
 		log.Info("Transaction verification failed", txn.Hash())
 		return errCode
 	}
-	if errCode := va.VerifyTransactionWithLedger(txn, ledger.DefaultLedger); errCode != ErrNoError {
+	if errCode := ledger.VerifyTransactionWithLedger(txn, ledger.DefaultLedger); errCode != ErrNoError {
 		log.Info("Transaction verification with ledger failed", txn.Hash())
 		return errCode
 	}
@@ -51,7 +49,7 @@ func (this *TXNPool) AppendTxnPool(txn *transaction.Transaction) ErrCode {
 }
 
 //get the transaction in txnpool
-func (this *TXNPool) GetTxnPool(byCount bool) map[common.Uint256]*transaction.Transaction {
+func (this *TXNPool) GetTxnPool(byCount bool) map[common.Uint256]*ledger.Transaction {
 	this.RLock()
 	count := config.Parameters.MaxTxInBlock
 	if count <= 0 {
@@ -61,7 +59,7 @@ func (this *TXNPool) GetTxnPool(byCount bool) map[common.Uint256]*transaction.Tr
 		count = len(this.txnList)
 	}
 	var num int
-	txnMap := make(map[common.Uint256]*transaction.Transaction, count)
+	txnMap := make(map[common.Uint256]*ledger.Transaction, count)
 	for txnId, tx := range this.txnList {
 		txnMap[txnId] = tx
 		num++
@@ -81,14 +79,14 @@ func (this *TXNPool) CleanSubmittedTransactions(block *ledger.Block) error {
 }
 
 //get the transaction by hash
-func (this *TXNPool) GetTransaction(hash common.Uint256) *transaction.Transaction {
+func (this *TXNPool) GetTransaction(hash common.Uint256) *ledger.Transaction {
 	this.RLock()
 	defer this.RUnlock()
 	return this.txnList[hash]
 }
 
 //verify transaction with txnpool
-func (this *TXNPool) verifyTransactionWithTxnPool(txn *transaction.Transaction) bool {
+func (this *TXNPool) verifyTransactionWithTxnPool(txn *ledger.Transaction) bool {
 	//check weather have duplicate UTXO input,if occurs duplicate, just keep the latest txn.
 	ok, duplicateTxn := this.apendToUTXOPool(txn)
 	if !ok && duplicateTxn != nil {
@@ -99,7 +97,7 @@ func (this *TXNPool) verifyTransactionWithTxnPool(txn *transaction.Transaction) 
 }
 
 //remove from associated map
-func (this *TXNPool) removeTransaction(txn *transaction.Transaction) {
+func (this *TXNPool) removeTransaction(txn *ledger.Transaction) {
 	//1.remove from txnList
 	this.deltxnList(txn)
 	//2.remove from UTXO list map
@@ -118,7 +116,7 @@ func (this *TXNPool) removeTransaction(txn *transaction.Transaction) {
 }
 
 //check and add to utxo list pool
-func (this *TXNPool) apendToUTXOPool(txn *transaction.Transaction) (bool, *transaction.Transaction) {
+func (this *TXNPool) apendToUTXOPool(txn *ledger.Transaction) (bool, *ledger.Transaction) {
 	reference, err := txn.GetReference()
 	if err != nil {
 		return false, nil
@@ -134,7 +132,7 @@ func (this *TXNPool) apendToUTXOPool(txn *transaction.Transaction) (bool, *trans
 }
 
 //clean txnpool utxo map
-func (this *TXNPool) cleanUTXOList(txs []*transaction.Transaction) {
+func (this *TXNPool) cleanUTXOList(txs []*ledger.Transaction) {
 	for _, txn := range txs {
 		inputUtxos, _ := txn.GetReference()
 		for Utxoinput, _ := range inputUtxos {
@@ -144,11 +142,11 @@ func (this *TXNPool) cleanUTXOList(txs []*transaction.Transaction) {
 }
 
 // clean the trasaction Pool with committed transactions.
-func (this *TXNPool) cleanTransactionList(txns []*transaction.Transaction) error {
+func (this *TXNPool) cleanTransactionList(txns []*ledger.Transaction) error {
 	cleaned := 0
 	txnsNum := len(txns)
 	for _, txn := range txns {
-		if txn.TxType == transaction.BookKeeping {
+		if txn.TxType == ledger.BookKeeping {
 			txnsNum = txnsNum - 1
 			continue
 		}
@@ -163,7 +161,7 @@ func (this *TXNPool) cleanTransactionList(txns []*transaction.Transaction) error
 	return nil
 }
 
-func (this *TXNPool) addtxnList(txn *transaction.Transaction) bool {
+func (this *TXNPool) addtxnList(txn *ledger.Transaction) bool {
 	this.Lock()
 	defer this.Unlock()
 	txnHash := txn.Hash()
@@ -174,7 +172,7 @@ func (this *TXNPool) addtxnList(txn *transaction.Transaction) bool {
 	return true
 }
 
-func (this *TXNPool) deltxnList(tx *transaction.Transaction) bool {
+func (this *TXNPool) deltxnList(tx *ledger.Transaction) bool {
 	this.Lock()
 	defer this.Unlock()
 	txHash := tx.Hash()
@@ -185,10 +183,10 @@ func (this *TXNPool) deltxnList(tx *transaction.Transaction) bool {
 	return true
 }
 
-func (this *TXNPool) copytxnList() map[common.Uint256]*transaction.Transaction {
+func (this *TXNPool) copytxnList() map[common.Uint256]*ledger.Transaction {
 	this.RLock()
 	defer this.RUnlock()
-	txnMap := make(map[common.Uint256]*transaction.Transaction, len(this.txnList))
+	txnMap := make(map[common.Uint256]*ledger.Transaction, len(this.txnList))
 	for txnId, txn := range this.txnList {
 		txnMap[txnId] = txn
 	}
@@ -201,13 +199,13 @@ func (this *TXNPool) GetTransactionCount() int {
 	return len(this.txnList)
 }
 
-func (this *TXNPool) getInputUTXOList(input *transaction.UTXOTxInput) *transaction.Transaction {
+func (this *TXNPool) getInputUTXOList(input *ledger.UTXOTxInput) *ledger.Transaction {
 	this.RLock()
 	defer this.RUnlock()
 	return this.inputUTXOList[input.ToString()]
 }
 
-func (this *TXNPool) addInputUTXOList(tx *transaction.Transaction, input *transaction.UTXOTxInput) bool {
+func (this *TXNPool) addInputUTXOList(tx *ledger.Transaction, input *ledger.UTXOTxInput) bool {
 	this.Lock()
 	defer this.Unlock()
 	id := input.ToString()
@@ -220,7 +218,7 @@ func (this *TXNPool) addInputUTXOList(tx *transaction.Transaction, input *transa
 	return true
 }
 
-func (this *TXNPool) delInputUTXOList(input *transaction.UTXOTxInput) bool {
+func (this *TXNPool) delInputUTXOList(input *ledger.UTXOTxInput) bool {
 	this.Lock()
 	defer this.Unlock()
 	id := input.ToString()

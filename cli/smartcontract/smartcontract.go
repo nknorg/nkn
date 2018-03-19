@@ -8,7 +8,6 @@ import (
 	"nkn-core/core/code"
 	"nkn-core/core/contract"
 	"nkn-core/core/signature"
-	"nkn-core/core/transaction"
 	httpjsonrpc "nkn-core/net/httpjsonrpc"
 	"nkn-core/smartcontract/types"
 	"bytes"
@@ -19,6 +18,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"nkn-core/core/ledger"
 )
 
 func newContractContextWithoutProgramHashes(data signature.SignableData) *contract.ContractContext {
@@ -50,7 +50,7 @@ func openWallet(name string, passwd string) account.Client {
 	}
 	return wallet
 }
-func signTransaction(signer *account.Account, tx *transaction.Transaction) error {
+func signTransaction(signer *account.Account, tx *ledger.Transaction) error {
 	signature, err := signature.SignBySigner(tx, signer)
 	if err != nil {
 		fmt.Println("SignBySigner failed")
@@ -78,12 +78,12 @@ func makeDeployContractTransaction(signer *account.Account, codeStr string, lang
 	}
 	fc.CodeHash()
 
-	tx, err := transaction.NewDeployTransaction(fc, signer.ProgramHash, "TEST", "1.0", "user", "user@example.com", "test uint", types.LangType(byte(language)))
+	tx, err := ledger.NewDeployTransaction(fc, signer.ProgramHash, "TEST", "1.0", "user", "user@example.com", "test uint", types.LangType(byte(language)))
 	if err != nil {
 		return "Deploy smartcontract fail!", err
 	}
-	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-	tx.Attributes = make([]*transaction.TxAttribute, 0)
+	txAttr := ledger.NewTxAttribute(ledger.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
+	tx.Attributes = make([]*ledger.TxAttribute, 0)
 	tx.Attributes = append(tx.Attributes, &txAttr)
 
 	var buffer bytes.Buffer
@@ -106,12 +106,12 @@ func makeInvokeTransaction(signer *account.Account, paramsStr, codeHashStr strin
 		return "", err
 	}
 
-	tx, err := transaction.NewInvokeTransaction(p, codeHash, transactionContract.ProgramHash)
+	tx, err := ledger.NewInvokeTransaction(p, codeHash, transactionContract.ProgramHash)
 	if err != nil {
 		return "Invoke smartcontract fail!", err
 	}
-	txAttr := transaction.NewTxAttribute(transaction.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
-	tx.Attributes = make([]*transaction.TxAttribute, 0)
+	txAttr := ledger.NewTxAttribute(ledger.Nonce, []byte(strconv.FormatInt(rand.Int63(), 10)))
+	tx.Attributes = make([]*ledger.TxAttribute, 0)
 	tx.Attributes = append(tx.Attributes, &txAttr)
 
 	if err := signTransaction(signer, tx); err != nil {

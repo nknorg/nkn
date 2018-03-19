@@ -1,39 +1,26 @@
-package ChainStore
+package store
 
 import (
-	. "nkn-core/common"
-	"nkn-core/common/log"
-	"nkn-core/common/serialization"
-	"nkn-core/core/account"
-	. "nkn-core/core/asset"
-	"nkn-core/core/contract/program"
-	. "nkn-core/core/ledger"
-	. "nkn-core/core/store"
-	. "nkn-core/core/store/LevelDBStore"
-	tx "nkn-core/core/transaction"
-	"nkn-core/core/transaction/payload"
-	"nkn-core/core/validation"
-	"nkn-core/events"
-	. "nkn-core/net/httprestful/error"
-	"nkn-core/net/httpwebsocket"
-	"nkn-core/smartcontract"
-	"nkn-core/smartcontract/service"
-	"nkn-core/smartcontract/states"
 	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 	"sort"
 	"sync"
 	"time"
+
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	"nkn-core/common/serialization"
+	. "nkn-core/core/asset"
+	"nkn-core/core/contract/program"
+	. "nkn-core/core/ledger"
+	"nkn-core/events"
 )
 
 const (
 	HeaderHashListCount = 2000
 	CleanCacheThreshold = 2
 	TaskChanCap         = 4
-	DEPLOY_TRANSACTION  = "DeployTransaction"
-	INVOKE_TRANSACTION  = "InvokeTransaction"
 )
 
 var (
@@ -296,7 +283,7 @@ func (bd *ChainStore) IsTxHashDuplicate(txhash Uint256) bool {
 	}
 }
 
-func (bd *ChainStore) IsDoubleSpend(tx *tx.Transaction) bool {
+func (bd *ChainStore) IsDoubleSpend(tx *Transaction) bool {
 	if len(tx.UTXOInputs) == 0 {
 		return false
 	}
@@ -395,7 +382,7 @@ func (bd *ChainStore) verifyHeader(header *BlockHeader) bool {
 		return false
 	}
 
-	flag, err := validation.VerifySignableData(header)
+	flag, err := VerifySignableData(header)
 	if flag == false || err != nil {
 		log.Error("[verifyHeader] failed, VerifySignableData failed.")
 		log.Error(err)
@@ -500,10 +487,10 @@ func (bd *ChainStore) GetAsset(hash Uint256) (*Asset, error) {
 	return asset, nil
 }
 
-func (bd *ChainStore) GetTransaction(hash Uint256) (*tx.Transaction, error) {
+func (bd *ChainStore) GetTransaction(hash Uint256) (*Transaction, error) {
 	log.Debugf("GetTransaction Hash: %x\n", hash)
 
-	t := new(tx.Transaction)
+	t := new(Transaction)
 	err := bd.getTx(t, hash)
 
 	if err != nil {
@@ -513,7 +500,7 @@ func (bd *ChainStore) GetTransaction(hash Uint256) (*tx.Transaction, error) {
 	return t, nil
 }
 
-func (bd *ChainStore) getTx(tx *tx.Transaction, hash Uint256) error {
+func (bd *ChainStore) getTx(tx *Transaction, hash Uint256) error {
 	prefix := []byte{byte(DATA_Transaction)}
 	tHash, err_get := bd.st.Get(append(prefix, hash.ToArray()...))
 	if err_get != nil {
@@ -535,7 +522,7 @@ func (bd *ChainStore) getTx(tx *tx.Transaction, hash Uint256) error {
 	return err
 }
 
-func (bd *ChainStore) SaveTransaction(tx *tx.Transaction, height uint32) error {
+func (bd *ChainStore) SaveTransaction(tx *Transaction, height uint32) error {
 	//////////////////////////////////////////////////////////////
 	// generate key with DATA_Transaction prefix
 	txhash := bytes.NewBuffer(nil)
@@ -607,14 +594,12 @@ func (bd *ChainStore) GetBlock(hash Uint256) (*Block, error) {
 }
 
 func (bd *ChainStore) persist(b *Block) error {
-	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
+	utxoUnspents := make(map[Uint160]map[Uint256][]*UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
-	dbCache := NewDBCache(bd)
 
 	///////////////////////////////////////////////////////////////
 	// Get Unspents for every tx
 	unspentPrefix := []byte{byte(IX_Unspent)}
-	accounts := make(map[Uint160]*account.AccountState, 0)
 
 	///////////////////////////////////////////////////////////////
 	// batch write begin
@@ -669,121 +654,24 @@ func (bd *ChainStore) persist(b *Block) error {
 			return err
 		}
 
-		txHash := b.Transactions[i].Hash()
-		switch b.Transactions[i].TxType {
-		case tx.DeployCode:
-			deployCode := b.Transactions[i].Payload.(*payload.DeployCode)
-			codeHash := deployCode.Code.CodeHash()
-			dbCache.GetOrAdd(ST_Contract, string(codeHash.ToArray()), &states.ContractState{
-				Code:        deployCode.Code,
-				Name:        deployCode.Name,
-				Version:     deployCode.CodeVersion,
-				Author:      deployCode.Author,
-				Email:       deployCode.Email,
-				Description: deployCode.Description,
-				Language:    deployCode.Language,
-				ProgramHash: deployCode.ProgramHash,
-			})
-
-			smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
-				Language:     deployCode.Language,
-				Caller:       deployCode.ProgramHash,
-				StateMachine: service.NewStateMachine(dbCache, NewDBCache(bd)),
-				DBCache:      dbCache,
-				Code:         deployCode.Code.Code,
-				Time:         big.NewInt(int64(b.Header.Timestamp)),
-				BlockNumber:  big.NewInt(int64(b.Header.Height)),
-				Gas:          Fixed64(0),
-			})
-
-			if err != nil {
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				return err
-			}
-
-			ret, err := smartContract.DeployContract()
-			if err != nil {
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				continue
-			}
-
-			hash, err := ToCodeHash(ret)
-			if err != nil {
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				return err
-			}
-
-			httpwebsocket.PushResult(txHash, 0, DEPLOY_TRANSACTION, ToHexString(hash.ToArrayReverse()))
-			err = dbCache.Commit()
-			if err != nil {
-				return err
-			}
-		case tx.InvokeCode:
-			invokeCode := b.Transactions[i].Payload.(*payload.InvokeCode)
-			contract, err := bd.GetContract(invokeCode.CodeHash)
-			if err != nil {
-				log.Error("db getcontract err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			state, err := states.GetStateValue(ST_Contract, contract)
-			if err != nil {
-				log.Error("states GetStateValue err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				return err
-			}
-			contractState := state.(*states.ContractState)
-			stateMachine := service.NewStateMachine(dbCache, NewDBCache(bd))
-			smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
-				Language:       contractState.Language,
-				Caller:         invokeCode.ProgramHash,
-				StateMachine:   stateMachine,
-				DBCache:        dbCache,
-				CodeHash:       invokeCode.CodeHash,
-				Input:          invokeCode.Code,
-				SignableData:   b.Transactions[i],
-				CacheCodeTable: NewCacheCodeTable(dbCache),
-				Time:           big.NewInt(int64(b.Header.Timestamp)),
-				BlockNumber:    big.NewInt(int64(b.Header.Height)),
-				Gas:            Fixed64(0),
-				ReturnType:     contractState.Code.ReturnType,
-				ParameterTypes: contractState.Code.ParameterTypes,
-			})
-			if err != nil {
-				log.Error("smartcontract NewSmartContract err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			ret, err := smartContract.InvokeContract()
-			if err != nil {
-				log.Error("smartContract InvokeContract err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			stateMachine.CloneCache.Commit()
-			httpwebsocket.PushResult(txHash, 0, INVOKE_TRANSACTION, ret)
-		}
 		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
 			output := b.Transactions[i].Outputs[index]
 			programHash := output.ProgramHash
 			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] += output.Value
-			}
 
 			// add utxoUnspent
 			if _, ok := utxoUnspents[programHash]; !ok {
-				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+				utxoUnspents[programHash] = make(map[Uint256][]*UTXOUnspent)
 			}
 
 			if _, ok := utxoUnspents[programHash][assetId]; !ok {
 				utxoUnspents[programHash][assetId], err = bd.GetUnspentFromProgramHash(programHash, assetId)
 				if err != nil {
-					utxoUnspents[programHash][assetId] = make([]*tx.UTXOUnspent, 0)
+					utxoUnspents[programHash][assetId] = make([]*UTXOUnspent, 0)
 				}
 			}
 
-			unspent := new(tx.UTXOUnspent)
+			unspent := new(UTXOUnspent)
 			unspent.Txid = b.Transactions[i].Hash()
 			unspent.Index = uint32(index)
 			unspent.Value = output.Value
@@ -801,16 +689,10 @@ func (bd *ChainStore) persist(b *Block) error {
 			output := transaction.Outputs[index]
 			programHash := output.ProgramHash
 			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] -= output.Value
-			}
-			if accounts[programHash].Balances[assetId] < 0 {
-				return errors.New(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
-			}
 
 			// delete utxoUnspent
 			if _, ok := utxoUnspents[programHash]; !ok {
-				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+				utxoUnspents[programHash] = make(map[Uint256][]*UTXOUnspent)
 			}
 
 			if _, ok := utxoUnspents[programHash][assetId]; !ok {
@@ -910,7 +792,6 @@ func (bd *ChainStore) persist(b *Block) error {
 	// BATCH PUT VALUE
 	bd.st.BatchPut(currentBlockKey.Bytes(), currentBlock.Bytes())
 
-	err = dbCache.Commit()
 	if err != nil {
 		return err
 	}
@@ -970,7 +851,7 @@ func (self *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 	}
 
 	if b.Header.Height == headerHeight {
-		err := validation.VerifyBlock(b, ledger, false)
+		err := VerifyBlock(b, ledger, false)
 		if err != nil {
 			log.Error("VerifyBlock error!")
 			return err
@@ -978,7 +859,7 @@ func (self *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 
 		self.taskCh <- &persistHeaderTask{header: b.Header}
 	} else {
-		flag, err := validation.VerifySignableData(b)
+		flag, err := VerifySignableData(b)
 		if flag == false || err != nil {
 			log.Error("VerifyBlock error!")
 			return err
@@ -1070,7 +951,7 @@ func (bd *ChainStore) BlockInCache(hash Uint256) bool {
 	return ok
 }
 
-func (bd *ChainStore) GetUnspent(txid Uint256, index uint16) (*tx.TxOutput, error) {
+func (bd *ChainStore) GetUnspent(txid Uint256, index uint16) (*TxOutput, error) {
 	if ok, _ := bd.ContainsUnspent(txid, index); ok {
 		Tx, err := bd.GetTransaction(txid)
 		if err != nil {
@@ -1166,7 +1047,7 @@ func (bd *ChainStore) IsBlockInStore(hash Uint256) bool {
 	return true
 }
 
-func (bd *ChainStore) GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*tx.UTXOUnspent, error) {
+func (bd *ChainStore) GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*UTXOUnspent, error) {
 
 	prefix := []byte{byte(IX_Unspent_UTXO)}
 
@@ -1186,9 +1067,9 @@ func (bd *ChainStore) GetUnspentFromProgramHash(programHash Uint160, assetid Uin
 	//log.Trace(fmt.Printf("[getUnspentFromProgramHash] listNum: %d, unspentsData: %x\n", listNum, unspentsData ))
 
 	// read unspent list in store
-	unspents := make([]*tx.UTXOUnspent, listNum)
+	unspents := make([]*UTXOUnspent, listNum)
 	for i := 0; i < int(listNum); i++ {
-		uu := new(tx.UTXOUnspent)
+		uu := new(UTXOUnspent)
 		err := uu.Deserialize(r)
 		if err != nil {
 			return nil, err
@@ -1200,7 +1081,7 @@ func (bd *ChainStore) GetUnspentFromProgramHash(programHash Uint160, assetid Uin
 	return unspents, nil
 }
 
-func (bd *ChainStore) saveUnspentWithProgramHash(programHash Uint160, assetid Uint256, unspents []*tx.UTXOUnspent) error {
+func (bd *ChainStore) saveUnspentWithProgramHash(programHash Uint160, assetid Uint256, unspents []*UTXOUnspent) error {
 	prefix := []byte{byte(IX_Unspent_UTXO)}
 
 	key := append(prefix, programHash.ToArray()...)
@@ -1222,8 +1103,8 @@ func (bd *ChainStore) saveUnspentWithProgramHash(programHash Uint160, assetid Ui
 	return nil
 }
 
-func (bd *ChainStore) GetUnspentsFromProgramHash(programHash Uint160) (map[Uint256][]*tx.UTXOUnspent, error) {
-	uxtoUnspents := make(map[Uint256][]*tx.UTXOUnspent)
+func (bd *ChainStore) GetUnspentsFromProgramHash(programHash Uint160) (map[Uint256][]*UTXOUnspent, error) {
+	uxtoUnspents := make(map[Uint256][]*UTXOUnspent)
 
 	prefix := []byte{byte(IX_Unspent_UTXO)}
 	key := append(prefix, programHash.ToArray()...)
@@ -1246,9 +1127,9 @@ func (bd *ChainStore) GetUnspentsFromProgramHash(programHash Uint160) (map[Uint2
 		}
 
 		// read unspent list in store
-		unspents := make([]*tx.UTXOUnspent, listNum)
+		unspents := make([]*UTXOUnspent, listNum)
 		for i := 0; i < int(listNum); i++ {
-			uu := new(tx.UTXOUnspent)
+			uu := new(UTXOUnspent)
 			err := uu.Deserialize(r)
 			if err != nil {
 				return nil, err
