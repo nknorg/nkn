@@ -112,16 +112,15 @@ func getBlock(params []interface{}) map[string]interface{} {
 	}
 
 	blockHead := &BlockHead{
-		Version:          block.Blockdata.Version,
-		PrevBlockHash:    ToHexString(block.Blockdata.PrevBlockHash.ToArray()),
-		TransactionsRoot: ToHexString(block.Blockdata.TransactionsRoot.ToArray()),
-		Timestamp:        block.Blockdata.Timestamp,
-		Height:           block.Blockdata.Height,
-		ConsensusData:    block.Blockdata.ConsensusData,
-		NextBookKeeper:   ToHexString(block.Blockdata.NextBookKeeper.ToArray()),
+		Version:          block.Header.Version,
+		PrevBlockHash:    ToHexString(block.Header.PrevBlockHash.ToArray()),
+		TransactionsRoot: ToHexString(block.Header.TransactionsRoot.ToArray()),
+		Timestamp:        block.Header.Timestamp,
+		Height:           block.Header.Height,
+		Nonce:    block.Header.Nonce,
 		Program: ProgramInfo{
-			Code:      ToHexString(block.Blockdata.Program.Code),
-			Parameter: ToHexString(block.Blockdata.Program.Parameter),
+			Code:      ToHexString(block.Header.Program.Code),
+			Parameter: ToHexString(block.Header.Program.Parameter),
 		},
 		Hash: ToHexString(hash.ToArray()),
 	}

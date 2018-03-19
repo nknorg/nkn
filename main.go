@@ -10,9 +10,6 @@ import (
 	"nkn-core/crypto"
 	"nkn-core/net"
 	"nkn-core/net/httpjsonrpc"
-	"nkn-core/net/httprestful"
-	"nkn-core/net/httpwebsocket"
-	"nkn-core/net/httpnodeinfo"
 	"nkn-core/net/protocol"
 	"os"
 	"runtime"
@@ -42,55 +39,40 @@ func main() {
 	var noder protocol.Noder
 	log.Trace("Node version: ", config.Version)
 
-	log.Info("0. Loading the Ledger")
 	ledger.DefaultLedger = new(ledger.Ledger)
 	ledger.DefaultLedger.Store, err = ChainStore.NewLedgerStore()
 	defer ledger.DefaultLedger.Store.Close()
 	if err != nil {
 		log.Fatal("open LedgerStore err:", err)
-		os.Exit(1)
 	}
 	ledger.DefaultLedger.Store.InitLedgerStore(ledger.DefaultLedger)
 	transaction.TxStore = ledger.DefaultLedger.Store
 	crypto.SetAlg(config.Parameters.EncryptAlg)
 
-	log.Info("1. Open the account")
-	client := account.GetClient()
-	if client == nil {
-		log.Fatal("Can't get local account.")
-		goto ERROR
-	}
-	acct, err = client.GetDefaultAccount()
-	if err != nil {
-		log.Fatal(err)
-		goto ERROR
-	}
-
 	log.Info("3. BlockChain init")
-	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)
+	blockChain, err = ledger.NewBlockchainWithGenesisBlock()
 	if err != nil {
 		log.Fatal(err, "  BlockChain generate failed")
-		goto ERROR
 	}
 	ledger.DefaultLedger.Blockchain = blockChain
 
 	log.Info("4. Start the P2P networks")
-	// Don't need two return value.
+	client := account.GetClient()
+	if client == nil {
+		log.Fatal("Can't get local account.")
+	}
+	acct, err = client.GetDefaultAccount()
+	if err != nil {
+		log.Fatal(err)
+	}
 	noder = net.StartProtocol(acct.PublicKey)
 	httpjsonrpc.RegistRpcNode(noder)
 	time.Sleep(20 * time.Second)
-	noder.SyncNodeHeight()
-	noder.WaitForFourPeersStart()
+	//noder.SyncNodeHeight()
 	noder.WaitForSyncBlkFinish()
 
 	log.Info("--Start the RPC interface")
 	go httpjsonrpc.StartRPCServer()
-	go httprestful.StartServer(noder)
-	go httpwebsocket.StartServer(noder)
-	if config.Parameters.HttpInfoStart {
-		go httpnodeinfo.StartServer(noder)
-	}
-
 
 	for {
 		log.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
@@ -100,7 +82,4 @@ func main() {
 			log.Init(log.Path, os.Stdout)
 		}
 	}
-
-ERROR:
-	os.Exit(1)
 }

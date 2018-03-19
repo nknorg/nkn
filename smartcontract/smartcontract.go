@@ -134,8 +134,8 @@ func (sc *SmartContract) InvokeResult() (interface{}, error) {
 				case *InteropInterface:
 					interop := data.GetInterface()
 					switch interop.(type) {
-					case *ledger.Header:
-						return service.GetHeaderInfo(interop.(*ledger.Header)), nil
+					case *ledger.BlockHeader:
+						return service.GetHeaderInfo(interop.(*ledger.BlockHeader)), nil
 					case *ledger.Block:
 						return service.GetBlockInfo(interop.(*ledger.Block)), nil
 					case *transaction.Transaction:

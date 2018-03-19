@@ -225,8 +225,8 @@ func (cp *ConsensusPayload) Deserialize(r io.Reader) error {
 	pg := new(program.Program)
 	err = pg.Deserialize(r)
 	if err != nil {
-		log.Error("Blockdata item Program Deserialize failed")
-		return NewDetailErr(err, ErrNoCode, "Blockdata item Program Deserialize failed.")
+		log.Error("BlockHeader item Program Deserialize failed")
+		return NewDetailErr(err, ErrNoCode, "BlockHeader item Program Deserialize failed.")
 	}
 	cp.Program = pg
 	return err

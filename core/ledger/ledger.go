@@ -1,22 +1,17 @@
 package ledger
 
 import (
-	"nkn-core/common"
 	. "nkn-core/common"
 	"nkn-core/core/asset"
-	"nkn-core/core/contract"
 	tx "nkn-core/core/transaction"
-	"nkn-core/crypto"
 	. "nkn-core/errors"
 	"errors"
 )
 
 var DefaultLedger *Ledger
-var StandbyBookKeepers []*crypto.PubKey
 
 type Ledger struct {
 	Blockchain *Blockchain
-	State      *State
 	Store      ILedgerStore
 }
 
@@ -32,34 +27,6 @@ func GetDefaultLedger() (*Ledger, error) {
 		return nil, NewDetailErr(errors.New("[Ledger], GetDefaultLedger failed, DefaultLedger not Exist."), ErrNoCode, "")
 	}
 	return DefaultLedger, nil
-}
-
-//Calc the BookKeepers address by bookKeepers pubkey.
-func GetBookKeeperAddress(bookKeepers []*crypto.PubKey) (Uint160, error) {
-	//TODO: GetBookKeeperAddress()
-	//return Uint160{}
-	//CreateSignatureRedeemScript
-	if len(bookKeepers) < 1 {
-		return Uint160{}, NewDetailErr(errors.New("[Ledger] , GetBookKeeperAddress with no bookKeeper"), ErrNoCode, "")
-	}
-	var temp []byte
-	var err error
-	if len(bookKeepers) > 1 {
-		temp, err = contract.CreateMultiSigRedeemScript(len(bookKeepers)-(len(bookKeepers)-1)/3, bookKeepers)
-		if err != nil {
-			return Uint160{}, NewDetailErr(err, ErrNoCode, "[Ledger],GetBookKeeperAddress failed with CreateMultiSigRedeemScript.")
-		}
-	} else {
-		temp, err = contract.CreateSignatureRedeemScript(bookKeepers[0])
-		if err != nil {
-			return Uint160{}, NewDetailErr(err, ErrNoCode, "[Ledger],GetBookKeeperAddress failed with CreateMultiSigRedeemScript.")
-		}
-	}
-	codehash, err := common.ToCodeHash(temp)
-	if err != nil {
-		return Uint160{}, NewDetailErr(err, ErrNoCode, "[Ledger],GetBookKeeperAddress failed with ToCodeHash.")
-	}
-	return codehash, nil
 }
 
 //Get the Asset from store.

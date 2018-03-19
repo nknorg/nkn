@@ -24,7 +24,7 @@ type headersReq struct {
 type blkHeader struct {
 	hdr    msgHdr
 	cnt    uint32
-	blkHdr []ledger.Header
+	blkHdr []ledger.BlockHeader
 }
 
 func NewHeadersReq() ([]byte, error) {
@@ -134,7 +134,7 @@ func (msg *blkHeader) Deserialization(p []byte) error {
 	}
 
 	for i := 0; i < int(msg.cnt); i++ {
-		var headers ledger.Header
+		var headers ledger.BlockHeader
 		err := (&headers).Deserialize(buf)
 		msg.blkHdr = append(msg.blkHdr, headers)
 		if err != nil {
@@ -188,10 +188,10 @@ func (msg blkHeader) Handle(node Noder) error {
 	return nil
 }
 
-func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]ledger.Header, uint32, error) {
+func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]ledger.BlockHeader, uint32, error) {
 	var count uint32 = 0
 	var empty [HASHLEN]byte
-	headers := []ledger.Header{}
+	headers := []ledger.BlockHeader{}
 	var startHeight uint32
 	var stopHeight uint32
 	curHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
@@ -207,7 +207,7 @@ func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]le
 			if err != nil {
 				return nil, 0, err
 			}
-			stopHeight = bkstop.Blockdata.Height
+			stopHeight = bkstop.Height
 			count = curHeight - stopHeight
 			if count > MAXBLKHDRCNT {
 				count = MAXBLKHDRCNT
@@ -218,13 +218,13 @@ func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]le
 		if err != nil {
 			return nil, 0, err
 		}
-		startHeight = bkstart.Blockdata.Height
+		startHeight = bkstart.Height
 		if stopHash != empty {
 			bkstop, err := ledger.DefaultLedger.Store.GetHeader(stopHash)
 			if err != nil {
 				return nil, 0, err
 			}
-			stopHeight = bkstop.Blockdata.Height
+			stopHeight = bkstop.Height
 
 			// avoid unsigned integer underflow
 			if startHeight < stopHeight {
@@ -260,7 +260,7 @@ func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]le
 	return headers, count, nil
 }
 
-func NewHeaders(headers []ledger.Header, count uint32) ([]byte, error) {
+func NewHeaders(headers []ledger.BlockHeader, count uint32) ([]byte, error) {
 	var msg blkHeader
 	msg.cnt = count
 	msg.blkHdr = headers

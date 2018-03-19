@@ -41,7 +41,6 @@ func NewStateReader() *StateReader {
 	stateReader.Register("Neo.Header.GetMerkleRoot", stateReader.HeaderGetMerkleRoot)
 	stateReader.Register("Neo.Header.GetTimestamp", stateReader.HeaderGetTimestamp)
 	stateReader.Register("Neo.Header.GetConsensusData", stateReader.HeaderGetConsensusData)
-	stateReader.Register("Neo.Header.GetNextConsensus", stateReader.HeaderGetNextConsensus)
 
 	stateReader.Register("Neo.Block.GetTransactionCount", stateReader.BlockGetTransactionCount)
 	stateReader.Register("Neo.Block.GetTransactions", stateReader.BlockGetTransactions)
@@ -170,7 +169,7 @@ func (s *StateReader) BlockChainGetHeight(e *avm.ExecutionEngine) (bool, error) 
 func (s *StateReader) BlockChainGetHeader(e *avm.ExecutionEngine) (bool, error) {
 	data := avm.PopByteArray(e)
 	var (
-		header *ledger.Header
+		header *ledger.BlockHeader
 		err    error
 	)
 	l := len(data)
@@ -296,7 +295,7 @@ func (s *StateReader) HeaderGetHash(e *avm.ExecutionEngine) (bool, error) {
 	if d == nil {
 		return false, fmt.Errorf("%v", "Get header error in function headergethash!")
 	}
-	h := d.(*ledger.Header).Blockdata.Hash()
+	h := d.(*ledger.BlockHeader).Hash()
 	avm.PushData(e, h.ToArray())
 	return true, nil
 }
@@ -306,7 +305,7 @@ func (s *StateReader) HeaderGetVersion(e *avm.ExecutionEngine) (bool, error) {
 	if d == nil {
 		return false, fmt.Errorf("%v", "Get header error in function headergetversion")
 	}
-	version := d.(*ledger.Header).Blockdata.Version
+	version := d.(*ledger.BlockHeader).Version
 	avm.PushData(e, version)
 	return true, nil
 }
@@ -316,7 +315,7 @@ func (s *StateReader) HeaderGetPrevHash(e *avm.ExecutionEngine) (bool, error) {
 	if d == nil {
 		return false, fmt.Errorf("%v", "Get header error in function HeaderGetPrevHash")
 	}
-	preHash := d.(*ledger.Header).Blockdata.PrevBlockHash
+	preHash := d.(*ledger.BlockHeader).PrevBlockHash
 	avm.PushData(e, preHash.ToArray())
 	return true, nil
 }
@@ -326,7 +325,7 @@ func (s *StateReader) HeaderGetMerkleRoot(e *avm.ExecutionEngine) (bool, error) 
 	if d == nil {
 		return false, fmt.Errorf("%v", "Get header error in function HeaderGetMerkleRoot")
 	}
-	root := d.(*ledger.Header).Blockdata.TransactionsRoot
+	root := d.(*ledger.BlockHeader).TransactionsRoot
 	avm.PushData(e, root.ToArray())
 	return true, nil
 }
@@ -336,7 +335,7 @@ func (s *StateReader) HeaderGetTimestamp(e *avm.ExecutionEngine) (bool, error) {
 	if d == nil {
 		return false, fmt.Errorf("%v", "Get header error in function HeaderGetTimestamp")
 	}
-	timeStamp := d.(*ledger.Header).Blockdata.Timestamp
+	timeStamp := d.(*ledger.BlockHeader).Timestamp
 	avm.PushData(e, timeStamp)
 	return true, nil
 }
@@ -346,18 +345,8 @@ func (s *StateReader) HeaderGetConsensusData(e *avm.ExecutionEngine) (bool, erro
 	if d == nil {
 		return false, fmt.Errorf("%v", "Get header error in function HeaderGetConsensusData")
 	}
-	consensusData := d.(*ledger.Header).Blockdata.ConsensusData
+	consensusData := d.(*ledger.BlockHeader).Nonce
 	avm.PushData(e, consensusData)
-	return true, nil
-}
-
-func (s *StateReader) HeaderGetNextConsensus(e *avm.ExecutionEngine) (bool, error) {
-	d := avm.PopInteropInterface(e)
-	if d == nil {
-		return false, fmt.Errorf("%v", "Get header error in function HeaderGetNextConsensus")
-	}
-	nextBookKeeper := d.(*ledger.Header).Blockdata.NextBookKeeper
-	avm.PushData(e, nextBookKeeper.ToArray())
 	return true, nil
 }
 

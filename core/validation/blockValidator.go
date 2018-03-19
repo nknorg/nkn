@@ -9,10 +9,10 @@ import (
 )
 
 func VerifyBlock(block *ledger.Block, ld *ledger.Ledger, completely bool) error {
-	if block.Blockdata.Height == 0 {
+	if block.Header.Height == 0 {
 		return nil
 	}
-	err := VerifyBlockData(block.Blockdata, ld)
+	err := VerifyHeader(block.Header, ld)
 	if err != nil {
 		return err
 	}
@@ -26,7 +26,7 @@ func VerifyBlock(block *ledger.Block, ld *ledger.Ledger, completely bool) error 
 		return errors.New(fmt.Sprintf("No Transactions Exist in Block."))
 	}
 	if block.Transactions[0].TxType != tx.BookKeeping {
-		return errors.New(fmt.Sprintf("Blockdata Verify failed first Transacion in block is not BookKeeping type."))
+		return errors.New(fmt.Sprintf("BlockHeader Verify failed first Transacion in block is not BookKeeping type."))
 	}
 	for index, v := range block.Transactions {
 		if v.TxType == tx.BookKeeping && index != 0 {
@@ -49,11 +49,7 @@ func VerifyBlock(block *ledger.Block, ld *ledger.Ledger, completely bool) error 
 	return nil
 }
 
-func VerifyHeader(bd *ledger.Header, ledger *ledger.Ledger) error {
-	return VerifyBlockData(bd.Blockdata, ledger)
-}
-
-func VerifyBlockData(bd *ledger.Blockdata, ledger *ledger.Ledger) error {
+func VerifyHeader(bd *ledger.BlockHeader, ledger *ledger.Ledger) error {
 	if bd.Height == 0 {
 		return nil
 	}
@@ -66,11 +62,11 @@ func VerifyBlockData(bd *ledger.Blockdata, ledger *ledger.Ledger) error {
 		return NewDetailErr(errors.New("[BlockValidator] error"), ErrNoCode, "[BlockValidator], Cannnot find previous block.")
 	}
 
-	if prevHeader.Blockdata.Height+1 != bd.Height {
+	if prevHeader.Height+1 != bd.Height {
 		return NewDetailErr(errors.New("[BlockValidator] error"), ErrNoCode, "[BlockValidator], block height is incorrect.")
 	}
 
-	if prevHeader.Blockdata.Timestamp >= bd.Timestamp {
+	if prevHeader.Timestamp >= bd.Timestamp {
 		return NewDetailErr(errors.New("[BlockValidator] error"), ErrNoCode, "[BlockValidator], block timestamp is incorrect.")
 	}
 

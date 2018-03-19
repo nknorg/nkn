@@ -131,7 +131,6 @@ type Noder interface {
 	RemoveFlightHeight(height uint32)
 	GetLastRXTime() time.Time
 	SetHeight(height uint64)
-	WaitForFourPeersStart()
 	WaitForSyncBlkFinish()
 	GetFlightHeights() []uint32
 	IsAddrInNbrList(addr string) bool

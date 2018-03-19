@@ -95,16 +95,15 @@ func GetTotalIssued(cmd map[string]interface{}) map[string]interface{} {
 func GetBlockInfo(block *ledger.Block) BlockInfo {
 	hash := block.Hash()
 	blockHead := &BlockHead{
-		Version:          block.Blockdata.Version,
-		PrevBlockHash:    ToHexString(block.Blockdata.PrevBlockHash.ToArrayReverse()),
-		TransactionsRoot: ToHexString(block.Blockdata.TransactionsRoot.ToArrayReverse()),
-		Timestamp:        block.Blockdata.Timestamp,
-		Height:           block.Blockdata.Height,
-		ConsensusData:    block.Blockdata.ConsensusData,
-		NextBookKeeper:   ToHexString(block.Blockdata.NextBookKeeper.ToArrayReverse()),
+		Version:          block.Header.Version,
+		PrevBlockHash:    ToHexString(block.Header.PrevBlockHash.ToArrayReverse()),
+		TransactionsRoot: ToHexString(block.Header.TransactionsRoot.ToArrayReverse()),
+		Timestamp:        block.Header.Timestamp,
+		Height:           block.Header.Height,
+		Nonce:    block.Header.Nonce,
 		Program: ProgramInfo{
-			Code:      ToHexString(block.Blockdata.Program.Code),
-			Parameter: ToHexString(block.Blockdata.Program.Parameter),
+			Code:      ToHexString(block.Header.Program.Code),
+			Parameter: ToHexString(block.Header.Program.Parameter),
 		},
 		Hash: ToHexString(hash.ToArrayReverse()),
 	}
@@ -135,7 +134,7 @@ func GetBlockTransactions(block *ledger.Block) interface{} {
 	}
 	b := BlockTransactions{
 		Hash:         ToHexString(hash.ToArrayReverse()),
-		Height:       block.Blockdata.Height,
+		Height:       block.Header.Height,
 		Transactions: trans,
 	}
 	return b

@@ -428,16 +428,6 @@ func (node *node) WaitForSyncBlkFinish() {
 		<-time.After(2 * time.Second)
 	}
 }
-func (node *node) WaitForFourPeersStart() {
-	for {
-		log.Debug("WaitForFourPeersStart...")
-		cnt := node.local.GetNbrNodeCnt()
-		if cnt >= MINCONNCNT {
-			break
-		}
-		<-time.After(2 * time.Second)
-	}
-}
 
 func (node *node) StoreFlightHeight(height uint32) {
 	node.flightHeights = append(node.flightHeights, height)

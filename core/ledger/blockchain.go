@@ -1,13 +1,12 @@
 package ledger
 
 import (
+	"sync"
+
 	. "nkn-core/common"
 	"nkn-core/common/log"
-	tx "nkn-core/core/transaction"
-	"nkn-core/crypto"
 	. "nkn-core/errors"
 	"nkn-core/events"
-	"sync"
 )
 
 type Blockchain struct {
@@ -23,8 +22,8 @@ func NewBlockchain(height uint32) *Blockchain {
 	}
 }
 
-func NewBlockchainWithGenesisBlock(defaultBookKeeper []*crypto.PubKey) (*Blockchain, error) {
-	genesisBlock, err := GenesisBlockInit(defaultBookKeeper)
+func NewBlockchainWithGenesisBlock() (*Blockchain, error) {
+	genesisBlock, err := GenesisBlockInit()
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], NewBlockchainWithGenesisBlock failed.")
 	}
@@ -32,7 +31,7 @@ func NewBlockchainWithGenesisBlock(defaultBookKeeper []*crypto.PubKey) (*Blockch
 	hashx := genesisBlock.Hash()
 	genesisBlock.hash = &hashx
 
-	height, err := DefaultLedger.Store.InitLedgerStoreWithGenesisBlock(genesisBlock, defaultBookKeeper)
+	height, err := DefaultLedger.Store.InitLedgerStoreWithGenesisBlock(genesisBlock)
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], InitLevelDBStoreWithGenesisBlock failed.")
 	}
@@ -53,7 +52,7 @@ func (bc *Blockchain) AddBlock(block *Block) error {
 	return nil
 }
 
-func (bc *Blockchain) GetHeader(hash Uint256) (*Header, error) {
+func (bc *Blockchain) GetHeader(hash Uint256) (*BlockHeader, error) {
 	header, err := DefaultLedger.Store.GetHeader(hash)
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], GetHeader failed.")
@@ -79,20 +78,6 @@ func (bc *Blockchain) ContainsTransaction(hash Uint256) bool {
 		return false
 	}
 	return true
-}
-
-func (bc *Blockchain) GetBookKeepersByTXs(others []*tx.Transaction) []*crypto.PubKey {
-	//TODO: GetBookKeepers()
-	//TODO: Just for TestUse
-
-	return StandbyBookKeepers
-}
-
-func (bc *Blockchain) GetBookKeepers() []*crypto.PubKey {
-	//TODO: GetBookKeepers()
-	//TODO: Just for TestUse
-
-	return StandbyBookKeepers
 }
 
 func (bc *Blockchain) CurrentBlockHash() Uint256 {

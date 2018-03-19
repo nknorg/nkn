@@ -21,7 +21,6 @@ func NewTransferAssetTransaction(inputs []*UTXOTxInput, outputs []*TxOutput) (*T
 	}, nil
 }
 
-
 //initial a new transaction with publish payload
 func NewDeployTransaction(fc *code.FunctionCode, programHash common.Uint160, name, codeversion, author, email, desp string, language types.LangType) (*Transaction, error) {
 	DeployCodePayload := &payload.DeployCode{

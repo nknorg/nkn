@@ -91,8 +91,7 @@ type BlockHead struct {
 	TransactionsRoot string
 	Timestamp        uint32
 	Height           uint32
-	ConsensusData    uint64
-	NextBookKeeper   string
+	Nonce    uint32
 	Program          ProgramInfo
 
 	Hash string

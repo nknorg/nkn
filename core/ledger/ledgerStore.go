@@ -20,8 +20,8 @@ type ILedgerStore interface {
 	IsDoubleSpend(tx *tx.Transaction) bool
 
 	//SaveHeader(header *Header,ledger *Ledger) error
-	AddHeaders(headers []Header, ledger *Ledger) error
-	GetHeader(hash Uint256) (*Header, error)
+	AddHeaders(headers []BlockHeader, ledger *Ledger) error
+	GetHeader(hash Uint256) (*BlockHeader, error)
 
 	GetTransaction(hash Uint256) (*tx.Transaction, error)
 
@@ -40,7 +40,7 @@ type ILedgerStore interface {
 	GetHeaderHashByHeight(height uint32) Uint256
 
 	GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error)
-	InitLedgerStoreWithGenesisBlock(genesisblock *Block, defaultBookKeeper []*crypto.PubKey) (uint32, error)
+	InitLedgerStoreWithGenesisBlock(genesisblock *Block) (uint32, error)
 
 	GetQuantityIssued(assetid Uint256) (Fixed64, error)
 

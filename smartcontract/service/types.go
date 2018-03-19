@@ -17,24 +17,23 @@ type AccountInfo struct {
 }
 
 type AssetInfo struct {
-	Name       string
-	Precision  byte
-	AssetType  byte
+	Name      string
+	Precision byte
+	AssetType byte
 }
 
-func GetHeaderInfo(header *ledger.Header) *BlockHead {
-	h := header.Blockdata.Hash()
+func GetHeaderInfo(header *ledger.BlockHeader) *BlockHead {
+	h := header.Hash()
 	return &BlockHead{
-		Version:          header.Blockdata.Version,
-		PrevBlockHash:    ToHexString(header.Blockdata.PrevBlockHash.ToArrayReverse()),
-		TransactionsRoot: ToHexString(header.Blockdata.TransactionsRoot.ToArrayReverse()),
-		Timestamp:        header.Blockdata.Timestamp,
-		Height:           header.Blockdata.Height,
-		ConsensusData:    header.Blockdata.ConsensusData,
-		NextBookKeeper:   ToHexString(header.Blockdata.NextBookKeeper.ToArrayReverse()),
+		Version:          header.Version,
+		PrevBlockHash:    ToHexString(header.PrevBlockHash.ToArrayReverse()),
+		TransactionsRoot: ToHexString(header.TransactionsRoot.ToArrayReverse()),
+		Timestamp:        header.Timestamp,
+		Height:           header.Height,
+		Nonce:            header.Nonce,
 		Program: ProgramInfo{
-			Code:      ToHexString(header.Blockdata.Program.Code),
-			Parameter: ToHexString(header.Blockdata.Program.Parameter),
+			Code:      ToHexString(header.Program.Code),
+			Parameter: ToHexString(header.Program.Parameter),
 		},
 		Hash: ToHexString(h.ToArrayReverse()),
 	}
@@ -93,8 +92,8 @@ func GetAccountInfo(account *states.AccountState) *AccountInfo {
 
 func GetAssetInfo(asset *asset.Asset) *AssetInfo {
 	return &AssetInfo{
-		Name:       asset.Name,
-		Precision:  asset.Precision,
-		AssetType:  byte(asset.AssetType),
+		Name:      asset.Name,
+		Precision: asset.Precision,
+		AssetType: byte(asset.AssetType),
 	}
 }
