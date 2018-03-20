@@ -162,9 +162,11 @@ func GenesisBlockInit() (*Block, error) {
 		Height: uint32(0),
 	}
 
+	txn := &Transaction{}
+
 	genesisBlock := &Block{
 		Header:       genesisBlockHeader,
-		Transactions: []*Transaction{}, // TODO: add transactions
+		Transactions: []*Transaction{txn}, // TODO: add transactions
 	}
 	txHashes := []Uint256{}
 	for _, tx := range genesisBlock.Transactions {

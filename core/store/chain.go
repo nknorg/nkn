@@ -140,7 +140,6 @@ func (p *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block) (uint3
 	}
 
 	if version[0] == 0x00 {
-		// remove old data
 		p.NewBatch()
 		iter := p.NewIterator(nil)
 		for iter.Next() {
@@ -160,46 +159,20 @@ func (p *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block) (uint3
 		if err != nil {
 			return 0, err
 		}
-
-		// Get Current Block
+		return 0, nil
+	} else {
 		data, err := p.Get([]byte{byte(SYS_CurrentBlock)})
 		if err != nil {
 			return 0, err
 		}
-
 		r := bytes.NewReader(data)
 		var blockHash Uint256
 		blockHash.Deserialize(r)
+		// load current height to memory
 		p.blockHeight, err = serialization.ReadUint32(r)
-		endHeight := p.blockHeight
-
-		startHeight := uint32(0)
-		if endHeight > MinMemoryNodes {
-			startHeight = endHeight - MinMemoryNodes
-		}
-
-		// load node from db to memory
-		for start := startHeight; start <= endHeight; start++ {
-			hash, err := p.GetBlockHashByHeight(start)
-			if err != nil {
-				return 0, err
-			}
-			header, err := p.GetHeader(hash)
-			if err != nil {
-				return 0, err
-			}
-			//node, err := p.ledger.Blockchain.LoadBlockNode(header, &hash)
-			if err != nil {
-				return 0, err
-			}
-
-			// This node is now the end of the best chain.
-			//p.ledger.Blockchain.BestChain = node
-			_ = header
-		}
+		// TODO load others to memory
+		return p.blockHeight, nil
 	}
-
-	return p.blockHeight, nil
 }
 
 func (p *ChainStore) GetBlock(hash Uint256) (*Block, error) {
@@ -219,13 +192,11 @@ func (p *ChainStore) GetBlock(hash Uint256) (*Block, error) {
 		return nil, err
 	}
 
-	// Deserialize block data
 	err = b.FromTrimmedData(r)
 	if err != nil {
 		return nil, err
 	}
 
-	// Deserialize transaction
 	for _, t := range b.Transactions {
 		txn, err := p.GetTransaction(t.Hash())
 		if err != nil {
@@ -605,11 +576,9 @@ func (p *ChainStore) processBlock(b *Block) error {
 	p.saveCurrentBlock(b)
 	p.BatchCommit()
 
-	//ledger.Blockchain.UpdateBestHeight(block.Header.Height)
 	p.mu.Lock()
 	p.blockHeight = b.Header.Height
 	p.mu.Unlock()
-	//DefaultLedger.Blockchain.BCEvents.Notify(events.EventBlockPersistCompleted, b)
 	p.removeHeaderFromCache(b.Header)
 
 	return nil
@@ -624,11 +593,9 @@ func (p *ChainStore) rollbackBlock(b *Block) error {
 	p.rollbackCurrentBlock(b)
 	p.BatchCommit()
 
-	//p.ledger.Blockchain.UpdateBestHeight(b.Blockdata.Height - 1)
 	p.mu.Lock()
 	p.blockHeight = b.Header.Height - 1
 	p.mu.Unlock()
-	//p.ledger.Blockchain.BCEvents.Notify(events.EventRollbackTransaction, b)
 
 	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	. "nkn-core/common"
-	"nkn-core/common/log"
 	. "nkn-core/errors"
 	"nkn-core/events"
 )
@@ -40,12 +39,14 @@ func NewBlockchainWithGenesisBlock() (*Blockchain, error) {
 }
 
 func (bc *Blockchain) AddBlock(block *Block) error {
-	log.Debug()
 	bc.mutex.Lock()
 	defer bc.mutex.Unlock()
 
-	err := bc.SaveBlock(block)
-	if err != nil {
+	if err := VerifyBlock(block, false); err != nil {
+		return err
+	}
+
+	if err := DefaultLedger.Store.SaveBlock(block); err != nil {
 		return err
 	}
 
@@ -60,19 +61,7 @@ func (bc *Blockchain) GetHeader(hash Uint256) (*BlockHeader, error) {
 	return header, nil
 }
 
-func (bc *Blockchain) SaveBlock(block *Block) error {
-	log.Debugf("Save block, block hash %x", block.Hash())
-	err := DefaultLedger.Store.SaveBlock(block)
-	if err != nil {
-		log.Warn("Save block failure , ", err)
-		return err
-	}
-
-	return nil
-}
-
 func (bc *Blockchain) ContainsTransaction(hash Uint256) bool {
-	//TODO: implement error catch
 	_, err := DefaultLedger.Store.GetTransaction(hash)
 	if err != nil {
 		return false
@@ -82,4 +71,8 @@ func (bc *Blockchain) ContainsTransaction(hash Uint256) bool {
 
 func (bc *Blockchain) CurrentBlockHash() Uint256 {
 	return DefaultLedger.Store.GetCurrentBlockHash()
+}
+
+func (bc *Blockchain) CurrentBlockHeight() uint32 {
+	return DefaultLedger.Store.GetBlockHeight()
 }
