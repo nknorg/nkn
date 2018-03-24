@@ -1,6 +1,10 @@
 package ChainStore
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"math/big"
 	. "nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/common/serialization"
@@ -20,10 +24,6 @@ import (
 	"nkn-core/smartcontract"
 	"nkn-core/smartcontract/service"
 	"nkn-core/smartcontract/states"
-	"bytes"
-	"errors"
-	"fmt"
-	"math/big"
 	"sort"
 	"sync"
 	"time"
@@ -773,23 +773,11 @@ func (bd *ChainStore) persist(b *Block) error {
 	nLen := len(b.Transactions)
 
 	for i := 0; i < nLen; i++ {
-
-		// now support RegisterAsset / IssueAsset / TransferAsset and Miner TX ONLY.
-		if b.Transactions[i].TxType == tx.RegisterAsset ||
-			b.Transactions[i].TxType == tx.IssueAsset ||
-			b.Transactions[i].TxType == tx.TransferAsset ||
-			b.Transactions[i].TxType == tx.Record ||
-			b.Transactions[i].TxType == tx.BookKeeper ||
-			b.Transactions[i].TxType == tx.PrivacyPayload ||
-			b.Transactions[i].TxType == tx.BookKeeping ||
-			b.Transactions[i].TxType == tx.DeployCode ||
-			b.Transactions[i].TxType == tx.InvokeCode ||
-			b.Transactions[i].TxType == tx.DataFile {
-			err = bd.SaveTransaction(b.Transactions[i], b.Blockdata.Height)
-			if err != nil {
-				return err
-			}
+		err = bd.SaveTransaction(b.Transactions[i], b.Blockdata.Height)
+		if err != nil {
+			return err
 		}
+
 		txHash := b.Transactions[i].Hash()
 		switch b.Transactions[i].TxType {
 		case tx.RegisterAsset:

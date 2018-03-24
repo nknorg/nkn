@@ -115,22 +115,3 @@ func SendRecord(cmd map[string]interface{}) map[string]interface{} {
 	resp["Result"] = BytesToHexString(hash.ToArrayReverse())
 	return resp
 }
-
-func SendRecordTransaction(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(Err.SUCCESS)
-	var recordData []byte
-	recordData, resp["Error"] = getRecordData(cmd)
-	if recordData == nil {
-		return resp
-	}
-	recordType := "record"
-	recordTx, _ := tx.NewRecordTransaction(recordType, recordData)
-
-	hash := recordTx.Hash()
-	resp["Result"] = BytesToHexString(hash.ToArrayReverse())
-	if errCode := VerifyAndSendTx(recordTx); errCode != ErrNoError {
-		resp["Error"] = int64(errCode)
-		return resp
-	}
-	return resp
-}

@@ -25,13 +25,10 @@ const (
 	BookKeeping    TransactionType = 0x00
 	IssueAsset     TransactionType = 0x01
 	BookKeeper     TransactionType = 0x02
-	PrivacyPayload TransactionType = 0x20
 	RegisterAsset  TransactionType = 0x40
 	TransferAsset  TransactionType = 0x80
-	Record         TransactionType = 0x81
 	DeployCode     TransactionType = 0xd0
 	InvokeCode     TransactionType = 0xd1
-	DataFile       TransactionType = 0x12
 )
 
 //Payload define the func for loading the payload data
@@ -197,18 +194,12 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		tx.Payload = new(payload.TransferAsset)
 	case BookKeeping:
 		tx.Payload = new(payload.BookKeeping)
-	case Record:
-		tx.Payload = new(payload.Record)
 	case BookKeeper:
 		tx.Payload = new(payload.BookKeeper)
-	case PrivacyPayload:
-		tx.Payload = new(payload.PrivacyPayload)
 	case DeployCode:
 		tx.Payload = new(payload.DeployCode)
 	case InvokeCode:
 		tx.Payload = new(payload.InvokeCode)
-	case DataFile:
-		tx.Payload = new(payload.DataFile)
 	default:
 		return errors.New("[Transaction],invalide transaction type.")
 	}
@@ -325,20 +316,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], payload is illegal", k))
 			}
 		}
-	case DataFile:
-		issuer := tx.Payload.(*payload.DataFile).Issuer
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
-
-		astHash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, astHash)
 	case TransferAsset:
-	case Record:
 	case DeployCode:
 	case InvokeCode:
 		issuer := tx.Payload.(*payload.InvokeCode).ProgramHash
@@ -353,18 +331,6 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		astHash, err := ToCodeHash(signatureRedeemScript)
 		if err != nil {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction - BookKeeper], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, astHash)
-	case PrivacyPayload:
-		issuer := tx.Payload.(*payload.PrivacyPayload).EncryptAttr.(*payload.EcdhAes256).FromPubkey
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
-
-		astHash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
 		}
 		hashs = append(hashs, astHash)
 	default:
