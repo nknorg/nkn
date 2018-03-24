@@ -1,6 +1,11 @@
 package transaction
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"errors"
+	"fmt"
+	"io"
 	. "nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/common/serialization"
@@ -9,11 +14,6 @@ import (
 	sig "nkn-core/core/signature"
 	"nkn-core/core/transaction/payload"
 	. "nkn-core/errors"
-	"bytes"
-	"crypto/sha256"
-	"errors"
-	"fmt"
-	"io"
 	"sort"
 )
 
@@ -22,13 +22,16 @@ import (
 type TransactionType byte
 
 const (
-	BookKeeping    TransactionType = 0x00
-	IssueAsset     TransactionType = 0x01
-	BookKeeper     TransactionType = 0x02
-	RegisterAsset  TransactionType = 0x40
-	TransferAsset  TransactionType = 0x80
-	DeployCode     TransactionType = 0xd0
-	InvokeCode     TransactionType = 0xd1
+	BookKeeping   TransactionType = 0x00
+	TransferAsset TransactionType = 0x10
+	RegisterAsset TransactionType = 0x11
+	IssueAsset    TransactionType = 0x12
+	BookKeeper    TransactionType = 0x20
+	DeployCode    TransactionType = 0x30
+	InvokeCode    TransactionType = 0x31
+	Prepaid       TransactionType = 0x40
+	Withdraw      TransactionType = 0x41
+	Commit        TransactionType = 0x42
 )
 
 //Payload define the func for loading the payload data
