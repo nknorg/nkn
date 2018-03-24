@@ -54,14 +54,8 @@ type Transaction struct {
 	Payload        Payload
 	Attributes     []*TxAttribute
 	UTXOInputs     []*UTXOTxInput
-	BalanceInputs  []*BalanceTxInput
 	Outputs        []*TxOutput
 	Programs       []*program.Program
-
-	//Inputs/Outputs map base on Asset (needn't serialize)
-	AssetOutputs      map[Uint256][]*TxOutput
-	AssetInputAmount  map[Uint256]Fixed64
-	AssetOutputAmount map[Uint256]Fixed64
 
 	hash *Uint256
 }

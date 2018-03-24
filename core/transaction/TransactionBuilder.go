@@ -26,7 +26,6 @@ func NewRegisterAssetTransaction(asset *asset.Asset, amount common.Fixed64, issu
 	return &Transaction{
 		//nonce uint64 //TODO: genenrate nonce
 		UTXOInputs:    []*UTXOTxInput{},
-		BalanceInputs: []*BalanceTxInput{},
 		Attributes:    []*TxAttribute{},
 		TxType:        RegisterAsset,
 		Payload:       assetRegPayload,
@@ -52,7 +51,6 @@ func NewBookKeeperTransaction(pubKey *crypto.PubKey, isAdd bool, cert []byte, is
 		TxType:        BookKeeper,
 		Payload:       bookKeeperPayload,
 		UTXOInputs:    []*UTXOTxInput{},
-		BalanceInputs: []*BalanceTxInput{},
 		Attributes:    []*TxAttribute{},
 		Programs:      []*program.Program{},
 	}, nil
@@ -66,7 +64,6 @@ func NewIssueAssetTransaction(outputs []*TxOutput) (*Transaction, error) {
 		TxType:        IssueAsset,
 		Payload:       assetRegPayload,
 		Attributes:    []*TxAttribute{},
-		BalanceInputs: []*BalanceTxInput{},
 		Outputs:       outputs,
 		Programs:      []*program.Program{},
 	}, nil
@@ -83,7 +80,6 @@ func NewTransferAssetTransaction(inputs []*UTXOTxInput, outputs []*TxOutput) (*T
 		Payload:       assetRegPayload,
 		Attributes:    []*TxAttribute{},
 		UTXOInputs:    inputs,
-		BalanceInputs: []*BalanceTxInput{},
 		Outputs:       outputs,
 		Programs:      []*program.Program{},
 	}, nil
@@ -108,7 +104,6 @@ func NewDeployTransaction(fc *code.FunctionCode, programHash common.Uint160, nam
 		Payload:       DeployCodePayload,
 		Attributes:    []*TxAttribute{},
 		UTXOInputs:    []*UTXOTxInput{},
-		BalanceInputs: []*BalanceTxInput{},
 		Programs:      []*program.Program{},
 	}, nil
 }
@@ -127,7 +122,6 @@ func NewInvokeTransaction(fc []byte, codeHash common.Uint160, programhash common
 		Payload:       InvokeCodePayload,
 		Attributes:    []*TxAttribute{},
 		UTXOInputs:    []*UTXOTxInput{},
-		BalanceInputs: []*BalanceTxInput{},
 		Programs:      []*program.Program{},
 	}, nil
 }

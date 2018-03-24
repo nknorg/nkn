@@ -175,7 +175,6 @@ func (ds *DbftService) CreateBookkeepingTransaction(nonce uint64) *tx.Transactio
 		Payload:        bookKeepingPayload,
 		Attributes:     []*tx.TxAttribute{},
 		UTXOInputs:     []*tx.UTXOTxInput{},
-		BalanceInputs:  []*tx.BalanceTxInput{},
 		Outputs:        []*tx.TxOutput{},
 		Programs:       []*program.Program{},
 	}
