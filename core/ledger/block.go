@@ -183,7 +183,6 @@ func GenesisBlockInit(defaultBookKeeper []*crypto.PubKey) (*Block, error) {
 		},
 		Attributes:    []*tx.TxAttribute{},
 		UTXOInputs:    []*tx.UTXOTxInput{},
-		BalanceInputs: []*tx.BalanceTxInput{},
 		Outputs:       []*tx.TxOutput{},
 		Programs:      []*program.Program{},
 	}
