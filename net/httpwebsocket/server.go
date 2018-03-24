@@ -23,7 +23,7 @@ func StartServer(n Noder) {
 	common.SetNode(n)
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
 	go func() {
-		ws = websocket.InitWsServer(common.CheckAccessToken)
+		ws = websocket.InitWsServer()
 		ws.Start()
 	}()
 }
@@ -47,7 +47,7 @@ func Stop() {
 }
 func ReStartServer() {
 	if ws == nil {
-		ws = websocket.InitWsServer(common.CheckAccessToken)
+		ws = websocket.InitWsServer()
 		ws.Start()
 		return
 	}

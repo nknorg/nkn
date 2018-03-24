@@ -30,7 +30,6 @@ type restServer struct {
 	server           *http.Server
 	postMap          map[string]Action
 	getMap           map[string]Action
-	checkAccessToken func(auth_type, access_token string) (string, int64, interface{})
 }
 
 const (
@@ -58,10 +57,8 @@ const (
 	Api_GetContract         = "/api/v1/contract/:hash"
 )
 
-func InitRestServer(checkAccessToken func(string, string) (string, int64, interface{})) ApiServer {
+func InitRestServer() ApiServer {
 	rt := &restServer{}
-	rt.checkAccessToken = checkAccessToken
-
 	rt.router = NewRouter()
 	rt.registryMethod()
 	rt.initGetHandler()
@@ -151,8 +148,6 @@ func (rt *restServer) registryMethod() {
 		Api_GetUTXObyAsset:      {name: "getutxobyasset", handler: GetUnspendOutput},
 		Api_GetBalanceByAddr:    {name: "getbalancebyaddr", handler: GetBalanceByAddr},
 		Api_GetBalancebyAsset:   {name: "getbalancebyasset", handler: GetBalanceByAsset},
-		Api_OauthServerUrl:      {name: "getoauthserverurl", handler: GetOauthServerUrl},
-		Api_NoticeServerUrl:     {name: "getnoticeserverurl", handler: GetNoticeServerUrl},
 		Api_Restart:             {name: "restart", handler: rt.Restart},
 		Api_GetStateUpdate:      {name: "getstateupdate", handler: GetStateUpdate},
 	}
@@ -170,9 +165,6 @@ func (rt *restServer) registryMethod() {
 	postMethodMap := map[string]Action{
 		Api_SendRawTx:         {name: "sendrawtransaction", handler: sendRawTransaction},
 		Api_SendRcdTxByTrans:  {name: "sendrecord", handler: SendRecord},
-		Api_OauthServerUrl:    {name: "setoauthserverurl", handler: SetOauthServerUrl},
-		Api_NoticeServerUrl:   {name: "setnoticeserverurl", handler: SetNoticeServerUrl},
-		Api_NoticeServerState: {name: "setpostblock", handler: SetPushBlockFlag},
 		Api_WebsocketState:    {name: "setwebsocketstate", handler: rt.setWebsocketState},
 	}
 	rt.postMap = postMethodMap
@@ -289,19 +281,8 @@ func (rt *restServer) initGetHandler() {
 
 			var req = make(map[string]interface{})
 			var resp map[string]interface{}
-			access_token := r.FormValue("access_token")
-			auth_type := r.FormValue("auth_type")
-
-			CAkey, errCode, result := rt.checkAccessToken(auth_type, access_token)
 			url := rt.getPath(r.URL.Path)
-			if errCode > 0 && r.URL.Path != Api_OauthServerUrl {
-				resp = ResponsePack(errCode)
-				resp["Result"] = result
-				rt.response(w, resp)
-				return
-			}
 			if h, ok := rt.getMap[url]; ok {
-				req["CAkey"] = CAkey
 				req = rt.getParams(r, url, req)
 				resp = h.handler(req)
 				resp["Action"] = h.name
@@ -321,20 +302,9 @@ func (rt *restServer) initPostHandler() {
 
 			var req = make(map[string]interface{})
 			var resp map[string]interface{}
-			access_token := r.FormValue("access_token")
-			auth_type := r.FormValue("auth_type")
-
-			CAkey, errCode, result := rt.checkAccessToken(auth_type, access_token)
 			url := rt.getPath(r.URL.Path)
-			if errCode > 0 && r.URL.Path != Api_OauthServerUrl {
-				resp = ResponsePack(errCode)
-				resp["Result"] = result
-				rt.response(w, resp)
-				return
-			}
 			if h, ok := rt.postMap[url]; ok {
 				if err := json.Unmarshal(body, &req); err == nil {
-					req["CAkey"] = CAkey
 					req = rt.getParams(r, url, req)
 					resp = h.handler(req)
 					resp["Action"] = h.name
