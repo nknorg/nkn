@@ -143,13 +143,13 @@ func (self *ChainStore) clearCache() {
 
 	currBlockHeight := self.currentBlockHeight
 	for hash, header := range self.headerCache {
-		if header.Blockdata.Height+CleanCacheThreshold < currBlockHeight {
+		if header.Height+CleanCacheThreshold < currBlockHeight {
 			delete(self.headerCache, hash)
 		}
 	}
 
 	for hash, block := range self.blockCache {
-		if block.Blockdata.Height+CleanCacheThreshold < currBlockHeight {
+		if block.Header.Height+CleanCacheThreshold < currBlockHeight {
 			delete(self.blockCache, hash)
 		}
 	}
@@ -245,11 +245,11 @@ func (bd *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block, defau
 					return 0, err
 				}
 
-				//log.Debug(fmt.Sprintf( "header height: %d\n", header.Blockdata.Height ))
+				//log.Debug(fmt.Sprintf( "header height: %d\n", header.Header.Height ))
 				//log.Debug(fmt.Sprintf( "header hash: %x\n", hash ))
 
-				bd.headerIndex[header.Blockdata.Height] = hash
-				hash = header.Blockdata.PrevBlockHash
+				bd.headerIndex[header.Height] = hash
+				hash = header.PrevBlockHash
 			}
 		}
 
@@ -406,24 +406,24 @@ func (bd *ChainStore) getHeaderWithCache(hash Uint256) *Header {
 }
 
 func (bd *ChainStore) verifyHeader(header *Header) bool {
-	prevHeader := bd.getHeaderWithCache(header.Blockdata.PrevBlockHash)
+	prevHeader := bd.getHeaderWithCache(header.PrevBlockHash)
 
 	if prevHeader == nil {
 		log.Error("[verifyHeader] failed, not found prevHeader.")
 		return false
 	}
 
-	if prevHeader.Blockdata.Height+1 != header.Blockdata.Height {
+	if prevHeader.Height+1 != header.Height {
 		log.Error("[verifyHeader] failed, prevHeader.Height + 1 != header.Height")
 		return false
 	}
 
-	if prevHeader.Blockdata.Timestamp >= header.Blockdata.Timestamp {
+	if prevHeader.Timestamp >= header.Timestamp {
 		log.Error("[verifyHeader] failed, prevHeader.Timestamp >= header.Timestamp")
 		return false
 	}
 
-	flag, err := validation.VerifySignableData(header.Blockdata)
+	flag, err := validation.VerifySignableData(header)
 	if flag == false || err != nil {
 		log.Error("[verifyHeader] failed, VerifySignableData failed.")
 		log.Error(err)
@@ -436,7 +436,7 @@ func (bd *ChainStore) verifyHeader(header *Header) bool {
 func (self *ChainStore) AddHeaders(headers []Header, ledger *Ledger) error {
 
 	sort.Slice(headers, func(i, j int) bool {
-		return headers[i].Blockdata.Height < headers[j].Blockdata.Height
+		return headers[i].Height < headers[j].Height
 	})
 
 	for i := 0; i < len(headers); i++ {
@@ -455,10 +455,8 @@ func (bd *ChainStore) GetHeader(hash Uint256) (*Header, error) {
 	}
 	bd.mu.RUnlock()
 
-	var h *Header = new(Header)
-
-	h.Blockdata = new(Blockdata)
-	h.Blockdata.Program = new(program.Program)
+	var h = new(Header)
+	h.Program = new(program.Program)
 
 	prefix := []byte{byte(DATA_Header)}
 	log.Debug("GetHeader Data:", hash.ToArray())
@@ -610,10 +608,9 @@ func (bd *ChainStore) GetBlock(hash Uint256) (*Block, error) {
 	}
 	bd.mu.RUnlock()
 
-	var b *Block = new(Block)
-
-	b.Blockdata = new(Blockdata)
-	b.Blockdata.Program = new(program.Program)
+	var b = new(Block)
+	b.Header = new(Header)
+	b.Header.Program = new(program.Program)
 
 	prefix := []byte{byte(DATA_Header)}
 	bHash, err_get := bd.st.Get(append(prefix, hash.ToArray()...))
@@ -730,7 +727,7 @@ func (bd *ChainStore) persist(b *Block) error {
 	// generate key with DATA_BlockHash prefix
 	bhash := bytes.NewBuffer(nil)
 	bhash.WriteByte(byte(DATA_BlockHash))
-	err := serialization.WriteUint32(bhash, b.Blockdata.Height)
+	err := serialization.WriteUint32(bhash, b.Header.Height)
 	if err != nil {
 		return err
 	}
@@ -738,7 +735,7 @@ func (bd *ChainStore) persist(b *Block) error {
 
 	// generate value
 	hashWriter := bytes.NewBuffer(nil)
-	hashValue := b.Blockdata.Hash()
+	hashValue := b.Header.Hash()
 	hashValue.Serialize(hashWriter)
 	log.Debugf("DATA_BlockHash table value: %x\n", hashValue)
 
@@ -773,7 +770,7 @@ func (bd *ChainStore) persist(b *Block) error {
 	nLen := len(b.Transactions)
 
 	for i := 0; i < nLen; i++ {
-		err = bd.SaveTransaction(b.Transactions[i], b.Blockdata.Height)
+		err = bd.SaveTransaction(b.Transactions[i], b.Header.Height)
 		if err != nil {
 			return err
 		}
@@ -815,8 +812,8 @@ func (bd *ChainStore) persist(b *Block) error {
 				StateMachine: service.NewStateMachine(dbCache, NewDBCache(bd)),
 				DBCache:      dbCache,
 				Code:         deployCode.Code.Code,
-				Time:         big.NewInt(int64(b.Blockdata.Timestamp)),
-				BlockNumber:  big.NewInt(int64(b.Blockdata.Height)),
+				Time:         big.NewInt(int64(b.Header.Timestamp)),
+				BlockNumber:  big.NewInt(int64(b.Header.Height)),
 				Gas:          Fixed64(0),
 			})
 
@@ -867,8 +864,8 @@ func (bd *ChainStore) persist(b *Block) error {
 				Input:          invokeCode.Code,
 				SignableData:   b.Transactions[i],
 				CacheCodeTable: NewCacheCodeTable(dbCache),
-				Time:           big.NewInt(int64(b.Blockdata.Timestamp)),
-				BlockNumber:    big.NewInt(int64(b.Blockdata.Height)),
+				Time:           big.NewInt(int64(b.Header.Timestamp)),
+				BlockNumber:    big.NewInt(int64(b.Header.Height)),
 				Gas:            Fixed64(0),
 				ReturnType:     contractState.Code.ReturnType,
 				ParameterTypes: contractState.Code.ParameterTypes,
@@ -1143,7 +1140,7 @@ func (bd *ChainStore) persist(b *Block) error {
 
 	currentBlock := bytes.NewBuffer(nil)
 	blockHash.Serialize(currentBlock)
-	serialization.WriteUint32(currentBlock, b.Blockdata.Height)
+	serialization.WriteUint32(currentBlock, b.Header.Height)
 
 	// BATCH PUT VALUE
 	bd.st.BatchPut(currentBlockKey.Bytes(), currentBlock.Bytes())
@@ -1165,21 +1162,21 @@ func (bd *ChainStore) persist(b *Block) error {
 // can only be invoked by backend write goroutine
 func (bd *ChainStore) addHeader(header *Header) {
 
-	log.Debugf("addHeader(), Height=%d\n", header.Blockdata.Height)
+	log.Debugf("addHeader(), Height=%d\n", header.Height)
 
-	hash := header.Blockdata.Hash()
+	hash := header.Hash()
 
 	bd.mu.Lock()
-	bd.headerCache[header.Blockdata.Hash()] = header
-	bd.headerIndex[header.Blockdata.Height] = hash
+	bd.headerCache[header.Hash()] = header
+	bd.headerIndex[header.Height] = hash
 	bd.mu.Unlock()
 
-	log.Debug("[addHeader]: finish, header height:", header.Blockdata.Height)
+	log.Debug("[addHeader]: finish, header height:", header.Height)
 }
 
 func (self *ChainStore) handlePersistHeaderTask(header *Header) {
 
-	if header.Blockdata.Height != uint32(len(self.headerIndex)) {
+	if header.Height != uint32(len(self.headerIndex)) {
 		return
 	}
 
@@ -1198,23 +1195,23 @@ func (self *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 	currBlockHeight := self.currentBlockHeight
 	self.mu.RUnlock()
 
-	if b.Blockdata.Height <= currBlockHeight {
+	if b.Header.Height <= currBlockHeight {
 		return nil
 	}
 
-	if b.Blockdata.Height > headerHeight {
+	if b.Header.Height > headerHeight {
 		return errors.New(fmt.Sprintf("Info: [SaveBlock] block height - headerIndex.count >= 1, block height:%d, headerIndex.count:%d",
-			b.Blockdata.Height, headerHeight))
+			b.Header.Height, headerHeight))
 	}
 
-	if b.Blockdata.Height == headerHeight {
+	if b.Header.Height == headerHeight {
 		err := validation.VerifyBlock(b, ledger, false)
 		if err != nil {
 			log.Error("VerifyBlock error!")
 			return err
 		}
 
-		self.taskCh <- &persistHeaderTask{header: &Header{Blockdata: b.Blockdata}}
+		self.taskCh <- &persistHeaderTask{header: b.Header}
 	} else {
 		flag, err := validation.VerifySignableData(b)
 		if flag == false || err != nil {
@@ -1228,7 +1225,7 @@ func (self *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 }
 
 func (self *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
-	if b.Blockdata.Height <= self.currentBlockHeight {
+	if b.Header.Height <= self.currentBlockHeight {
 		return
 	}
 
@@ -1236,7 +1233,7 @@ func (self *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
 	self.blockCache[b.Hash()] = b
 	self.mu.Unlock()
 
-	if b.Blockdata.Height < uint32(len(self.headerIndex)) {
+	if b.Header.Height < uint32(len(self.headerIndex)) {
 		self.persistBlocks(ledger)
 
 		self.st.NewBatch()
@@ -1289,13 +1286,13 @@ func (bd *ChainStore) persistBlocks(ledger *Ledger) {
 		}
 
 		// PersistCompleted event
-		ledger.Blockchain.BlockHeight = block.Blockdata.Height
+		ledger.Blockchain.BlockHeight = block.Header.Height
 		bd.mu.Lock()
-		bd.currentBlockHeight = block.Blockdata.Height
+		bd.currentBlockHeight = block.Header.Height
 		bd.mu.Unlock()
 
 		ledger.Blockchain.BCEvents.Notify(events.EventBlockPersistCompleted, block)
-		log.Tracef("The latest block height:%d, block hash: %x", block.Blockdata.Height, hash)
+		log.Tracef("The latest block height:%d, block hash: %x", block.Header.Height, hash)
 	}
 
 }
@@ -1405,10 +1402,9 @@ func (bd *ChainStore) GetAccount(programHash Uint160) (*account.AccountState, er
 
 func (bd *ChainStore) IsBlockInStore(hash Uint256) bool {
 
-	var b *Block = new(Block)
-
-	b.Blockdata = new(Blockdata)
-	b.Blockdata.Program = new(program.Program)
+	var b = new(Block)
+	b.Header = new(Header)
+	b.Header.Program = new(program.Program)
 
 	prefix := []byte{byte(DATA_Header)}
 	blockData, err_get := bd.st.Get(append(prefix, hash.ToArray()...))
@@ -1430,7 +1426,7 @@ func (bd *ChainStore) IsBlockInStore(hash Uint256) bool {
 		return false
 	}
 
-	if b.Blockdata.Height > bd.currentBlockHeight {
+	if b.Header.Height > bd.currentBlockHeight {
 		return false
 	}
 

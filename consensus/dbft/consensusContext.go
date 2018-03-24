@@ -91,17 +91,16 @@ func (cxt *ConsensusContext) MakeHeader() *ledger.Block {
 		if err != nil {
 			return nil
 		}
-		blockData := &ledger.Blockdata{
-			Version:          ContextVersion,
-			PrevBlockHash:    cxt.PrevHash,
-			TransactionsRoot: txRoot,
-			Timestamp:        cxt.Timestamp,
-			Height:           cxt.Height,
-			ConsensusData:    cxt.Nonce,
-			NextBookKeeper:   cxt.NextBookKeeper,
-		}
 		cxt.header = &ledger.Block{
-			Blockdata:    blockData,
+			Header:    &ledger.Header{
+				Version:          ContextVersion,
+				PrevBlockHash:    cxt.PrevHash,
+				TransactionsRoot: txRoot,
+				Timestamp:        cxt.Timestamp,
+				Height:           cxt.Height,
+				ConsensusData:    cxt.Nonce,
+				NextBookKeeper:   cxt.NextBookKeeper,
+			},
 			Transactions: []*tx.Transaction{},
 		}
 	}

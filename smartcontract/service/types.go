@@ -24,18 +24,18 @@ type AssetInfo struct {
 }
 
 func GetHeaderInfo(header *ledger.Header) *BlockHead {
-	h := header.Blockdata.Hash()
+	h := header.Hash()
 	return &BlockHead{
-		Version:          header.Blockdata.Version,
-		PrevBlockHash:    BytesToHexString(header.Blockdata.PrevBlockHash.ToArrayReverse()),
-		TransactionsRoot: BytesToHexString(header.Blockdata.TransactionsRoot.ToArrayReverse()),
-		Timestamp:        header.Blockdata.Timestamp,
-		Height:           header.Blockdata.Height,
-		ConsensusData:    header.Blockdata.ConsensusData,
-		NextBookKeeper:   BytesToHexString(header.Blockdata.NextBookKeeper.ToArrayReverse()),
+		Version:          header.Version,
+		PrevBlockHash:    BytesToHexString(header.PrevBlockHash.ToArrayReverse()),
+		TransactionsRoot: BytesToHexString(header.TransactionsRoot.ToArrayReverse()),
+		Timestamp:        header.Timestamp,
+		Height:           header.Height,
+		ConsensusData:    header.ConsensusData,
+		NextBookKeeper:   BytesToHexString(header.NextBookKeeper.ToArrayReverse()),
 		Program: ProgramInfo{
-			Code:      BytesToHexString(header.Blockdata.Program.Code),
-			Parameter: BytesToHexString(header.Blockdata.Program.Parameter),
+			Code:      BytesToHexString(header.Program.Code),
+			Parameter: BytesToHexString(header.Program.Parameter),
 		},
 		Hash: BytesToHexString(h.ToArrayReverse()),
 	}
