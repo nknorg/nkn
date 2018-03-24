@@ -20,7 +20,7 @@ func getRecordData(cmd map[string]interface{}) ([]byte, int64) {
 		if !ok {
 			return nil, Err.INVALID_PARAMS
 		}
-		bys, err := HexToBytes(str)
+		bys, err := HexStringToBytes(str)
 		if err != nil {
 			return nil, Err.INVALID_PARAMS
 		}
@@ -112,7 +112,7 @@ func SendRecord(cmd map[string]interface{}) map[string]interface{} {
 		return resp
 	}
 	hash := transferTx.Hash()
-	resp["Result"] = ToHexString(hash.ToArrayReverse())
+	resp["Result"] = BytesToHexString(hash.ToArrayReverse())
 	return resp
 }
 
@@ -127,7 +127,7 @@ func SendRecordTransaction(cmd map[string]interface{}) map[string]interface{} {
 	recordTx, _ := tx.NewRecordTransaction(recordType, recordData)
 
 	hash := recordTx.Hash()
-	resp["Result"] = ToHexString(hash.ToArrayReverse())
+	resp["Result"] = BytesToHexString(hash.ToArrayReverse())
 	if errCode := VerifyAndSendTx(recordTx); errCode != ErrNoError {
 		resp["Error"] = int64(errCode)
 		return resp

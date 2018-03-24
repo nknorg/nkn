@@ -78,8 +78,8 @@ func walletAction(c *cli.Context) error {
 	programHash, _ := ToCodeHash(signatureRedeemScript)
 	encodedPubKey, _ := pubKey.EncodePoint(true)
 	address, _ := programHash.ToAddress()
-	fmt.Println("public key:   ", ToHexString(encodedPubKey))
-	fmt.Println("program hash: ", ToHexString(programHash.ToArray()))
+	fmt.Println("public key:   ", BytesToHexString(encodedPubKey))
+	fmt.Println("program hash: ", BytesToHexString(programHash.ToArray()))
 	fmt.Println("address:      ", address)
 	asset := c.String("asset")
 	if list && asset != "" {

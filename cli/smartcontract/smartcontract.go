@@ -70,7 +70,7 @@ func signTransaction(signer *account.Account, tx *transaction.Transaction) error
 	return nil
 }
 func makeDeployContractTransaction(signer *account.Account, codeStr string, language int) (string, error) {
-	c, _ := common.HexToBytes(codeStr)
+	c, _ := common.HexStringToBytes(codeStr)
 	fc := &code.FunctionCode{
 		Code:           c,
 		ParameterTypes: []contract.ContractParameterType{contract.ByteArray, contract.ByteArray},
@@ -95,8 +95,8 @@ func makeDeployContractTransaction(signer *account.Account, codeStr string, lang
 }
 
 func makeInvokeTransaction(signer *account.Account, paramsStr, codeHashStr string) (string, error) {
-	p, _ := common.HexToBytes(paramsStr)
-	hash, _ := common.HexToBytesReverse(codeHashStr)
+	p, _ := common.HexStringToBytes(paramsStr)
+	hash, _ := common.HexStringToBytesReverse(codeHashStr)
 	p = append(p, 0x69)
 	p = append(p, hash...)
 	codeHash := common.BytesToUint160(hash)
@@ -162,7 +162,7 @@ func contractAction(c *cli.Context) error {
 				fmt.Println("read avm file err")
 				return nil
 			}
-			codeStr = common.ToHexString(bytes)
+			codeStr = common.BytesToHexString(bytes)
 		}
 		txHex, err = makeDeployContractTransaction(admin, codeStr, language)
 		if err != nil {

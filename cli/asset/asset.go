@@ -145,7 +145,7 @@ func makeTransferTransaction(signer *account.Account, programHashStr, assetHashS
 	if err != nil {
 		return "", err
 	}
-	myProgramHashStr := ToHexString(signer.ProgramHash.ToArray())
+	myProgramHashStr := BytesToHexString(signer.ProgramHash.ToArray())
 
 	resp, err := httpjsonrpc.Call(Address(), "getunspendoutput", 0, []interface{}{myProgramHashStr, assetHashStr})
 	if err != nil {
@@ -261,7 +261,7 @@ func assetAction(c *cli.Context) error {
 		if name == "" {
 			rbuf := make([]byte, RANDBYTELEN)
 			rand.Read(rbuf)
-			name = "TEST-" + ToHexString(rbuf)
+			name = "TEST-" + BytesToHexString(rbuf)
 		}
 		issuer := admin
 		description := "description"

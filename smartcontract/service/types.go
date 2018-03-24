@@ -27,17 +27,17 @@ func GetHeaderInfo(header *ledger.Header) *BlockHead {
 	h := header.Blockdata.Hash()
 	return &BlockHead{
 		Version:          header.Blockdata.Version,
-		PrevBlockHash:    ToHexString(header.Blockdata.PrevBlockHash.ToArrayReverse()),
-		TransactionsRoot: ToHexString(header.Blockdata.TransactionsRoot.ToArrayReverse()),
+		PrevBlockHash:    BytesToHexString(header.Blockdata.PrevBlockHash.ToArrayReverse()),
+		TransactionsRoot: BytesToHexString(header.Blockdata.TransactionsRoot.ToArrayReverse()),
 		Timestamp:        header.Blockdata.Timestamp,
 		Height:           header.Blockdata.Height,
 		ConsensusData:    header.Blockdata.ConsensusData,
-		NextBookKeeper:   ToHexString(header.Blockdata.NextBookKeeper.ToArrayReverse()),
+		NextBookKeeper:   BytesToHexString(header.Blockdata.NextBookKeeper.ToArrayReverse()),
 		Program: ProgramInfo{
-			Code:      ToHexString(header.Blockdata.Program.Code),
-			Parameter: ToHexString(header.Blockdata.Program.Parameter),
+			Code:      BytesToHexString(header.Blockdata.Program.Code),
+			Parameter: BytesToHexString(header.Blockdata.Program.Parameter),
 		},
-		Hash: ToHexString(h.ToArrayReverse()),
+		Hash: BytesToHexString(h.ToArrayReverse()),
 	}
 
 }
@@ -54,7 +54,7 @@ func GetTransactionInfo(transaction *transaction.Transaction) *Transactions {
 func GetTransactionInputs(inputs []*transaction.UTXOTxInput) []UTXOTxInputInfo {
 	inputList := make([]UTXOTxInputInfo, len(inputs))
 	for k, v := range inputs {
-		inputList[k].ReferTxID = ToHexString(v.ReferTxID.ToArrayReverse())
+		inputList[k].ReferTxID = BytesToHexString(v.ReferTxID.ToArrayReverse())
 		inputList[k].ReferTxOutputIndex = v.ReferTxOutputIndex
 	}
 	return inputList
@@ -63,9 +63,10 @@ func GetTransactionInputs(inputs []*transaction.UTXOTxInput) []UTXOTxInputInfo {
 func GetTransactionOutputs(outputs []*transaction.TxOutput) []TxoutputInfo {
 	outputList := make([]TxoutputInfo, len(outputs))
 	for k, v := range outputs {
-		outputList[k].AssetID = ToHexString(v.AssetID.ToArrayReverse())
-		outputList[k].Value = v.Value
-		outputList[k].ProgramHash = ToHexString(v.ProgramHash.ToArrayReverse())
+		outputList[k].AssetID = BytesToHexString(v.AssetID.ToArrayReverse())
+		outputList[k].Value = v.Value.String()
+		addr, _ := v.ProgramHash.ToAddress()
+		outputList[k].Address = addr
 	}
 	return outputList
 }
@@ -74,7 +75,7 @@ func GetTransactionAttributes(attributes []*transaction.TxAttribute) []TxAttribu
 	attributeList := make([]TxAttributeInfo, len(attributes))
 	for k, v := range attributes {
 		attributeList[k].Usage = v.Usage
-		attributeList[k].Data = ToHexString(v.Data)
+		attributeList[k].Data = BytesToHexString(v.Data)
 	}
 	return attributeList
 }
@@ -82,11 +83,11 @@ func GetTransactionAttributes(attributes []*transaction.TxAttribute) []TxAttribu
 func GetAccountInfo(account *states.AccountState) *AccountInfo {
 	balances := make(map[string]Fixed64)
 	for k, v := range account.Balances {
-		assetId := ToHexString(k.ToArrayReverse())
+		assetId := BytesToHexString(k.ToArrayReverse())
 		balances[assetId] = v
 	}
 	return &AccountInfo{
-		ProgramHash: ToHexString(account.ProgramHash.ToArrayReverse()),
+		ProgramHash: BytesToHexString(account.ProgramHash.ToArrayReverse()),
 		IsFrozen:    account.IsFrozen,
 		Balances:    balances,
 	}

@@ -85,7 +85,7 @@ func PushResult(txHash Uint256, errcode int64, action string, result interface{}
 		resp["Error"] = errcode
 		resp["Action"] = action
 		resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]
-		ws.PushTxResult(ToHexString(txHash.ToArrayReverse()), resp)
+		ws.PushTxResult(BytesToHexString(txHash.ToArrayReverse()), resp)
 	}
 }
 
@@ -95,7 +95,7 @@ func PushSmartCodeInvokeResult(txHash Uint256, errcode int64, result interface{}
 	}
 	resp := common.ResponsePack(Err.SUCCESS)
 	var Result = make(map[string]interface{})
-	txHashStr := ToHexString(txHash.ToArray())
+	txHashStr := BytesToHexString(txHash.ToArray())
 	Result["TxHash"] = txHashStr
 	Result["ExecResult"] = result
 
@@ -114,7 +114,7 @@ func PushBlock(v interface{}) {
 		if pushRawBlockFlag {
 			w := bytes.NewBuffer(nil)
 			block.Serialize(w)
-			resp["Result"] = ToHexString(w.Bytes())
+			resp["Result"] = BytesToHexString(w.Bytes())
 		} else {
 			resp["Result"] = common.GetBlockInfo(block)
 		}
