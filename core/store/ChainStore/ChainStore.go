@@ -849,7 +849,7 @@ func (bd *ChainStore) persist(b *Block) error {
 				return err
 			}
 
-			httpwebsocket.PushResult(txHash, 0, DEPLOY_TRANSACTION, ToHexString(hash.ToArrayReverse()))
+			httpwebsocket.PushResult(txHash, 0, DEPLOY_TRANSACTION, BytesToHexString(hash.ToArrayReverse()))
 			err = dbCache.Commit()
 			if err != nil {
 				return err

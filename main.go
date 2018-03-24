@@ -100,7 +100,6 @@ func main() {
 
 	log.Info("--Start the RPC interface")
 	go httpjsonrpc.StartRPCServer()
-	go httpjsonrpc.StartLocalServer()
 	go httprestful.StartServer(noder)
 	go httpwebsocket.StartServer(noder)
 	if config.Parameters.HttpInfoStart {

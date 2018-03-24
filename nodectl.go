@@ -8,12 +8,9 @@ import (
 	"nkn-core/cli/asset"
 	"nkn-core/cli/bookkeeper"
 	. "nkn-core/cli/common"
-	"nkn-core/cli/data"
 	"nkn-core/cli/debug"
 	"nkn-core/cli/info"
-	"nkn-core/cli/privpayload"
 	"nkn-core/cli/smartcontract"
-	"nkn-core/cli/test"
 	"nkn-core/cli/wallet"
 	"github.com/urfave/cli"
 )
@@ -38,11 +35,8 @@ func main() {
 	app.Commands = []cli.Command{
 		*debug.NewCommand(),
 		*info.NewCommand(),
-		*test.NewCommand(),
 		*wallet.NewCommand(),
 		*asset.NewCommand(),
-		*privpayload.NewCommand(),
-		*data.NewCommand(),
 		*bookkeeper.NewCommand(),
 		*smartcontract.NewCommand(),
 	}

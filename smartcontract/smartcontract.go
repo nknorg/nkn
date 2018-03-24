@@ -119,9 +119,9 @@ func (sc *SmartContract) InvokeResult() (interface{}, error) {
 			case contract.String:
 				return string(avm.PopByteArray(engine)), nil
 			case contract.Hash160, contract.Hash256:
-				return common.ToHexString(common.ToArrayReverse(avm.PopByteArray(engine))), nil
+				return common.BytesToHexString(common.ToArrayReverse(avm.PopByteArray(engine))), nil
 			case contract.PublicKey:
-				return common.ToHexString(avm.PopByteArray(engine)), nil
+				return common.BytesToHexString(avm.PopByteArray(engine)), nil
 			case contract.Object:
 				data := avm.PeekStackItem(engine)
 				switch data.(type) {
