@@ -1,9 +1,9 @@
 package httpjsonrpc
 
 import (
-	"nkn-core/common/log"
-	. "nkn-core/common/config"
 	"net/http"
+	. "nkn-core/common/config"
+	"nkn-core/common/log"
 	"strconv"
 )
 
@@ -24,7 +24,7 @@ func StartLocalServer() {
 	HandleFunc("setdebuginfo", setDebugInfo)
 
 	// TODO: only listen to local host
-	err := http.ListenAndServe(":"+strconv.Itoa(Parameters.HttpLocalPort), nil)
+	err := http.ListenAndServe(":"+strconv.Itoa(Parameters.HttpJsonPort), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err.Error())
 	}
