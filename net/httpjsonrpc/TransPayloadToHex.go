@@ -5,7 +5,6 @@ import (
 	"nkn-core/core/asset"
 	. "nkn-core/core/transaction"
 	"nkn-core/core/transaction/payload"
-	"bytes"
 )
 
 type PayloadInfo interface{}
@@ -55,11 +54,6 @@ type RegisterAssetInfo struct {
 type TransferAssetInfo struct {
 }
 
-type RecordInfo struct {
-	RecordType string
-	RecordData string
-}
-
 type BookkeeperInfo struct {
 	PubKey     string
 	Action     string
@@ -67,19 +61,6 @@ type BookkeeperInfo struct {
 	Controller string
 }
 
-type DataFileInfo struct {
-	IPFSPath string
-	Filename string
-	Note     string
-	Issuer   IssuerInfo
-}
-
-type PrivacyPayloadInfo struct {
-	PayloadType uint8
-	Payload     string
-	EncryptType uint8
-	EncryptAttr string
-}
 
 func TransPayloadToHex(p Payload) PayloadInfo {
 	switch object := p.(type) {
@@ -131,28 +112,6 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 		obj.Issuer.X = object.Issuer.X.String()
 		obj.Issuer.Y = object.Issuer.Y.String()
 		obj.Controller = BytesToHexString(object.Controller.ToArray())
-		return obj
-	case *payload.Record:
-		obj := new(RecordInfo)
-		obj.RecordType = object.RecordType
-		obj.RecordData = BytesToHexString(object.RecordData)
-		return obj
-	case *payload.PrivacyPayload:
-		obj := new(PrivacyPayloadInfo)
-		obj.PayloadType = uint8(object.PayloadType)
-		obj.Payload = BytesToHexString(object.Payload)
-		obj.EncryptType = uint8(object.EncryptType)
-		bytesBuffer := bytes.NewBuffer([]byte{})
-		object.EncryptAttr.Serialize(bytesBuffer)
-		obj.EncryptAttr = BytesToHexString(bytesBuffer.Bytes())
-		return obj
-	case *payload.DataFile:
-		obj := new(DataFileInfo)
-		obj.IPFSPath = object.IPFSPath
-		obj.Filename = object.Filename
-		obj.Note = object.Note
-		obj.Issuer.X = object.Issuer.X.String()
-		obj.Issuer.Y = object.Issuer.Y.String()
 		return obj
 	}
 	return nil

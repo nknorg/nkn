@@ -273,11 +273,8 @@ func CheckTransactionPayload(Tx *tx.Transaction) error {
 	case *payload.IssueAsset:
 	case *payload.TransferAsset:
 	case *payload.BookKeeping:
-	case *payload.PrivacyPayload:
-	case *payload.Record:
 	case *payload.DeployCode:
 	case *payload.InvokeCode:
-	case *payload.DataFile:
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")
 	}

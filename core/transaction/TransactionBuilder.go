@@ -89,63 +89,6 @@ func NewTransferAssetTransaction(inputs []*UTXOTxInput, outputs []*TxOutput) (*T
 	}, nil
 }
 
-//initial a new transaction with record payload
-func NewRecordTransaction(recordType string, recordData []byte) (*Transaction, error) {
-	//TODO: check arguments
-	recordPayload := &payload.Record{
-		RecordType: recordType,
-		RecordData: recordData,
-	}
-
-	return &Transaction{
-		TxType:        Record,
-		Payload:       recordPayload,
-		Attributes:    []*TxAttribute{},
-		UTXOInputs:    []*UTXOTxInput{},
-		BalanceInputs: []*BalanceTxInput{},
-		Programs:      []*program.Program{},
-	}, nil
-}
-
-func NewPrivacyPayloadTransaction(fromPrivKey []byte, fromPubkey *crypto.PubKey, toPubkey *crypto.PubKey, payloadType payload.EncryptedPayloadType, data []byte) (*Transaction, error) {
-	privacyPayload := &payload.PrivacyPayload{
-		PayloadType: payloadType,
-		EncryptType: payload.ECDH_AES256,
-		EncryptAttr: &payload.EcdhAes256{
-			FromPubkey: fromPubkey,
-			ToPubkey:   toPubkey,
-		},
-	}
-	privacyPayload.Payload, _ = privacyPayload.EncryptAttr.Encrypt(data, fromPrivKey)
-
-	return &Transaction{
-		TxType:        PrivacyPayload,
-		Payload:       privacyPayload,
-		Attributes:    []*TxAttribute{},
-		UTXOInputs:    []*UTXOTxInput{},
-		BalanceInputs: []*BalanceTxInput{},
-		Programs:      []*program.Program{},
-	}, nil
-}
-func NewDataFileTransaction(path string, fileName string, note string, issuer *crypto.PubKey) (*Transaction, error) {
-	//TODO: check arguments
-	DataFilePayload := &payload.DataFile{
-		IPFSPath: path,
-		Filename: fileName,
-		Note:     note,
-		Issuer:   issuer,
-	}
-
-	return &Transaction{
-		TxType:        DataFile,
-		Payload:       DataFilePayload,
-		Attributes:    []*TxAttribute{},
-		UTXOInputs:    []*UTXOTxInput{},
-		BalanceInputs: []*BalanceTxInput{},
-		Programs:      []*program.Program{},
-	}, nil
-}
-
 //initial a new transaction with publish payload
 func NewDeployTransaction(fc *code.FunctionCode, programHash common.Uint160, name, codeversion, author, email, desp string, language types.LangType) (*Transaction, error) {
 	//TODO: check arguments
