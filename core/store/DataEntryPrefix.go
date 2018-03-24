@@ -23,6 +23,7 @@ const (
 	ST_ACCOUNT        DataEntryPrefix = 0xc4
 	ST_AssetState     DataEntryPrefix = 0xc5
 	ST_Validator      DataEntryPrefix = 0xc6
+	ST_Prepaid        DataEntryPrefix = 0xc7
 
 	//SYSTEM
 	SYS_CurrentBlock  DataEntryPrefix = 0x40

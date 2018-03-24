@@ -1561,3 +1561,47 @@ func (bd *ChainStore) GetStorage(key []byte) ([]byte, error) {
 	}
 	return bData, nil
 }
+
+func (bd *ChainStore) SavePrepaidInfo(programHash Uint160, amount, rates Fixed64) error {
+	var err error
+	key := append([]byte{byte(ST_Prepaid)}, programHash.ToArray()...)
+	value := bytes.NewBuffer(nil)
+	err = amount.Serialize(value)
+	if err != nil {
+		return err
+	}
+	err = rates.Serialize(value)
+	if err != nil {
+		return err
+	}
+
+	err = bd.st.Put(key, value.Bytes())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (bd *ChainStore) GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error) {
+	var err error
+	key := append([]byte{byte(ST_Prepaid)}, programHash.ToArray()...)
+	value, err := bd.st.Get(key)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r := bytes.NewReader(value)
+	var amount, rates Fixed64
+	err = amount.Deserialize(r)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = rates.Deserialize(r)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &amount, &rates, nil
+}
