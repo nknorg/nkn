@@ -1,28 +1,27 @@
 package httpnodeinfo
 
 import (
-	"nkn-core/common/config"
-	"nkn-core/core/ledger"
-	. "nkn-core/net/protocol"
 	"fmt"
 	"html/template"
 	"net/http"
+	"nkn-core/common/config"
+	"nkn-core/core/ledger"
+	. "nkn-core/net/protocol"
 	"sort"
 	"strconv"
 )
 
 type Info struct {
-	NodeVersion   string
-	BlockHeight   uint32
-	NeighborCnt   int
-	Neighbors     []NgbNodeInfo
-	HttpRestPort  int
-	HttpWsPort    int
-	HttpJsonPort  int
-	HttpLocalPort int
-	NodePort      int
-	NodeId        string
-	NodeType      string
+	NodeVersion  string
+	BlockHeight  uint32
+	NeighborCnt  int
+	Neighbors    []NgbNodeInfo
+	HttpRestPort int
+	HttpWsPort   int
+	HttpJsonPort int
+	NodePort     int
+	NodeId       string
+	NodeType     string
 }
 
 const (
@@ -36,19 +35,18 @@ var templates = template.Must(template.New("info").Parse(page))
 
 func newNgbNodeInfo(ngbId string, ngbType string, ngbAddr string, httpInfoAddr string, httpInfoPort int, httpInfoStart bool) *NgbNodeInfo {
 	return &NgbNodeInfo{NgbId: ngbId, NgbType: ngbType, NgbAddr: ngbAddr, HttpInfoAddr: httpInfoAddr,
-		HttpInfoPort: httpInfoPort,	HttpInfoStart: httpInfoStart}
+		HttpInfoPort: httpInfoPort, HttpInfoStart: httpInfoStart}
 }
 
 func initPageInfo(blockHeight uint32, curNodeType string, ngbrCnt int, ngbrsInfo []NgbNodeInfo) (*Info, error) {
 	id := fmt.Sprintf("0x%x", node.GetID())
 	return &Info{NodeVersion: config.Version, BlockHeight: blockHeight,
 		NeighborCnt: ngbrCnt, Neighbors: ngbrsInfo,
-		HttpRestPort:  config.Parameters.HttpRestPort,
-		HttpWsPort:    config.Parameters.HttpWsPort,
-		HttpJsonPort:  config.Parameters.HttpJsonPort,
-		HttpLocalPort: config.Parameters.HttpLocalPort,
-		NodePort:      config.Parameters.NodePort,
-		NodeId:        id, NodeType: curNodeType}, nil
+		HttpRestPort: config.Parameters.HttpRestPort,
+		HttpWsPort:   config.Parameters.HttpWsPort,
+		HttpJsonPort: config.Parameters.HttpJsonPort,
+		NodePort:     config.Parameters.NodePort,
+		NodeId:       id, NodeType: curNodeType}, nil
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,5 +107,5 @@ func StartServer(n Noder) {
 	node = n
 	port := int(config.Parameters.HttpInfoPort)
 	http.HandleFunc("/info", viewHandler)
-	http.ListenAndServe(":" + strconv.Itoa(port), nil)
+	http.ListenAndServe(":"+strconv.Itoa(port), nil)
 }

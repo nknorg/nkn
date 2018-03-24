@@ -17,34 +17,31 @@ const (
 var Version string
 
 type Configuration struct {
-	Magic           int64    `json:"Magic"`
-	Version         int      `json:"Version"`
-	SeedList        []string `json:"SeedList"`
-	BookKeepers     []string `json:"BookKeepers"` // The default book keepers' publickey
-	HttpRestPort    int      `json:"HttpRestPort"`
-	RestCertPath    string   `json:"RestCertPath"`
-	RestKeyPath     string   `json:"RestKeyPath"`
-	HttpInfoPort    uint16   `json:"HttpInfoPort"`
-	HttpInfoStart   bool     `json:"HttpInfoStart"`
-	HttpWsPort      int      `json:"HttpWsPort"`
-	HttpJsonPort    int      `json:"HttpJsonPort"`
-	HttpLocalPort   int      `json:"HttpLocalPort"`
-	OauthServerUrl  string   `json:"OauthServerUrl"`
-	NoticeServerUrl string   `json:"NoticeServerUrl"`
-	NodePort        int      `json:"NodePort"`
-	NodeType        string   `json:"NodeType"`
-	WebSocketPort   int      `json:"WebSocketPort"`
-	PrintLevel      int      `json:"PrintLevel"`
-	IsTLS           bool     `json:"IsTLS"`
-	CertPath        string   `json:"CertPath"`
-	KeyPath         string   `json:"KeyPath"`
-	CAPath          string   `json:"CAPath"`
-	GenBlockTime    uint     `json:"GenBlockTime"`
-	MultiCoreNum    uint     `json:"MultiCoreNum"`
-	EncryptAlg      string   `json:"EncryptAlg"`
-	MaxLogSize      int64    `json:"MaxLogSize"`
-	MaxTxInBlock    int      `json:"MaxTransactionInBlock"`
-	MaxHdrSyncReqs  int      `json:"MaxConcurrentSyncHeaderReqs"`
+	Magic          int64    `json:"Magic"`
+	Version        int      `json:"Version"`
+	SeedList       []string `json:"SeedList"`
+	BookKeepers    []string `json:"BookKeepers"` // The default book keepers' publickey
+	HttpRestPort   int      `json:"HttpRestPort"`
+	RestCertPath   string   `json:"RestCertPath"`
+	RestKeyPath    string   `json:"RestKeyPath"`
+	HttpInfoPort   uint16   `json:"HttpInfoPort"`
+	HttpInfoStart  bool     `json:"HttpInfoStart"`
+	HttpWsPort     int      `json:"HttpWsPort"`
+	HttpJsonPort   int      `json:"HttpJsonPort"`
+	NodePort       int      `json:"NodePort"`
+	NodeType       string   `json:"NodeType"`
+	WebSocketPort  int      `json:"WebSocketPort"`
+	PrintLevel     int      `json:"PrintLevel"`
+	IsTLS          bool     `json:"IsTLS"`
+	CertPath       string   `json:"CertPath"`
+	KeyPath        string   `json:"KeyPath"`
+	CAPath         string   `json:"CAPath"`
+	GenBlockTime   uint     `json:"GenBlockTime"`
+	MultiCoreNum   uint     `json:"MultiCoreNum"`
+	EncryptAlg     string   `json:"EncryptAlg"`
+	MaxLogSize     int64    `json:"MaxLogSize"`
+	MaxTxInBlock   int      `json:"MaxTransactionInBlock"`
+	MaxHdrSyncReqs int      `json:"MaxConcurrentSyncHeaderReqs"`
 }
 
 type ConfigFile struct {
