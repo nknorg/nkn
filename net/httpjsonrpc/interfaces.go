@@ -9,10 +9,10 @@ import (
 	tx "nkn-core/core/transaction"
 	. "nkn-core/errors"
 	"nkn-core/helper"
-	"nkn-core/account"
+	"nkn-core/wallet"
 )
 
-var Wallet account.Client
+var Wallet wallet.Wallet
 
 func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 

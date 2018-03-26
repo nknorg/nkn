@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"os"
 
-	"nkn-core/account"
+	"nkn-core/wallet"
 	. "nkn-core/cli/common"
 	. "nkn-core/common"
 	"nkn-core/net/httpjsonrpc"
@@ -109,7 +109,7 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "wallet, w",
 				Usage: "wallet name",
-				Value: account.WalletFileName,
+				Value: wallet.WalletFileName,
 			},
 			cli.StringFlag{
 				Name:  "password, p",

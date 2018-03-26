@@ -1,7 +1,7 @@
 package dbft
 
 import (
-	cl "nkn-core/account"
+	cl "nkn-core/wallet"
 	. "nkn-core/common"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
@@ -26,7 +26,7 @@ var GenBlockTime = (config.DEFAULTGENBLOCKTIME * time.Second)
 
 type DbftService struct {
 	context           ConsensusContext
-	Client            cl.Client
+	Client            cl.Wallet
 	timer             *time.Timer
 	timerHeight       uint32
 	timeView          byte
@@ -39,7 +39,7 @@ type DbftService struct {
 	blockPersistCompletedSubscriber events.Subscriber
 }
 
-func NewDbftService(client cl.Client, logDictionary string, localNet net.Neter) *DbftService {
+func NewDbftService(client cl.Wallet, logDictionary string, localNet net.Neter) *DbftService {
 	log.Debug()
 
 	ds := &DbftService{
