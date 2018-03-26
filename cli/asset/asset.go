@@ -73,7 +73,8 @@ func assetAction(c *cli.Context) error {
 		resp, err = httpjsonrpc.Call(Address(), "issueasset", 0, []interface{}{parseAssetID(c), parseAddress(c), value})
 	case c.Bool("transfer"):
 		resp, err = httpjsonrpc.Call(Address(), "sendtoaddress", 0, []interface{}{parseAssetID(c), parseAddress(c), value})
-		return nil
+	case c.Bool("prepaid"):
+		resp, err = httpjsonrpc.Call(Address(), "prepaidasset", 0, []interface{}{parseAssetID(c), value})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -105,6 +106,10 @@ func NewCommand() *cli.Command {
 			cli.BoolFlag{
 				Name:  "transfer, t",
 				Usage: "transfer asset",
+			},
+			cli.BoolFlag{
+				Name:  "prepaid",
+				Usage: "prepaid asset",
 			},
 			cli.StringFlag{
 				Name:  "wallet, w",
