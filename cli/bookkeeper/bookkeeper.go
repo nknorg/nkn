@@ -35,14 +35,6 @@ func makeBookkeeperTransaction(pubkey *crypto.PubKey, op bool, cert []byte, issu
 	return hex.EncodeToString(buffer.Bytes()), nil
 }
 
-func newContractContextWithoutProgramHashes(data signature.SignableData) *contract.ContractContext {
-	return &contract.ContractContext{
-		Data:       data,
-		Codes:      make([][]byte, 1),
-		Parameters: make([][][]byte, 1),
-	}
-}
-
 func signTransaction(signer *account.Account, tx *transaction.Transaction) error {
 	signature, err := signature.SignBySigner(tx, signer)
 	if err != nil {
@@ -101,8 +93,8 @@ func assetAction(c *cli.Context) error {
 	}
 	cert := c.String("cert")
 
-	wallet := account.Open(account.WalletFileName, WalletPassword(c.String("password")))
-	if wallet == nil {
+	wallet, err := account.Open(account.WalletFileName, WalletPassword(c.String("password")))
+	if err != nil {
 		fmt.Println("Failed to open wallet.")
 		os.Exit(1)
 	}

@@ -59,8 +59,16 @@ func main() {
 	ledger.DefaultLedger.Store.InitLedgerStore(ledger.DefaultLedger)
 	transaction.TxStore = ledger.DefaultLedger.Store
 	crypto.SetAlg(config.Parameters.EncryptAlg)
+	ledger.StandbyBookKeepers = account.GetBookKeepers()
 
-	log.Info("1. Open the account")
+	log.Info("2. BlockChain init")
+	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)
+	if err != nil {
+		log.Fatal(err, "  BlockChain generate failed")
+	}
+	ledger.DefaultLedger.Blockchain = blockChain
+
+	log.Info("3. Start the P2P networks")
 	client := account.GetClient()
 	if client == nil {
 		log.Fatal("Can't get local account.")
@@ -71,19 +79,6 @@ func main() {
 		log.Fatal(err)
 		goto ERROR
 	}
-	log.Debug("The Node's PublicKey ", acct.PublicKey)
-	ledger.StandbyBookKeepers = account.GetBookKeepers()
-
-	log.Info("3. BlockChain init")
-	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)
-	if err != nil {
-		log.Fatal(err, "  BlockChain generate failed")
-		goto ERROR
-	}
-	ledger.DefaultLedger.Blockchain = blockChain
-
-	log.Info("4. Start the P2P networks")
-	// Don't need two return value.
 	noder = net.StartProtocol(acct.PublicKey)
 	httpjsonrpc.RegistRpcNode(noder)
 	time.Sleep(20 * time.Second)
@@ -97,7 +92,7 @@ func main() {
 		go dbftServices.Start()
 		time.Sleep(5 * time.Second)
 	}
-
+	httpjsonrpc.Wallet = client
 	log.Info("--Start the RPC interface")
 	go httpjsonrpc.StartRPCServer()
 	go httprestful.StartServer(noder)

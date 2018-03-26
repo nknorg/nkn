@@ -43,8 +43,8 @@ func openWallet(name string, passwd string) account.Client {
 			os.Exit(1)
 		}
 	}
-	wallet := account.Open(name, pwd)
-	if wallet == nil {
+	wallet, err := account.Open(name, pwd)
+	if err != nil {
 		fmt.Println("Failed to open wallet: ", name)
 		os.Exit(1)
 	}
