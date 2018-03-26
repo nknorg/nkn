@@ -479,8 +479,8 @@ func (ds *DbftService) SignAndRelay(payload *msg.ConsensusPayload) {
 
 	ctCxt := ct.NewContractContext(payload)
 
-	ret := ds.Client.Sign(ctCxt)
-	if ret == false {
+	err = ds.Client.Sign(ctCxt)
+	if err != nil {
 		log.Warn("[SignAndRelay] Sign contract failure")
 	}
 	prog := ctCxt.GetPrograms()

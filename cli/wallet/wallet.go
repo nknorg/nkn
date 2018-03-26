@@ -1,21 +1,55 @@
 package wallet
 
 import (
-	"bytes"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"os"
-
 	"nkn-core/account"
 	. "nkn-core/cli/common"
 	. "nkn-core/common"
 	"nkn-core/common/password"
-	"nkn-core/core/contract"
 	"nkn-core/net/httpjsonrpc"
 
 	"github.com/urfave/cli"
 )
+
+func showAccountInfo(wallet account.Client) {
+	account, _ := wallet.GetDefaultAccount()
+	fmt.Println("Address\t\t\t\t Public Key")
+	fmt.Println("-------\t\t\t\t ----------")
+	address, _ := account.ProgramHash.ToAddress()
+	publicKey, _ := account.PublicKey.EncodePoint(true)
+	fmt.Printf("%s %s\n", address, BytesToHexString(publicKey))
+}
+
+func getPassword(passwd string) []byte {
+	var tmp []byte
+	var err error
+	if passwd != "" {
+		tmp = []byte(passwd)
+	} else {
+		tmp, err = password.GetPassword()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+	return tmp
+}
+
+func getConfirmedPassword(passwd string) []byte {
+	var tmp []byte
+	var err error
+	if passwd != "" {
+		tmp = []byte(passwd)
+	} else {
+		tmp, err = password.GetConfirmedPassword()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+	return tmp
+}
 
 func walletAction(c *cli.Context) error {
 	if c.NumFlags() == 0 {
@@ -24,96 +58,73 @@ func walletAction(c *cli.Context) error {
 	}
 	// wallet name is wallet.dat by default
 	name := c.String("name")
-	create := c.Bool("create")
-	list := c.Bool("list")
-	passwd := c.String("password")
 	if name == "" {
-		fmt.Println("Invalid wallet name.")
+		fmt.Fprintln(os.Stderr, "invalid wallet name")
 		os.Exit(1)
 	}
-	if FileExisted(name) && create {
-		fmt.Printf("CAUTION: '%s' already exists!\n", name)
-		os.Exit(1)
-	}
-	// need to input password when password is not specified from command line
-	if passwd == "" {
-		var err error
-		var tmppasswd []byte
-		if create {
-			tmppasswd, err = password.GetConfirmedPassword()
+	passwd := c.String("password")
+
+	// create wallet
+	if c.Bool("create") {
+		if FileExisted(name) {
+			fmt.Printf("CAUTION: '%s' already exists!\n", name)
+			os.Exit(1)
 		} else {
-			tmppasswd, err = password.GetPassword()
+			wallet, err := account.Create(name, getConfirmedPassword(passwd))
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			showAccountInfo(wallet)
 		}
+		return nil
+	}
+
+	// list wallet info
+	if item := c.String("list"); item != "" {
+		if item != "account" && item != "balance" && item != "verbose" {
+			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose]")
+			os.Exit(1)
+		} else {
+			wallet, err := account.Open(name, getPassword(passwd))
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			switch item {
+			case "account":
+				showAccountInfo(wallet)
+			case "balance":
+				resp, err := httpjsonrpc.Call(Address(), "getbalance", 0, []interface{}{})
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					return err
+				}
+				FormatOutput(resp)
+			}
+		}
+		return nil
+	}
+
+	// change password
+	if c.Bool("changepassword") {
+		fmt.Printf("Wallet File: '%s'\n", name)
+		passwd, _ := password.GetPassword()
+		wallet, err := account.Open(name, passwd)
 		if err != nil {
-			fmt.Println(err)
 			os.Exit(1)
 		}
-		passwd = string(tmppasswd)
-	}
-	var wallet *account.ClientImpl
-	if create {
-		wallet = account.Create(name, []byte(passwd))
-	} else {
-		// list wallet or change wallet password
-		wallet = account.Open(name, []byte(passwd))
-	}
-	if wallet == nil {
-		fmt.Println("Failed to open wallet: ", name)
-		os.Exit(1)
-	}
-	fmt.Printf("Wallet File: '%s'\n", name)
-	if c.Bool("changepassword") {
 		fmt.Println("# input new password #")
 		newPassword, _ := password.GetConfirmedPassword()
 		if ok := wallet.ChangePassword([]byte(passwd), newPassword); !ok {
-			fmt.Println("error: failed to change password")
+			fmt.Fprintln(os.Stderr, "failed to change password")
 			os.Exit(1)
 		}
 		fmt.Println("password changed")
+
 		return nil
 	}
-	account, _ := wallet.GetDefaultAccount()
-	pubKey := account.PubKey()
-	signatureRedeemScript, _ := contract.CreateSignatureRedeemScript(pubKey)
-	programHash, _ := ToCodeHash(signatureRedeemScript)
-	encodedPubKey, _ := pubKey.EncodePoint(true)
-	address, _ := programHash.ToAddress()
-	fmt.Println("public key:   ", BytesToHexString(encodedPubKey))
-	fmt.Println("program hash: ", BytesToHexString(programHash.ToArray()))
-	fmt.Println("address:      ", address)
-	asset := c.String("asset")
-	if list && asset != "" {
-		var buffer bytes.Buffer
-		_, err := programHash.Serialize(&buffer)
-		if err != nil {
-			return err
-		}
-		resp, err := httpjsonrpc.Call(Address(), "getunspendoutput", 0,
-			[]interface{}{hex.EncodeToString(buffer.Bytes()), asset})
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return err
-		}
-		r := make(map[string]interface{})
-		err = json.Unmarshal(resp, &r)
-		if err != nil {
-			fmt.Println("Unmarshal JSON failed")
-			return err
-		}
-		switch r["result"].(type) {
-		case map[string]interface{}:
-			ammount := 0
-			unspend := r["result"].(map[string]interface{})
-			for _, v := range unspend {
-				out := v.(map[string]interface{})
-				ammount += int(out["Value"].(float64))
-			}
-			fmt.Println("Ammount: ", ammount)
-		case string:
-			fmt.Println(r["result"].(string))
-			return nil
-		}
-	}
+
 	return nil
 }
 
@@ -128,17 +139,17 @@ func NewCommand() *cli.Command {
 				Name:  "create, c",
 				Usage: "create wallet",
 			},
-			cli.BoolFlag{
+			cli.StringFlag{
 				Name:  "list, l",
-				Usage: "list wallet information",
+				Usage: "list wallet information [account, balance, verbose]",
 			},
 			cli.BoolFlag{
 				Name:  "changepassword",
 				Usage: "change wallet password",
 			},
-			cli.StringFlag{
-				Name:  "asset, a",
-				Usage: "asset uniq ID",
+			cli.BoolFlag{
+				Name:  "reset",
+				Usage: "reset wallet",
 			},
 			cli.StringFlag{
 				Name:  "name, n",
