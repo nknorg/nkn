@@ -1,4 +1,4 @@
-package account
+package wallet
 
 import (
 	"bytes"
@@ -29,7 +29,7 @@ const (
 	WalletFileName         = "wallet.dat"
 )
 
-type Client interface {
+type Wallet interface {
 	Sign(context *ct.ContractContext) error
 
 	ContainsAccount(pubKey *crypto.PubKey) bool
@@ -43,7 +43,7 @@ type Client interface {
 	GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error)
 }
 
-type ClientImpl struct {
+type WalletImpl struct {
 	path      string
 	iv        []byte
 	masterKey []byte
@@ -54,8 +54,8 @@ type ClientImpl struct {
 	store
 }
 
-func Create(path string, passwordKey []byte) (*ClientImpl, error) {
-	client := NewClient(path, passwordKey, true)
+func Create(path string, passwordKey []byte) (*WalletImpl, error) {
+	client := NewWallet(path, passwordKey, true)
 	if client == nil {
 		return nil, errors.New("client nil")
 	}
@@ -70,8 +70,8 @@ func Create(path string, passwordKey []byte) (*ClientImpl, error) {
 	return client, nil
 }
 
-func Open(path string, passwordKey []byte) (*ClientImpl, error) {
-	client := NewClient(path, passwordKey, false)
+func Open(path string, passwordKey []byte) (*WalletImpl, error) {
+	client := NewWallet(path, passwordKey, false)
 	if client == nil {
 		return nil, errors.New("client nil")
 	}
@@ -85,8 +85,8 @@ func Open(path string, passwordKey []byte) (*ClientImpl, error) {
 	return client, nil
 }
 
-func Recover(path string, password []byte, privateKeyHex string) (*ClientImpl, error) {
-	client := NewClient(path, password, true)
+func Recover(path string, password []byte, privateKeyHex string) (*WalletImpl, error) {
+	client := NewWallet(path, password, true)
 	if client == nil {
 		return nil, errors.New("client nil")
 	}
@@ -105,8 +105,8 @@ func Recover(path string, password []byte, privateKeyHex string) (*ClientImpl, e
 	return client, nil
 }
 
-func NewClient(path string, password []byte, create bool) *ClientImpl {
-	client := &ClientImpl{
+func NewWallet(path string, password []byte, create bool) *WalletImpl {
+	client := &WalletImpl{
 		path:     path,
 		account:  new(Account),
 		contract: new(ct.Contract),
@@ -181,14 +181,14 @@ func NewClient(path string, password []byte, create bool) *ClientImpl {
 	return client
 }
 
-func (cl *ClientImpl) GetDefaultAccount() (*Account, error) {
+func (cl *WalletImpl) GetDefaultAccount() (*Account, error) {
 	if cl.account == nil {
 		return nil, errors.New("account error")
 	}
 	return cl.account, nil
 }
 
-func (cl *ClientImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
+func (cl *WalletImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
 	signatureRedeemScript, err := contract.CreateSignatureRedeemScript(pubKey)
 	if err != nil {
 		return nil, err
@@ -205,7 +205,7 @@ func (cl *ClientImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
 	return cl.account, nil
 }
 
-func (cl *ClientImpl) ChangePassword(oldPassword []byte, newPassword []byte) bool {
+func (cl *WalletImpl) ChangePassword(oldPassword []byte, newPassword []byte) bool {
 	// check password
 	oldPasswordKey := crypto.ToAesKey(oldPassword)
 	if !cl.verifyPasswordKey(oldPasswordKey) {
@@ -236,7 +236,7 @@ func (cl *ClientImpl) ChangePassword(oldPassword []byte, newPassword []byte) boo
 	return true
 }
 
-func (cl *ClientImpl) ContainsAccount(pubKey *crypto.PubKey) bool {
+func (cl *WalletImpl) ContainsAccount(pubKey *crypto.PubKey) bool {
 	signatureRedeemScript, err := contract.CreateSignatureRedeemScript(pubKey)
 	if err != nil {
 		return false
@@ -249,7 +249,7 @@ func (cl *ClientImpl) ContainsAccount(pubKey *crypto.PubKey) bool {
 	return cl.account.ProgramHash == programHash
 }
 
-func (cl *ClientImpl) Sign(context *ct.ContractContext) error {
+func (cl *WalletImpl) Sign(context *ct.ContractContext) error {
 	var err error
 	contract, err := cl.GetContract()
 	if err != nil {
@@ -272,7 +272,7 @@ func (cl *ClientImpl) Sign(context *ct.ContractContext) error {
 	return nil
 }
 
-func (cl *ClientImpl) verifyPasswordKey(passwordKey []byte) bool {
+func (cl *WalletImpl) verifyPasswordKey(passwordKey []byte) bool {
 	savedPasswordHash, err := cl.LoadStoredData("PasswordHash")
 	if err != nil {
 		fmt.Println("error: failed to load password hash")
@@ -290,7 +290,7 @@ func (cl *ClientImpl) verifyPasswordKey(passwordKey []byte) bool {
 	return true
 }
 
-func (cl *ClientImpl) EncryptPrivateKey(prikey []byte) ([]byte, error) {
+func (cl *WalletImpl) EncryptPrivateKey(prikey []byte) ([]byte, error) {
 	enc, err := crypto.AesEncrypt(prikey, cl.masterKey, cl.iv)
 	if err != nil {
 		return nil, err
@@ -299,7 +299,7 @@ func (cl *ClientImpl) EncryptPrivateKey(prikey []byte) ([]byte, error) {
 	return enc, nil
 }
 
-func (cl *ClientImpl) DecryptPrivateKey(prikey []byte) ([]byte, error) {
+func (cl *WalletImpl) DecryptPrivateKey(prikey []byte) ([]byte, error) {
 	if prikey == nil {
 		return nil, NewDetailErr(errors.New("The PriKey is nil"), ErrNoCode, "")
 	}
@@ -316,7 +316,7 @@ func (cl *ClientImpl) DecryptPrivateKey(prikey []byte) ([]byte, error) {
 }
 
 // CreateAccount create a new Account then save it
-func (cl *ClientImpl) CreateAccount() (*Account, error) {
+func (cl *WalletImpl) CreateAccount() (*Account, error) {
 	account, err := NewAccount()
 	if err != nil {
 		return nil, err
@@ -328,7 +328,7 @@ func (cl *ClientImpl) CreateAccount() (*Account, error) {
 	return account, nil
 }
 
-func (cl *ClientImpl) CreateAccountByPrivateKey(privateKey []byte) (*Account, error) {
+func (cl *WalletImpl) CreateAccountByPrivateKey(privateKey []byte) (*Account, error) {
 	account, err := NewAccountWithPrivatekey(privateKey)
 	if err != nil {
 		return nil, err
@@ -342,7 +342,7 @@ func (cl *ClientImpl) CreateAccountByPrivateKey(privateKey []byte) (*Account, er
 }
 
 // SaveAccount saves a Account to memory and db
-func (cl *ClientImpl) SaveAccount(ac *Account) error {
+func (cl *WalletImpl) SaveAccount(ac *Account) error {
 	programHash := ac.ProgramHash
 	cl.account = ac
 
@@ -373,7 +373,7 @@ func (cl *ClientImpl) SaveAccount(ac *Account) error {
 }
 
 // LoadAccounts loads all accounts from db to memory
-func (cl *ClientImpl) LoadAccount() error {
+func (cl *WalletImpl) LoadAccount() error {
 	account, err := cl.LoadAccountData()
 	if err != nil {
 		return err
@@ -398,7 +398,7 @@ func (cl *ClientImpl) LoadAccount() error {
 }
 
 // CreateContract creates a singlesig contract to wallet
-func (cl *ClientImpl) CreateContract(account *Account) (*contract.Contract, error) {
+func (cl *WalletImpl) CreateContract(account *Account) (*contract.Contract, error) {
 	contract, err := contract.CreateSignatureContract(account.PubKey())
 	if err != nil {
 		return nil, err
@@ -411,7 +411,7 @@ func (cl *ClientImpl) CreateContract(account *Account) (*contract.Contract, erro
 }
 
 // SaveContract saves a contract to memory and db
-func (cl *ClientImpl) SaveContract(ct *contract.Contract) error {
+func (cl *WalletImpl) SaveContract(ct *contract.Contract) error {
 
 	// save contract to memory
 	cl.contract = ct
@@ -421,7 +421,7 @@ func (cl *ClientImpl) SaveContract(ct *contract.Contract) error {
 }
 
 // LoadContracts loads all contracts from db to memory
-func (cl *ClientImpl) LoadContract() error {
+func (cl *WalletImpl) LoadContract() error {
 	contract, err := cl.LoadContractData()
 	if err != nil {
 		return err
@@ -436,7 +436,7 @@ func (cl *ClientImpl) LoadContract() error {
 	return nil
 }
 
-func (cl *ClientImpl) GetContract() (*ct.Contract, error) {
+func (cl *WalletImpl) GetContract() (*ct.Contract, error) {
 	if cl.contract == nil {
 		return nil, errors.New("contract error")
 	}
@@ -444,7 +444,7 @@ func (cl *ClientImpl) GetContract() (*ct.Contract, error) {
 	return cl.contract, nil
 }
 
-func (cl *ClientImpl) GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error) {
+func (cl *WalletImpl) GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error) {
 	account, err := cl.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -457,7 +457,7 @@ func (cl *ClientImpl) GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, erro
 	return ret, nil
 }
 
-func GetClient() Client {
+func GetClient() Wallet {
 	if !FileExisted(WalletFileName) {
 		log.Fatal(fmt.Sprintf("No %s detected, please create a wallet by using command line.", WalletFileName))
 		os.Exit(1)

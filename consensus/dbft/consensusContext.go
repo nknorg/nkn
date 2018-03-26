@@ -1,7 +1,7 @@
 package dbft
 
 import (
-	cl "nkn-core/account"
+	cl "nkn-core/wallet"
 	. "nkn-core/common"
 	"nkn-core/common/log"
 	ser "nkn-core/common/serialization"
@@ -166,7 +166,7 @@ func (cxt *ConsensusContext) GetStateDetail() string {
 
 }
 
-func (cxt *ConsensusContext) Reset(client cl.Client, localNode net.Neter) {
+func (cxt *ConsensusContext) Reset(client cl.Wallet, localNode net.Neter) {
 	log.Debug()
 	cxt.State = Initial
 	cxt.PrevHash = ledger.DefaultLedger.Blockchain.CurrentBlockHash()

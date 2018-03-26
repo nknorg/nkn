@@ -3,7 +3,7 @@ package helper
 import (
 	"errors"
 	"fmt"
-	"nkn-core/account"
+	"nkn-core/wallet"
 	. "nkn-core/common"
 	. "nkn-core/core/asset"
 	"nkn-core/core/contract"
@@ -15,7 +15,7 @@ type BatchOut struct {
 	Value   string
 }
 
-func MakeRegTransaction(wallet account.Client, name string, value string) (*transaction.Transaction, error) {
+func MakeRegTransaction(wallet wallet.Wallet, name string, value string) (*transaction.Transaction, error) {
 	admin, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func MakeRegTransaction(wallet account.Client, name string, value string) (*tran
 	return txn, nil
 }
 
-func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string, value string) (*transaction.Transaction, error) {
+func MakeIssueTransaction(wallet wallet.Wallet, assetID Uint256, address string, value string) (*transaction.Transaction, error) {
 	programHash, err := ToScriptHash(address)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string
 	return txn, nil
 }
 
-func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ...BatchOut) (*transaction.Transaction, error) {
+func MakeTransferTransaction(wallet wallet.Wallet, assetID Uint256, batchOut ...BatchOut) (*transaction.Transaction, error) {
 	outputNum := len(batchOut)
 	if outputNum == 0 {
 		return nil, errors.New("nil outputs")
