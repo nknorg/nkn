@@ -110,6 +110,23 @@ func NewPrepaidTransaction(inputs []*UTXOTxInput, changes *TxOutput, assetID Uin
 	}, nil
 }
 
+func NewWithdrawTransaction(output *TxOutput) (*Transaction, error) {
+	withdrawPayload := &payload.Withdraw{
+		// TODO programhash should be passed in then
+		// user could withdraw asset to another address
+		ProgramHash: output.ProgramHash,
+	}
+
+	return &Transaction{
+		TxType:     Withdraw,
+		Payload:    withdrawPayload,
+		Attributes: []*TxAttribute{},
+		UTXOInputs: nil,
+		Outputs:    []*TxOutput{output},
+		Programs:   []*program.Program{},
+	}, nil
+}
+
 //initial a new transaction with publish payload
 func NewDeployTransaction(fc *code.FunctionCode, programHash Uint160, name, codeversion, author, email, desp string, language types.LangType) (*Transaction, error) {
 	//TODO: check arguments

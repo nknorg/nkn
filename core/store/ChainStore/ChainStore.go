@@ -795,7 +795,8 @@ func (bd *ChainStore) persist(b *Block) error {
 			}
 		case tx.Withdraw:
 			withdrawPld := b.Transactions[i].Payload.(*payload.Withdraw)
-			err = bd.UpdateWithdrawInfo(withdrawPld.ProgramHash, withdrawPld.Amount)
+			// TODO for range output list
+			err = bd.UpdateWithdrawInfo(withdrawPld.ProgramHash, b.Transactions[i].Outputs[0].Value)
 			if err != nil {
 				return err
 			}
@@ -1520,7 +1521,6 @@ func (bd *ChainStore) GetUnspentsFromProgramHash(programHash Uint160) (map[Uint2
 		ph.Deserialize(rk)
 		var assetid Uint256
 		assetid.Deserialize(rk)
-		log.Tracef("[GetUnspentsFromProgramHash] assetid: %x\n", assetid.ToArray())
 
 		r := bytes.NewReader(iter.Value())
 		listNum, err := serialization.ReadVarUint(r, 0)

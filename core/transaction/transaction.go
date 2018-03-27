@@ -195,6 +195,8 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		tx.Payload = new(payload.BookKeeper)
 	case Prepaid:
 		tx.Payload = new(payload.Prepaid)
+	case Withdraw:
+		tx.Payload = new(payload.Withdraw)
 	case DeployCode:
 		tx.Payload = new(payload.DeployCode)
 	case InvokeCode:
@@ -318,6 +320,8 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	case Prepaid:
 	case TransferAsset:
 	case DeployCode:
+	case Withdraw:
+		hashs = append(hashs, tx.Payload.(*payload.Withdraw).ProgramHash)
 	case InvokeCode:
 		issuer := tx.Payload.(*payload.InvokeCode).ProgramHash
 		hashs = append(hashs, issuer)

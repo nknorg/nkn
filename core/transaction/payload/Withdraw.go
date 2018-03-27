@@ -8,7 +8,6 @@ import (
 
 type Withdraw struct {
 	ProgramHash Uint160
-	Amount      Fixed64
 }
 
 func (p *Withdraw) Data(version byte) []byte {
@@ -17,7 +16,6 @@ func (p *Withdraw) Data(version byte) []byte {
 
 func (p *Withdraw) Serialize(w io.Writer, version byte) error {
 	p.ProgramHash.Serialize(w)
-	p.Amount.Serialize(w)
 
 	return nil
 }
@@ -28,12 +26,6 @@ func (p *Withdraw) Deserialize(r io.Reader, version byte) error {
 	err = p.ProgramHash.Deserialize(r)
 	if err != nil {
 		return errors.New("programhash deserialization error")
-	}
-
-	p.Amount = *new(Fixed64)
-	err = p.Amount.Deserialize(r)
-	if err != nil {
-		return errors.New("amount deserialization error")
 	}
 
 	return nil
