@@ -54,6 +54,12 @@ type RegisterAssetInfo struct {
 type TransferAssetInfo struct {
 }
 
+//implement PayloadInfo define BookKeepingInfo
+type PrepaidInfo struct {
+	Amount string
+	Rates string
+}
+
 type BookkeeperInfo struct {
 	PubKey     string
 	Action     string
@@ -85,6 +91,11 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 		return obj
 	case *payload.IssueAsset:
 	case *payload.TransferAsset:
+	case *payload.Prepaid:
+		obj := new(PrepaidInfo)
+		obj.Amount = object.Amount.String()
+		obj.Rates = object.Rates.String()
+		return obj
 	case *payload.DeployCode:
 		obj := new(DeployCodeInfo)
 		obj.Code = new(FunctionCodeInfo)

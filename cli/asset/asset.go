@@ -74,7 +74,12 @@ func assetAction(c *cli.Context) error {
 	case c.Bool("transfer"):
 		resp, err = httpjsonrpc.Call(Address(), "sendtoaddress", 0, []interface{}{parseAssetID(c), parseAddress(c), value})
 	case c.Bool("prepaid"):
-		resp, err = httpjsonrpc.Call(Address(), "prepaidasset", 0, []interface{}{parseAssetID(c), value})
+		rates := c.String("rates")
+		if rates == "" {
+			fmt.Println("rates is required with [--rates]")
+			return nil
+		}
+		resp, err = httpjsonrpc.Call(Address(), "prepaidasset", 0, []interface{}{parseAssetID(c), value, rates})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -136,6 +141,10 @@ func NewCommand() *cli.Command {
 				Name:  "value, v",
 				Usage: "asset amount",
 				Value: "",
+			},
+			cli.StringFlag{
+				Name:  "rates",
+				Usage: "rates",
 			},
 		},
 		Action: assetAction,

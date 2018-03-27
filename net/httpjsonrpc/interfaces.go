@@ -455,7 +455,7 @@ func sendToAddress(params []interface{}) map[string]interface{} {
 }
 
 func prepaidAsset(params []interface{}) map[string]interface{} {
-	if len(params) < 2 {
+	if len(params) < 3 {
 		return RpcResultNil
 	}
 	var assetName, assetValue, rates string
