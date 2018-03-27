@@ -196,29 +196,29 @@ func CheckAssetPrecision(Tx *tx.Transaction) error {
 	return nil
 }
 
-func CheckTransactionBalance(Tx *tx.Transaction) error {
-	if Tx.TxType == tx.Prepaid {
+func CheckTransactionBalance(txn *tx.Transaction) error {
+	if txn.TxType == tx.Prepaid || txn.TxType == tx.Withdraw{
 		return nil
 	}
-	for _, v := range Tx.Outputs {
+	for _, v := range txn.Outputs {
 		if v.Value <= common.Fixed64(0) {
 			return errors.New("Invalide transaction UTXO output.")
 		}
 	}
-	if Tx.TxType == tx.IssueAsset {
-		if len(Tx.UTXOInputs) > 0 {
+	if txn.TxType == tx.IssueAsset {
+		if len(txn.UTXOInputs) > 0 {
 			return errors.New("Invalide Issue transaction.")
 		}
 		return nil
 	}
-	results, err := Tx.GetTransactionResults()
+	results, err := txn.GetTransactionResults()
 	if err != nil {
 		return err
 	}
 	for k, v := range results {
 		if v != 0 {
-			log.Debug(fmt.Sprintf("AssetID %x in Transfer transactions %x , Input/output UTXO not equal.", k, Tx.Hash()))
-			return errors.New(fmt.Sprintf("AssetID %x in Transfer transactions %x , Input/output UTXO not equal.", k, Tx.Hash()))
+			log.Debug(fmt.Sprintf("AssetID %x in Transfer transactions %x , Input/output UTXO not equal.", k, txn.Hash()))
+			return errors.New(fmt.Sprintf("AssetID %x in Transfer transactions %x , Input/output UTXO not equal.", k, txn.Hash()))
 		}
 	}
 	return nil
@@ -289,11 +289,22 @@ func CheckTransactionPayload(txn *tx.Transaction) error {
 			outputAmount += output.Value
 		}
 		if inputAmount - outputAmount != pld.Amount {
-			fmt.Println(inputAmount)
-			fmt.Println(outputAmount)
-			fmt.Println(pld.Amount)
 			return errors.New("prepaid transaction balance unmatched")
 		}
+	case *payload.Withdraw:
+		var outputAmount common.Fixed64
+
+		for _, output := range txn.Outputs {
+			outputAmount += output.Value
+		}
+		prepaidAmount, _, err := ledger.DefaultLedger.Store.GetPrepaidInfo(pld.ProgramHash)
+		if err != nil {
+			return err
+		}
+		if outputAmount > *prepaidAmount {
+			return errors.New("asset is not enough")
+		}
+
 	case *payload.DeployCode:
 	case *payload.InvokeCode:
 	default:

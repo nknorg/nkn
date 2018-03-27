@@ -3,11 +3,11 @@ package helper
 import (
 	"errors"
 	"fmt"
-	"nkn-core/wallet"
 	. "nkn-core/common"
 	. "nkn-core/core/asset"
 	"nkn-core/core/contract"
 	"nkn-core/core/transaction"
+	"nkn-core/wallet"
 )
 
 type BatchOut struct {
@@ -197,8 +197,37 @@ func MakePrepaidTransaction(wallet wallet.Wallet, assetID Uint256, value, rates 
 		return nil, errors.New("token is not enough")
 	}
 
-
 	txn, err := transaction.NewPrepaidTransaction(inputs, changes, assetID, value, rates)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	ctx := contract.NewContractContext(txn)
+	wallet.Sign(ctx)
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
+}
+
+func MakeWithdrawTransaction(wallet wallet.Wallet, assetID Uint256, value string) (*transaction.Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	amount, err := StringToFixed64(value)
+	if err != nil {
+		return nil, err
+	}
+
+	output := &transaction.TxOutput{
+		AssetID:     assetID,
+		Value:       amount,
+		ProgramHash: account.ProgramHash,
+	}
+
+	txn, err := transaction.NewWithdrawTransaction(output)
 	if err != nil {
 		return nil, err
 	}
