@@ -783,6 +783,23 @@ func (bd *ChainStore) persist(b *Block) error {
 			if err != nil {
 				return err
 			}
+		case tx.Prepaid:
+			prepaidPld := b.Transactions[i].Payload.(*payload.Prepaid)
+			pHash, err := b.Transactions[i].GetProgramHashes()
+			if err != nil || len(pHash) == 0 {
+				return err
+			}
+			err = bd.UpdatePrepaidInfo(pHash[0], prepaidPld.Amount, prepaidPld.Rates)
+			if err != nil {
+				return err
+			}
+		case tx.Withdraw:
+			withdrawPld := b.Transactions[i].Payload.(*payload.Withdraw)
+			// TODO for range output list
+			err = bd.UpdateWithdrawInfo(withdrawPld.ProgramHash, b.Transactions[i].Outputs[0].Value)
+			if err != nil {
+				return err
+			}
 		case tx.IssueAsset:
 			results := b.Transactions[i].GetMergedAssetIDValueFromOutputs()
 			for assetId, value := range results {
@@ -1504,7 +1521,6 @@ func (bd *ChainStore) GetUnspentsFromProgramHash(programHash Uint160) (map[Uint2
 		ph.Deserialize(rk)
 		var assetid Uint256
 		assetid.Deserialize(rk)
-		log.Tracef("[GetUnspentsFromProgramHash] assetid: %x\n", assetid.ToArray())
 
 		r := bytes.NewReader(iter.Value())
 		listNum, err := serialization.ReadVarUint(r, 0)
@@ -1562,11 +1578,48 @@ func (bd *ChainStore) GetStorage(key []byte) ([]byte, error) {
 	return bData, nil
 }
 
-func (bd *ChainStore) SavePrepaidInfo(programHash Uint160, amount, rates Fixed64) error {
+func (bd *ChainStore) UpdatePrepaidInfo(programHash Uint160, amount, rates Fixed64) error {
 	var err error
+	newAmount := amount
+	// key: prefix + programHash
 	key := append([]byte{byte(ST_Prepaid)}, programHash.ToArray()...)
+
+	// value: increase existed prepaid amount
 	value := bytes.NewBuffer(nil)
-	err = amount.Serialize(value)
+	oldAmount, _, _ := bd.GetPrepaidInfo(programHash)
+	if oldAmount != nil {
+		newAmount = *oldAmount + amount
+	}
+	err = newAmount.Serialize(value)
+	if err != nil {
+		return err
+	}
+	err = rates.Serialize(value)
+	if err != nil {
+		return err
+	}
+
+	err = bd.st.Put(key, value.Bytes())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (bd *ChainStore) UpdateWithdrawInfo(programHash Uint160, amount Fixed64) error {
+	var err error
+	newAmount := amount
+	// key: prefix + programHash
+	key := append([]byte{byte(ST_Prepaid)}, programHash.ToArray()...)
+
+	// value: increase existed prepaid amount
+	value := bytes.NewBuffer(nil)
+	oldAmount, rates, _ := bd.GetPrepaidInfo(programHash)
+	if oldAmount != nil {
+		newAmount = *oldAmount - amount
+	}
+	err = newAmount.Serialize(value)
 	if err != nil {
 		return err
 	}
@@ -1584,20 +1637,19 @@ func (bd *ChainStore) SavePrepaidInfo(programHash Uint160, amount, rates Fixed64
 }
 
 func (bd *ChainStore) GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error) {
+	var amount, rates Fixed64
 	var err error
+
 	key := append([]byte{byte(ST_Prepaid)}, programHash.ToArray()...)
 	value, err := bd.st.Get(key)
 	if err != nil {
 		return nil, nil, err
 	}
-
 	r := bytes.NewReader(value)
-	var amount, rates Fixed64
 	err = amount.Deserialize(r)
 	if err != nil {
 		return nil, nil, err
 	}
-
 	err = rates.Deserialize(r)
 	if err != nil {
 		return nil, nil, err

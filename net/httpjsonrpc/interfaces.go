@@ -500,3 +500,47 @@ func prepaidAsset(params []interface{}) map[string]interface{} {
 	txHash := txn.Hash()
 	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
 }
+
+func withdrawAsset(params []interface{}) map[string]interface{} {
+	if len(params) < 2 {
+		return RpcResultNil
+	}
+
+	var assetName, assetValue string
+	switch params[0].(type) {
+	case string:
+		assetName = params[0].(string)
+	default:
+		return RpcResultInvalidParameter
+	}
+	switch params[1].(type) {
+	case string:
+		assetValue = params[1].(string)
+	default:
+		return RpcResultInvalidParameter
+	}
+	if Wallet == nil {
+		return RpcResult("open wallet first")
+	}
+
+	tmp, err := HexStringToBytesReverse(assetName)
+	if err != nil {
+		return RpcResult("error: invalid asset ID")
+	}
+	var assetID Uint256
+	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
+		return RpcResult("error: invalid asset hash")
+	}
+
+	txn, err := helper.MakeWithdrawTransaction(Wallet, assetID, assetValue)
+	if err != nil {
+		return RpcResultInternalError
+	}
+
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return RpcResultInvalidTransaction
+	}
+
+	txHash := txn.Hash()
+	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
+}
