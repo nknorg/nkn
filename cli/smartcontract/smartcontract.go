@@ -1,7 +1,7 @@
 package smartcontract
 
 import (
-	"nkn-core/account"
+	"nkn-core/wallet"
 	. "nkn-core/cli/common"
 	"nkn-core/common"
 	"nkn-core/common/password"
@@ -29,10 +29,10 @@ func newContractContextWithoutProgramHashes(data signature.SignableData) *contra
 	}
 }
 
-func openWallet(name string, passwd string) account.Client {
+func openWallet(name string, passwd string) wallet.Wallet {
 	if name == "" {
-		name = account.WalletFileName
-		fmt.Println("Using default wallet: ", account.WalletFileName)
+		name = wallet.WalletFileName
+		fmt.Println("Using default wallet: ", wallet.WalletFileName)
 	}
 	pwd := []byte(passwd)
 	var err error
@@ -43,14 +43,14 @@ func openWallet(name string, passwd string) account.Client {
 			os.Exit(1)
 		}
 	}
-	wallet, err := account.Open(name, pwd)
+	wallet, err := wallet.Open(name, pwd)
 	if err != nil {
 		fmt.Println("Failed to open wallet: ", name)
 		os.Exit(1)
 	}
 	return wallet
 }
-func signTransaction(signer *account.Account, tx *transaction.Transaction) error {
+func signTransaction(signer *wallet.Account, tx *transaction.Transaction) error {
 	signature, err := signature.SignBySigner(tx, signer)
 	if err != nil {
 		fmt.Println("SignBySigner failed")
@@ -69,7 +69,7 @@ func signTransaction(signer *account.Account, tx *transaction.Transaction) error
 	tx.SetPrograms(transactionContractContext.GetPrograms())
 	return nil
 }
-func makeDeployContractTransaction(signer *account.Account, codeStr string, language int) (string, error) {
+func makeDeployContractTransaction(signer *wallet.Account, codeStr string, language int) (string, error) {
 	c, _ := common.HexStringToBytes(codeStr)
 	fc := &code.FunctionCode{
 		Code:           c,
@@ -94,7 +94,7 @@ func makeDeployContractTransaction(signer *account.Account, codeStr string, lang
 	return hex.EncodeToString(buffer.Bytes()), nil
 }
 
-func makeInvokeTransaction(signer *account.Account, paramsStr, codeHashStr string) (string, error) {
+func makeInvokeTransaction(signer *wallet.Account, paramsStr, codeHashStr string) (string, error) {
 	p, _ := common.HexStringToBytes(paramsStr)
 	hash, _ := common.HexStringToBytesReverse(codeHashStr)
 	p = append(p, 0x69)

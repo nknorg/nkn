@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"os"
 
-	"nkn-core/account"
+	"nkn-core/wallet"
 	. "nkn-core/cli/common"
 	. "nkn-core/common"
 	"nkn-core/net/httpjsonrpc"
@@ -73,7 +73,13 @@ func assetAction(c *cli.Context) error {
 		resp, err = httpjsonrpc.Call(Address(), "issueasset", 0, []interface{}{parseAssetID(c), parseAddress(c), value})
 	case c.Bool("transfer"):
 		resp, err = httpjsonrpc.Call(Address(), "sendtoaddress", 0, []interface{}{parseAssetID(c), parseAddress(c), value})
-		return nil
+	case c.Bool("prepaid"):
+		rates := c.String("rates")
+		if rates == "" {
+			fmt.Println("rates is required with [--rates]")
+			return nil
+		}
+		resp, err = httpjsonrpc.Call(Address(), "prepaidasset", 0, []interface{}{parseAssetID(c), value, rates})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -106,10 +112,14 @@ func NewCommand() *cli.Command {
 				Name:  "transfer, t",
 				Usage: "transfer asset",
 			},
+			cli.BoolFlag{
+				Name:  "prepaid",
+				Usage: "prepaid asset",
+			},
 			cli.StringFlag{
 				Name:  "wallet, w",
 				Usage: "wallet name",
-				Value: account.WalletFileName,
+				Value: wallet.WalletFileName,
 			},
 			cli.StringFlag{
 				Name:  "password, p",
@@ -131,6 +141,10 @@ func NewCommand() *cli.Command {
 				Name:  "value, v",
 				Usage: "asset amount",
 				Value: "",
+			},
+			cli.StringFlag{
+				Name:  "rates",
+				Usage: "rates",
 			},
 		},
 		Action: assetAction,

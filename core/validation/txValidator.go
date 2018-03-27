@@ -197,6 +197,9 @@ func CheckAssetPrecision(Tx *tx.Transaction) error {
 }
 
 func CheckTransactionBalance(Tx *tx.Transaction) error {
+	if Tx.TxType == tx.Prepaid {
+		return nil
+	}
 	for _, v := range Tx.Outputs {
 		if v.Value <= common.Fixed64(0) {
 			return errors.New("Invalide transaction UTXO output.")
@@ -251,9 +254,9 @@ func checkIssuerInBookkeeperList(issuer *crypto.PubKey, bookKeepers []*crypto.Pu
 	return false
 }
 
-func CheckTransactionPayload(Tx *tx.Transaction) error {
+func CheckTransactionPayload(txn *tx.Transaction) error {
 
-	switch pld := Tx.Payload.(type) {
+	switch pld := txn.Payload.(type) {
 	case *payload.BookKeeper:
 		//Todo: validate bookKeeper Cert
 		_ = pld.Cert
@@ -273,6 +276,24 @@ func CheckTransactionPayload(Tx *tx.Transaction) error {
 	case *payload.IssueAsset:
 	case *payload.TransferAsset:
 	case *payload.BookKeeping:
+	case *payload.Prepaid:
+		var inputAmount, outputAmount common.Fixed64
+		for _, input := range txn.UTXOInputs {
+			reftxn, err := tx.TxStore.GetTransaction(input.ReferTxID)
+			if err != nil {
+				return err
+			}
+			inputAmount += reftxn.Outputs[input.ReferTxOutputIndex].Value
+		}
+		for _, output := range txn.Outputs {
+			outputAmount += output.Value
+		}
+		if inputAmount - outputAmount != pld.Amount {
+			fmt.Println(inputAmount)
+			fmt.Println(outputAmount)
+			fmt.Println(pld.Amount)
+			return errors.New("prepaid transaction balance unmatched")
+		}
 	case *payload.DeployCode:
 	case *payload.InvokeCode:
 	default:

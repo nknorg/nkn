@@ -9,10 +9,10 @@ import (
 	tx "nkn-core/core/transaction"
 	. "nkn-core/errors"
 	"nkn-core/helper"
-	"nkn-core/account"
+	"nkn-core/wallet"
 )
 
-var Wallet account.Client
+var Wallet wallet.Wallet
 
 func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 
@@ -450,6 +450,53 @@ func sendToAddress(params []interface{}) map[string]interface{} {
 	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
 		return RpcResult("error: " + errCode.Error())
 	}
+	txHash := txn.Hash()
+	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
+}
+
+func prepaidAsset(params []interface{}) map[string]interface{} {
+	if len(params) < 3 {
+		return RpcResultNil
+	}
+	var assetName, assetValue, rates string
+	switch params[0].(type) {
+	case string:
+		assetName = params[0].(string)
+	default:
+		return RpcResultInvalidParameter
+	}
+	switch params[1].(type) {
+	case string:
+		assetValue = params[1].(string)
+	default:
+		return RpcResultInvalidParameter
+	}
+	switch params[2].(type) {
+	case string:
+		rates = params[2].(string)
+	default:
+		return RpcResultInvalidParameter
+	}
+	if Wallet == nil {
+		return RpcResult("open wallet first")
+	}
+	tmp, err := HexStringToBytesReverse(assetName)
+	if err != nil {
+		return RpcResult("error: invalid asset ID")
+	}
+	var assetID Uint256
+	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
+		return RpcResult("error: invalid asset hash")
+	}
+	txn, err := helper.MakePrepaidTransaction(Wallet, assetID, assetValue, rates)
+	if err != nil {
+		return RpcResultInternalError
+	}
+
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return RpcResultInvalidTransaction
+	}
+
 	txHash := txn.Hash()
 	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
 }

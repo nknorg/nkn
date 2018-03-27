@@ -3,7 +3,7 @@ package helper
 import (
 	"errors"
 	"fmt"
-	"nkn-core/account"
+	"nkn-core/wallet"
 	. "nkn-core/common"
 	. "nkn-core/core/asset"
 	"nkn-core/core/contract"
@@ -15,7 +15,7 @@ type BatchOut struct {
 	Value   string
 }
 
-func MakeRegTransaction(wallet account.Client, name string, value string) (*transaction.Transaction, error) {
+func MakeRegTransaction(wallet wallet.Wallet, name string, value string) (*transaction.Transaction, error) {
 	admin, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func MakeRegTransaction(wallet account.Client, name string, value string) (*tran
 	return txn, nil
 }
 
-func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string, value string) (*transaction.Transaction, error) {
+func MakeIssueTransaction(wallet wallet.Wallet, assetID Uint256, address string, value string) (*transaction.Transaction, error) {
 	programHash, err := ToScriptHash(address)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func MakeIssueTransaction(wallet account.Client, assetID Uint256, address string
 	return txn, nil
 }
 
-func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ...BatchOut) (*transaction.Transaction, error) {
+func MakeTransferTransaction(wallet wallet.Wallet, assetID Uint256, batchOut ...BatchOut) (*transaction.Transaction, error) {
 	outputNum := len(batchOut)
 	if outputNum == 0 {
 		return nil, errors.New("nil outputs")
@@ -142,6 +142,63 @@ func MakeTransferTransaction(wallet account.Client, assetID Uint256, batchOut ..
 
 	// construct transaction
 	txn, err := transaction.NewTransferAssetTransaction(input, output)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	ctx := contract.NewContractContext(txn)
+	wallet.Sign(ctx)
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
+}
+
+func MakePrepaidTransaction(wallet wallet.Wallet, assetID Uint256, value, rates string) (*transaction.Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	amount, err := StringToFixed64(value)
+	if err != nil {
+		return nil, err
+	}
+
+	unspent, err := wallet.GetUnspent()
+	if err != nil {
+		return nil, errors.New("get asset error")
+	}
+	inputs := []*transaction.UTXOTxInput{}
+	var changes *transaction.TxOutput
+	for _, item := range unspent[assetID] {
+		tmpInput := &transaction.UTXOTxInput{
+			ReferTxID:          item.Txid,
+			ReferTxOutputIndex: uint16(item.Index),
+		}
+		inputs = append(inputs, tmpInput)
+		if item.Value > amount {
+			changes = &transaction.TxOutput{
+				AssetID:     assetID,
+				Value:       item.Value - amount,
+				ProgramHash: account.ProgramHash,
+			}
+			amount = 0
+			break
+		} else if item.Value == amount {
+			amount = 0
+			break
+		} else if item.Value < amount {
+			amount = amount - item.Value
+		}
+
+	}
+	if amount > 0 {
+		return nil, errors.New("token is not enough")
+	}
+
+
+	txn, err := transaction.NewPrepaidTransaction(inputs, changes, assetID, value, rates)
 	if err != nil {
 		return nil, err
 	}

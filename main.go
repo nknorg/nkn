@@ -1,7 +1,7 @@
 package main
 
 import (
-	"nkn-core/account"
+	"nkn-core/wallet"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/consensus/dbft"
@@ -37,14 +37,14 @@ func init() {
 }
 
 func main() {
-	var acct *account.Account
+	var acct *wallet.Account
 	var blockChain *ledger.Blockchain
 	var err error
 	var noder protocol.Noder
 	log.Trace("Node version: ", config.Version)
 
-	if len(config.Parameters.BookKeepers) < account.DefaultBookKeeperCount {
-		log.Fatal("At least ", account.DefaultBookKeeperCount, " BookKeepers should be set at config.json")
+	if len(config.Parameters.BookKeepers) < wallet.DefaultBookKeeperCount {
+		log.Fatal("At least ", wallet.DefaultBookKeeperCount, " BookKeepers should be set at config.json")
 		os.Exit(1)
 	}
 
@@ -59,7 +59,7 @@ func main() {
 	ledger.DefaultLedger.Store.InitLedgerStore(ledger.DefaultLedger)
 	transaction.TxStore = ledger.DefaultLedger.Store
 	crypto.SetAlg(config.Parameters.EncryptAlg)
-	ledger.StandbyBookKeepers = account.GetBookKeepers()
+	ledger.StandbyBookKeepers = wallet.GetBookKeepers()
 
 	log.Info("2. BlockChain init")
 	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)
@@ -69,7 +69,7 @@ func main() {
 	ledger.DefaultLedger.Blockchain = blockChain
 
 	log.Info("3. Start the P2P networks")
-	client := account.GetClient()
+	client := wallet.GetClient()
 	if client == nil {
 		log.Fatal("Can't get local account.")
 		goto ERROR

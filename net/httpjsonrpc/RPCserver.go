@@ -33,6 +33,8 @@ func StartRPCServer() {
 	HandleFunc("setdebuginfo", sendToAddress)
 	HandleFunc("registasset", registAsset)
 	HandleFunc("issueasset", issueAsset)
+	HandleFunc("prepaidasset", prepaidAsset)
+
 
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(config.Parameters.HttpJsonPort), nil)

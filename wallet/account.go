@@ -1,4 +1,4 @@
-package account
+package wallet
 
 import (
 	. "nkn-core/common"
