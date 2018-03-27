@@ -34,8 +34,7 @@ func StartRPCServer() {
 	HandleFunc("registasset", registAsset)
 	HandleFunc("issueasset", issueAsset)
 	HandleFunc("prepaidasset", prepaidAsset)
-
-
+	HandleFunc("withdrawasset", withdrawAsset)
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(config.Parameters.HttpJsonPort), nil)
 	if err != nil {
