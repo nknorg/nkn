@@ -193,6 +193,8 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		tx.Payload = new(payload.BookKeeping)
 	case BookKeeper:
 		tx.Payload = new(payload.BookKeeper)
+	case Prepaid:
+		tx.Payload = new(payload.Prepaid)
 	case DeployCode:
 		tx.Payload = new(payload.DeployCode)
 	case InvokeCode:
@@ -313,6 +315,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], payload is illegal", k))
 			}
 		}
+	case Prepaid:
 	case TransferAsset:
 	case DeployCode:
 	case InvokeCode:
