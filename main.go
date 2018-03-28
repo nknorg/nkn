@@ -18,6 +18,7 @@ import (
 	"os"
 	"runtime"
 	"time"
+	"math/rand"
 )
 
 const (
@@ -34,6 +35,7 @@ func init() {
 	}
 	log.Debug("The Core number is ", coreNum)
 	runtime.GOMAXPROCS(coreNum)
+	rand.Seed(time.Now().UnixNano())
 }
 
 func main() {

@@ -7,35 +7,39 @@ import (
 	"nkn-core/core/contract/program"
 	"nkn-core/core/transaction/payload"
 	"nkn-core/crypto"
+	"nkn-core/crypto/util"
 	"nkn-core/smartcontract/types"
+)
+
+const (
+	TransactionNonceLength = 32
 )
 
 //initial a new transaction with asset registration payload
 func NewRegisterAssetTransaction(asset *asset.Asset, amount Fixed64, issuer *crypto.PubKey, conroller Uint160) (*Transaction, error) {
-
-	//TODO: check arguments
-
 	assetRegPayload := &payload.RegisterAsset{
-		Asset:  asset,
-		Amount: amount,
-		//Precision: precision,
+		Asset:      asset,
+		Amount:     amount,
 		Issuer:     issuer,
 		Controller: conroller,
 	}
 
 	return &Transaction{
-		//nonce uint64 //TODO: genenrate nonce
 		UTXOInputs: []*UTXOTxInput{},
-		Attributes: []*TxAttribute{},
-		TxType:     RegisterAsset,
-		Payload:    assetRegPayload,
-		Programs:   []*program.Program{},
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		},
+		TxType:   RegisterAsset,
+		Payload:  assetRegPayload,
+		Programs: []*program.Program{},
 	}, nil
 }
 
 //initial a new transaction with asset registration payload
 func NewBookKeeperTransaction(pubKey *crypto.PubKey, isAdd bool, cert []byte, issuer *crypto.PubKey) (*Transaction, error) {
-
 	bookKeeperPayload := &payload.BookKeeper{
 		PubKey: pubKey,
 		Action: payload.BookKeeperAction_SUB,
@@ -51,37 +55,45 @@ func NewBookKeeperTransaction(pubKey *crypto.PubKey, isAdd bool, cert []byte, is
 		TxType:     BookKeeper,
 		Payload:    bookKeeperPayload,
 		UTXOInputs: []*UTXOTxInput{},
-		Attributes: []*TxAttribute{},
-		Programs:   []*program.Program{},
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		}, Programs: []*program.Program{},
 	}, nil
 }
 
 func NewIssueAssetTransaction(outputs []*TxOutput) (*Transaction, error) {
-
 	assetRegPayload := &payload.IssueAsset{}
 
 	return &Transaction{
-		TxType:     IssueAsset,
-		Payload:    assetRegPayload,
-		Attributes: []*TxAttribute{},
-		Outputs:    outputs,
-		Programs:   []*program.Program{},
+		TxType:  IssueAsset,
+		Payload: assetRegPayload,
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		}, Outputs: outputs,
+		Programs: []*program.Program{},
 	}, nil
 }
 
 func NewTransferAssetTransaction(inputs []*UTXOTxInput, outputs []*TxOutput) (*Transaction, error) {
-
-	//TODO: check arguments
-
 	assetRegPayload := &payload.TransferAsset{}
 
 	return &Transaction{
-		TxType:     TransferAsset,
-		Payload:    assetRegPayload,
-		Attributes: []*TxAttribute{},
-		UTXOInputs: inputs,
-		Outputs:    outputs,
-		Programs:   []*program.Program{},
+		TxType:  TransferAsset,
+		Payload: assetRegPayload,
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		}, UTXOInputs: inputs,
+		Outputs:  outputs,
+		Programs: []*program.Program{},
 	}, nil
 }
 
@@ -101,12 +113,16 @@ func NewPrepaidTransaction(inputs []*UTXOTxInput, changes *TxOutput, assetID Uin
 	}
 
 	return &Transaction{
-		TxType:     Prepaid,
-		Payload:    prepaidPayload,
-		Attributes: []*TxAttribute{},
-		UTXOInputs: inputs,
-		Outputs:    []*TxOutput{changes},
-		Programs:   []*program.Program{},
+		TxType:  Prepaid,
+		Payload: prepaidPayload,
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		}, UTXOInputs: inputs,
+		Outputs:  []*TxOutput{changes},
+		Programs: []*program.Program{},
 	}, nil
 }
 
@@ -118,12 +134,16 @@ func NewWithdrawTransaction(output *TxOutput) (*Transaction, error) {
 	}
 
 	return &Transaction{
-		TxType:     Withdraw,
-		Payload:    withdrawPayload,
-		Attributes: []*TxAttribute{},
-		UTXOInputs: nil,
-		Outputs:    []*TxOutput{output},
-		Programs:   []*program.Program{},
+		TxType:  Withdraw,
+		Payload: withdrawPayload,
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		}, UTXOInputs: nil,
+		Outputs:  []*TxOutput{output},
+		Programs: []*program.Program{},
 	}, nil
 }
 
@@ -142,11 +162,15 @@ func NewDeployTransaction(fc *code.FunctionCode, programHash Uint160, name, code
 	}
 
 	return &Transaction{
-		TxType:     DeployCode,
-		Payload:    DeployCodePayload,
-		Attributes: []*TxAttribute{},
-		UTXOInputs: []*UTXOTxInput{},
-		Programs:   []*program.Program{},
+		TxType:  DeployCode,
+		Payload: DeployCodePayload,
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		}, UTXOInputs: []*UTXOTxInput{},
+		Programs: []*program.Program{},
 	}, nil
 }
 
@@ -160,10 +184,14 @@ func NewInvokeTransaction(fc []byte, codeHash Uint160, programhash Uint160) (*Tr
 	}
 
 	return &Transaction{
-		TxType:     InvokeCode,
-		Payload:    InvokeCodePayload,
-		Attributes: []*TxAttribute{},
-		UTXOInputs: []*UTXOTxInput{},
-		Programs:   []*program.Program{},
+		TxType:  InvokeCode,
+		Payload: InvokeCodePayload,
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		}, UTXOInputs: []*UTXOTxInput{},
+		Programs: []*program.Program{},
 	}, nil
 }
