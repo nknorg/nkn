@@ -14,7 +14,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"runtime"
 	"strconv"
@@ -173,8 +172,6 @@ func InitNode(pubKey *crypto.PubKey) Noder {
 
 	n.link.port = uint16(Parameters.NodePort)
 	n.relay = true
-	// TODO is it neccessary to init the rand seed here?
-	rand.Seed(time.Now().UTC().UnixNano())
 
 	key, err := pubKey.EncodePoint(true)
 	if err != nil {

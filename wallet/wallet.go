@@ -9,8 +9,6 @@ import (
 	"math/rand"
 	"os"
 	"sort"
-	"time"
-
 	. "nkn-core/common"
 	"nkn-core/common/config"
 	"nkn-core/common/log"
@@ -120,12 +118,11 @@ func NewWallet(path string, password []byte, create bool) *WalletImpl {
 		client.masterKey = make([]byte, 32)
 
 		//generate random number for iv/masterkey
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		for i := 0; i < 16; i++ {
-			client.iv[i] = byte(r.Intn(256))
+			client.iv[i] = byte(rand.Intn(256))
 		}
 		for i := 0; i < 32; i++ {
-			client.masterKey[i] = byte(r.Intn(256))
+			client.masterKey[i] = byte(rand.Intn(256))
 		}
 
 		//new client store (build DB)

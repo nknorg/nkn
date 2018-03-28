@@ -34,7 +34,6 @@ func (node *node) GetBlkHdrs() {
 	if ncout == 0 {
 		return
 	}
-	rand.Seed(time.Now().UnixNano())
 	index := rand.Intn(ncout)
 	n := nodelist[index]
 	SendMsgSyncHeaders(n)

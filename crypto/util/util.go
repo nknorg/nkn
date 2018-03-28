@@ -19,21 +19,23 @@ const (
 	NEGBIGNUMLEN  = 33
 )
 
+const (
+	MaxRandomBytesLength = 2048
+)
+
 type CryptoAlgSet struct {
 	EccParams elliptic.CurveParams
 	Curve     elliptic.Curve
 }
 
-// RandomNum Generate the "real" random number which can be used for crypto algorithm
-func RandomNum(n int) ([]byte, error) {
-	// TODO Get the random number from System urandom
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-
-	if err != nil {
-		return nil, err
+func RandomBytes(length int) []byte {
+	if length <= 0 || length >= MaxRandomBytesLength {
+		return nil
 	}
-	return b, nil
+	random := make([]byte, length)
+	rand.Read(random)
+
+	return random
 }
 
 func Hash(data []byte) [HASHLEN]byte {

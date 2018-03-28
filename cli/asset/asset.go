@@ -2,7 +2,6 @@ package asset
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 
 	"nkn-core/wallet"
@@ -10,6 +9,7 @@ import (
 	. "nkn-core/common"
 	"nkn-core/net/httpjsonrpc"
 	"github.com/urfave/cli"
+	"nkn-core/crypto/util"
 )
 
 const (
@@ -19,9 +19,7 @@ const (
 func parseAssetName(c *cli.Context) string {
 	name := c.String("name")
 	if name == "" {
-		rbuf := make([]byte, RANDBYTELEN)
-		rand.Read(rbuf)
-		name = "TEST-" + BytesToHexString(rbuf)
+		name = "TEST-" + BytesToHexString(util.RandomBytes(RANDBYTELEN))
 	}
 
 	return name
