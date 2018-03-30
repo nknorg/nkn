@@ -10,7 +10,6 @@ import (
 	. "nkn-core/cli/common"
 	"nkn-core/cli/debug"
 	"nkn-core/cli/info"
-	"nkn-core/cli/smartcontract"
 	"nkn-core/cli/wallet"
 	"github.com/urfave/cli"
 )
@@ -38,7 +37,6 @@ func main() {
 		*wallet.NewCommand(),
 		*asset.NewCommand(),
 		*bookkeeper.NewCommand(),
-		*smartcontract.NewCommand(),
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 	sort.Sort(cli.FlagsByName(app.Flags))

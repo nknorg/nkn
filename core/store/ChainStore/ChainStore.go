@@ -5,6 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sort"
+	"sync"
+	"time"
+
 	. "nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/common/serialization"
@@ -19,14 +23,6 @@ import (
 	"nkn-core/core/validation"
 	"nkn-core/crypto"
 	"nkn-core/events"
-	. "nkn-core/net/httprestful/error"
-	"nkn-core/net/httpwebsocket"
-	"nkn-core/smartcontract"
-	"nkn-core/smartcontract/service"
-	"nkn-core/smartcontract/states"
-	"sort"
-	"sync"
-	"time"
 )
 
 const (
@@ -508,17 +504,6 @@ func (bd *ChainStore) SaveAsset(assetId Uint256, asset *Asset) error {
 	return nil
 }
 
-func (bd *ChainStore) GetAssetState(assetId Uint256) (*states.AssetState, error) {
-	assetState := new(states.AssetState)
-	data, err := bd.st.Get(append([]byte{byte(ST_AssetState)}, assetId.ToArray()...))
-	if err != nil {
-		return nil, err
-	}
-	r := bytes.NewReader(data)
-	assetState.Deserialize(r)
-	return assetState, nil
-}
-
 func (bd *ChainStore) GetAsset(hash Uint256) (*Asset, error) {
 	log.Debug(fmt.Sprintf("GetAsset Hash: %x\n", hash))
 
@@ -693,7 +678,6 @@ func (bd *ChainStore) persist(b *Block) error {
 	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
 	unspents := make(map[Uint256][]uint16)
 	quantities := make(map[Uint256]Fixed64)
-	dbCache := NewDBCache(bd)
 
 	///////////////////////////////////////////////////////////////
 	// Get Unspents for every tx
@@ -775,7 +759,6 @@ func (bd *ChainStore) persist(b *Block) error {
 			return err
 		}
 
-		txHash := b.Transactions[i].Hash()
 		switch b.Transactions[i].TxType {
 		case tx.RegisterAsset:
 			ar := b.Transactions[i].Payload.(*payload.RegisterAsset)
@@ -809,97 +792,6 @@ func (bd *ChainStore) persist(b *Block) error {
 					quantities[assetId] = value
 				}
 			}
-		case tx.DeployCode:
-			deployCode := b.Transactions[i].Payload.(*payload.DeployCode)
-			codeHash := deployCode.Code.CodeHash()
-			dbCache.GetOrAdd(ST_Contract, string(codeHash.ToArray()), &states.ContractState{
-				Code:        deployCode.Code,
-				Name:        deployCode.Name,
-				Version:     deployCode.CodeVersion,
-				Author:      deployCode.Author,
-				Email:       deployCode.Email,
-				Description: deployCode.Description,
-				Language:    deployCode.Language,
-				ProgramHash: deployCode.ProgramHash,
-			})
-
-			smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
-				Language:     deployCode.Language,
-				Caller:       deployCode.ProgramHash,
-				StateMachine: service.NewStateMachine(dbCache, NewDBCache(bd)),
-				DBCache:      dbCache,
-				Code:         deployCode.Code.Code,
-				Time:         big.NewInt(int64(b.Header.Timestamp)),
-				BlockNumber:  big.NewInt(int64(b.Header.Height)),
-				Gas:          Fixed64(0),
-			})
-
-			if err != nil {
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				return err
-			}
-
-			ret, err := smartContract.DeployContract()
-			if err != nil {
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				continue
-			}
-
-			hash, err := ToCodeHash(ret)
-			if err != nil {
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, DEPLOY_TRANSACTION, err)
-				return err
-			}
-
-			httpwebsocket.PushResult(txHash, 0, DEPLOY_TRANSACTION, BytesToHexString(hash.ToArrayReverse()))
-			err = dbCache.Commit()
-			if err != nil {
-				return err
-			}
-		case tx.InvokeCode:
-			invokeCode := b.Transactions[i].Payload.(*payload.InvokeCode)
-			contract, err := bd.GetContract(invokeCode.CodeHash)
-			if err != nil {
-				log.Error("db getcontract err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			state, err := states.GetStateValue(ST_Contract, contract)
-			if err != nil {
-				log.Error("states GetStateValue err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				return err
-			}
-			contractState := state.(*states.ContractState)
-			stateMachine := service.NewStateMachine(dbCache, NewDBCache(bd))
-			smartContract, err := smartcontract.NewSmartContract(&smartcontract.Context{
-				Language:       contractState.Language,
-				Caller:         invokeCode.ProgramHash,
-				StateMachine:   stateMachine,
-				DBCache:        dbCache,
-				CodeHash:       invokeCode.CodeHash,
-				Input:          invokeCode.Code,
-				SignableData:   b.Transactions[i],
-				CacheCodeTable: NewCacheCodeTable(dbCache),
-				Time:           big.NewInt(int64(b.Header.Timestamp)),
-				BlockNumber:    big.NewInt(int64(b.Header.Height)),
-				Gas:            Fixed64(0),
-				ReturnType:     contractState.Code.ReturnType,
-				ParameterTypes: contractState.Code.ParameterTypes,
-			})
-			if err != nil {
-				log.Error("smartcontract NewSmartContract err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			ret, err := smartContract.InvokeContract()
-			if err != nil {
-				log.Error("smartContract InvokeContract err:", err)
-				httpwebsocket.PushResult(txHash, SMARTCODE_ERROR, INVOKE_TRANSACTION, err)
-				continue
-			}
-			stateMachine.CloneCache.Commit()
-			httpwebsocket.PushResult(txHash, 0, INVOKE_TRANSACTION, ret)
 		}
 		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
 			output := b.Transactions[i].Outputs[index]
@@ -1161,11 +1053,6 @@ func (bd *ChainStore) persist(b *Block) error {
 
 	// BATCH PUT VALUE
 	bd.st.BatchPut(currentBlockKey.Bytes(), currentBlock.Bytes())
-
-	err = dbCache.Commit()
-	if err != nil {
-		return err
-	}
 
 	err = bd.st.BatchCommit()
 

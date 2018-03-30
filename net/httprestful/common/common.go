@@ -1,6 +1,11 @@
 package common
 
 import (
+	"bytes"
+	"fmt"
+	"math"
+	"strconv"
+
 	. "nkn-core/common"
 	"nkn-core/core/ledger"
 	tx "nkn-core/core/transaction"
@@ -8,11 +13,6 @@ import (
 	. "nkn-core/net/httpjsonrpc"
 	Err "nkn-core/net/httprestful/error"
 	. "nkn-core/net/protocol"
-	"bytes"
-	"fmt"
-	"math"
-	"strconv"
-	"nkn-core/smartcontract/states"
 )
 
 var node Noder
@@ -498,55 +498,5 @@ func ResponsePack(errCode int64) map[string]interface{} {
 		"Desc":    "",
 		"Version": "1.0.0",
 	}
-	return resp
-}
-func GetContract(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(Err.SUCCESS)
-	str := cmd["Hash"].(string)
-	bys, err := HexStringToBytesReverse(str)
-	if err != nil {
-		resp["Error"] = Err.INVALID_PARAMS
-		return resp
-	}
-	var hash Uint160
-	err = hash.Deserialize(bytes.NewReader(bys))
-	if err != nil {
-		resp["Error"] = Err.INVALID_PARAMS
-		return resp
-	}
-	//TODO GetContract from store
-	contract, err := ledger.DefaultLedger.Store.GetContract(hash)
-	if err != nil {
-		resp["Error"] = Err.INVALID_PARAMS
-		return resp
-	}
-	c := new(states.ContractState)
-	b := bytes.NewBuffer(contract)
-	c.Deserialize(b)
-	var params []int
-	for _, v := range c.Code.ParameterTypes {
-		params = append(params, int(v))
-	}
-	codehash := c.Code.CodeHash()
-	funcCode := &FunctionCodeInfo{
-		Code:           BytesToHexString(c.Code.Code),
-		ParameterTypes: params,
-		ReturnType:     int(c.Code.ReturnType),
-		CodeHash:       BytesToHexString(codehash.ToArrayReverse()),
-	}
-	programHash := c.ProgramHash
-	result := DeployCodeInfo{
-		Name:        c.Name,
-		Author:      c.Author,
-		Email:       c.Email,
-		Version: c.Version,
-		Description: c.Description,
-		Language:    int(c.Language),
-		Code:        new(FunctionCodeInfo),
-		ProgramHash: BytesToHexString(programHash.ToArrayReverse()),
-	}
-
-	result.Code = funcCode
-	resp["Result"] = result
 	return resp
 }

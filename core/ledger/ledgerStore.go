@@ -6,7 +6,6 @@ import (
 	. "nkn-core/core/asset"
 	tx "nkn-core/core/transaction"
 	"nkn-core/crypto"
-	"nkn-core/smartcontract/states"
 )
 
 // ILedgerStore provides func with store package.
@@ -31,7 +30,6 @@ type ILedgerStore interface {
 	GetContract(codeHash Uint160) ([]byte, error)
 	GetStorage(key []byte) ([]byte, error)
 	GetAccount(programHash Uint160) (*account.AccountState, error)
-	GetAssetState(assetId Uint256) (*states.AssetState, error)
 
 	GetCurrentBlockHash() Uint256
 	GetCurrentHeaderHash() Uint256

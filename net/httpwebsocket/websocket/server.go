@@ -129,7 +129,6 @@ func (ws *WsServer) registryMethod() {
 		"getblockbyhash":     {handler: GetBlockByHash},
 		"getblockheight":     {handler: GetBlockHeight},
 		"gettransaction":     {handler: GetTransactionByHash},
-		"getcontract":        {handler: GetContract},
 		"getasset":           {handler: GetAssetByHash},
 		"getunspendoutput":   {handler: GetUnspendOutput},
 
