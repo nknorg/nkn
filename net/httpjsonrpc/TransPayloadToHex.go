@@ -15,25 +15,6 @@ type BookKeepingInfo struct {
 	Issuer IssuerInfo
 }
 
-//implement PayloadInfo define DeployCodeInfo
-type FunctionCodeInfo struct {
-	Code           string
-	ParameterTypes []int
-	ReturnType    int
-	CodeHash       string
-}
-
-type DeployCodeInfo struct {
-	Code        *FunctionCodeInfo
-	Name        string
-	Version string
-	Author      string
-	Email       string
-	Description string
-	Language    int
-	ProgramHash string
-}
-
 //implement PayloadInfo define IssueAssetInfo
 type IssueAssetInfo struct {
 }
@@ -95,26 +76,6 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 		obj := new(PrepaidInfo)
 		obj.Amount = object.Amount.String()
 		obj.Rates = object.Rates.String()
-		return obj
-	case *payload.DeployCode:
-		obj := new(DeployCodeInfo)
-		obj.Code = new(FunctionCodeInfo)
-		obj.Code.Code = BytesToHexString(object.Code.Code)
-		var params []int
-		for _, v := range object.Code.ParameterTypes {
-			params = append(params, int(v))
-		}
-		obj.Code.ParameterTypes = params
-		obj.Code.ReturnType = int(object.Code.ReturnType)
-		codeHash := object.Code.CodeHash()
-		obj.Code.CodeHash = BytesToHexString(codeHash.ToArrayReverse())
-		obj.Name = object.Name
-		obj.Version = object.CodeVersion
-		obj.Author = object.Author
-		obj.Email = object.Email
-		obj.Description = object.Description
-		obj.Language = int(object.Language)
-		obj.ProgramHash = BytesToHexString(object.ProgramHash.ToArrayReverse())
 		return obj
 	case *payload.RegisterAsset:
 		obj := new(RegisterAssetInfo)

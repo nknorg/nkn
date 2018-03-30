@@ -54,7 +54,6 @@ const (
 	Api_NoticeServerState   = "/api/v1/config/noticeserver/state"
 	Api_WebsocketState      = "/api/v1/config/websocket/state"
 	Api_Restart             = "/api/v1/restart"
-	Api_GetContract         = "/api/v1/contract/:hash"
 )
 
 func InitRestServer() ApiServer {
@@ -143,7 +142,6 @@ func (rt *restServer) registryMethod() {
 		Api_GetTotalIssued:      {name: "gettotalissued", handler: GetTotalIssued},
 		Api_Gettransaction:      {name: "gettransaction", handler: GetTransactionByHash},
 		Api_Getasset:            {name: "getasset", handler: GetAssetByHash},
-		Api_GetContract:         {name: "getcontract", handler: GetContract},
 		Api_GetUTXObyAddr:       {name: "getutxobyaddr", handler: GetUnspends},
 		Api_GetUTXObyAsset:      {name: "getutxobyasset", handler: GetUnspendOutput},
 		Api_GetBalanceByAddr:    {name: "getbalancebyaddr", handler: GetBalanceByAddr},
@@ -184,9 +182,7 @@ func (rt *restServer) getPath(url string) string {
 		return Api_GetTotalIssued
 	} else if strings.Contains(url, strings.TrimRight(Api_Gettransaction, ":hash")) {
 		return Api_Gettransaction
-	} else if strings.Contains(url, strings.TrimRight(Api_GetContract, ":hash")) {
-		return Api_GetContract
-	} else if strings.Contains(url, strings.TrimRight(Api_GetBalanceByAddr, ":addr")) {
+	}  else if strings.Contains(url, strings.TrimRight(Api_GetBalanceByAddr, ":addr")) {
 		return Api_GetBalanceByAddr
 	} else if strings.Contains(url, strings.TrimRight(Api_GetBalancebyAsset, ":addr/:assetid")) {
 		return Api_GetBalancebyAsset
@@ -225,10 +221,6 @@ func (rt *restServer) getParams(r *http.Request, url string, req map[string]inte
 		req["Assetid"] = getParam(r, "assetid")
 		break
 	case Api_Gettransaction:
-		req["Hash"] = getParam(r, "hash")
-		req["Raw"] = r.FormValue("raw")
-		break
-	case Api_GetContract:
 		req["Hash"] = getParam(r, "hash")
 		req["Raw"] = r.FormValue("raw")
 		break

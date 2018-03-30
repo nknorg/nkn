@@ -304,9 +304,6 @@ func CheckTransactionPayload(txn *tx.Transaction) error {
 		if outputAmount > *prepaidAmount {
 			return errors.New("asset is not enough")
 		}
-
-	case *payload.DeployCode:
-	case *payload.InvokeCode:
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")
 	}

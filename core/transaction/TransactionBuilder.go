@@ -3,12 +3,10 @@ package transaction
 import (
 	. "nkn-core/common"
 	"nkn-core/core/asset"
-	"nkn-core/core/code"
 	"nkn-core/core/contract/program"
 	"nkn-core/core/transaction/payload"
 	"nkn-core/crypto"
 	"nkn-core/crypto/util"
-	"nkn-core/smartcontract/types"
 )
 
 const (
@@ -143,55 +141,6 @@ func NewWithdrawTransaction(output *TxOutput) (*Transaction, error) {
 			},
 		}, UTXOInputs: nil,
 		Outputs:  []*TxOutput{output},
-		Programs: []*program.Program{},
-	}, nil
-}
-
-//initial a new transaction with publish payload
-func NewDeployTransaction(fc *code.FunctionCode, programHash Uint160, name, codeversion, author, email, desp string, language types.LangType) (*Transaction, error) {
-	//TODO: check arguments
-	DeployCodePayload := &payload.DeployCode{
-		Code:        fc,
-		Name:        name,
-		CodeVersion: codeversion,
-		Author:      author,
-		Email:       email,
-		Description: desp,
-		Language:    language,
-		ProgramHash: programHash,
-	}
-
-	return &Transaction{
-		TxType:  DeployCode,
-		Payload: DeployCodePayload,
-		Attributes: []*TxAttribute{
-			{
-				Usage: Nonce,
-				Data:  util.RandomBytes(TransactionNonceLength),
-			},
-		}, UTXOInputs: []*UTXOTxInput{},
-		Programs: []*program.Program{},
-	}, nil
-}
-
-//initial a new transaction with invoke payload
-func NewInvokeTransaction(fc []byte, codeHash Uint160, programhash Uint160) (*Transaction, error) {
-	//TODO: check arguments
-	InvokeCodePayload := &payload.InvokeCode{
-		Code:        fc,
-		CodeHash:    codeHash,
-		ProgramHash: programhash,
-	}
-
-	return &Transaction{
-		TxType:  InvokeCode,
-		Payload: InvokeCodePayload,
-		Attributes: []*TxAttribute{
-			{
-				Usage: Nonce,
-				Data:  util.RandomBytes(TransactionNonceLength),
-			},
-		}, UTXOInputs: []*UTXOTxInput{},
 		Programs: []*program.Program{},
 	}, nil
 }
