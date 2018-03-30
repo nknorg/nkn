@@ -7,9 +7,27 @@ import (
 	"io"
 
 	. "nkn-core/common"
+	"nkn-core/common/log"
 	"nkn-core/common/serialization"
 	"nkn-core/crypto"
 )
+
+// for the first relay node
+// 1. New : create a new Signature Chain
+// 2. Sign: sign the first element
+//
+// for the next relay node
+// 1. NewElem : Create a new Signature Chain Element
+// 2. Sign: sign the element create above
+// 3. Append: append new element to existed signature chain
+
+// TODO fake private key for signing, use local wallet instead
+var privateKeyStub = []byte{
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+}
 
 type SigChain struct {
 	dataSize   uint32         // payload size
@@ -26,59 +44,59 @@ type SigChainElem struct {
 }
 
 // first relay node starts a new signature chain which consists of meta data and the first element.
-func New(dataSize uint32, dataHash *Uint256, srcPubkey *crypto.PubKey, destPubkey *crypto.PubKey, nextPubkey *crypto.PubKey, signature []byte) *SigChain {
+func New(dataSize uint32, dataHash *Uint256, srcPubkey *crypto.PubKey, destPubkey *crypto.PubKey, nextPubkey *crypto.PubKey) *SigChain {
 	var chain SigChain
-	firstElem := &SigChainElem{
-		pubkey:     pubKey,
-		nextPubkey: nextPubkey,
-		signature:  signature,
-	}
 	chain.dataSize = dataSize
 	chain.dataHash = dataHash
 	chain.srcPubkey = srcPubkey
 	chain.destPubkey = destPubkey
+	firstElem := NewElem(srcPubkey, nextPubkey)
 	chain.elems = append(chain.elems, firstElem)
 
 	return &chain
 }
 
 // Create a new signature chain element for relay node.
-func NewElem(pubkey *crypto.PubKey, nextPubkey *crypto.PubKey, signature []byte) *SigChainElem {
+func NewElem(pubKey *crypto.PubKey, nextPubkey *crypto.PubKey) *SigChainElem {
 	return &SigChainElem{
 		pubkey:     pubKey,
 		nextPubkey: nextPubkey,
-		signature:  signature,
+		signature:  nil,
 	}
 }
 
-// stub function, when receive data from other node, calculate hash first
-// to construct signature chain element.
-func CalculateDataHash(data []byte) (*Uint256, error) {
-	h := sha256.Sum256(data)
-	hash, err := Uint256ParseFromBytes(h[:])
-	if err != nil {
-		return nil, err
+// Sign new created signature chain with local wallet.
+func (p *SigChain) Sign(elem *SigChainElem) error {
+	sigNum := p.SignatureNum()
+	switch {
+	case sigNum <= 0:
+		return errors.New("uninitialized signature chain")
+	case sigNum == 1:
+		firstElem, err := p.FirstSigElem()
+		if err != nil {
+			return err
+		}
+		if firstElem.signature != nil {
+			log.Warn("new signature chain resigned")
+		}
+		buff := bytes.NewBuffer(nil)
+		if err := p.SerializationMetadata(buff); err != nil {
+			return err
+		}
+		if err := firstElem.SerializationUnsigned(buff); err != nil {
+			return err
+		}
+		hash := sha256.Sum256(buff.Bytes())
+		signature, err := crypto.Sign(privateKeyStub, hash[:])
+		if err != nil {
+			return err
+		}
+		firstElem.signature = signature
+	case sigNum > 1:
+		return errors.New("sign signature chain error")
 	}
 
-	return &hash, nil
-}
-
-// stub function, sign signature chain element with local wallet.
-func SignSigChainELem(elem *SigChainElem) ([]byte, error) {
-	var err error
-	var privateKeyStub = []byte{
-		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-	}
-	buff := bytes.NewBuffer(nil)
-	err = elem.SerializationUnsigned(buff)
-	if err != nil {
-		return nil, err
-	}
-
-	return crypto.Sign(privateKeyStub, buff.Bytes())
+	return nil
 }
 
 // Append appends a new signature chain element in existed signature chain.
@@ -110,17 +128,10 @@ func (p *SigChain) Append(elem *SigChainElem) (*SigChain, error) {
 func (p *SigChain) Verify() error {
 	var err error
 
-	firstElem, err := p.FirstSigElem()
-	if err != nil {
-		return err
-	}
-
 	prevNextPubkey := p.srcPubkey
-
 	buff := bytes.NewBuffer(nil)
 	p.SerializationMetadata(buff)
 	prevHash := sha256.Sum256(buff.Bytes())
-
 	for _, e := range p.elems {
 		// verify each element public key is correct
 		if crypto.Equal(prevNextPubkey, e.pubkey) != true {
@@ -129,8 +140,8 @@ func (p *SigChain) Verify() error {
 
 		// verify each element signature
 		buff := bytes.NewBuffer(nil)
+		serialization.WriteVarBytes(buff, prevHash[:])
 		e.SerializationUnsigned(buff)
-		prevHash.Serialize(buff)
 		currHash := sha256.Sum256(buff.Bytes())
 		err = crypto.Verify(*e.pubkey, currHash[:], e.signature)
 		if err != nil {
@@ -173,6 +184,11 @@ func (p *SigChain) LastSigElem() (*SigChainElem, error) {
 	return p.elems[num-1], nil
 }
 
+// SignatureNum returns element num in current signature chain
+func (p *SigChain) SignatureNum() int {
+	return len(p.elems)
+}
+
 func (p *SigChain) Serialization(w io.Writer) error {
 	var err error
 	err = p.SerializationMetadata(w)
@@ -197,7 +213,7 @@ func (p *SigChain) Serialization(w io.Writer) error {
 
 func (p *SigChain) SerializationMetadata(w io.Writer) error {
 	var err error
-	err = serialization.WriteUint32(w, uint32(p.dataSize))
+	err = serialization.WriteUint32(w, p.dataSize)
 	if err != nil {
 		return err
 	}
@@ -246,7 +262,6 @@ func (p *SigChain) DeserializationMetadata(r io.Reader) error {
 		return err
 	}
 	p.dataSize = dataSize
-
 	err = p.dataHash.Deserialize(r)
 	if err != nil {
 		return err
@@ -261,6 +276,31 @@ func (p *SigChain) DeserializationMetadata(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+// Sign new signature chain element with local wallet.
+func (p *SigChainElem) Sign(sigchain *SigChain) error {
+	var err error
+	lastElem, err := sigchain.LastSigElem()
+	if err != nil {
+		return err
+	}
+	buff := bytes.NewBuffer(nil)
+	err = serialization.WriteVarBytes(buff, lastElem.signature)
+	if err != nil {
+		return err
+	}
+	err = p.SerializationUnsigned(buff)
+	if err != nil {
+		return err
+	}
+	signature, err := crypto.Sign(privateKeyStub, buff.Bytes())
+	if err != nil {
+		return err
+	}
+	p.signature = signature
 
 	return nil
 }

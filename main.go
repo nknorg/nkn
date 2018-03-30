@@ -15,6 +15,7 @@ import (
 	"nkn-core/net/httpwebsocket"
 	"nkn-core/net/httpnodeinfo"
 	"nkn-core/net/protocol"
+	_"nkn-core/core/sigchain" // for testing sigchain package
 	"os"
 	"runtime"
 	"time"
