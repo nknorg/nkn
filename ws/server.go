@@ -1,13 +1,13 @@
-package httpwebsocket
+package ws
 
 import (
 	. "nkn-core/common"
 	. "nkn-core/common/config"
 	"nkn-core/core/ledger"
 	"nkn-core/events"
-	"nkn-core/net/httprestful/common"
-	Err "nkn-core/net/httprestful/error"
-	"nkn-core/net/httpwebsocket/websocket"
+	"nkn-core/rpc/httprestful/common"
+	Err "nkn-core/rpc/httprestful/error"
+	"nkn-core/ws/websocket"
 	. "nkn-core/net/protocol"
 	"bytes"
 )

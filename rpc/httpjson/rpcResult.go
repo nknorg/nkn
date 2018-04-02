@@ -1,4 +1,4 @@
-package httpjsonrpc
+package httpjson
 
 var (
 	RpcResultInvalidHash        = responsePacking("invalid hash")

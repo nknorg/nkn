@@ -10,8 +10,8 @@ import (
 	"nkn-core/core/ledger"
 	tx "nkn-core/core/transaction"
 	. "nkn-core/errors"
-	. "nkn-core/net/httpjsonrpc"
-	Err "nkn-core/net/httprestful/error"
+	. "nkn-core/rpc/httpjson"
+	Err "nkn-core/rpc/httprestful/error"
 	. "nkn-core/net/protocol"
 )
 

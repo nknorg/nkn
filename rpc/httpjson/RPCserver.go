@@ -1,4 +1,4 @@
-package httpjsonrpc
+package httpjson
 
 import (
 	"nkn-core/common/config"
