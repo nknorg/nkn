@@ -1109,7 +1109,7 @@ func (self *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 	}
 
 	if b.Header.Height == headerHeight {
-		err := validation.VerifyBlock(b, ledger, false)
+		err := VerifyBlock(b, ledger, false)
 		if err != nil {
 			log.Error("VerifyBlock error!")
 			return err

@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"nkn-core/common"
-	"nkn-core/core/ledger"
 	"nkn-core/core/transaction"
 	"nkn-core/crypto"
 	. "nkn-core/errors"
@@ -121,7 +120,7 @@ type Noder interface {
 	SetBookKeeperAddr(pk *crypto.PubKey)
 	GetNeighborHeights() ([]uint64, uint64)
 	SyncNodeHeight()
-	CleanSubmittedTransactions(block *ledger.Block) error
+	CleanSubmittedTransactions(txns []*transaction.Transaction) error
 
 	GetNeighborNoder() []Noder
 	GetNbrNodeCnt() uint32

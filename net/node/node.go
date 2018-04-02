@@ -50,7 +50,7 @@ type node struct {
 	local      *node             // The pointer to local node
 	nbrNodes                     // The neighbor node connect with currently node except itself
 	eventQueue                   // The event queue to notice notice other modules
-	TXNPool                      // Unconfirmed transaction pool
+	transaction.TXNPool                      // Unconfirmed transaction pool
 	idCache                      // The buffer to store the id of the items which already be processed
 	/*
 	 * |--|--|--|--|--|--|isSyncFailed|isSyncHeaders|
@@ -185,7 +185,7 @@ func InitNode(pubKey *crypto.PubKey) Noder {
 	n.nbrNodes.init()
 	n.local = n
 	n.publicKey = pubKey
-	n.TXNPool.init()
+	n.TXNPool.Init()
 	n.eventQueue.init()
 	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnect)
 	go n.initConnection()

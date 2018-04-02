@@ -1,14 +1,14 @@
-package validation
+package ledger
 
 import (
-	"nkn-core/core/ledger"
 	tx "nkn-core/core/transaction"
+	"nkn-core/core/validation"
 	. "nkn-core/errors"
 	"errors"
 	"fmt"
 )
 
-func VerifyBlock(block *ledger.Block, ld *ledger.Ledger, completely bool) error {
+func VerifyBlock(block *Block, ld *Ledger, completely bool) error {
 	if block.Header.Height == 0 {
 		return nil
 	}
@@ -17,7 +17,7 @@ func VerifyBlock(block *ledger.Block, ld *ledger.Ledger, completely bool) error 
 		return err
 	}
 
-	flag, err := VerifySignableData(block)
+	flag, err := validation.VerifySignableData(block)
 	if flag == false || err != nil {
 		return err
 	}
@@ -47,14 +47,14 @@ func VerifyBlock(block *ledger.Block, ld *ledger.Ledger, completely bool) error 
 			}
 		*/
 		for _, txVerify := range block.Transactions {
-			if errCode := VerifyTransaction(txVerify); errCode != ErrNoError {
+			if errCode := tx.VerifyTransaction(txVerify); errCode != ErrNoError {
 				return errors.New(fmt.Sprintf("VerifyTransaction failed when verifiy block"))
 			}
-			if errCode := VerifyTransactionWithLedger(txVerify, ledger.DefaultLedger); errCode != ErrNoError {
+			if errCode := tx.VerifyTransactionWithLedger(txVerify); errCode != ErrNoError {
 				return errors.New(fmt.Sprintf("VerifyTransactionWithLedger failed when verifiy block"))
 			}
 		}
-		if err := VerifyTransactionWithBlock(block.Transactions); err != nil {
+		if err := tx.VerifyTransactionWithBlock(block.Transactions); err != nil {
 			return errors.New(fmt.Sprintf("VerifyTransactionWithBlock failed when verifiy block"))
 		}
 	}
@@ -62,11 +62,11 @@ func VerifyBlock(block *ledger.Block, ld *ledger.Ledger, completely bool) error 
 	return nil
 }
 
-func VerifyHeader(bd *ledger.Header, ledger *ledger.Ledger) error {
+func VerifyHeader(bd *Header, ledger *Ledger) error {
 	return VerifyBlockData(bd, ledger)
 }
 
-func VerifyBlockData(bd *ledger.Header, ledger *ledger.Ledger) error {
+func VerifyBlockData(bd *Header, ledger *Ledger) error {
 	if bd.Height == 0 {
 		return nil
 	}

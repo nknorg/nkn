@@ -62,7 +62,7 @@ func (ds *DbftService) BlockPersistCompleted(v interface{}) {
 	log.Debug()
 	if block, ok := v.(*ledger.Block); ok {
 		log.Infof("persist block: %x", block.Hash())
-		err := ds.localNet.CleanSubmittedTransactions(block)
+		err := ds.localNet.CleanSubmittedTransactions(block.Transactions)
 		if err != nil {
 			log.Warn(err)
 		}
