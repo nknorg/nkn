@@ -249,7 +249,7 @@ func submitBlock(params []interface{}) map[string]interface{} {
 		if err := ledger.DefaultLedger.Blockchain.AddBlock(&block); err != nil {
 			return RpcResultInvalidBlock
 		}
-		if err := node.LocalNode().CleanSubmittedTransactions(&block); err != nil {
+		if err := node.LocalNode().CleanSubmittedTransactions(block.Transactions); err != nil {
 			return RpcResultInternalError
 		}
 		if err := node.Xmit(&block); err != nil {

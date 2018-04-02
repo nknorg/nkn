@@ -1,21 +1,32 @@
-package validation
+package transaction
 
 import (
-	"nkn-core/common"
+	. "nkn-core/common"
 	"nkn-core/common/log"
 	"nkn-core/core/asset"
-	"nkn-core/core/ledger"
-	tx "nkn-core/core/transaction"
 	"nkn-core/core/transaction/payload"
 	"nkn-core/crypto"
+	"nkn-core/core/validation"
 	. "nkn-core/errors"
 	"errors"
 	"fmt"
 	"math"
 )
 
+
+type TxnHistory interface {
+	GetTransaction(hash Uint256) (*Transaction, error)
+	GetQuantityIssued(AssetId Uint256) (Fixed64, error)
+	IsDoubleSpend(tx *Transaction) bool
+	GetAsset(hash Uint256) (*asset.Asset, error)
+	GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error)
+	GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error)
+	IsTxHashDuplicate(txhash Uint256) bool
+}
+
+
 // VerifyTransaction verifys received single transaction
-func VerifyTransaction(Tx *tx.Transaction) ErrCode {
+func VerifyTransaction(Tx *Transaction) ErrCode {
 
 	if err := CheckDuplicateInput(Tx); err != nil {
 		log.Warn("[VerifyTransaction],", err)
@@ -51,9 +62,9 @@ func VerifyTransaction(Tx *tx.Transaction) ErrCode {
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
+func VerifyTransactionWithBlock(TxPool []*Transaction) error {
 	//initial
-	txnlist := make(map[common.Uint256]*tx.Transaction, 0)
+	txnlist := make(map[Uint256]*Transaction, 0)
 	var txPoolInputs []string
 	//sum all inputs in TxPool
 	for _, Tx := range TxPool {
@@ -75,32 +86,32 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 		}
 		//3.check issue amount
 		switch txn.TxType {
-		case tx.IssueAsset:
+		case IssueAsset:
 			//TODO: use delta mode to improve performance
 			results := txn.GetMergedAssetIDValueFromOutputs()
 			for k, _ := range results {
 				//Get the Asset amount when RegisterAsseted.
-				trx, err := tx.TxStore.GetTransaction(k)
-				if trx.TxType != tx.RegisterAsset {
+				trx, err := TxStore.GetTransaction(k)
+				if trx.TxType != RegisterAsset {
 					return errors.New("[VerifyTransaction], TxType is illegal.")
 				}
 				AssetReg := trx.Payload.(*payload.RegisterAsset)
 
 				//Get the amount has been issued of this assetID
-				var quantity_issued common.Fixed64
-				if AssetReg.Amount < common.Fixed64(0) {
+				var quantity_issued Fixed64
+				if AssetReg.Amount < Fixed64(0) {
 					continue
 				} else {
-					quantity_issued, err = tx.TxStore.GetQuantityIssued(k)
+					quantity_issued, err = TxStore.GetQuantityIssued(k)
 					if err != nil {
 						return errors.New("[VerifyTransaction], GetQuantityIssued failed.")
 					}
 				}
 
 				//calc the amounts in txPool which are also IssueAsset
-				var txPoolAmounts common.Fixed64
+				var txPoolAmounts Fixed64
 				for _, t := range TxPool {
-					if t.TxType == tx.IssueAsset {
+					if t.TxType == IssueAsset {
 						outputResult := t.GetMergedAssetIDValueFromOutputs()
 						for txidInPool, txValueInPool := range outputResult {
 							if txidInPool == k {
@@ -126,12 +137,12 @@ func VerifyTransactionWithBlock(TxPool []*tx.Transaction) error {
 }
 
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
-func VerifyTransactionWithLedger(Tx *tx.Transaction, ledger *ledger.Ledger) ErrCode {
-	if IsDoubleSpend(Tx, ledger) {
+func VerifyTransactionWithLedger(Tx *Transaction) ErrCode {
+	if IsDoubleSpend(Tx) {
 		log.Info("[VerifyTransactionWithLedger] IsDoubleSpend check faild.")
 		return ErrDoubleSpend
 	}
-	if exist := ledger.Store.IsTxHashDuplicate(Tx.Hash()); exist {
+	if exist := TxStore.IsTxHashDuplicate(Tx.Hash()); exist {
 		log.Info("[VerifyTransactionWithLedger] duplicate transaction check faild.")
 		return ErrTxHashDuplicate
 	}
@@ -139,7 +150,7 @@ func VerifyTransactionWithLedger(Tx *tx.Transaction, ledger *ledger.Ledger) ErrC
 }
 
 //validate the transaction of duplicate UTXO input
-func CheckDuplicateInput(tx *tx.Transaction) error {
+func CheckDuplicateInput(tx *Transaction) error {
 	if len(tx.UTXOInputs) == 0 {
 		return nil
 	}
@@ -153,7 +164,7 @@ func CheckDuplicateInput(tx *tx.Transaction) error {
 	return nil
 }
 
-func CheckDuplicateUtxoInBlock(tx *tx.Transaction, txPoolInputs []string) error {
+func CheckDuplicateUtxoInBlock(tx *Transaction, txPoolInputs []string) error {
 	var txInputs []string
 	for _, t := range tx.UTXOInputs {
 		txInputs = append(txInputs, t.ToString())
@@ -168,21 +179,21 @@ func CheckDuplicateUtxoInBlock(tx *tx.Transaction, txPoolInputs []string) error 
 	return nil
 }
 
-func IsDoubleSpend(tx *tx.Transaction, ledger *ledger.Ledger) bool {
-	return ledger.IsDoubleSpend(tx)
+func IsDoubleSpend(tx *Transaction) bool {
+	return TxStore.IsDoubleSpend(tx)
 }
 
-func CheckAssetPrecision(Tx *tx.Transaction) error {
+func CheckAssetPrecision(Tx *Transaction) error {
 	if len(Tx.Outputs) == 0 {
 		return nil
 	}
-	assetOutputs := make(map[common.Uint256][]*tx.TxOutput, len(Tx.Outputs))
+	assetOutputs := make(map[Uint256][]*TxOutput, len(Tx.Outputs))
 
 	for _, v := range Tx.Outputs {
 		assetOutputs[v.AssetID] = append(assetOutputs[v.AssetID], v)
 	}
 	for k, outputs := range assetOutputs {
-		asset, err := ledger.DefaultLedger.GetAsset(k)
+		asset, err := TxStore.GetAsset(k)
 		if err != nil {
 			return errors.New("The asset not exist in local blockchain.")
 		}
@@ -196,16 +207,16 @@ func CheckAssetPrecision(Tx *tx.Transaction) error {
 	return nil
 }
 
-func CheckTransactionBalance(txn *tx.Transaction) error {
-	if txn.TxType == tx.Prepaid || txn.TxType == tx.Withdraw{
+func CheckTransactionBalance(txn *Transaction) error {
+	if txn.TxType == Prepaid || txn.TxType == Withdraw{
 		return nil
 	}
 	for _, v := range txn.Outputs {
-		if v.Value <= common.Fixed64(0) {
+		if v.Value <= Fixed64(0) {
 			return errors.New("Invalide transaction UTXO output.")
 		}
 	}
-	if txn.TxType == tx.IssueAsset {
+	if txn.TxType == IssueAsset {
 		if len(txn.UTXOInputs) > 0 {
 			return errors.New("Invalide Issue transaction.")
 		}
@@ -224,13 +235,13 @@ func CheckTransactionBalance(txn *tx.Transaction) error {
 	return nil
 }
 
-func CheckAttributeProgram(Tx *tx.Transaction) error {
+func CheckAttributeProgram(Tx *Transaction) error {
 	//TODO: implement CheckAttributeProgram
 	return nil
 }
 
-func CheckTransactionContracts(Tx *tx.Transaction) error {
-	flag, err := VerifySignableData(Tx)
+func CheckTransactionContracts(Tx *Transaction) error {
+	flag, err := validation.VerifySignableData(Tx)
 	if flag && err == nil {
 		return nil
 	} else {
@@ -238,7 +249,7 @@ func CheckTransactionContracts(Tx *tx.Transaction) error {
 	}
 }
 
-func checkAmountPrecise(amount common.Fixed64, precision byte) bool {
+func checkAmountPrecise(amount Fixed64, precision byte) bool {
 	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
 }
 
@@ -254,13 +265,13 @@ func checkIssuerInBookkeeperList(issuer *crypto.PubKey, bookKeepers []*crypto.Pu
 	return false
 }
 
-func CheckTransactionPayload(txn *tx.Transaction) error {
+func CheckTransactionPayload(txn *Transaction) error {
 
 	switch pld := txn.Payload.(type) {
 	case *payload.BookKeeper:
 		//Todo: validate bookKeeper Cert
 		_ = pld.Cert
-		bookKeepers, _, _ := ledger.DefaultLedger.Store.GetBookKeeperList()
+		bookKeepers, _, _ := TxStore.GetBookKeeperList()
 		r := checkIssuerInBookkeeperList(pld.Issuer, bookKeepers)
 		if r == false {
 			return errors.New("The issuer isn't bookekeeper, can't add other in bookkeepers list.")
@@ -277,9 +288,9 @@ func CheckTransactionPayload(txn *tx.Transaction) error {
 	case *payload.TransferAsset:
 	case *payload.BookKeeping:
 	case *payload.Prepaid:
-		var inputAmount, outputAmount common.Fixed64
+		var inputAmount, outputAmount Fixed64
 		for _, input := range txn.UTXOInputs {
-			reftxn, err := tx.TxStore.GetTransaction(input.ReferTxID)
+			reftxn, err := TxStore.GetTransaction(input.ReferTxID)
 			if err != nil {
 				return err
 			}
@@ -292,12 +303,12 @@ func CheckTransactionPayload(txn *tx.Transaction) error {
 			return errors.New("prepaid transaction balance unmatched")
 		}
 	case *payload.Withdraw:
-		var outputAmount common.Fixed64
+		var outputAmount Fixed64
 
 		for _, output := range txn.Outputs {
 			outputAmount += output.Value
 		}
-		prepaidAmount, _, err := ledger.DefaultLedger.Store.GetPrepaidInfo(pld.ProgramHash)
+		prepaidAmount, _, err := TxStore.GetPrepaidInfo(pld.ProgramHash)
 		if err != nil {
 			return err
 		}
