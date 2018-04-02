@@ -7,7 +7,7 @@ import (
 	. "nkn-core/cli/common"
 	. "nkn-core/common"
 	"nkn-core/common/password"
-	"nkn-core/net/httpjsonrpc"
+	"nkn-core/rpc/httpjson"
 
 	"github.com/urfave/cli"
 )
@@ -95,7 +95,7 @@ func walletAction(c *cli.Context) error {
 			case "account":
 				showAccountInfo(wallet)
 			case "balance":
-				resp, err := httpjsonrpc.Call(Address(), "getbalance", 0, []interface{}{})
+				resp, err := httpjson.Call(Address(), "getbalance", 0, []interface{}{})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					return err

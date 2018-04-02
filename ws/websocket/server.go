@@ -3,9 +3,9 @@ package websocket
 import (
 	. "nkn-core/common/config"
 	"nkn-core/common/log"
-	. "nkn-core/net/httprestful/common"
-	Err "nkn-core/net/httprestful/error"
-	. "nkn-core/net/httpwebsocket/session"
+	. "nkn-core/rpc/httprestful/common"
+	Err "nkn-core/rpc/httprestful/error"
+	. "nkn-core/ws/session"
 	"context"
 	"crypto/tls"
 	"encoding/json"

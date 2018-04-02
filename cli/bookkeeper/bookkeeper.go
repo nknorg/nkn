@@ -7,7 +7,7 @@ import (
 	"nkn-core/core/signature"
 	"nkn-core/core/transaction"
 	"nkn-core/crypto"
-	"nkn-core/net/httpjsonrpc"
+	"nkn-core/rpc/httpjson"
 	"bytes"
 	"encoding/hex"
 	"fmt"
@@ -105,7 +105,7 @@ func assetAction(c *cli.Context) error {
 		return err
 	}
 
-	resp, err := httpjsonrpc.Call(Address(), "sendrawtransaction", 0, []interface{}{txHex})
+	resp, err := httpjson.Call(Address(), "sendrawtransaction", 0, []interface{}{txHex})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

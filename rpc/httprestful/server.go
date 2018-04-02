@@ -1,8 +1,8 @@
 package httprestful
 
 import (
-	"nkn-core/net/httprestful/common"
-	. "nkn-core/net/httprestful/restful"
+	"nkn-core/rpc/httprestful/common"
+	. "nkn-core/rpc/httprestful/restful"
 	. "nkn-core/net/protocol"
 )
 

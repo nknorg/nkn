@@ -1,4 +1,4 @@
-package httpnodeinfo
+package monitor
 
 const page = `
 <html>

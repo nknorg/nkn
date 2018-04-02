@@ -5,7 +5,7 @@ import (
 	"os"
 
 	. "nkn-core/cli/common"
-	"nkn-core/net/httpjsonrpc"
+	"nkn-core/rpc/httpjson"
 
 	"github.com/urfave/cli"
 )
@@ -17,7 +17,7 @@ func debugAction(c *cli.Context) (err error) {
 	}
 	level := c.Int("level")
 	if level != -1 {
-		resp, err := httpjsonrpc.Call(Address(), "setdebuginfo", 0, []interface{}{level})
+		resp, err := httpjson.Call(Address(), "setdebuginfo", 0, []interface{}{level})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
