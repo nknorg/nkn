@@ -325,7 +325,7 @@ func (ds *DbftService) GetUnverifiedTxs(txs []*tx.Transaction) []*tx.Transaction
 	if len(ds.context.Transactions) == 0 {
 		return nil
 	}
-	txpool := ds.localNet.GetTxnPool(false)
+	txpool := ds.localNet.GetTxnByCount(0)
 	ret := []*tx.Transaction{}
 	for _, t := range txs {
 		if _, ok := txpool[t.Hash()]; !ok {
@@ -535,7 +535,7 @@ func (ds *DbftService) Timeout() {
 			}
 
 			ds.context.Nonce = GetNonce()
-			transactionsPool := ds.localNet.GetTxnPool(true)
+			transactionsPool := ds.localNet.GetTxnByCount(0)
 			//TODO: add policy
 			//TODO: add max TX limitation
 

@@ -159,8 +159,8 @@ func getConnectionCount(params []interface{}) map[string]interface{} {
 
 func getRawMemPool(params []interface{}) map[string]interface{} {
 	txs := []*Transactions{}
-	txpool := node.GetTxnPool(false)
-	for _, t := range txpool {
+	txpool := node.GetTxnPool()
+	for _, t := range txpool.GetAllTransactions() {
 		txs = append(txs, TransArryByteToHexString(t))
 	}
 	if len(txs) == 0 {
