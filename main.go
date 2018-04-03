@@ -91,7 +91,6 @@ func main() {
 	if protocol.SERVICENODENAME != config.Parameters.NodeType {
 		log.Info("5. Start DBFT Services")
 		dbftServices := dbft.NewDbftService(client, "logdbft", noder)
-		httpjson.RegistDbftService(dbftServices)
 		go dbftServices.Start()
 		time.Sleep(5 * time.Second)
 	}

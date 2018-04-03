@@ -2,12 +2,12 @@ package transaction
 
 import (
 	"nkn-core/common"
-	"nkn-core/common/config"
 	"nkn-core/common/log"
 	"nkn-core/core/transaction/payload"
 	. "nkn-core/errors"
 	"fmt"
 	"sync"
+	"nkn-core/common/config"
 )
 
 type TXNPool struct {
@@ -18,13 +18,13 @@ type TXNPool struct {
 	inputUTXOList map[string]*Transaction         // transaction which pass the verify will add the UTXO to this map
 }
 
-func (this *TXNPool) Init() {
-	this.Lock()
-	defer this.Unlock()
-	this.txnCnt = 0
-	this.inputUTXOList = make(map[string]*Transaction)
-	this.issueSummary = make(map[common.Uint256]common.Fixed64)
-	this.txnList = make(map[common.Uint256]*Transaction)
+func NewTxnPool() *TXNPool{
+	return &TXNPool{
+		txnCnt: 0,
+		inputUTXOList: make(map[string]*Transaction),
+		issueSummary: make(map[common.Uint256]common.Fixed64),
+		txnList: make(map[common.Uint256]*Transaction),
+	}
 }
 
 //append transaction to txnpool when check ok.
@@ -48,27 +48,35 @@ func (this *TXNPool) AppendTxnPool(txn *Transaction) ErrCode {
 	return ErrNoError
 }
 
-//get the transaction in txnpool
-func (this *TXNPool) GetTxnPool(byCount bool) map[common.Uint256]*Transaction {
+func (this *TXNPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
 	this.RLock()
-	count := config.Parameters.MaxTxInBlock
-	if count <= 0 {
-		byCount = false
+	defer this.RUnlock()
+
+	n := 0
+	if num <= 0 {
+		n = config.Parameters.MaxTxInBlock
+	} else {
+		n = len(this.txnList)
+		if num < n {
+			n = num
+		}
+		if config.Parameters.MaxTxInBlock < n {
+			n = config.Parameters.MaxTxInBlock
+		}
 	}
-	if len(this.txnList) < count || !byCount {
-		count = len(this.txnList)
-	}
-	var num int
-	txnMap := make(map[common.Uint256]*Transaction, count)
-	for txnId, tx := range this.txnList {
-		txnMap[txnId] = tx
-		num++
-		if num >= count {
+
+	i := 0
+	txns := make(map[common.Uint256]*Transaction, n)
+	//TODO sort transaction list
+	for hash, txn := range this.txnList {
+		txns[hash] = txn
+		i++
+		if i >= n {
 			break
 		}
 	}
-	this.RUnlock()
-	return txnMap
+
+	return txns
 }
 
 //clean the trasaction Pool with committed block.
@@ -84,6 +92,18 @@ func (this *TXNPool) GetTransaction(hash common.Uint256) *Transaction {
 	this.RLock()
 	defer this.RUnlock()
 	return this.txnList[hash]
+}
+
+func (this *TXNPool) GetAllTransactions() map[common.Uint256]*Transaction {
+	this.RLock()
+	defer this.RUnlock()
+
+	txns := make(map[common.Uint256]*Transaction, len(this.txnList))
+	for hash, txn := range this.txnList {
+		txns[hash] = txn
+	}
+
+	return txns
 }
 
 //verify transaction with txnpool
