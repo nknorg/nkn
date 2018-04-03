@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"time"
 	"math/rand"
+	"nkn-core/consensus/ising"
 )
 
 const (
@@ -89,9 +90,11 @@ func main() {
 	noder.WaitForFourPeersStart()
 	noder.WaitForSyncBlkFinish()
 	if protocol.SERVICENODENAME != config.Parameters.NodeType {
-		log.Info("5. Start DBFT Services")
-		dbftServices := dbft.NewDbftService(client, "logdbft", noder)
-		go dbftServices.Start()
+		//log.Info("5. Start DBFT Services")
+		//dbftServices := dbft.NewDbftService(client, "logdbft", noder)
+		//go dbftServices.Start()
+		consensus := ising.New(client, noder)
+		consensus.Start()
 		time.Sleep(5 * time.Second)
 	}
 	httpjson.Wallet = client

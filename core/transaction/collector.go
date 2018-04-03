@@ -20,7 +20,7 @@ type TxnCollector struct {
 	TxnSource TxnSource
 }
 
-func New(source TxnSource, num int) *TxnCollector {
+func NewTxnCollector(source TxnSource, num int) *TxnCollector {
 	var entityNum int
 	if num <= 0 {
 		entityNum = 0
