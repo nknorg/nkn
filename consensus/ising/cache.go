@@ -72,9 +72,8 @@ func (p *BlockCache) AddBlockToCache(block *ledger.Block) error {
 	if p.BlockInCache(hash) {
 		return nil
 	}
-	//if p.CachedBlockNum() >= p.cap {
-	//	return errors.New("block")
-	//}
+	// TODO FIFO cleanup, if cap space is not enough then
+	// remove block from cache according to FIFO
 	p.Lock()
 	defer p.Unlock()
 	blockInfo := &BlockInfo{
@@ -86,14 +85,18 @@ func (p *BlockCache) AddBlockToCache(block *ledger.Block) error {
 	return nil
 }
 
+// Cleanup is a background routine used for cleaning up expired block in cache
 func (p *BlockCache) Cleanup() {
+	ticket := time.NewTicker(time.Minute)
 	for {
-		for _, blockInfo := range p.cache {
-			select {
-			case <-blockInfo.lifetime.C:
-				//TODO remove block from cache
+		select {
+		case <-ticket.C:
+			for blockHash, blockInfo := range p.cache {
+				select {
+				case <-blockInfo.lifetime.C:
+					p.RemoveBlockFromCache(blockHash)
+				}
 			}
-			time.Sleep(time.Second)
 		}
 	}
 }
