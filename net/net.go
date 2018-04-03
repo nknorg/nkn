@@ -12,6 +12,7 @@ import (
 
 type Neter interface {
 	GetTxnByCount(int) map[Uint256]*transaction.Transaction
+	GetTxnPool() *transaction.TXNPool
 	Xmit(interface{}) error
 	GetEvent(eventName string) *events.Event
 	GetBookKeepersAddrs() ([]*crypto.PubKey, uint64)
