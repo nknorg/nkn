@@ -33,6 +33,8 @@ const (
 	Commit        TransactionType = 0x42
 )
 
+type TransactionResult map[Uint256]Fixed64
+
 //Payload define the func for loading the payload data
 //base on payload type which have different struture
 type Payload interface {
