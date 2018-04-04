@@ -3,9 +3,8 @@ package events
 type EventType int16
 
 const (
-	EventSaveBlock             EventType = 0
-	EventReplyTx               EventType = 1
-	EventBlockPersistCompleted EventType = 2
-	EventNewInventory          EventType = 3
-	EventNodeDisconnect        EventType = 4
+	EventBlockPersistCompleted EventType = 0
+	EventNewInventory          EventType = 1
+	EventNodeDisconnect        EventType = 2
+	EventConsensusMsgReceived  EventType = 3
 )
