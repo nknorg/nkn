@@ -1,21 +1,25 @@
 package ising
 
 const (
-	// proposer node sent the block
-	BlockSent = 0
+	// proposer node get into this state after broadcast block
+	// voter node get into this state after received block
+	FloodingFinished = 1 << iota
 
-	// voter node received proposed block
-	BlockReceived = 1
+	// proposer node sent the proposal
+	ProposalSent
 
-	// voter node sent the idea of the proposed block
-	OpinionSent = 2
+	// voter node received proposal
+	ProposalReceived
+
+	// voter node sent the idea of the proposal
+	OpinionSent
 
 	// proposer node received the idea from voter node
-	OpintionReceived = 3
+	OpintionReceived
 
 	// proposer got enough votes
-	BlockConfirmed = 4
+	BlockConfirmed
 
 	// proposer got enough votes is enough
-	BlockDroped = 5
+	BlockDroped
 )
