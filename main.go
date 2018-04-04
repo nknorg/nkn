@@ -85,7 +85,7 @@ func main() {
 	}
 	noder = net.StartProtocol(acct.PublicKey)
 	httpjson.RegistRpcNode(noder)
-	time.Sleep(20 * time.Second)
+	time.Sleep(10 * time.Second)
 	noder.SyncNodeHeight()
 	noder.WaitForFourPeersStart()
 	noder.WaitForSyncBlkFinish()
