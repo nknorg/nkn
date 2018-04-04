@@ -143,7 +143,6 @@ func (msg Inv) Handle(node Noder) error {
 				log.Infof("inv request block hash: %x", id)
 				ReqBlkData(node, id)
 			}
-
 		}
 	default:
 		log.Warn("RX unknown inventory message")

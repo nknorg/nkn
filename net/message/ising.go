@@ -13,7 +13,7 @@ import (
 )
 
 type IsingPayload struct {
-	payloadData serialization.SerializableData
+	PayloadData serialization.SerializableData
 }
 
 type IsingMessage struct {
@@ -23,7 +23,7 @@ type IsingMessage struct {
 
 
 func (msg IsingMessage) Handle(node Noder) error {
-	node.LocalNode().GetEvent("ising").Notify(events.EventIsingMsgReceived, &msg.pld)
+	node.LocalNode().GetEvent("consensus").Notify(events.EventConsensusMsgReceived, &msg.pld)
 	return nil
 }
 
@@ -43,21 +43,20 @@ func (p *IsingMessage) Serialize() ([]byte, error) {
 
 
 func (p *IsingMessage) Deserialize(b []byte) error {
-	log.Debug()
 	buf := bytes.NewBuffer(b)
 	err := binary.Read(buf, binary.LittleEndian, &(p.msgHdr))
-	err = p.pld.payloadData.Deserialize(buf)
+	err = p.pld.Deserialize(buf)
 
 	return err
 }
 
 
 func (p *IsingPayload) Serialize(w io.Writer) error {
-	return p.payloadData.Serialize(w)
+	return p.PayloadData.Serialize(w)
 }
 
 func (p *IsingPayload) Deserialize(r io.Reader) error {
-	return p.payloadData.Deserialize(r)
+	return p.PayloadData.Deserialize(r)
 }
 
 func NewIsingConsensus(pld *IsingPayload) ([]byte, error) {
@@ -81,10 +80,11 @@ func NewIsingConsensus(pld *IsingPayload) ([]byte, error) {
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(b.Bytes()))
 
-	m, err := msg.Serialization()
+	m, err := msg.Serialize()
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
+
 	return m, nil
 }
