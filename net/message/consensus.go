@@ -35,20 +35,6 @@ type ConsensusPayload struct {
 type consensus struct {
 	msgHdr
 	cons ConsensusPayload
-	//event *events.Event
-	//TBD
-}
-
-func (cp *ConsensusPayload) Hash() common.Uint256 {
-	return common.Uint256{}
-}
-
-func (cp *ConsensusPayload) Verify() error {
-	return nil
-}
-
-func (cp *ConsensusPayload) InvertoryType() common.InventoryType {
-	return common.CONSENSUS
 }
 
 func (cp *ConsensusPayload) GetProgramHashes() ([]common.Uint160, error) {
@@ -112,25 +98,8 @@ func (b *ConsensusPayload) ToArray() ([]byte) {
 
 func (msg consensus) Handle(node Noder) error {
 	log.Debug()
-	node.LocalNode().GetEvent("consensus").Notify(events.EventNewInventory, &msg.cons)
+	node.LocalNode().GetEvent("consensus").Notify(events.EventConsensusMsgReceived, &msg.cons)
 	return nil
-}
-
-func reqConsensusData(node Noder, hash common.Uint256) error {
-	var msg dataReq
-	msg.dataType = common.CONSENSUS
-	// TODO handle the hash array case
-	msg.hash = hash
-
-	buf, _ := msg.Serialization()
-	go node.Tx(buf)
-
-	return nil
-}
-func (cp *ConsensusPayload) Type() common.InventoryType {
-
-	//TODO:Temporary add for Interface signature.SignableData use.
-	return common.CONSENSUS
 }
 
 func (cp *ConsensusPayload) SerializeUnsigned(w io.Writer) error {

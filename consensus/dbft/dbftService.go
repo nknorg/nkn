@@ -35,7 +35,7 @@ type DbftService struct {
 	started           bool
 	localNet          net.Neter
 
-	newInventorySubscriber          events.Subscriber
+	consensusMsgReceivedSubscriber  events.Subscriber
 	blockPersistCompletedSubscriber events.Subscriber
 }
 
@@ -202,7 +202,7 @@ func (ds *DbftService) Halt() error {
 
 	if ds.started {
 		ledger.DefaultLedger.Blockchain.BCEvents.UnSubscribe(events.EventBlockPersistCompleted, ds.blockPersistCompletedSubscriber)
-		ds.localNet.GetEvent("consensus").UnSubscribe(events.EventNewInventory, ds.newInventorySubscriber)
+		ds.localNet.GetEvent("consensus").UnSubscribe(events.EventNewInventory, ds.consensusMsgReceivedSubscriber)
 	}
 	return nil
 }
@@ -259,15 +259,9 @@ func (ds *DbftService) InitializeConsensus(viewNum byte) error {
 	return nil
 }
 
-func (ds *DbftService) LocalNodeNewInventory(v interface{}) {
-	log.Debug()
-	if inventory, ok := v.(Inventory); ok {
-		if inventory.Type() == CONSENSUS {
-			payload, ret := inventory.(*msg.ConsensusPayload)
-			if ret == true {
-				ds.NewConsensusPayload(payload)
-			}
-		}
+func (ds *DbftService) ConsensusMsgReceived(v interface{}) {
+	if payload, ok := v.(*msg.ConsensusPayload); ok {
+		ds.NewConsensusPayload(payload)
 	}
 }
 
@@ -502,7 +496,7 @@ func (ds *DbftService) Start() error {
 	}
 
 	ds.blockPersistCompletedSubscriber = ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, ds.BlockPersistCompleted)
-	ds.newInventorySubscriber = ds.localNet.GetEvent("consensus").Subscribe(events.EventNewInventory, ds.LocalNodeNewInventory)
+	ds.consensusMsgReceivedSubscriber = ds.localNet.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, ds.ConsensusMsgReceived)
 
 	go ds.InitializeConsensus(0)
 	return nil
