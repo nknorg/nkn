@@ -7,4 +7,5 @@ const (
 	EventNewInventory          EventType = 1
 	EventNodeDisconnect        EventType = 2
 	EventConsensusMsgReceived  EventType = 3
+	EventIsingMsgReceived      EventType = 4
 )

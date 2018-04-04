@@ -341,6 +341,13 @@ func (node *node) Xmit(message interface{}) error {
 			log.Error("Error New consensus message: ", err)
 			return err
 		}
+	case *IsingPayload:
+		isingPayload := message.(*IsingPayload)
+		buffer, err = NewIsingConsensus(isingPayload)
+		if err != nil {
+			log.Error("Error New ising consensus message: ", err)
+			return err
+		}
 	case Uint256:
 		log.Debug("TX block hash message")
 		hash := message.(Uint256)

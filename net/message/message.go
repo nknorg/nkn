@@ -116,6 +116,10 @@ func AllocMsg(t string, length int) Messager {
 		var msg consensus
 		copy(msg.msgHdr.CMD[0:len(t)], t)
 		return &msg
+	case "ising":
+		var msg IsingMessage
+		copy(msg.msgHdr.CMD[0:len(t)], t)
+		return &msg
 	case "filteradd":
 		var msg filteradd
 		copy(msg.msgHdr.CMD[0:len(t)], t)
