@@ -14,3 +14,7 @@ format:
 
 clean:
 	rm -rf *.8 *.o *.out *.6
+
+cov:
+	gocov test ./ | gocov-html > /tmp/coverage.html
+	open /tmp/coverage.html
