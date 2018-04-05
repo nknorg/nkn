@@ -2,15 +2,18 @@ package ising
 
 import (
 	"fmt"
-	. "nkn-core/common"
-	"nkn-core/common/serialization"
+	"math/rand"
+
+	."nkn-core/common"
 	"nkn-core/core/ledger"
 	"nkn-core/core/transaction"
-	"nkn-core/crypto"
 	"nkn-core/events"
 	"nkn-core/net"
 	"nkn-core/net/message"
 	"nkn-core/wallet"
+	"nkn-core/core/transaction/payload"
+	"nkn-core/core/contract/program"
+	"nkn-core/crypto"
 )
 
 const (
@@ -71,7 +74,11 @@ func (p *Ising) Start() error {
 		blockFlooding := &BlockFlooding{
 			block: block,
 		}
-		err = p.localNode.Xmit(BuildIsingConsensusPayload(blockFlooding))
+		payload, err := BuildIsingPayload(blockFlooding)
+		if err != nil {
+			return err
+		}
+		err = p.localNode.Xmit(payload)
 		if err != nil {
 			return err
 		}
@@ -81,11 +88,25 @@ func (p *Ising) Start() error {
 	return nil
 }
 
+func  CreateBookkeepingTransaction() *transaction.Transaction {
+	bookKeepingPayload := &payload.BookKeeping{
+		Nonce: rand.Uint64(),
+	}
+	return &transaction.Transaction{
+		TxType:         transaction.BookKeeping,
+		PayloadVersion: payload.BookKeepingPayloadVersion,
+		Payload:        bookKeepingPayload,
+		Attributes:     []*transaction.TxAttribute{},
+		UTXOInputs:     []*transaction.UTXOTxInput{},
+		Outputs:        []*transaction.TxOutput{},
+		Programs:       []*program.Program{},
+	}
+}
+
 func (p *Ising) BuildBlock() (*ledger.Block, error) {
 	var txnList []*transaction.Transaction
 	var txnHashList []Uint256
-	account, _ := p.wallet.GetDefaultAccount()
-	coinbase, _ := transaction.NewBookKeeperTransaction(account.PublicKey, true, nil, account.PublicKey)
+	coinbase := CreateBookkeepingTransaction()
 	txnList = append(txnList, coinbase)
 	txnHashList = append(txnHashList, coinbase.Hash())
 	txns := p.txnCollector.Collect()
@@ -99,6 +120,10 @@ func (p *Ising) BuildBlock() (*ledger.Block, error) {
 	}
 	header := &ledger.Header{
 		TransactionsRoot: txnRoot,
+		Program: &program.Program{
+			Code:      []byte{},
+			Parameter: []byte{},
+		},
 	}
 	block := &ledger.Block{
 		Header:       header,
@@ -110,7 +135,11 @@ func (p *Ising) BuildBlock() (*ledger.Block, error) {
 
 func (p *Ising) ConsensusMsgReceived(v interface{}) {
 	if payload, ok := v.(*message.IsingPayload); ok {
-		switch payload.PayloadData.(type) {
+		isingMsg, err := RecoverFromIsingPayload(payload.PayloadData)
+		if err != nil {
+			fmt.Println("Deserialization of ising message error")
+		}
+		switch isingMsg.(type) {
 		case *BlockFlooding:
 			fmt.Println("receive block flooding")
 		case *BlockProposal:
@@ -123,6 +152,4 @@ func (p *Ising) ConsensusMsgReceived(v interface{}) {
 	}
 }
 
-func BuildIsingConsensusPayload(s serialization.SerializableData) *message.IsingPayload {
-	return &message.IsingPayload{s}
-}
+

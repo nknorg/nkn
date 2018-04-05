@@ -13,7 +13,7 @@ import (
 )
 
 type IsingPayload struct {
-	PayloadData serialization.SerializableData
+	PayloadData []byte
 }
 
 type IsingMessage struct {
@@ -27,7 +27,7 @@ func (msg IsingMessage) Handle(node Noder) error {
 	return nil
 }
 
-func (p *IsingMessage) Serialize() ([]byte, error) {
+func (p *IsingMessage) Serialization() ([]byte, error) {
 	msgHeader, err := p.msgHdr.Serialization()
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (p *IsingMessage) Serialize() ([]byte, error) {
 }
 
 
-func (p *IsingMessage) Deserialize(b []byte) error {
+func (p *IsingMessage) Deserialization(b []byte) error {
 	buf := bytes.NewBuffer(b)
 	err := binary.Read(buf, binary.LittleEndian, &(p.msgHdr))
 	err = p.pld.Deserialize(buf)
@@ -52,11 +52,22 @@ func (p *IsingMessage) Deserialize(b []byte) error {
 
 
 func (p *IsingPayload) Serialize(w io.Writer) error {
-	return p.PayloadData.Serialize(w)
+	err := serialization.WriteVarBytes(w, p.PayloadData)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *IsingPayload) Deserialize(r io.Reader) error {
-	return p.PayloadData.Deserialize(r)
+	pldData, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	p.PayloadData = pldData
+
+	return nil
 }
 
 func NewIsingConsensus(pld *IsingPayload) ([]byte, error) {
@@ -80,7 +91,7 @@ func NewIsingConsensus(pld *IsingPayload) ([]byte, error) {
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(b.Bytes()))
 
-	m, err := msg.Serialize()
+	m, err := msg.Serialization()
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
