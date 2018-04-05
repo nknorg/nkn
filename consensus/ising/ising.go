@@ -19,7 +19,8 @@ const (
 
 type Ising struct {
 	wallet               wallet.Wallet             // local account
-	role                 Role                      // proposer or voter
+	role                 Bitmap                    // node role
+	state                Bitmap                    // consensus state
 	localNode            net.Neter                 // local node
 	txnCollector         *transaction.TxnCollector // collect transaction from where
 	blockCache           *BlockCache               // blocks waiting for voting
@@ -27,7 +28,9 @@ type Ising struct {
 }
 
 func New(wallet wallet.Wallet, node net.Neter) *Ising {
-	var role Role
+	var role Bitmap
+
+	role.SetBit(BlockVoter)
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil
@@ -38,12 +41,12 @@ func New(wallet wallet.Wallet, node net.Neter) *Ising {
 	}
 	confPubKey, err := ledger.StandbyBookKeepers[0].EncodePoint(true)
 	if IsEqualBytes(encPubKey, confPubKey) {
-		role = BlockProposer
-	} else {
-		role = BlockVoter
+		role.SetBit(BlockProposer)
 	}
+
 	ising := &Ising{
 		role:         role,
+		state:        InitialState,
 		wallet:       wallet,
 		localNode:    node,
 		txnCollector: transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged),
@@ -55,8 +58,7 @@ func New(wallet wallet.Wallet, node net.Neter) *Ising {
 
 func (p *Ising) Start() error {
 	p.consensusMsgReceived = p.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, p.ConsensusMsgReceived)
-	switch p.role {
-	case BlockProposer:
+	if p.role.HasBit(BlockProposer) {
 		fmt.Println("I am block proposer")
 		block, err := p.BuildBlock()
 		if err != nil {
@@ -73,8 +75,7 @@ func (p *Ising) Start() error {
 		if err != nil {
 			return err
 		}
-	case BlockVoter:
-		fmt.Println("I am block voter")
+		p.state.SetBit(FloodingFinished)
 	}
 
 	return nil
