@@ -20,10 +20,12 @@ func (p *BlockFlooding) Serialize(w io.Writer) error {
 }
 
 func (p *BlockFlooding) Deserialize(r io.Reader) error {
-	err := p.block.Deserialize(r)
+	block := new(ledger.Block)
+	err := block.Deserialize(r)
 	if err != nil {
 		return err
 	}
+	p.block = block
 
 	return nil
 }
