@@ -47,6 +47,18 @@ func (p *BlockCache) BlockInCache(hash Uint256) bool {
 	return false
 }
 
+// GetBlockFromCache returns block according to bloch hash passed in.
+func (p *BlockCache) GetBlockFromCache(hash Uint256) *ledger.Block {
+	p.RLock()
+	defer p.RUnlock()
+
+	if i, ok := p.cache[hash]; !ok {
+		return nil
+	} else {
+		return i.block
+	}
+}
+
 // RemoveBlockFromCache return true if the block doesn't exist in cache.
 func (p *BlockCache) RemoveBlockFromCache(hash Uint256) error {
 	p.Lock()

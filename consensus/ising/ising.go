@@ -15,6 +15,7 @@ import (
 	"nkn-core/core/contract/program"
 	"nkn-core/crypto"
 	"nkn-core/common/serialization"
+	"nkn-core/common/log"
 )
 
 const (
@@ -163,18 +164,63 @@ func (p *Ising) ReceiveConsensusMsg(v interface{}) {
 }
 
 func (p *Ising) HandleBlockFloodingMsg(bfMsg *BlockFlooding) {
+	if !p.state.HasBit(InitialState) || p.state.HasBit(FloodingFinished){
+		log.Warn("consensus state error in BlockFlooding message handler")
+		return
+	}
+	err := p.blockCache.AddBlockToCache(bfMsg.block)
+	if err != nil {
+		log.Error("add received block to local cache error")
+		return
+	}
+	p.state.SetBit(FloodingFinished)
+}
+
+func (p *Ising) HandleBlockProposalMsg(bpMsg *BlockProposal) {
+	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) {
+		log.Warn("consensus state error in BlockProposal message handler")
+		return
+	}
+	//TODO verify consensus message
+	account, err := p.wallet.GetDefaultAccount()
+	if err != nil {
+		log.Error("local account error")
+		return
+	}
+	hash := *bpMsg.blockHash
+	if !p.blockCache.BlockInCache(hash) {
+		brMsg := &BlockRequest {
+			blockHash: bpMsg.blockHash,
+			requester: account.PublicKey,
+			signature: nil,
+		}
+		p.SendConsensusMsg(brMsg)
+		p.state.SetBit(RequestSent)
+		return
+	}
+	block := p.blockCache.GetBlockFromCache(hash)
+	if block == nil {
+		return
+	}
+	//TODO verify block
+	option := true
+	blMsg := &BlockVote{
+		blockHash: bpMsg.blockHash,
+		agree: option,
+		voter: account.PublicKey,
+		signature: nil,
+	}
+	p.SendConsensusMsg(blMsg)
+	p.state.SetBit(OpinionSent)
+	p.blockCache.RemoveBlockFromCache(hash)
+	return
+}
+
+func (p *Ising) HandleBlockRequestMsg(brMsg *BlockRequest) {
 
 }
 
-func (p *Ising) HandleBlockProposalMsg(bfMsg *BlockProposal) {
-
-}
-
-func (p *Ising) HandleBlockRequestMsg(bfMsg *BlockRequest) {
-
-}
-
-func (p *Ising) HandleBlockVoteMsg(bfMsg *BlockVote) {
+func (p *Ising) HandleBlockVoteMsg(bvMsg *BlockVote) {
 
 }
 

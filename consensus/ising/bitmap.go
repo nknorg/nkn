@@ -26,6 +26,12 @@ const (
 	// voter node get into this state after received block
 	FloodingFinished
 
+	// voter node request block from proposer node
+	RequestSent
+
+	// proposer node received block request from voter node
+	RequestReceived
+
 	// proposer node sent the proposal
 	ProposalSent
 
