@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"math/rand"
 
-	."nkn-core/common"
+	. "nkn-core/common"
+	"nkn-core/common/log"
+	"nkn-core/common/serialization"
+	"nkn-core/core/contract/program"
 	"nkn-core/core/ledger"
 	"nkn-core/core/transaction"
+	"nkn-core/core/transaction/payload"
+	"nkn-core/crypto"
 	"nkn-core/events"
 	"nkn-core/net"
 	"nkn-core/net/message"
 	"nkn-core/wallet"
-	"nkn-core/core/transaction/payload"
-	"nkn-core/core/contract/program"
-	"nkn-core/crypto"
-	"nkn-core/common/serialization"
-	"nkn-core/common/log"
 )
 
 const (
@@ -30,6 +30,9 @@ type Ising struct {
 	state                Bitmap                    // consensus state
 	localNode            net.Neter                 // local node
 	txnCollector         *transaction.TxnCollector // collect transaction from where
+	confirmingBlock      *Uint256                  // current block in consensus process
+	proposalNum          int32                     // sent BlockProposal msg count
+	votedNum             int32                     // received agreed BlockVote msg count
 	blockCache           *BlockCache               // blocks waiting for voting
 	consensusMsgReceived events.Subscriber         // consensus events listening
 }
@@ -79,9 +82,9 @@ func (p *Ising) Start() error {
 			block: block,
 		}
 		err = p.SendConsensusMsg(blockFlooding)
-		 if err != nil {
-		 	return err
-		 }
+		if err != nil {
+			return err
+		}
 		p.state.SetBit(FloodingFinished)
 	}
 
@@ -168,7 +171,7 @@ func (p *Ising) ReceiveConsensusMsg(v interface{}) {
 }
 
 func (p *Ising) HandleBlockFloodingMsg(bfMsg *BlockFlooding) {
-	if !p.state.HasBit(InitialState) || p.state.HasBit(FloodingFinished){
+	if !p.state.HasBit(InitialState) || p.state.HasBit(FloodingFinished) {
 		log.Warn("consensus state error in BlockFlooding message handler")
 		return
 	}
@@ -181,9 +184,9 @@ func (p *Ising) HandleBlockFloodingMsg(bfMsg *BlockFlooding) {
 }
 
 func (p *Ising) HandleBlockProposalMsg(bpMsg *BlockProposal) {
-	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) {
-			log.Warn("consensus state error in BlockProposal message handler")
-			return
+	if !p.state.HasBit(InitialState) {
+		log.Warn("consensus state error in BlockProposal message handler")
+		return
 	}
 	//TODO verify consensus message
 	account, err := p.wallet.GetDefaultAccount()
@@ -192,44 +195,105 @@ func (p *Ising) HandleBlockProposalMsg(bpMsg *BlockProposal) {
 		return
 	}
 	hash := *bpMsg.blockHash
-	if !p.blockCache.BlockInCache(hash) {
-		brMsg := &BlockRequest {
+	if !p.state.HasBit(FloodingFinished) {
+		if !p.blockCache.BlockInCache(hash) {
+			brMsg := &BlockRequest{
+				blockHash: bpMsg.blockHash,
+				requester: account.PublicKey,
+				signature: MsgSignatureStub,
+			}
+			p.SendConsensusMsg(brMsg)
+			p.state.SetBit(RequestSent)
+			return
+		}
+		p.state.SetBit(FloodingFinished)
+		return
+	} else {
+		block := p.blockCache.GetBlockFromCache(hash)
+		if block == nil {
+			return
+		}
+		//TODO verify block
+		option := true
+		blMsg := &BlockVote{
 			blockHash: bpMsg.blockHash,
-			requester: account.PublicKey,
+			agree:     option,
+			voter:     account.PublicKey,
 			signature: MsgSignatureStub,
 		}
-		p.SendConsensusMsg(brMsg)
-		p.state.SetBit(RequestSent)
+		p.SendConsensusMsg(blMsg)
+		p.state.SetBit(OpinionSent)
+		p.blockCache.RemoveBlockFromCache(hash)
 		return
 	}
-	block := p.blockCache.GetBlockFromCache(hash)
-	if block == nil {
+}
+
+func (p *Ising) HandleBlockRequestMsg(brMsg *BlockRequest) {
+	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) || !p.state.HasBit(ProposalSent) {
+		log.Warn("consensus state error in BlockRequest message handler")
 		return
 	}
-	//TODO verify block
+	//TODO verify request message
+	hash := *brMsg.blockHash
+	if hash.CompareTo(*p.confirmingBlock) != 0 {
+		log.Warn("requested block doesn't match with local block in process")
+		return
+	}
+	b := p.blockCache.GetBlockFromCache(hash)
+	if b == nil {
+		return
+	}
+	respMsg := &BlockResponse{
+		block: b,
+	}
+	p.SendConsensusMsg(respMsg)
+	return
+}
+
+func (p *Ising) HandleBlockResponseMsg(brMsg *BlockResponse) {
+	if !p.state.HasBit(InitialState) || !p.state.HasBit(RequestSent) {
+		log.Warn("consensus state error in BlockResponse message handler")
+		return
+	}
+	// TODO verify proposer
+	err := p.blockCache.AddBlockToCache(brMsg.block)
+	if err != nil {
+		return
+	}
+	p.state.SetBit(FloodingFinished)
+	account, err := p.wallet.GetDefaultAccount()
+	if err != nil {
+		log.Error("local account error")
+		return
+	}
+	// TODO verify block
 	option := true
-	blMsg := &BlockVote{
-		blockHash: bpMsg.blockHash,
-		agree: option,
-		voter: account.PublicKey,
+	hash := brMsg.block.Hash()
+	bvMsg := &BlockVote{
+		blockHash: &hash,
+		agree:     option,
+		voter:     account.PublicKey,
 		signature: MsgSignatureStub,
 	}
-	p.SendConsensusMsg(blMsg)
+	p.SendConsensusMsg(bvMsg)
 	p.state.SetBit(OpinionSent)
 	p.blockCache.RemoveBlockFromCache(hash)
 	return
 }
 
-func (p *Ising) HandleBlockRequestMsg(brMsg *BlockRequest) {
-
-}
-
-func (p *Ising) HandleBlockResponseMsg(brMsg *BlockResponse) {
-
-}
-
 func (p *Ising) HandleBlockVoteMsg(bvMsg *BlockVote) {
-
+	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) || !p.state.HasBit(ProposalSent) {
+		log.Warn("consensus state error in BlockVote message handler")
+		return
+	}
+	//TODO verify blockvote message
+	hash := bvMsg.blockHash
+	if hash.CompareTo(*p.confirmingBlock) != 0 {
+		log.Warn("voted block doesn't match with local block in process")
+		return
+	}
+	if bvMsg.agree == true {
+		p.votedNum++
+	}
+	return
 }
-
-
