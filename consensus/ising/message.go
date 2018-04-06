@@ -13,8 +13,9 @@ type IsingMessageType byte
 const (
 	BlockFloodingMsg IsingMessageType = 0x00
 	BlockRequestMsg  IsingMessageType = 0x01
-	BlockProposalMsg IsingMessageType = 0x02
-	BlockVoteMsg     IsingMessageType = 0x03
+	BlockResponseMsg IsingMessageType = 0x02
+	BlockProposalMsg IsingMessageType = 0x03
+	BlockVoteMsg     IsingMessageType = 0x04
 )
 
 type IsingMessage interface {
@@ -29,6 +30,8 @@ func BuildIsingPayload(s serialization.SerializableData) (*message.IsingPayload,
 		err = serialization.WriteByte(buf, byte(BlockFloodingMsg))
 	case *BlockRequest:
 		err = serialization.WriteByte(buf, byte(BlockRequestMsg))
+	case *BlockResponse:
+		err = serialization.WriteByte(buf, byte(BlockResponseMsg))
 	case *BlockProposal:
 		err = serialization.WriteByte(buf, byte(BlockProposalMsg))
 	case *BlockVote:
@@ -65,6 +68,13 @@ func RecoverFromIsingPayload(data []byte) (IsingMessage, error) {
 		return bfmsg, nil
 	case BlockRequestMsg:
 		brmsg := &BlockRequest{}
+		err := brmsg.Deserialize(r)
+		if err != nil {
+			return nil, err
+		}
+		return brmsg, nil
+	case BlockResponseMsg:
+		brmsg := &BlockResponse{}
 		err := brmsg.Deserialize(r)
 		if err != nil {
 			return nil, err

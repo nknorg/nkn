@@ -22,6 +22,8 @@ const (
 	TxnAmountToBePackaged = 1024
 )
 
+var MsgSignatureStub = [32]byte{}
+
 type Ising struct {
 	wallet               wallet.Wallet             // local account
 	role                 Bitmap                    // node role
@@ -157,6 +159,8 @@ func (p *Ising) ReceiveConsensusMsg(v interface{}) {
 			p.HandleBlockProposalMsg(t)
 		case *BlockRequest:
 			p.HandleBlockRequestMsg(t)
+		case *BlockResponse:
+			p.HandleBlockResponseMsg(t)
 		case *BlockVote:
 			p.HandleBlockVoteMsg(t)
 		}
@@ -178,8 +182,8 @@ func (p *Ising) HandleBlockFloodingMsg(bfMsg *BlockFlooding) {
 
 func (p *Ising) HandleBlockProposalMsg(bpMsg *BlockProposal) {
 	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) {
-		log.Warn("consensus state error in BlockProposal message handler")
-		return
+			log.Warn("consensus state error in BlockProposal message handler")
+			return
 	}
 	//TODO verify consensus message
 	account, err := p.wallet.GetDefaultAccount()
@@ -192,7 +196,7 @@ func (p *Ising) HandleBlockProposalMsg(bpMsg *BlockProposal) {
 		brMsg := &BlockRequest {
 			blockHash: bpMsg.blockHash,
 			requester: account.PublicKey,
-			signature: nil,
+			signature: MsgSignatureStub,
 		}
 		p.SendConsensusMsg(brMsg)
 		p.state.SetBit(RequestSent)
@@ -208,7 +212,7 @@ func (p *Ising) HandleBlockProposalMsg(bpMsg *BlockProposal) {
 		blockHash: bpMsg.blockHash,
 		agree: option,
 		voter: account.PublicKey,
-		signature: nil,
+		signature: MsgSignatureStub,
 	}
 	p.SendConsensusMsg(blMsg)
 	p.state.SetBit(OpinionSent)
@@ -217,6 +221,10 @@ func (p *Ising) HandleBlockProposalMsg(bpMsg *BlockProposal) {
 }
 
 func (p *Ising) HandleBlockRequestMsg(brMsg *BlockRequest) {
+
+}
+
+func (p *Ising) HandleBlockResponseMsg(brMsg *BlockResponse) {
 
 }
 
