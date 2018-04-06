@@ -14,6 +14,7 @@ import (
 	"nkn-core/core/transaction/payload"
 	"nkn-core/core/contract/program"
 	"nkn-core/crypto"
+	"nkn-core/common/serialization"
 )
 
 const (
@@ -60,7 +61,7 @@ func New(wallet wallet.Wallet, node net.Neter) *Ising {
 }
 
 func (p *Ising) Start() error {
-	p.consensusMsgReceived = p.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, p.ConsensusMsgReceived)
+	p.consensusMsgReceived = p.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, p.ReceiveConsensusMsg)
 	if p.role.HasBit(BlockProposer) {
 		fmt.Println("I am block proposer")
 		block, err := p.BuildBlock()
@@ -74,21 +75,30 @@ func (p *Ising) Start() error {
 		blockFlooding := &BlockFlooding{
 			block: block,
 		}
-		payload, err := BuildIsingPayload(blockFlooding)
-		if err != nil {
-			return err
-		}
-		err = p.localNode.Xmit(payload)
-		if err != nil {
-			return err
-		}
+		err = p.SendConsensusMsg(blockFlooding)
+		 if err != nil {
+		 	return err
+		 }
 		p.state.SetBit(FloodingFinished)
 	}
 
 	return nil
 }
 
-func  CreateBookkeepingTransaction() *transaction.Transaction {
+func (p *Ising) SendConsensusMsg(payload serialization.SerializableData) error {
+	isingPld, err := BuildIsingPayload(payload)
+	if err != nil {
+		return err
+	}
+	err = p.localNode.Xmit(isingPld)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreateBookkeepingTransaction() *transaction.Transaction {
 	bookKeepingPayload := &payload.BookKeeping{
 		Nonce: rand.Uint64(),
 	}
@@ -133,23 +143,39 @@ func (p *Ising) BuildBlock() (*ledger.Block, error) {
 	return block, nil
 }
 
-func (p *Ising) ConsensusMsgReceived(v interface{}) {
+func (p *Ising) ReceiveConsensusMsg(v interface{}) {
 	if payload, ok := v.(*message.IsingPayload); ok {
 		isingMsg, err := RecoverFromIsingPayload(payload.PayloadData)
 		if err != nil {
 			fmt.Println("Deserialization of ising message error")
 		}
-		switch isingMsg.(type) {
+		switch t := isingMsg.(type) {
 		case *BlockFlooding:
-			fmt.Println("receive block flooding")
+			p.HandleBlockFloodingMsg(t)
 		case *BlockProposal:
-			fmt.Println("receive block proposal")
+			p.HandleBlockProposalMsg(t)
 		case *BlockRequest:
-			fmt.Println("receive block request")
+			p.HandleBlockRequestMsg(t)
 		case *BlockVote:
-			fmt.Println("receive block vote")
+			p.HandleBlockVoteMsg(t)
 		}
 	}
+}
+
+func (p *Ising) HandleBlockFloodingMsg(bfMsg *BlockFlooding) {
+
+}
+
+func (p *Ising) HandleBlockProposalMsg(bfMsg *BlockProposal) {
+
+}
+
+func (p *Ising) HandleBlockRequestMsg(bfMsg *BlockRequest) {
+
+}
+
+func (p *Ising) HandleBlockVoteMsg(bfMsg *BlockVote) {
+
 }
 
 
