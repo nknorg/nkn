@@ -10,7 +10,7 @@ import (
 
 type BlockRequest struct {
 	blockHash *Uint256
-	voter  *crypto.PubKey
+	requester *crypto.PubKey
 	signature [32]byte
 }
 
@@ -19,7 +19,7 @@ func (p *BlockRequest) Serialize(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	err = p.voter.Serialize(w)
+	err = p.requester.Serialize(w)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (p *BlockRequest) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	err = p.voter.DeSerialize(r)
+	err = p.requester.DeSerialize(r)
 	if err != nil {
 		return err
 	}
