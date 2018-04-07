@@ -3,7 +3,7 @@ package avm
 import (
 	"bytes"
 	"encoding/binary"
-	"nkn-core/common"
+	"nkn/common"
 )
 
 type ParamsBuilder struct {

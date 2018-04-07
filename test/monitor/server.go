@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"nkn-core/common/config"
-	"nkn-core/core/ledger"
-	. "nkn-core/net/protocol"
+	"nkn/common/config"
+	"nkn/core/ledger"
+	. "nkn/net/protocol"
 	"sort"
 	"strconv"
 )

@@ -1,8 +1,8 @@
 package message
 
 import (
-	"nkn-core/common/log"
-	. "nkn-core/net/protocol"
+	"nkn/common/log"
+	. "nkn/net/protocol"
 	"encoding/hex"
 	"errors"
 	"strconv"

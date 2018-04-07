@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	. "nkn-core/common"
-	"nkn-core/core/account"
-	. "nkn-core/core/asset"
-	tx "nkn-core/core/transaction"
-	"nkn-core/crypto"
+	. "nkn/common"
+	"nkn/core/account"
+	. "nkn/core/asset"
+	tx "nkn/core/transaction"
+	"nkn/crypto"
 )
 
 // ILedgerStore provides func with store package.

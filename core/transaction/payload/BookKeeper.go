@@ -1,9 +1,9 @@
 package payload
 
 import (
-	"nkn-core/common/serialization"
-	"nkn-core/crypto"
-	. "nkn-core/errors"
+	"nkn/common/serialization"
+	"nkn/crypto"
+	. "nkn/errors"
 	"bytes"
 	"io"
 )

@@ -9,8 +9,8 @@ import (
 	"github.com/golang/crypto/ripemd160"
 	"io"
 	"math/rand"
-	"nkn-core/common/log"
-	. "nkn-core/errors"
+	"nkn/common/log"
+	. "nkn/errors"
 	"os"
 )
 

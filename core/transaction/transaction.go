@@ -8,14 +8,14 @@ import (
 	"io"
 	"sort"
 
-	. "nkn-core/common"
-	"nkn-core/common/log"
-	"nkn-core/common/serialization"
-	"nkn-core/core/contract"
-	"nkn-core/core/contract/program"
-	sig "nkn-core/core/signature"
-	"nkn-core/core/transaction/payload"
-	. "nkn-core/errors"
+	. "nkn/common"
+	"nkn/common/log"
+	"nkn/common/serialization"
+	"nkn/core/contract"
+	"nkn/core/contract/program"
+	sig "nkn/core/signature"
+	"nkn/core/transaction/payload"
+	. "nkn/errors"
 )
 
 //for different transaction types with different payload format

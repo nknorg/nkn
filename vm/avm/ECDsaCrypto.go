@@ -1,11 +1,11 @@
 package avm
 
 import (
-	"nkn-core/crypto"
-	. "nkn-core/errors"
-	"nkn-core/common/log"
+	"nkn/crypto"
+	. "nkn/errors"
+	"nkn/common/log"
 	"errors"
-	"nkn-core/common"
+	"nkn/common"
 )
 
 

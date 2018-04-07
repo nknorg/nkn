@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	. "nkn-core/common"
-	"nkn-core/common/serialization"
-	"nkn-core/core/contract/program"
-	sig "nkn-core/core/signature"
-	. "nkn-core/errors"
+	. "nkn/common"
+	"nkn/common/serialization"
+	"nkn/core/contract/program"
+	sig "nkn/core/signature"
+	. "nkn/errors"
 	"crypto/sha256"
 	"errors"
 	"io"

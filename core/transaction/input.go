@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"nkn-core/common"
-	"nkn-core/common/serialization"
+	"nkn/common"
+	"nkn/common/serialization"
 	"fmt"
 	"io"
 	"bytes"

@@ -1,13 +1,13 @@
 package transaction
 
 import (
-	. "nkn-core/common"
-	"nkn-core/common/log"
-	"nkn-core/core/asset"
-	"nkn-core/core/transaction/payload"
-	"nkn-core/crypto"
-	"nkn-core/core/validation"
-	. "nkn-core/errors"
+	. "nkn/common"
+	"nkn/common/log"
+	"nkn/core/asset"
+	"nkn/core/transaction/payload"
+	"nkn/crypto"
+	"nkn/core/validation"
+	. "nkn/errors"
 	"errors"
 	"fmt"
 	"math"

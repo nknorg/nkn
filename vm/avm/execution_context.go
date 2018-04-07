@@ -1,9 +1,9 @@
 package avm
 
 import (
-	"nkn-core/vm/avm/utils"
+	"nkn/vm/avm/utils"
 	"io"
-	"nkn-core/vm/avm/types"
+	"nkn/vm/avm/types"
 )
 
 type ExecutionContext struct {

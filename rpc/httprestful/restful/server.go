@@ -1,11 +1,11 @@
 package restful
 
 import (
-	. "nkn-core/common/config"
-	"nkn-core/common/log"
-	. "nkn-core/rpc/httprestful/common"
-	Err "nkn-core/rpc/httprestful/error"
-	"nkn-core/ws"
+	. "nkn/common/config"
+	"nkn/common/log"
+	. "nkn/rpc/httprestful/common"
+	Err "nkn/rpc/httprestful/error"
+	"nkn/ws"
 	"context"
 	"crypto/tls"
 	"encoding/json"

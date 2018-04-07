@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"nkn-core/common"
+	"nkn/common"
 	"io"
 	"bytes"
 )

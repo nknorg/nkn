@@ -1,7 +1,7 @@
 package signature
 
 import (
-	"nkn-core/crypto"
+	"nkn/crypto"
 )
 
 //Signer is the abstract interface of user's information(Keys) for signing data.

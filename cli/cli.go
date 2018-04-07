@@ -4,9 +4,9 @@ import (
 	"math/rand"
 	"time"
 
-	"nkn-core/common/config"
-	"nkn-core/common/log"
-	"nkn-core/crypto"
+	"nkn/common/config"
+	"nkn/common/log"
+	"nkn/crypto"
 )
 
 func init() {

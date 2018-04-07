@@ -8,9 +8,9 @@ import (
 	"os"
 	"sync"
 
-	. "nkn-core/common"
-	ct "nkn-core/core/contract"
-	. "nkn-core/errors"
+	. "nkn/common"
+	ct "nkn/core/contract"
+	. "nkn/errors"
 )
 
 const (

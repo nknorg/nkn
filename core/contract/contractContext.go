@@ -1,12 +1,12 @@
 package contract
 
 import (
-	. "nkn-core/common"
-	"nkn-core/common/log"
-	pg "nkn-core/core/contract/program"
-	sig "nkn-core/core/signature"
-	"nkn-core/crypto"
-	_ "nkn-core/errors"
+	. "nkn/common"
+	"nkn/common/log"
+	pg "nkn/core/contract/program"
+	sig "nkn/core/signature"
+	"nkn/crypto"
+	_ "nkn/errors"
 	"errors"
 	"math/big"
 	"sort"

@@ -1,13 +1,13 @@
 package bookkeeper
 
 import (
-	"nkn-core/wallet"
-	. "nkn-core/cli/common"
-	"nkn-core/core/contract"
-	"nkn-core/core/signature"
-	"nkn-core/core/transaction"
-	"nkn-core/crypto"
-	"nkn-core/rpc/httpjson"
+	"nkn/wallet"
+	. "nkn/cli/common"
+	"nkn/core/contract"
+	"nkn/core/signature"
+	"nkn/core/transaction"
+	"nkn/crypto"
+	"nkn/rpc/httpjson"
 	"bytes"
 	"encoding/hex"
 	"fmt"

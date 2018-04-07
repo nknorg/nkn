@@ -1,26 +1,26 @@
 package main
 
 import (
-	"nkn-core/wallet"
-	"nkn-core/common/config"
-	"nkn-core/common/log"
-	"nkn-core/consensus/dbft"
-	"nkn-core/core/ledger"
-	"nkn-core/core/store/ChainStore"
-	"nkn-core/core/transaction"
-	"nkn-core/crypto"
-	"nkn-core/net"
-	"nkn-core/rpc/httpjson"
-	"nkn-core/rpc/httprestful"
-	"nkn-core/ws"
-	"nkn-core/test/monitor"
-	"nkn-core/net/protocol"
-	_"nkn-core/core/sigchain" // for testing sigchain package
+	"nkn/wallet"
+	"nkn/common/config"
+	"nkn/common/log"
+	"nkn/consensus/dbft"
+	"nkn/core/ledger"
+	"nkn/core/store/ChainStore"
+	"nkn/core/transaction"
+	"nkn/crypto"
+	"nkn/net"
+	"nkn/rpc/httpjson"
+	"nkn/rpc/httprestful"
+	"nkn/ws"
+	"nkn/test/monitor"
+	"nkn/net/protocol"
+	_"nkn/core/sigchain" // for testing sigchain package
 	"os"
 	"runtime"
 	"time"
 	"math/rand"
-	"nkn-core/consensus/ising"
+	"nkn/consensus/ising"
 )
 
 const (

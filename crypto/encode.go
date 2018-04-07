@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	. "nkn-core/errors"
+	. "nkn/errors"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"

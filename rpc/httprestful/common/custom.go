@@ -1,11 +1,11 @@
 package common
 
 import (
-	. "nkn-core/common"
-	tx "nkn-core/core/transaction"
-	. "nkn-core/errors"
-	. "nkn-core/rpc/httpjson"
-	Err "nkn-core/rpc/httprestful/error"
+	. "nkn/common"
+	tx "nkn/core/transaction"
+	. "nkn/errors"
+	. "nkn/rpc/httpjson"
+	Err "nkn/rpc/httprestful/error"
 	"bytes"
 	"encoding/json"
 	"time"

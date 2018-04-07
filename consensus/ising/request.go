@@ -3,9 +3,9 @@ package ising
 import (
 	"io"
 
-	. "nkn-core/common"
-	"nkn-core/crypto"
-	"nkn-core/common/serialization"
+	. "nkn/common"
+	"nkn/crypto"
+	"nkn/common/serialization"
 )
 
 type BlockRequest struct {

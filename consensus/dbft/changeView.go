@@ -2,7 +2,7 @@ package dbft
 
 import (
 	"io"
-	ser "nkn-core/common/serialization"
+	ser "nkn/common/serialization"
 )
 
 type ChangeView struct {

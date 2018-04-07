@@ -1,10 +1,10 @@
 package program
 
 import (
-	. "nkn-core/common"
+	. "nkn/common"
 	"bytes"
 	"math/big"
-	"nkn-core/vm/avm"
+	"nkn/vm/avm"
 )
 
 type ProgramBuilder struct {

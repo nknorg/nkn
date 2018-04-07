@@ -3,11 +3,11 @@ package helper
 import (
 	"errors"
 	"fmt"
-	. "nkn-core/common"
-	. "nkn-core/core/asset"
-	"nkn-core/core/contract"
-	"nkn-core/core/transaction"
-	"nkn-core/wallet"
+	. "nkn/common"
+	. "nkn/core/asset"
+	"nkn/core/contract"
+	"nkn/core/transaction"
+	"nkn/wallet"
 )
 
 type BatchOut struct {

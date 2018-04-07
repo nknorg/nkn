@@ -1,13 +1,13 @@
 package net
 
 import (
-	. "nkn-core/common"
-	"nkn-core/core/transaction"
-	"nkn-core/crypto"
-	. "nkn-core/errors"
-	"nkn-core/events"
-	"nkn-core/net/node"
-	"nkn-core/net/protocol"
+	. "nkn/common"
+	"nkn/core/transaction"
+	"nkn/crypto"
+	. "nkn/errors"
+	"nkn/events"
+	"nkn/net/node"
+	"nkn/net/protocol"
 )
 
 type Neter interface {

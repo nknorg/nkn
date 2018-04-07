@@ -3,7 +3,7 @@ package avm
 import (
 	"testing"
 	"math/big"
-	"nkn-core/vm/avm/types"
+	"nkn/vm/avm/types"
 )
 
 var (

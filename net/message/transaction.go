@@ -1,12 +1,12 @@
 package message
 
 import (
-	"nkn-core/common"
-	"nkn-core/common/log"
-	"nkn-core/core/ledger"
-	"nkn-core/core/transaction"
-	. "nkn-core/errors"
-	. "nkn-core/net/protocol"
+	"nkn/common"
+	"nkn/common/log"
+	"nkn/core/ledger"
+	"nkn/core/transaction"
+	. "nkn/errors"
+	. "nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

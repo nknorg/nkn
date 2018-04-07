@@ -3,7 +3,7 @@ package ising
 import (
 	"io"
 
-	"nkn-core/core/ledger"
+	"nkn/core/ledger"
 )
 
 type BlockFlooding struct {

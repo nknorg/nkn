@@ -6,10 +6,10 @@ import (
 	"encoding/binary"
 	"io"
 
-	. "nkn-core/net/protocol"
-	"nkn-core/common/log"
-	"nkn-core/common/serialization"
-	"nkn-core/events"
+	. "nkn/net/protocol"
+	"nkn/common/log"
+	"nkn/common/serialization"
+	"nkn/events"
 )
 
 type IsingPayload struct {

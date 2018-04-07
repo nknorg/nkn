@@ -1,14 +1,14 @@
 package validation
 
 import (
-	. "nkn-core/common"
-	sig "nkn-core/core/signature"
-	"nkn-core/crypto"
-	. "nkn-core/errors"
-	"nkn-core/vm/avm"
+	. "nkn/common"
+	sig "nkn/core/signature"
+	"nkn/crypto"
+	. "nkn/errors"
+	"nkn/vm/avm"
 	"errors"
-	"nkn-core/vm/avm/interfaces"
-	"nkn-core/common"
+	"nkn/vm/avm/interfaces"
+	"nkn/common"
 )
 
 func VerifySignableData(signableData sig.SignableData) (bool, error) {
