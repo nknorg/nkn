@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"nkn-core/common/serialization"
-	. "nkn-core/errors"
+	"nkn/common/serialization"
+	. "nkn/errors"
 	"errors"
 	"io"
 	"bytes"

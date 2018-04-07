@@ -1,7 +1,7 @@
 package avm
 
 import (
-	"nkn-core/vm/avm/types"
+	"nkn/vm/avm/types"
 )
 
 func opArraySize(e *ExecutionEngine) (VMState, error) {

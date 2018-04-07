@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	"nkn-core/common/config"
-	"nkn-core/common/password"
+	"nkn/common/config"
+	"nkn/common/password"
 
 	"github.com/urfave/cli"
 )

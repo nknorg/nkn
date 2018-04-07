@@ -1,12 +1,12 @@
 package signature
 
 import (
-	"nkn-core/common"
-	"nkn-core/common/log"
-	"nkn-core/core/contract/program"
-	"nkn-core/crypto"
-	. "nkn-core/errors"
-	"nkn-core/vm/avm/interfaces"
+	"nkn/common"
+	"nkn/common/log"
+	"nkn/core/contract/program"
+	"nkn/crypto"
+	. "nkn/errors"
+	"nkn/vm/avm/interfaces"
 	"bytes"
 	"crypto/sha256"
 	"io"

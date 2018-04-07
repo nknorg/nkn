@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"nkn-core/wallet"
-	. "nkn-core/cli/common"
-	. "nkn-core/common"
-	"nkn-core/rpc/httpjson"
+	"nkn/wallet"
+	. "nkn/cli/common"
+	. "nkn/common"
+	"nkn/rpc/httpjson"
 	"github.com/urfave/cli"
-	"nkn-core/crypto/util"
+	"nkn/crypto/util"
 )
 
 const (

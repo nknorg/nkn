@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 
-	"nkn-core/common/serialization"
-	"nkn-core/net/message"
+	"nkn/common/serialization"
+	"nkn/net/message"
 )
 
 type IsingMessageType byte

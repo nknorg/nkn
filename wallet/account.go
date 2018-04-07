@@ -1,10 +1,10 @@
 package wallet
 
 import (
-	. "nkn-core/common"
-	"nkn-core/core/contract"
-	"nkn-core/crypto"
-	. "nkn-core/errors"
+	. "nkn/common"
+	"nkn/core/contract"
+	"nkn/crypto"
+	. "nkn/errors"
 	"errors"
 )
 

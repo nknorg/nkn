@@ -1,8 +1,8 @@
 package sm2
 
 import (
-	"nkn-core/crypto/sm3"
-	"nkn-core/crypto/util"
+	"nkn/crypto/sm3"
+	"nkn/crypto/util"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/elliptic"

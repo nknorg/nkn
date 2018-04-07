@@ -2,14 +2,14 @@ package httpjson
 
 import (
 	"bytes"
-	. "nkn-core/common"
-	"nkn-core/common/config"
-	"nkn-core/common/log"
-	"nkn-core/core/ledger"
-	tx "nkn-core/core/transaction"
-	. "nkn-core/errors"
-	"nkn-core/helper"
-	"nkn-core/wallet"
+	. "nkn/common"
+	"nkn/common/config"
+	"nkn/common/log"
+	"nkn/core/ledger"
+	tx "nkn/core/transaction"
+	. "nkn/errors"
+	"nkn/helper"
+	"nkn/wallet"
 )
 
 var Wallet wallet.Wallet

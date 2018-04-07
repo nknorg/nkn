@@ -1,7 +1,7 @@
 package node
 
 import (
-	"nkn-core/common"
+	"nkn/common"
 	"sync"
 )
 

@@ -1,11 +1,11 @@
 package dbft
 
 import (
-	. "nkn-core/common"
-	"nkn-core/common/log"
-	ser "nkn-core/common/serialization"
-	tx "nkn-core/core/transaction"
-	. "nkn-core/errors"
+	. "nkn/common"
+	"nkn/common/log"
+	ser "nkn/common/serialization"
+	tx "nkn/core/transaction"
+	. "nkn/errors"
 	"io"
 )
 

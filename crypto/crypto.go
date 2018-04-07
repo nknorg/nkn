@@ -1,10 +1,10 @@
 package crypto
 
 import (
-	"nkn-core/common/serialization"
-	"nkn-core/crypto/p256r1"
-	"nkn-core/crypto/sm2"
-	"nkn-core/crypto/util"
+	"nkn/common/serialization"
+	"nkn/crypto/p256r1"
+	"nkn/crypto/sm2"
+	"nkn/crypto/util"
 	"crypto/sha256"
 	"errors"
 	"fmt"

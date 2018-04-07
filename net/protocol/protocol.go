@@ -1,11 +1,11 @@
 package protocol
 
 import (
-	"nkn-core/common"
-	"nkn-core/core/transaction"
-	"nkn-core/crypto"
-	. "nkn-core/errors"
-	"nkn-core/events"
+	"nkn/common"
+	"nkn/core/transaction"
+	"nkn/crypto"
+	. "nkn/errors"
+	"nkn/events"
 	"bytes"
 	"encoding/binary"
 	"time"

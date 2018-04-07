@@ -3,11 +3,11 @@ package wallet
 import (
 	"fmt"
 	"os"
-	"nkn-core/wallet"
-	. "nkn-core/cli/common"
-	. "nkn-core/common"
-	"nkn-core/common/password"
-	"nkn-core/rpc/httpjson"
+	"nkn/wallet"
+	. "nkn/cli/common"
+	. "nkn/common"
+	"nkn/common/password"
+	"nkn/rpc/httpjson"
 
 	"github.com/urfave/cli"
 )

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
-	"nkn-core/net/chord"
+	"nkn/net/chord"
 )
 
 // func prepRing(port int) (*chord.Config, *chord.TCPTransport, error) {

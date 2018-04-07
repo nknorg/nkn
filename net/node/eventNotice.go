@@ -1,7 +1,7 @@
 package node
 
 import (
-	"nkn-core/events"
+	"nkn/events"
 	"fmt"
 )
 

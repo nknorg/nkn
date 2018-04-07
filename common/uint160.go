@@ -1,8 +1,8 @@
 package common
 
 import (
-	"nkn-core/common/log"
-	. "nkn-core/errors"
+	"nkn/common/log"
+	. "nkn/errors"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

@@ -1,9 +1,9 @@
 package httprestful
 
 import (
-	"nkn-core/rpc/httprestful/common"
-	. "nkn-core/rpc/httprestful/restful"
-	. "nkn-core/net/protocol"
+	"nkn/rpc/httprestful/common"
+	. "nkn/rpc/httprestful/restful"
+	. "nkn/net/protocol"
 )
 
 func StartServer(n Noder) {

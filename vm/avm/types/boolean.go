@@ -2,7 +2,7 @@ package types
 
 import (
 	"math/big"
-	"nkn-core/vm/avm/interfaces"
+	"nkn/vm/avm/interfaces"
 )
 
 type Boolean struct {

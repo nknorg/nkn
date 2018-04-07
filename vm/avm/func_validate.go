@@ -1,10 +1,10 @@
 package avm
 
 import (
-	. "nkn-core/vm/avm/errors"
+	. "nkn/vm/avm/errors"
 	"bytes"
 	"encoding/binary"
-	"nkn-core/vm/avm/types"
+	"nkn/vm/avm/types"
 )
 
 func validatorPushData4(e *ExecutionEngine) error {

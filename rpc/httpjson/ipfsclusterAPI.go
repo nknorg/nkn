@@ -1,7 +1,7 @@
 package httpjson
 
 import (
-	"nkn-core/common/log"
+	"nkn/common/log"
 	"bytes"
 	"context"
 	"encoding/json"

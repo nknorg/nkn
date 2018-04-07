@@ -1,10 +1,10 @@
 package account
 
 import (
-	"nkn-core/common"
+	"nkn/common"
 	"io"
 	"bytes"
-	"nkn-core/common/serialization"
+	"nkn/common/serialization"
 )
 
 type AccountState struct {

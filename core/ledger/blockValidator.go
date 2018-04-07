@@ -1,9 +1,9 @@
 package ledger
 
 import (
-	tx "nkn-core/core/transaction"
-	"nkn-core/core/validation"
-	. "nkn-core/errors"
+	tx "nkn/core/transaction"
+	"nkn/core/validation"
+	. "nkn/errors"
 	"errors"
 	"fmt"
 )

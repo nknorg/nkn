@@ -1,12 +1,12 @@
 package avm
 
 import (
-	"nkn-core/vm/avm/interfaces"
+	"nkn/vm/avm/interfaces"
 	"io"
 	_ "math/big"
 	_ "sort"
-	. "nkn-core/vm/avm/errors"
-	"nkn-core/common"
+	. "nkn/vm/avm/errors"
+	"nkn/common"
 )
 
 const (
