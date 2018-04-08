@@ -4,9 +4,10 @@
 > a project aiming to rebuild the Internet that will be truly open, decentralized, dynamic, safe, shared and owned by the community.
 
 [![nkn.org](https://nkn.org/static/img/Contactlogo2x.fc393ae.png)](https://nkn.org/)
-[![telegram](https://telegram.org/img/t_logo.png)](https://t.me/nknorg)
 
-Welcome to NKN! Why not [watch a video of NKN introduction](https://youtu.be/cT29i3-ImQk) to get started? 
+Welcome to NKN! Why not [watch a 2-minutes video of NKN concept](https://youtu.be/cT29i3-ImQk) to get started? 
+
+[![NKN Introduction](https://nkn.org/static/img/bigimage2x.036772a.png)](https://youtu.be/cT29i3-ImQk)
 
 ## Table of Contents
 
@@ -41,7 +42,7 @@ Welcome to NKN! Why not [watch a video of NKN introduction](https://youtu.be/cT2
 
 ## Abstract
 
-NKN ([the New Kind of Network](https://github.com/nknetwork)) is a new generation of highly scalable, self-evolving and self-
+NKN ([New Kind of Network](https://github.com/nknetwork)) is a new generation of highly scalable, self-evolving and self-
 incentivized blockchain network infrastructure. NKN addresses the network decentralization and self-evolution by introducing Cellular Automata (CA) methodology. NKN tokenizes network connectivity and data transmission capacity by a novel and use-
 ful Proof of Work.NKN focuses on decentralizing network resources, similar to how Bitcoin and Ethereum decentralize computing power as well as how IPFS and Filecoin decentralize
 storage. Together, they form the three pillars of the Internet infrastructure for next generation blockchain systems. NKN ultimately makes the network more decentralized, efficient, equalized, robust and secure, thus enabling healthier, safer, and more open Internet.
@@ -49,7 +50,7 @@ storage. Together, they form the three pillars of the Internet infrastructure fo
 
 ## Challenges of Network Infrastructure
 
-After years of transmutation, the Internet is in danger of losing its original vision and spirit. For example, Network Neutrality is overturned; spectrum and bandwidth are not eciently utilized; information is fragmented and can be censored; privacy protection is limited. These signal that the network needs a reform. Existing solutions are not suitable for next generation blockchain systems due to the following reasons:
+After years of transmutation, the Internet is in danger of losing its original vision and spirit. For example, Network Neutrality is overturned; spectrum and bandwidth are not efficiently utilized; information is fragmented and can be censored; privacy protection is limited. These signal that the network needs a reform. Existing solutions are not suitable for next generation blockchain systems due to the following reasons:
 - Utilize a centralized approach to improve efficiency.
 - Sacrifice the scalability of the network to speed up consensus.
 - Limit participation rate of nodes or require authorization to increase "security".
@@ -208,4 +209,4 @@ The current network has huge inefficiencies for providing universal connectivity
 
 ## License
 
-MIT
+ Apache-2.0
