@@ -18,14 +18,15 @@ it, or remains in its previous state if there are four black and four white neig
 
 - For ising model consensus, setting a threshold value of K/2 can gurantee the consensus can be reached globally. However, it is esstential to define proper voting rule and randomize gossip distribution to enhance fault tolerance and covergence time.
 
-[![Cellular automata with 4 neighbors vote 1 then it votes 1 when gossip reach 75% and randomized](https://github.com/NKNetwork/nkn/blob/master/simulation/cellular_automata_gossip_ising_sim/Moore_CA_neighbors_set_vote_1-vote_when_halfKis4_gossip_75percent_on%20the_entire_network_randomized.png)]
 
-[![Cellular automata with 4 neighbors vote 1 then it keeps its original state when gossip reach 75% and randomized](https://github.com/NKNetwork/nkn/blob/master/simulation/cellular_automata_gossip_ising_sim/Moore_CA_neighbors_set_vote_1_when_halfKis4_gossip_75percent_on%20the_entire_network_randomized.png)]
+Cellular automata with 4 neighbors vote 1 then it votes 1 when gossip reach 75% and randomized, as below
+![Cellular automata with 4 neighbors vote 1 then it votes 1 when gossip reach 75% and randomized](https://github.com/NKNetwork/nkn/blob/master/simulation/cellular_automata_gossip_ising_sim/Moore_CA_neighbors_set_vote_1-vote_when_halfKis4_gossip_75percent_on%20the_entire_network_randomized.png)
 
+Cellular automata with 4 neighbors vote 1 then it keeps its original state when gossip reach 75% and randomized, as below
+![Cellular automata with 4 neighbors vote 1 then it keeps its original state when gossip reach 75% and randomized](https://github.com/NKNetwork/nkn/blob/master/simulation/cellular_automata_gossip_ising_sim/Moore_CA_neighbors_set_vote_1_when_halfKis4_gossip_75percent_on%20the_entire_network_randomized.png)
 
-[![Cellular automata with 4 neighbors vote 1 then it votes 1 when gossip reach 75% and randomized dynamically](https://github.com/NKNetwork/nkn/blob/master/simulation/cellular_automata_gossip_ising_sim/Moore_CA_neighbors_set_vote_1_when_halfKis4_gossip_75percent_on%20the_entire_network_dynamic_randomized.png)]
-
-
+Cellular automata with 4 neighbors vote 1 then it votes 1 when gossip reach 75% and randomized dynamically, as below
+![Cellular automata with 4 neighbors vote 1 then it votes 1 when gossip reach 75% and randomized dynamically](https://github.com/NKNetwork/nkn/blob/master/simulation/cellular_automata_gossip_ising_sim/Moore_CA_neighbors_set_vote_1_when_halfKis4_gossip_75percent_on%20the_entire_network_dynamic_randomized.png)
 
 
 ## License
