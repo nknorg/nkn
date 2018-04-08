@@ -93,6 +93,7 @@ func RecoverFromIsingPayload(data []byte) (IsingMessage, error) {
 		if err != nil {
 			return nil, err
 		}
+		return bvmsg, nil
 	}
 
 	return nil, errors.New("invalid ising consensus message.")
