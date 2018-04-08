@@ -7,7 +7,7 @@
 
 Welcome to NKN! Why not [watch a 2-minutes video of NKN concept](https://youtu.be/cT29i3-ImQk) to get started? 
 
-[![NKN Introduction](https://nkn.org/static/img/bigimage2x.036772a.png)](https://youtu.be/cT29i3-ImQk)
+[![NKN Introduction](https://nkn.org/static/img/NKN-logo-2.aa97389.png)](https://youtu.be/cT29i3-ImQk)
 
 ## Table of Contents
 
