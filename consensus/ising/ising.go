@@ -95,16 +95,17 @@ func (p *Ising) ProposerRoutine() {
 	hash := block.Hash()
 	bpMsg := &BlockProposal{
 		blockHash: &hash,
-		proposer: account.PublicKey,
+		proposer:  account.PublicKey,
 		signature: MsgSignatureStub,
 	}
 	p.SendConsensusMsg(bpMsg)
 	p.state.SetBit(ProposalSent)
+	p.confirmingBlock = &hash
 	p.proposalNum = len(p.localNode.GetNeighborNoder())
 
 	// waiting for other nodes voting finished
 	time.Sleep(time.Second * 3)
-	if p.votedNum <= p.proposalNum / 2 {
+	if p.votedNum <= p.proposalNum/2 {
 		p.blockCache.RemoveBlockFromCache(hash)
 		p.state.SetBit(BlockDroped)
 		return
@@ -119,7 +120,7 @@ func (p *Ising) ProposerRoutine() {
 func (p *Ising) Start() error {
 	p.consensusMsgReceived = p.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, p.ReceiveConsensusMsg)
 	if p.role.HasBit(BlockProposer) {
-		ticker := time.NewTicker(time.Second*20)
+		ticker := time.NewTicker(time.Second * 20)
 		for {
 			select {
 			case <-ticker.C:
@@ -175,7 +176,13 @@ func (p *Ising) BuildBlock() (*ledger.Block, error) {
 		return nil, err
 	}
 	header := &ledger.Header{
+		Version:          0,
+		PrevBlockHash:    ledger.DefaultLedger.Store.GetCurrentBlockHash(),
+		Timestamp:        uint32(time.Now().Unix()),
+		Height:           ledger.DefaultLedger.Store.GetHeight() + 1,
+		ConsensusData:    rand.Uint64(),
 		TransactionsRoot: txnRoot,
+		NextBookKeeper:   Uint160{},
 		Program: &program.Program{
 			Code:      []byte{},
 			Parameter: []byte{},

@@ -20,7 +20,6 @@ import (
 	. "nkn/core/store/LevelDBStore"
 	tx "nkn/core/transaction"
 	"nkn/core/transaction/payload"
-	"nkn/core/validation"
 	"nkn/crypto"
 	"nkn/events"
 )
@@ -419,12 +418,12 @@ func (bd *ChainStore) verifyHeader(header *Header) bool {
 		return false
 	}
 
-	flag, err := validation.VerifySignableData(header)
-	if flag == false || err != nil {
-		log.Error("[verifyHeader] failed, VerifySignableData failed.")
-		log.Error(err)
-		return false
-	}
+	//flag, err := validation.VerifySignableData(header)
+	//if flag == false || err != nil {
+	//	log.Error("[verifyHeader] failed, VerifySignableData failed.")
+	//	log.Error(err)
+	//	return false
+	//}
 
 	return true
 }
@@ -1109,19 +1108,19 @@ func (self *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 	}
 
 	if b.Header.Height == headerHeight {
-		err := VerifyBlock(b, ledger, false)
-		if err != nil {
-			log.Error("VerifyBlock error!")
-			return err
-		}
+		//err := VerifyBlock(b, ledger, false)
+		//if err != nil {
+		//	log.Error("VerifyBlock error!")
+		//	return err
+		//}
 
 		self.taskCh <- &persistHeaderTask{header: b.Header}
 	} else {
-		flag, err := validation.VerifySignableData(b)
-		if flag == false || err != nil {
-			log.Error("VerifyBlock error!")
-			return err
-		}
+		//flag, err := validation.VerifySignableData(b)
+		//if flag == false || err != nil {
+		//	log.Error("VerifyBlock error!")
+		//	return err
+		//}
 	}
 
 	self.taskCh <- &persistBlockTask{block: b, ledger: ledger}
