@@ -1,4 +1,4 @@
-package ChainStore
+package db
 
 import (
 	"bytes"
@@ -16,8 +16,6 @@ import (
 	. "nkn/core/asset"
 	"nkn/core/contract/program"
 	. "nkn/core/ledger"
-	. "nkn/core/store"
-	. "nkn/core/store/LevelDBStore"
 	tx "nkn/core/transaction"
 	"nkn/core/transaction/payload"
 	"nkn/crypto"
@@ -28,8 +26,6 @@ const (
 	HeaderHashListCount = 2000
 	CleanCacheThreshold = 2
 	TaskChanCap         = 4
-	DEPLOY_TRANSACTION  = "DeployTransaction"
-	INVOKE_TRANSACTION  = "InvokeTransaction"
 )
 
 var (

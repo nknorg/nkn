@@ -6,7 +6,7 @@ import (
 	"nkn/common/log"
 	"nkn/consensus/dbft"
 	"nkn/core/ledger"
-	"nkn/core/store/ChainStore"
+	"nkn/db"
 	"nkn/core/transaction"
 	"nkn/crypto"
 	"nkn/net"
@@ -75,7 +75,7 @@ func main() {
 
 	log.Info("0. Loading the Ledger")
 	ledger.DefaultLedger = new(ledger.Ledger)
-	ledger.DefaultLedger.Store, err = ChainStore.NewLedgerStore()
+	ledger.DefaultLedger.Store, err = db.NewLedgerStore()
 	defer ledger.DefaultLedger.Store.Close()
 	if err != nil {
 		log.Fatal("open LedgerStore err:", err)
