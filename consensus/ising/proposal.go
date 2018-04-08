@@ -33,10 +33,12 @@ func (p *BlockProposal) Serialize(w io.Writer) error {
 }
 
 func (p *BlockProposal) Deserialize(r io.Reader) error {
+	p.blockHash = new(Uint256)
 	err := p.blockHash.Deserialize(r)
 	if err != nil {
 		return err
 	}
+	p.proposer = new(crypto.PubKey)
 	err = p.proposer.DeSerialize(r)
 	if err != nil {
 		return err

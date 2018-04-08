@@ -37,6 +37,7 @@ func (p *BlockVote) Serialize(w io.Writer) error {
 }
 
 func (p *BlockVote) Deserialize(r io.Reader) error {
+	p.blockHash = new(Uint256)
 	err := p.blockHash.Deserialize(r)
 	if err != nil {
 		return err
@@ -46,6 +47,7 @@ func (p *BlockVote) Deserialize(r io.Reader) error {
 		return err
 	}
 	p.agree = agree
+	p.voter = new(crypto.PubKey)
 	err = p.voter.DeSerialize(r)
 	if err != nil {
 		return err
