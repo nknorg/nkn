@@ -16,6 +16,7 @@ import (
 	"nkn/net"
 	"nkn/net/message"
 	"nkn/wallet"
+	"time"
 )
 
 const (
@@ -31,8 +32,8 @@ type Ising struct {
 	localNode            net.Neter                 // local node
 	txnCollector         *transaction.TxnCollector // collect transaction from where
 	confirmingBlock      *Uint256                  // current block in consensus process
-	proposalNum          int32                     // sent BlockProposal msg count
-	votedNum             int32                     // received agreed BlockVote msg count
+	proposalNum          int                       // sent BlockProposal msg count
+	votedNum             int                       // received agreed BlockVote msg count
 	blockCache           *BlockCache               // blocks waiting for voting
 	consensusMsgReceived events.Subscriber         // consensus events listening
 }
@@ -66,26 +67,65 @@ func New(wallet wallet.Wallet, node net.Neter) *Ising {
 	return ising
 }
 
+func (p *Ising) ProposerRoutine() {
+	block, err := p.BuildBlock()
+	if err != nil {
+		log.Error("building block error: ", err)
+	}
+	err = p.blockCache.AddBlockToCache(block)
+	if err != nil {
+		log.Error("adding block to cache error: ", err)
+	}
+	blockFlooding := &BlockFlooding{
+		block: block,
+	}
+	err = p.SendConsensusMsg(blockFlooding)
+	if err != nil {
+		log.Error("sending consensus message error: ", err)
+	}
+	p.state.SetBit(FloodingFinished)
+	// waiting for other nodes flooding finished
+	time.Sleep(time.Second * 3)
+
+	account, err := p.wallet.GetDefaultAccount()
+	if err != nil {
+		log.Error("local account error")
+		return
+	}
+	hash := block.Hash()
+	bpMsg := &BlockProposal{
+		blockHash: &hash,
+		proposer: account.PublicKey,
+		signature: MsgSignatureStub,
+	}
+	p.SendConsensusMsg(bpMsg)
+	p.state.SetBit(ProposalSent)
+	p.proposalNum = len(p.localNode.GetNeighborNoder())
+
+	// waiting for other nodes voting finished
+	time.Sleep(time.Second * 3)
+	if p.votedNum <= p.proposalNum / 2 {
+		p.blockCache.RemoveBlockFromCache(hash)
+		p.state.SetBit(BlockDroped)
+		return
+	}
+	err = ledger.DefaultLedger.Blockchain.AddBlock(block)
+	if err != nil {
+		log.Error("saving block error: ", err)
+	}
+	return
+}
+
 func (p *Ising) Start() error {
 	p.consensusMsgReceived = p.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, p.ReceiveConsensusMsg)
 	if p.role.HasBit(BlockProposer) {
-		fmt.Println("I am block proposer")
-		block, err := p.BuildBlock()
-		if err != nil {
-			return err
+		ticker := time.NewTicker(time.Second*20)
+		for {
+			select {
+			case <-ticker.C:
+				go p.ProposerRoutine()
+			}
 		}
-		err = p.blockCache.AddBlockToCache(block)
-		if err != nil {
-			return err
-		}
-		blockFlooding := &BlockFlooding{
-			block: block,
-		}
-		err = p.SendConsensusMsg(blockFlooding)
-		if err != nil {
-			return err
-		}
-		p.state.SetBit(FloodingFinished)
 	}
 
 	return nil
