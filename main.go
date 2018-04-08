@@ -15,7 +15,7 @@ import (
 	"nkn/ws"
 	"nkn/test/monitor"
 	"nkn/net/protocol"
-	_"nkn/core/sigchain" // for testing sigchain package
+	_"nkn/por" // for testing sigchain of PoR feature
 	"os"
 	"runtime"
 	"time"
