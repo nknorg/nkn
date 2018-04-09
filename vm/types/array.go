@@ -2,7 +2,7 @@ package types
 
 import (
 	"math/big"
-	"nkn/vm/avm/interfaces"
+	"nkn/vm/interfaces"
 )
 
 type Array struct {

@@ -1,7 +1,7 @@
-package avm
+package vm
 
 import (
-	. "nkn/vm/avm/errors"
+	. "nkn/vm/errors"
 	"nkn/common/log"
 )
 

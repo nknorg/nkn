@@ -1,8 +1,8 @@
-package avm
+package vm
 
 import (
-	. "nkn/vm/avm/errors"
 	"nkn/common/log"
+	. "nkn/vm/errors"
 )
 
 func opNop(e *ExecutionEngine) (VMState, error) {
@@ -72,4 +72,3 @@ func opSysCall(e *ExecutionEngine) (VMState, error) {
 		return FAULT, err
 	}
 }
-

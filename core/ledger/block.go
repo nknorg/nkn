@@ -1,6 +1,10 @@
 package ledger
 
 import (
+	"bytes"
+	"io"
+	"time"
+
 	. "nkn/common"
 	"nkn/common/log"
 	"nkn/common/serialization"
@@ -10,17 +14,14 @@ import (
 	"nkn/core/transaction/payload"
 	"nkn/crypto"
 	. "nkn/errors"
-	"nkn/vm/avm"
-	"io"
-	"time"
-	"bytes"
+	"nkn/vm"
 )
 
 const BlockVersion uint32 = 0
 const GenesisNonce uint64 = 2083236893
 
 type Block struct {
-	Header    *Header
+	Header       *Header
 	Transactions []*tx.Transaction
 
 	hash *Uint256
@@ -117,7 +118,7 @@ func (b *Block) GetMessage() []byte {
 	return sig.GetHashData(b)
 }
 
-func (b *Block) ToArray() ([]byte) {
+func (b *Block) ToArray() []byte {
 	bf := new(bytes.Buffer)
 	b.Serialize(bf)
 	return bf.Bytes()
@@ -171,7 +172,7 @@ func GenesisBlockInit(defaultBookKeeper []*crypto.PubKey) (*Block, error) {
 		NextBookKeeper:   nextBookKeeper,
 		Program: &program.Program{
 			Code:      []byte{},
-			Parameter: []byte{byte(avm.PUSHT)},
+			Parameter: []byte{byte(vm.PUSHT)},
 		},
 	}
 	//transaction
@@ -181,14 +182,14 @@ func GenesisBlockInit(defaultBookKeeper []*crypto.PubKey) (*Block, error) {
 		Payload: &payload.BookKeeping{
 			Nonce: GenesisNonce,
 		},
-		Attributes:    []*tx.TxAttribute{},
-		UTXOInputs:    []*tx.UTXOTxInput{},
-		Outputs:       []*tx.TxOutput{},
-		Programs:      []*program.Program{},
+		Attributes: []*tx.TxAttribute{},
+		UTXOInputs: []*tx.UTXOTxInput{},
+		Outputs:    []*tx.TxOutput{},
+		Programs:   []*program.Program{},
 	}
 	//block
 	genesisBlock := &Block{
-		Header:    genesisBlockdata,
+		Header:       genesisBlockdata,
 		Transactions: []*tx.Transaction{trans},
 	}
 

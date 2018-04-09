@@ -1,4 +1,4 @@
-package avm
+package vm
 
 const (
 	StackLimit       uint32 = 2*1024

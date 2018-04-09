@@ -1,4 +1,4 @@
-package avm
+package vm
 
 func opCat(e *ExecutionEngine) (VMState, error) {
 	b2 := PopByteArray(e)

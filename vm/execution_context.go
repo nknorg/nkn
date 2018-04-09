@@ -1,9 +1,10 @@
-package avm
+package vm
 
 import (
-	"nkn/vm/avm/utils"
 	"io"
-	"nkn/vm/avm/types"
+
+	"nkn/vm/types"
+	"nkn/vm/utils"
 )
 
 type ExecutionContext struct {
@@ -60,5 +61,3 @@ func (ec *ExecutionContext) GetStackItem() types.StackItemInterface {
 func (ec *ExecutionContext) GetExecutionContext() *ExecutionContext {
 	return ec
 }
-
-

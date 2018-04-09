@@ -1,4 +1,4 @@
-package avm
+package vm
 
 type OpCode byte
 

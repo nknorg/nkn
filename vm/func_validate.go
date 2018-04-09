@@ -1,18 +1,19 @@
-package avm
+package vm
 
 import (
-	. "nkn/vm/avm/errors"
 	"bytes"
+
 	"encoding/binary"
-	"nkn/vm/avm/types"
+	. "nkn/vm/errors"
+	"nkn/vm/types"
 )
 
 func validatorPushData4(e *ExecutionEngine) error {
 	index := e.context.GetInstructionPointer()
-	if index + 4 >= len(e.context.Code) {
+	if index+4 >= len(e.context.Code) {
 		return ErrOverCodeLen
 	}
-	bytesBuffer := bytes.NewBuffer(e.context.Code[index: index + 4])
+	bytesBuffer := bytes.NewBuffer(e.context.Code[index : index+4])
 	var l uint32
 	binary.Read(bytesBuffer, binary.LittleEndian, &l)
 	if l > MaxItemSize {
@@ -127,7 +128,7 @@ func validateSubStr(e *ExecutionEngine) error {
 		return ErrBadValue
 	}
 	arr := PeekNByteArray(2, e)
-	if len(arr) < index + count {
+	if len(arr) < index+count {
 		return ErrOverMaxArraySize
 	}
 	return nil
@@ -240,7 +241,7 @@ func validatorSetItem(e *ExecutionEngine) error {
 		} else {
 			return ErrNotArray
 		}
-	}else {
+	} else {
 		if index >= len(item.GetArray()) {
 			return ErrOverMaxArraySize
 		}
