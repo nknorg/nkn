@@ -205,11 +205,20 @@ func (p *Ising) ReceiveConsensusMsg(v interface{}) {
 	if payload, ok := v.(*message.IsingPayload); ok {
 		sender := payload.Sender
 		signature := payload.Signature
-		_ = signature
-		// TODO verify signature
+		hash, err := payload.DataHash()
+		if err != nil {
+			fmt.Println("get consensus payload hash error")
+			return
+		}
+		err = crypto.Verify(*sender, hash, signature)
+		if err != nil {
+			fmt.Println("consensus message verification error")
+			return
+		}
 		isingMsg, err := RecoverFromIsingPayload(payload.PayloadData)
 		if err != nil {
 			fmt.Println("Deserialization of ising message error")
+			return
 		}
 		switch t := isingMsg.(type) {
 		case *BlockFlooding:
@@ -231,6 +240,7 @@ func (p *Ising) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubK
 		log.Warn("consensus state error in BlockFlooding message handler")
 		return
 	}
+	// TODO check if the sender is PoR node
 	err := p.blockCache.AddBlockToCache(bfMsg.block)
 	if err != nil {
 		log.Error("add received block to local cache error")
@@ -244,7 +254,7 @@ func (p *Ising) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *crypto.PubK
 		log.Warn("consensus state error in BlockProposal message handler")
 		return
 	}
-	//TODO verify consensus message
+	// TODO check if the sender is neighbor
 	hash := *bpMsg.blockHash
 	if !p.state.HasBit(FloodingFinished) {
 		if !p.blockCache.BlockInCache(hash) {
@@ -280,7 +290,7 @@ func (p *Ising) HandleBlockRequestMsg(brMsg *BlockRequest, sender *crypto.PubKey
 		log.Warn("consensus state error in BlockRequest message handler")
 		return
 	}
-	//TODO verify request message
+	// TODO check if already sent BlockProposal to sender
 	hash := *brMsg.blockHash
 	if hash.CompareTo(*p.confirmingBlock) != 0 {
 		log.Warn("requested block doesn't match with local block in process")
@@ -302,7 +312,7 @@ func (p *Ising) HandleBlockResponseMsg(brMsg *BlockResponse, sender *crypto.PubK
 		log.Warn("consensus state error in BlockResponse message handler")
 		return
 	}
-	// TODO verify proposer
+	// TODO check if the sender is requested neighbor node
 	err := p.blockCache.AddBlockToCache(brMsg.block)
 	if err != nil {
 		return
@@ -326,7 +336,7 @@ func (p *Ising) HandleBlockVoteMsg(bvMsg *BlockVote, sender *crypto.PubKey) {
 		log.Warn("consensus state error in BlockVote message handler")
 		return
 	}
-	//TODO verify blockvote message
+	// TODO check if the sender is neighbor
 	hash := bvMsg.blockHash
 	if hash.CompareTo(*p.confirmingBlock) != 0 {
 		log.Warn("voted block doesn't match with local block in process")
