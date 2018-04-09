@@ -1,9 +1,9 @@
-package avm
+package vm
 
 import (
 	"testing"
 	"math/big"
-	"nkn/vm/avm/types"
+	"nkn/vm/types"
 )
 
 var (

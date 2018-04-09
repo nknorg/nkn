@@ -1,4 +1,4 @@
-package avm
+package vm
 
 func opToAltStack(e *ExecutionEngine) (VMState, error) {
 	e.altStack.Push(Pop(e))

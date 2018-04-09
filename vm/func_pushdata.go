@@ -1,4 +1,4 @@
-package avm
+package vm
 
 func opPushData(e *ExecutionEngine) (VMState, error) {
 	data := getPushData(e)

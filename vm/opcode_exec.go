@@ -1,4 +1,4 @@
-package avm
+package vm
 
 type OpExec struct {
 	Opcode    OpCode

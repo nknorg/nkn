@@ -1,7 +1,7 @@
-package avm
+package vm
 
 import (
-	"nkn/vm/avm/types"
+	"nkn/vm/types"
 )
 
 type Element interface {

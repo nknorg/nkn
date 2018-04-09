@@ -1,4 +1,4 @@
-package avm
+package vm
 
 func opInvert(e *ExecutionEngine) (VMState, error) {
 	i := PopBigInt(e)

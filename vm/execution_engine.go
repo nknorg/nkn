@@ -1,11 +1,11 @@
-package avm
+package vm
 
 import (
-	"nkn/vm/avm/interfaces"
+	"nkn/vm/interfaces"
 	"io"
 	_ "math/big"
 	_ "sort"
-	. "nkn/vm/avm/errors"
+	. "nkn/vm/errors"
 	"nkn/common"
 )
 

@@ -1,12 +1,12 @@
-package avm
+package vm
 
 import (
-	"nkn/vm/avm/errors"
-	"nkn/vm/avm/types"
+	"nkn/vm/errors"
+	"nkn/vm/types"
 	"encoding/binary"
 	"math/big"
 	"reflect"
-	"nkn/vm/avm/interfaces"
+	"nkn/vm/interfaces"
 	"hash"
 	"crypto/sha1"
 	"crypto/sha256"

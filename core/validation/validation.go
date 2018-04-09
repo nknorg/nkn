@@ -1,14 +1,15 @@
 package validation
 
 import (
+	"errors"
+
+	"nkn/common"
 	. "nkn/common"
 	sig "nkn/core/signature"
 	"nkn/crypto"
 	. "nkn/errors"
-	"nkn/vm/avm"
-	"errors"
-	"nkn/vm/avm/interfaces"
-	"nkn/common"
+	"nkn/vm"
+	"nkn/vm/interfaces"
 )
 
 func VerifySignableData(signableData sig.SignableData) (bool, error) {
@@ -32,8 +33,8 @@ func VerifySignableData(signableData sig.SignableData) (bool, error) {
 		}
 		//execute program on VM
 		var cryptos interfaces.ICrypto
-		cryptos = new(avm.ECDsaCrypto)
-		se := avm.NewExecutionEngine(signableData, cryptos, nil, nil, common.Fixed64(0))
+		cryptos = new(vm.ECDsaCrypto)
+		se := vm.NewExecutionEngine(signableData, cryptos, nil, nil, common.Fixed64(0))
 		se.LoadCode(programs[i].Code, false)
 		se.LoadCode(programs[i].Parameter, true)
 		err := se.Execute()
@@ -42,7 +43,7 @@ func VerifySignableData(signableData sig.SignableData) (bool, error) {
 			return false, NewDetailErr(err, ErrNoCode, "")
 		}
 
-		if se.GetState() != avm.HALT {
+		if se.GetState() != vm.HALT {
 			return false, NewDetailErr(errors.New("[VM] Finish State not equal to HALT."), ErrNoCode, "")
 		}
 

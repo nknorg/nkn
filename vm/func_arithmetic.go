@@ -1,4 +1,4 @@
-package avm
+package vm
 
 func opBigInt(e *ExecutionEngine) (VMState, error) {
 	x := PopBigInt(e)
