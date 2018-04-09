@@ -8,12 +8,15 @@ import (
 
 	. "nkn/net/protocol"
 	"nkn/common/log"
+	"nkn/crypto"
 	"nkn/common/serialization"
 	"nkn/events"
 )
 
 type IsingPayload struct {
 	PayloadData []byte
+	Sender      *crypto.PubKey
+	Signature   []byte
 }
 
 type IsingMessage struct {
@@ -56,6 +59,14 @@ func (p *IsingPayload) Serialize(w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	err = p.Sender.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteVarBytes(w, p.Signature)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -66,6 +77,17 @@ func (p *IsingPayload) Deserialize(r io.Reader) error {
 		return err
 	}
 	p.PayloadData = pldData
+
+	p.Sender = new(crypto.PubKey)
+	err = p.Sender.DeSerialize(r)
+	if err != nil {
+		return err
+	}
+	signature, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	p.Signature = signature
 
 	return nil
 }

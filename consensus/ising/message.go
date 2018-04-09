@@ -6,6 +6,7 @@ import (
 
 	"nkn/common/serialization"
 	"nkn/net/message"
+	"nkn/crypto"
 )
 
 type IsingMessageType byte
@@ -22,7 +23,7 @@ type IsingMessage interface {
 	serialization.SerializableData
 }
 
-func BuildIsingPayload(msg IsingMessage) (*message.IsingPayload, error) {
+func BuildIsingPayload(msg IsingMessage, sender *crypto.PubKey) (*message.IsingPayload, error) {
 	var err error
 	buf := bytes.NewBuffer(nil)
 	switch msg.(type) {
@@ -46,6 +47,8 @@ func BuildIsingPayload(msg IsingMessage) (*message.IsingPayload, error) {
 	}
 	payload := &message.IsingPayload{
 		PayloadData: buf.Bytes(),
+		Sender: sender,
+		Signature: nil,
 	}
 
 	return payload, nil
