@@ -22,10 +22,10 @@ type IsingMessage interface {
 	serialization.SerializableData
 }
 
-func BuildIsingPayload(s serialization.SerializableData) (*message.IsingPayload, error) {
+func BuildIsingPayload(msg IsingMessage) (*message.IsingPayload, error) {
 	var err error
 	buf := bytes.NewBuffer(nil)
-	switch s.(type) {
+	switch msg.(type) {
 	case *BlockFlooding:
 		err = serialization.WriteByte(buf, byte(BlockFloodingMsg))
 	case *BlockRequest:
@@ -40,7 +40,7 @@ func BuildIsingPayload(s serialization.SerializableData) (*message.IsingPayload,
 	if err != nil {
 		return nil, err
 	}
-	err = s.Serialize(buf)
+	err = msg.Serialize(buf)
 	if err != nil {
 		return nil, err
 	}
