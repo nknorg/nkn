@@ -6,7 +6,6 @@ import (
 
 	. "nkn/common"
 	"nkn/common/log"
-	"nkn/common/serialization"
 	"nkn/core/contract/program"
 	"nkn/core/ledger"
 	"nkn/core/transaction"
@@ -132,8 +131,8 @@ func (p *Ising) Start() error {
 	return nil
 }
 
-func (p *Ising) SendConsensusMsg(payload serialization.SerializableData) error {
-	isingPld, err := BuildIsingPayload(payload)
+func (p *Ising) SendConsensusMsg(msg IsingMessage) error {
+	isingPld, err := BuildIsingPayload(msg)
 	if err != nil {
 		return err
 	}
