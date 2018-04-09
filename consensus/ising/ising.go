@@ -133,6 +133,15 @@ func (p *Ising) SendConsensusMsg(msg IsingMessage) error {
 	if err != nil {
 		return err
 	}
+	hash, err := isingPld.DataHash()
+	if err != nil {
+		return err
+	}
+	signature, err := crypto.Sign(account.PrivateKey, hash)
+	if err != nil {
+		return err
+	}
+	isingPld.Signature = signature
 	err = p.localNode.Xmit(isingPld)
 	if err != nil {
 		return err
