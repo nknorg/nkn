@@ -53,13 +53,22 @@ func (p *IsingMessage) Deserialization(b []byte) error {
 	return err
 }
 
-
-func (p *IsingPayload) Serialize(w io.Writer) error {
+func (p *IsingPayload) SerializeUnsigned(w io.Writer) error {
 	err := serialization.WriteVarBytes(w, p.PayloadData)
 	if err != nil {
 		return err
 	}
 	err = p.Sender.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *IsingPayload) Serialize(w io.Writer) error {
+	var err error
+	err = p.SerializeUnsigned(w)
 	if err != nil {
 		return err
 	}
@@ -72,6 +81,21 @@ func (p *IsingPayload) Serialize(w io.Writer) error {
 }
 
 func (p *IsingPayload) Deserialize(r io.Reader) error {
+	var err error
+	err = p.DeserializeUnsigned(r)
+	if err != nil {
+		return err
+	}
+	signature, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	p.Signature = signature
+
+	return nil
+}
+
+func (p *IsingPayload) DeserializeUnsigned(r io.Reader) error {
 	pldData, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
@@ -83,13 +107,18 @@ func (p *IsingPayload) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	signature, err := serialization.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-	p.Signature = signature
 
 	return nil
+}
+
+func (p *IsingPayload) DataHash() ([]byte, error) {
+	buff := bytes.NewBuffer(nil)
+	err := p.SerializeUnsigned(buff)
+	if err != nil {
+		return nil, err
+	}
+	temp := sha256.Sum256(buff.Bytes())
+	return temp[:], nil
 }
 
 func NewIsingConsensus(pld *IsingPayload) ([]byte, error) {
