@@ -59,6 +59,18 @@ func (p *BlockCache) GetBlockFromCache(hash Uint256) *ledger.Block {
 	}
 }
 
+// GetCurrentBlockFromCache returns latest block in cache
+func (p *BlockCache) GetCurrentBlockFromCache() *ledger.Block {
+	p.RLock()
+	defer p.RUnlock()
+	// TODO block cache supports getting current block
+	for _, v := range p.cache {
+		return v.block
+	}
+
+	return nil
+}
+
 // RemoveBlockFromCache return true if the block doesn't exist in cache.
 func (p *BlockCache) RemoveBlockFromCache(hash Uint256) error {
 	p.Lock()
@@ -86,12 +98,12 @@ func (p *BlockCache) AddBlockToCache(block *ledger.Block) error {
 	}
 	// TODO FIFO cleanup, if cap space is not enough then
 	// remove block from cache according to FIFO
-	p.Lock()
-	defer p.Unlock()
 	blockInfo := &BlockInfo{
 		block:    block,
 		lifetime: time.NewTimer(time.Hour),
 	}
+	p.Lock()
+	defer p.Unlock()
 	p.cache[hash] = blockInfo
 
 	return nil

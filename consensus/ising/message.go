@@ -54,8 +54,8 @@ func BuildIsingPayload(msg IsingMessage, sender *crypto.PubKey) (*message.IsingP
 	return payload, nil
 }
 
-func RecoverFromIsingPayload(data []byte) (IsingMessage, error) {
-	r := bytes.NewReader(data)
+func RecoverFromIsingPayload(payload *message.IsingPayload) (IsingMessage, error) {
+	r := bytes.NewReader(payload.PayloadData)
 	msgType, err := serialization.ReadByte(r)
 	if err != nil {
 		return nil, err
