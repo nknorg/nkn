@@ -1,26 +1,21 @@
 package ising
 
-type Bitmap uint32
+type State uint32
 
-func (p *Bitmap) SetBit(bit Bitmap) {
+func (p *State) SetBit(bit State) {
 	*p |= bit
 }
 
-func (p Bitmap) HasBit(bit Bitmap) bool {
+func (p State) HasBit(bit State) bool {
 	return (p & bit) == bit
 }
 
-func (p *Bitmap) ClearBit(bit Bitmap) {
+func (p *State) ClearBit(bit State) {
 	*p &^= bit
 }
 
 const (
-	BlockProposer Bitmap = 1 << iota
-	BlockVoter
-)
-
-const (
-	InitialState Bitmap = 1 << iota
+	InitialState State = 1 << iota
 
 	// proposer node get into this state after broadcast block
 	// voter node get into this state after received block
@@ -32,14 +27,8 @@ const (
 	// proposer node sent the proposal
 	ProposalSent
 
-	// voter node received proposal
-	ProposalReceived
-
 	// voter node sent the idea of the proposal
 	OpinionSent
-
-	// proposer node received the idea from voter node
-	OpintionReceived
 
 	// proposer got enough votes
 	BlockConfirmed

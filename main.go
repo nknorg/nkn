@@ -114,7 +114,7 @@ func main() {
 		//log.Info("5. Start DBFT Services")
 		//dbftServices := dbft.NewDbftService(client, "logdbft", noder)
 		//go dbftServices.Start()
-		consensus := ising.New(client, noder)
+		consensus := ising.New(acct, noder)
 		go consensus.Start()
 		time.Sleep(5 * time.Second)
 	}
