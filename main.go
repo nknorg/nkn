@@ -15,10 +15,12 @@ import (
 	"nkn/ws"
 	"nkn/test/monitor"
 	"nkn/net/protocol"
+	"nkn/net/chord"
 	_"nkn/por" // for testing sigchain of PoR feature
 	"os"
 	"runtime"
 	"time"
+	"flag"
 	"math/rand"
 	"nkn/consensus/ising"
 )
@@ -41,12 +43,31 @@ func init() {
 }
 
 func main() {
+	var name = flag.String("test", "value", "usage")
+	var numNode int
+	flag.IntVar(&numNode, "numNode", 1, "usage")
+	flag.Parse()
+
+	// Start the Chord ring testing process
+	if len(os.Args) != 1 {
+		//flag.PrintDefaults()
+		if *name == "create" {
+			go chord.CreateNet()
+		} else if *name == "join" {
+			go chord.JoinNet()
+		}
+		for {
+			time.Sleep(20 * time.Second)
+		}
+	}
+
 	var acct *wallet.Account
 	var blockChain *ledger.Blockchain
 	var err error
 	var noder protocol.Noder
 	log.Trace("Node version: ", config.Version)
 
+	// TODO remove the bookkeepers limitation
 	if len(config.Parameters.BookKeepers) < wallet.DefaultBookKeeperCount {
 		log.Fatal("At least ", wallet.DefaultBookKeeperCount, " BookKeepers should be set at config.json")
 		os.Exit(1)

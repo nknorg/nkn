@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"hash"
 	"time"
+	"nkn/common/log"
 )
 
 // Implements the methods needed for a Chord ring
@@ -221,4 +222,78 @@ func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 		successors = successors[:len(successors)-1]
 	}
 	return successors, nil
+}
+
+// Ring create and join testing functions
+func prepRing(port int) (*Config, *TCPTransport, error) {
+	listen := fmt.Sprintf("localhost:%d", port)
+	conf := DefaultConfig(listen)
+	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
+	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
+	timeout := time.Duration(20 * time.Millisecond)
+	trans, err := InitTCPTransport(listen, timeout)
+	if err != nil {
+		return nil, nil, err
+	}
+	return conf, trans, nil
+}
+
+// Creat the ring
+func CreateNet() {
+	log.Trace()
+	c, t, err := prepRing(10025)
+	if err != nil {
+		log.Error("unexpected err. %s", err)
+	}
+	defer t.Shutdown()
+
+	// Create initial ring
+	r, err := Create(c, t)
+	if err != nil {
+		log.Fatal("unexpected err. %s", err)
+	}
+	defer r.Shutdown()
+
+	i := 0
+	for {
+		time.Sleep(20 * time.Second)
+		log.Info("Create Height = %d\n", i)
+		i++
+	}
+}
+
+func prepJoinRing(port int) (*Config, *TCPTransport, error) {
+	listen := fmt.Sprintf("localhost:%d", port)
+	conf := DefaultConfig(listen)
+	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
+	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
+	timeout := time.Duration(20 * time.Millisecond)
+	trans, err := InitTCPTransport(listen, timeout)
+	if err != nil {
+		return nil, nil, err
+	}
+	return conf, trans, nil
+}
+
+// Join the ring
+func JoinNet() {
+	log.Trace()
+	c, t, err := prepJoinRing(10026)
+	if err != nil {
+		log.Error("unexpected err. %s", err)
+	}
+	defer t.Shutdown()
+	// Join ring
+	r, err := Join(c, t, "localhost:10025")
+	if err != nil {
+		log.Error("failed to join local node! Got %s", err)
+	}
+	defer r.Shutdown()
+
+	i := 0
+	for {
+		time.Sleep(20 * time.Second)
+		log.Info("Join Height = %d\n", i)
+		i++
+	}
 }
