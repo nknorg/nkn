@@ -67,7 +67,6 @@ func (p *VoterService) ReceiveConsensusMsg(v interface{}) {
 }
 
 func (p *VoterService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubKey) {
-	fmt.Println("handle block flooing in voternode")
 	// TODO check if the sender is PoR node
 	err := p.blockCache.AddBlockToCache(bfMsg.block)
 	if err != nil {
@@ -80,7 +79,6 @@ func (p *VoterService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *cryp
 }
 
 func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *crypto.PubKey) {
-	fmt.Println("handle block proposal")
 	// TODO check if the sender is neighbor
 	nodeID := publickKeyToNodeID(sender)
 	hash := *bpMsg.blockHash
@@ -89,7 +87,7 @@ func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *cryp
 			brMsg := &BlockRequest{
 				blockHash: bpMsg.blockHash,
 			}
-			p.SendConsensusMsg(brMsg)
+			p.ReplyConsensusMsg(brMsg, sender)
 			p.state[nodeID].SetBit(RequestSent)
 			return
 		}
@@ -106,13 +104,12 @@ func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *cryp
 		blockHash: bpMsg.blockHash,
 		agree:     option,
 	}
-	p.SendConsensusMsg(blMsg)
+	p.ReplyConsensusMsg(blMsg, sender)
 	p.state[nodeID].SetBit(OpinionSent)
 	return
 }
 
 func (p *VoterService) HandleBlockResponseMsg(brMsg *BlockResponse, sender *crypto.PubKey) {
-	fmt.Println("handle block response...")
 	nodeID := publickKeyToNodeID(sender)
 	if !p.state[nodeID].HasBit(InitialState) || !p.state[nodeID].HasBit(RequestSent) {
 		log.Warn("consensus state error in BlockResponse message handler")
@@ -131,12 +128,13 @@ func (p *VoterService) HandleBlockResponseMsg(brMsg *BlockResponse, sender *cryp
 		blockHash: &hash,
 		agree:     option,
 	}
-	p.SendConsensusMsg(bvMsg)
+	p.ReplyConsensusMsg(bvMsg, sender)
 	p.state[nodeID].SetBit(OpinionSent)
 	return
 }
 
-func (p *VoterService) SendConsensusMsg(msg IsingMessage) error {
+func (p *VoterService) ReplyConsensusMsg(msg IsingMessage, to *crypto.PubKey) error {
+	replied := false
 	isingPld, err := BuildIsingPayload(msg, p.account.PublicKey)
 	if err != nil {
 		return err
@@ -150,9 +148,19 @@ func (p *VoterService) SendConsensusMsg(msg IsingMessage) error {
 		return err
 	}
 	isingPld.Signature = signature
-	err = p.localNode.Xmit(isingPld)
-	if err != nil {
-		return err
+	neighbors := p.localNode.GetNeighborNoder()
+	for _, n := range neighbors {
+		if n.GetID() == publickKeyToNodeID(to) {
+			b, err := message.NewIsingConsensus(isingPld)
+			if err != nil {
+				return err
+			}
+			n.Tx(b)
+			replied = true
+		}
+	}
+	if !replied {
+		log.Warn("neighbor missing")
 	}
 
 	return nil
