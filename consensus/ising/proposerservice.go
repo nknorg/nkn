@@ -58,7 +58,7 @@ func NewProposerService(account *wallet.Account, node net.Neter) *ProposerServic
 	return service
 }
 
-func (p *ProposerService) ConsensusRoutine() {
+func (p *ProposerService) ProposerRoutine() {
 	var err error
 	var block *ledger.Block
 	if p.spreader {
@@ -78,32 +78,34 @@ func (p *ProposerService) ConsensusRoutine() {
 			log.Error("sending consensus message error: ", err)
 		}
 		p.state.SetBit(FloodingFinished)
-		// waiting for other nodes spreader finished
-		time.Sleep(time.Second * 3)
-		block = p.blockCache.GetCurrentBlockFromCache()
-		hash := block.Hash()
-		bpMsg := &BlockProposal{
-			blockHash: &hash,
-		}
-
-		p.SendConsensusMsg(bpMsg)
-		p.state.SetBit(ProposalSent)
-		p.confirmingBlock = &hash
-		p.proposalNum = len(p.localNode.GetNeighborNoder())
-
-		// waiting for other nodes voting finished
-		time.Sleep(time.Second * 3)
-		if p.votedNum <= p.proposalNum/2 {
-			p.blockCache.RemoveBlockFromCache(hash)
-			p.state.SetBit(BlockDroped)
-			return
-		}
-		err = ledger.DefaultLedger.Blockchain.AddBlock(block)
-		if err != nil {
-			log.Error("saving block error: ", err)
-		}
-		p.state.SetBit(BlockConfirmed)
 	}
+	// waiting for other nodes spreader finished
+	time.Sleep(time.Second * 3)
+	block = p.blockCache.GetCurrentBlockFromCache()
+	hash := block.Hash()
+	bpMsg := &BlockProposal{
+		blockHash: &hash,
+	}
+
+	p.SendConsensusMsg(bpMsg)
+	p.state.SetBit(ProposalSent)
+	p.confirmingBlock = &hash
+	p.proposalNum = len(p.localNode.GetNeighborNoder())
+
+	// waiting for other nodes voting finished
+	time.Sleep(time.Second * 3)
+	if p.votedNum <= p.proposalNum/2 {
+		p.blockCache.RemoveBlockFromCache(hash)
+		p.state.SetBit(BlockDroped)
+		return
+	}
+	err = ledger.DefaultLedger.Blockchain.AddBlock(block)
+	if err != nil {
+		log.Error("saving block error: ", err)
+	}
+	fmt.Println("add block ....")
+	p.state.SetBit(BlockConfirmed)
+
 	return
 }
 
@@ -113,7 +115,7 @@ func (p *ProposerService) Start() error {
 	for {
 		select {
 		case <-ticker.C:
-			go p.ConsensusRoutine()
+			go p.ProposerRoutine()
 		}
 	}
 
@@ -215,12 +217,8 @@ func (p *ProposerService) ReceiveConsensusMsg(v interface{}) {
 		switch t := isingMsg.(type) {
 		case *BlockFlooding:
 			p.HandleBlockFloodingMsg(t, sender)
-		case *BlockProposal:
-			p.HandleBlockProposalMsg(t, sender)
 		case *BlockRequest:
 			p.HandleBlockRequestMsg(t, sender)
-		case *BlockResponse:
-			p.HandleBlockResponseMsg(t, sender)
 		case *BlockVote:
 			p.HandleBlockVoteMsg(t, sender)
 		}
@@ -228,6 +226,7 @@ func (p *ProposerService) ReceiveConsensusMsg(v interface{}) {
 }
 
 func (p *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubKey) {
+	fmt.Println("handle block flooding in proposer... ")
 	if !p.state.HasBit(InitialState) || p.state.HasBit(FloodingFinished) {
 		log.Warn("consensus state error in BlockFlooding message handler")
 		return
@@ -241,43 +240,8 @@ func (p *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *c
 	p.state.SetBit(FloodingFinished)
 }
 
-func (p *ProposerService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *crypto.PubKey) {
-	if !p.state.HasBit(InitialState) {
-		log.Warn("consensus state error in BlockProposal message handler")
-		return
-	}
-	// TODO check if the sender is neighbor
-	hash := *bpMsg.blockHash
-	if !p.state.HasBit(FloodingFinished) {
-		if !p.blockCache.BlockInCache(hash) {
-			brMsg := &BlockRequest{
-				blockHash: bpMsg.blockHash,
-			}
-			p.SendConsensusMsg(brMsg)
-			p.state.SetBit(RequestSent)
-			return
-		}
-		p.state.SetBit(FloodingFinished)
-		return
-	} else {
-		block := p.blockCache.GetBlockFromCache(hash)
-		if block == nil {
-			return
-		}
-		//TODO verify block
-		option := true
-		blMsg := &BlockVote{
-			blockHash: bpMsg.blockHash,
-			agree:     option,
-		}
-		p.SendConsensusMsg(blMsg)
-		p.state.SetBit(OpinionSent)
-		p.blockCache.RemoveBlockFromCache(hash)
-		return
-	}
-}
-
 func (p *ProposerService) HandleBlockRequestMsg(brMsg *BlockRequest, sender *crypto.PubKey) {
+	fmt.Println("handle block request... ")
 	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) || !p.state.HasBit(ProposalSent) {
 		log.Warn("consensus state error in BlockRequest message handler")
 		return
@@ -299,31 +263,8 @@ func (p *ProposerService) HandleBlockRequestMsg(brMsg *BlockRequest, sender *cry
 	return
 }
 
-func (p *ProposerService) HandleBlockResponseMsg(brMsg *BlockResponse, sender *crypto.PubKey) {
-	if !p.state.HasBit(InitialState) || !p.state.HasBit(RequestSent) {
-		log.Warn("consensus state error in BlockResponse message handler")
-		return
-	}
-	// TODO check if the sender is requested neighbor node
-	err := p.blockCache.AddBlockToCache(brMsg.block)
-	if err != nil {
-		return
-	}
-	p.state.SetBit(FloodingFinished)
-	// TODO verify block
-	option := true
-	hash := brMsg.block.Hash()
-	bvMsg := &BlockVote{
-		blockHash: &hash,
-		agree:     option,
-	}
-	p.SendConsensusMsg(bvMsg)
-	p.state.SetBit(OpinionSent)
-	p.blockCache.RemoveBlockFromCache(hash)
-	return
-}
-
 func (p *ProposerService) HandleBlockVoteMsg(bvMsg *BlockVote, sender *crypto.PubKey) {
+	fmt.Println("handle block vote... ")
 	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) || !p.state.HasBit(ProposalSent) {
 		log.Warn("consensus state error in BlockVote message handler")
 		return
