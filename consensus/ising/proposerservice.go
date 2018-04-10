@@ -96,14 +96,17 @@ func (p *ProposerService) ProposerRoutine() {
 	time.Sleep(time.Second * 3)
 	if p.votedNum <= p.proposalNum/2 {
 		p.blockCache.RemoveBlockFromCache(hash)
-		p.state.SetBit(BlockDroped)
+		p.state.ClearAll()
+		p.state.SetBit(InitialState)
 		return
 	}
+
 	err = ledger.DefaultLedger.Blockchain.AddBlock(block)
 	if err != nil {
 		log.Error("saving block error: ", err)
 	}
-	p.state.SetBit(BlockConfirmed)
+	p.state.ClearAll()
+	p.state.SetBit(InitialState)
 
 	return
 }

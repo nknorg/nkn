@@ -1,19 +1,5 @@
 package ising
 
-type State uint32
-
-func (p *State) SetBit(bit State) {
-	*p |= bit
-}
-
-func (p State) HasBit(bit State) bool {
-	return (p & bit) == bit
-}
-
-func (p *State) ClearBit(bit State) {
-	*p &^= bit
-}
-
 const (
 	InitialState State = 1 << iota
 
@@ -29,10 +15,23 @@ const (
 
 	// voter node sent the idea of the proposal
 	OpinionSent
-
-	// proposer got enough votes
-	BlockConfirmed
-
-	// proposer got enough votes is enough
-	BlockDroped
 )
+
+type State uint32
+
+func (p *State) SetBit(bit State) {
+	*p |= bit
+}
+
+func (p State) HasBit(bit State) bool {
+	return (p & bit) == bit
+}
+
+func (p *State) ClearBit(bit State) {
+	*p &^= bit
+}
+
+func (p *State) ClearAll() {
+	*p = 0
+}
+
