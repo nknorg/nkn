@@ -114,8 +114,7 @@ func main() {
 		//log.Info("5. Start DBFT Services")
 		//dbftServices := dbft.NewDbftService(client, "logdbft", noder)
 		//go dbftServices.Start()
-		consensus := ising.New(acct, noder)
-		go consensus.Start()
+		ising.StartIsingConsensus(acct, noder)
 		time.Sleep(5 * time.Second)
 	}
 	httpjson.Wallet = client
