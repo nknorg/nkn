@@ -13,8 +13,8 @@ import (
 	"nkn/core/transaction/payload"
 	"nkn/crypto"
 	"nkn/events"
-	"nkn/net"
 	"nkn/net/message"
+	"nkn/net/protocol"
 	"nkn/wallet"
 )
 
@@ -26,7 +26,7 @@ type ProposerService struct {
 	account              *wallet.Account           // local account
 	spreader             bool                      // whether the node could do block flooding
 	state                State                     // consensus state
-	localNode            net.Neter                 // local node
+	localNode            protocol.Noder            // local node
 	txnCollector         *transaction.TxnCollector // collect transaction from where
 	confirmingBlock      *Uint256                  // current block in consensus process
 	proposalNum          int                       // sent BlockProposal msg count
@@ -35,7 +35,7 @@ type ProposerService struct {
 	consensusMsgReceived events.Subscriber         // consensus events listening
 }
 
-func NewProposerService(account *wallet.Account, node net.Neter) *ProposerService {
+func NewProposerService(account *wallet.Account, node protocol.Noder) *ProposerService {
 	flag := false
 	encPubKey, err := account.PublicKey.EncodePoint(true)
 	if err != nil {
@@ -73,7 +73,7 @@ func (p *ProposerService) ProposerRoutine() {
 		blockFlooding := &BlockFlooding{
 			block: block,
 		}
-		err = p.SendConsensusMsg(blockFlooding)
+		err = p.SendConsensusMsg(blockFlooding, nil)
 		if err != nil {
 			log.Error("sending consensus message error: ", err)
 		}
@@ -87,7 +87,7 @@ func (p *ProposerService) ProposerRoutine() {
 		blockHash: &hash,
 	}
 
-	p.SendConsensusMsg(bpMsg)
+	p.SendConsensusMsg(bpMsg, nil)
 	p.state.SetBit(ProposalSent)
 	p.confirmingBlock = &hash
 	p.proposalNum = len(p.localNode.GetNeighborNoder())
@@ -103,7 +103,6 @@ func (p *ProposerService) ProposerRoutine() {
 	if err != nil {
 		log.Error("saving block error: ", err)
 	}
-	fmt.Println("add block ....")
 	p.state.SetBit(BlockConfirmed)
 
 	return
@@ -122,7 +121,7 @@ func (p *ProposerService) Start() error {
 	return nil
 }
 
-func (p *ProposerService) SendConsensusMsg(msg IsingMessage) error {
+func (p *ProposerService) SendConsensusMsg(msg IsingMessage, to *crypto.PubKey) error {
 	isingPld, err := BuildIsingPayload(msg, p.account.PublicKey)
 	if err != nil {
 		return err
@@ -136,9 +135,24 @@ func (p *ProposerService) SendConsensusMsg(msg IsingMessage) error {
 		return err
 	}
 	isingPld.Signature = signature
-	err = p.localNode.Xmit(isingPld)
-	if err != nil {
-		return err
+
+	// broadcast consensus message
+	if to == nil {
+		err = p.localNode.Xmit(isingPld)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	neighbors := p.localNode.GetNeighborNoder()
+	for _, n := range neighbors {
+		if n.GetID() == publickKeyToNodeID(to) {
+			b, err := message.NewIsingConsensus(isingPld)
+			if err != nil {
+				return err
+			}
+			n.Tx(b)
+		}
 	}
 
 	return nil
@@ -226,7 +240,6 @@ func (p *ProposerService) ReceiveConsensusMsg(v interface{}) {
 }
 
 func (p *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubKey) {
-	fmt.Println("handle block flooding in proposer... ")
 	if !p.state.HasBit(InitialState) || p.state.HasBit(FloodingFinished) {
 		log.Warn("consensus state error in BlockFlooding message handler")
 		return
@@ -241,7 +254,6 @@ func (p *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *c
 }
 
 func (p *ProposerService) HandleBlockRequestMsg(brMsg *BlockRequest, sender *crypto.PubKey) {
-	fmt.Println("handle block request... ")
 	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) || !p.state.HasBit(ProposalSent) {
 		log.Warn("consensus state error in BlockRequest message handler")
 		return
@@ -259,12 +271,11 @@ func (p *ProposerService) HandleBlockRequestMsg(brMsg *BlockRequest, sender *cry
 	respMsg := &BlockResponse{
 		block: b,
 	}
-	p.SendConsensusMsg(respMsg)
+	p.SendConsensusMsg(respMsg, sender)
 	return
 }
 
 func (p *ProposerService) HandleBlockVoteMsg(bvMsg *BlockVote, sender *crypto.PubKey) {
-	fmt.Println("handle block vote... ")
 	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) || !p.state.HasBit(ProposalSent) {
 		log.Warn("consensus state error in BlockVote message handler")
 		return
