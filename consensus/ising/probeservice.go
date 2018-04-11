@@ -3,22 +3,27 @@ package ising
 import (
 	"fmt"
 	"time"
+	"sync"
 
+	."github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/common/log"
 )
 
 const (
-	ProbeDuration = time.Second
+	ProbeDuration = time.Second * 2
 )
 
 type ProbeService struct {
+	sync.RWMutex
 	account              *wallet.Account   // local account
 	localNode            protocol.Noder    // local node
 	ticker               *time.Ticker      // ticker for probing
+	detectedResults      map[uint64]StateResponse // collected probe response
 	consensusMsgReceived events.Subscriber // consensus events listening
 }
 
@@ -27,6 +32,7 @@ func NewProbeService(account *wallet.Account, node protocol.Noder) *ProbeService
 		account:   account,
 		localNode: node,
 		ticker:    time.NewTicker(ProbeDuration),
+		detectedResults: make(map[uint64]StateResponse),
 	}
 
 	return service
@@ -41,6 +47,8 @@ func (p *ProbeService) Start() error {
 				message: "Hi",
 			}
 			p.SendConsensusMsg(stateProbe)
+			time.Sleep(time.Second)
+			p.AnalyzeResponse()
 		}
 	}
 
@@ -66,8 +74,9 @@ func (p *ProbeService) ReceiveConsensusMsg(v interface{}) {
 			fmt.Println("Deserialization of ising message error")
 			return
 		}
-		switch isingMsg.(type) {
-		//TODO handle Probe response message
+		switch t := isingMsg.(type) {
+		case *StateResponse:
+			p.HandleStateResponseMsg(t, sender)
 		}
 	}
 }
@@ -94,4 +103,35 @@ func (p *ProbeService) SendConsensusMsg(msg IsingMessage) error {
 	}
 
 	return nil
+}
+
+func (p *ProbeService) HandleStateResponseMsg(msg *StateResponse, sender *crypto.PubKey) {
+	p.Lock()
+	defer p.Unlock()
+
+	id := publickKeyToNodeID(sender)
+	p.detectedResults[id] = *msg
+
+	return
+}
+
+func (p *ProbeService) AnalyzeResponse() {
+	p.RLock()
+	defer p.RUnlock()
+
+	results := make(map[Uint256]int)
+	for _, resp := range p.detectedResults {
+		results[resp.currentBlockHash] ++
+	}
+	length := len(p.detectedResults)
+	for blockHash, num := range results {
+		if num * 2 >= length {
+			_ = blockHash
+			fmt.Println(BytesToHexString(blockHash.ToArrayReverse()))
+			// TODO communicate with proposer service
+			return
+		}
+	}
+	log.Warn("inconsistent state of neighbor")
+	return
 }

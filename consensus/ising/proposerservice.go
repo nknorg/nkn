@@ -239,6 +239,8 @@ func (p *ProposerService) ReceiveConsensusMsg(v interface{}) {
 			p.HandleBlockRequestMsg(t, sender)
 		case *BlockVote:
 			p.HandleBlockVoteMsg(t, sender)
+		case *StateProbe:
+			p.HandleStateProbeMsg(t, sender)
 		}
 	}
 }
@@ -301,4 +303,16 @@ func (p *ProposerService) Reset() {
 	p.state.SetBit(InitialState)
 	p.proposalNum = len(p.localNode.GetNeighborNoder())
 	p.votedNum = 0
+}
+
+func (p *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.PubKey) {
+	var resp StateResponse
+	block := p.blockCache.GetCurrentBlockFromCache()
+	if block != nil {
+		resp.currentBlockHeight = block.Header.Height
+		resp.currentBlockHash = block.Header.Hash()
+	}
+
+	p.SendConsensusMsg(&resp, sender)
+	return
 }
