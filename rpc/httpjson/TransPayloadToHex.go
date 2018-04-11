@@ -41,34 +41,11 @@ type PrepaidInfo struct {
 	Rates string
 }
 
-type BookkeeperInfo struct {
-	PubKey     string
-	Action     string
-	Issuer     IssuerInfo
-	Controller string
-}
-
-
 func TransPayloadToHex(p Payload) PayloadInfo {
 	switch object := p.(type) {
 	case *payload.BookKeeping:
 		obj := new(BookKeepingInfo)
 		obj.Nonce = object.Nonce
-		return obj
-	case *payload.BookKeeper:
-		obj := new(BookkeeperInfo)
-		encodedPubKey, _ := object.PubKey.EncodePoint(true)
-		obj.PubKey = BytesToHexString(encodedPubKey)
-		if object.Action == payload.BookKeeperAction_ADD {
-			obj.Action = "add"
-		} else if object.Action == payload.BookKeeperAction_SUB {
-			obj.Action = "sub"
-		} else {
-			obj.Action = "nil"
-		}
-		obj.Issuer.X = object.Issuer.X.String()
-		obj.Issuer.Y = object.Issuer.Y.String()
-
 		return obj
 	case *payload.IssueAsset:
 	case *payload.TransferAsset:
