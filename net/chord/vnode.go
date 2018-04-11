@@ -89,33 +89,26 @@ func (vn *localVnode) checkNewSuccessor() error {
 	// Ask our successor for it's predecessor
 	trans := vn.ring.transport
 
-CHECK_NEW_SUC:
 	succ := vn.successors[0]
 	if succ == nil {
 		panic("Node has no successor!")
 	}
 	maybe_suc, err := trans.GetPredecessor(succ)
-	if err != nil {
-		// Check if we have succ list, try to contact next live succ
-		known := vn.knownSuccessors()
-		if known > 1 {
-			for i := 0; i < known; i++ {
-				if alive, _ := trans.Ping(vn.successors[0]); !alive {
-					// Don't eliminate the last successor we know of
-					if i+1 == known {
-						return fmt.Errorf("All known successors dead!")
-					}
+	known := vn.knownSuccessors()
 
-					// Advance the successors list past the dead one
-					copy(vn.successors[0:], vn.successors[1:])
-					vn.successors[known-1-i] = nil
-				} else {
-					// Found live successor, check for new one
-					goto CHECK_NEW_SUC
-				}
-			}
+	for i := 0; i < known; i++ {
+		if err == nil {
+			break
 		}
-		return err
+		if i == known-1 {
+			// TODO: re-join the network
+			panic("All known successors dead!")
+		}
+		// TODO: add retry before removing successor from list
+		copy(vn.successors[0:], vn.successors[1:])
+		vn.successors[known-1-i] = nil
+		succ = vn.successors[0]
+		maybe_suc, err = trans.GetPredecessor(succ)
 	}
 
 	// Check if we should replace our successor
