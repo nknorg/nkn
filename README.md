@@ -7,6 +7,9 @@
 
 [https://nkn.org/](https://nkn.org/)
 
+New to NKN? [See our (non-technical) introduction to
+NKN](doc/introduction).
+
 ## Features
 
 ## Building
