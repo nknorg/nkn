@@ -17,6 +17,8 @@ const (
 	BlockResponseMsg IsingMessageType = 0x02
 	BlockProposalMsg IsingMessageType = 0x03
 	BlockVoteMsg     IsingMessageType = 0x04
+	StateProbeMsg    IsingMessageType = 0x05
+	StateResponseMsg IsingMessageType = 0x06
 )
 
 type IsingMessage interface {
@@ -37,6 +39,10 @@ func BuildIsingPayload(msg IsingMessage, sender *crypto.PubKey) (*message.IsingP
 		err = serialization.WriteByte(buf, byte(BlockProposalMsg))
 	case *BlockVote:
 		err = serialization.WriteByte(buf, byte(BlockVoteMsg))
+	case *StateProbe:
+		err = serialization.WriteByte(buf, byte(StateProbeMsg))
+	case *StateResponse:
+		err = serialization.WriteByte(buf, byte(StateResponseMsg))
 	}
 	if err != nil {
 		return nil, err
@@ -47,8 +53,8 @@ func BuildIsingPayload(msg IsingMessage, sender *crypto.PubKey) (*message.IsingP
 	}
 	payload := &message.IsingPayload{
 		PayloadData: buf.Bytes(),
-		Sender: sender,
-		Signature: nil,
+		Sender:      sender,
+		Signature:   nil,
 	}
 
 	return payload, nil
@@ -97,6 +103,20 @@ func RecoverFromIsingPayload(payload *message.IsingPayload) (IsingMessage, error
 			return nil, err
 		}
 		return bvmsg, nil
+	case StateProbeMsg:
+		spmsg := &StateProbe{}
+		err := spmsg.Deserialize(r)
+		if err != nil {
+			return nil, err
+		}
+		return spmsg, nil
+	case StateResponseMsg:
+		srmsg := &StateResponse{}
+		err := srmsg.Deserialize(r)
+		if err != nil {
+			return nil, err
+		}
+		return srmsg, nil
 	}
 
 	return nil, errors.New("invalid ising consensus message.")

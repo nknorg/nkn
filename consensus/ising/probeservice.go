@@ -37,7 +37,10 @@ func (p *ProbeService) Start() error {
 	for {
 		select {
 		case <-p.ticker.C:
-			// TODO send State Probe message
+			stateProbe := &StateProbe{
+				message: "Hi",
+			}
+			p.SendConsensusMsg(stateProbe)
 		}
 	}
 
@@ -67,4 +70,28 @@ func (p *ProbeService) ReceiveConsensusMsg(v interface{}) {
 		//TODO handle Probe response message
 		}
 	}
+}
+
+func (p *ProbeService) SendConsensusMsg(msg IsingMessage) error {
+	isingPld, err := BuildIsingPayload(msg, p.account.PublicKey)
+	if err != nil {
+		return err
+	}
+	hash, err := isingPld.DataHash()
+	if err != nil {
+		return err
+	}
+	signature, err := crypto.Sign(p.account.PrivateKey, hash)
+	if err != nil {
+		return err
+	}
+	isingPld.Signature = signature
+
+	// broadcast consensus message
+	err = p.localNode.Xmit(isingPld)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
