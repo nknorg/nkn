@@ -1,8 +1,8 @@
 package ising
 
 import (
-	"nkn/wallet"
-	"nkn/net/protocol"
+	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/net/protocol"
 )
 
 func StartIsingConsensus(account *wallet.Account,  node protocol.Noder) {

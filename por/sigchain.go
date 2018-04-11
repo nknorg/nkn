@@ -6,10 +6,10 @@ import (
 	"errors"
 	"io"
 
-	. "nkn/common"
-	"nkn/common/log"
-	"nkn/common/serialization"
-	"nkn/crypto"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
 )
 
 // for the first relay node

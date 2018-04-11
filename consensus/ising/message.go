@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 
-	"nkn/common/serialization"
-	"nkn/net/message"
-	"nkn/crypto"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/net/message"
+	"github.com/nknorg/nkn/crypto"
 )
 
 type IsingMessageType byte

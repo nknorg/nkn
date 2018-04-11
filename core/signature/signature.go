@@ -5,12 +5,12 @@ import (
 	"crypto/sha256"
 	"io"
 
-	"nkn/common"
-	"nkn/common/log"
-	"nkn/core/contract/program"
-	"nkn/crypto"
-	. "nkn/errors"
-	"nkn/vm/interfaces"
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/core/contract/program"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/vm/interfaces"
 )
 
 //SignableData describe the data need be signed.

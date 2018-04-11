@@ -3,7 +3,7 @@ package vm
 import (
 	"testing"
 	"math/big"
-	"nkn/vm/types"
+	"github.com/nknorg/nkn/vm/types"
 )
 
 

@@ -1,8 +1,8 @@
 package transaction
 
 import (
-	"nkn/common"
-	"nkn/common/serialization"
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/serialization"
 	"io"
 )
 

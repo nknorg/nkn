@@ -1,7 +1,7 @@
 package payload
 
 import (
-	. "nkn/common"
+	. "github.com/nknorg/nkn/common"
 	"io"
 	"errors"
 )

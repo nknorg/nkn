@@ -1,10 +1,10 @@
 package message
 
 import (
-	"nkn/common/log"
-	"nkn/common/serialization"
-	"nkn/core/ledger"
-	. "nkn/net/protocol"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/ledger"
+	. "github.com/nknorg/nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

@@ -1,8 +1,8 @@
 package dbft
 
 import (
-	"nkn/common/log"
-	ser "nkn/common/serialization"
+	"github.com/nknorg/nkn/common/log"
+	ser "github.com/nknorg/nkn/common/serialization"
 	"bytes"
 	"errors"
 	"io"

@@ -1,12 +1,12 @@
 package vm
 
 import (
-	"nkn/vm/interfaces"
+	"github.com/nknorg/nkn/vm/interfaces"
 	"io"
 	_ "math/big"
 	_ "sort"
-	. "nkn/vm/errors"
-	"nkn/common"
+	. "github.com/nknorg/nkn/vm/errors"
+	"github.com/nknorg/nkn/common"
 )
 
 const (

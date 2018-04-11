@@ -1,28 +1,28 @@
 package main
 
 import (
-	"nkn/wallet"
-	"nkn/common/config"
-	"nkn/common/log"
-	"nkn/consensus/dbft"
-	"nkn/core/ledger"
-	"nkn/db"
-	"nkn/core/transaction"
-	"nkn/crypto"
-	"nkn/net"
-	"nkn/rpc/httpjson"
-	"nkn/rpc/httprestful"
-	"nkn/ws"
-	"nkn/test/monitor"
-	"nkn/net/protocol"
-	"nkn/net/chord"
-	_"nkn/por" // for testing sigchain of PoR feature
+	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/common/config"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/consensus/dbft"
+	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/db"
+	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/net"
+	"github.com/nknorg/nkn/rpc/httpjson"
+	"github.com/nknorg/nkn/rpc/httprestful"
+	"github.com/nknorg/nkn/ws"
+	"github.com/nknorg/nkn/test/monitor"
+	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/net/chord"
+	_"github.com/nknorg/nkn/por" // for testing sigchain of PoR feature
 	"os"
 	"runtime"
 	"time"
 	"flag"
 	"math/rand"
-	"nkn/consensus/ising"
+	"github.com/nknorg/nkn/consensus/ising"
 )
 
 const (

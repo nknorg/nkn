@@ -1,11 +1,11 @@
 package message
 
 import (
-	"nkn/common/config"
-	"nkn/common/log"
-	"nkn/core/ledger"
-	"nkn/crypto"
-	. "nkn/net/protocol"
+	"github.com/nknorg/nkn/common/config"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
@@ -172,8 +172,8 @@ func (msg version) Handle(node Noder) error {
 
 	s := node.GetState()
 	if s != INIT && s != HAND {
-		log.Warn("Unknow status to received version")
-		return errors.New("Unknow status to received version")
+		log.Warn("Ugithub.com/nknorg/nknow status to received version")
+		return errors.New("Ugithub.com/nknorg/nknow status to received version")
 	}
 
 	// Obsolete node

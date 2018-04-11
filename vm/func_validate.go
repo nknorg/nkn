@@ -4,8 +4,8 @@ import (
 	"bytes"
 
 	"encoding/binary"
-	. "nkn/vm/errors"
-	"nkn/vm/types"
+	. "github.com/nknorg/nkn/vm/errors"
+	"github.com/nknorg/nkn/vm/types"
 )
 
 func validatorPushData4(e *ExecutionEngine) error {

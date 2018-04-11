@@ -9,17 +9,17 @@ import (
 	"sync"
 	"time"
 
-	. "nkn/common"
-	"nkn/common/log"
-	"nkn/common/serialization"
-	"nkn/core/account"
-	. "nkn/core/asset"
-	"nkn/core/contract/program"
-	. "nkn/core/ledger"
-	tx "nkn/core/transaction"
-	"nkn/core/transaction/payload"
-	"nkn/crypto"
-	"nkn/events"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/account"
+	. "github.com/nknorg/nkn/core/asset"
+	"github.com/nknorg/nkn/core/contract/program"
+	. "github.com/nknorg/nkn/core/ledger"
+	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/core/transaction/payload"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/events"
 )
 
 const (

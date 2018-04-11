@@ -1,10 +1,10 @@
 package program
 
 import (
-	. "nkn/common"
+	. "github.com/nknorg/nkn/common"
 	"bytes"
 	"math/big"
-	"nkn/vm"
+	"github.com/nknorg/nkn/vm"
 )
 
 type ProgramBuilder struct {

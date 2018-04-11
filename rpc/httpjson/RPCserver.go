@@ -1,8 +1,8 @@
 package httpjson
 
 import (
-	"nkn/common/config"
-	"nkn/common/log"
+	"github.com/nknorg/nkn/common/config"
+	"github.com/nknorg/nkn/common/log"
 	"net/http"
 	"strconv"
 )

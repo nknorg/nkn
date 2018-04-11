@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	. "nkn/cli/common"
-	"nkn/rpc/httpjson"
+	. "github.com/nknorg/nkn/cli/common"
+	"github.com/nknorg/nkn/rpc/httpjson"
 
 	"github.com/urfave/cli"
 )

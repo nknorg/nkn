@@ -6,7 +6,7 @@ import (
 	"errors"
 	"io"
 
-	. "nkn/errors"
+	. "github.com/nknorg/nkn/errors"
 )
 
 const UINT256SIZE int = 32

@@ -2,8 +2,8 @@ package types
 
 import (
 	"math/big"
-	"nkn/vm/interfaces"
-	"nkn/common"
+	"github.com/nknorg/nkn/vm/interfaces"
+	"github.com/nknorg/nkn/common"
 )
 
 type Integer struct {

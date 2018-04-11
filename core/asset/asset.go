@@ -1,8 +1,8 @@
 package asset
 
 import (
-	"nkn/common/serialization"
-	. "nkn/errors"
+	"github.com/nknorg/nkn/common/serialization"
+	. "github.com/nknorg/nkn/errors"
 	"errors"
 	"io"
 	"bytes"

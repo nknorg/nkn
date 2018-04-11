@@ -8,9 +8,9 @@ import (
 	"os"
 	"sync"
 
-	. "nkn/common"
-	ct "nkn/core/contract"
-	. "nkn/errors"
+	. "github.com/nknorg/nkn/common"
+	ct "github.com/nknorg/nkn/core/contract"
+	. "github.com/nknorg/nkn/errors"
 )
 
 const (

@@ -1,12 +1,12 @@
 package vm
 
 import (
-	"nkn/vm/errors"
-	"nkn/vm/types"
+	"github.com/nknorg/nkn/vm/errors"
+	"github.com/nknorg/nkn/vm/types"
 	"encoding/binary"
 	"math/big"
 	"reflect"
-	"nkn/vm/interfaces"
+	"github.com/nknorg/nkn/vm/interfaces"
 	"hash"
 	"crypto/sha1"
 	"crypto/sha256"

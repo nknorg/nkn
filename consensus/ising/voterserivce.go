@@ -2,14 +2,14 @@ package ising
 
 import (
 	"fmt"
-	"nkn/crypto"
+	"github.com/nknorg/nkn/crypto"
 	"bytes"
 	"encoding/binary"
-	"nkn/common/log"
-	"nkn/events"
-	"nkn/net"
-	"nkn/net/message"
-	"nkn/wallet"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/net"
+	"github.com/nknorg/nkn/net/message"
+	"github.com/nknorg/nkn/wallet"
 )
 
 type VoterService struct {

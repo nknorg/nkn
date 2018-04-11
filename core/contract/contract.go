@@ -1,13 +1,13 @@
 package contract
 
 import (
-	. "nkn/common"
-	"nkn/common/serialization"
-	. "nkn/errors"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/serialization"
+	. "github.com/nknorg/nkn/errors"
 	"bytes"
 	"errors"
 	"io"
-	"nkn/vm"
+	"github.com/nknorg/nkn/vm"
 )
 
 //Contract address is the hash of contract program .

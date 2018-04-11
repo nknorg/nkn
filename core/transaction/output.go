@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"nkn/common"
+	"github.com/nknorg/nkn/common"
 	"io"
 	"bytes"
 )

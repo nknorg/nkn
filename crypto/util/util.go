@@ -1,7 +1,7 @@
 package util
 
 import (
-	"nkn/crypto/sm3"
+	"github.com/nknorg/nkn/crypto/sm3"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"

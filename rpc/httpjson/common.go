@@ -1,12 +1,12 @@
 package httpjson
 
 import (
-	. "nkn/common"
-	"nkn/common/log"
-	. "nkn/core/transaction"
-	tx "nkn/core/transaction"
-	. "nkn/errors"
-	. "nkn/net/protocol"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	. "github.com/nknorg/nkn/core/transaction"
+	tx "github.com/nknorg/nkn/core/transaction"
+	. "github.com/nknorg/nkn/errors"
+	. "github.com/nknorg/nkn/net/protocol"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

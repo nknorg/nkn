@@ -1,8 +1,8 @@
 package code
 
 import (
-	. "nkn/common"
-	. "nkn/core/contract"
+	. "github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/core/contract"
 )
 //ICode is the abstract interface of smart contract code.
 type ICode interface {

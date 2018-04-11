@@ -3,7 +3,7 @@ package ising
 import (
 	"io"
 
-	"nkn/core/ledger"
+	"github.com/nknorg/nkn/core/ledger"
 )
 
 type BlockResponse struct {
