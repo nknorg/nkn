@@ -15,7 +15,7 @@ import (
 	va "github.com/nknorg/nkn/core/validation"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/net"
+	"github.com/nknorg/nkn/net/protocol"
 	msg "github.com/nknorg/nkn/net/message"
 	"errors"
 	"fmt"
@@ -33,13 +33,13 @@ type DbftService struct {
 	blockReceivedTime time.Time
 	logDictionary     string
 	started           bool
-	localNet          net.Neter
+	localNet          protocol.Noder
 
 	consensusMsgReceivedSubscriber  events.Subscriber
 	blockPersistCompletedSubscriber events.Subscriber
 }
 
-func NewDbftService(client cl.Wallet, logDictionary string, localNet net.Neter) *DbftService {
+func NewDbftService(client cl.Wallet, logDictionary string, localNet protocol.Noder) *DbftService {
 	log.Debug()
 
 	ds := &DbftService{
