@@ -42,11 +42,10 @@ concept](https://youtu.be/cT29i3-ImQk) to get started.
 
 ## Abstract
 
-NKN ([New Kind of Network](https://github.com/nknetwork)) is a new
-generation of highly scalable, self-evolving and self-incentivized
-blockchain network infrastructure. NKN addresses the network
-decentralization and self-evolution by introducing Cellular Automata
-(CA) methodology. NKN tokenizes network connectivity and data
+NKN is a new generation of highly scalable, self-evolving and
+self-incentivized blockchain network infrastructure. NKN addresses the
+network decentralization and self-evolution by introducing Cellular
+Automata (CA) methodology. NKN tokenizes network connectivity and data
 transmission capacity by a novel and useful Proof of Work. NKN focuses
 on decentralizing network resources, similar to how Bitcoin and
 Ethereum decentralize computing power as well as how IPFS and Filecoin
