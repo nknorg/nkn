@@ -1,26 +1,26 @@
 package ising
 
 import (
-	"fmt"
-	"nkn/crypto"
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"nkn/common/log"
+	"nkn/crypto"
 	"nkn/events"
-	"nkn/net"
 	"nkn/net/message"
+	"nkn/net/protocol"
 	"nkn/wallet"
 )
 
 type VoterService struct {
 	account              *wallet.Account   // local account
 	state                map[uint64]*State // consensus state
-	localNode            net.Neter         // local node
+	localNode            protocol.Noder    // local node
 	blockCache           *BlockCache       // blocks waiting for voting
 	consensusMsgReceived events.Subscriber // consensus events listening
 }
 
-func NewVoterService(account *wallet.Account, node net.Neter) *VoterService {
+func NewVoterService(account *wallet.Account, node protocol.Noder) *VoterService {
 	service := &VoterService{
 		account:    account,
 		state:      initialVoterNodeState(node),
@@ -180,7 +180,7 @@ func publickKeyToNodeID(pubKey *crypto.PubKey) uint64 {
 	return id
 }
 
-func initialVoterNodeState(node net.Neter) map[uint64]*State {
+func initialVoterNodeState(node protocol.Noder) map[uint64]*State {
 	neighbors := node.GetNeighborNoder()
 	m := make(map[uint64]*State, len(neighbors))
 	var state State
