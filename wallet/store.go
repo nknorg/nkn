@@ -130,7 +130,6 @@ func (cs *store) SaveAccountData(programHash []byte, encryptedPrivateKey []byte)
 		ProgramHash:         BytesToHexString(programHash),
 		PrivateKeyEncrypted: BytesToHexString(encryptedPrivateKey),
 	}
-
 	JSONBlob, err := json.Marshal(cs.data)
 	if err != nil {
 		return errors.New("error: marshal db")

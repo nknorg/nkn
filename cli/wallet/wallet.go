@@ -8,7 +8,6 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/password"
 	"github.com/nknorg/nkn/rpc/httpjson"
-
 	"github.com/urfave/cli"
 )
 
