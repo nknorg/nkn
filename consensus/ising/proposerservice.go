@@ -20,10 +20,12 @@ import (
 
 const (
 	TxnAmountToBePackaged = 1024
+	ConsensusTime         = 20 * time.Second
 )
 
 type ProposerService struct {
 	account              *wallet.Account           // local account
+	ticker               *time.Ticker              // ticker for proposal service
 	spreader             bool                      // whether the node could do block flooding
 	state                State                     // consensus state
 	localNode            protocol.Noder            // local node
@@ -48,6 +50,7 @@ func NewProposerService(account *wallet.Account, node protocol.Noder) *ProposerS
 
 	service := &ProposerService{
 		state:        InitialState,
+		ticker:       time.NewTicker(ConsensusTime),
 		spreader:     flag,
 		account:      account,
 		localNode:    node,
@@ -96,8 +99,7 @@ func (p *ProposerService) ProposerRoutine() {
 	time.Sleep(time.Second * 3)
 	if p.votedNum <= p.proposalNum/2 {
 		p.blockCache.RemoveBlockFromCache(hash)
-		p.state.ClearAll()
-		p.state.SetBit(InitialState)
+		p.Reset()
 		return
 	}
 
@@ -105,19 +107,18 @@ func (p *ProposerService) ProposerRoutine() {
 	if err != nil {
 		log.Error("saving block error: ", err)
 	}
-	p.state.ClearAll()
-	p.state.SetBit(InitialState)
+	p.Reset()
 
 	return
 }
 
 func (p *ProposerService) Start() error {
 	p.consensusMsgReceived = p.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, p.ReceiveConsensusMsg)
-	ticker := time.NewTicker(time.Second * 20)
 	for {
 		select {
-		case <-ticker.C:
-			go p.ProposerRoutine()
+		case <-p.ticker.C:
+			p.Reset()
+			p.ProposerRoutine()
 		}
 	}
 
@@ -293,4 +294,11 @@ func (p *ProposerService) HandleBlockVoteMsg(bvMsg *BlockVote, sender *crypto.Pu
 		p.votedNum++
 	}
 	return
+}
+
+func (p *ProposerService) Reset() {
+	p.state.ClearAll()
+	p.state.SetBit(InitialState)
+	p.proposalNum = len(p.localNode.GetNeighborNoder())
+	p.votedNum = 0
 }
