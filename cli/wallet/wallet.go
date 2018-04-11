@@ -82,8 +82,8 @@ func walletAction(c *cli.Context) error {
 
 	// list wallet info
 	if item := c.String("list"); item != "" {
-		if item != "account" && item != "balance" && item != "verbose" {
-			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose]")
+		if item != "account" && item != "balance" {
+			fmt.Fprintln(os.Stderr, "--list [account | balance]")
 			os.Exit(1)
 		} else {
 			wallet, err := wallet.Open(name, getPassword(passwd))

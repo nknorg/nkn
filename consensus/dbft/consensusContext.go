@@ -8,10 +8,10 @@ import (
 	"nkn/core/ledger"
 	tx "nkn/core/transaction"
 	"nkn/crypto"
-	"nkn/net"
 	msg "nkn/net/message"
 	"fmt"
 	"sync"
+	"nkn/net/protocol"
 )
 
 const ContextVersion uint32 = 0
@@ -166,7 +166,7 @@ func (cxt *ConsensusContext) GetStateDetail() string {
 
 }
 
-func (cxt *ConsensusContext) Reset(client cl.Wallet, localNode net.Neter) {
+func (cxt *ConsensusContext) Reset(client cl.Wallet, localNode protocol.Noder) {
 	log.Debug()
 	cxt.State = Initial
 	cxt.PrevHash = ledger.DefaultLedger.Blockchain.CurrentBlockHash()

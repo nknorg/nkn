@@ -15,11 +15,11 @@ import (
 	va "nkn/core/validation"
 	. "nkn/errors"
 	"nkn/events"
-	"nkn/net"
 	msg "nkn/net/message"
 	"errors"
 	"fmt"
 	"time"
+	"nkn/net/protocol"
 )
 
 var GenBlockTime = (config.DEFAULTGENBLOCKTIME * time.Second)
@@ -33,13 +33,13 @@ type DbftService struct {
 	blockReceivedTime time.Time
 	logDictionary     string
 	started           bool
-	localNet          net.Neter
+	localNet          protocol.Noder
 
 	consensusMsgReceivedSubscriber  events.Subscriber
 	blockPersistCompletedSubscriber events.Subscriber
 }
 
-func NewDbftService(client cl.Wallet, logDictionary string, localNet net.Neter) *DbftService {
+func NewDbftService(client cl.Wallet, logDictionary string, localNet protocol.Noder) *DbftService {
 	log.Debug()
 
 	ds := &DbftService{

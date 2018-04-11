@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 	"sort"
 	"sync"
 	"time"
@@ -718,29 +717,6 @@ func (bd *ChainStore) persist(b *Block) error {
 	hashValue.Serialize(hashWriter)
 	log.Debugf("DATA_BlockHash table value: %x\n", hashValue)
 
-	needUpdateBookKeeper := false
-	currBookKeeper, nextBookKeeper, err := bd.GetBookKeeperList()
-	// update current BookKeeperList
-	if len(currBookKeeper) != len(nextBookKeeper) {
-		needUpdateBookKeeper = true
-	} else {
-		for i := range currBookKeeper {
-			if currBookKeeper[i].X.Cmp(nextBookKeeper[i].X) != 0 ||
-				currBookKeeper[i].Y.Cmp(nextBookKeeper[i].Y) != 0 {
-				needUpdateBookKeeper = true
-				break
-			}
-		}
-	}
-	if needUpdateBookKeeper {
-		currBookKeeper = make([]*crypto.PubKey, len(nextBookKeeper))
-		for i := 0; i < len(nextBookKeeper); i++ {
-			currBookKeeper[i] = new(crypto.PubKey)
-			currBookKeeper[i].X = new(big.Int).Set(nextBookKeeper[i].X)
-			currBookKeeper[i].Y = new(big.Int).Set(nextBookKeeper[i].Y)
-		}
-	}
-
 	// BATCH PUT VALUE
 	bd.st.BatchPut(bhash.Bytes(), hashWriter.Bytes())
 
@@ -917,71 +893,7 @@ func (bd *ChainStore) persist(b *Block) error {
 				}
 			}
 		}
-
-		// bookkeeper
-		if b.Transactions[i].TxType == tx.BookKeeper {
-			bk := b.Transactions[i].Payload.(*payload.BookKeeper)
-
-			switch bk.Action {
-			case payload.BookKeeperAction_ADD:
-				findflag := false
-				for k := 0; k < len(nextBookKeeper); k++ {
-					if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
-						findflag = true
-						break
-					}
-				}
-
-				if !findflag {
-					needUpdateBookKeeper = true
-					nextBookKeeper = append(nextBookKeeper, bk.PubKey)
-					sort.Sort(crypto.PubKeySlice(nextBookKeeper))
-				}
-			case payload.BookKeeperAction_SUB:
-				ind := -1
-				for k := 0; k < len(nextBookKeeper); k++ {
-					if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
-						ind = k
-						break
-					}
-				}
-
-				if ind != -1 {
-					needUpdateBookKeeper = true
-					// already sorted
-					nextBookKeeper = append(nextBookKeeper[:ind], nextBookKeeper[ind+1:]...)
-				}
-			}
-
-		}
-
 	}
-
-	if needUpdateBookKeeper {
-		//bookKeeper key
-		bkListKey := bytes.NewBuffer(nil)
-		bkListKey.WriteByte(byte(SYS_CurrentBookKeeper))
-
-		//bookKeeper value
-		bkListValue := bytes.NewBuffer(nil)
-
-		serialization.WriteUint8(bkListValue, uint8(len(currBookKeeper)))
-		for k := 0; k < len(currBookKeeper); k++ {
-			currBookKeeper[k].Serialize(bkListValue)
-		}
-
-		serialization.WriteUint8(bkListValue, uint8(len(nextBookKeeper)))
-		for k := 0; k < len(nextBookKeeper); k++ {
-			nextBookKeeper[k].Serialize(bkListValue)
-		}
-
-		// BookKeeper put value
-		bd.st.BatchPut(bkListKey.Bytes(), bkListValue.Bytes())
-
-		///////////////////////////////////////////////////////
-	}
-	///////////////////////////////////////////////////////
-	//*/
 
 	// batch put the utxoUnspents
 	for programHash, programHash_value := range utxoUnspents {

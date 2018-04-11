@@ -19,7 +19,6 @@ import (
 	sig "nkn/core/signature"
 	"nkn/core/transaction"
 	"nkn/crypto"
-	. "nkn/errors"
 )
 
 const (
@@ -297,13 +296,9 @@ func (cl *WalletImpl) EncryptPrivateKey(prikey []byte) ([]byte, error) {
 }
 
 func (cl *WalletImpl) DecryptPrivateKey(prikey []byte) ([]byte, error) {
-	if prikey == nil {
-		return nil, NewDetailErr(errors.New("The PriKey is nil"), ErrNoCode, "")
+	if prikey == nil || len(prikey) != 32 {
+		return nil, errors.New("invalid private key length")
 	}
-	if len(prikey) != 96 {
-		return nil, NewDetailErr(errors.New("The len of PriKeyEnc is not 96bytes"), ErrNoCode, "")
-	}
-
 	dec, err := crypto.AesDecrypt(prikey, cl.masterKey, cl.iv)
 	if err != nil {
 		return nil, err
@@ -339,29 +334,14 @@ func (cl *WalletImpl) CreateAccountByPrivateKey(privateKey []byte) (*Account, er
 }
 
 // SaveAccount saves a Account to memory and db
-func (cl *WalletImpl) SaveAccount(ac *Account) error {
-	programHash := ac.ProgramHash
-	cl.account = ac
-
-	decryptedPrivateKey := make([]byte, 96)
-	temp, err := ac.PublicKey.EncodePoint(false)
+func (cl *WalletImpl) SaveAccount(account *Account) error {
+	cl.account = account
+	encryptedPrivateKey, err := cl.EncryptPrivateKey(account.PrivateKey)
 	if err != nil {
 		return err
 	}
-	for i := 1; i <= 64; i++ {
-		decryptedPrivateKey[i-1] = temp[i]
-	}
-	for i := len(ac.PrivateKey) - 1; i >= 0; i-- {
-		decryptedPrivateKey[96+i-len(ac.PrivateKey)] = ac.PrivateKey[i]
-	}
-	encryptedPrivateKey, err := cl.EncryptPrivateKey(decryptedPrivateKey)
-	if err != nil {
-		return err
-	}
-	ClearBytes(decryptedPrivateKey, 96)
-
 	// save Account keys to db
-	err = cl.SaveAccountData(programHash.ToArray(), encryptedPrivateKey)
+	err = cl.SaveAccountData(account.ProgramHash.ToArray(), encryptedPrivateKey)
 	if err != nil {
 		return err
 	}
@@ -375,15 +355,14 @@ func (cl *WalletImpl) LoadAccount() error {
 	if err != nil {
 		return err
 	}
-	encryptedKeyPair, err := HexStringToBytes(account.PrivateKeyEncrypted)
+	encryptedPrivateKey, err := HexStringToBytes(account.PrivateKeyEncrypted)
 	if err != nil {
 		return err
 	}
-	keyPair, err := cl.DecryptPrivateKey(encryptedKeyPair)
+	privateKey, err := cl.DecryptPrivateKey(encryptedPrivateKey)
 	if err != nil {
 		return err
 	}
-	privateKey := keyPair[64:96]
 	ac, err := NewAccountWithPrivatekey(privateKey)
 	if err != nil {
 		return err

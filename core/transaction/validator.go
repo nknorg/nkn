@@ -268,15 +268,6 @@ func checkIssuerInBookkeeperList(issuer *crypto.PubKey, bookKeepers []*crypto.Pu
 func CheckTransactionPayload(txn *Transaction) error {
 
 	switch pld := txn.Payload.(type) {
-	case *payload.BookKeeper:
-		//Todo: validate bookKeeper Cert
-		_ = pld.Cert
-		bookKeepers, _, _ := TxStore.GetBookKeeperList()
-		r := checkIssuerInBookkeeperList(pld.Issuer, bookKeepers)
-		if r == false {
-			return errors.New("The issuer isn't bookekeeper, can't add other in bookkeepers list.")
-		}
-		return nil
 	case *payload.RegisterAsset:
 		if pld.Asset.Precision < asset.MinPrecision || pld.Asset.Precision > asset.MaxPrecision {
 			return errors.New("Invalide asset Precision.")
