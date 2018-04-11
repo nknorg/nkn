@@ -1,13 +1,13 @@
 package transaction
 
 import (
-	"nkn/common"
-	"nkn/common/log"
-	"nkn/core/transaction/payload"
-	. "nkn/errors"
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/core/transaction/payload"
+	. "github.com/nknorg/nkn/errors"
 	"fmt"
 	"sync"
-	"nkn/common/config"
+	"github.com/nknorg/nkn/common/config"
 )
 
 type TXNPool struct {

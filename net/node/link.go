@@ -1,11 +1,11 @@
 package node
 
 import (
-	. "nkn/common/config"
-	"nkn/common/log"
-	"nkn/events"
-	msg "nkn/net/message"
-	. "nkn/net/protocol"
+	. "github.com/nknorg/nkn/common/config"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/events"
+	msg "github.com/nknorg/nkn/net/message"
+	. "github.com/nknorg/nkn/net/protocol"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"

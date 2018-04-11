@@ -1,12 +1,12 @@
 package transaction
 
 import (
-	. "nkn/common"
-	"nkn/core/asset"
-	"nkn/core/contract/program"
-	"nkn/core/transaction/payload"
-	"nkn/crypto"
-	"nkn/crypto/util"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/asset"
+	"github.com/nknorg/nkn/core/contract/program"
+	"github.com/nknorg/nkn/core/transaction/payload"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/crypto/util"
 )
 
 const (

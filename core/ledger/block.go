@@ -5,16 +5,16 @@ import (
 	"io"
 	"time"
 
-	. "nkn/common"
-	"nkn/common/log"
-	"nkn/common/serialization"
-	"nkn/core/contract/program"
-	sig "nkn/core/signature"
-	tx "nkn/core/transaction"
-	"nkn/core/transaction/payload"
-	"nkn/crypto"
-	. "nkn/errors"
-	"nkn/vm"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/contract/program"
+	sig "github.com/nknorg/nkn/core/signature"
+	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/core/transaction/payload"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/vm"
 )
 
 const BlockVersion uint32 = 0

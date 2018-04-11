@@ -3,8 +3,8 @@ package vm
 import (
 	"io"
 
-	"nkn/vm/types"
-	"nkn/vm/utils"
+	"github.com/nknorg/nkn/vm/types"
+	"github.com/nknorg/nkn/vm/utils"
 )
 
 type ExecutionContext struct {

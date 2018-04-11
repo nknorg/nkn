@@ -1,9 +1,9 @@
 package payload
 
 import (
-	"nkn/common/serialization"
-	"nkn/crypto"
-	. "nkn/errors"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
 	"bytes"
 	"io"
 )

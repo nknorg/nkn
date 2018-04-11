@@ -1,12 +1,12 @@
 package ledger
 
 import (
-	. "nkn/common"
-	"nkn/common/log"
-	tx "nkn/core/transaction"
-	"nkn/crypto"
-	. "nkn/errors"
-	"nkn/events"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/events"
 	"sync"
 )
 

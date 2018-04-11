@@ -1,7 +1,7 @@
 package node
 
 import (
-	"nkn/events"
+	"github.com/nknorg/nkn/events"
 	"fmt"
 )
 
@@ -26,7 +26,7 @@ func (eq *eventQueue) GetEvent(eventName string) *events.Event {
 	case "disconnect":
 		return eq.Disconnect
 	default:
-		fmt.Printf("Unknow event registe")
+		fmt.Printf("Ugithub.com/nknorg/nknow event registe")
 		return nil
 	}
 }

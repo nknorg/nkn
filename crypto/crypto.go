@@ -1,13 +1,13 @@
 package crypto
 
 import (
-	"nkn/common/serialization"
-	"nkn/crypto/p256r1"
-	"nkn/crypto/sm2"
-	"nkn/crypto/util"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto/p256r1"
+	"github.com/nknorg/nkn/crypto/sm2"
+	"github.com/nknorg/nkn/crypto/util"
 	"io"
 	"math/big"
 	"strings"

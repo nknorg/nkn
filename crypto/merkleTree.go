@@ -1,8 +1,8 @@
 package crypto
 
 import (
-	. "nkn/common"
-	. "nkn/errors"
+	. "github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/errors"
 	"bytes"
 	"crypto/sha256"
 	"errors"

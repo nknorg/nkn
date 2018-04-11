@@ -3,7 +3,7 @@ package payload
 import (
 	"errors"
 	"io"
-	. "nkn/common"
+	. "github.com/nknorg/nkn/common"
 )
 
 type Withdraw struct {

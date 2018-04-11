@@ -1,7 +1,7 @@
 package log
 
 import (
-	"nkn/common/config"
+	"github.com/nknorg/nkn/common/config"
 	"bytes"
 	"errors"
 	"fmt"

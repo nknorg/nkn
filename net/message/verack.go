@@ -1,8 +1,8 @@
 package message
 
 import (
-	"nkn/common/log"
-	. "nkn/net/protocol"
+	"github.com/nknorg/nkn/common/log"
+	. "github.com/nknorg/nkn/net/protocol"
 	"encoding/hex"
 	"errors"
 	"strconv"
@@ -54,8 +54,8 @@ func (msg verACK) Handle(node Noder) error {
 
 	s := node.GetState()
 	if s != HANDSHAKE && s != HANDSHAKED {
-		log.Warn("Unknow status to received verack")
-		return errors.New("Unknow status to received verack")
+		log.Warn("Ugithub.com/nknorg/nknow status to received verack")
+		return errors.New("Ugithub.com/nknorg/nknow status to received verack")
 	}
 
 	node.SetState(ESTABLISH)

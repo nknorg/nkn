@@ -1,11 +1,11 @@
 package vm
 
 import (
-	"nkn/crypto"
-	. "nkn/errors"
-	"nkn/common/log"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/common/log"
 	"errors"
-	"nkn/common"
+	"github.com/nknorg/nkn/common"
 )
 
 

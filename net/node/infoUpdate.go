@@ -1,11 +1,11 @@
 package node
 
 import (
-	"nkn/common/config"
-	"nkn/common/log"
-	"nkn/core/ledger"
-	. "nkn/net/message"
-	. "nkn/net/protocol"
+	"github.com/nknorg/nkn/common/config"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/core/ledger"
+	. "github.com/nknorg/nkn/net/message"
+	. "github.com/nknorg/nkn/net/protocol"
 	"math/rand"
 	"net"
 	"strconv"

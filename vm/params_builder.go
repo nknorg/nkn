@@ -3,7 +3,7 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
-	"nkn/common"
+	"github.com/nknorg/nkn/common"
 )
 
 type ParamsBuilder struct {

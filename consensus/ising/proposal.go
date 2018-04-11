@@ -3,7 +3,7 @@ package ising
 import (
 	"io"
 
-	. "nkn/common"
+	. "github.com/nknorg/nkn/common"
 )
 
 

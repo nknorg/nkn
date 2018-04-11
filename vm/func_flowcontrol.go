@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"nkn/common/log"
-	. "nkn/vm/errors"
+	"github.com/nknorg/nkn/common/log"
+	. "github.com/nknorg/nkn/vm/errors"
 )
 
 func opNop(e *ExecutionEngine) (VMState, error) {

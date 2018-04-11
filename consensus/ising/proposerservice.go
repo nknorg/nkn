@@ -5,17 +5,17 @@ import (
 	"math/rand"
 	"time"
 
-	. "nkn/common"
-	"nkn/common/log"
-	"nkn/core/contract/program"
-	"nkn/core/ledger"
-	"nkn/core/transaction"
-	"nkn/core/transaction/payload"
-	"nkn/crypto"
-	"nkn/events"
-	"nkn/net/message"
-	"nkn/net/protocol"
-	"nkn/wallet"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/core/contract/program"
+	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/core/transaction/payload"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/net/message"
+	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/wallet"
 )
 
 const (

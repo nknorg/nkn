@@ -1,11 +1,11 @@
 package websocket
 
 import (
-	. "nkn/common/config"
-	"nkn/common/log"
-	. "nkn/rpc/httprestful/common"
-	Err "nkn/rpc/httprestful/error"
-	. "nkn/ws/session"
+	. "github.com/nknorg/nkn/common/config"
+	"github.com/nknorg/nkn/common/log"
+	. "github.com/nknorg/nkn/rpc/httprestful/common"
+	Err "github.com/nknorg/nkn/rpc/httprestful/error"
+	. "github.com/nknorg/nkn/ws/session"
 	"context"
 	"crypto/tls"
 	"encoding/json"

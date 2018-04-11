@@ -1,10 +1,10 @@
 package payload
 
 import (
-	"nkn/common"
-	"nkn/core/asset"
-	"nkn/crypto"
-	. "nkn/errors"
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/asset"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
 	"io"
 )
 

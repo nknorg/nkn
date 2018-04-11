@@ -3,13 +3,13 @@ package validation
 import (
 	"errors"
 
-	"nkn/common"
-	. "nkn/common"
-	sig "nkn/core/signature"
-	"nkn/crypto"
-	. "nkn/errors"
-	"nkn/vm"
-	"nkn/vm/interfaces"
+	"github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/common"
+	sig "github.com/nknorg/nkn/core/signature"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/vm"
+	"github.com/nknorg/nkn/vm/interfaces"
 )
 
 func VerifySignableData(signableData sig.SignableData) (bool, error) {

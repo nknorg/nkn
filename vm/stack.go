@@ -1,7 +1,7 @@
 package vm
 
 import (
-	"nkn/vm/types"
+	"github.com/nknorg/nkn/vm/types"
 )
 
 type Element interface {

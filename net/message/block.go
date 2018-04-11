@@ -1,11 +1,11 @@
 package message
 
 import (
-	"nkn/common"
-	"nkn/common/log"
-	"nkn/core/ledger"
-	"nkn/events"
-	. "nkn/net/protocol"
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/events"
+	. "github.com/nknorg/nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

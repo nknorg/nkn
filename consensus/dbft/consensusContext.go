@@ -1,15 +1,15 @@
 package dbft
 
 import (
-	cl "nkn/wallet"
-	. "nkn/common"
-	"nkn/common/log"
-	ser "nkn/common/serialization"
-	"nkn/core/ledger"
-	tx "nkn/core/transaction"
-	"nkn/crypto"
-	"nkn/net"
-	msg "nkn/net/message"
+	cl "github.com/nknorg/nkn/wallet"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
+	ser "github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/ledger"
+	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/net"
+	msg "github.com/nknorg/nkn/net/message"
 	"fmt"
 	"sync"
 )

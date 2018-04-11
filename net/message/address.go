@@ -1,8 +1,8 @@
 package message
 
 import (
-	"nkn/common/log"
-	. "nkn/net/protocol"
+	"github.com/nknorg/nkn/common/log"
+	. "github.com/nknorg/nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"

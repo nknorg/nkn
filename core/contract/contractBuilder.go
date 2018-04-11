@@ -4,11 +4,11 @@ import (
 	"math/big"
 	"sort"
 
-	. "nkn/common"
-	pg "nkn/core/contract/program"
-	"nkn/crypto"
-	. "nkn/errors"
-	"nkn/vm"
+	. "github.com/nknorg/nkn/common"
+	pg "github.com/nknorg/nkn/core/contract/program"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/vm"
 )
 
 //create a Single Singature contract for owner

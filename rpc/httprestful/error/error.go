@@ -1,6 +1,6 @@
 package error
 
-import . "nkn/errors"
+import . "github.com/nknorg/nkn/errors"
 
 const (
 	SUCCESS            int64 = 0

@@ -3,8 +3,8 @@ package ising
 import (
 	"sync"
 
-	. "nkn/common"
-	"nkn/core/ledger"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
 	"time"
 )
 
