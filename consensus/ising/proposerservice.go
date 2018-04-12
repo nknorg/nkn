@@ -35,9 +35,10 @@ type ProposerService struct {
 	votedNum             int                       // received agreed BlockVote msg count
 	blockCache           *BlockCache               // blocks waiting for voting
 	consensusMsgReceived events.Subscriber         // consensus events listening
+	msgChan              chan interface{}          // get notice from probe thread
 }
 
-func NewProposerService(account *wallet.Account, node protocol.Noder) *ProposerService {
+func NewProposerService(account *wallet.Account, node protocol.Noder, ch chan interface{}) *ProposerService {
 	flag := false
 	encPubKey, err := account.PublicKey.EncodePoint(true)
 	if err != nil {
@@ -56,6 +57,7 @@ func NewProposerService(account *wallet.Account, node protocol.Noder) *ProposerS
 		localNode:    node,
 		txnCollector: transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged),
 		blockCache:   NewCache(),
+		msgChan:      ch,
 	}
 
 	return service
@@ -114,13 +116,39 @@ func (p *ProposerService) ProposerRoutine() {
 
 func (p *ProposerService) Start() error {
 	p.consensusMsgReceived = p.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, p.ReceiveConsensusMsg)
-	for {
-		select {
-		case <-p.ticker.C:
-			p.Reset()
-			p.ProposerRoutine()
+	go func() {
+		for {
+			select {
+			case <-p.ticker.C:
+				p.Reset()
+				p.ProposerRoutine()
+			}
 		}
-	}
+	}()
+	go func() {
+		for {
+			select {
+			case msg := <- p.msgChan:
+				if notice, ok := msg.(*BlockInfoNotice); ok {
+					h := notice.hash
+					if h.CompareTo(Uint256{}) == 0 {
+						time.Sleep(time.Second * 3)
+					} else {
+						// new joined node
+						if p.confirmingBlock == nil {
+							// TODO sync with neighors
+						} else {
+							if p.confirmingBlock.CompareTo(h) == 0{
+								fmt.Println("same with neighbor")
+							} else {
+								fmt.Println("should changed.")
+							}
+						}
+					}
+				}
+			}
+		}
+	}()
 
 	return nil
 }

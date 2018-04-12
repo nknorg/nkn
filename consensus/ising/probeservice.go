@@ -2,16 +2,16 @@ package ising
 
 import (
 	"fmt"
-	"time"
 	"sync"
+	"time"
 
-	."github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/log"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/wallet"
-	"github.com/nknorg/nkn/common/log"
 )
 
 const (
@@ -20,19 +20,21 @@ const (
 
 type ProbeService struct {
 	sync.RWMutex
-	account              *wallet.Account   // local account
-	localNode            protocol.Noder    // local node
-	ticker               *time.Ticker      // ticker for probing
+	account              *wallet.Account          // local account
+	localNode            protocol.Noder           // local node
+	ticker               *time.Ticker             // ticker for probing
 	detectedResults      map[uint64]StateResponse // collected probe response
-	consensusMsgReceived events.Subscriber // consensus events listening
+	consensusMsgReceived events.Subscriber        // consensus events listening
+	msgChan              chan interface{}         // send probe message
 }
 
-func NewProbeService(account *wallet.Account, node protocol.Noder) *ProbeService {
+func NewProbeService(account *wallet.Account, node protocol.Noder, ch chan interface{}) *ProbeService {
 	service := &ProbeService{
-		account:   account,
-		localNode: node,
-		ticker:    time.NewTicker(ProbeDuration),
+		account:         account,
+		localNode:       node,
+		ticker:          time.NewTicker(ProbeDuration),
 		detectedResults: make(map[uint64]StateResponse),
+		msgChan:         ch,
 	}
 
 	return service
@@ -121,14 +123,15 @@ func (p *ProbeService) AnalyzeResponse() {
 
 	results := make(map[Uint256]int)
 	for _, resp := range p.detectedResults {
-		results[resp.currentBlockHash] ++
+		results[resp.currentBlockHash]++
 	}
 	length := len(p.detectedResults)
 	for blockHash, num := range results {
-		if num * 2 >= length {
-			_ = blockHash
-			fmt.Println(BytesToHexString(blockHash.ToArrayReverse()))
-			// TODO communicate with proposer service
+		if num*2 >= length {
+			notice := &BlockInfoNotice{
+				hash: blockHash,
+			}
+			p.msgChan <- notice
 			return
 		}
 	}
