@@ -778,6 +778,8 @@ func (bd *ChainStore) persist(b *Block) error {
 			if err != nil {
 				return err
 			}
+		case tx.Commit:
+			//TODO save POR data
 		case tx.IssueAsset:
 			results := b.Transactions[i].GetMergedAssetIDValueFromOutputs()
 			for assetId, value := range results {
