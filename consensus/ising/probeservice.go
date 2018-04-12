@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	ProbeDuration = time.Second * 2
+	ProbeDuration = time.Second * 5
 )
 
 type ProbeService struct {

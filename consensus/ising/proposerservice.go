@@ -131,17 +131,21 @@ func (p *ProposerService) Start() error {
 			case msg := <- p.msgChan:
 				if notice, ok := msg.(*BlockInfoNotice); ok {
 					h := notice.hash
+					// neighbor node starting
 					if h.CompareTo(Uint256{}) == 0 {
 						time.Sleep(time.Second * 3)
 					} else {
 						// new joined node
 						if p.confirmingBlock == nil {
-							// TODO sync with neighors
+							brmsg := &BlockRequest{
+								blockHash: &h,
+							}
+							// request confirming block
+							p.SendConsensusMsg(brmsg, p.localNode.GetNeighborNoder()[0].GetPubKey())
+							p.confirmingBlock = &h
 						} else {
-							if p.confirmingBlock.CompareTo(h) == 0{
-								fmt.Println("same with neighbor")
-							} else {
-								fmt.Println("should changed.")
+							if p.confirmingBlock.CompareTo(h) != 0{
+								p.confirmingBlock = &h
 							}
 						}
 					}
@@ -288,7 +292,8 @@ func (p *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *c
 }
 
 func (p *ProposerService) HandleBlockRequestMsg(brMsg *BlockRequest, sender *crypto.PubKey) {
-	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) || !p.state.HasBit(ProposalSent) {
+	fmt.Println("handle block request....")
+	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) {
 		log.Warn("consensus state error in BlockRequest message handler")
 		return
 	}
@@ -335,10 +340,9 @@ func (p *ProposerService) Reset() {
 
 func (p *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.PubKey) {
 	var resp StateResponse
-	block := p.blockCache.GetCurrentBlockFromCache()
-	if block != nil {
-		resp.currentBlockHeight = block.Header.Height
-		resp.currentBlockHash = block.Header.Hash()
+	if p.confirmingBlock != nil {
+		resp.currentBlockHeight = 0 //Fixme to real height
+		resp.currentBlockHash = *p.confirmingBlock
 	}
 
 	p.SendConsensusMsg(&resp, sender)

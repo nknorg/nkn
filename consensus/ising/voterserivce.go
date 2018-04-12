@@ -1,18 +1,21 @@
 package ising
 
 import (
-	"fmt"
-	"github.com/nknorg/nkn/crypto"
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	"sync"
+
 	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/net/message"
+	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/wallet"
 )
 
 type VoterService struct {
+	sync.RWMutex
 	account              *wallet.Account   // local account
 	state                map[uint64]*State // consensus state
 	localNode            protocol.Noder    // local node
@@ -66,6 +69,28 @@ func (p *VoterService) ReceiveConsensusMsg(v interface{}) {
 	}
 }
 
+func (p *VoterService) NewSenderDetected(node uint64) bool {
+	p.RLock()
+	defer p.RUnlock()
+
+	if _, ok := p.state[node]; !ok {
+		return true
+	}
+
+	return false
+}
+
+func (p *VoterService) AddNewNeighbor(node uint64) {
+	p.Lock()
+	defer p.Unlock()
+
+	var s State
+	s.SetBit(InitialState)
+	p.state[node] = &s
+
+	return
+}
+
 func (p *VoterService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubKey) {
 	// TODO check if the sender is PoR node
 	err := p.blockCache.AddBlockToCache(bfMsg.block)
@@ -81,6 +106,12 @@ func (p *VoterService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *cryp
 func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *crypto.PubKey) {
 	// TODO check if the sender is neighbor
 	nodeID := publickKeyToNodeID(sender)
+	if p.NewSenderDetected(nodeID) {
+		p.AddNewNeighbor(nodeID)
+	}
+
+	p.Lock()
+	defer p.Unlock()
 	hash := *bpMsg.blockHash
 	if !p.state[nodeID].HasBit(FloodingFinished) {
 		if !p.blockCache.BlockInCache(hash) {
@@ -110,6 +141,9 @@ func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *cryp
 }
 
 func (p *VoterService) HandleBlockResponseMsg(brMsg *BlockResponse, sender *crypto.PubKey) {
+	p.Lock()
+	defer p.Unlock()
+
 	nodeID := publickKeyToNodeID(sender)
 	if !p.state[nodeID].HasBit(InitialState) || !p.state[nodeID].HasBit(RequestSent) {
 		log.Warn("consensus state error in BlockResponse message handler")
