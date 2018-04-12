@@ -144,3 +144,21 @@ func NewWithdrawTransaction(output *TxOutput) (*Transaction, error) {
 		Programs: []*program.Program{},
 	}, nil
 }
+
+func NewCommitTransaction(sigChain []byte) (*Transaction, error) {
+	CommitPayload := &payload.Commit{
+		SigChain: sigChain,
+	}
+
+	return &Transaction{
+		TxType:  Commit,
+		Payload: CommitPayload,
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		}, UTXOInputs: nil,
+		Programs: []*program.Program{},
+	}, nil
+}

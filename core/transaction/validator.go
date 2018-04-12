@@ -1,18 +1,18 @@
 package transaction
 
 import (
+	"errors"
+	"fmt"
+	"math"
+
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/log"
 	"github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/core/transaction/payload"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/core/validation"
+	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
-	"errors"
-	"fmt"
-	"math"
 )
-
 
 type TxnHistory interface {
 	GetTransaction(hash Uint256) (*Transaction, error)
@@ -23,7 +23,6 @@ type TxnHistory interface {
 	GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error)
 	IsTxHashDuplicate(txhash Uint256) bool
 }
-
 
 // VerifyTransaction verifys received single transaction
 func VerifyTransaction(Tx *Transaction) ErrCode {
@@ -208,7 +207,7 @@ func CheckAssetPrecision(Tx *Transaction) error {
 }
 
 func CheckTransactionBalance(txn *Transaction) error {
-	if txn.TxType == Prepaid || txn.TxType == Withdraw{
+	if txn.TxType == Prepaid || txn.TxType == Withdraw || txn.TxType == Commit {
 		return nil
 	}
 	for _, v := range txn.Outputs {
@@ -287,6 +286,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 	case *payload.IssueAsset:
 	case *payload.TransferAsset:
 	case *payload.BookKeeping:
+	case *payload.Commit:
 	case *payload.Prepaid:
 		var inputAmount, outputAmount Fixed64
 		for _, input := range txn.UTXOInputs {
@@ -299,7 +299,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 		for _, output := range txn.Outputs {
 			outputAmount += output.Value
 		}
-		if inputAmount - outputAmount != pld.Amount {
+		if inputAmount-outputAmount != pld.Amount {
 			return errors.New("prepaid transaction balance unmatched")
 		}
 	case *payload.Withdraw:

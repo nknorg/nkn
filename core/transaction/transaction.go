@@ -198,6 +198,8 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		tx.Payload = new(payload.Prepaid)
 	case Withdraw:
 		tx.Payload = new(payload.Withdraw)
+	case Commit:
+		tx.Payload = new(payload.Commit)
 	default:
 		return errors.New("[Transaction],invalide transaction type.")
 	}
@@ -316,6 +318,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		}
 	case Prepaid:
 	case TransferAsset:
+	case Commit:
 	case Withdraw:
 		hashs = append(hashs, tx.Payload.(*payload.Withdraw).ProgramHash)
 	case BookKeeper:
