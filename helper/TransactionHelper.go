@@ -239,3 +239,17 @@ func MakeWithdrawTransaction(wallet wallet.Wallet, assetID Uint256, value string
 
 	return txn, nil
 }
+
+func MakeCommitTransaction(wallet wallet.Wallet, sigChain []byte) (*transaction.Transaction, error) {
+	txn, err := transaction.NewCommitTransaction(sigChain)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	ctx := contract.NewContractContext(txn)
+	wallet.Sign(ctx)
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
+}

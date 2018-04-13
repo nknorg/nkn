@@ -544,3 +544,38 @@ func withdrawAsset(params []interface{}) map[string]interface{} {
 	txHash := txn.Hash()
 	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
 }
+
+func commitPor(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+
+	var sigChain []byte
+	var err error
+	switch params[0].(type) {
+	case string:
+		str := params[0].(string)
+		sigChain, err = HexStringToBytes(str)
+		if err != nil {
+			return RpcResultInvalidParameter
+		}
+	default:
+		return RpcResultInvalidParameter
+	}
+
+	if Wallet == nil {
+		return RpcResult("open wallet first")
+	}
+
+	txn, err := helper.MakeCommitTransaction(Wallet, sigChain)
+	if err != nil {
+		return RpcResultInternalError
+	}
+
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return RpcResultInvalidTransaction
+	}
+
+	txHash := txn.Hash()
+	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
+}

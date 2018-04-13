@@ -28,13 +28,13 @@ func StartRPCServer() {
 	HandleFunc("getnodestate", getNodeState)
 	HandleFunc("getbalance", getBalance)
 
-
 	HandleFunc("setdebuginfo", setDebugInfo)
 	HandleFunc("setdebuginfo", sendToAddress)
 	HandleFunc("registasset", registAsset)
 	HandleFunc("issueasset", issueAsset)
 	HandleFunc("prepaidasset", prepaidAsset)
 	HandleFunc("withdrawasset", withdrawAsset)
+	HandleFunc("commitpor", commitPor)
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(config.Parameters.HttpJsonPort), nil)
 	if err != nil {
