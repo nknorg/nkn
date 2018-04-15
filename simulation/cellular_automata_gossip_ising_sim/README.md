@@ -72,3 +72,11 @@ Cellular automata with 4 neighbors vote 1 then it votes 1 when fault toerlance i
 
 Cellular automata with 4 neighbors vote 1 then it votes 1 when fault toerlance is 68% before ising consensus. It indicates a final state that consensus cannot be achieved.
 ![Cellular automata with 4 neighbors vote 1 then it votes 1 when fault toerlance is 68% in final state](https://github.com/barbapapait/misc/blob/master/68percent_ising_consensus_failed.PNG)
+
+## Credits and References
+
+* Wilensky, U. (1999). NetLogo. http://ccl.northwestern.edu/netlogo/. Center for Connected Learning and Computer-Based Modeling, Northwestern University, Evanston, IL.
+
+* Wilensky, U. (1997).  NetLogo Rumor Mill model.  http://ccl.northwestern.edu/netlogo/models/RumorMill.  Center for Connected Learning and Computer-Based Modeling, Northwestern University, Evanston, IL.
+
+* Wilensky, U. (1998).  NetLogo Voting model.  http://ccl.northwestern.edu/netlogo/models/Voting.  Center for Connected Learning and Computer-Based Modeling, Northwestern University, Evanston, IL.
