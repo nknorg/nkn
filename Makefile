@@ -5,16 +5,15 @@ Minversion := $(shell date)
 BUILD_NODE_PAR = -ldflags "-X nkn/common/config.Version=$(VERSION)" #-race
 BUILD_NODECTL_PAR = -ldflags "-X main.Version=$(VERSION)"
 
+.PHONY: all
 all:
 	$(GC)  $(BUILD_NODE_PAR) -o node main.go
 # $(GC)  $(BUILD_NODECTL_PAR) nodectl.go
 
+.PHONY: format
 format:
 	$(GOFMT) -w main.go
 
+.PHONY: clean
 clean:
-	rm -rf *.8 *.o *.out *.6
-
-cov:
-	gocov test ./ | gocov-html > /tmp/coverage.html
-	open /tmp/coverage.html
+	rm -rf node nodectl
