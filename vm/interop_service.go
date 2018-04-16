@@ -1,8 +1,8 @@
 package vm
 
 import (
+	"github.com/nknorg/nkn/util/log"
 	. "github.com/nknorg/nkn/vm/errors"
-	"github.com/nknorg/nkn/common/log"
 )
 
 type IInteropService interface {

@@ -6,12 +6,14 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"github.com/golang/crypto/ripemd160"
 	"io"
 	"math/rand"
-	"github.com/nknorg/nkn/common/log"
-	. "github.com/nknorg/nkn/errors"
 	"os"
+
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/util/log"
+
+	"github.com/golang/crypto/ripemd160"
 )
 
 func ToCodeHash(code []byte) (Uint160, error) {

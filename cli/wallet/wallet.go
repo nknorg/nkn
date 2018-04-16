@@ -6,7 +6,7 @@ import (
 	"github.com/nknorg/nkn/wallet"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/password"
+	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/urfave/cli"
 )

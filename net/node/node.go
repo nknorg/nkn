@@ -5,15 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	. "github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/common/config"
-	"github.com/nknorg/nkn/common/log"
-	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/events"
-	. "github.com/nknorg/nkn/net/message"
-	. "github.com/nknorg/nkn/net/protocol"
 	"net"
 	"runtime"
 	"strconv"
@@ -21,6 +12,16 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/events"
+	. "github.com/nknorg/nkn/net/message"
+	. "github.com/nknorg/nkn/net/protocol"
+	. "github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type Semaphore chan struct{}

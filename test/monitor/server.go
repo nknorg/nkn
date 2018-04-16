@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"github.com/nknorg/nkn/common/config"
-	"github.com/nknorg/nkn/core/ledger"
-	. "github.com/nknorg/nkn/net/protocol"
 	"sort"
 	"strconv"
+
+	"github.com/nknorg/nkn/core/ledger"
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/config"
 )
 
 type Info struct {

@@ -1,7 +1,6 @@
 package log
 
 import (
-	"github.com/nknorg/nkn/common/config"
 	"bytes"
 	"errors"
 	"fmt"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/nknorg/nkn/util/config"
 )
 
 const (

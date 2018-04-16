@@ -1,11 +1,12 @@
 package message
 
 import (
-	"github.com/nknorg/nkn/common/log"
-	. "github.com/nknorg/nkn/net/protocol"
 	"encoding/hex"
 	"errors"
 	"strconv"
+
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type verACK struct {

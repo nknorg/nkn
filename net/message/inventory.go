@@ -6,12 +6,13 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
+
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/log"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
 	. "github.com/nknorg/nkn/net/protocol"
-	"io"
+	"github.com/nknorg/nkn/util/log"
 )
 
 var LastInvHash Uint256

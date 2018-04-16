@@ -6,11 +6,11 @@ import (
 	"encoding/binary"
 	"io"
 
-	. "github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/common/log"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type IsingPayload struct {
@@ -23,7 +23,6 @@ type IsingMessage struct {
 	msgHdr
 	pld IsingPayload
 }
-
 
 func (msg IsingMessage) Handle(node Noder) error {
 	node.LocalNode().GetEvent("consensus").Notify(events.EventConsensusMsgReceived, &msg.pld)
@@ -43,7 +42,6 @@ func (p *IsingMessage) Serialization() ([]byte, error) {
 
 	return buf.Bytes(), err
 }
-
 
 func (p *IsingMessage) Deserialization(b []byte) error {
 	buf := bytes.NewBuffer(b)

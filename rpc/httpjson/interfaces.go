@@ -2,13 +2,14 @@ package httpjson
 
 import (
 	"bytes"
+
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/config"
-	"github.com/nknorg/nkn/common/log"
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/helper"
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 )
 

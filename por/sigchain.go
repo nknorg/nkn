@@ -7,9 +7,9 @@ import (
 	"io"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/log"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/util/log"
 )
 
 // for the first relay node

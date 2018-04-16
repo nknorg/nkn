@@ -1,28 +1,28 @@
 package main
 
 import (
-	"github.com/nknorg/nkn/wallet"
-	"github.com/nknorg/nkn/common/config"
-	"github.com/nknorg/nkn/common/log"
+	"flag"
 	"github.com/nknorg/nkn/consensus/dbft"
+	"github.com/nknorg/nkn/consensus/ising"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/db"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/db"
 	"github.com/nknorg/nkn/net"
+	"github.com/nknorg/nkn/net/chord"
+	"github.com/nknorg/nkn/net/protocol"
+	_ "github.com/nknorg/nkn/por" // for testing sigchain of PoR feature
 	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/rpc/httprestful"
-	"github.com/nknorg/nkn/ws"
 	"github.com/nknorg/nkn/test/monitor"
-	"github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/net/chord"
-	_"github.com/nknorg/nkn/por" // for testing sigchain of PoR feature
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/ws"
+	"math/rand"
 	"os"
 	"runtime"
 	"time"
-	"flag"
-	"math/rand"
-	"github.com/nknorg/nkn/consensus/ising"
 )
 
 const (
@@ -125,7 +125,6 @@ func main() {
 	if config.Parameters.HttpInfoStart {
 		go monitor.StartServer(noder)
 	}
-
 
 	for {
 		time.Sleep(dbft.GenBlockTime)

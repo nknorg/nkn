@@ -6,7 +6,6 @@ import (
 	"time"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/log"
 	"github.com/nknorg/nkn/core/contract/program"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
@@ -15,6 +14,7 @@ import (
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 )
 
@@ -128,7 +128,7 @@ func (p *ProposerService) Start() error {
 	go func() {
 		for {
 			select {
-			case msg := <- p.msgChan:
+			case msg := <-p.msgChan:
 				if notice, ok := msg.(*BlockInfoNotice); ok {
 					h := notice.hash
 					// neighbor node starting
@@ -144,7 +144,7 @@ func (p *ProposerService) Start() error {
 							p.SendConsensusMsg(brmsg, p.localNode.GetNeighborNoder()[0].GetPubKey())
 							p.confirmingBlock = &h
 						} else {
-							if p.confirmingBlock.CompareTo(h) != 0{
+							if p.confirmingBlock.CompareTo(h) != 0 {
 								p.confirmingBlock = &h
 							}
 						}

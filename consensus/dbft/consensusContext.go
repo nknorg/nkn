@@ -1,17 +1,18 @@
 package dbft
 
 import (
-	cl "github.com/nknorg/nkn/wallet"
+	"fmt"
+	"sync"
+
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/log"
 	ser "github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/net/protocol"
 	msg "github.com/nknorg/nkn/net/message"
-	"fmt"
-	"sync"
+	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
+	cl "github.com/nknorg/nkn/wallet"
 )
 
 const ContextVersion uint32 = 0
@@ -92,7 +93,7 @@ func (cxt *ConsensusContext) MakeHeader() *ledger.Block {
 			return nil
 		}
 		cxt.header = &ledger.Block{
-			Header:    &ledger.Header{
+			Header: &ledger.Header{
 				Version:          ContextVersion,
 				PrevBlockHash:    cxt.PrevHash,
 				TransactionsRoot: txRoot,
