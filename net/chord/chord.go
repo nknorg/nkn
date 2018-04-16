@@ -9,7 +9,8 @@ import (
 	"fmt"
 	"hash"
 	"time"
-	"github.com/nknorg/nkn/common/log"
+
+	"github.com/nknorg/nkn/util/log"
 )
 
 // Implements the methods needed for a Chord ring

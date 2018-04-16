@@ -4,8 +4,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/nknorg/nkn/common/config"
-	"github.com/nknorg/nkn/common/log"
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/crypto"
 )
 

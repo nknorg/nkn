@@ -1,13 +1,11 @@
 package httpjson
 
 import (
-	"github.com/nknorg/nkn/common/log"
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	tar "github.com/whyrusleeping/tar-utils"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -15,6 +13,10 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/nknorg/nkn/util/log"
+
+	tar "github.com/whyrusleeping/tar-utils"
 )
 
 type ipfsError struct {

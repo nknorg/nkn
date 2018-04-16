@@ -1,13 +1,14 @@
 package ledger
 
 import (
+	"sync"
+
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/log"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
-	"sync"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type Blockchain struct {

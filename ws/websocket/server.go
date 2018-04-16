@@ -1,21 +1,23 @@
 package websocket
 
 import (
-	. "github.com/nknorg/nkn/common/config"
-	"github.com/nknorg/nkn/common/log"
-	. "github.com/nknorg/nkn/rpc/httprestful/common"
-	Err "github.com/nknorg/nkn/rpc/httprestful/error"
-	. "github.com/nknorg/nkn/ws/session"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/websocket"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
+
+	. "github.com/nknorg/nkn/rpc/httprestful/common"
+	Err "github.com/nknorg/nkn/rpc/httprestful/error"
+	. "github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
+	. "github.com/nknorg/nkn/ws/session"
+
+	"github.com/gorilla/websocket"
 )
 
 type handler func(map[string]interface{}) map[string]interface{}
@@ -26,12 +28,12 @@ type Handler struct {
 
 type WsServer struct {
 	sync.RWMutex
-	Upgrader         websocket.Upgrader
-	listener         net.Listener
-	server           *http.Server
-	SessionList      *SessionList
-	ActionMap        map[string]Handler
-	TxHashMap        map[string]string //key: txHash   value:sessionid
+	Upgrader    websocket.Upgrader
+	listener    net.Listener
+	server      *http.Server
+	SessionList *SessionList
+	ActionMap   map[string]Handler
+	TxHashMap   map[string]string //key: txHash   value:sessionid
 }
 
 func InitWsServer() *WsServer {

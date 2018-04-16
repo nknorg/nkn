@@ -1,11 +1,6 @@
 package restful
 
 import (
-	. "github.com/nknorg/nkn/common/config"
-	"github.com/nknorg/nkn/common/log"
-	. "github.com/nknorg/nkn/rpc/httprestful/common"
-	Err "github.com/nknorg/nkn/rpc/httprestful/error"
-	"github.com/nknorg/nkn/ws"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -16,6 +11,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	. "github.com/nknorg/nkn/rpc/httprestful/common"
+	Err "github.com/nknorg/nkn/rpc/httprestful/error"
+	. "github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/ws"
 )
 
 type handler func(map[string]interface{}) map[string]interface{}
@@ -25,11 +26,11 @@ type Action struct {
 	handler handler
 }
 type restServer struct {
-	router           *Router
-	listener         net.Listener
-	server           *http.Server
-	postMap          map[string]Action
-	getMap           map[string]Action
+	router   *Router
+	listener net.Listener
+	server   *http.Server
+	postMap  map[string]Action
+	getMap   map[string]Action
 }
 
 const (
@@ -161,9 +162,9 @@ func (rt *restServer) registryMethod() {
 		return resp
 	}
 	postMethodMap := map[string]Action{
-		Api_SendRawTx:         {name: "sendrawtransaction", handler: sendRawTransaction},
-		Api_SendRcdTxByTrans:  {name: "sendrecord", handler: SendRecord},
-		Api_WebsocketState:    {name: "setwebsocketstate", handler: rt.setWebsocketState},
+		Api_SendRawTx:        {name: "sendrawtransaction", handler: sendRawTransaction},
+		Api_SendRcdTxByTrans: {name: "sendrecord", handler: SendRecord},
+		Api_WebsocketState:   {name: "setwebsocketstate", handler: rt.setWebsocketState},
 	}
 	rt.postMap = postMethodMap
 	rt.getMap = getMethodMap
@@ -182,7 +183,7 @@ func (rt *restServer) getPath(url string) string {
 		return Api_GetTotalIssued
 	} else if strings.Contains(url, strings.TrimRight(Api_Gettransaction, ":hash")) {
 		return Api_Gettransaction
-	}  else if strings.Contains(url, strings.TrimRight(Api_GetBalanceByAddr, ":addr")) {
+	} else if strings.Contains(url, strings.TrimRight(Api_GetBalanceByAddr, ":addr")) {
 		return Api_GetBalanceByAddr
 	} else if strings.Contains(url, strings.TrimRight(Api_GetBalancebyAsset, ":addr/:assetid")) {
 		return Api_GetBalancebyAsset

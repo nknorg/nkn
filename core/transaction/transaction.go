@@ -9,13 +9,13 @@ import (
 	"sort"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/log"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/util/log"
 )
 
 //for different transaction types with different payload format

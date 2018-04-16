@@ -1,10 +1,11 @@
 package httpjson
 
 import (
-	"github.com/nknorg/nkn/common/config"
-	"github.com/nknorg/nkn/common/log"
 	"net/http"
 	"strconv"
+
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 )
 
 const (

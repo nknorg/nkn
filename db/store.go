@@ -10,7 +10,6 @@ import (
 	"time"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/log"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/account"
 	. "github.com/nknorg/nkn/core/asset"
@@ -20,6 +19,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/util/log"
 )
 
 const (

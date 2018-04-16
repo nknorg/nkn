@@ -1,10 +1,9 @@
 package dbft
 
 import (
-	cl "github.com/nknorg/nkn/wallet"
+	"errors"
+	"fmt"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/config"
-	"github.com/nknorg/nkn/common/log"
 	ct "github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/contract/program"
 	"github.com/nknorg/nkn/core/ledger"
@@ -15,10 +14,11 @@ import (
 	va "github.com/nknorg/nkn/core/validation"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/net/protocol"
 	msg "github.com/nknorg/nkn/net/message"
-	"errors"
-	"fmt"
+	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
+	cl "github.com/nknorg/nkn/wallet"
 	"time"
 )
 
