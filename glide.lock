@@ -1,8 +1,12 @@
-hash: 24abf52ae2075105cd7fa42a28d52c8c22716ab3a46f2d97a4f859fde0b5e4a7
-updated: 2018-03-07T17:27:34.978466+08:00
+hash: cd8c1b38e78fe9494ff681049ea0721a7c41e56bf94adc9d78a0cf867905c4c0
+updated: 2018-04-16T14:18:41.165119+08:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: da1a8928f709389522c8023062a3739f3b4af419
+- name: github.com/cbocovic/chord
+  version: 17010ac448d4dbf5db278dce5546f926fdc29d84
+  subpackages:
+  - internal
 - name: github.com/dnaproject/gopass
   version: 3d5cac4c3c49028515a6f149131ef897100b71c2
 - name: github.com/golang/crypto
@@ -10,6 +14,10 @@ imports:
   subpackages:
   - ripemd160
   - ssh/terminal
+- name: github.com/golang/protobuf
+  version: e09c5db296004fbe3f74490e84dcd62c3c5ddb1b
+  subpackages:
+  - proto
 - name: github.com/golang/snappy
   version: 553a641470496b2327abcac10b36396bd98e45c9
 - name: github.com/gorilla/websocket
