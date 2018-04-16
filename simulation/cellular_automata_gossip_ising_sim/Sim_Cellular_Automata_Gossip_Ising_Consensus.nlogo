@@ -34,7 +34,7 @@ to transaction
 end
 
 to go
-  if all? patches [gossip-percent > 0.75]; if percentage of gossip reach 75% then gossip stops
+  if all? patches [gossip-percent > 1]; if percentage of gossip reach 100% then gossip stops
    [ stop ]; stop gossip
   ask patches
     [ if times-heard > 0
@@ -78,12 +78,15 @@ to randomize
 
   ask patches
     [ if first-heard >= 0[
-      set vote random 2
+      ifelse random 100 < fault-tor
+      [ set vote 0 ]
+      [ set vote 1 ]
       change-state-vote
       ]
   ]
   reset-ticks
 end
+
 
 to consensus
      ; keep track of whether any cell has changed their vote
@@ -174,10 +177,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot (vote-count / count patches) * 100"
 
 BUTTON
-575
-28
-686
-61
+623
+36
+791
+69
 1. TX Creation
 setup true
 NIL
@@ -191,10 +194,10 @@ NIL
 1
 
 BUTTON
-575
-65
-700
-99
+623
+73
+790
+107
 2. Gossip Spread
 go
 T
@@ -208,10 +211,10 @@ NIL
 0
 
 BUTTON
-575
-140
-713
-173
+623
+148
+792
+181
 4. Ising-Consensus
 consensus
 T
@@ -225,10 +228,10 @@ NIL
 0
 
 BUTTON
-575
-101
-681
-136
+623
+109
+792
+144
 3. Randomize
 randomize
 NIL
@@ -240,6 +243,21 @@ NIL
 NIL
 NIL
 0
+
+SLIDER
+582
+34
+619
+184
+fault-tor
+fault-tor
+0
+100
+56.0
+1
+1
+NIL
+VERTICAL
 
 @#$#@#$#@
 ## Simulation Introduction
