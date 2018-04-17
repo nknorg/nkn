@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/nknorg/nkn/consensus/dbft"
-	"github.com/nknorg/nkn/consensus/ising"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
@@ -23,6 +22,7 @@ import (
 	"os"
 	"runtime"
 	"time"
+	"github.com/nknorg/nkn/consensus/ising"
 )
 
 const (
@@ -94,7 +94,7 @@ func main() {
 	ledger.DefaultLedger.Blockchain = blockChain
 
 	log.Info("3. Start the P2P networks")
-	client := wallet.GetClient()
+	client := wallet.GetWallet()
 	if client == nil {
 		log.Fatal("Can't get local account.")
 		goto ERROR

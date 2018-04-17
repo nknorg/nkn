@@ -1,11 +1,11 @@
 package wallet
 
 import (
+	"errors"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
-	"errors"
 )
 
 type Account struct {
