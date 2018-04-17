@@ -1,21 +1,11 @@
 # Overview
 
-The core of the NKN network are many connected nodes. Every node is
-only connected to and aware of a few other nodes called neighbors. The
-topology of the network is verifiable. Data can be transmitted from
-any node to any other node in an efficient and verifiable route. The
-network is dynamic such that any node can join and leave the network
-at any time without causing system failures. Data can also be sent
-from and to client (which only sends and receives data but does not
-relay data or participate in consensus) without public IP address.
+The NKN comprises four kernal parts as a public blockchain infrastructure. They are decentralized data transmission network (DDTN), proof of relay (PoR), blockchain consensus and incentive distribution mechanism. With all these elements, NKN is served as a network-orientied blockchain platform.
 
-The relay workload can be verified using our Proof of Relay (PoR)
-algorithm. A small and fixed portion of the packets will be randomly
-selected as proof. The random selection can be verified and cannot be
-predicted or controlled. Proof will be sent to other nodes for payment
-and rewards.
+The core of DDTN comprise many connected nodes. With cellular automata methodology, every node is only connected to and aware of a few other nodes called neighbors. A node can establish a circuit/channel via other nodes. The first node in the channel is the initiator, the last node is the exit node. The nodes in between are intermediate nodes. The overall number of nodes of a channel is the length of the channel. One essential feature of DDTN is that when setting up a channel, eachnode along the channel selects its successor node. This exhibits methodology of cellular automata and brings about the benefit that a node only has to manage its local envrionment comprising its current neighbors, which is almost independent of the network size and providing high scability. Neighbors can directly communicate with each other and exchange control information to learn which nodes have resource to provide network connectivity and data transmission capability. The topology of the network is verifiable. Data can be transmitted from any node to any other node in an efficient and verifiable route. The network is dynamic such that any node can join and leave the network at any time without causing system failures. Data can also be sent from and to client (which only sends and receives data but does not relay data or participate in consensus) without public IP address.
 
-A node in our network is both relayer and consensus
-participant. Consensus among massive nodes can be reached efficiently
-by only communicating with neighbors using our algorithm. Consensus is
-reached for every block to prevent fork.
+The relay workload can be verified using our Proof of Relay (PoR) algorithm. A small and fixed portion of the packets will be randomly selected as proof. The random selection can be verified and cannot be predicted or controlled. Proof will be sent to other nodes for payment and rewards.
+
+In blockchain consensus mechanism, a node in our network is both relayer and consensus participant. Consensus among massive nodes can be reached efficiently by only communicating with neighbors using our algorithm. Consensus is reached for every block to prevent fork.
+
+Finally, incentive distrubtion mechanism use game theory to encourage nodes to build the network and achieve Nash equilibrum. Incentive distrubution mechism encourage free-rider clients's transformation to nodes of NKN which is beneficial to the overall ecosystem of NKN.
