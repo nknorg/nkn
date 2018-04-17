@@ -93,7 +93,7 @@ func assetAction(c *cli.Context) error {
 	}
 	cert := c.String("cert")
 
-	wallet, err := wallet.Open(wallet.WalletFileName, WalletPassword(c.String("password")))
+	wallet, err := wallet.OpenWallet(wallet.WalletFileName, WalletPassword(c.String("password")))
 	if err != nil {
 		fmt.Println("Failed to open wallet.")
 		os.Exit(1)
