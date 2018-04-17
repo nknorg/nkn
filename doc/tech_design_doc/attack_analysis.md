@@ -1,4 +1,5 @@
 # Attack Analysis
+<<<<<<< HEAD
 
 - [Collusion Attacks](#collusion-attacks)
 - [Sybil Attacks](#sybil-attacks)
@@ -41,3 +42,5 @@ In a selfish mining strategy, the selfish miners maintain two blockchains, one p
 ## Fraud Attacks
 
 Malicious miners can claim large amounts of data to be transmitted but efficiently generate data on-demand using applets. If the applet is smaller than the actual amount of relay data, it increases the likelihood of malicious miners getting block bonus.
+=======
+>>>>>>> e7359abc37f32040918c8acab10f2dfdc39cb77a
