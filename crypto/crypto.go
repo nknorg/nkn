@@ -4,21 +4,19 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/crypto/p256r1"
-	"github.com/nknorg/nkn/crypto/sm2"
-	"github.com/nknorg/nkn/crypto/util"
 	"io"
 	"math/big"
-	"strings"
+
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto/p256r1"
+	"github.com/nknorg/nkn/crypto/util"
 )
 
 const (
 	P256R1 = 0
-	SM2    = 1
 )
 
-//It can be P256R1 or SM2
+//It can be P256R1
 var AlgChoice int
 
 var algSet util.CryptoAlgSet
@@ -32,13 +30,9 @@ func init() {
 }
 
 func SetAlg(algChoice string) {
-	if strings.Compare("SM2", algChoice) == 0 {
-		AlgChoice = SM2
-		sm2.Init(&algSet)
-	} else {
-		AlgChoice = P256R1
-		p256r1.Init(&algSet)
-	}
+	// TODO add switch statements
+	AlgChoice = P256R1
+	p256r1.Init(&algSet)
 	return
 }
 
@@ -49,11 +43,7 @@ func GenKeyPair() ([]byte, PubKey, error) {
 	var Y *big.Int
 	var err error
 
-	if SM2 == AlgChoice {
-		privateD, X, Y, err = sm2.GenKeyPair(&algSet)
-	} else {
-		privateD, X, Y, err = p256r1.GenKeyPair(&algSet)
-	}
+	privateD, X, Y, err = p256r1.GenKeyPair(&algSet)
 
 	if nil != err {
 		return nil, *mPubKey, err
@@ -69,11 +59,7 @@ func Sign(privateKey []byte, data []byte) ([]byte, error) {
 	var s *big.Int
 	var err error
 
-	if SM2 == AlgChoice {
-		r, s, err = sm2.Sign(&algSet, privateKey, data)
-	} else {
-		r, s, err = p256r1.Sign(&algSet, privateKey, data)
-	}
+	r, s, err = p256r1.Sign(&algSet, privateKey, data)
 	if err != nil {
 		return nil, err
 	}
@@ -97,9 +83,6 @@ func Verify(publicKey PubKey, data []byte, signature []byte) error {
 	r := new(big.Int).SetBytes(signature[:len/2])
 	s := new(big.Int).SetBytes(signature[len/2:])
 
-	if SM2 == AlgChoice {
-		return sm2.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
-	}
 	return p256r1.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
 }
 
