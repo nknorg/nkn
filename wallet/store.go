@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
+	"path"
 
 	. "github.com/nknorg/nkn/common"
 	ct "github.com/nknorg/nkn/core/contract"
@@ -72,23 +73,34 @@ func (cs *store) readDB() ([]byte, error) {
 	}
 }
 
-// Caller holds the lock and writes bytes to DB, then close the DB and release the lock
-func (cs *store) writeDB(data []byte) error {
+func (cs *store)writeDB(data []byte) error {
 	cs.Lock()
 	defer cs.Unlock()
 	defer cs.closeDB()
 
-	var err error
-	cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	dir, name := path.Split(cs.path)
+	f, err := ioutil.TempFile(dir, name)
 	if err != nil {
 		return err
 	}
-
-	if cs.file != nil {
-		cs.file.Write(data)
+	_, err = f.Write(data)
+	if err == nil {
+		err = f.Sync()
+	}
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
+	if permErr := os.Chmod(f.Name(), 0666); err == nil {
+		err = permErr
+	}
+	if err == nil {
+		err = os.Rename(f.Name(), name)
+	}
+	if err != nil {
+		os.Remove(f.Name())
 	}
 
-	return nil
+	return err
 }
 
 func (cs *store) closeDB() {
