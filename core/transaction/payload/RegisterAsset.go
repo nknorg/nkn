@@ -60,7 +60,7 @@ func (a *RegisterAsset) Deserialize(r io.Reader, version byte) error {
 
 	//Issuer     *crypto.PubKey
 	a.Issuer = new(crypto.PubKey)
-	err = a.Issuer.DeSerialize(r)
+	err = a.Issuer.Deserialize(r)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[RegisterAsset], Ammount Deserialize failed.")
 	}

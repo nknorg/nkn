@@ -266,9 +266,6 @@ func (cl *WalletImpl) ChangePassword(oldPassword []byte, newPassword []byte) boo
 	// encrypt master key with new password
 	newPasswordKey := crypto.ToAesKey(newPassword)
 	newPasswordHash := sha256.Sum256(newPasswordKey)
-	fmt.Println("11", cl.masterKey)
-	fmt.Println("22", newPasswordKey)
-	fmt.Println("33", cl.iv)
 	newMasterKey, err := crypto.AesEncrypt(cl.masterKey, newPasswordKey, cl.iv)
 	if err != nil {
 		fmt.Println("error: set new password failed")

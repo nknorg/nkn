@@ -12,10 +12,21 @@ type UTXOUnspent struct {
 	Value common.Fixed64
 }
 
-func (uu *UTXOUnspent) Serialize(w io.Writer) {
-	uu.Txid.Serialize(w)
-	serialization.WriteUint32(w, uu.Index)
-	uu.Value.Serialize(w)
+func (uu *UTXOUnspent) Serialize(w io.Writer) error {
+	_, err := uu.Txid.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteUint32(w, uu.Index)
+	if err != nil {
+		return err
+	}
+	err = uu.Value.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (uu *UTXOUnspent) Deserialize(r io.Reader) error {

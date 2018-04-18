@@ -57,16 +57,17 @@ func NewBlocksReq(n Noder) ([]byte, error) {
 	s := checkSum(p.Bytes())
 	h.msgHdr.init("getblocks", s, uint32(len(p.Bytes())))
 
-	m, err := h.Serialization()
+	reqBuff := bytes.NewBuffer(nil)
+	err = h.Serialize(reqBuff)
+	if err != nil {
+		return nil, err
+	}
 
-	return m, err
+	return reqBuff.Bytes(), nil
 }
 
 func (msg blocksReq) Verify(buf []byte) error {
-
-	// TODO verify the message Content
-	err := msg.msgHdr.Verify(buf)
-	return err
+	return msg.msgHdr.Verify(buf)
 }
 
 func (msg blocksReq) Handle(node Noder) error {
@@ -89,31 +90,19 @@ func (msg blocksReq) Handle(node Noder) error {
 	return nil
 }
 
-func (msg blocksReq) Serialization() ([]byte, error) {
-	var buf bytes.Buffer
-
-	err := binary.Write(&buf, binary.LittleEndian, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), err
+func (msg blocksReq) Serialize(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, msg)
 }
 
-func (msg *blocksReq) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-	err := binary.Read(buf, binary.LittleEndian, &msg)
-	return err
+func (msg *blocksReq) Deserialize(r io.Reader) error {
+	return binary.Read(r, binary.LittleEndian, &msg)
 }
 
 func (msg Inv) Verify(buf []byte) error {
-	// TODO verify the message Content
-	err := msg.Hdr.Verify(buf)
-	return err
+	return msg.Hdr.Verify(buf)
 }
 
 func (msg Inv) Handle(node Noder) error {
-	log.Debug()
 	var id Uint256
 	str := hex.EncodeToString(msg.P.Blk)
 	log.Debug(fmt.Sprintf("The inv type: 0x%x block len: %d, %s\n",
@@ -151,38 +140,39 @@ func (msg Inv) Handle(node Noder) error {
 	return nil
 }
 
-func (msg Inv) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.Hdr.Serialization()
+func (msg Inv) Serialize(w io.Writer) error {
+	err := msg.Hdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	msg.P.Serialization(buf)
-
-	return buf.Bytes(), err
-}
-
-func (msg *Inv) Deserialization(p []byte) error {
-	err := msg.Hdr.Deserialization(p)
+	err = msg.P.Serialize(w)
 	if err != nil {
 		return err
 	}
 
-	buf := bytes.NewBuffer(p[MSGHDRLEN:])
-	invType, err := serialization.ReadUint8(buf)
+	return nil
+}
+
+func (msg *Inv) Deserialize(r io.Reader) error {
+	err := msg.Hdr.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	invType, err := serialization.ReadUint8(r)
 	if err != nil {
 		return err
 	}
 	msg.P.InvType = InventoryType(invType)
-	msg.P.Cnt, err = serialization.ReadUint32(buf)
+	msg.P.Cnt, err = serialization.ReadUint32(r)
+	if err != nil {
+		return err
+	}
+	err = binary.Read(r, binary.LittleEndian, &(msg.P.Blk))
 	if err != nil {
 		return err
 	}
 
-	msg.P.Blk = make([]byte, msg.P.Cnt*HASHLEN)
-	err = binary.Read(buf, binary.LittleEndian, &(msg.P.Blk))
-
-	return err
+	return nil
 }
 
 func (msg Inv) invType() InventoryType {
@@ -269,7 +259,7 @@ func NewInv(inv *InvPayload) ([]byte, error) {
 	cmd := "inv"
 	copy(msg.Hdr.CMD[0:len(cmd)], cmd)
 	tmpBuffer := bytes.NewBuffer([]byte{})
-	inv.Serialization(tmpBuffer)
+	inv.Serialize(tmpBuffer)
 
 	b := new(bytes.Buffer)
 	err := binary.Write(b, binary.LittleEndian, tmpBuffer.Bytes())
@@ -284,18 +274,29 @@ func NewInv(inv *InvPayload) ([]byte, error) {
 	binary.Read(buf, binary.LittleEndian, &(msg.Hdr.Checksum))
 	msg.Hdr.Length = uint32(len(b.Bytes()))
 
-	m, err := msg.Serialization()
+	invBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(invBuff)
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
 
-	return m, nil
+	return invBuff.Bytes(), nil
 }
 
-func (msg *InvPayload) Serialization(w io.Writer) {
-	serialization.WriteUint8(w, uint8(msg.InvType))
-	serialization.WriteUint32(w, msg.Cnt)
+func (msg *InvPayload) Serialize(w io.Writer) error {
+	err := serialization.WriteUint8(w, uint8(msg.InvType))
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteUint32(w, msg.Cnt)
+	if err != nil {
+		return err
+	}
+	err = binary.Write(w, binary.LittleEndian, msg.Blk)
+	if err != nil {
+		return err
+	}
 
-	binary.Write(w, binary.LittleEndian, msg.Blk)
+	return nil
 }

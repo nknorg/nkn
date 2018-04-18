@@ -110,7 +110,7 @@ func (e *PubKey) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (e *PubKey) DeSerialize(r io.Reader) error {
+func (e *PubKey) Deserialize(r io.Reader) error {
 	bufX, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err

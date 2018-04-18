@@ -17,9 +17,17 @@ type UTXOTxInput struct {
 	ReferTxOutputIndex uint16
 }
 
-func (ui *UTXOTxInput) Serialize(w io.Writer) {
-	ui.ReferTxID.Serialize(w)
-	serialization.WriteUint16(w, ui.ReferTxOutputIndex)
+func (ui *UTXOTxInput) Serialize(w io.Writer) error {
+	_, err := ui.ReferTxID.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteUint16(w, ui.ReferTxOutputIndex)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ui *UTXOTxInput) Deserialize(r io.Reader) error {

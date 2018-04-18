@@ -642,7 +642,7 @@ func (self *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey,
 	var currBookKeeper = make([]*crypto.PubKey, currCount)
 	for i := uint8(0); i < currCount; i++ {
 		bk := new(crypto.PubKey)
-		err := bk.DeSerialize(r)
+		err := bk.Deserialize(r)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -658,7 +658,7 @@ func (self *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey,
 	var nextBookKeeper = make([]*crypto.PubKey, nextCount)
 	for i := uint8(0); i < nextCount; i++ {
 		bk := new(crypto.PubKey)
-		err := bk.DeSerialize(r)
+		err := bk.Deserialize(r)
 		if err != nil {
 			return nil, nil, err
 		}

@@ -32,7 +32,7 @@ func (r *RelayStat) CalcRelays(txn *transaction.Transaction) error {
 	rs := txn.Payload.(*payload.Commit)
 	buf := bytes.NewBuffer(rs.SigChain)
 	var sigChain SigChain
-	sigChain.Deserialization(buf)
+	sigChain.Deserialize(buf)
 
 	r.TxPool = append(r.TxPool, txn.Hash())
 
