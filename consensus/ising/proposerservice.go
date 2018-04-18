@@ -6,6 +6,7 @@ import (
 	"time"
 
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/contract/program"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
@@ -31,8 +32,8 @@ type ProposerService struct {
 	localNode            protocol.Noder            // local node
 	txnCollector         *transaction.TxnCollector // collect transaction from where
 	confirmingBlock      *Uint256                  // current block in consensus process
-	proposalNum          int                       // sent BlockProposal msg count
-	votedNum             int                       // received agreed BlockVote msg count
+	totalWeight          int                       // neighbors total weight
+	agreedWeight         int                       // agreed weight
 	blockCache           *BlockCache               // blocks waiting for voting
 	consensusMsgReceived events.Subscriber         // consensus events listening
 	msgChan              chan interface{}          // get notice from probe thread
@@ -95,11 +96,11 @@ func (p *ProposerService) ProposerRoutine() {
 	p.SendConsensusMsg(bpMsg, nil)
 	p.state.SetBit(ProposalSent)
 	p.confirmingBlock = &hash
-	p.proposalNum = len(p.localNode.GetNeighborNoder())
+	p.totalWeight = GetNeighborsVotingWeight(p.localNode.GetNeighborNoder())
 
 	// waiting for other nodes voting finished
 	time.Sleep(time.Second * 3)
-	if p.votedNum <= p.proposalNum/2 {
+	if p.agreedWeight <= p.totalWeight/2 {
 		p.blockCache.RemoveBlockFromCache(hash)
 		p.Reset()
 		return
@@ -326,7 +327,22 @@ func (p *ProposerService) HandleBlockVoteMsg(bvMsg *BlockVote, sender *crypto.Pu
 		return
 	}
 	if bvMsg.agree == true {
-		p.votedNum++
+		script, err := contract.CreateSignatureRedeemScript(sender)
+		if err != nil {
+			log.Warn("sender public key to script error")
+			return
+		}
+		programHash, err := ToCodeHash(script)
+		if err != nil {
+			log.Warn("sender script to hash error")
+			return
+		}
+		weight, err := GetNeighborWeightFromDB(programHash)
+		if err != nil {
+			log.Warn("get sender weight error")
+			return
+		}
+		p.agreedWeight += weight
 	}
 	return
 }
@@ -334,8 +350,34 @@ func (p *ProposerService) HandleBlockVoteMsg(bvMsg *BlockVote, sender *crypto.Pu
 func (p *ProposerService) Reset() {
 	p.state.ClearAll()
 	p.state.SetBit(InitialState)
-	p.proposalNum = len(p.localNode.GetNeighborNoder())
-	p.votedNum = 0
+	p.totalWeight = GetNeighborsVotingWeight(p.localNode.GetNeighborNoder())
+	p.agreedWeight = 0
+}
+
+func GetNeighborWeightFromDB(programHash Uint160) (int, error) {
+	// TODO get node voting weight from database
+	return 1, nil
+}
+
+func GetNeighborsVotingWeight(neighbors []protocol.Noder) int {
+	total := 0
+	for _, n := range neighbors {
+		script, err := contract.CreateSignatureRedeemScript(n.GetPubKey())
+		if err != nil {
+			continue
+		}
+		programHash, err := ToCodeHash(script)
+		if err != nil {
+			continue
+		}
+		weight, err := GetNeighborWeightFromDB(programHash)
+		if err != nil {
+			continue
+		}
+		total += weight
+	}
+
+	return total
 }
 
 func (p *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.PubKey) {
