@@ -16,7 +16,6 @@ var StandbyBookKeepers []*crypto.PubKey
 
 type Ledger struct {
 	Blockchain *Blockchain
-	State      *State
 	Store      ILedgerStore
 }
 

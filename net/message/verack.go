@@ -1,12 +1,12 @@
 package message
 
 import (
-	"encoding/hex"
 	"errors"
 	"strconv"
 
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
+	"bytes"
 )
 
 type verACK struct {
@@ -21,15 +21,13 @@ func NewVerack() ([]byte, error) {
 	sum = []byte{0x5d, 0xf6, 0xe0, 0xe2}
 	msg.msgHdr.init("verack", sum, 0)
 
-	buf, err := msg.Serialization()
+	buff := bytes.NewBuffer(nil)
+	err := msg.Serialize(buff)
 	if err != nil {
 		return nil, err
 	}
 
-	str := hex.EncodeToString(buf)
-	log.Debug("The message tx verack length is ", len(buf), ", ", str)
-
-	return buf, err
+	return buff.Bytes(), nil
 }
 
 /*

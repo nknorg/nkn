@@ -29,26 +29,30 @@ func (msg IsingMessage) Handle(node Noder) error {
 	return nil
 }
 
-func (p *IsingMessage) Serialization() ([]byte, error) {
-	msgHeader, err := p.msgHdr.Serialization()
+func (p *IsingMessage) Serialize(w io.Writer) error {
+	err := p.msgHdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(msgHeader)
-	err = p.pld.Serialize(buf)
+	err = p.pld.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return buf.Bytes(), err
+	return nil
 }
 
-func (p *IsingMessage) Deserialization(b []byte) error {
-	buf := bytes.NewBuffer(b)
-	err := binary.Read(buf, binary.LittleEndian, &(p.msgHdr))
-	err = p.pld.Deserialize(buf)
+func (p *IsingMessage) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(p.msgHdr))
+	if err != nil {
+		return err
+	}
+	err = p.pld.Deserialize(r)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (p *IsingPayload) SerializeUnsigned(w io.Writer) error {
@@ -101,7 +105,7 @@ func (p *IsingPayload) DeserializeUnsigned(r io.Reader) error {
 	p.PayloadData = pldData
 
 	p.Sender = new(crypto.PubKey)
-	err = p.Sender.DeSerialize(r)
+	err = p.Sender.Deserialize(r)
 	if err != nil {
 		return err
 	}
@@ -140,11 +144,12 @@ func NewIsingConsensus(pld *IsingPayload) ([]byte, error) {
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(b.Bytes()))
 
-	m, err := msg.Serialization()
+	isingBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(isingBuff)
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
 
-	return m, nil
+	return isingBuff.Bytes(), nil
 }

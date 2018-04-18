@@ -6,9 +6,9 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
+	"time"
 	"bytes"
 	"encoding/binary"
-	"time"
 )
 
 type NodeAddr struct {

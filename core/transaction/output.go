@@ -12,16 +12,38 @@ type TxOutput struct {
 	ProgramHash common.Uint160
 }
 
-func (o *TxOutput) Serialize(w io.Writer) {
-	o.AssetID.Serialize(w)
-	o.Value.Serialize(w)
-	o.ProgramHash.Serialize(w)
+func (o *TxOutput) Serialize(w io.Writer) error {
+	_, err := o.AssetID.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = o.Value.Serialize(w)
+	if err != nil {
+		return err
+	}
+	_, err = o.ProgramHash.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (o *TxOutput) Deserialize(r io.Reader) {
-	o.AssetID.Deserialize(r)
-	o.Value.Deserialize(r)
-	o.ProgramHash.Deserialize(r)
+func (o *TxOutput) Deserialize(r io.Reader) error {
+	err := o.AssetID.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	err = o.Value.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	err = o.ProgramHash.Deserialize(r)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ui *TxOutput) ToArray() ([]byte) {

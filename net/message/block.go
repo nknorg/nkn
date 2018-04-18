@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
-	"errors"
+	"io"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
@@ -13,16 +13,9 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
-type blockReq struct {
-	msgHdr
-	//TBD
-}
-
 type block struct {
 	msgHdr
 	blk ledger.Block
-	// TBD
-	//event *events.Event
 }
 
 func (msg block) Handle(node Noder) error {
@@ -51,7 +44,6 @@ func (msg dataReq) Handle(node Noder) error {
 		block, err := NewBlockFromHash(hash)
 		if err != nil {
 			log.Debug("Can't get block from hash: ", hash, " ,send not found message")
-			//call notfound message
 			b, err := NewNotFound(hash)
 			node.Tx(b)
 			return err
@@ -109,13 +101,14 @@ func NewBlock(bk *ledger.Block) ([]byte, error) {
 	msg.msgHdr.Length = uint32(len(p.Bytes()))
 	log.Debug("The message payload length is ", msg.msgHdr.Length)
 
-	m, err := msg.Serialization()
+	msgBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(msgBuff)
 	if err != nil {
-		log.Error("Error Convert net message ", err.Error())
+		log.Error("new block message error")
 		return nil, err
 	}
 
-	return m, nil
+	return msgBuff.Bytes(), nil
 }
 
 func ReqBlkData(node Noder, hash common.Uint256) error {
@@ -138,15 +131,13 @@ func ReqBlkData(node Noder, hash common.Uint256) error {
 	buf := bytes.NewBuffer(s[:4])
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(p.Bytes()))
-	log.Debug("The message payload length is ", msg.msgHdr.Length)
 
-	sendBuf, err := msg.Serialization()
+	sendBuf := bytes.NewBuffer(nil)
+	err = msg.Serialize(sendBuf)
 	if err != nil {
-		log.Error("Error Convert net message ", err.Error())
 		return err
 	}
-
-	node.Tx(sendBuf)
+	node.Tx(sendBuf.Bytes())
 
 	return nil
 }
@@ -157,31 +148,30 @@ func (msg block) Verify(buf []byte) error {
 	return err
 }
 
-func (msg block) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.msgHdr.Serialization()
+func (msg block) Serialize(w io.Writer) error {
+	err := msg.msgHdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	msg.blk.Serialize(buf)
+	err = msg.blk.Serialize(w)
+	if err != nil {
+		return err
+	}
 
-	return buf.Bytes(), err
+	return nil
 }
 
-func (msg *block) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-
-	err := binary.Read(buf, binary.LittleEndian, &(msg.msgHdr))
+func (msg *block) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.msgHdr))
 	if err != nil {
-		log.Warn("Parse block message hdr error")
-		return errors.New("Parse block message hdr error")
+		log.Error("block header message parsing error")
+		return err
+	}
+	err = msg.blk.Deserialize(r)
+	if err != nil {
+		log.Error("block message parsing error")
+		return err
 	}
 
-	err = msg.blk.Deserialize(buf)
-	if err != nil {
-		log.Warn("Parse block message error")
-		return errors.New("Parse block message error")
-	}
-
-	return err
+	return nil
 }

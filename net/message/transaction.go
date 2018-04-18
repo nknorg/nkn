@@ -12,6 +12,7 @@ import (
 	. "github.com/nknorg/nkn/errors"
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
+	"io"
 )
 
 type dataReq struct {
@@ -23,10 +24,7 @@ type dataReq struct {
 // Transaction message
 type trn struct {
 	msgHdr
-	// TBD
-	//txn []byte
 	txn transaction.Transaction
-	//hash common.Uint256
 }
 
 func (msg trn) Handle(node Noder) error {
@@ -51,45 +49,50 @@ func reqTxnData(node Noder, hash common.Uint256) error {
 	// TODO handle the hash array case
 	//msg.hash = hash
 
-	buf, _ := msg.Serialization()
-	go node.Tx(buf)
+	buff := bytes.NewBuffer(nil)
+	err := msg.Serialize(buff)
+	if err != nil {
+		return err
+	}
+	go node.Tx(buff.Bytes())
+
 	return nil
 }
 
-func (msg dataReq) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.msgHdr.Serialization()
+func (msg dataReq) Serialize(w io.Writer) error {
+	err := msg.msgHdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	err = binary.Write(buf, binary.LittleEndian, msg.dataType)
+	err = binary.Write(w, binary.LittleEndian, msg.dataType)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	msg.hash.Serialize(buf)
+	_, err = msg.hash.Serialize(w)
+	if err != nil {
+		return err
+	}
 
-	return buf.Bytes(), err
+	return nil
 }
 
-func (msg *dataReq) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-	err := binary.Read(buf, binary.LittleEndian, &(msg.msgHdr))
+func (msg *dataReq) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.msgHdr))
 	if err != nil {
-		log.Warn("Parse datareq message hdr error")
-		return errors.New("Parse datareq message hdr error")
+		log.Error("datareq header message parsing error")
+		return err
+	}
+	err = binary.Read(r, binary.LittleEndian, &(msg.dataType))
+	if err != nil {
+		log.Error("datareq datatype message parsing error")
+		return err
+	}
+	err = msg.hash.Deserialize(r)
+	if err != nil {
+		log.Error("datareq hash message parsing error")
+		return err
 	}
 
-	err = binary.Read(buf, binary.LittleEndian, &(msg.dataType))
-	if err != nil {
-		log.Warn("Parse datareq message dataType error")
-		return errors.New("Parse datareq message dataType error")
-	}
-
-	err = msg.hash.Deserialize(buf)
-	if err != nil {
-		log.Warn("Parse datareq message hash error")
-		return errors.New("Parse datareq message hash error")
-	}
 	return nil
 }
 
@@ -126,30 +129,35 @@ func NewTxn(txn *transaction.Transaction) ([]byte, error) {
 	msg.msgHdr.Length = uint32(len(b.Bytes()))
 	log.Debug("The message payload length is ", msg.msgHdr.Length)
 
-	m, err := msg.Serialization()
+	txnBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(txnBuff)
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
 
-	return m, nil
+	return txnBuff.Bytes(), nil
 }
 
-func (msg trn) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.msgHdr.Serialization()
+func (msg trn) Serialize(w io.Writer) error {
+	err := msg.msgHdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	msg.txn.Serialize(buf)
+	err = msg.txn.Serialize(w)
+	if err != nil {
+		return err
+	}
 
-	return buf.Bytes(), err
+	return nil
 }
 
-func (msg *trn) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-	err := binary.Read(buf, binary.LittleEndian, &(msg.msgHdr))
-	err = msg.txn.Deserialize(buf)
+func (msg *trn) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.msgHdr))
+	if err != nil {
+		return err
+	}
+	err = msg.txn.Deserialize(r)
 	if err != nil {
 		return err
 	}
@@ -164,8 +172,12 @@ type txnPool struct {
 
 func ReqTxnPool(node Noder) error {
 	msg := AllocMsg("txnpool", 0)
-	buf, _ := msg.Serialization()
-	go node.Tx(buf)
+	buff := bytes.NewBuffer(nil)
+	err := msg.Serialize(buff)
+	if err != nil {
+		return err
+	}
+	go node.Tx(buff.Bytes())
 
 	return nil
 }
