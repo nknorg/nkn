@@ -300,11 +300,6 @@ func (bd *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block, defau
 	}
 }
 
-func (bd *ChainStore) InitLedgerStore(l *Ledger) error {
-	// TODO: InitLedgerStore
-	return nil
-}
-
 func (bd *ChainStore) IsTxHashDuplicate(txhash Uint256) bool {
 	prefix := []byte{byte(DATA_Transaction)}
 	_, err_get := bd.st.Get(append(prefix, txhash.ToArray()...))
