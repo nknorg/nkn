@@ -19,21 +19,66 @@ import (
 	"github.com/nknorg/nkn/net/protocol"
 	_ "github.com/nknorg/nkn/por" // for testing sigchain of PoR feature
 	"github.com/nknorg/nkn/rpc/httpjson"
-	"github.com/nknorg/nkn/rpc/httprestful"
-	"github.com/nknorg/nkn/test/monitor"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
+	nlog "github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
-	"github.com/nknorg/nkn/ws"
 )
 
 func init() {
-	log.Init(log.Path, log.Stdout)
+	nlog.Init(nlog.Path, nlog.Stdout)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().UnixNano())
+	crypto.SetAlg(config.Parameters.EncryptAlg)
+}
+
+func InitLedger() error {
+	var err error
+	store, err := db.NewLedgerStore()
+	if err != nil {
+		return err
+	}
+	ledger.StandbyBookKeepers = wallet.GetBookKeepers()
+	blockChain, err := ledger.NewBlockchainWithGenesisBlock(store, ledger.StandbyBookKeepers)
+	if err != nil {
+		return err
+	}
+	ledger.DefaultLedger = &ledger.Ledger{
+		Blockchain: blockChain,
+		Store:      store,
+	}
+	transaction.TxStore = ledger.DefaultLedger.Store
+
+	return nil
+}
+
+func StartNetworking(pubKey *crypto.PubKey) protocol.Noder {
+	node := net.StartProtocol(pubKey)
+	node.SyncNodeHeight()
+	node.WaitForFourPeersStart()
+	node.WaitForSyncBlkFinish()
+	httpjson.RegistRpcNode(node)
+	go httpjson.StartRPCServer()
+
+	return node
+}
+
+func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
+	if protocol.SERVICENODENAME != config.Parameters.NodeType {
+		switch config.Parameters.ConsensusType {
+		case "ising":
+			nlog.Info("ising consensus starting ...")
+			account, _ := wallet.GetDefaultAccount()
+			ising.StartIsingConsensus(account, node)
+		case "dbft":
+			nlog.Info("dbft consensus starting ...")
+			dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
+			go dbftServices.Start()
+		}
+	}
 }
 
 func nknMain() error {
+	nlog.Trace("Node version: ", config.Version)
 	var name = flag.String("test", "value", "usage")
 	var numNode int
 	flag.IntVar(&numNode, "numNode", 1, "usage")
@@ -52,82 +97,38 @@ func nknMain() error {
 		}
 	}
 
-	var acct *wallet.Account
-	var blockChain *ledger.Blockchain
-	var err error
-	var noder protocol.Noder
-	log.Trace("Node version: ", config.Version)
-
-	// TODO remove the bookkeepers limitation
-	if len(config.Parameters.BookKeepers) < wallet.DefaultBookKeeperCount {
-		log.Fatal("At least ", wallet.DefaultBookKeeperCount, " BookKeepers should be set at config.json")
-		return errors.New("BookKeepers should be set at config.json")
+	// Get local account
+	wallet := wallet.GetWallet()
+	if wallet == nil {
+		return errors.New("open local wallet error")
+	}
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return errors.New("load local account error")
 	}
 
-	log.Info("0. Loading the Ledger")
-	ledger.DefaultLedger = new(ledger.Ledger)
-	ledger.DefaultLedger.Store, err = db.NewLedgerStore()
+	// initialize ledger
+	err = InitLedger()
 	defer ledger.DefaultLedger.Store.Close()
 	if err != nil {
-		log.Fatal("open LedgerStore err:", err)
-		return err
-	}
-	ledger.DefaultLedger.Store.InitLedgerStore(ledger.DefaultLedger)
-	transaction.TxStore = ledger.DefaultLedger.Store
-	crypto.SetAlg(config.Parameters.EncryptAlg)
-	ledger.StandbyBookKeepers = wallet.GetBookKeepers()
-
-	log.Info("2. BlockChain init")
-	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)
-	if err != nil {
-		log.Fatal(err, "  BlockChain generate failed")
-	}
-	ledger.DefaultLedger.Blockchain = blockChain
-
-	log.Info("3. Start the P2P networks")
-	client := wallet.GetWallet()
-	if client == nil {
-		log.Fatal("Can't get local account.")
-		return errors.New("Can't get local account")
-
-	}
-	acct, err = client.GetDefaultAccount()
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
-	noder = net.StartProtocol(acct.PublicKey)
-	httpjson.RegistRpcNode(noder)
-	time.Sleep(10 * time.Second)
-	noder.SyncNodeHeight()
-	noder.WaitForFourPeersStart()
-	noder.WaitForSyncBlkFinish()
-	if protocol.SERVICENODENAME != config.Parameters.NodeType {
-		//log.Info("5. Start DBFT Services")
-		//dbftServices := dbft.NewDbftService(client, "logdbft", noder)
-		//go dbftServices.Start()
-		ising.StartIsingConsensus(acct, noder)
-		time.Sleep(5 * time.Second)
-	}
-	httpjson.Wallet = client
-	log.Info("--Start the RPC interface")
-	go httpjson.StartRPCServer()
-	go httprestful.StartServer(noder)
-	go ws.StartServer(noder)
-	if config.Parameters.HttpInfoStart {
-		go monitor.StartServer(noder)
+		return errors.New("ledger initialization error")
 	}
 
+	// start P2P networking
+	node := StartNetworking(account.PublicKey)
+
+	// start consensus
+	StartConsensus(wallet, node)
+
+	httpjson.Wallet = wallet
 	for {
 		time.Sleep(dbft.GenBlockTime)
-		log.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
-		isNeedNewFile := log.CheckIfNeedNewFile()
-		if isNeedNewFile == true {
-			log.ClosePrintLog()
-			log.Init(log.Path, os.Stdout)
+		nlog.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
+		if nlog.CheckIfNeedNewFile() {
+			nlog.ClosePrintLog()
+			nlog.Init(nlog.Path, os.Stdout)
 		}
 	}
-
 }
 
 func main() {

@@ -3,15 +3,18 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
-	"os"
+	"fmt"
 )
 
 const (
-	DefaultConfigFilename = "./config.json"
-	MINGENBLOCKTIME       = 2
-	DEFAULTGENBLOCKTIME   = 6
+	MINGENBLOCKTIME        = 2
+	DEFAULTGENBLOCKTIME    = 6
+	DefaultConfigFilename  = "./config.json"
+	DefaultBookKeeperCount = 4
+	DefaultMultiCoreNum    = 4
 )
 
 var Version string
@@ -20,7 +23,7 @@ type Configuration struct {
 	Magic          int64    `json:"Magic"`
 	Version        int      `json:"Version"`
 	SeedList       []string `json:"SeedList"`
-	BookKeepers    []string `json:"BookKeepers"` // The default book keepers' publickey
+	BookKeepers    []string `json:"BookKeepers"`
 	HttpRestPort   int      `json:"HttpRestPort"`
 	RestCertPath   string   `json:"RestCertPath"`
 	RestKeyPath    string   `json:"RestKeyPath"`
@@ -41,28 +44,47 @@ type Configuration struct {
 	MaxLogSize     int64    `json:"MaxLogSize"`
 	MaxTxInBlock   int      `json:"MaxTransactionInBlock"`
 	MaxHdrSyncReqs int      `json:"MaxConcurrentSyncHeaderReqs"`
-}
-
-type ConfigFile struct {
-	ConfigFile Configuration `json:"Configuration"`
+	ConsensusType  string   `json:"ConsensusType"`
 }
 
 var Parameters *Configuration
 
 func init() {
-	file, e := ioutil.ReadFile(DefaultConfigFilename)
-	if e != nil {
-		log.Fatalf("File error: %v\n", e)
-		os.Exit(1)
+	file, err := ioutil.ReadFile(DefaultConfigFilename)
+	if err != nil {
+		log.Fatalln("Config file error: ", err)
 	}
 	// Remove the UTF-8 Byte Order Mark
 	file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
 
-	config := ConfigFile{}
-	e = json.Unmarshal(file, &config)
-	if e != nil {
-		log.Fatalf("Unmarshal json file erro %v", e)
-		os.Exit(1)
+	config := Configuration{}
+	err = json.Unmarshal(file, &config)
+	if err != nil {
+		log.Fatalln("Unmarshal config file error: ", err)
 	}
-	Parameters = &(config.ConfigFile)
+	err = check(&config)
+	if err != nil {
+		log.Fatalln("invalid config file: ", err)
+	}
+
+	Parameters = &config
+}
+
+func check(config *Configuration) error {
+	switch config.ConsensusType {
+	case "dbft":
+		if len(config.BookKeepers) < DefaultBookKeeperCount {
+			return errors.New("error config for dbft consensus, needs 4 BookKeepers at least")
+		}
+		fallthrough
+	case "ising":
+		if len(config.SeedList) == 0 {
+			return errors.New("seed list in config file should not be blank")
+		}
+	default:
+		fmt.Println(config.ConsensusType)
+		return errors.New("consensus type in config file should not be blank")
+	}
+
+	return nil
 }
