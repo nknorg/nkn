@@ -1,8 +1,15 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"math/rand"
+	"os"
+	"runtime"
+	"time"
+
 	"github.com/nknorg/nkn/consensus/dbft"
+	"github.com/nknorg/nkn/consensus/ising"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
@@ -18,31 +25,15 @@ import (
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 	"github.com/nknorg/nkn/ws"
-	"math/rand"
-	"os"
-	"runtime"
-	"time"
-	"github.com/nknorg/nkn/consensus/ising"
-)
-
-const (
-	DefaultMultiCoreNum = 4
 )
 
 func init() {
 	log.Init(log.Path, log.Stdout)
-	var coreNum int
-	if config.Parameters.MultiCoreNum > DefaultMultiCoreNum {
-		coreNum = int(config.Parameters.MultiCoreNum)
-	} else {
-		coreNum = DefaultMultiCoreNum
-	}
-	log.Debug("The Core number is ", coreNum)
-	runtime.GOMAXPROCS(coreNum)
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().UnixNano())
 }
 
-func main() {
+func nknMain() error {
 	var name = flag.String("test", "value", "usage")
 	var numNode int
 	flag.IntVar(&numNode, "numNode", 1, "usage")
@@ -70,7 +61,7 @@ func main() {
 	// TODO remove the bookkeepers limitation
 	if len(config.Parameters.BookKeepers) < wallet.DefaultBookKeeperCount {
 		log.Fatal("At least ", wallet.DefaultBookKeeperCount, " BookKeepers should be set at config.json")
-		os.Exit(1)
+		return errors.New("BookKeepers should be set at config.json")
 	}
 
 	log.Info("0. Loading the Ledger")
@@ -79,7 +70,7 @@ func main() {
 	defer ledger.DefaultLedger.Store.Close()
 	if err != nil {
 		log.Fatal("open LedgerStore err:", err)
-		os.Exit(1)
+		return err
 	}
 	ledger.DefaultLedger.Store.InitLedgerStore(ledger.DefaultLedger)
 	transaction.TxStore = ledger.DefaultLedger.Store
@@ -97,12 +88,13 @@ func main() {
 	client := wallet.GetWallet()
 	if client == nil {
 		log.Fatal("Can't get local account.")
-		goto ERROR
+		return errors.New("Can't get local account")
+
 	}
 	acct, err = client.GetDefaultAccount()
 	if err != nil {
 		log.Fatal(err)
-		goto ERROR
+		return err
 	}
 	noder = net.StartProtocol(acct.PublicKey)
 	httpjson.RegistRpcNode(noder)
@@ -136,6 +128,11 @@ func main() {
 		}
 	}
 
-ERROR:
-	os.Exit(1)
+}
+
+func main() {
+	// Call the nknMain so the defers will be executed in the case of a graceful shutdown.
+	if err := nknMain(); err != nil {
+		os.Exit(1)
+	}
 }

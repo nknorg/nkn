@@ -37,7 +37,6 @@ type Configuration struct {
 	KeyPath        string   `json:"KeyPath"`
 	CAPath         string   `json:"CAPath"`
 	GenBlockTime   uint     `json:"GenBlockTime"`
-	MultiCoreNum   uint     `json:"MultiCoreNum"`
 	EncryptAlg     string   `json:"EncryptAlg"`
 	MaxLogSize     int64    `json:"MaxLogSize"`
 	MaxTxInBlock   int      `json:"MaxTransactionInBlock"`
