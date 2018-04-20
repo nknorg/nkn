@@ -37,9 +37,10 @@ type ProposerService struct {
 	blockCache           *BlockCache               // blocks waiting for voting
 	consensusMsgReceived events.Subscriber         // consensus events listening
 	msgChan              chan interface{}          // get notice from probe thread
+	blockChan            chan *ledger.Block        // send block to voter thread cache
 }
 
-func NewProposerService(account *wallet.Account, node protocol.Noder, ch chan interface{}) *ProposerService {
+func NewProposerService(account *wallet.Account, node protocol.Noder, ch chan interface{}, bch chan *ledger.Block) *ProposerService {
 	flag := false
 	encPubKey, err := account.PublicKey.EncodePoint(true)
 	if err != nil {
@@ -59,6 +60,7 @@ func NewProposerService(account *wallet.Account, node protocol.Noder, ch chan in
 		txnCollector: transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged),
 		blockCache:   NewCache(),
 		msgChan:      ch,
+		blockChan:    bch,
 	}
 
 	return service
@@ -83,6 +85,7 @@ func (p *ProposerService) ProposerRoutine() {
 		if err != nil {
 			log.Error("sending consensus message error: ", err)
 		}
+		p.blockChan <- block
 		p.state.SetBit(FloodingFinished)
 	}
 	// waiting for other nodes spreader finished
