@@ -11,7 +11,7 @@ Log
 vendor/*
 Chain/*
 /config/*
-node
-nodectl
+nknd
+nknc
 cscope*
 *~

@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nknorg/nkn/wallet"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/rpc/httpjson"
-	"github.com/urfave/cli"
 	"github.com/nknorg/nkn/crypto/util"
+	"github.com/nknorg/nkn/rpc/httpjson"
+	"github.com/nknorg/nkn/wallet"
+
+	"github.com/urfave/cli"
 )
 
 const (
@@ -97,7 +98,7 @@ func NewCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "asset",
 		Usage:       "asset registration, issuance and transfer",
-		Description: "With nodectl asset, you could control assert through transaction.",
+		Description: "With nknc asset, you could control assert through transaction.",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
