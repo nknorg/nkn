@@ -1,19 +1,20 @@
 package bookkeeper
 
 import (
-	"github.com/nknorg/nkn/wallet"
-	. "github.com/nknorg/nkn/cli/common"
-	"github.com/nknorg/nkn/core/contract"
-	"github.com/nknorg/nkn/core/signature"
-	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/rpc/httpjson"
 	"bytes"
 	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
+
+	. "github.com/nknorg/nkn/cli/common"
+	"github.com/nknorg/nkn/core/contract"
+	"github.com/nknorg/nkn/core/signature"
+	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/rpc/httpjson"
+	"github.com/nknorg/nkn/wallet"
 
 	"github.com/urfave/cli"
 )
@@ -120,7 +121,7 @@ func NewCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "bookkeeper",
 		Usage:       "add or remove bookkeeper",
-		Description: "With nodectl bookkeeper, you could add or remove bookkeeper.",
+		Description: "With nknc bookkeeper, you could add or remove bookkeeper.",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.StringFlag{

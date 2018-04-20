@@ -3,11 +3,13 @@ package wallet
 import (
 	"fmt"
 	"os"
-	"github.com/nknorg/nkn/wallet"
+
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/rpc/httpjson"
+	"github.com/nknorg/nkn/util/password"
+	"github.com/nknorg/nkn/wallet"
+
 	"github.com/urfave/cli"
 )
 
@@ -131,7 +133,7 @@ func NewCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "wallet",
 		Usage:       "user wallet operation",
-		Description: "With nodectl wallet, you could control your asset.",
+		Description: "With nknc wallet, you could control your asset.",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.BoolFlag{

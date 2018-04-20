@@ -30,7 +30,7 @@ func debugAction(c *cli.Context) (err error) {
 func NewCommand() *cli.Command {
 	return &cli.Command{Name: "debug",
 		Usage:       "blockchain node debugging",
-		Description: "With nodectl debug, you could debug blockchain node.",
+		Description: "With nknc debug, you could debug blockchain node.",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.IntFlag{
