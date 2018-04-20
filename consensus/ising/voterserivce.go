@@ -113,18 +113,19 @@ func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *cryp
 	p.Lock()
 	defer p.Unlock()
 	hash := *bpMsg.blockHash
-	if !p.state[nodeID].HasBit(FloodingFinished) {
-		if !p.blockCache.BlockInCache(hash) {
-			brMsg := &BlockRequest{
-				blockHash: bpMsg.blockHash,
-			}
-			p.ReplyConsensusMsg(brMsg, sender)
-			p.state[nodeID].SetBit(RequestSent)
-			return
+	if !p.blockCache.BlockInCache(hash) {
+		brMsg := &BlockRequest{
+			blockHash: bpMsg.blockHash,
 		}
-		p.state[nodeID].SetBit(FloodingFinished)
+		p.ReplyConsensusMsg(brMsg, sender)
+		p.state[nodeID].SetBit(RequestSent)
 		return
 	}
+
+	if !p.state[nodeID].HasBit(FloodingFinished) {
+		p.state[nodeID].SetBit(FloodingFinished)
+	}
+
 	block := p.blockCache.GetBlockFromCache(hash)
 	if block == nil {
 		return
