@@ -20,12 +20,12 @@ import (
 	_ "github.com/nknorg/nkn/por" // for testing sigchain of PoR feature
 	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/util/config"
-	nlog "github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 )
 
 func init() {
-	nlog.Init(nlog.Path, nlog.Stdout)
+	log.Init(log.Path, log.Stdout)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().UnixNano())
 	crypto.SetAlg(config.Parameters.EncryptAlg)
@@ -66,11 +66,11 @@ func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
 	if protocol.SERVICENODENAME != config.Parameters.NodeType {
 		switch config.Parameters.ConsensusType {
 		case "ising":
-			nlog.Info("ising consensus starting ...")
+			log.Info("ising consensus starting ...")
 			account, _ := wallet.GetDefaultAccount()
 			ising.StartIsingConsensus(account, node)
 		case "dbft":
-			nlog.Info("dbft consensus starting ...")
+			log.Info("dbft consensus starting ...")
 			dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
 			go dbftServices.Start()
 		}
@@ -78,7 +78,7 @@ func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
 }
 
 func nknMain() error {
-	nlog.Trace("Node version: ", config.Version)
+	log.Trace("Node version: ", config.Version)
 	var name = flag.String("test", "value", "usage")
 	var numNode int
 	flag.IntVar(&numNode, "numNode", 1, "usage")
@@ -123,10 +123,10 @@ func nknMain() error {
 	httpjson.Wallet = wallet
 	for {
 		time.Sleep(dbft.GenBlockTime)
-		nlog.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
-		if nlog.CheckIfNeedNewFile() {
-			nlog.ClosePrintLog()
-			nlog.Init(nlog.Path, os.Stdout)
+		log.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
+		if log.CheckIfNeedNewFile() {
+			log.ClosePrintLog()
+			log.Init(log.Path, os.Stdout)
 		}
 	}
 }
