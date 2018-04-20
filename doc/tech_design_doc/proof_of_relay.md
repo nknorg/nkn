@@ -33,15 +33,10 @@ The basic transmission unit in the NKN network is NKN packet. A NKN
 packet contains the following fields:
 
 1. Payload (e.g. network packet)
-
 2. Payload hash
-
 3. Payload size
-
 4. Source NKN address and public key
-
 5. Destination NKN address and public key
-
 6. Signature chain
 
 ### Signature Chain
@@ -51,9 +46,7 @@ sequentially when relaying NKN packet. Each element of the chain
 consists of the following fields:
 
 1. Relayer NKN address and public key
-
 2. Next relayer NKN address
-
 3. Signature(signature of the previous element on chain, relayer NKN
 address, next relayer NKN address) signed with relayer private key
 
@@ -69,7 +62,6 @@ the following conditions are satisfied:
 
 1. The relayer NKN address matches the next relayer NKN address of the
 previous element.
-
 2. The signature field is valid.
 
 Any modifications to a signed NKN packet except the payload will
@@ -82,14 +74,10 @@ A NKN packet is valid if and only if the following conditions are
 satisfied:
 
 1. Payload hash is correct.
-
 2. Payload size is correct.
-
 3. Signature chain is valid.
-
 4. Source NKN address and public key match the first element of the
 signature chain.
-
 5. Destination NKN address and public key match the last element of
 the signature chain
 
@@ -160,9 +148,7 @@ We define a path from source to destination as secure path if the
 following conditions are satisfied:
 
 1. Each hop of the path is between designated neighbors.
-
 2. The path is the designated path following the routing rule.
-
 3. The length of the path is higher than a threshold.
 
 Secure paths have vanishing probability to be controlled by the same
@@ -217,3 +203,55 @@ that relay nodes get for such relay path is the token paid by
 source. Since the sum of rewards that all relayers get is no more than
 the amount paid by source, malicious party does not gain anything but
 economic loss (transaction fees) by forging signature chain.
+
+## Session based Transmission
+
+For heavy network traffic, establishing a signature chain for each
+packet is inefficient. Here we introduce another concept called
+session. When users want to communicate with another NKN node, they
+can establish a session to avoid signing every packet.
+
+We have two different versions of this protocol, a deterministic
+version and a probabilistic version. We implement the deterministic
+version in the early stage as it is simpler. If there are tens of
+thousands users in NKN, the throughput of blockchain becomes a
+bottleneck. We are designing a probabilistic version to reduce the
+data on the blockchain. The two different versions share many similar
+ideas, so we introduce two of them simultaneously.
+
+### Establish Session
+
+In order to establish a session, the participants need to agree on the
+following things:
+
+* The owner of the session. (Who will pay for it.)
+* Timestamp chosen by the owner. 
+* A relayer list specifying the path of session. (The last element is
+  called destination)
+* Each relayer element should contain the following part
+  * Public Key
+  * Price
+  * Hash Anchor (Only required in probabilistic version)
+
+These part is called the metadata of this session. Making consensus of
+these metadata may be based on signature chain and some other market
+matching and bargaining mechanism. We skip the details here.
+
+Once metadata is generated, we construct a signature chain for this
+metadata. The hash value of metadata and signature is session ID.
+
+### Data Transmission
+
+Session based transmission can reduce the average overhead of each
+packet significantly. Each packet only needs to contains a header
+includes the following:
+
+* Session ID
+* Direction (Owner → Destination or Destination → Owner)
+* Nonce (The nonce of two direction are count respectively.)
+
+Note: the term “packet” here is not the IP packet in network layer, it
+is a basic billing unit in data transmission. The sender can determine
+how to divide all transmission data into packets. For example, a GET
+request, a response of HTTP request. Each packet should not be too
+large. (For example, < 1MB)
