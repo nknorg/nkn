@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
@@ -16,20 +17,32 @@ import (
 
 type VoterService struct {
 	sync.RWMutex
-	account              *wallet.Account   // local account
-	state                map[uint64]*State // consensus state
-	localNode            protocol.Noder    // local node
-	blockCache           *BlockCache       // blocks waiting for voting
-	consensusMsgReceived events.Subscriber // consensus events listening
+	account              *wallet.Account     // local account
+	state                map[uint64]*State   // consensus state
+	localNode            protocol.Noder      // local node
+	blockCache           *BlockCache         // blocks waiting for voting
+	consensusMsgReceived events.Subscriber   // consensus events listening
+	blockChan            chan *ledger.Block  // receive block from proposer thread
 }
 
-func NewVoterService(account *wallet.Account, node protocol.Noder) *VoterService {
+func NewVoterService(account *wallet.Account, node protocol.Noder, bch chan *ledger.Block) *VoterService {
 	service := &VoterService{
 		account:    account,
 		state:      initialVoterNodeState(node),
 		localNode:  node,
 		blockCache: NewCache(),
+		blockChan:  bch,
 	}
+
+	// sync new generated block from proposer thread to local cache
+	go func() {
+		for {
+			select {
+			case block := <- bch:
+				service.blockCache.AddBlockToCache(block)
+			}
+		}
+	}()
 
 	return service
 }
