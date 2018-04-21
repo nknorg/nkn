@@ -2,9 +2,46 @@ package chord
 
 import (
 	"bytes"
-	"log"
+	"github.com/nknorg/nkn/util/log"
 	"sort"
 )
+
+func (r *Ring) DumpInfo(finger bool) {
+	for idx, vnode := range r.vnodes {
+		log.Infof("ring.vnodes[%d]: {", idx)
+		log.Infof("\tId: %x", string(vnode.Id))
+		log.Infof("\tHost: %s", vnode.Host)
+
+		for sidx, succ := range vnode.successors {
+		        if succ != nil {
+		                log.Infof("\tsucc[%d].Id: %x", sidx, string(succ.Id))
+		                log.Infof("\tsucc[%d].Host: %s", sidx, succ.Host)
+		        } else {
+		                log.Infof("\tsucc[%d]: nil", sidx)
+		        }
+		}
+
+		// Only dump []finger when DumpInfo(true)
+		if finger {
+		        for fidx, fing := range vnode.finger {
+		                if fing != nil {
+		                        log.Infof("\tfinger[%d].Id: %x", fidx, string(fing.Id))
+		                        log.Infof("\tfinger[%d].Host: %s", fidx, fing.Host)
+		                } else {
+		                        log.Infof("\tfinger[%d]: nil", fidx)
+		                }
+		        }
+		}
+
+		log.Infof("\tlast_finger: %d", vnode.last_finger)
+		if vnode.predecessor != nil {
+		        log.Infof("\tpredecessor.Id: %x", string((*vnode.predecessor).Id))
+		        log.Infof("\tpredecessor.Host: %s", (*vnode.predecessor).Host)
+		}
+		log.Infof("\tstabilized: %s", vnode.stabilized.String())
+		log.Infof("}\n")
+	}
+}
 
 func (r *Ring) init(conf *Config, trans Transport) {
 	// Set our variables
@@ -123,7 +160,7 @@ func (r *Ring) delegateHandler() {
 func (r *Ring) safeInvoke(f func()) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("Caught a panic invoking a delegate function! Got: %s", r)
+			log.Fatal("Caught a panic invoking a delegate function! Got: %s", r)
 		}
 	}()
 	f()
