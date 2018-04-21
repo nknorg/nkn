@@ -97,3 +97,49 @@ the leader sends out different blocks to different neighbors) and if
 it is accepted or not. When consensus is reached, all nodes should
 have the same accepted block or none if rejected. Proposed block is
 added to the blockchain if accepted.
+
+## State Transition
+
+Leader selection and block creation and running in parallel.
+
+Leader selection for block epoch n starts after both leader selection
+for block n-1 and block creation for block opoch n-2 are finished, and
+runs in parallel with the block creation for block n-1. In leader
+selection process, each node has 3 different states: listening state,
+waiting for candidates state and candidate consensus state.
+
+In listening state, node waits for signature chain that is valid for
+mining (candidate). Once it receives or produces a valid candidate, it
+transits into waiting for candidates state. In this state, node sends
+out new candidate signature chain(s) it mined since last listening
+state.
+
+In waiting for candidates state, node still accepts and relays
+candidates, but will not send out new candidates it mined. The propose
+of this state is waiting for candidates sent out during listening
+state to finish propagating. Node stays in waiting for candidates
+state for a fixed time before transiting to candidate consensus state.
+
+In candidate consensus state, node receives neighbors' states on each
+candidate indicating whether to choose the candidate. If more than
+half of the neighbors have the opposite state on a candidate than
+itself, node updates its state and sends the new one to its
+neighbors. Node also sends its initial states to neighbors when
+entering candidate consensus state. Consensus is finished after a
+fixed time since entering the candidate consensus state.
+
+Block creation runs in parallel with leader selection, but one epoch
+behind. Block creation for block epoch n starts after both leader
+selection for block n and block creation for block n-1 are
+finished. There are 2 states in block creation process: listening
+state and block consensus state.
+
+In listening state, node waits for block proposed by the selected
+candidate. Once it receives a proposed block, it transits into block
+consensus state.
+
+Block consensus state is similar to candidate consensus state, except
+that nodes vote for block rather than candidate. If node receives more
+than one proposed block signed by the candidate, it will vote for none
+of the proposed blocks because it indicates that the selected
+candidate is not honest (propose multiple blocks).
