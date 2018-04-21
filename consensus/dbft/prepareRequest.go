@@ -1,12 +1,13 @@
 package dbft
 
 import (
-	. "nkn/common"
-	"nkn/common/log"
-	ser "nkn/common/serialization"
-	tx "nkn/core/transaction"
-	. "nkn/errors"
 	"io"
+
+	. "github.com/nknorg/nkn/common"
+	ser "github.com/nknorg/nkn/common/serialization"
+	tx "github.com/nknorg/nkn/core/transaction"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type PrepareRequest struct {

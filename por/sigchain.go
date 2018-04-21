@@ -6,10 +6,10 @@ import (
 	"errors"
 	"io"
 
-	. "nkn/common"
-	"nkn/common/log"
-	"nkn/common/serialization"
-	"nkn/crypto"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/util/log"
 )
 
 // for the first relay node
@@ -189,7 +189,7 @@ func (p *SigChain) SignatureNum() int {
 	return len(p.elems)
 }
 
-func (p *SigChain) Serialization(w io.Writer) error {
+func (p *SigChain) Serialize(w io.Writer) error {
 	var err error
 	err = p.SerializationMetadata(w)
 	if err != nil {
@@ -202,7 +202,7 @@ func (p *SigChain) Serialization(w io.Writer) error {
 		return err
 	}
 	for i := 0; i < num; i++ {
-		err = p.elems[i].Serialization(w)
+		err = p.elems[i].Serialize(w)
 		if err != nil {
 			return err
 		}
@@ -236,7 +236,7 @@ func (p *SigChain) SerializationMetadata(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChain) Deserialization(r io.Reader) error {
+func (p *SigChain) Deserialize(r io.Reader) error {
 	var err error
 	err = p.DeserializationMetadata(r)
 	if err != nil {
@@ -248,7 +248,7 @@ func (p *SigChain) Deserialization(r io.Reader) error {
 		return err
 	}
 	for i := 0; i < int(num); i++ {
-		err = p.elems[i].Deserialization(r)
+		err = p.elems[i].Deserialize(r)
 		return err
 	}
 
@@ -267,12 +267,12 @@ func (p *SigChain) DeserializationMetadata(r io.Reader) error {
 		return err
 	}
 
-	err = p.srcPubkey.DeSerialize(r)
+	err = p.srcPubkey.Deserialize(r)
 	if err != nil {
 		return err
 	}
 
-	err = p.destPubkey.DeSerialize(r)
+	err = p.destPubkey.Deserialize(r)
 	if err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func (p *SigChainElem) Sign(sigchain *SigChain) error {
 	return nil
 }
 
-func (p *SigChainElem) Serialization(w io.Writer) error {
+func (p *SigChainElem) Serialize(w io.Writer) error {
 	var err error
 	err = p.SerializationUnsigned(w)
 	if err != nil {
@@ -333,7 +333,7 @@ func (p *SigChainElem) SerializationUnsigned(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChainElem) Deserialization(r io.Reader) error {
+func (p *SigChainElem) Deserialize(r io.Reader) error {
 	var err error
 	err = p.DeserializationUnsigned(r)
 	if err != nil {
@@ -350,12 +350,12 @@ func (p *SigChainElem) Deserialization(r io.Reader) error {
 
 func (p *SigChainElem) DeserializationUnsigned(r io.Reader) error {
 	var err error
-	err = p.pubkey.DeSerialize(r)
+	err = p.pubkey.Deserialize(r)
 	if err != nil {
 		return err
 	}
 
-	err = p.nextPubkey.DeSerialize(r)
+	err = p.nextPubkey.Deserialize(r)
 	if err != nil {
 		return err
 	}

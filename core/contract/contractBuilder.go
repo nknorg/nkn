@@ -1,13 +1,14 @@
 package contract
 
 import (
-	. "nkn/common"
-	pg "nkn/core/contract/program"
-	"nkn/crypto"
-	. "nkn/errors"
 	"math/big"
 	"sort"
-	"nkn/vm/avm"
+
+	. "github.com/nknorg/nkn/common"
+	pg "github.com/nknorg/nkn/core/contract/program"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/vm"
 )
 
 //create a Single Singature contract for owner
@@ -43,7 +44,7 @@ func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
 	}
 	sb := pg.NewProgramBuilder()
 	sb.PushData(temp)
-	sb.AddOp(avm.CHECKSIG)
+	sb.AddOp(vm.CHECKSIG)
 	return sb.ToArray(), nil
 }
 
@@ -90,6 +91,6 @@ func CreateMultiSigRedeemScript(m int, pubkeys []*crypto.PubKey) ([]byte, error)
 	}
 
 	sb.PushNumber(big.NewInt(int64(len(pubkeys))))
-	sb.AddOp(avm.CHECKMULTISIG)
+	sb.AddOp(vm.CHECKMULTISIG)
 	return sb.ToArray(), nil
 }

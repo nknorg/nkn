@@ -1,31 +1,15 @@
 ﻿{
   "Configuration": {
-    "Magic": 879768,
-    "Version": 35,
-    "SeedList": [
-      "127.0.0.1:10338",
-      "127.0.0.1:20338",
-      "127.0.0.1:30338",
-      "127.0.0.1:40338"
-    ],
-    "BookKeepers": [
-      "",
-      "",
-      "",
-      ""
-    ],
+    "Magic": 99281,
+    "Version": 1,
     "HttpInfoPort": 10333,
     "HttpInfoStart": true,
     "HttpRestPort": 10334,
     "HttpWsPort":10335,
     "HttpJsonPort": 10336,
-    "NodeType": "verify",
     "NodePort": 10338,
-    "PrintLevel": 1,
+    "PrintLevel": 5,
     "IsTLS": false,
-    "CertPath": "./sample-cert.pem",
-    "KeyPath": "./sample-cert-key.pem",
-    "CAPath": "./sample-ca.pem",
     "MultiCoreNum": 4
   }
 }

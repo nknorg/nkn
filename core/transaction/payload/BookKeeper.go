@@ -1,9 +1,9 @@
 package payload
 
 import (
-	"nkn/common/serialization"
-	"nkn/crypto"
-	. "nkn/errors"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
 	"bytes"
 	"io"
 )
@@ -42,7 +42,7 @@ func (self *BookKeeper) Serialize(w io.Writer, version byte) error {
 
 func (self *BookKeeper) Deserialize(r io.Reader, version byte) error {
 	self.PubKey = new(crypto.PubKey)
-	err := self.PubKey.DeSerialize(r)
+	err := self.PubKey.Deserialize(r)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[BookKeeper], PubKey Deserialize failed.")
 	}
@@ -57,7 +57,7 @@ func (self *BookKeeper) Deserialize(r io.Reader, version byte) error {
 		return NewDetailErr(err, ErrNoCode, "[BookKeeper], Cert Deserialize failed.")
 	}
 	self.Issuer = new(crypto.PubKey)
-	err = self.Issuer.DeSerialize(r)
+	err = self.Issuer.Deserialize(r)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[BookKeeper], Issuer Deserialize failed.")
 	}

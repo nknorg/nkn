@@ -1,13 +1,15 @@
 package message
 
 import (
-	"nkn/common"
-	"nkn/common/log"
-	. "nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+
+	"github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
+	"io"
 )
 
 type notFound struct {
@@ -38,48 +40,46 @@ func NewNotFound(hash common.Uint256) ([]byte, error) {
 	msg.msgHdr.Length = uint32(len(p.Bytes()))
 	log.Debug("The message payload length is ", msg.msgHdr.Length)
 
-	m, err := msg.Serialization()
+	notfoundBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(notfoundBuff)
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
 
-	return m, nil
+	return notfoundBuff.Bytes(), nil
 }
 
 func (msg notFound) Verify(buf []byte) error {
-	err := msg.msgHdr.Verify(buf)
-	// TODO verify the message Content
-	return err
+	return msg.msgHdr.Verify(buf)
 }
 
-func (msg notFound) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.msgHdr.Serialization()
+func (msg notFound) Serialize(w io.Writer) error {
+	err := msg.msgHdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	msg.hash.Serialize(buf)
+	_, err = msg.hash.Serialize(w)
+	if err != nil {
+		return err
+	}
 
-	return buf.Bytes(), err
+	return nil
 }
 
-func (msg *notFound) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-
-	err := binary.Read(buf, binary.LittleEndian, &(msg.msgHdr))
+func (msg *notFound) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.msgHdr))
 	if err != nil {
 		log.Warn("Parse notfound message hdr error")
 		return errors.New("Parse notfound message hdr error")
 	}
-
-	err = msg.hash.Deserialize(buf)
+	err = msg.hash.Deserialize(r)
 	if err != nil {
 		log.Warn("Parse notfound message error")
 		return errors.New("Parse notfound message error")
 	}
 
-	return err
+	return nil
 }
 
 func (msg notFound) Handle(node Noder) error {

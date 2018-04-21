@@ -2,14 +2,14 @@ package httpjson
 
 import (
 	"bytes"
-	. "nkn/common"
-	"nkn/common/config"
-	"nkn/common/log"
-	"nkn/core/ledger"
-	tx "nkn/core/transaction"
-	. "nkn/errors"
-	"nkn/helper"
-	"nkn/wallet"
+
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
+	tx "github.com/nknorg/nkn/core/transaction"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/wallet"
 )
 
 var Wallet wallet.Wallet
@@ -343,7 +343,7 @@ func registAsset(params []interface{}) map[string]interface{} {
 		return RpcResult("open wallet first")
 	}
 
-	txn, err := helper.MakeRegTransaction(Wallet, assetName, assetValue)
+	txn, err := MakeRegTransaction(Wallet, assetName, assetValue)
 	if err != nil {
 		return RpcResultInternalError
 	}
@@ -390,7 +390,7 @@ func issueAsset(params []interface{}) map[string]interface{} {
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
 		return RpcResult("invalid asset hash")
 	}
-	txn, err := helper.MakeIssueTransaction(Wallet, assetID, address, value)
+	txn, err := MakeIssueTransaction(Wallet, assetID, address, value)
 	if err != nil {
 		return RpcResultInternalError
 	}
@@ -430,7 +430,7 @@ func sendToAddress(params []interface{}) map[string]interface{} {
 		return RpcResult("error : wallet is not opened")
 	}
 
-	batchOut := helper.BatchOut{
+	batchOut := BatchOut{
 		Address: address,
 		Value:   value,
 	}
@@ -442,7 +442,7 @@ func sendToAddress(params []interface{}) map[string]interface{} {
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
 		return RpcResult("error: invalid asset hash")
 	}
-	txn, err := helper.MakeTransferTransaction(Wallet, assetID, batchOut)
+	txn, err := MakeTransferTransaction(Wallet, assetID, batchOut)
 	if err != nil {
 		return RpcResult("error: " + err.Error())
 	}
@@ -488,7 +488,7 @@ func prepaidAsset(params []interface{}) map[string]interface{} {
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
 		return RpcResult("error: invalid asset hash")
 	}
-	txn, err := helper.MakePrepaidTransaction(Wallet, assetID, assetValue, rates)
+	txn, err := MakePrepaidTransaction(Wallet, assetID, assetValue, rates)
 	if err != nil {
 		return RpcResultInternalError
 	}
@@ -532,7 +532,42 @@ func withdrawAsset(params []interface{}) map[string]interface{} {
 		return RpcResult("error: invalid asset hash")
 	}
 
-	txn, err := helper.MakeWithdrawTransaction(Wallet, assetID, assetValue)
+	txn, err := MakeWithdrawTransaction(Wallet, assetID, assetValue)
+	if err != nil {
+		return RpcResultInternalError
+	}
+
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return RpcResultInvalidTransaction
+	}
+
+	txHash := txn.Hash()
+	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
+}
+
+func commitPor(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+
+	var sigChain []byte
+	var err error
+	switch params[0].(type) {
+	case string:
+		str := params[0].(string)
+		sigChain, err = HexStringToBytes(str)
+		if err != nil {
+			return RpcResultInvalidParameter
+		}
+	default:
+		return RpcResultInvalidParameter
+	}
+
+	if Wallet == nil {
+		return RpcResult("open wallet first")
+	}
+
+	txn, err := MakeCommitTransaction(Wallet, sigChain)
 	if err != nil {
 		return RpcResultInternalError
 	}

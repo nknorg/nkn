@@ -1,7 +1,7 @@
 package httpjson
 
 import (
-	"nkn/common/log"
+	"github.com/nknorg/nkn/common/log"
 	"fmt"
 	"os"
 	"os/exec"

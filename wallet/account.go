@@ -1,11 +1,11 @@
 package wallet
 
 import (
-	. "nkn/common"
-	"nkn/core/contract"
-	"nkn/crypto"
-	. "nkn/errors"
 	"errors"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/contract"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
 )
 
 type Account struct {
@@ -33,11 +33,9 @@ func NewAccount() (*Account, error) {
 
 func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
 	privKeyLen := len(privateKey)
-
-	if privKeyLen != 32 && privKeyLen != 96 && privKeyLen != 104 {
-		return nil, errors.New("Invalid private Key.")
+	if privKeyLen != 32 {
+		return nil, errors.New("invalid private key length")
 	}
-
 	pubKey := crypto.NewPubKey(privateKey)
 	signatureRedeemScript, err := contract.CreateSignatureRedeemScript(pubKey)
 	if err != nil {

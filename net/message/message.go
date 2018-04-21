@@ -1,21 +1,23 @@
 package message
 
 import (
-	"nkn/common/log"
-	. "nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/common/serialization"
 )
 
 type Messager interface {
 	Verify([]byte) error
-	Serialization() ([]byte, error)
-	Deserialization([]byte) error
 	Handle(Noder) error
+	serialization.SerializableData
 }
 
 // The network communication message header
@@ -216,8 +218,15 @@ func HandleNodeMsg(node Noder, buf []byte, len int) error {
 	}
 	// Todo attach a node pointer to each message
 	// Todo drop the message when verify/deseria packet error
-	msg.Deserialization(buf[:len])
-	msg.Verify(buf[MSGHDRLEN:len])
+	r := bytes.NewReader(buf[:len])
+	err = msg.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	err = msg.Verify(buf[MSGHDRLEN:len])
+	if err != nil {
+		return err
+	}
 
 	return msg.Handle(node)
 }
@@ -231,27 +240,17 @@ func magicVerify(magic uint32) bool {
 
 func ValidMsgHdr(buf []byte) bool {
 	var h msgHdr
-	h.Deserialization(buf)
+	r := bytes.NewReader(buf)
+	h.Deserialize(r)
 	//TODO: verify hdr checksum
 	return magicVerify(h.Magic)
 }
 
-func PayloadLen(buf []byte) (int) {
+func PayloadLen(buf []byte) int {
 	var h msgHdr
-	h.Deserialization(buf)
+	r := bytes.NewReader(buf)
+	h.Deserialize(r)
 	return int(h.Length)
-}
-
-func LocateMsgHdr(buf []byte) []byte {
-	var h msgHdr
-	for i := 0; i <= len(buf)-MSGHDRLEN; i++ {
-		if magicVerify(binary.LittleEndian.Uint32(buf[i:])) {
-			buf = append(buf[:0], buf[i:]...)
-			h.Deserialization(buf)
-			return buf
-		}
-	}
-	return nil
 }
 
 func checkSum(p []byte) []byte {
@@ -296,23 +295,12 @@ func (hdr msgHdr) Verify(buf []byte) error {
 	return nil
 }
 
-func (msg *msgHdr) Deserialization(p []byte) error {
-
-	buf := bytes.NewBuffer(p[0:MSGHDRLEN])
-	err := binary.Read(buf, binary.LittleEndian, msg)
-	return err
+func (msg *msgHdr) Deserialize(r io.Reader) error {
+	return binary.Read(r, binary.LittleEndian, msg)
 }
 
-// FIXME how to avoid duplicate serial/deserial function as
-// most of them are the same
-func (hdr msgHdr) Serialization() ([]byte, error) {
-	var buf bytes.Buffer
-	err := binary.Write(&buf, binary.LittleEndian, hdr)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), err
+func (hdr msgHdr) Serialize(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, hdr)
 }
 
 func (hdr msgHdr) Handle(n Noder) error {

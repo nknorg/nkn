@@ -1,13 +1,13 @@
 package ledger
 
 import (
-	"nkn/common"
-	. "nkn/common"
-	"nkn/core/asset"
-	"nkn/core/contract"
-	tx "nkn/core/transaction"
-	"nkn/crypto"
-	. "nkn/errors"
+	"github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/asset"
+	"github.com/nknorg/nkn/core/contract"
+	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
 	"errors"
 )
 
@@ -16,7 +16,6 @@ var StandbyBookKeepers []*crypto.PubKey
 
 type Ledger struct {
 	Blockchain *Blockchain
-	State      *State
 	Store      ILedgerStore
 }
 

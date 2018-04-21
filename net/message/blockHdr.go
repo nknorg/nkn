@@ -1,15 +1,17 @@
 package message
 
 import (
-	"nkn/common"
-	"nkn/common/log"
-	"nkn/common/serialization"
-	"nkn/core/ledger"
-	. "nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/ledger"
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
+	"io"
 )
 
 type headersReq struct {
@@ -44,107 +46,103 @@ func NewHeadersReq() ([]byte, error) {
 	s := checkSum(p.Bytes())
 	h.hdr.init("getheaders", s, uint32(len(p.Bytes())))
 
-	m, err := h.Serialization()
-	return m, err
+	reqBuff := bytes.NewBuffer(nil)
+	err = h.Serialize(reqBuff)
+	if err != nil {
+		return nil, err
+	}
+
+	return reqBuff.Bytes(), err
 }
 
 func (msg headersReq) Verify(buf []byte) error {
-	// TODO Verify the message Content
-	err := msg.hdr.Verify(buf)
-	return err
+	return msg.hdr.Verify(buf)
 }
 
 func (msg blkHeader) Verify(buf []byte) error {
-	// TODO Verify the message Content
-	err := msg.hdr.Verify(buf)
-	return err
+	return msg.hdr.Verify(buf)
 }
 
-func (msg headersReq) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.hdr.Serialization()
+func (msg headersReq) Serialize(w io.Writer) error {
+	err := msg.hdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	err = binary.Write(buf, binary.LittleEndian, msg.p.len)
+	err = binary.Write(w, binary.LittleEndian, msg.p.len)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	err = binary.Write(buf, binary.LittleEndian, msg.p.hashStart)
+	err = binary.Write(w, binary.LittleEndian, msg.p.hashStart)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	err = binary.Write(buf, binary.LittleEndian, msg.p.hashEnd)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), err
-}
-
-func (msg *headersReq) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-	err := binary.Read(buf, binary.LittleEndian, &(msg.hdr))
+	err = binary.Write(w, binary.LittleEndian, msg.p.hashEnd)
 	if err != nil {
 		return err
 	}
 
-	err = binary.Read(buf, binary.LittleEndian, &(msg.p.len))
-	if err != nil {
-		return err
-	}
-
-	err = binary.Read(buf, binary.LittleEndian, &(msg.p.hashStart))
-	if err != nil {
-		return err
-	}
-
-	err = binary.Read(buf, binary.LittleEndian, &(msg.p.hashEnd))
-	return err
+	return nil
 }
 
-func (msg blkHeader) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.hdr.Serialization()
+func (msg *headersReq) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.hdr))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	err = binary.Write(buf, binary.LittleEndian, msg.cnt)
+	err = binary.Read(r, binary.LittleEndian, &(msg.p.len))
 	if err != nil {
-		return nil, err
+		return err
+	}
+	err = binary.Read(r, binary.LittleEndian, &(msg.p.hashStart))
+	if err != nil {
+		return err
+	}
+	err = binary.Read(r, binary.LittleEndian, &(msg.p.hashEnd))
+	if err != nil {
+		return err
 	}
 
+	return nil
+}
+
+func (msg blkHeader) Serialize(w io.Writer) error {
+	err := msg.hdr.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = binary.Write(w, binary.LittleEndian, msg.cnt)
+	if err != nil {
+		return err
+	}
 	for _, header := range msg.blkHdr {
-		header.Serialize(buf)
-	}
-	return buf.Bytes(), err
-}
-
-func (msg *blkHeader) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-	err := binary.Read(buf, binary.LittleEndian, &(msg.hdr))
-	if err != nil {
-		return err
-	}
-
-	err = binary.Read(buf, binary.LittleEndian, &(msg.cnt))
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < int(msg.cnt); i++ {
-		var headers ledger.Header
-		err := (&headers).Deserialize(buf)
-		msg.blkHdr = append(msg.blkHdr, headers)
+		err = header.Serialize(w)
 		if err != nil {
-			log.Debug("blkHeader Deserialization failed")
-			goto blkHdrErr
+			return err
 		}
 	}
 
-blkHdrErr:
-	return err
+	return nil
+}
+
+func (msg *blkHeader) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.hdr))
+	if err != nil {
+		return err
+	}
+	err = binary.Read(r, binary.LittleEndian, &(msg.cnt))
+	if err != nil {
+		return err
+	}
+	for i := 0; i < int(msg.cnt); i++ {
+		var headers ledger.Header
+		err := (&headers).Deserialize(r)
+		msg.blkHdr = append(msg.blkHdr, headers)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (msg headersReq) Handle(node Noder) error {
@@ -286,10 +284,11 @@ func NewHeaders(headers []ledger.Header, count uint32) ([]byte, error) {
 	binary.Read(buf, binary.LittleEndian, &(msg.hdr.Checksum))
 	msg.hdr.Length = uint32(len(b.Bytes()))
 
-	m, err := msg.Serialization()
+	headerBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(headerBuff)
 	if err != nil {
-		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
-	return m, nil
+
+	return headerBuff.Bytes(), nil
 }

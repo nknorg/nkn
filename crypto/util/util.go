@@ -1,7 +1,6 @@
 package util
 
 import (
-	"nkn/crypto/sm3"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"
@@ -40,10 +39,6 @@ func RandomBytes(length int) []byte {
 
 func Hash(data []byte) [HASHLEN]byte {
 	return sha256.Sum256(data)
-}
-
-func SM3(data []byte) [HASHLEN]byte {
-	return sm3.Sum(data)
 }
 
 // CheckMAC reports whether messageMAC is a valid HMAC tag for message.

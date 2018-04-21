@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	. "nkn/common"
-	"nkn/core/account"
-	. "nkn/core/asset"
-	tx "nkn/core/transaction"
-	"nkn/crypto"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/account"
+	. "github.com/nknorg/nkn/core/asset"
+	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
 )
 
 // ILedgerStore provides func with store package.
@@ -15,7 +15,6 @@ type ILedgerStore interface {
 	GetBlock(hash Uint256) (*Block, error)
 	BlockInCache(hash Uint256) bool
 	GetBlockHash(height uint32) (Uint256, error)
-	InitLedgerStore(ledger *Ledger) error
 	IsDoubleSpend(tx *tx.Transaction) bool
 
 	//SaveHeader(header *Header,ledger *Ledger) error

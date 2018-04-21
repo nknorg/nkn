@@ -1,13 +1,15 @@
 package message
 
 import (
-	"nkn/common/log"
-	"nkn/common/serialization"
-	"nkn/core/ledger"
-	. "nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/ledger"
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
+	"io"
 )
 
 type ping struct {
@@ -35,18 +37,18 @@ func NewPingMsg() ([]byte, error) {
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(b.Bytes()))
 
-	m, err := msg.Serialization()
+	pingBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(pingBuff)
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
-	return m, nil
+
+	return pingBuff.Bytes(), nil
 }
 
 func (msg ping) Verify(buf []byte) error {
-	err := msg.msgHdr.Verify(buf)
-	// TODO verify the message Content
-	return err
+	return msg.msgHdr.Verify(buf)
 }
 
 func (msg ping) Handle(node Noder) error {
@@ -60,27 +62,28 @@ func (msg ping) Handle(node Noder) error {
 	return err
 }
 
-func (msg ping) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.msgHdr.Serialization()
+func (msg ping) Serialize(w io.Writer) error {
+	err := msg.msgHdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	err = serialization.WriteUint64(buf, msg.height)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), err
-
-}
-
-func (msg *ping) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-	err := binary.Read(buf, binary.LittleEndian, &(msg.msgHdr))
+	err = serialization.WriteUint64(w, msg.height)
 	if err != nil {
 		return err
 	}
 
-	msg.height, err = serialization.ReadUint64(buf)
-	return err
+	return nil
+}
+
+func (msg *ping) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.msgHdr))
+	if err != nil {
+		return err
+	}
+	msg.height, err = serialization.ReadUint64(r)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

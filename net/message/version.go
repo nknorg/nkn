@@ -1,17 +1,19 @@
 package message
 
 import (
-	"nkn/common/config"
-	"nkn/common/log"
-	"nkn/core/ledger"
-	"nkn/crypto"
-	. "nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
+	"io"
 )
 
 const (
@@ -88,59 +90,58 @@ func NewVersion(n Noder) ([]byte, error) {
 	msg.Hdr.Length = uint32(len(p.Bytes()))
 	log.Debug("The message payload length is ", msg.Hdr.Length)
 
-	m, err := msg.Serialization()
+	versionBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(versionBuff)
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
 
-	return m, nil
+	return versionBuff.Bytes(), nil
 }
 
 func (msg version) Verify(buf []byte) error {
-	err := msg.Hdr.Verify(buf)
-	// TODO verify the message Content
-	// TODO check version compatible or not
-	return err
+	return  msg.Hdr.Verify(buf)
 }
 
-func (msg version) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.Hdr.Serialization()
+func (msg version) Serialize(w io.Writer) error {
+	err := msg.Hdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	err = binary.Write(buf, binary.LittleEndian, msg.P)
+	err = binary.Write(w, binary.LittleEndian, msg.P)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	msg.pk.Serialize(buf)
+	err = msg.pk.Serialize(w)
+	if err != nil {
+		return err
+	}
 
-	return buf.Bytes(), err
+	return nil
 }
 
-func (msg *version) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-
-	err := binary.Read(buf, binary.LittleEndian, &(msg.Hdr))
+func (msg *version) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.Hdr))
 	if err != nil {
 		log.Warn("Parse version message hdr error")
 		return errors.New("Parse version message hdr error")
 	}
 
-	err = binary.Read(buf, binary.LittleEndian, &(msg.P))
+	err = binary.Read(r, binary.LittleEndian, &(msg.P))
 	if err != nil {
 		log.Warn("Parse version P message error")
 		return errors.New("Parse version P message error")
 	}
 
 	pk := new(crypto.PubKey)
-	err = pk.DeSerialize(buf)
+	err = pk.Deserialize(r)
 	if err != nil {
 		return errors.New("Parse pubkey Deserialize failed.")
 	}
 	msg.pk = pk
-	return err
+
+	return nil
 }
 
 /*
@@ -172,8 +173,8 @@ func (msg version) Handle(node Noder) error {
 
 	s := node.GetState()
 	if s != INIT && s != HAND {
-		log.Warn("Unknow status to received version")
-		return errors.New("Unknow status to received version")
+		log.Warn("Ugithub.com/nknorg/nknow status to received version")
+		return errors.New("Ugithub.com/nknorg/nknow status to received version")
 	}
 
 	// Obsolete node

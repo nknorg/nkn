@@ -1,9 +1,10 @@
 package dbft
 
 import (
-	"nkn/common/log"
-	ser "nkn/common/serialization"
 	"io"
+
+	ser "github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type PrepareResponse struct {

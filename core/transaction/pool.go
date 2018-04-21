@@ -1,29 +1,30 @@
 package transaction
 
 import (
-	"nkn/common"
-	"nkn/common/log"
-	"nkn/core/transaction/payload"
-	. "nkn/errors"
 	"fmt"
 	"sync"
-	"nkn/common/config"
+
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/transaction/payload"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type TXNPool struct {
 	sync.RWMutex
-	txnCnt        uint64                                      // count
-	txnList       map[common.Uint256]*Transaction // transaction which have been verifyed will put into this map
-	issueSummary  map[common.Uint256]common.Fixed64           // transaction which pass the verify will summary the amout to this map
-	inputUTXOList map[string]*Transaction         // transaction which pass the verify will add the UTXO to this map
+	txnCnt        uint64                            // count
+	txnList       map[common.Uint256]*Transaction   // transaction which have been verifyed will put into this map
+	issueSummary  map[common.Uint256]common.Fixed64 // transaction which pass the verify will summary the amout to this map
+	inputUTXOList map[string]*Transaction           // transaction which pass the verify will add the UTXO to this map
 }
 
-func NewTxnPool() *TXNPool{
+func NewTxnPool() *TXNPool {
 	return &TXNPool{
-		txnCnt: 0,
+		txnCnt:        0,
 		inputUTXOList: make(map[string]*Transaction),
-		issueSummary: make(map[common.Uint256]common.Fixed64),
-		txnList: make(map[common.Uint256]*Transaction),
+		issueSummary:  make(map[common.Uint256]common.Fixed64),
+		txnList:       make(map[common.Uint256]*Transaction),
 	}
 }
 

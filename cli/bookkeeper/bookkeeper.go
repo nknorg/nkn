@@ -1,13 +1,13 @@
 package bookkeeper
 
 import (
-	"nkn/wallet"
-	. "nkn/cli/common"
-	"nkn/core/contract"
-	"nkn/core/signature"
-	"nkn/core/transaction"
-	"nkn/crypto"
-	"nkn/rpc/httpjson"
+	"github.com/nknorg/nkn/wallet"
+	. "github.com/nknorg/nkn/cli/common"
+	"github.com/nknorg/nkn/core/contract"
+	"github.com/nknorg/nkn/core/signature"
+	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/rpc/httpjson"
 	"bytes"
 	"encoding/hex"
 	"fmt"
@@ -93,7 +93,7 @@ func assetAction(c *cli.Context) error {
 	}
 	cert := c.String("cert")
 
-	wallet, err := wallet.Open(wallet.WalletFileName, WalletPassword(c.String("password")))
+	wallet, err := wallet.OpenWallet(wallet.WalletFileName, WalletPassword(c.String("password")))
 	if err != nil {
 		fmt.Println("Failed to open wallet.")
 		os.Exit(1)

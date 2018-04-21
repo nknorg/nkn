@@ -1,122 +1,139 @@
 package main
 
 import (
-	"nkn/wallet"
-	"nkn/common/config"
-	"nkn/common/log"
-	"nkn/consensus/dbft"
-	"nkn/core/ledger"
-	"nkn/core/store/ChainStore"
-	"nkn/core/transaction"
-	"nkn/crypto"
-	"nkn/net"
-	"nkn/rpc/httpjson"
-	"nkn/rpc/httprestful"
-	"nkn/ws"
-	"nkn/test/monitor"
-	"nkn/net/protocol"
-	_"nkn/por" // for testing sigchain of PoR feature
+	"errors"
+	"flag"
+	"math/rand"
 	"os"
 	"runtime"
 	"time"
-	"math/rand"
-	"nkn/consensus/ising"
-)
 
-const (
-	DefaultMultiCoreNum = 4
+	"github.com/nknorg/nkn/consensus/dbft"
+	"github.com/nknorg/nkn/consensus/ising"
+	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/db"
+	"github.com/nknorg/nkn/net"
+	"github.com/nknorg/nkn/net/chord"
+	"github.com/nknorg/nkn/net/protocol"
+	_ "github.com/nknorg/nkn/por" // for testing sigchain of PoR feature
+	"github.com/nknorg/nkn/rpc/httpjson"
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/wallet"
 )
 
 func init() {
 	log.Init(log.Path, log.Stdout)
-	var coreNum int
-	if config.Parameters.MultiCoreNum > DefaultMultiCoreNum {
-		coreNum = int(config.Parameters.MultiCoreNum)
-	} else {
-		coreNum = DefaultMultiCoreNum
-	}
-	log.Debug("The Core number is ", coreNum)
-	runtime.GOMAXPROCS(coreNum)
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().UnixNano())
+	crypto.SetAlg(config.Parameters.EncryptAlg)
 }
 
-func main() {
-	var acct *wallet.Account
-	var blockChain *ledger.Blockchain
+func InitLedger() error {
 	var err error
-	var noder protocol.Noder
-	log.Trace("Node version: ", config.Version)
+	store, err := db.NewLedgerStore()
+	if err != nil {
+		return err
+	}
+	ledger.StandbyBookKeepers = wallet.GetBookKeepers()
+	blockChain, err := ledger.NewBlockchainWithGenesisBlock(store, ledger.StandbyBookKeepers)
+	if err != nil {
+		return err
+	}
+	ledger.DefaultLedger = &ledger.Ledger{
+		Blockchain: blockChain,
+		Store:      store,
+	}
+	transaction.TxStore = ledger.DefaultLedger.Store
 
-	if len(config.Parameters.BookKeepers) < wallet.DefaultBookKeeperCount {
-		log.Fatal("At least ", wallet.DefaultBookKeeperCount, " BookKeepers should be set at config.json")
-		os.Exit(1)
+	return nil
+}
+
+func StartNetworking(pubKey *crypto.PubKey) protocol.Noder {
+	node := net.StartProtocol(pubKey)
+	node.SyncNodeHeight()
+	node.WaitForFourPeersStart()
+	node.WaitForSyncBlkFinish()
+	httpjson.RegistRpcNode(node)
+	go httpjson.StartRPCServer()
+
+	return node
+}
+
+func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
+	if protocol.SERVICENODENAME != config.Parameters.NodeType {
+		switch config.Parameters.ConsensusType {
+		case "ising":
+			log.Info("ising consensus starting ...")
+			account, _ := wallet.GetDefaultAccount()
+			ising.StartIsingConsensus(account, node)
+		case "dbft":
+			log.Info("dbft consensus starting ...")
+			dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
+			go dbftServices.Start()
+		}
+	}
+}
+
+func nknMain() error {
+	log.Trace("Node version: ", config.Version)
+	var name = flag.String("test", "value", "usage")
+	var numNode int
+	flag.IntVar(&numNode, "numNode", 1, "usage")
+	flag.Parse()
+
+	// Start the Chord ring testing process
+	if len(os.Args) != 1 {
+		//flag.PrintDefaults()
+		if *name == "create" {
+			go chord.CreateNet()
+		} else if *name == "join" {
+			go chord.JoinNet()
+		}
+		for {
+			time.Sleep(20 * time.Second)
+		}
 	}
 
-	log.Info("0. Loading the Ledger")
-	ledger.DefaultLedger = new(ledger.Ledger)
-	ledger.DefaultLedger.Store, err = ChainStore.NewLedgerStore()
+	// Get local account
+	wallet := wallet.GetWallet()
+	if wallet == nil {
+		return errors.New("open local wallet error")
+	}
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return errors.New("load local account error")
+	}
+
+	// initialize ledger
+	err = InitLedger()
 	defer ledger.DefaultLedger.Store.Close()
 	if err != nil {
-		log.Fatal("open LedgerStore err:", err)
-		os.Exit(1)
-	}
-	ledger.DefaultLedger.Store.InitLedgerStore(ledger.DefaultLedger)
-	transaction.TxStore = ledger.DefaultLedger.Store
-	crypto.SetAlg(config.Parameters.EncryptAlg)
-	ledger.StandbyBookKeepers = wallet.GetBookKeepers()
-
-	log.Info("2. BlockChain init")
-	blockChain, err = ledger.NewBlockchainWithGenesisBlock(ledger.StandbyBookKeepers)
-	if err != nil {
-		log.Fatal(err, "  BlockChain generate failed")
-	}
-	ledger.DefaultLedger.Blockchain = blockChain
-
-	log.Info("3. Start the P2P networks")
-	client := wallet.GetClient()
-	if client == nil {
-		log.Fatal("Can't get local account.")
-		goto ERROR
-	}
-	acct, err = client.GetDefaultAccount()
-	if err != nil {
-		log.Fatal(err)
-		goto ERROR
-	}
-	noder = net.StartProtocol(acct.PublicKey)
-	httpjson.RegistRpcNode(noder)
-	time.Sleep(10 * time.Second)
-	noder.SyncNodeHeight()
-	noder.WaitForFourPeersStart()
-	noder.WaitForSyncBlkFinish()
-	if protocol.SERVICENODENAME != config.Parameters.NodeType {
-		//log.Info("5. Start DBFT Services")
-		//dbftServices := dbft.NewDbftService(client, "logdbft", noder)
-		//go dbftServices.Start()
-		consensus := ising.New(client, noder)
-		consensus.Start()
-		time.Sleep(5 * time.Second)
-	}
-	httpjson.Wallet = client
-	log.Info("--Start the RPC interface")
-	go httpjson.StartRPCServer()
-	go httprestful.StartServer(noder)
-	go ws.StartServer(noder)
-	if config.Parameters.HttpInfoStart {
-		go monitor.StartServer(noder)
+		return errors.New("ledger initialization error")
 	}
 
+	// start P2P networking
+	node := StartNetworking(account.PublicKey)
 
+	// start consensus
+	StartConsensus(wallet, node)
+
+	httpjson.Wallet = wallet
 	for {
 		time.Sleep(dbft.GenBlockTime)
 		log.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
-		isNeedNewFile := log.CheckIfNeedNewFile()
-		if isNeedNewFile == true {
+		if log.CheckIfNeedNewFile() {
 			log.ClosePrintLog()
 			log.Init(log.Path, os.Stdout)
 		}
 	}
+}
 
-ERROR:
-	os.Exit(1)
+func main() {
+	// Call the nknMain so the defers will be executed in the case of a graceful shutdown.
+	if err := nknMain(); err != nil {
+		os.Exit(1)
+	}
 }

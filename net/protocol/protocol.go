@@ -1,14 +1,14 @@
 package protocol
 
 import (
-	"nkn/common"
-	"nkn/core/transaction"
-	"nkn/crypto"
-	. "nkn/errors"
-	"nkn/events"
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/events"
+	"time"
 	"bytes"
 	"encoding/binary"
-	"time"
 )
 
 type NodeAddr struct {

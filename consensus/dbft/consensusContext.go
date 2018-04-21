@@ -1,17 +1,18 @@
 package dbft
 
 import (
-	cl "nkn/wallet"
-	. "nkn/common"
-	"nkn/common/log"
-	ser "nkn/common/serialization"
-	"nkn/core/ledger"
-	tx "nkn/core/transaction"
-	"nkn/crypto"
-	"nkn/net"
-	msg "nkn/net/message"
 	"fmt"
 	"sync"
+
+	. "github.com/nknorg/nkn/common"
+	ser "github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/ledger"
+	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	msg "github.com/nknorg/nkn/net/message"
+	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
+	cl "github.com/nknorg/nkn/wallet"
 )
 
 const ContextVersion uint32 = 0
@@ -92,7 +93,7 @@ func (cxt *ConsensusContext) MakeHeader() *ledger.Block {
 			return nil
 		}
 		cxt.header = &ledger.Block{
-			Header:    &ledger.Header{
+			Header: &ledger.Header{
 				Version:          ContextVersion,
 				PrevBlockHash:    cxt.PrevHash,
 				TransactionsRoot: txRoot,
@@ -166,7 +167,7 @@ func (cxt *ConsensusContext) GetStateDetail() string {
 
 }
 
-func (cxt *ConsensusContext) Reset(client cl.Wallet, localNode net.Neter) {
+func (cxt *ConsensusContext) Reset(client cl.Wallet, localNode protocol.Noder) {
 	log.Debug()
 	cxt.State = Initial
 	cxt.PrevHash = ledger.DefaultLedger.Blockchain.CurrentBlockHash()

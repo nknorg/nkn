@@ -1,4 +1,4 @@
-package: nkn-core
+package: github.com/nknorg/nkn
 import:
 - package: github.com/golang/crypto
   subpackages:
@@ -23,5 +23,3 @@ import:
   - params
 ignore:
   - golang.org/x/sys/unix
-
-

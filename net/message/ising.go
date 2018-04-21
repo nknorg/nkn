@@ -6,14 +6,17 @@ import (
 	"encoding/binary"
 	"io"
 
-	. "nkn/net/protocol"
-	"nkn/common/log"
-	"nkn/common/serialization"
-	"nkn/events"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/events"
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type IsingPayload struct {
 	PayloadData []byte
+	Sender      *crypto.PubKey
+	Signature   []byte
 }
 
 type IsingMessage struct {
@@ -21,38 +24,57 @@ type IsingMessage struct {
 	pld IsingPayload
 }
 
-
 func (msg IsingMessage) Handle(node Noder) error {
 	node.LocalNode().GetEvent("consensus").Notify(events.EventConsensusMsgReceived, &msg.pld)
 	return nil
 }
 
-func (p *IsingMessage) Serialization() ([]byte, error) {
-	msgHeader, err := p.msgHdr.Serialization()
+func (p *IsingMessage) Serialize(w io.Writer) error {
+	err := p.msgHdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(msgHeader)
-	err = p.pld.Serialize(buf)
+	err = p.pld.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return buf.Bytes(), err
+	return nil
 }
 
+func (p *IsingMessage) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(p.msgHdr))
+	if err != nil {
+		return err
+	}
+	err = p.pld.Deserialize(r)
+	if err != nil {
+		return err
+	}
 
-func (p *IsingMessage) Deserialization(b []byte) error {
-	buf := bytes.NewBuffer(b)
-	err := binary.Read(buf, binary.LittleEndian, &(p.msgHdr))
-	err = p.pld.Deserialize(buf)
-
-	return err
+	return nil
 }
 
+func (p *IsingPayload) SerializeUnsigned(w io.Writer) error {
+	err := serialization.WriteVarBytes(w, p.PayloadData)
+	if err != nil {
+		return err
+	}
+	err = p.Sender.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func (p *IsingPayload) Serialize(w io.Writer) error {
-	err := serialization.WriteVarBytes(w, p.PayloadData)
+	var err error
+	err = p.SerializeUnsigned(w)
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteVarBytes(w, p.Signature)
 	if err != nil {
 		return err
 	}
@@ -61,13 +83,44 @@ func (p *IsingPayload) Serialize(w io.Writer) error {
 }
 
 func (p *IsingPayload) Deserialize(r io.Reader) error {
+	var err error
+	err = p.DeserializeUnsigned(r)
+	if err != nil {
+		return err
+	}
+	signature, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	p.Signature = signature
+
+	return nil
+}
+
+func (p *IsingPayload) DeserializeUnsigned(r io.Reader) error {
 	pldData, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
 	p.PayloadData = pldData
 
+	p.Sender = new(crypto.PubKey)
+	err = p.Sender.Deserialize(r)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (p *IsingPayload) DataHash() ([]byte, error) {
+	buff := bytes.NewBuffer(nil)
+	err := p.SerializeUnsigned(buff)
+	if err != nil {
+		return nil, err
+	}
+	temp := sha256.Sum256(buff.Bytes())
+	return temp[:], nil
 }
 
 func NewIsingConsensus(pld *IsingPayload) ([]byte, error) {
@@ -91,11 +144,12 @@ func NewIsingConsensus(pld *IsingPayload) ([]byte, error) {
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(b.Bytes()))
 
-	m, err := msg.Serialization()
+	isingBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(isingBuff)
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
 
-	return m, nil
+	return isingBuff.Bytes(), nil
 }

@@ -3,12 +3,11 @@ package wallet
 import (
 	"fmt"
 	"os"
-	"nkn/wallet"
-	. "nkn/cli/common"
-	. "nkn/common"
-	"nkn/common/password"
-	"nkn/rpc/httpjson"
-
+	"github.com/nknorg/nkn/wallet"
+	. "github.com/nknorg/nkn/cli/common"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/password"
+	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/urfave/cli"
 )
 
@@ -70,7 +69,7 @@ func walletAction(c *cli.Context) error {
 			fmt.Printf("CAUTION: '%s' already exists!\n", name)
 			os.Exit(1)
 		} else {
-			wallet, err := wallet.Create(name, getConfirmedPassword(passwd))
+			wallet, err := wallet.NewWallet(name, getConfirmedPassword(passwd), true)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
@@ -86,7 +85,7 @@ func walletAction(c *cli.Context) error {
 			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose]")
 			os.Exit(1)
 		} else {
-			wallet, err := wallet.Open(name, getPassword(passwd))
+			wallet, err := wallet.OpenWallet(name, getPassword(passwd))
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
@@ -110,7 +109,7 @@ func walletAction(c *cli.Context) error {
 	if c.Bool("changepassword") {
 		fmt.Printf("Wallet File: '%s'\n", name)
 		passwd, _ := password.GetPassword()
-		wallet, err := wallet.Open(name, passwd)
+		wallet, err := wallet.OpenWallet(name, passwd)
 		if err != nil {
 			os.Exit(1)
 		}

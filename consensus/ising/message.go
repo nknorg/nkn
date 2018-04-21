@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"errors"
 
-	"nkn/common/serialization"
-	"nkn/net/message"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/net/message"
+	"github.com/nknorg/nkn/crypto"
 )
 
 type IsingMessageType byte
@@ -16,16 +17,18 @@ const (
 	BlockResponseMsg IsingMessageType = 0x02
 	BlockProposalMsg IsingMessageType = 0x03
 	BlockVoteMsg     IsingMessageType = 0x04
+	StateProbeMsg    IsingMessageType = 0x05
+	StateResponseMsg IsingMessageType = 0x06
 )
 
 type IsingMessage interface {
 	serialization.SerializableData
 }
 
-func BuildIsingPayload(s serialization.SerializableData) (*message.IsingPayload, error) {
+func BuildIsingPayload(msg IsingMessage, sender *crypto.PubKey) (*message.IsingPayload, error) {
 	var err error
 	buf := bytes.NewBuffer(nil)
-	switch s.(type) {
+	switch msg.(type) {
 	case *BlockFlooding:
 		err = serialization.WriteByte(buf, byte(BlockFloodingMsg))
 	case *BlockRequest:
@@ -36,23 +39,29 @@ func BuildIsingPayload(s serialization.SerializableData) (*message.IsingPayload,
 		err = serialization.WriteByte(buf, byte(BlockProposalMsg))
 	case *BlockVote:
 		err = serialization.WriteByte(buf, byte(BlockVoteMsg))
+	case *StateProbe:
+		err = serialization.WriteByte(buf, byte(StateProbeMsg))
+	case *StateResponse:
+		err = serialization.WriteByte(buf, byte(StateResponseMsg))
 	}
 	if err != nil {
 		return nil, err
 	}
-	err = s.Serialize(buf)
+	err = msg.Serialize(buf)
 	if err != nil {
 		return nil, err
 	}
 	payload := &message.IsingPayload{
 		PayloadData: buf.Bytes(),
+		Sender:      sender,
+		Signature:   nil,
 	}
 
 	return payload, nil
 }
 
-func RecoverFromIsingPayload(data []byte) (IsingMessage, error) {
-	r := bytes.NewReader(data)
+func RecoverFromIsingPayload(payload *message.IsingPayload) (IsingMessage, error) {
+	r := bytes.NewReader(payload.PayloadData)
 	msgType, err := serialization.ReadByte(r)
 	if err != nil {
 		return nil, err
@@ -93,6 +102,21 @@ func RecoverFromIsingPayload(data []byte) (IsingMessage, error) {
 		if err != nil {
 			return nil, err
 		}
+		return bvmsg, nil
+	case StateProbeMsg:
+		spmsg := &StateProbe{}
+		err := spmsg.Deserialize(r)
+		if err != nil {
+			return nil, err
+		}
+		return spmsg, nil
+	case StateResponseMsg:
+		srmsg := &StateResponse{}
+		err := srmsg.Deserialize(r)
+		if err != nil {
+			return nil, err
+		}
+		return srmsg, nil
 	}
 
 	return nil, errors.New("invalid ising consensus message.")

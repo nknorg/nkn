@@ -1,20 +1,20 @@
 package message
 
 import (
-	"nkn/common/log"
-	. "nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
+
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type addrReq struct {
-	Hdr msgHdr
-	// No payload
+	Hdr msgHdr // No payload
 }
 
 type addr struct {
@@ -23,26 +23,18 @@ type addr struct {
 	nodeAddrs []NodeAddr
 }
 
-const (
-	NODEADDRSIZE = 30
-)
-
 func newGetAddr() ([]byte, error) {
 	var msg addrReq
-	// Fixme the check is the []byte{0} instead of 0
-	var sum []byte
-	sum = []byte{0x5d, 0xf6, 0xe0, 0xe2}
+	sum := []byte{0x5d, 0xf6, 0xe0, 0xe2}
 	msg.Hdr.init("getaddr", sum, 0)
 
-	buf, err := msg.Serialization()
+	buf := bytes.NewBuffer(nil)
+	err := msg.Serialize(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	str := hex.EncodeToString(buf)
-	log.Debug("The message get addr length is: ", len(buf), " ", str)
-
-	return buf, err
+	return buf.Bytes(), err
 }
 
 func NewAddrs(nodeaddrs []NodeAddr, count uint64) ([]byte, error) {
@@ -72,24 +64,21 @@ func NewAddrs(nodeaddrs []NodeAddr, count uint64) ([]byte, error) {
 	msg.hdr.Length = uint32(len(p.Bytes()))
 	log.Debug("The message payload length is ", msg.hdr.Length)
 
-	m, err := msg.Serialization()
+	buff := bytes.NewBuffer(nil)
+	err = msg.Serialize(buff)
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
 
-	return m, nil
+	return buff.Bytes(), nil
 }
 
 func (msg addrReq) Verify(buf []byte) error {
-	// TODO Verify the message Content
-	err := msg.Hdr.Verify(buf)
-	return err
+	return msg.Hdr.Verify(buf)
 }
 
 func (msg addrReq) Handle(node Noder) error {
-	log.Debug()
-	// lock
 	var addrstr []NodeAddr
 	var count uint64
 	addrstr, count = node.LocalNode().GetNeighborAddrs()
@@ -101,63 +90,55 @@ func (msg addrReq) Handle(node Noder) error {
 	return nil
 }
 
-func (msg addrReq) Serialization() ([]byte, error) {
-	var buf bytes.Buffer
-	err := binary.Write(&buf, binary.LittleEndian, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), err
+func (msg addrReq) Serialize(w io.Writer) error {
+	return binary.Write(w, binary.LittleEndian, msg)
 }
 
-func (msg *addrReq) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-	err := binary.Read(buf, binary.LittleEndian, msg)
-	return err
+func (msg *addrReq) Deserialize(r io.Reader) error {
+	return binary.Read(r, binary.LittleEndian, msg)
 }
 
-func (msg addr) Serialization() ([]byte, error) {
-	var buf bytes.Buffer
-	err := binary.Write(&buf, binary.LittleEndian, msg.hdr)
-
+func (msg addr) Serialize(w io.Writer) error {
+	err := binary.Write(w, binary.LittleEndian, msg.hdr)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	err = binary.Write(&buf, binary.LittleEndian, msg.nodeCnt)
+	err = binary.Write(w, binary.LittleEndian, msg.nodeCnt)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, v := range msg.nodeAddrs {
-		err = binary.Write(&buf, binary.LittleEndian, v)
+		err = binary.Write(w, binary.LittleEndian, v)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return buf.Bytes(), err
+	return nil
 }
 
-func (msg *addr) Deserialization(p []byte) error {
-	buf := bytes.NewBuffer(p)
-	err := binary.Read(buf, binary.LittleEndian, &(msg.hdr))
-	err = binary.Read(buf, binary.LittleEndian, &(msg.nodeCnt))
-	log.Debug("The address count is ", msg.nodeCnt)
+func (msg *addr)Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.hdr))
+	if err != nil {
+		return err
+	}
+	err = binary.Read(r, binary.LittleEndian, &(msg.nodeCnt))
+	if err != nil{
+		return err
+	}
 	msg.nodeAddrs = make([]NodeAddr, msg.nodeCnt)
 	for i := 0; i < int(msg.nodeCnt); i++ {
-		err := binary.Read(buf, binary.LittleEndian, &(msg.nodeAddrs[i]))
+		err := binary.Read(r, binary.LittleEndian, &(msg.nodeAddrs[i]))
 		if err != nil {
-			goto err
+			return err
 		}
 	}
-err:
-	return err
+
+	return nil
 }
 
 func (msg addr) Verify(buf []byte) error {
-	err := msg.hdr.Verify(buf)
-	// TODO Verify the message Content, check the ipaddr number
-	return err
+	return msg.hdr.Verify(buf)
 }
 
 func (msg addr) Handle(node Noder) error {
@@ -165,7 +146,6 @@ func (msg addr) Handle(node Noder) error {
 	for _, v := range msg.nodeAddrs {
 		var ip net.IP
 		ip = v.IpAddr[:]
-		//address := ip.To4().String() + ":" + strconv.Itoa(int(v.Port))
 		address := ip.To16().String() + ":" + strconv.Itoa(int(v.Port))
 		log.Info(fmt.Sprintf("The ip address is %s id is 0x%x", address, v.ID))
 

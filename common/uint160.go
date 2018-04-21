@@ -1,14 +1,15 @@
 package common
 
 import (
-	"nkn/common/log"
-	. "nkn/errors"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"io"
 	"math/big"
+
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/util/log"
 
 	"github.com/itchyny/base58-go"
 )

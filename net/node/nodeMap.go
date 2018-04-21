@@ -1,7 +1,7 @@
 package node
 
 import (
-	. "nkn/net/protocol"
+	. "github.com/nknorg/nkn/net/protocol"
 	"fmt"
 	"sync"
 )

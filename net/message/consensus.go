@@ -1,22 +1,23 @@
 package message
 
 import (
-	"nkn/common"
-	"nkn/common/log"
-	"nkn/common/serialization"
-	"nkn/core/contract"
-	"nkn/core/contract/program"
-	"nkn/core/ledger"
-	sig "nkn/core/signature"
-	"nkn/crypto"
-	. "nkn/errors"
-	"nkn/events"
-	. "nkn/net/protocol"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"io"
+
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/contract"
+	"github.com/nknorg/nkn/core/contract/program"
+	"github.com/nknorg/nkn/core/ledger"
+	sig "github.com/nknorg/nkn/core/signature"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/events"
+	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type ConsensusPayload struct {
@@ -48,20 +49,13 @@ func (cp *ConsensusPayload) GetProgramHashes() ([]common.Uint160, error) {
 	}
 
 	contract, err := contract.CreateSignatureContract(cp.Owner)
-	hash := contract.ProgramHash
-	log.Debug("program hash == ", hash)
-
-	//signatureRedeemScript, err := contract.CreateSignatureRedeemScript(bookKeepers[cp.BookKeeperIndex])
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Consensus], CreateSignatureContract failed.")
 	}
-
-	//hash, err:=common.ToCodeHash(signatureRedeemScript)
-	//if err != nil {
-	//	return  nil, NewDetailErr(err, ErrNoCode, "[Consensus], ToCodeHash failed.")
-	//}
+	hash := contract.ProgramHash
 	programhashes := []common.Uint160{}
 	programhashes = append(programhashes, hash)
+
 	return programhashes, nil
 }
 
@@ -90,7 +84,7 @@ func (cp *ConsensusPayload) GetMessage() []byte {
 	//return []byte{}
 }
 
-func (b *ConsensusPayload) ToArray() ([]byte) {
+func (b *ConsensusPayload) ToArray() []byte {
 	bf := new(bytes.Buffer)
 	b.Serialize(bf)
 	return bf.Bytes()
@@ -124,18 +118,24 @@ func (cp *ConsensusPayload) Serialize(w io.Writer) error {
 		return errors.New("Program in consensus is NULL")
 	}
 	err = cp.Program.Serialize(w)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (msg *consensus) Serialization() ([]byte, error) {
-	hdrBuf, err := msg.msgHdr.Serialization()
+func (msg *consensus) Serialize(w io.Writer) error {
+	err := msg.msgHdr.Serialize(w)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf := bytes.NewBuffer(hdrBuf)
-	err = msg.cons.Serialize(buf)
+	err = msg.cons.Serialize(w)
+	if err != nil {
+		return err
+	}
 
-	return buf.Bytes(), err
+	return nil
 }
 
 func (cp *ConsensusPayload) DeserializeUnsigned(r io.Reader) error {
@@ -178,7 +178,7 @@ func (cp *ConsensusPayload) DeserializeUnsigned(r io.Reader) error {
 		return errors.New("consensus item Data Deserialize failed.")
 	}
 	pk := new(crypto.PubKey)
-	err = pk.DeSerialize(r)
+	err = pk.Deserialize(r)
 	if err != nil {
 		log.Warn("consensus item Owner deserialize failed.")
 		return errors.New("consensus item Owner deserialize failed.")
@@ -190,7 +190,9 @@ func (cp *ConsensusPayload) DeserializeUnsigned(r io.Reader) error {
 
 func (cp *ConsensusPayload) Deserialize(r io.Reader) error {
 	err := cp.DeserializeUnsigned(r)
-
+	if err != nil {
+		return err
+	}
 	pg := new(program.Program)
 	err = pg.Deserialize(r)
 	if err != nil {
@@ -201,12 +203,17 @@ func (cp *ConsensusPayload) Deserialize(r io.Reader) error {
 	return err
 }
 
-func (msg *consensus) Deserialization(p []byte) error {
-	log.Debug()
-	buf := bytes.NewBuffer(p)
-	err := binary.Read(buf, binary.LittleEndian, &(msg.msgHdr))
-	err = msg.cons.Deserialize(buf)
-	return err
+func (msg *consensus) Deserialize(r io.Reader) error {
+	err := binary.Read(r, binary.LittleEndian, &(msg.msgHdr))
+	if err != nil {
+		return err
+	}
+	err = msg.cons.Deserialize(r)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewConsensus(cp *ConsensusPayload) ([]byte, error) {
@@ -232,10 +239,12 @@ func NewConsensus(cp *ConsensusPayload) ([]byte, error) {
 	msg.msgHdr.Length = uint32(len(b.Bytes()))
 	log.Debug("NewConsensus The message payload length is ", msg.msgHdr.Length)
 
-	m, err := msg.Serialization()
+	consensusBuff := bytes.NewBuffer(nil)
+	err = msg.Serialize(consensusBuff)
 	if err != nil {
 		log.Error("Error Convert net message ", err.Error())
 		return nil, err
 	}
-	return m, nil
+
+	return consensusBuff.Bytes(), nil
 }

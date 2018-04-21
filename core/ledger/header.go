@@ -1,11 +1,11 @@
 package ledger
 
 import (
-	. "nkn/common"
-	"nkn/common/serialization"
-	"nkn/core/contract/program"
-	sig "nkn/core/signature"
-	. "nkn/errors"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/contract/program"
+	sig "github.com/nknorg/nkn/core/signature"
+	. "github.com/nknorg/nkn/errors"
 	"crypto/sha256"
 	"errors"
 	"io"
@@ -26,12 +26,13 @@ type Header struct {
 }
 
 //Serialize the blockheader
-func (bd *Header) Serialize(w io.Writer) {
+func (bd *Header) Serialize(w io.Writer) error {
 	bd.SerializeUnsigned(w)
 	w.Write([]byte{byte(1)})
 	if bd.Program != nil {
 		bd.Program.Serialize(w)
 	}
+	return nil
 }
 
 //Serialize the blockheader data without program

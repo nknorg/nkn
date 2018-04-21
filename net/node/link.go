@@ -1,11 +1,6 @@
 package node
 
 import (
-	. "nkn/common/config"
-	"nkn/common/log"
-	"nkn/events"
-	msg "nkn/net/message"
-	. "nkn/net/protocol"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -17,6 +12,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/nknorg/nkn/events"
+	msg "github.com/nknorg/nkn/net/message"
+	. "github.com/nknorg/nkn/net/protocol"
+	. "github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type link struct {

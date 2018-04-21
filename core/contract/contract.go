@@ -1,13 +1,13 @@
 package contract
 
 import (
-	. "nkn/common"
-	"nkn/common/serialization"
-	. "nkn/errors"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/serialization"
+	. "github.com/nknorg/nkn/errors"
 	"bytes"
 	"errors"
 	"io"
-	"nkn/vm/avm"
+	"github.com/nknorg/nkn/vm"
 )
 
 //Contract address is the hash of contract program .
@@ -34,7 +34,7 @@ func (c *Contract) IsStandard() bool {
 	if len(c.Code) != 35 {
 		return false
 	}
-	if c.Code[0] != 33 || c.Code[34] != byte(avm.CHECKSIG) {
+	if c.Code[0] != 33 || c.Code[34] != byte(vm.CHECKSIG) {
 		return false
 	}
 	return true
@@ -48,10 +48,10 @@ func (c *Contract) IsMultiSigContract() bool {
 	if len(c.Code) < 37 {
 		return false
 	}
-	if c.Code[i] > byte(avm.PUSH16) {
+	if c.Code[i] > byte(vm.PUSH16) {
 		return false
 	}
-	if c.Code[i] < byte(avm.PUSH1) && c.Code[i] != 1 && c.Code[i] != 2 {
+	if c.Code[i] < byte(vm.PUSH1) && c.Code[i] != 1 && c.Code[i] != 2 {
 		return false
 	}
 
@@ -110,7 +110,7 @@ func (c *Contract) IsMultiSigContract() bool {
 		break
 	}
 
-	if c.Code[i] != byte(avm.CHECKMULTISIG) {
+	if c.Code[i] != byte(vm.CHECKMULTISIG) {
 		return false
 	}
 	i++

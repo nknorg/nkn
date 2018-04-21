@@ -1,13 +1,14 @@
 package ledger
 
 import (
-	. "nkn/common"
-	"nkn/common/log"
-	tx "nkn/core/transaction"
-	"nkn/crypto"
-	. "nkn/errors"
-	"nkn/events"
 	"sync"
+
+	. "github.com/nknorg/nkn/common"
+	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type Blockchain struct {
@@ -23,7 +24,7 @@ func NewBlockchain(height uint32) *Blockchain {
 	}
 }
 
-func NewBlockchainWithGenesisBlock(defaultBookKeeper []*crypto.PubKey) (*Blockchain, error) {
+func NewBlockchainWithGenesisBlock(store ILedgerStore, defaultBookKeeper []*crypto.PubKey) (*Blockchain, error) {
 	genesisBlock, err := GenesisBlockInit(defaultBookKeeper)
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], NewBlockchainWithGenesisBlock failed.")
@@ -32,7 +33,7 @@ func NewBlockchainWithGenesisBlock(defaultBookKeeper []*crypto.PubKey) (*Blockch
 	hashx := genesisBlock.Hash()
 	genesisBlock.hash = &hashx
 
-	height, err := DefaultLedger.Store.InitLedgerStoreWithGenesisBlock(genesisBlock, defaultBookKeeper)
+	height, err := store.InitLedgerStoreWithGenesisBlock(genesisBlock, defaultBookKeeper)
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], InitLevelDBStoreWithGenesisBlock failed.")
 	}

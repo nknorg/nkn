@@ -1,12 +1,12 @@
 package transaction
 
 import (
-	. "nkn/common"
-	"nkn/core/asset"
-	"nkn/core/contract/program"
-	"nkn/core/transaction/payload"
-	"nkn/crypto"
-	"nkn/crypto/util"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/asset"
+	"github.com/nknorg/nkn/core/contract/program"
+	"github.com/nknorg/nkn/core/transaction/payload"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/crypto/util"
 )
 
 const (
@@ -141,6 +141,24 @@ func NewWithdrawTransaction(output *TxOutput) (*Transaction, error) {
 			},
 		}, UTXOInputs: nil,
 		Outputs:  []*TxOutput{output},
+		Programs: []*program.Program{},
+	}, nil
+}
+
+func NewCommitTransaction(sigChain []byte) (*Transaction, error) {
+	CommitPayload := &payload.Commit{
+		SigChain: sigChain,
+	}
+
+	return &Transaction{
+		TxType:  Commit,
+		Payload: CommitPayload,
+		Attributes: []*TxAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		}, UTXOInputs: nil,
 		Programs: []*program.Program{},
 	}, nil
 }

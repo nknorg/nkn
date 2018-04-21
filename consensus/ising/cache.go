@@ -3,8 +3,8 @@ package ising
 import (
 	"sync"
 
-	. "nkn/common"
-	"nkn/core/ledger"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
 	"time"
 )
 
@@ -20,15 +20,19 @@ type BlockInfo struct {
 
 type BlockCache struct {
 	sync.RWMutex
-	cap   int
-	cache map[Uint256]*BlockInfo
+	cap    int
+	currentHeight uint32                //current block height
+	cache  map[uint32]*BlockInfo // height and block mapping
+	hashes map[Uint256]uint32    // for block fast searching
 }
 
 // When receive new block message from consensus layer, cache it.
 func NewCache() *BlockCache {
 	blockCache := &BlockCache{
-		cap:   MaxCachedBlocks,
-		cache: make(map[Uint256]*BlockInfo),
+		cap:    MaxCachedBlocks,
+		currentHeight: 0,
+		cache:  make(map[uint32]*BlockInfo),
+		hashes: make(map[Uint256]uint32),
 	}
 	go blockCache.Cleanup()
 
@@ -40,7 +44,7 @@ func (p *BlockCache) BlockInCache(hash Uint256) bool {
 	p.RLock()
 	defer p.RUnlock()
 
-	if _, ok := p.cache[hash]; ok {
+	if _, ok := p.hashes[hash]; ok {
 		return true
 	}
 
@@ -52,19 +56,41 @@ func (p *BlockCache) GetBlockFromCache(hash Uint256) *ledger.Block {
 	p.RLock()
 	defer p.RUnlock()
 
-	if i, ok := p.cache[hash]; !ok {
+	if i, ok := p.hashes[hash]; !ok {
 		return nil
 	} else {
-		return i.block
+		if j, ok := p.cache[i]; !ok {
+			return nil
+		} else {
+			return j.block
+		}
 	}
+}
+
+// GetCurrentBlockFromCache returns latest block in cache
+func (p *BlockCache) GetCurrentBlockFromCache() *ledger.Block {
+	p.RLock()
+	defer p.RUnlock()
+
+	if v, ok := p.cache[p.currentHeight]; ok {
+		return v.block
+	}
+
+	return nil
 }
 
 // RemoveBlockFromCache return true if the block doesn't exist in cache.
 func (p *BlockCache) RemoveBlockFromCache(hash Uint256) error {
 	p.Lock()
 	defer p.Unlock()
+
 	if p.BlockInCache(hash) {
-		delete(p.cache, hash)
+		h := p.hashes[hash]
+		delete(p.cache, h)
+		delete(p.hashes, hash)
+		if p.currentHeight > 0 {
+			p.currentHeight --
+		}
 	}
 
 	return nil
@@ -86,13 +112,16 @@ func (p *BlockCache) AddBlockToCache(block *ledger.Block) error {
 	}
 	// TODO FIFO cleanup, if cap space is not enough then
 	// remove block from cache according to FIFO
-	p.Lock()
-	defer p.Unlock()
 	blockInfo := &BlockInfo{
 		block:    block,
 		lifetime: time.NewTimer(time.Hour),
 	}
-	p.cache[hash] = blockInfo
+	p.Lock()
+	defer p.Unlock()
+	blockHeight := block.Header.Height
+	p.cache[blockHeight] = blockInfo
+	p.hashes[hash] = blockHeight
+	p.currentHeight = blockHeight
 
 	return nil
 }
@@ -103,10 +132,10 @@ func (p *BlockCache) Cleanup() {
 	for {
 		select {
 		case <-ticket.C:
-			for blockHash, blockInfo := range p.cache {
+			for _, blockInfo := range p.cache {
 				select {
 				case <-blockInfo.lifetime.C:
-					p.RemoveBlockFromCache(blockHash)
+					p.RemoveBlockFromCache(blockInfo.block.Hash())
 				}
 			}
 		}

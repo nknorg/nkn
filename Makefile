@@ -5,16 +5,40 @@ Minversion := $(shell date)
 BUILD_NODE_PAR = -ldflags "-X nkn/common/config.Version=$(VERSION)" #-race
 BUILD_NODECTL_PAR = -ldflags "-X main.Version=$(VERSION)"
 
+.PHONY: node
+node:
+	$(GC)  $(BUILD_NODE_PAR) -o node main.go
+
+.PHONY: all
 all:
 	$(GC)  $(BUILD_NODE_PAR) -o node main.go
 	$(GC)  $(BUILD_NODECTL_PAR) nodectl.go
 
+.PHONY: format
 format:
 	$(GOFMT) -w main.go
 
-clean:
-	rm -rf *.8 *.o *.out *.6
+.PHONY: glide
+glide:
+	@ mkdir -p $$GOPATH/bin
+	@ curl https://glide.sh/get | sh;
 
-cov:
-	gocov test ./ | gocov-html > /tmp/coverage.html
-	open /tmp/coverage.html
+.PHONY: vendor
+vendor: glide.yaml glide.lock
+	@ glide install
+
+.PHONY: test
+test:
+	go test -v github.com/nknorg/nkn/common
+	go test -v github.com/nknorg/nkn/net
+	go test -v github.com/nknorg/nkn/por
+	go test -v github.com/nknorg/nkn/db
+	go test -v github.com/nknorg/nkn/cli
+
+.PHONY: clean
+clean:
+	rm -rf node nodectl
+
+.PHONY: deepclean
+deepclean:
+	rm -rf node nodectl vendor

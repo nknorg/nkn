@@ -1,7 +1,6 @@
 language: go
 
 install:
-  - grep 'import' -rl ./| grep ".go"| xargs sed -i 's#"nkn-core/#"github.com/NKNetwork/nkn-core/#g'
   - go get github.com/Masterminds/glide
   - glide install
 

@@ -3,21 +3,19 @@ package wallet
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"sync"
 
-	. "nkn/common"
-	ct "nkn/core/contract"
-	. "nkn/errors"
+	. "github.com/nknorg/nkn/common"
 )
 
 const (
-	WalletStoreVersion = "1.0.0"
+	WalletStoreVersion = "0.0.1"
 )
 
-type WalletData struct {
+type HeaderData struct {
 	PasswordHash string
 	IV           string
 	MasterKey    string
@@ -28,209 +26,154 @@ type AccountData struct {
 	Address             string
 	ProgramHash         string
 	PrivateKeyEncrypted string
+	ContractData        string
 }
 
-type ContractData struct {
-	RawData     string
+type WalletData struct {
+	HeaderData
+	AccountData
 }
 
-type FileData struct {
-	WalletData
-	Account  AccountData
-	Contract ContractData
+type Store struct {
+	sync.RWMutex
+
+	Path string
+	Data WalletData
 }
 
-type store struct {
-	// this lock could be hold by readDB, writeDB and interrupt signals.
-	sync.Mutex
+func NewStore(fullPath string) (*Store, error) {
+	if FileExisted(fullPath) {
+		return nil, errors.New("wallet store exists")
+	}
 
-	data FileData
-	file *os.File
-	path string
-}
-
-// Caller holds the lock and reads bytes from DB, then close the DB and release the lock
-func (cs *store) readDB() ([]byte, error) {
-	cs.Lock()
-	defer cs.Unlock()
-	defer cs.closeDB()
-
-	var err error
-	cs.file, err = os.OpenFile(cs.path, os.O_RDONLY, 0666)
+	var walletData WalletData
+	jsonBlob, err := json.Marshal(walletData)
+	if err != nil {
+		return nil, err
+	}
+	_, name := path.Split(fullPath)
+	err = ioutil.WriteFile(name, jsonBlob, 0666)
 	if err != nil {
 		return nil, err
 	}
 
-	if cs.file != nil {
-		data, err := ioutil.ReadAll(cs.file)
-		if err != nil {
-			return nil, err
-		}
-		return data, nil
-	} else {
-		return nil, NewDetailErr(errors.New("[readDB] file handle is nil"), ErrNoCode, "")
-	}
+	return &Store{
+		Path: fullPath,
+		Data: walletData,
+	}, nil
 }
 
-// Caller holds the lock and writes bytes to DB, then close the DB and release the lock
-func (cs *store) writeDB(data []byte) error {
-	cs.Lock()
-	defer cs.Unlock()
-	defer cs.closeDB()
+func LoadStore(fullPath string) (*Store, error) {
+	if !FileExisted(fullPath) {
+		return nil, errors.New("wallet store doesn't exists")
+	}
+	fileData, err := ioutil.ReadFile(fullPath)
+	if err != nil {
+		return nil, err
+	}
+	var walletData WalletData
+	err = json.Unmarshal(fileData, &walletData)
+	if err != nil {
+		return nil, err
+	}
+	return &Store{
+		Path: fullPath,
+		Data: walletData,
+	}, nil
+}
 
-	var err error
-	cs.file, err = os.OpenFile(cs.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+func (p *Store) read() ([]byte, error) {
+	p.RLock()
+	defer p.RUnlock()
+
+	return ioutil.ReadFile(p.Path)
+}
+
+func (p *Store) write(data []byte) error {
+	p.Lock()
+	defer p.Unlock()
+
+	dir, name := path.Split(p.Path)
+	f, err := ioutil.TempFile(dir, name)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(data)
+	if err == nil {
+		err = f.Sync()
+	}
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
+	if permErr := os.Chmod(f.Name(), 0666); err == nil {
+		err = permErr
+	}
+	if err == nil {
+		err = os.Rename(f.Name(), name)
+	}
+	if err != nil {
+		os.Remove(f.Name())
+	}
+
+	return err
+}
+
+func (p *Store) SaveAccountData(programHash []byte, encryptedPrivateKey []byte, contract []byte) error {
+	oldBlob, err := p.read()
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(oldBlob, &p.Data); err != nil {
+		return err
+	}
+	pHash, err := Uint160ParseFromBytes(programHash)
+	if err != nil {
+		return err
+	}
+	addr, err := pHash.ToAddress()
+	if err != nil {
+		return err
+	}
+	p.Data.AccountData = AccountData{
+		Address:             addr,
+		ProgramHash:         BytesToHexString(programHash),
+		PrivateKeyEncrypted: BytesToHexString(encryptedPrivateKey),
+		ContractData:        BytesToHexString(contract),
+	}
+	newBlob, err := json.Marshal(p.Data)
+	if err != nil {
+		return err
+	}
+	err = p.write(newBlob)
 	if err != nil {
 		return err
 	}
 
-	if cs.file != nil {
-		cs.file.Write(data)
-	}
-
 	return nil
 }
 
-func (cs *store) closeDB() {
-	if cs.file != nil {
-		cs.file.Close()
-		cs.file = nil
-	}
-}
-
-func (cs *store) BuildDatabase(path string) {
-	os.Remove(path)
-	jsonBlob, err := json.Marshal(cs.data)
+func (p *Store) SaveBasicData(version, iv, masterKey, passwordHash []byte) error {
+	oldBlob, err := p.read()
 	if err != nil {
-		fmt.Println("Build DataBase Error")
-		os.Exit(1)
+		return err
 	}
-	cs.writeDB(jsonBlob)
-}
-
-func (cs *store) SaveAccountData(programHash []byte, encryptedPrivateKey []byte) error {
-	JSONData, err := cs.readDB()
-	if err != nil {
-		return errors.New("error: reading db")
-	}
-	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
+	if err := json.Unmarshal(oldBlob, &p.Data); err != nil {
+		return err
 	}
 
-	pHash, err := Uint160ParseFromBytes(programHash)
-	if err != nil {
-		return errors.New("invalid program hash")
-	}
-	addr, err := pHash.ToAddress()
-	if err != nil {
-		return errors.New("invalid address")
-	}
-	cs.data.Account = AccountData{
-		Address:             addr,
-		ProgramHash:         BytesToHexString(programHash),
-		PrivateKeyEncrypted: BytesToHexString(encryptedPrivateKey),
-	}
+	p.Data.Version = string(version)
+	p.Data.IV = BytesToHexString(iv)
+	p.Data.MasterKey = BytesToHexString(masterKey)
+	p.Data.PasswordHash = BytesToHexString(passwordHash)
 
-	JSONBlob, err := json.Marshal(cs.data)
+	newBlob, err := json.Marshal(p.Data)
 	if err != nil {
-		return errors.New("error: marshal db")
+		return err
 	}
-	cs.writeDB(JSONBlob)
+	err = p.write(newBlob)
+	if err != nil {
+		return err
+	}
 
 	return nil
-}
-
-func (cs *store) LoadAccountData() (AccountData, error) {
-	JSONData, err := cs.readDB()
-	if err != nil {
-		return AccountData{}, errors.New("error: reading db")
-	}
-	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return AccountData{}, errors.New("error: unmarshal db")
-	}
-	return cs.data.Account, nil
-}
-
-func (cs *store) SaveContractData(ct *ct.Contract) error {
-	JSONData, err := cs.readDB()
-	if err != nil {
-		return errors.New("error: reading db")
-	}
-	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
-	}
-	cs.data.Contract = ContractData{
-		RawData:     BytesToHexString(ct.ToArray()),
-	}
-
-	JSONBlob, err := json.Marshal(cs.data)
-	if err != nil {
-		return errors.New("error: marshal db")
-	}
-	cs.writeDB(JSONBlob)
-
-	return nil
-}
-
-func (cs *store) LoadContractData() (ContractData, error) {
-	JSONData, err := cs.readDB()
-	if err != nil {
-		return ContractData{}, errors.New("error: reading db")
-	}
-	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return ContractData{}, errors.New("error: unmarshal db")
-	}
-
-	return cs.data.Contract, nil
-}
-
-func (cs *store) SaveStoredData(name string, value []byte) error {
-	JSONData, err := cs.readDB()
-	if err != nil {
-		return errors.New("error: reading db")
-	}
-	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return errors.New("error: unmarshal db")
-	}
-
-	hexValue := BytesToHexString(value)
-	switch name {
-	case "Version":
-		cs.data.Version = string(value)
-	case "IV":
-		cs.data.IV = hexValue
-	case "MasterKey":
-		cs.data.MasterKey = hexValue
-	case "PasswordHash":
-		cs.data.PasswordHash = hexValue
-	}
-	JSONBlob, err := json.Marshal(cs.data)
-	if err != nil {
-		return errors.New("error: marshal db")
-	}
-	cs.writeDB(JSONBlob)
-
-	return nil
-}
-
-func (cs *store) LoadStoredData(name string) ([]byte, error) {
-	JSONData, err := cs.readDB()
-	if err != nil {
-		return nil, errors.New("error: reading db")
-	}
-	if err := json.Unmarshal(JSONData, &cs.data); err != nil {
-		return nil, errors.New("error: unmarshal db")
-	}
-	switch name {
-	case "Version":
-		return []byte(cs.data.Version), nil
-	case "IV":
-		return HexStringToBytes(cs.data.IV)
-	case "MasterKey":
-		return HexStringToBytes(cs.data.MasterKey)
-	case "PasswordHash":
-		return HexStringToBytes(cs.data.PasswordHash)
-	}
-
-	return nil, errors.New("Can't find the key: " + name)
 }

@@ -4,13 +4,13 @@ import (
 	"os"
 	"sort"
 
-	_ "nkn/cli"
-	"nkn/cli/asset"
-	"nkn/cli/bookkeeper"
-	. "nkn/cli/common"
-	"nkn/cli/debug"
-	"nkn/cli/info"
-	"nkn/cli/wallet"
+	_ "github.com/nknorg/nkn/cli"
+	"github.com/nknorg/nkn/cli/asset"
+	"github.com/nknorg/nkn/cli/bookkeeper"
+	. "github.com/nknorg/nkn/cli/common"
+	"github.com/nknorg/nkn/cli/debug"
+	"github.com/nknorg/nkn/cli/info"
+	"github.com/nknorg/nkn/cli/wallet"
 	"github.com/urfave/cli"
 )
 
