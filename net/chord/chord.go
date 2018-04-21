@@ -259,6 +259,7 @@ func CreateNet() {
 	for {
 		time.Sleep(20 * time.Second)
 		log.Infof("Create Height = %d\n", i)
+		r.DumpInfo(false)
 		i++
 	}
 }
@@ -295,6 +296,7 @@ func JoinNet() {
 	for {
 		time.Sleep(20 * time.Second)
 		log.Infof("Join Height = %d\n", i)
+		r.DumpInfo(false)
 		i++
 	}
 }
