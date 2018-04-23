@@ -280,9 +280,18 @@ func prepJoinRing(port int) (*Config, *TCPTransport, error) {
 // Join the ring
 func JoinNet() {
 	log.Trace()
-	c, t, err := prepJoinRing(10026)
+	port := 10026
+	c, t, err := prepJoinRing(port)
 	if err != nil {
 		log.Error("unexpected err. %s", err)
+		for ; port < 10100; port++ {
+			c, t, err = prepJoinRing(port)
+			if err != nil {
+				log.Error("unexpected err. %s", err)
+			} else {
+				break
+			}
+		}
 	}
 	defer t.Shutdown()
 	// Join ring
