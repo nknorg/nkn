@@ -42,7 +42,8 @@ type tcpOutConn struct {
 }
 
 const (
-	tcpPing = iota
+	_ = iota // request type = 0 cannot be decoded correctly so we start from 1
+	tcpPing
 	tcpListReq
 	tcpGetPredReq
 	tcpNotifyReq
