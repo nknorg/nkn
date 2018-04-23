@@ -77,12 +77,12 @@ $ make
 After building the source code, you should see two executable
 programs:
 
-* `node`: the node program
-* `nodectl`: command line tool for node control
+* `nknd`: the nkn program
+* `nknc`: command line tool for nkn control
 
 ## Deployment
 
-Create four directories to save exectuable files `node` `nodectl` and
+Create four directories to save exectuable files `nknd` `nknc` and
 config file `config.json`.
 
 ``` shell
@@ -90,26 +90,26 @@ $ tree
 .
 ├── n1
 │   ├── config.json
-│   ├── node
-│   └── nodectl
+│   ├── nknd
+│   └── nknc
 ├── n2
 │   ├── config.json
-│   ├── node
-│   └── nodectl
+│   ├── nknd
+│   └── nknc
 ├── n3
 │   ├── config.json
-│   ├── node
-│   └── nodectl
+│   ├── nknd
+│   └── nknc
 ├── n4
 │   ├── config.json
-│   ├── node
-│   └── nodectl
+│   ├── nknd
+│   └── nknc
 ```
 
 Create new wallet in each directory
 
 ``` shell
-$ ./nodectl wallet -c
+$ ./nknc wallet -c
 Password:
 Re-enter Password:
 Address                            Public Key
@@ -190,7 +190,7 @@ conflict on one host.
 Start all nodes
 
 ```shell
-$ ./node
+$ ./nknd
 Password:
 ```
 
