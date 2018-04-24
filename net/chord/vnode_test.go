@@ -154,7 +154,7 @@ func TestVnodeCheckNewSuccDead(t *testing.T) {
 	vn1.successors[0] = &Vnode{Id: []byte{0}}
 
 	if err := vn1.checkNewSuccessor(); err == nil {
-		t.Fatalf("err!", err)
+		t.Fatalf("err: %s", err)
 	}
 
 	if vn1.successors[0].String() != "00" {

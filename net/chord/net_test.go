@@ -1,23 +1,9 @@
 package chord
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
-
-func prepRing(port int) (*Config, *TCPTransport, error) {
-	listen := fmt.Sprintf("localhost:%d", port)
-	conf := DefaultConfig(listen)
-	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
-	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
-	timeout := time.Duration(20 * time.Millisecond)
-	trans, err := InitTCPTransport(listen, timeout)
-	if err != nil {
-		return nil, nil, err
-	}
-	return conf, trans, nil
-}
 
 func TestTCPJoin(t *testing.T) {
 	// Prepare to create 2 nodes
