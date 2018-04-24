@@ -62,7 +62,7 @@ func TestLocalList(t *testing.T) {
 		t.Fatalf("unexpected err. %s", err)
 	}
 	if len(list) != 1 || list[0] != vn {
-		t.Fatalf("local list failed", list)
+		t.Fatalf("local list failed: %s", list)
 	}
 }
 
