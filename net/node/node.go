@@ -422,7 +422,7 @@ func (node *node) SyncNodeHeight() {
 		if CompareHeight(uint64(ledger.DefaultLedger.Blockchain.BlockHeight), heights) {
 			break
 		}
-		<-time.After(5 * time.Second)
+		<-time.After(time.Second)
 	}
 }
 
