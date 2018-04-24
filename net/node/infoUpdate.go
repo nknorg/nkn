@@ -215,11 +215,9 @@ func (n *node) fetchRetryNodeFromNeiborList() int {
 // a node map method
 // Fixme the Nodes should be a parameter
 func (node *node) updateNodeInfo() {
-	var periodUpdateTime uint
+	var periodUpdateTime uint = 1
 	if config.Parameters.GenBlockTime > config.MINGENBLOCKTIME {
 		periodUpdateTime = config.Parameters.GenBlockTime / TIMESOFUPDATETIME
-	} else {
-		periodUpdateTime = config.DEFAULTGENBLOCKTIME / TIMESOFUPDATETIME
 	}
 	ticker := time.NewTicker(time.Second * (time.Duration(periodUpdateTime)))
 	quit := make(chan struct{})

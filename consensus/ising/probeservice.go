@@ -15,7 +15,10 @@ import (
 )
 
 const (
-	ProbeDuration = time.Second * 5
+	ProbeFactor        = 2
+	ResultFactor       = 3
+	ProbeDuration      = ConsensusTime / ProbeFactor
+	WaitForProbeResult = ConsensusTime / ResultFactor
 )
 
 type ProbeService struct {
@@ -49,7 +52,7 @@ func (p *ProbeService) Start() error {
 				message: "Hi",
 			}
 			p.SendConsensusMsg(stateProbe)
-			time.Sleep(time.Second)
+			time.Sleep(WaitForProbeResult)
 			p.AnalyzeResponse()
 		}
 	}

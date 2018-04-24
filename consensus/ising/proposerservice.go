@@ -20,8 +20,12 @@ import (
 )
 
 const (
-	TxnAmountToBePackaged = 1024
-	ConsensusTime         = 20 * time.Second
+	TxnAmountToBePackaged           = 1024
+	FloodingFactor                  = 3
+	VoteFactor                      = 3
+	ConsensusTime                   = 3 * time.Second
+	WaitingForBlockFloodingDuration = ConsensusTime / FloodingFactor
+	WaitingForBlockVoteDuration     = ConsensusTime / VoteFactor
 )
 
 type ProposerService struct {
@@ -89,7 +93,7 @@ func (p *ProposerService) ProposerRoutine() {
 		p.state.SetBit(FloodingFinished)
 	}
 	// waiting for other nodes spreader finished
-	time.Sleep(time.Second * 3)
+	time.Sleep(WaitingForBlockFloodingDuration)
 	block = p.blockCache.GetCurrentBlockFromCache()
 	hash := block.Hash()
 	bpMsg := &BlockProposal{
@@ -102,7 +106,7 @@ func (p *ProposerService) ProposerRoutine() {
 	p.totalWeight = GetNeighborsVotingWeight(p.localNode.GetNeighborNoder())
 
 	// waiting for other nodes voting finished
-	time.Sleep(time.Second * 3)
+	time.Sleep(WaitingForBlockVoteDuration)
 	if p.agreedWeight <= p.totalWeight/2 {
 		p.blockCache.RemoveBlockFromCache(hash)
 		p.Reset()
@@ -148,7 +152,7 @@ func (p *ProposerService) Start() error {
 							p.confirmingBlock = &h
 						} else {
 							if p.confirmingBlock.CompareTo(h) != 0 {
-								p.confirmingBlock = &h
+								//p.confirmingBlock = &h
 							}
 						}
 					}
@@ -236,8 +240,8 @@ func (p *ProposerService) BuildBlock() (*ledger.Block, error) {
 		TransactionsRoot: txnRoot,
 		NextBookKeeper:   Uint160{},
 		Program: &program.Program{
-			Code:      []byte{},
-			Parameter: []byte{},
+			Code:      []byte{0x00},
+			Parameter: []byte{0x00},
 		},
 	}
 	block := &ledger.Block{
