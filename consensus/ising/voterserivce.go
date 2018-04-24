@@ -1,8 +1,6 @@
 package ising
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"sync"
 
@@ -105,6 +103,7 @@ func (p *VoterService) AddNewNeighbor(node uint64) {
 }
 
 func (p *VoterService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubKey) {
+	dumpState(sender, "VoterService received BlockFlooding", 0)
 	// TODO check if the sender is PoR node
 	err := p.blockCache.AddBlockToCache(bfMsg.block)
 	if err != nil {
@@ -122,7 +121,7 @@ func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *cryp
 	if p.NewSenderDetected(nodeID) {
 		p.AddNewNeighbor(nodeID)
 	}
-
+	dumpState(sender, "VoterService received BlockProposal", *p.state[nodeID])
 	p.Lock()
 	defer p.Unlock()
 	hash := *bpMsg.blockHash
@@ -159,6 +158,7 @@ func (p *VoterService) HandleBlockResponseMsg(brMsg *BlockResponse, sender *cryp
 	defer p.Unlock()
 
 	nodeID := publickKeyToNodeID(sender)
+	dumpState(sender, "VoterService received BlockResponse", *p.state[nodeID])
 	if !p.state[nodeID].HasBit(InitialState) || !p.state[nodeID].HasBit(RequestSent) {
 		log.Warn("consensus state error in BlockResponse message handler")
 		return
@@ -212,20 +212,6 @@ func (p *VoterService) ReplyConsensusMsg(msg IsingMessage, to *crypto.PubKey) er
 	}
 
 	return nil
-}
-
-func publickKeyToNodeID(pubKey *crypto.PubKey) uint64 {
-	var id uint64
-	key, err := pubKey.EncodePoint(true)
-	if err != nil {
-		log.Error(err)
-	}
-	err = binary.Read(bytes.NewBuffer(key[:8]), binary.LittleEndian, &id)
-	if err != nil {
-		log.Error(err)
-	}
-
-	return id
 }
 
 func initialVoterNodeState(node protocol.Noder) map[uint64]*State {
