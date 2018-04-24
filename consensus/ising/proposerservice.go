@@ -282,6 +282,7 @@ func (p *ProposerService) ReceiveConsensusMsg(v interface{}) {
 }
 
 func (p *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubKey) {
+	dumpState(sender, "ProposerService received BlockFlooding", p.state)
 	if !p.state.HasBit(InitialState) || p.state.HasBit(FloodingFinished) {
 		log.Warn("consensus state error in BlockFlooding message handler")
 		return
@@ -296,7 +297,7 @@ func (p *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *c
 }
 
 func (p *ProposerService) HandleBlockRequestMsg(brMsg *BlockRequest, sender *crypto.PubKey) {
-	fmt.Println("handle block request....")
+	dumpState(sender, "ProposerService received BlockRequest", p.state)
 	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) {
 		log.Warn("consensus state error in BlockRequest message handler")
 		return
@@ -319,6 +320,7 @@ func (p *ProposerService) HandleBlockRequestMsg(brMsg *BlockRequest, sender *cry
 }
 
 func (p *ProposerService) HandleBlockVoteMsg(bvMsg *BlockVote, sender *crypto.PubKey) {
+	dumpState(sender, "ProposerService received BlockVote", p.state)
 	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) || !p.state.HasBit(ProposalSent) {
 		log.Warn("consensus state error in BlockVote message handler")
 		return
