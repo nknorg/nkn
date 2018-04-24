@@ -124,7 +124,6 @@ func (p *ProposerService) Start() error {
 		for {
 			select {
 			case <-p.ticker.C:
-				p.Reset()
 				p.ProposerRoutine()
 			}
 		}
