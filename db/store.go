@@ -1188,7 +1188,7 @@ func (bd *ChainStore) persistBlocks(ledger *Ledger) {
 		bd.mu.Unlock()
 
 		ledger.Blockchain.BCEvents.Notify(events.EventBlockPersistCompleted, block)
-		log.Tracef("The latest block height:%d, block hash: %x", block.Header.Height, hash)
+		log.Tracef("current block height: %d, block hash: %x", block.Header.Height, hash)
 	}
 
 }
