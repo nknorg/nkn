@@ -123,7 +123,6 @@ func nknMain() error {
 	httpjson.Wallet = wallet
 	for {
 		time.Sleep(dbft.GenBlockTime)
-		log.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
 		if log.CheckIfNeedNewFile() {
 			log.ClosePrintLog()
 			log.Init(log.Path, os.Stdout)

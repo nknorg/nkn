@@ -32,7 +32,7 @@ type ProposerService struct {
 	account              *wallet.Account           // local account
 	ticker               *time.Ticker              // ticker for proposal service
 	spreader             bool                      // whether the node could do block flooding
-	state                State                     // consensus state
+	state                map[Uint256]*State        // consensus state
 	localNode            protocol.Noder            // local node
 	txnCollector         *transaction.TxnCollector // collect transaction from where
 	confirmingBlock      *Uint256                  // current block in consensus process
@@ -56,7 +56,7 @@ func NewProposerService(account *wallet.Account, node protocol.Noder, ch chan in
 	}
 
 	service := &ProposerService{
-		state:        InitialState,
+		state:        make(map[Uint256]*State),
 		ticker:       time.NewTicker(ConsensusTime),
 		spreader:     flag,
 		account:      account,
@@ -90,7 +90,7 @@ func (p *ProposerService) ProposerRoutine() {
 			log.Error("sending consensus message error: ", err)
 		}
 		p.blockChan <- block
-		p.state.SetBit(FloodingFinished)
+		p.SetBlockState(block.Hash(), FloodingFinished)
 	}
 	// waiting for other nodes spreader finished
 	time.Sleep(WaitingForBlockFloodingDuration)
@@ -101,7 +101,7 @@ func (p *ProposerService) ProposerRoutine() {
 	}
 
 	p.SendConsensusMsg(bpMsg, nil)
-	p.state.SetBit(ProposalSent)
+	p.SetBlockState(hash, ProposalSent)
 	p.confirmingBlock = &hash
 	p.totalWeight = GetNeighborsVotingWeight(p.localNode.GetNeighborNoder())
 
@@ -252,6 +252,24 @@ func (p *ProposerService) BuildBlock() (*ledger.Block, error) {
 	return block, nil
 }
 
+func (p *ProposerService) HasBlockState(blockhash Uint256, state State) bool {
+	if v, ok := p.state[blockhash]; !ok || v == nil {
+		return false
+	} else {
+		if v.HasBit(state) {
+			return true
+		}
+		return false
+	}
+}
+
+func (p *ProposerService) SetBlockState(blockhash Uint256, s State) {
+	if _, ok := p.state[blockhash]; !ok {
+		p.state[blockhash] = new(State)
+	}
+	p.state[blockhash].SetBit(s)
+}
+
 func (p *ProposerService) ReceiveConsensusMsg(v interface{}) {
 	if payload, ok := v.(*message.IsingPayload); ok {
 		sender := payload.Sender
@@ -285,8 +303,9 @@ func (p *ProposerService) ReceiveConsensusMsg(v interface{}) {
 }
 
 func (p *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubKey) {
-	dumpState(sender, "ProposerService received BlockFlooding", p.state)
-	if !p.state.HasBit(InitialState) || p.state.HasBit(FloodingFinished) {
+	blockHash := bfMsg.block.Hash()
+	dumpState(sender, "ProposerService received BlockFlooding", p.state[blockHash])
+	if p.HasBlockState(blockHash, FloodingFinished) {
 		log.Warn("consensus state error in BlockFlooding message handler")
 		return
 	}
@@ -296,12 +315,14 @@ func (p *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *c
 		log.Error("add received block to local cache error")
 		return
 	}
-	p.state.SetBit(FloodingFinished)
+	p.SetBlockState(blockHash, FloodingFinished)
+	return
 }
 
 func (p *ProposerService) HandleBlockRequestMsg(brMsg *BlockRequest, sender *crypto.PubKey) {
-	dumpState(sender, "ProposerService received BlockRequest", p.state)
-	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) {
+	blockHash := *brMsg.blockHash
+	dumpState(sender, "ProposerService received BlockRequest", p.state[blockHash])
+	if !p.HasBlockState(blockHash, FloodingFinished) {
 		log.Warn("consensus state error in BlockRequest message handler")
 		return
 	}
@@ -323,8 +344,9 @@ func (p *ProposerService) HandleBlockRequestMsg(brMsg *BlockRequest, sender *cry
 }
 
 func (p *ProposerService) HandleBlockVoteMsg(bvMsg *BlockVote, sender *crypto.PubKey) {
-	dumpState(sender, "ProposerService received BlockVote", p.state)
-	if !p.state.HasBit(InitialState) || !p.state.HasBit(FloodingFinished) || !p.state.HasBit(ProposalSent) {
+	blockHash := *bvMsg.blockHash
+	dumpState(sender, "ProposerService received BlockVote", p.state[blockHash])
+	if !p.HasBlockState(blockHash, FloodingFinished) || !p.HasBlockState(blockHash, ProposalSent) {
 		log.Warn("consensus state error in BlockVote message handler")
 		return
 	}
@@ -356,8 +378,6 @@ func (p *ProposerService) HandleBlockVoteMsg(bvMsg *BlockVote, sender *crypto.Pu
 }
 
 func (p *ProposerService) Reset() {
-	p.state.ClearAll()
-	p.state.SetBit(InitialState)
 	p.totalWeight = GetNeighborsVotingWeight(p.localNode.GetNeighborNoder())
 	p.agreedWeight = 0
 }

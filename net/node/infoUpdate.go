@@ -215,11 +215,10 @@ func (n *node) fetchRetryNodeFromNeiborList() int {
 // a node map method
 // Fixme the Nodes should be a parameter
 func (node *node) updateNodeInfo() {
-	var periodUpdateTime uint = 1
-	if config.Parameters.GenBlockTime > config.MINGENBLOCKTIME {
-		periodUpdateTime = config.Parameters.GenBlockTime / TIMESOFUPDATETIME
-	}
-	ticker := time.NewTicker(time.Second * (time.Duration(periodUpdateTime)))
+	// Fixme: relate ticker time with block generation time.
+	// If the ticker time is inappropriate, the node will
+	// not catch up with neighbor nodes(syncing always).
+	ticker := time.NewTicker(time.Millisecond * 1200)
 	quit := make(chan struct{})
 	for {
 		select {
