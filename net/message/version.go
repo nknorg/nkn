@@ -173,8 +173,8 @@ func (msg version) Handle(node Noder) error {
 
 	s := node.GetState()
 	if s != INIT && s != HAND {
-		log.Warn("Ugithub.com/nknorg/nknow status to received version")
-		return errors.New("Ugithub.com/nknorg/nknow status to received version")
+		log.Warn("Unknown status to received version")
+		return errors.New("Unknown status to received version")
 	}
 
 	// Obsolete node

@@ -4,9 +4,10 @@ import (
 	"errors"
 	"strconv"
 
+	"bytes"
+
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
-	"bytes"
 )
 
 type verACK struct {
@@ -53,8 +54,8 @@ func (msg verACK) Handle(node Noder) error {
 
 	s := node.GetState()
 	if s != HANDSHAKE && s != HANDSHAKED {
-		log.Warn("Ugithub.com/nknorg/nknow status to received verack")
-		return errors.New("Ugithub.com/nknorg/nknow status to received verack")
+		log.Warn("Unknown status to received verack")
+		return errors.New("Unknown status to received verack")
 	}
 
 	node.SetState(ESTABLISH)
