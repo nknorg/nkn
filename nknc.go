@@ -14,15 +14,13 @@ import (
 	"github.com/urfave/cli"
 )
 
-var Version string
-
 func main() {
 	app := cli.NewApp()
-	app.Name = "nodectl"
+	app.Name = "nknc"
 	app.Version = Version
-	app.HelpName = "nodectl"
+	app.HelpName = "nknc"
 	app.Usage = "command line tool for blockchain"
-	app.UsageText = "nodectl [global options] command [command options] [args]"
+	app.UsageText = "nknc [global options] command [command options] [args]"
 	app.HideHelp = false
 	app.HideVersion = false
 	//global options

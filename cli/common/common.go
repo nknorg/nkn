@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	Ip   string
-	Port string
+	Ip      string
+	Port    string
+	Version string
 )
 
 func NewIpFlag() cli.Flag {

@@ -119,7 +119,7 @@ func NewCommand() *cli.Command {
 	return &cli.Command{
 		Name:        "info",
 		Usage:       "show blockchain information",
-		Description: "With nodectl info, you could look up blocks, transactions, etc.",
+		Description: "With nknc info, you could look up blocks, transactions, etc.",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.StringFlag{

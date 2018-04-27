@@ -5,7 +5,7 @@ Chord network protocol.
 package chord
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"fmt"
 	"hash"
 	"time"
@@ -101,13 +101,13 @@ type Ring struct {
 func DefaultConfig(hostname string) *Config {
 	return &Config{
 		hostname,
-		8,        // 8 vnodes
-		sha1.New, // SHA1
-		time.Duration(15 * time.Second),
-		time.Duration(45 * time.Second),
+		1,          // 1 vnodes
+		sha256.New, // SHA256
+		time.Duration(150 * time.Millisecond),
+		time.Duration(450 * time.Millisecond),
 		8,   // 8 successors
 		nil, // No delegate
-		160, // 160bit hash function
+		256, // 256bit hash function
 	}
 }
 
@@ -115,6 +115,10 @@ func DefaultConfig(hostname string) *Config {
 func Create(conf *Config, trans Transport) (*Ring, error) {
 	// Initialize the hash bits
 	conf.hashBits = conf.HashFunc().Size() * 8
+
+	if conf.NumVnodes < conf.NumSuccessors {
+		conf.NumVnodes = conf.NumSuccessors
+	}
 
 	// Create and initialize a ring
 	ring := &Ring{}
@@ -229,8 +233,6 @@ func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 func prepRing(port int) (*Config, *TCPTransport, error) {
 	listen := fmt.Sprintf("localhost:%d", port)
 	conf := DefaultConfig(listen)
-	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
-	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
 	timeout := time.Duration(20 * time.Millisecond)
 	trans, err := InitTCPTransport(listen, timeout)
 	if err != nil {
@@ -267,8 +269,6 @@ func CreateNet() {
 func prepJoinRing(port int) (*Config, *TCPTransport, error) {
 	listen := fmt.Sprintf("localhost:%d", port)
 	conf := DefaultConfig(listen)
-	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
-	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
 	timeout := time.Duration(20 * time.Millisecond)
 	trans, err := InitTCPTransport(listen, timeout)
 	if err != nil {
@@ -280,9 +280,18 @@ func prepJoinRing(port int) (*Config, *TCPTransport, error) {
 // Join the ring
 func JoinNet() {
 	log.Trace()
-	c, t, err := prepJoinRing(10026)
+	port := 10026
+	c, t, err := prepJoinRing(port)
 	if err != nil {
 		log.Error("unexpected err. %s", err)
+		for ; port < 10100; port++ {
+			c, t, err = prepJoinRing(port)
+			if err != nil {
+				log.Error("unexpected err. %s", err)
+			} else {
+				break
+			}
+		}
 	}
 	defer t.Shutdown()
 	// Join ring

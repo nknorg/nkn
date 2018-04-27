@@ -1,15 +1,17 @@
 ﻿{
-  "Configuration": {
-    "Magic": 99281,
-    "Version": 1,
-    "HttpInfoPort": 10333,
-    "HttpInfoStart": true,
-    "HttpRestPort": 10334,
-    "HttpWsPort":10335,
-    "HttpJsonPort": 10336,
-    "NodePort": 10338,
-    "PrintLevel": 5,
-    "IsTLS": false,
-    "MultiCoreNum": 4
-  }
+  "Magic": 99281,
+  "Version": 1,
+  "HttpInfoPort": 10333,
+  "HttpInfoStart": true,
+  "HttpRestPort": 10334,
+  "HttpWsPort":10335,
+  "HttpJsonPort": 10336,
+  "NodePort": 10338,
+  "PrintLevel": 5,
+  "IsTLS": false,
+  "MultiCoreNum": 4,
+  "ConsensusType": "ising",
+  "SeedList": [
+    "127.0.0.1:10338"
+  ]
 }

@@ -1,11 +1,8 @@
 package ising
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"sync"
-
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
@@ -17,12 +14,12 @@ import (
 
 type VoterService struct {
 	sync.RWMutex
-	account              *wallet.Account     // local account
-	state                map[uint64]*State   // consensus state
-	localNode            protocol.Noder      // local node
-	blockCache           *BlockCache         // blocks waiting for voting
-	consensusMsgReceived events.Subscriber   // consensus events listening
-	blockChan            chan *ledger.Block  // receive block from proposer thread
+	account              *wallet.Account    // local account
+	state                map[uint64]*State  // consensus state
+	localNode            protocol.Noder     // local node
+	blockCache           *BlockCache        // blocks waiting for voting
+	consensusMsgReceived events.Subscriber  // consensus events listening
+	blockChan            chan *ledger.Block // receive block from proposer thread
 }
 
 func NewVoterService(account *wallet.Account, node protocol.Noder, bch chan *ledger.Block) *VoterService {
@@ -38,8 +35,11 @@ func NewVoterService(account *wallet.Account, node protocol.Noder, bch chan *led
 	go func() {
 		for {
 			select {
-			case block := <- bch:
+			case block := <-bch:
 				service.blockCache.AddBlockToCache(block)
+				for _, s := range service.state {
+					s.SetBit(FloodingFinished)
+				}
 			}
 		}
 	}()
@@ -105,6 +105,7 @@ func (p *VoterService) AddNewNeighbor(node uint64) {
 }
 
 func (p *VoterService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubKey) {
+	dumpState(sender, "VoterService received BlockFlooding", 0)
 	// TODO check if the sender is PoR node
 	err := p.blockCache.AddBlockToCache(bfMsg.block)
 	if err != nil {
@@ -122,7 +123,11 @@ func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *cryp
 	if p.NewSenderDetected(nodeID) {
 		p.AddNewNeighbor(nodeID)
 	}
-
+	dumpState(sender, "VoterService received BlockProposal", *p.state[nodeID])
+	if !p.state[nodeID].HasBit(InitialState) || p.state[nodeID].HasBit(OpinionSent) {
+		log.Warn("consensus state error in BlockProposal message handler")
+		return
+	}
 	p.Lock()
 	defer p.Unlock()
 	hash := *bpMsg.blockHash
@@ -132,11 +137,13 @@ func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *cryp
 		}
 		p.ReplyConsensusMsg(brMsg, sender)
 		p.state[nodeID].SetBit(RequestSent)
+		log.Warn("doesn't contain block in local cache, requesting it from neighbor")
 		return
 	}
 
 	if !p.state[nodeID].HasBit(FloodingFinished) {
-		p.state[nodeID].SetBit(FloodingFinished)
+		log.Warn("require FloodingFinished state in BlockProposal message handler")
+		return
 	}
 
 	block := p.blockCache.GetBlockFromCache(hash)
@@ -151,6 +158,7 @@ func (p *VoterService) HandleBlockProposalMsg(bpMsg *BlockProposal, sender *cryp
 	}
 	p.ReplyConsensusMsg(blMsg, sender)
 	p.state[nodeID].SetBit(OpinionSent)
+	p.Reset(nodeID)
 	return
 }
 
@@ -159,6 +167,7 @@ func (p *VoterService) HandleBlockResponseMsg(brMsg *BlockResponse, sender *cryp
 	defer p.Unlock()
 
 	nodeID := publickKeyToNodeID(sender)
+	dumpState(sender, "VoterService received BlockResponse", *p.state[nodeID])
 	if !p.state[nodeID].HasBit(InitialState) || !p.state[nodeID].HasBit(RequestSent) {
 		log.Warn("consensus state error in BlockResponse message handler")
 		return
@@ -178,6 +187,7 @@ func (p *VoterService) HandleBlockResponseMsg(brMsg *BlockResponse, sender *cryp
 	}
 	p.ReplyConsensusMsg(bvMsg, sender)
 	p.state[nodeID].SetBit(OpinionSent)
+	p.Reset(nodeID)
 	return
 }
 
@@ -214,26 +224,19 @@ func (p *VoterService) ReplyConsensusMsg(msg IsingMessage, to *crypto.PubKey) er
 	return nil
 }
 
-func publickKeyToNodeID(pubKey *crypto.PubKey) uint64 {
-	var id uint64
-	key, err := pubKey.EncodePoint(true)
-	if err != nil {
-		log.Error(err)
-	}
-	err = binary.Read(bytes.NewBuffer(key[:8]), binary.LittleEndian, &id)
-	if err != nil {
-		log.Error(err)
-	}
-
-	return id
+// Reset resets neighbor state for continuing next round consensus,
+// this function should be called after voter thread sending a vote to a neighbor.
+func (p *VoterService) Reset(neighbor uint64) {
+	p.state[neighbor].ClearAll()
+	p.state[neighbor].SetBit(InitialState)
 }
 
 func initialVoterNodeState(node protocol.Noder) map[uint64]*State {
 	neighbors := node.GetNeighborNoder()
 	m := make(map[uint64]*State, len(neighbors))
-	var state State
-	state.SetBit(InitialState)
 	for _, n := range neighbors {
+		var state State
+		state.SetBit(InitialState)
 		m[n.GetID()] = &state
 	}
 

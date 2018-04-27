@@ -115,11 +115,14 @@ func (vn *localVnode) checkNewSuccessor() error {
 	if maybe_suc != nil && between(vn.Id, succ.Id, maybe_suc.Id) {
 		// Check if new successor is alive before switching
 		alive, err := trans.Ping(maybe_suc)
-		if alive && err == nil {
+		if err != nil {
+			return err
+		}
+		if alive {
 			copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
 			vn.successors[0] = maybe_suc
 		} else {
-			return err
+			// TODO: notify successor to update its predecessor
 		}
 	}
 	return nil

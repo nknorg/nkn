@@ -42,7 +42,8 @@ type tcpOutConn struct {
 }
 
 const (
-	tcpPing = iota
+	_ = iota // request type = 0 cannot be decoded correctly so we start from 1
+	tcpPing
 	tcpListReq
 	tcpGetPredReq
 	tcpNotifyReq
@@ -254,7 +255,7 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 	// Get a conn
 	out, err := t.getConn(vn.Host)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 
 	// Response channels
@@ -292,7 +293,7 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 
 	select {
 	case <-time.After(t.timeout):
-		return false, fmt.Errorf("Command timed out!")
+		return false, nil
 	case err := <-errChan:
 		return false, err
 	case res := <-respChan:
