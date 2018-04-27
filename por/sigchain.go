@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"io"
 
 	. "github.com/nknorg/nkn/common"
@@ -361,4 +362,30 @@ func (p *SigChainElem) DeserializationUnsigned(r io.Reader) error {
 	}
 
 	return nil
+}
+
+func (p *SigChain) GetFinalSignature() ([]byte, error) {
+	if eq := crypto.Equal(p.destPubkey, p.elems[len(p.elems)-1].pubkey); !eq {
+		return nil, errors.New("unfinal signature.")
+	}
+
+	return p.elems[len(p.elems)-1].signature, nil
+}
+
+func (p *SigChain) dump() {
+	fmt.Println("dataSize: ", p.dataSize)
+	fmt.Println("dataHash: ", p.dataHash)
+	srcPk, _ := p.srcPubkey.EncodePoint(true)
+	fmt.Println("srcPubkey: ", BytesToHexString(srcPk))
+	dstPk, _ := p.destPubkey.EncodePoint(true)
+	fmt.Println("dstPubkey: ", BytesToHexString(dstPk))
+
+	for i, e := range p.elems {
+		curPk, _ := e.pubkey.EncodePoint(true)
+		fmt.Printf("curPubkey[%d]: %s\n", i, BytesToHexString(curPk))
+		nextPk, _ := e.nextPubkey.EncodePoint(true)
+		fmt.Printf("nextPubkey[%d]: %s\n", i, BytesToHexString(nextPk))
+		fmt.Printf("signature[%d]: %s\n", i, BytesToHexString(e.signature))
+
+	}
 }
