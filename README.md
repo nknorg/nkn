@@ -3,7 +3,7 @@
 > A project aiming to rebuild the Internet that will be truly open,
   decentralized, dynamic, safe, shared and owned by the community.
 
-                                                               [![nkn.org](img/nkn_logo.png)](https://nkn.org/)
+[![nkn.org](img/nkn_logo.png)](https://nkn.org/)
 
 [https://nkn.org/](https://nkn.org/)
 
@@ -76,8 +76,7 @@ well as IPFS and Filecoin blockchainized storage. The next generation blockchain
  on NKN are capable of supporting new kind of decentralized applications (DApp)
  which have much more powerful connectivity and transmission capability. The vision of
  NKN is not only to revolutionize the decentralized network layers, but also to develop
-core technologies for the next generation blockchain. More details can be found in [Overview]
- (https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/overview.md).
+core technologies for the next generation blockchain. More details can be found in [Overview](https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/overview.md).
 
 ## Technology Foundations
 
@@ -120,8 +119,7 @@ network connectivity and data transmission, there are multiple efficient
 paths between nodes in DDTN, which can be used to enhance data transmission
 capacity. Native tokens can incentivize the sharing of network resources, and
 eventually minimize wasted connectivity and bandwidth. Such a property is
-termed "self-incentivized". More details can be found in [DDTN]
- (https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/distributed_data_transmission_network.md).
+termed "self-incentivized". More details can be found in [DDTN](https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/distributed_data_transmission_network.md).
 
 ## Cellular Automata Powered Consensus
 
@@ -140,8 +138,7 @@ CA to zero temperature Ising model. Some studies investigated the fault
  tolerance of Cellular Automata and how to increase robustness in Cellular 
 Automata-Based systems. We further showed that the result is robust to random
  and malicious faulty nodes and compute the threshold when desired consensus
- cannot be made. More details can be found in [Ising Consensus and Blockchain]
- (https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/consensus_and_blockchain.md).
+ cannot be made. More details can be found in [Ising Consensus and Blockchain](https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/consensus_and_blockchain.md).
 
 Consensus in NKN is driven by Proof of Relay (PoR), a useful Proof of
 Work (PoW) where the expected rewards a node gets depend on its
@@ -153,8 +150,7 @@ waste of resources since the work performed in PoR benefits the whole network
  to the data transmission layer, and the only way to get more rewards is providing 
  more transmission power. The competition between nodes in the network will eventually
 drive the system towards the direction of low latency, high bandwidth data transmission network.
-More details can be found in [Proof of Relay]
- (https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/proof_of_relay.md).
+More details can be found in [Proof of Relay](https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/proof_of_relay.md).
 
 ## Potential Attacks
 
@@ -164,8 +160,7 @@ one of the important aspects of NKN development and future work.
 The attackt types under study are collusion attacks, double spending 
 attacks, Sybil attacks, denial-of-service (DoS) attacks, quality-of-service
  (QoS) attacks, eclipse attacks, selfish mining attacks, and fraud attacks.
- More details can be found in [Attack Analysis]
- (https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/attack_analysis.md).
+ More details can be found in [Attack Analysis](https://github.com/nknorg/nkn/blob/master/doc/tech_design_doc/attack_analysis.md).
 
 ## Conclusions
 
