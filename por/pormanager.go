@@ -70,9 +70,7 @@ func (pm *porManager) handleSignMsg(sm *signMsg) {
 	if eq := crypto.Equal(pm.account.PubKey(), sm.sc.elems[len(sm.sc.elems)-1].pubkey); !eq {
 		sm.reply <- sm.sc
 	}
-	ne := NewElem(pm.account.PubKey(), sm.nextPubkey)
-	ne.Sign(sm.sc)
-	sm.sc.Sign(ne)
+	sm.sc.Sign(sm.nextPubkey, pm.account)
 	sm.reply <- sm.sc
 	//TODO if it's the destination address of sigchain, send commit
 	//transaction
