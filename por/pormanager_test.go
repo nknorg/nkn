@@ -1,7 +1,7 @@
 package por
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/nknorg/nkn/common"
@@ -14,20 +14,45 @@ func TestPorManager(t *testing.T) {
 	from, _ := wallet.NewAccount()
 	rel, _ := wallet.NewAccount()
 	to, _ := wallet.NewAccount()
-	pm := NewPorManager(rel)
-	sc, _ := NewSigChain(from, 1, &common.Uint256{}, to.PubKey(), rel.PubKey())
-	ret := pm.Sign(sc, to.PubKey())
-	if pm.Verify(ret) {
-		fmt.Println("[pormanager] verify successfully")
-	} else {
-		fmt.Println("[pormanager] verify failed")
+	pmFrom := NewPorManager(from)
+	pmRel := NewPorManager(rel)
+	pmTo := NewPorManager(to)
+	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, to.PubKey(), rel.PubKey())
+	if err != nil {
+		t.Error("sigchain created failed")
 	}
-	pm2 := NewPorManager(to)
-	ret2 := pm2.Sign(ret, to.PubKey())
-	if pm2.Verify(ret2) {
-		fmt.Println("[pormanager] verify successfully 2")
+	scRel := pmRel.Sign(scFrom, to.PubKey())
+	if pmRel.Verify(scRel) {
+		t.Log("[pormanager] verify successfully")
 	} else {
-		fmt.Println("[pormanager] verify failed 2")
+		t.Error("[pormanager] verify failed")
+	}
+
+	if !pmTo.IsFinal(scRel) {
+		t.Log("[pormanager] IsFinal test successfully")
+	} else {
+		t.Error("[pormanager] IsFinal test failed")
+	}
+
+	scTo := pmTo.Sign(scRel, to.PubKey())
+	if pmTo.Verify(scTo) {
+		t.Log("[pormanager] verify successfully 2")
+	} else {
+		t.Error("[pormanager] verify failed 2")
+	}
+
+	if pmTo.IsFinal(scTo) {
+		t.Log("[pormanager] IsFinal test successfully 2")
+	} else {
+		t.Error("[pormanager] IsFinal test failed 2")
+	}
+
+	elem, _ := scTo.lastSigElem()
+	sig, err := pmTo.GetSignture(scTo)
+	if reflect.DeepEqual(sig, elem.signature) != true || err != nil {
+		t.Error("[pormanager] GetSignture error")
+	} else {
+		t.Log("[pormanager] GetSignture successfully")
 	}
 
 }
