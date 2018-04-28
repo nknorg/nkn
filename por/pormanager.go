@@ -1,6 +1,8 @@
 package por
 
 import (
+	"fmt"
+
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
@@ -67,10 +69,13 @@ type signMsg struct {
 }
 
 func (pm *porManager) handleSignMsg(sm *signMsg) {
-	if eq := crypto.Equal(pm.account.PubKey(), sm.sc.elems[len(sm.sc.elems)-1].pubkey); !eq {
+	if !crypto.Equal(pm.account.PubKey(), sm.sc.elems[len(sm.sc.elems)-1].nextPubkey) {
 		sm.reply <- sm.sc
 	}
-	sm.sc.Sign(sm.nextPubkey, pm.account)
+	err := sm.sc.Sign(sm.nextPubkey, pm.account)
+	if err != nil {
+		fmt.Println(err)
+	}
 	sm.reply <- sm.sc
 	//TODO if it's the destination address of sigchain, send commit
 	//transaction

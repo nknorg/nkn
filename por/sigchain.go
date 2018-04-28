@@ -219,7 +219,7 @@ func (p *SigChain) getElemByPubkey(pubkey *crypto.PubKey) (*SigChainElem, int, e
 		return nil, 0, errors.New("nil signature chain")
 	}
 	for i, elem := range p.elems {
-		if !crypto.Equal(elem.pubkey, pubkey) {
+		if crypto.Equal(elem.pubkey, pubkey) {
 			return elem, i, nil
 		}
 	}
