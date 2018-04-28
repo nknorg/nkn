@@ -1,6 +1,7 @@
 package por
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/nknorg/nkn/common"
@@ -13,9 +14,13 @@ func TestPorManager(t *testing.T) {
 	from, _ := wallet.NewAccount()
 	rel, _ := wallet.NewAccount()
 	to, _ := wallet.NewAccount()
-	pm := NewPorManager(from)
-	sc := New(1, &common.Uint256{}, from.PubKey(), to.PubKey(), rel.PubKey())
-	sc.dump()
-	ret := pm.Sign(sc, rel.PubKey())
-	ret.dump()
+	pm := NewPorManager(rel)
+	sc, _ := NewSigChain(from, 1, &common.Uint256{}, to.PubKey(), rel.PubKey())
+	ret := pm.Sign(sc, to.PubKey())
+	if ret.Verify() == nil {
+		fmt.Println("[pormanager] verify successfully")
+	} else {
+		fmt.Println("[pormanager] verify failed")
+	}
+
 }
