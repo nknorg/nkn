@@ -14,18 +14,15 @@ concept](https://youtu.be/cT29i3-ImQk) to get started.
 
 ## Table of Contents
 
-- [Challenges of Network Infrastructure](#challenges-of-network-infrastructure)
-- [Vision](#vision)
-- [Technology Foundations](#technology-foundations)
+- [Introduction](#introduction)
 - [New Kind of Network](#new-kind-of-network)
 - [Cellular Automata Powered Consensus](#cellular-automata-consensus)
-- [Potential Attacks](#potential-attacks)
 - [Building](#building)
 - [Contributing](#contributing)
 - [Community](#community)
 - [Conclusions](#conclusions)
 
-## Challenges of Network Infrastructure
+## Introduction
 
 After years of transmutation, the Internet is in danger of losing its
 original vision and spirit.  When the FCC approved a measure to remove the
@@ -38,8 +35,6 @@ selective and biased information propagation. Without a proper incentivizing
 engagement scheme, it is almost impossible to maintain a constant and secured
  information propagation channel.
 
-## Vision
-
 NKN intends to revolutionize the entire network technology and business. NKN
  wants  to be the Uber or Airbnb of the trillion-dollar communication service
 business, but without a central entity. NKN aspires to free the bits, and build
@@ -51,7 +46,7 @@ storage. The vision of NKN is not only to revolutionize the decentralized
 network layers, but also to develop core technologies for the next generation
 blockchain. More details can be found in [Overview](doc/tech_design_doc/overview.md).
 
-## Technology Foundations
+## New Kind of Network
 
 NKN utilizes microscopic rules based on Cellular Automata (CA) to define
 network topology, achieves self-evolution behaviors, and explores
@@ -66,8 +61,6 @@ network. Each node in the NKN network is constantly updating based on its
 current state as well as the states of neighbors. The neighbors of each node are
 also dynamically changing so that the network topology is also dynamic without
 changing its underlying infrastructure and protocols.
-
-## New Kind of Network
 
 NKN introduced the concept of Decentralized Data Transmission Network
 (DDTN). DDTN combines multiple independent and self-organized relay
@@ -100,21 +93,16 @@ waste of resources since the work performed in PoR benefits the whole network
 drive the system towards the direction of low latency, high bandwidth data transmission network.
 More details can be found in [Proof of Relay](doc/tech_design_doc/proof_of_relay.md).
 
-## Potential Attacks
 
-Since NKN is designed with attack prevention in mind, it is necessary
-to review related attack types. Attack analysis and mitigation will be
-one of the important aspects of NKN development and future work.
-The attackt types under study are collusion attacks, double spending 
-attacks, Sybil attacks, denial-of-service (DoS) attacks, quality-of-service
- (QoS) attacks, eclipse attacks, selfish mining attacks, and fraud attacks.
- More details can be found in [Attack Analysis](doc/tech_design_doc/attack_analysis.md).
  
 ## Building
+
  
 ## Contributing
+
  
 ## Community
+
 
 ## Conclusions
 
