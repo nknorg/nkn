@@ -16,14 +16,6 @@ const (
 	cacheChanCap = 10
 )
 
-//TODO
-//  NewSigChain() *SigChain
-//  IsFinal(sc *SigChain) bool
-//  GetSignture(sc *SigChain) ([]byte, error)
-//  GetLenofSig(sc *SigChain) uint32
-//  CommitSig() *transaction.Transaction
-//  GetSigFromTx(txn *transaction.Transaction) []byte
-//  GetSigChainFromTx(txn *transaction.Transaction) *SigChain
 type porManager struct {
 	account    *wallet.Account
 	maxWorkSig []byte
@@ -31,7 +23,7 @@ type porManager struct {
 	quit       chan struct{}
 	started    bool
 	sigChains  map[common.Uint256]*SigChain
-	cacheChan  chan *SigChain
+	cacheChan  chan interface{}
 }
 
 type signMsg struct {
@@ -44,12 +36,15 @@ type verifyMsg struct {
 	sc    *SigChain
 	reply chan bool
 }
+type getSigChainsMsg struct {
+	reply chan []*SigChain
+}
 
 func NewPorManager(acc *wallet.Account) *porManager {
 	pm := &porManager{
 		account:   acc,
 		msgChan:   make(chan interface{}, porChanCap),
-		cacheChan: make(chan *SigChain, cacheChanCap),
+		cacheChan: make(chan interface{}, cacheChanCap),
 		quit:      make(chan struct{}, 1),
 		sigChains: make(map[common.Uint256]*SigChain),
 	}
@@ -60,18 +55,33 @@ func NewPorManager(acc *wallet.Account) *porManager {
 	return pm
 }
 
-//TODO add and delete
 func (pm *porManager) cacheSigChain() {
 out:
 	for {
 		select {
-		case sc := <-pm.cacheChan:
-			buff := bytes.NewBuffer(nil)
-			if err := sc.Serialize(buff); err != nil {
-				log.Error("sigchain Serialize error")
-			} else {
-				hash := sha256.Sum256(buff.Bytes())
-				pm.sigChains[hash] = sc
+		case m := <-pm.cacheChan:
+			switch msg := m.(type) {
+			case *SigChain:
+				buff := bytes.NewBuffer(nil)
+				if err := msg.Serialize(buff); err != nil {
+					log.Error("sigchain Serialize error")
+				} else {
+					hash := sha256.Sum256(buff.Bytes())
+					pm.sigChains[hash] = msg
+				}
+			case []common.Uint256:
+				for _, v := range msg {
+					_, ok := pm.sigChains[v]
+					if ok {
+						delete(pm.sigChains, v)
+					}
+				}
+			case *getSigChainsMsg:
+				sigchains := make([]*SigChain, 0, len(pm.sigChains))
+				for _, sigchain := range pm.sigChains {
+					sigchains = append(sigchains, sigchain)
+				}
+				msg.reply <- sigchains
 			}
 		case <-pm.quit:
 			break out
@@ -162,4 +172,27 @@ func (pm *porManager) GetSignture(sc *SigChain) ([]byte, error) {
 	}
 
 	return sce.signature, nil
+}
+
+func (pm *porManager) CleanChainCache(sigchainHashs []common.Uint256) {
+	if !pm.started {
+		return
+	}
+
+	pm.cacheChan <- sigchainHashs
+}
+
+func (pm *porManager) LenOfSigChain(sc *SigChain) int {
+	return sc.Length()
+}
+
+func (pm *porManager) GetSigChains() []*SigChain {
+	if !pm.started {
+		return nil
+	}
+
+	rp := make(chan []*SigChain, 1)
+	pm.msgChan <- &getSigChainsMsg{reply: rp}
+	ret := <-rp
+	return ret
 }
