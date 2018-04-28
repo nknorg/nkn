@@ -18,6 +18,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/net/chord"
 	. "github.com/nknorg/nkn/net/message"
 	. "github.com/nknorg/nkn/net/protocol"
 	. "github.com/nknorg/nkn/util/config"
@@ -63,6 +64,7 @@ type node struct {
 	ConnectingNodes
 	RetryConnAddrs
 	SyncReqSem Semaphore
+	ring       *chord.Ring
 }
 
 type RetryConnAddrs struct {
@@ -156,7 +158,7 @@ func NewNode() *node {
 	return &n
 }
 
-func InitNode(pubKey *crypto.PubKey) Noder {
+func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n := NewNode()
 	n.version = PROTOCOLVERSION
 	if Parameters.NodeType == SERVICENODENAME {
@@ -189,6 +191,9 @@ func InitNode(pubKey *crypto.PubKey) Noder {
 	n.TXNPool = transaction.NewTxnPool()
 	n.eventQueue.init()
 	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnect)
+
+	n.ring = ring
+
 	go n.initConnection()
 	go n.updateConnection()
 	go n.updateNodeInfo()

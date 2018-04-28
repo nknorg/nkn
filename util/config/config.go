@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
-	"fmt"
 )
 
 const (
@@ -45,6 +45,7 @@ type Configuration struct {
 	MaxTxInBlock   int      `json:"MaxTransactionInBlock"`
 	MaxHdrSyncReqs int      `json:"MaxConcurrentSyncHeaderReqs"`
 	ConsensusType  string   `json:"ConsensusType"`
+	ChordPort      int      `json:"ChordPort"`
 }
 
 var Parameters *Configuration

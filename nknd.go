@@ -51,8 +51,8 @@ func InitLedger() error {
 	return nil
 }
 
-func StartNetworking(pubKey *crypto.PubKey) protocol.Noder {
-	node := net.StartProtocol(pubKey)
+func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
+	node := net.StartProtocol(pubKey, ring)
 	node.SyncNodeHeight()
 	node.WaitForFourPeersStart()
 	node.WaitForSyncBlkFinish()
@@ -79,22 +79,30 @@ func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
 
 func nknMain() error {
 	log.Trace("Node version: ", config.Version)
-	var name = flag.String("test", "value", "usage")
+	var name = flag.String("test", "", "usage")
 	var numNode int
 	flag.IntVar(&numNode, "numNode", 1, "usage")
 	flag.Parse()
 
+	var ring *chord.Ring
+	var transport *chord.TCPTransport
+	var err error
+
 	// Start the Chord ring testing process
-	if len(os.Args) != 1 {
+	if *name != "" {
 		//flag.PrintDefaults()
 		if *name == "create" {
-			go chord.CreateNet()
+			ring, transport, err = chord.CreateNet()
 		} else if *name == "join" {
-			go chord.JoinNet()
+			ring, transport, err = chord.JoinNet()
 		}
-		for {
-			time.Sleep(20 * time.Second)
+
+		if err != nil {
+			return err
 		}
+
+		defer transport.Shutdown()
+		defer ring.Shutdown()
 	}
 
 	// Get local account
@@ -107,6 +115,8 @@ func nknMain() error {
 		return errors.New("load local account error")
 	}
 
+	// time.Sleep(10 * time.Second)
+
 	// initialize ledger
 	err = InitLedger()
 	defer ledger.DefaultLedger.Store.Close()
@@ -115,7 +125,7 @@ func nknMain() error {
 	}
 
 	// start P2P networking
-	node := StartNetworking(account.PublicKey)
+	node := StartNetworking(account.PublicKey, ring)
 
 	// start consensus
 	StartConsensus(wallet, node)
