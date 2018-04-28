@@ -17,9 +17,7 @@ const (
 )
 
 //TODO
-//  Version() uint32
-// NewSigChain() *SigChain
-//  Verify(sc *SigChain) error
+//  NewSigChain() *SigChain
 //  IsFinal(sc *SigChain) bool
 //  GetSignture(sc *SigChain) ([]byte, error)
 //  GetLenofSig(sc *SigChain) uint32
@@ -147,4 +145,21 @@ func (pm *porManager) Verify(sc *SigChain) bool {
 	pm.msgChan <- &verifyMsg{sc: sc, reply: rp}
 	ret := <-rp
 	return ret
+}
+
+func (pm *porManager) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey *crypto.PubKey, nextPubkey *crypto.PubKey) (*SigChain, error) {
+	return NewSigChain(pm.account, dataSize, dataHash, destPubkey, nextPubkey)
+}
+
+func (pm *porManager) IsFinal(sc *SigChain) bool {
+	return sc.IsFinal()
+}
+
+func (pm *porManager) GetSignture(sc *SigChain) ([]byte, error) {
+	sce, err := sc.finalSigElem()
+	if err != nil {
+		return nil, err
+	}
+
+	return sce.signature, nil
 }

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/wallet"
@@ -21,7 +21,7 @@ type sigchainer interface {
 	Length() int
 	IsFinal() bool
 	GetSignerIndex(pubkey *crypto.PubKey) int
-	GetDataHash() *Uint256
+	GetDataHash() *common.Uint256
 }
 
 // for the first relay node
@@ -32,10 +32,10 @@ type sigchainer interface {
 
 type SigChain struct {
 	nonce      [4]byte
-	dataSize   uint32         // payload size
-	dataHash   *Uint256       // payload hash
-	srcPubkey  *crypto.PubKey // source pubkey
-	destPubkey *crypto.PubKey // destination pubkey
+	dataSize   uint32          // payload size
+	dataHash   *common.Uint256 // payload hash
+	srcPubkey  *crypto.PubKey  // source pubkey
+	destPubkey *crypto.PubKey  // destination pubkey
 	elems      []*SigChainElem
 }
 
@@ -46,7 +46,7 @@ type SigChainElem struct {
 }
 
 // first relay node starts a new signature chain which consists of meta data and the first element.
-func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash *Uint256, destPubkey *crypto.PubKey, nextPubkey *crypto.PubKey) (*SigChain, error) {
+func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash *common.Uint256, destPubkey *crypto.PubKey, nextPubkey *crypto.PubKey) (*SigChain, error) {
 	sc := &SigChain{
 		dataSize:   dataSize,
 		dataHash:   dataHash,
@@ -176,7 +176,7 @@ func (p *SigChain) Length() int {
 	return len(p.elems)
 }
 
-func (p *SigChain) GetDataHash() *Uint256 {
+func (p *SigChain) GetDataHash() *common.Uint256 {
 	return p.dataHash
 }
 
@@ -414,16 +414,16 @@ func (p *SigChain) dump() {
 	fmt.Println("dataSize: ", p.dataSize)
 	fmt.Println("dataHash: ", p.dataHash)
 	srcPk, _ := p.srcPubkey.EncodePoint(true)
-	fmt.Println("srcPubkey: ", BytesToHexString(srcPk))
+	fmt.Println("srcPubkey: ", common.BytesToHexString(srcPk))
 	dstPk, _ := p.destPubkey.EncodePoint(true)
-	fmt.Println("dstPubkey: ", BytesToHexString(dstPk))
+	fmt.Println("dstPubkey: ", common.BytesToHexString(dstPk))
 
 	for i, e := range p.elems {
 		curPk, _ := e.pubkey.EncodePoint(true)
-		fmt.Printf("curPubkey[%d]: %s\n", i, BytesToHexString(curPk))
+		fmt.Printf("curPubkey[%d]: %s\n", i, common.BytesToHexString(curPk))
 		nextPk, _ := e.nextPubkey.EncodePoint(true)
-		fmt.Printf("nextPubkey[%d]: %s\n", i, BytesToHexString(nextPk))
-		fmt.Printf("signature[%d]: %s\n", i, BytesToHexString(e.signature))
+		fmt.Printf("nextPubkey[%d]: %s\n", i, common.BytesToHexString(nextPk))
+		fmt.Printf("signature[%d]: %s\n", i, common.BytesToHexString(e.signature))
 
 	}
 }
