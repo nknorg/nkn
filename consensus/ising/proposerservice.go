@@ -95,6 +95,9 @@ func (p *ProposerService) ProposerRoutine() {
 	// waiting for other nodes spreader finished
 	time.Sleep(WaitingForBlockFloodingDuration)
 	block = p.blockCache.GetCurrentBlockFromCache()
+	if block == nil {
+		return
+	}
 	hash := block.Hash()
 	bpMsg := &BlockProposal{
 		blockHash: &hash,
