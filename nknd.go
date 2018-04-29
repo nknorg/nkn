@@ -31,13 +31,13 @@ func init() {
 	crypto.SetAlg(config.Parameters.EncryptAlg)
 }
 
-func InitLedger() error {
+func InitLedger(account *wallet.Account) error {
 	var err error
 	store, err := db.NewLedgerStore()
 	if err != nil {
 		return err
 	}
-	ledger.StandbyBookKeepers = wallet.GetBookKeepers()
+	ledger.StandbyBookKeepers = wallet.GetBookKeepers(account)
 	blockChain, err := ledger.NewBlockchainWithGenesisBlock(store, ledger.StandbyBookKeepers)
 	if err != nil {
 		return err
@@ -118,7 +118,7 @@ func nknMain() error {
 	// time.Sleep(10 * time.Second)
 
 	// initialize ledger
-	err = InitLedger()
+	err = InitLedger(account)
 	defer ledger.DefaultLedger.Store.Close()
 	if err != nil {
 		return errors.New("ledger initialization error")

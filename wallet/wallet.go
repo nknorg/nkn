@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	"bytes"
+
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/contract"
 	ct "github.com/nknorg/nkn/core/contract"
@@ -319,12 +320,21 @@ func GetWallet() Wallet {
 	return c
 }
 
-func GetBookKeepers() []*crypto.PubKey {
+func GetBookKeepers(account *Account) []*crypto.PubKey {
 	var pubKeys = []*crypto.PubKey{}
+
+	if len(config.Parameters.BookKeepers) == 0 {
+		pubKeys = append(pubKeys, account.PublicKey)
+		return pubKeys
+	}
+
 	sort.Strings(config.Parameters.BookKeepers)
 	for _, key := range config.Parameters.BookKeepers {
-		pubKey := []byte(key)
 		pubKey, err := hex.DecodeString(key)
+		if err != nil {
+			log.Error("Incorrectly book keepers key")
+			return nil
+		}
 		// TODO Convert the key string to byte
 		k, err := crypto.DecodePoint(pubKey)
 		if err != nil {
