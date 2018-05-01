@@ -132,7 +132,6 @@ func (node *node) ConnectNeighbors() {
 			continue
 		}
 		found := false
-		var n Noder
 		var ip net.IP
 		node.nbrNodes.Lock()
 		for _, tn := range node.nbrNodes.List {
@@ -140,17 +139,12 @@ func (node *node) ConnectNeighbors() {
 			ip = addr.IpAddr[:]
 			addrstring := ip.To16().String() + ":" + strconv.Itoa(int(addr.Port))
 			if nodeAddr == addrstring {
-				n = tn
 				found = true
 				break
 			}
 		}
 		node.nbrNodes.Unlock()
-		if found {
-			if n.GetState() == ESTABLISH {
-				n.ReqNeighborList()
-			}
-		} else { //not found
+		if !found {
 			go node.Connect(nodeAddr)
 		}
 	}
