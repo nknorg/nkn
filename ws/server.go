@@ -24,7 +24,7 @@ func StartServer(n Noder) {
 	common.SetNode(n)
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
 	go func() {
-		ws = websocket.InitWsServer()
+		ws = websocket.InitWsServer(n)
 		ws.Start()
 	}()
 }
@@ -48,7 +48,8 @@ func Stop() {
 }
 func ReStartServer() {
 	if ws == nil {
-		ws = websocket.InitWsServer()
+		n := common.GetNode()
+		ws = websocket.InitWsServer(n)
 		ws.Start()
 		return
 	}
@@ -135,4 +136,8 @@ func PushBlockTransactions(v interface{}) {
 		resp["Action"] = "sendblocktransactions"
 		ws.PushResult(resp)
 	}
+}
+
+func GetServer() *websocket.WsServer {
+	return ws
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/ws"
 )
 
 func init() {
@@ -54,7 +55,7 @@ func InitLedger(account *wallet.Account) error {
 func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 	node := net.StartProtocol(pubKey, ring)
 	node.SyncNodeHeight()
-	node.WaitForFourPeersStart()
+	// node.WaitForFourPeersStart()
 	node.WaitForSyncBlkFinish()
 	httpjson.RegistRpcNode(node)
 	go httpjson.StartRPCServer()
@@ -80,8 +81,6 @@ func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
 func nknMain() error {
 	log.Trace("Node version: ", config.Version)
 	var name = flag.String("test", "", "usage")
-	var numNode int
-	flag.IntVar(&numNode, "numNode", 1, "usage")
 	flag.Parse()
 
 	var ring *chord.Ring
@@ -115,8 +114,6 @@ func nknMain() error {
 		return errors.New("load local account error")
 	}
 
-	// time.Sleep(10 * time.Second)
-
 	// initialize ledger
 	err = InitLedger(account)
 	defer ledger.DefaultLedger.Store.Close()
@@ -126,6 +123,12 @@ func nknMain() error {
 
 	// start P2P networking
 	node := StartNetworking(account.PublicKey, ring)
+
+	// start relay service
+	node.StartRelayer()
+
+	// start websocket server
+	ws.StartServer(node)
 
 	// start consensus
 	StartConsensus(wallet, node)
