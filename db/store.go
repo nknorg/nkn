@@ -619,6 +619,37 @@ func (bd *ChainStore) GetBlock(hash Uint256) (*Block, error) {
 	return b, nil
 }
 
+func (self *ChainStore) GetBlockHistory(startHeight, blockNum uint32) map[uint32]Uint256 {
+	endHeight := startHeight + blockNum
+	if self.GetHeight() < endHeight {
+		endHeight = self.GetHeight()
+	}
+	history := make(map[uint32]Uint256)
+	for height := startHeight; height < endHeight; height++ {
+		blockHash, err := self.GetBlockHash(height)
+		if err != nil {
+			return nil
+		}
+		history[height] = blockHash
+	}
+
+	return history
+}
+
+func (self *ChainStore) CheckBlockHistory(history map[uint32]Uint256) (uint32, bool) {
+	for height, blockHash := range history {
+		h, err := self.GetBlockHash(height)
+		if err != nil {
+			return 0, false
+		}
+		if h.CompareTo(blockHash) != 0 {
+			return height, false
+		}
+	}
+
+	return 0, true
+}
+
 func (self *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error) {
 	prefix := []byte{byte(SYS_CurrentBookKeeper)}
 	bkListValue, err_get := self.st.Get(prefix)

@@ -414,8 +414,12 @@ func GetNeighborsVotingWeight(neighbors []protocol.Noder) int {
 func (p *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.PubKey) {
 	switch msg.ProbeType {
 	case BlockHistory:
-		s := &StateResponse{}
-		p.SendConsensusMsg(s, sender)
+		switch t := msg.ProbePayload.(type) {
+		case BlockHistoryPayload:
+			history := ledger.DefaultLedger.Store.GetBlockHistory(t.StartHeight, t.StartHeight + t.BlockNum)
+			s := &StateResponse{history}
+			p.SendConsensusMsg(s, sender)
+		}
 	}
 	return
 }
