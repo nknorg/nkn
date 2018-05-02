@@ -40,7 +40,6 @@ type SigChain struct {
 }
 
 type SigChainElem struct {
-	pubkey     []byte // current signer
 	nextPubkey []byte // next signer
 	signature  []byte // signature for signature chain element
 }
@@ -60,7 +59,6 @@ func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash *common.Uint25
 		destPubkey: destPubkey,
 		elems: []*SigChainElem{
 			&SigChainElem{
-				pubkey:     srcPubkey,
 				nextPubkey: nextPubkey,
 			},
 		},
@@ -86,9 +84,8 @@ func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash *common.Uint25
 	return sc, nil
 }
 
-func NewSigChainElem(pubKey []byte, nextPubkey []byte) *SigChainElem {
+func NewSigChainElem(nextPubkey []byte) *SigChainElem {
 	return &SigChainElem{
-		pubkey:     pubKey,
 		nextPubkey: nextPubkey,
 		signature:  nil,
 	}
@@ -127,7 +124,7 @@ func (p *SigChain) Sign(nextPubkey []byte, signer *wallet.Account) error {
 	//	return err
 	//}
 	buff := bytes.NewBuffer(lastElem.signature)
-	elem := NewSigChainElem(pk, nextPubkey)
+	elem := NewSigChainElem(nextPubkey)
 	err = elem.SerializationUnsigned(buff)
 	if err != nil {
 		return err
@@ -152,11 +149,11 @@ func (p *SigChain) Verify() error {
 	prevSig := buff.Bytes()
 	for _, e := range p.elems {
 		// verify each element public key is correct
-		if !common.IsEqualBytes(prevNextPubkey, e.pubkey) {
-			return errors.New("unmatch public key in signature chain")
-		}
+		//if !common.IsEqualBytes(prevNextPubkey, e.pubkey) {
+		//	return errors.New("unmatch public key in signature chain")
+		//}
 
-		ePk, err := crypto.DecodePoint(e.pubkey)
+		ePk, err := crypto.DecodePoint(prevNextPubkey)
 		if err != nil {
 			return errors.New("the pubkey of e is wrong")
 		}
@@ -180,9 +177,9 @@ func (p *SigChain) Verify() error {
 
 // Path returns signer path in signature chain.
 func (p *SigChain) Path() [][]byte {
-	var publicKeys [][]byte
+	publicKeys := [][]byte{p.srcPubkey}
 	for _, e := range p.elems {
-		publicKeys = append(publicKeys, e.pubkey)
+		publicKeys = append(publicKeys, e.nextPubkey)
 	}
 
 	return publicKeys
@@ -217,7 +214,7 @@ func (p *SigChain) lastSigElem() (*SigChainElem, error) {
 }
 
 func (p *SigChain) finalSigElem() (*SigChainElem, error) {
-	if !common.IsEqualBytes(p.destPubkey, p.elems[len(p.elems)-1].pubkey) {
+	if len(p.elems) < 2 && !common.IsEqualBytes(p.destPubkey, p.elems[len(p.elems)-2].nextPubkey) {
 		return nil, errors.New("unfinal")
 	}
 
@@ -225,7 +222,7 @@ func (p *SigChain) finalSigElem() (*SigChainElem, error) {
 }
 
 func (p *SigChain) IsFinal() bool {
-	if !common.IsEqualBytes(p.destPubkey, p.elems[len(p.elems)-1].pubkey) {
+	if len(p.elems) < 2 || !common.IsEqualBytes(p.destPubkey, p.elems[len(p.elems)-2].nextPubkey) {
 		return false
 	}
 	return true
@@ -235,9 +232,13 @@ func (p *SigChain) getElemByPubkey(pubkey []byte) (*SigChainElem, int, error) {
 	if p == nil || len(p.elems) == 0 {
 		return nil, 0, errors.New("nil signature chain")
 	}
+	if common.IsEqualBytes(p.srcPubkey, pubkey) {
+		return p.elems[0], 0, nil
+	}
+
 	for i, elem := range p.elems {
-		if common.IsEqualBytes(elem.pubkey, pubkey) {
-			return elem, i, nil
+		if common.IsEqualBytes(elem.nextPubkey, pubkey) {
+			return p.elems[i+1], i + 1, nil
 		}
 	}
 
@@ -386,11 +387,6 @@ func (p *SigChainElem) Serialize(w io.Writer) error {
 func (p *SigChainElem) SerializationUnsigned(w io.Writer) error {
 	var err error
 
-	err = serialization.WriteVarBytes(w, p.pubkey)
-	if err != nil {
-		return err
-	}
-
 	err = serialization.WriteVarBytes(w, p.nextPubkey)
 	if err != nil {
 		return err
@@ -417,11 +413,6 @@ func (p *SigChainElem) Deserialize(r io.Reader) error {
 func (p *SigChainElem) DeserializationUnsigned(r io.Reader) error {
 	var err error
 
-	p.pubkey, err = serialization.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-
 	p.nextPubkey, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
@@ -437,7 +428,6 @@ func (p *SigChain) dump() {
 	fmt.Println("dstPubkey: ", common.BytesToHexString(p.destPubkey))
 
 	for i, e := range p.elems {
-		fmt.Printf("curPubkey[%d]: %s\n", i, common.BytesToHexString(e.pubkey))
 		fmt.Printf("nextPubkey[%d]: %s\n", i, common.BytesToHexString(e.nextPubkey))
 		fmt.Printf("signature[%d]: %s\n", i, common.BytesToHexString(e.signature))
 	}
