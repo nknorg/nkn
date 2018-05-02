@@ -24,8 +24,8 @@ func TestPorManager(t *testing.T) {
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
-	scRel := pmRel.Sign(scFrom, toPk)
-	if pmRel.Verify(scRel) {
+	scRel, _ := pmRel.Sign(scFrom, toPk)
+	if pmRel.Verify(scRel) == nil {
 		t.Log("[pormanager] verify successfully")
 	} else {
 		t.Error("[pormanager] verify failed")
@@ -37,8 +37,8 @@ func TestPorManager(t *testing.T) {
 		t.Error("[pormanager] IsFinal test failed")
 	}
 
-	scTo := pmTo.Sign(scRel, toPk)
-	if pmTo.Verify(scTo) {
+	scTo, _ := pmTo.Sign(scRel, toPk)
+	if pmTo.Verify(scTo) == nil {
 		t.Log("[pormanager] verify successfully 2")
 	} else {
 		t.Error("[pormanager] verify failed 2")
