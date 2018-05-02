@@ -5,9 +5,7 @@ import (
 	"sync"
 	"time"
 
-
-	."github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
@@ -16,10 +14,16 @@ import (
 )
 
 const (
-	ProbeFactor        = 2
+	ProbeFactor        = 1
 	ResultFactor       = 3
 	ProbeDuration      = ConsensusTime / ProbeFactor
 	WaitForProbeResult = ConsensusTime / ResultFactor
+
+	// probe service will detect BlockNumDetected blocks of neighbor per time
+	BlockNumDetected = 5
+
+	// block detecting starts from height (current height - BlockDepthDetected)
+	BlockDepthDetected = 10
 )
 
 type ProbeService struct {
@@ -27,19 +31,20 @@ type ProbeService struct {
 	account              *wallet.Account          // local account
 	localNode            protocol.Noder           // local node
 	ticker               *time.Ticker             // ticker for probing
-	detectedResults      map[uint64]StateResponse // collected probe response
-	startHeight		     uint32                   // block start height to be detected
+	neighborInfo         map[uint64]StateResponse // collected neighbor block info
+	startHeight          uint32                   // block start height to be detected
 	consensusMsgReceived events.Subscriber        // consensus events listening
 	msgChan              chan interface{}         // send probe message
 }
 
 func NewProbeService(account *wallet.Account, node protocol.Noder, ch chan interface{}) *ProbeService {
 	service := &ProbeService{
-		account:         account,
-		localNode:       node,
-		ticker:          time.NewTicker(ProbeDuration),
-		detectedResults: make(map[uint64]StateResponse),
-		msgChan:         ch,
+		account:      account,
+		localNode:    node,
+		ticker:       time.NewTicker(ProbeDuration),
+		neighborInfo: make(map[uint64]StateResponse),
+		startHeight:  0,
+		msgChan:      ch,
 	}
 
 	return service
@@ -50,16 +55,19 @@ func (p *ProbeService) Start() error {
 	for {
 		select {
 		case <-p.ticker.C:
-			stateProbe := &StateProbe{
-				ProbeType:BlockHistory,
-				ProbePayload: &BlockHistoryPayload{
-					p.startHeight,
-					p.startHeight + 100,
-				},
+			if ledger.DefaultLedger.Store.GetHeight() > BlockDepthDetected {
+				stateProbe := &StateProbe{
+					ProbeType: BlockHistory,
+					ProbePayload: &BlockHistoryPayload{
+						p.startHeight,
+						p.startHeight + BlockNumDetected,
+					},
+				}
+				p.SendConsensusMsg(stateProbe)
+				time.Sleep(WaitForProbeResult)
+				p.msgChan <- p.BuildNotice()
+				p.Reset()
 			}
-			p.SendConsensusMsg(stateProbe)
-			time.Sleep(WaitForProbeResult)
-			//p.AnalyzeResponse()
 		}
 	}
 
@@ -121,29 +129,58 @@ func (p *ProbeService) HandleStateResponseMsg(msg *StateResponse, sender *crypto
 	defer p.Unlock()
 
 	id := publickKeyToNodeID(sender)
-	p.detectedResults[id] = *msg
+	p.neighborInfo[id] = *msg
 
 	return
 }
 
-func (p *ProbeService) AnalyzeResponse() {
+func (p *ProbeService) BuildNotice() *Notice {
 	p.RLock()
 	defer p.RUnlock()
 
-	results := make(map[Uint256]int)
-	for _, resp := range p.detectedResults {
-		results[resp.currentBlockHash]++
+	blockHistory := make(map[string]uint64)
+	type BlockInfo struct {
+		count      int    // count of block
+		neighborID uint64 // from which neighbor
 	}
-	length := len(p.detectedResults)
-	for blockHash, num := range results {
-		if num*2 >= length {
-			notice := &BlockInfoNotice{
-				hash: blockHash,
+	i := p.startHeight
+	for i < p.startHeight+BlockNumDetected {
+		m := make(map[string]*BlockInfo)
+		for id, resp := range p.neighborInfo {
+			if hash, ok := resp.PersistedBlocks[i]; ok {
+				tmp := HHToString(i, hash)
+				if _, ok := m[tmp]; !ok {
+					info := &BlockInfo{
+						count:      1,
+						neighborID: id,
+					}
+					m[tmp] = info
+				} else {
+					m[tmp].count++
+				}
 			}
-			p.msgChan <- notice
-			return
 		}
+		// requiring >= 50% neighbors have same block
+		for k, v := range m {
+			if v.count*2 >= len(p.neighborInfo) {
+				if _, ok := blockHistory[k]; !ok {
+					blockHistory[k] = v.neighborID
+				}
+			}
+		}
+		i++
 	}
-	log.Warn("inconsistent state of neighbor")
-	return
+
+	return &Notice{
+		BlockHistory: blockHistory,
+	}
+}
+
+func (p *ProbeService) Reset() {
+	p.neighborInfo = nil
+	p.neighborInfo = make(map[uint64]StateResponse)
+	p.startHeight = 0
+	if height := ledger.DefaultLedger.Store.GetHeight() - BlockDepthDetected; height > 0 {
+		p.startHeight = height
+	}
 }

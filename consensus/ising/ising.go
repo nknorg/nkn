@@ -1,7 +1,6 @@
 package ising
 
 import (
-	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/wallet"
@@ -13,8 +12,8 @@ const (
 )
 
 // chan messaage sent from probe to proposer
-type BlockInfoNotice struct {
-	hash Uint256
+type Notice struct {
+	BlockHistory map[string]uint64
 }
 
 func StartIsingConsensus(account *wallet.Account, node protocol.Noder) {
