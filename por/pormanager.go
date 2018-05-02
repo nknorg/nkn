@@ -3,7 +3,7 @@ package por
 import (
 	"bytes"
 	"crypto/sha256"
-	"fmt"
+	"errors"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/log"
@@ -11,30 +11,18 @@ import (
 )
 
 const (
-	porChanCap   = 5
 	cacheChanCap = 10
 )
 
 type porManager struct {
 	account    *wallet.Account
 	maxWorkSig []byte
-	msgChan    chan interface{}
 	quit       chan struct{}
 	started    bool
 	sigChains  map[common.Uint256]*SigChain
 	cacheChan  chan interface{}
 }
 
-type signMsg struct {
-	sc         *SigChain
-	nextPubkey []byte
-	reply      chan *SigChain
-}
-
-type verifyMsg struct {
-	sc    *SigChain
-	reply chan bool
-}
 type getSigChainsMsg struct {
 	reply chan []*SigChain
 }
@@ -42,13 +30,11 @@ type getSigChainsMsg struct {
 func NewPorManager(acc *wallet.Account) *porManager {
 	pm := &porManager{
 		account:   acc,
-		msgChan:   make(chan interface{}, porChanCap),
 		cacheChan: make(chan interface{}, cacheChanCap),
 		quit:      make(chan struct{}, 1),
 		sigChains: make(map[common.Uint256]*SigChain),
 	}
 
-	go pm.porHandler()
 	go pm.cacheSigChain()
 	pm.started = true
 	return pm
@@ -89,77 +75,34 @@ out:
 	}
 }
 
-func (pm *porManager) porHandler() {
-out:
-	for {
-		select {
-		case m := <-pm.msgChan:
-			switch msg := m.(type) {
-			case *signMsg:
-				go pm.handleSignMsg(msg)
-			case *verifyMsg:
-				go pm.handleVerifyMsg(msg)
-			default:
-				log.Warnf("Invalid message type in block "+"handler: %T", msg)
-			}
-
-		case <-pm.quit:
-			break out
-		}
-	}
-
-	log.Trace("Por handler done")
-}
-
-func (pm *porManager) handleSignMsg(sm *signMsg) {
+func (pm *porManager) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 	dcPk, err := pm.account.PubKey().EncodePoint(true)
 	if err != nil {
-		sm.reply <- sm.sc
-		return
+		return nil, errors.New("the account of porManager is wrong")
 	}
-	if !common.IsEqualBytes(dcPk, sm.sc.elems[len(sm.sc.elems)-1].nextPubkey) {
-		sm.reply <- sm.sc
-		return
+
+	if !common.IsEqualBytes(dcPk, sc.elems[len(sc.elems)-1].nextPubkey) {
+		return nil, errors.New("it's not the right signer")
 	}
-	err = sm.sc.Sign(sm.nextPubkey, pm.account)
+
+	err = sc.Sign(nextPubkey, pm.account)
 	if err != nil {
-		fmt.Println(err)
+		return nil, errors.New("sign failed")
 	}
-	sm.reply <- sm.sc
 
-	if sm.sc.IsFinal() {
-		pm.cacheChan <- sm.sc
+	if sc.IsFinal() {
+		pm.cacheChan <- sc
 	}
+
+	return sc, nil
 }
 
-func (pm *porManager) handleVerifyMsg(sm *verifyMsg) {
-	if err := sm.sc.Verify(); err != nil {
-		sm.reply <- false
+func (pm *porManager) Verify(sc *SigChain) error {
+	if err := sc.Verify(); err != nil {
+		return errors.New("verify failed")
 	}
 
-	sm.reply <- true
-}
-
-func (pm *porManager) Sign(sc *SigChain, nextPubkey []byte) *SigChain {
-	if !pm.started {
-		return nil
-	}
-
-	rp := make(chan *SigChain, 1)
-	pm.msgChan <- &signMsg{sc: sc, nextPubkey: nextPubkey, reply: rp}
-	ret := <-rp
-	return ret
-}
-
-func (pm *porManager) Verify(sc *SigChain) bool {
-	if !pm.started {
-		return false
-	}
-
-	rp := make(chan bool, 1)
-	pm.msgChan <- &verifyMsg{sc: sc, reply: rp}
-	ret := <-rp
-	return ret
+	return nil
 }
 
 func (pm *porManager) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
@@ -197,7 +140,7 @@ func (pm *porManager) GetSigChains() []*SigChain {
 	}
 
 	rp := make(chan []*SigChain, 1)
-	pm.msgChan <- &getSigChainsMsg{reply: rp}
+	pm.cacheChan <- &getSigChainsMsg{reply: rp}
 	ret := <-rp
 	return ret
 }
