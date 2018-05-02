@@ -31,8 +31,13 @@ func (p *RelayService) Start() error {
 func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 	destID := packet.DestID
 	if bytes.Equal(p.localNode.GetChordAddr(), destID) {
-		ws.GetServer().Broadcast(packet.PayloadData)
-		log.Info("Received packet from %x to %x with payload %s\n", packet.SrcID, destID, packet.PayloadData)
+		log.Infof(
+			"Receive packet:\nSrcID: %x\nDestID: %x\nPayload %x",
+			packet.SrcID,
+			destID,
+			packet.PayloadData,
+		)
+		websocket.GetServer().Broadcast(packet.PayloadData)
 		return nil
 	}
 	nextHop, err := p.localNode.NextHop(destID)
@@ -41,7 +46,12 @@ func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 		return err
 	}
 	if nextHop == nil {
-		log.Errorf("No next hop for packet from %x to %x with payload %x\n", packet.SrcID, destID, packet.PayloadData)
+		log.Infof(
+			"No next hop for packet:\nSrcID: %x\nDestID: %x\nPayload %x",
+			packet.SrcID,
+			destID,
+			packet.PayloadData,
+		)
 		return nil
 	}
 	b, err := message.NewRelayMessage(packet)
@@ -49,7 +59,14 @@ func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 		log.Error("Create relay message error: ", err)
 		return err
 	}
-	log.Infof("Relay packet from %x to %x with payload %x\n", packet.SrcID, destID, packet.PayloadData)
+	log.Infof(
+		"Relay packet:\nSrcID: %x\nDestID: %x\nNext Hop: %s:%d\nPayload %x",
+		packet.SrcID,
+		destID,
+		nextHop.GetAddr(),
+		nextHop.GetPort(),
+		packet.PayloadData,
+	)
 	nextHop.Tx(b)
 	return nil
 }
