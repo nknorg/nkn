@@ -412,12 +412,10 @@ func GetNeighborsVotingWeight(neighbors []protocol.Noder) int {
 }
 
 func (p *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.PubKey) {
-	var resp StateResponse
-	if p.confirmingBlock != nil {
-		resp.currentBlockHeight = 0 //Fixme to real height
-		resp.currentBlockHash = *p.confirmingBlock
+	switch msg.ProbeType {
+	case BlockHistory:
+		s := &StateResponse{}
+		p.SendConsensusMsg(s, sender)
 	}
-
-	p.SendConsensusMsg(&resp, sender)
 	return
 }
