@@ -4,20 +4,19 @@ import (
 	"bytes"
 	"errors"
 
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
-	"github.com/nknorg/nkn/crypto"
 )
 
 type RelayStat struct {
-	PrevBlockHash Uint256
-	TxPool        []Uint256
-	Relays        map[crypto.PubKey]int
-	//TxCommitMerkle Uint256
+	PrevBlockHash common.Uint256
+	TxPool        []common.Uint256
+	Relays        map[string]int
+	//TxCommitMerkle common.Uint256
 }
 
-func NewStat(PrevBlock Uint256) RelayStat {
+func NewStat(PrevBlock common.Uint256) RelayStat {
 	rs := RelayStat{
 		PrevBlockHash: PrevBlock,
 	}
@@ -37,22 +36,23 @@ func (r *RelayStat) CalcRelays(txn *transaction.Transaction) error {
 	r.TxPool = append(r.TxPool, txn.Hash())
 
 	for _, v := range sigChain.elems {
-		r.Relays[*v.pubkey] += 1
+		r.Relays[common.BytesToHexString(v.pubkey)] += 1
 	}
 
 	return nil
 }
 
-func (r *RelayStat) GetRelays(pk *crypto.PubKey) int {
-	return r.Relays[*pk]
+func (r *RelayStat) GetRelays(pk []byte) int {
+	return r.Relays[common.BytesToHexString(pk)]
 }
 
-func (r *RelayStat) GetMaxRelay() crypto.PubKey {
-	var pk crypto.PubKey
+func (r *RelayStat) GetMaxRelay() []byte {
+	var pk []byte
 	i := 0
 	for k, v := range r.Relays {
 		if v >= i {
-			pk = k
+			kb, _ := common.HexStringToBytes(k)
+			pk = kb
 		}
 	}
 
@@ -77,8 +77,9 @@ func (r *RelayStat) MergeRelays(por IPor) error {
 	return nil
 }
 
-func (r *RelayStat) IsRelaying(pk *crypto.PubKey) bool {
-	if _, ok := r.Relays[*pk]; ok {
+func (r *RelayStat) IsRelaying(pk []byte) bool {
+
+	if _, ok := r.Relays[common.BytesToHexString(pk)]; ok {
 		return true
 	}
 	return false
