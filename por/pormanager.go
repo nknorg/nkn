@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 )
@@ -28,7 +27,7 @@ type porManager struct {
 
 type signMsg struct {
 	sc         *SigChain
-	nextPubkey *crypto.PubKey
+	nextPubkey []byte
 	reply      chan *SigChain
 }
 
@@ -113,10 +112,16 @@ out:
 }
 
 func (pm *porManager) handleSignMsg(sm *signMsg) {
-	if !crypto.Equal(pm.account.PubKey(), sm.sc.elems[len(sm.sc.elems)-1].nextPubkey) {
+	dcPk, err := pm.account.PubKey().EncodePoint(true)
+	if err != nil {
 		sm.reply <- sm.sc
+		return
 	}
-	err := sm.sc.Sign(sm.nextPubkey, pm.account)
+	if !common.IsEqualBytes(dcPk, sm.sc.elems[len(sm.sc.elems)-1].nextPubkey) {
+		sm.reply <- sm.sc
+		return
+	}
+	err = sm.sc.Sign(sm.nextPubkey, pm.account)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -135,7 +140,7 @@ func (pm *porManager) handleVerifyMsg(sm *verifyMsg) {
 	sm.reply <- true
 }
 
-func (pm *porManager) Sign(sc *SigChain, nextPubkey *crypto.PubKey) *SigChain {
+func (pm *porManager) Sign(sc *SigChain, nextPubkey []byte) *SigChain {
 	if !pm.started {
 		return nil
 	}
@@ -157,7 +162,7 @@ func (pm *porManager) Verify(sc *SigChain) bool {
 	return ret
 }
 
-func (pm *porManager) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey *crypto.PubKey, nextPubkey *crypto.PubKey) (*SigChain, error) {
+func (pm *porManager) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
 	return NewSigChain(pm.account, dataSize, dataHash, destPubkey, nextPubkey)
 }
 

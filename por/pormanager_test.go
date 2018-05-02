@@ -17,11 +17,14 @@ func TestPorManager(t *testing.T) {
 	pmFrom := NewPorManager(from)
 	pmRel := NewPorManager(rel)
 	pmTo := NewPorManager(to)
-	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, to.PubKey(), rel.PubKey())
+	toPk, _ := to.PubKey().EncodePoint(true)
+	relPk, _ := rel.PubKey().EncodePoint(true)
+
+	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, toPk, relPk)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
-	scRel := pmRel.Sign(scFrom, to.PubKey())
+	scRel := pmRel.Sign(scFrom, toPk)
 	if pmRel.Verify(scRel) {
 		t.Log("[pormanager] verify successfully")
 	} else {
@@ -34,7 +37,7 @@ func TestPorManager(t *testing.T) {
 		t.Error("[pormanager] IsFinal test failed")
 	}
 
-	scTo := pmTo.Sign(scRel, to.PubKey())
+	scTo := pmTo.Sign(scRel, toPk)
 	if pmTo.Verify(scTo) {
 		t.Log("[pormanager] verify successfully 2")
 	} else {

@@ -16,14 +16,18 @@ func TestSign(t *testing.T) {
 	rel2, _ := wallet.NewAccount()
 
 	//test Sign & Verify
-	sc, _ := NewSigChain(from, 1, &common.Uint256{1, 2, 3}, to.PubKey(), rel1.PubKey())
+	fromPk, _ := from.PubKey().EncodePoint(true)
+	toPk, _ := to.PubKey().EncodePoint(true)
+	rel1Pk, _ := rel1.PubKey().EncodePoint(true)
+	rel2Pk, _ := rel2.PubKey().EncodePoint(true)
+	sc, _ := NewSigChain(from, 1, &common.Uint256{1, 2, 3}, toPk, rel1Pk)
 	if sc.Verify() == nil {
 		t.Log("[sigchain] verify successfully")
 	} else {
 		t.Error("[sigchain] verify failed")
 	}
 	pm := NewPorManager(rel1)
-	ret := pm.Sign(sc, rel2.PubKey())
+	ret := pm.Sign(sc, rel2Pk)
 	if ret.Verify() == nil {
 		t.Log("[sigchain] verify successfully 2")
 	} else {
@@ -31,7 +35,7 @@ func TestSign(t *testing.T) {
 	}
 
 	pm2 := NewPorManager(rel2)
-	ret2 := pm2.Sign(ret, to.PubKey())
+	ret2 := pm2.Sign(ret, toPk)
 	if ret2.Verify() == nil {
 		t.Log("[sigchain] verify successfully 3")
 	} else {
@@ -39,7 +43,7 @@ func TestSign(t *testing.T) {
 	}
 
 	pm3 := NewPorManager(to)
-	ret3 := pm3.Sign(ret, to.PubKey())
+	ret3 := pm3.Sign(ret, toPk)
 	if ret3.Verify() == nil {
 		t.Log("[sigchain] verify successfully 4")
 	} else {
@@ -48,8 +52,8 @@ func TestSign(t *testing.T) {
 
 	//test Path()
 	pks := ret3.Path()
-	if crypto.Equal(pks[0], from.PubKey()) && crypto.Equal(pks[1], rel1.PubKey()) &&
-		crypto.Equal(pks[2], rel2.PubKey()) && crypto.Equal(pks[3], to.PubKey()) {
+	if common.IsEqualBytes(pks[0], fromPk) && common.IsEqualBytes(pks[1], rel1Pk) &&
+		common.IsEqualBytes(pks[2], rel2Pk) && common.IsEqualBytes(pks[3], toPk) {
 		t.Log("[sigchain] Path test successfully")
 	} else {
 		t.Error("[sigchain] Path test failed")
@@ -74,7 +78,7 @@ func TestSign(t *testing.T) {
 		t.Error("[sigchain] Length test failed")
 	}
 
-	idx, err := ret3.GetSignerIndex(rel2.PubKey())
+	idx, err := ret3.GetSignerIndex(rel2Pk)
 	if idx == 2 && err == nil {
 		t.Log("[sigchain] GetSignerIndex test successfully")
 	} else {
