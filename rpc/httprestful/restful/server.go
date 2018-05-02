@@ -16,7 +16,7 @@ import (
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/ws"
+	"github.com/nknorg/nkn/websocket"
 )
 
 type handler func(map[string]interface{}) map[string]interface{}
@@ -106,28 +106,28 @@ func (rt *restServer) setWebsocketState(cmd map[string]interface{}) map[string]i
 		return resp
 	}
 	if b, ok := cmd["PushBlock"].(bool); ok {
-		ws.SetWsPushBlockFlag(b)
+		websocket.SetWsPushBlockFlag(b)
 	}
 	if b, ok := cmd["PushRawBlock"].(bool); ok {
-		ws.SetPushRawBlockFlag(b)
+		websocket.SetPushRawBlockFlag(b)
 	}
 	if b, ok := cmd["PushBlockTxs"].(bool); ok {
-		ws.SetPushBlockTxsFlag(b)
+		websocket.SetPushBlockTxsFlag(b)
 	}
 	if wsPort, ok := cmd["Port"].(float64); ok && wsPort != 0 {
 		Parameters.HttpWsPort = int(wsPort)
 	}
 	if startFlag {
-		ws.ReStartServer()
+		websocket.ReStartServer()
 	} else {
-		ws.Stop()
+		websocket.Stop()
 	}
 	var result = make(map[string]interface{})
 	result["Open"] = startFlag
 	result["Port"] = Parameters.HttpWsPort
-	result["PushBlock"] = ws.GetWsPushBlockFlag()
-	result["PushRawBlock"] = ws.GetPushRawBlockFlag()
-	result["PushBlockTxs"] = ws.GetPushBlockTxsFlag()
+	result["PushBlock"] = websocket.GetWsPushBlockFlag()
+	result["PushRawBlock"] = websocket.GetPushRawBlockFlag()
+	result["PushBlockTxs"] = websocket.GetPushBlockTxsFlag()
 	resp["Result"] = result
 	return resp
 }
@@ -155,7 +155,7 @@ func (rt *restServer) registryMethod() {
 		resp := SendRawTransaction(cmd)
 		if userid, ok := resp["Userid"].(string); ok && len(userid) > 0 {
 			if result, ok := resp["Result"].(string); ok {
-				ws.SetTxHashMap(result, userid)
+				websocket.SetTxHashMap(result, userid)
 			}
 			delete(resp, "Userid")
 		}
