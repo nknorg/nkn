@@ -27,6 +27,7 @@ type ProbeService struct {
 	localNode            protocol.Noder           // local node
 	ticker               *time.Ticker             // ticker for probing
 	detectedResults      map[uint64]StateResponse // collected probe response
+	startHeight		     uint32                   // block start height to be detected
 	consensusMsgReceived events.Subscriber        // consensus events listening
 	msgChan              chan interface{}         // send probe message
 }
@@ -49,7 +50,8 @@ func (p *ProbeService) Start() error {
 		select {
 		case <-p.ticker.C:
 			stateProbe := &StateProbe{
-				message: "Hi",
+				ProbeType:BlockHistory,
+				ProbePayload:p.startHeight,
 			}
 			p.SendConsensusMsg(stateProbe)
 			time.Sleep(WaitForProbeResult)
