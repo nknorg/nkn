@@ -15,6 +15,9 @@ type ILedgerStore interface {
 	GetBlock(hash Uint256) (*Block, error)
 	BlockInCache(hash Uint256) bool
 	GetBlockHash(height uint32) (Uint256, error)
+	GetBlockHistory(startHeight, blockNum uint32) map[uint32]Uint256
+	CheckBlockHistory(history map[uint32]Uint256) (uint32, bool)
+
 	IsDoubleSpend(tx *tx.Transaction) bool
 
 	//SaveHeader(header *Header,ledger *Ledger) error

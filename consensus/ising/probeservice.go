@@ -5,12 +5,13 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/nknorg/nkn/common"
+
+	."github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 )
 
@@ -51,11 +52,14 @@ func (p *ProbeService) Start() error {
 		case <-p.ticker.C:
 			stateProbe := &StateProbe{
 				ProbeType:BlockHistory,
-				ProbePayload:p.startHeight,
+				ProbePayload: &BlockHistoryPayload{
+					p.startHeight,
+					p.startHeight + 100,
+				},
 			}
 			p.SendConsensusMsg(stateProbe)
 			time.Sleep(WaitForProbeResult)
-			p.AnalyzeResponse()
+			//p.AnalyzeResponse()
 		}
 	}
 
