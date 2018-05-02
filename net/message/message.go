@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/common/serialization"
 )
 
 type Messager interface {
@@ -163,6 +163,10 @@ func AllocMsg(t string, length int) Messager {
 	case "reject":
 		log.Warn("Not supported message type - reject")
 		return nil
+	case "relay":
+		var msg RelayMessage
+		copy(msg.msgHdr.CMD[0:len(t)], t)
+		return &msg
 	default:
 		log.Warn("Unknown message type")
 		return nil

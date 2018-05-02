@@ -3,6 +3,7 @@ package websocket
 import (
 	"context"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net"
@@ -11,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nknorg/nkn/net/message"
+	"github.com/nknorg/nkn/net/protocol"
 	. "github.com/nknorg/nkn/rpc/httprestful/common"
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	. "github.com/nknorg/nkn/util/config"
@@ -34,13 +37,15 @@ type WsServer struct {
 	SessionList *SessionList
 	ActionMap   map[string]Handler
 	TxHashMap   map[string]string //key: txHash   value:sessionid
+	node        protocol.Noder
 }
 
-func InitWsServer() *WsServer {
+func InitWsServer(node protocol.Noder) *WsServer {
 	ws := &WsServer{
 		Upgrader:    websocket.Upgrader{},
 		SessionList: NewSessionList(),
 		TxHashMap:   make(map[string]string),
+		node:        node,
 	}
 	return ws
 }
@@ -125,6 +130,21 @@ func (ws *WsServer) registryMethod() {
 		resp["Result"] = ws.SessionList.GetSessionCount()
 		return resp
 	}
+	relayhandler := func(cmd map[string]interface{}) map[string]interface{} {
+		destID, err := hex.DecodeString(cmd["destID"].(string))
+		if err != nil {
+			return ResponsePack(Err.INVALID_PARAMS)
+		}
+		payload := []byte(cmd["payload"].(string))
+		relayPacket := &message.RelayPacket{
+			ws.node.GetChordAddr(),
+			destID[:],
+			payload,
+		}
+		ws.node.SendRelayPacket(relayPacket)
+		resp := ResponsePack(Err.SUCCESS)
+		return resp
+	}
 	actionMap := map[string]Handler{
 		"getconnectioncount": {handler: GetConnectionCount},
 		"getblockbyheight":   {handler: GetBlockByHeight},
@@ -142,6 +162,8 @@ func (ws *WsServer) registryMethod() {
 
 		"gettxhashmap":    {handler: gettxhashmap},
 		"getsessioncount": {handler: getsessioncount},
+
+		"relay": {handler: relayhandler},
 	}
 	ws.ActionMap = actionMap
 }
@@ -321,7 +343,7 @@ func (ws *WsServer) PushResult(resp map[string]interface{}) {
 		log.Error("Websocket PushResult:", err)
 		return
 	}
-	ws.broadcast(data)
+	ws.Broadcast(data)
 }
 func (ws *WsServer) send(sSessionId string, data []byte) error {
 	session := ws.SessionList.GetSessionById(sSessionId)
@@ -330,7 +352,7 @@ func (ws *WsServer) send(sSessionId string, data []byte) error {
 	}
 	return session.Send(data)
 }
-func (ws *WsServer) broadcast(data []byte) error {
+func (ws *WsServer) Broadcast(data []byte) error {
 	ws.SessionList.ForEachSession(func(v *Session) {
 		v.Send(data)
 	})

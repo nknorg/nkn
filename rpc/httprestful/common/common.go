@@ -10,9 +10,9 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
+	. "github.com/nknorg/nkn/net/protocol"
 	. "github.com/nknorg/nkn/rpc/httpjson"
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
-	. "github.com/nknorg/nkn/net/protocol"
 )
 
 var node Noder
@@ -26,6 +26,10 @@ type ApiServer interface {
 
 func SetNode(n Noder) {
 	node = n
+}
+
+func GetNode() Noder {
+	return node
 }
 
 //Node

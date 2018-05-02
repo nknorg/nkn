@@ -267,7 +267,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 
 	// Try the closest preceeding nodes
 	cp := closestPreceedingVnodeIterator{}
-	cp.init(vn, key)
+	cp.init(vn, key, false, false)
 	for {
 		// Get the next closest node
 		closest := cp.Next()
@@ -382,4 +382,10 @@ func (vn *localVnode) Neighbors() []*Vnode {
 		}
 	}
 	return neighbors
+}
+
+func (vn *localVnode) ClosestNeighborIterator(key []byte) (closestPreceedingVnodeIterator, error) {
+	cp := closestPreceedingVnodeIterator{}
+	cp.init(vn, key, true, true)
+	return cp, nil
 }

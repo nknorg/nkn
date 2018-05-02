@@ -21,6 +21,7 @@ import (
 	"github.com/nknorg/nkn/net/chord"
 	. "github.com/nknorg/nkn/net/message"
 	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/relay"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -65,6 +66,7 @@ type node struct {
 	RetryConnAddrs
 	SyncReqSem Semaphore
 	ring       *chord.Ring
+	relayer    *relay.RelayService
 }
 
 type RetryConnAddrs struct {
@@ -527,4 +529,15 @@ func (node *node) AcqSyncReqSem() {
 
 func (node *node) RelSyncReqSem() {
 	node.SyncReqSem.release()
+}
+
+func (node *node) GetChordAddr() []byte {
+	if node.ring == nil {
+		return nil
+	}
+	chordVnode := node.ring.GetFirstVnode()
+	if chordVnode == nil {
+		return nil
+	}
+	return chordVnode.Id
 }
