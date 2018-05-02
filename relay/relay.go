@@ -8,7 +8,7 @@ import (
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/ws"
+	"github.com/nknorg/nkn/websocket"
 )
 
 type RelayService struct {

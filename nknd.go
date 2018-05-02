@@ -22,7 +22,7 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
-	"github.com/nknorg/nkn/ws"
+	"github.com/nknorg/nkn/websocket"
 )
 
 func init() {
@@ -128,7 +128,7 @@ func nknMain() error {
 	node.StartRelayer()
 
 	// start websocket server
-	ws.StartServer(node)
+	websocket.StartServer(node)
 
 	// start consensus
 	StartConsensus(wallet, node)

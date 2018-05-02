@@ -1,4 +1,4 @@
-package websocket
+package server
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	. "github.com/nknorg/nkn/ws/session"
+	. "github.com/nknorg/nkn/websocket/session"
 
 	"github.com/gorilla/websocket"
 )
