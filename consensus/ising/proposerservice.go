@@ -139,25 +139,17 @@ func (p *ProposerService) Start() error {
 		for {
 			select {
 			case msg := <-p.msgChan:
-				if notice, ok := msg.(*BlockInfoNotice); ok {
-					h := notice.hash
-					// neighbor node starting
-					if h.CompareTo(Uint256{}) == 0 {
-						time.Sleep(time.Second * 3)
-					} else {
-						// new joined node
-						if p.confirmingBlock == nil {
-							brmsg := &BlockRequest{
-								blockHash: &h,
-							}
-							// request confirming block
-							p.SendConsensusMsg(brmsg, p.localNode.GetNeighborNoder()[0].GetPubKey())
-							p.confirmingBlock = &h
-						} else {
-							if p.confirmingBlock.CompareTo(h) != 0 {
-								//p.confirmingBlock = &h
-							}
-						}
+				if notice, ok := msg.(*Notice); ok {
+					heightHashMap := make(map[uint32]Uint256)
+					heightNeighborMap := make(map[uint32]uint64)
+					for k, v := range notice.BlockHistory {
+						height, hash := StringToHH(k)
+						heightHashMap[height] = hash
+						heightNeighborMap[height] = v
+					}
+					if height, ok := ledger.DefaultLedger.Store.CheckBlockHistory(heightHashMap); !ok {
+						//TODO DB reverts to 'height' - 1 and request blocks from neighbor n[height]
+						_ = height
 					}
 				}
 			}
@@ -415,8 +407,8 @@ func (p *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.Pu
 	switch msg.ProbeType {
 	case BlockHistory:
 		switch t := msg.ProbePayload.(type) {
-		case BlockHistoryPayload:
-			history := ledger.DefaultLedger.Store.GetBlockHistory(t.StartHeight, t.StartHeight + t.BlockNum)
+		case *BlockHistoryPayload:
+			history := ledger.DefaultLedger.Store.GetBlockHistory(t.StartHeight, t.StartHeight+t.BlockNum)
 			s := &StateResponse{history}
 			p.SendConsensusMsg(s, sender)
 		}

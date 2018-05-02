@@ -32,7 +32,7 @@ func (p *StateProbe) Serialize(w io.Writer) error {
 	}
 	if p.ProbePayload != nil {
 		switch t := p.ProbePayload.(type) {
-		case BlockHistoryPayload:
+		case *BlockHistoryPayload:
 			err = serialization.WriteUint32(w, t.StartHeight)
 			if err != nil {
 				return err
