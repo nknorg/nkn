@@ -36,7 +36,7 @@ func (r *RelayStat) CalcRelays(txn *transaction.Transaction) error {
 	r.TxPool = append(r.TxPool, txn.Hash())
 
 	for _, v := range sigChain.elems {
-		r.Relays[common.BytesToHexString(v.pubkey)] += 1
+		r.Relays[common.BytesToHexString(v.nextPubkey)] += 1
 	}
 
 	return nil
