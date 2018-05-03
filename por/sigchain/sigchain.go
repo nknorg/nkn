@@ -21,7 +21,9 @@ type sigchainer interface {
 	Length() int
 	IsFinal() bool
 	GetSignerIndex(pubkey []byte) (int, error)
+	GetLastPubkey() ([]byte, error)
 	GetDataHash() *common.Uint256
+	GetSignture() ([]byte, error)
 	Serialize(w io.Writer) error
 	Deserialize(r io.Reader) error
 }
@@ -71,16 +73,24 @@ func (p *SigChain) GetDataHash() *common.Uint256 {
 	return p.chain.GetDataHash()
 }
 
-func (p *SigChainEcdsa) Serialize(w io.Writer) error {
+func (p *SigChain) Serialize(w io.Writer) error {
 	if err := p.chain.Serialize(w); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *SigChainEcdsa) Deserialize(r io.Reader) error {
+func (p *SigChain) Deserialize(r io.Reader) error {
 	if err := p.chain.Deserialize(r); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (p *SigChain) GetLastPubkey() ([]byte, error) {
+	return p.chain.GetLastPubkey()
+}
+
+func (p *SigChain) GetSignture() ([]byte, error) {
+	return p.chain.GetLastPubkey()
 }

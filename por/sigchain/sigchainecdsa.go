@@ -247,6 +247,14 @@ func (p *SigChainEcdsa) GetSignerIndex(pubkey []byte) (int, error) {
 	_, idx, err := p.getElemByPubkey(pubkey)
 	return idx, err
 }
+func (p *SigChainEcdsa) GetLastPubkey() ([]byte, error) {
+	e, err := p.lastSigElem()
+	if err != nil {
+		return nil, err
+	}
+	return e.nextPubkey, nil
+
+}
 
 func (p *SigChainEcdsa) nextSigner() ([]byte, error) {
 	e, err := p.lastSigElem()
@@ -409,6 +417,15 @@ func (p *SigChainElemEcdsa) DeserializationUnsigned(r io.Reader) error {
 	}
 
 	return nil
+}
+
+func (p *SigChainEcdsa) GetSignture() ([]byte, error) {
+	sce, err := p.finalSigElem()
+	if err != nil {
+		return nil, err
+	}
+
+	return sce.signature, nil
 }
 
 func (p *SigChainEcdsa) dump() {
