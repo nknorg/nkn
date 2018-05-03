@@ -6,7 +6,6 @@ import (
 	"errors"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/por/sigchain"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 )
@@ -20,12 +19,12 @@ type porManager struct {
 	maxWorkSig []byte
 	quit       chan struct{}
 	started    bool
-	sigChains  map[common.Uint256]*sigchain.SigChain
+	sigChains  map[common.Uint256]*SigChain
 	cacheChan  chan interface{}
 }
 
 type getSigChainsMsg struct {
-	reply chan []*sigchain.SigChain
+	reply chan []*SigChain
 }
 
 func NewPorManager(acc *wallet.Account) *porManager {
@@ -33,7 +32,7 @@ func NewPorManager(acc *wallet.Account) *porManager {
 		account:   acc,
 		cacheChan: make(chan interface{}, cacheChanCap),
 		quit:      make(chan struct{}, 1),
-		sigChains: make(map[common.Uint256]*sigchain.SigChain),
+		sigChains: make(map[common.Uint256]*SigChain),
 	}
 
 	go pm.cacheSigChain()
@@ -47,7 +46,7 @@ out:
 		select {
 		case m := <-pm.cacheChan:
 			switch msg := m.(type) {
-			case *sigchain.SigChain:
+			case *SigChain:
 				buff := bytes.NewBuffer(nil)
 				if err := msg.Serialize(buff); err != nil {
 					log.Error("sigchain Serialize error")
@@ -63,7 +62,7 @@ out:
 					}
 				}
 			case *getSigChainsMsg:
-				sigchains := make([]*sigchain.SigChain, 0, len(pm.sigChains))
+				sigchains := make([]*SigChain, 0, len(pm.sigChains))
 				for _, sigchain := range pm.sigChains {
 					sigchains = append(sigchains, sigchain)
 				}
@@ -76,7 +75,7 @@ out:
 	}
 }
 
-func (pm *porManager) Sign(sc *sigchain.SigChain, nextPubkey []byte) (*sigchain.SigChain, error) {
+func (pm *porManager) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 	dcPk, err := pm.account.PubKey().EncodePoint(true)
 	if err != nil {
 		return nil, errors.New("the account of porManager is wrong")
@@ -103,7 +102,7 @@ func (pm *porManager) Sign(sc *sigchain.SigChain, nextPubkey []byte) (*sigchain.
 	return sc, nil
 }
 
-func (pm *porManager) Verify(sc *sigchain.SigChain) error {
+func (pm *porManager) Verify(sc *SigChain) error {
 	if err := sc.Verify(); err != nil {
 		return errors.New("verify failed")
 	}
@@ -111,15 +110,15 @@ func (pm *porManager) Verify(sc *sigchain.SigChain) error {
 	return nil
 }
 
-func (pm *porManager) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*sigchain.SigChain, error) {
-	return sigchain.NewSigChain(pm.account, dataSize, dataHash, destPubkey, nextPubkey)
+func (pm *porManager) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
+	return NewSigChain(pm.account, dataSize, dataHash, destPubkey, nextPubkey)
 }
 
-func (pm *porManager) IsFinal(sc *sigchain.SigChain) bool {
+func (pm *porManager) IsFinal(sc *SigChain) bool {
 	return sc.IsFinal()
 }
 
-func (pm *porManager) GetSignture(sc *sigchain.SigChain) ([]byte, error) {
+func (pm *porManager) GetSignture(sc *SigChain) ([]byte, error) {
 	return sc.GetSignture()
 }
 
@@ -131,16 +130,16 @@ func (pm *porManager) CleanChainCache(sigchainHashs []common.Uint256) {
 	pm.cacheChan <- sigchainHashs
 }
 
-func (pm *porManager) LenOfSigChain(sc *sigchain.SigChain) int {
+func (pm *porManager) LenOfSigChain(sc *SigChain) int {
 	return sc.Length()
 }
 
-func (pm *porManager) GetSigChains() []*sigchain.SigChain {
+func (pm *porManager) GetSigChains() []*SigChain {
 	if !pm.started {
 		return nil
 	}
 
-	rp := make(chan []*sigchain.SigChain, 1)
+	rp := make(chan []*SigChain, 1)
 	pm.cacheChan <- &getSigChainsMsg{reply: rp}
 	ret := <-rp
 	return ret

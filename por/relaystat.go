@@ -7,7 +7,6 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
-	"github.com/nknorg/nkn/por/sigchain"
 )
 
 type RelayStat struct {
@@ -31,7 +30,7 @@ func (r *RelayStat) CalcRelays(txn *transaction.Transaction) error {
 	}
 	rs := txn.Payload.(*payload.Commit)
 	buf := bytes.NewBuffer(rs.SigChain)
-	var sigChain sigchain.SigChain
+	var sigChain SigChain
 	sigChain.Deserialize(buf)
 
 	r.TxPool = append(r.TxPool, txn.Hash())
