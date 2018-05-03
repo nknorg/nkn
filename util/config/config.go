@@ -17,7 +17,24 @@ const (
 	DefaultMultiCoreNum    = 4
 )
 
-var Version string
+var (
+	Version           string
+	Parameters        *Configuration
+	defaultParameters = &Configuration{
+		Magic:         99281,
+		Version:       1,
+		HttpRestPort:  10334,
+		HttpWsPort:    10335,
+		HttpJsonPort:  10336,
+		NodePort:      10338,
+		ChordPort:     10339,
+		PrintLevel:    5,
+		ConsensusType: "ising",
+		SeedList: []string{
+			"127.0.0.1:10339",
+		},
+	}
+)
 
 type Configuration struct {
 	Magic          int64    `json:"Magic"`
@@ -48,12 +65,12 @@ type Configuration struct {
 	ChordPort      int      `json:"ChordPort"`
 }
 
-var Parameters *Configuration
-
 func init() {
 	file, err := ioutil.ReadFile(DefaultConfigFilename)
 	if err != nil {
-		log.Fatalln("Config file error: ", err)
+		log.Printf("Config file error: %v, use default parameters.", err)
+		Parameters = defaultParameters
+		return
 	}
 	// Remove the UTF-8 Byte Order Mark
 	file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
@@ -61,11 +78,15 @@ func init() {
 	config := Configuration{}
 	err = json.Unmarshal(file, &config)
 	if err != nil {
-		log.Fatalln("Unmarshal config file error: ", err)
+		log.Printf("Unmarshal config file error: %v, use default parameters.", err)
+		Parameters = defaultParameters
+		return
 	}
 	err = check(&config)
 	if err != nil {
-		log.Fatalln("invalid config file: ", err)
+		log.Printf("invalid config file: %v, use default parameters.", err)
+		Parameters = defaultParameters
+		return
 	}
 
 	Parameters = &config
