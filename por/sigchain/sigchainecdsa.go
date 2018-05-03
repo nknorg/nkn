@@ -1,4 +1,4 @@
-package por
+package sigchain
 
 import (
 	"bytes"
@@ -14,51 +14,41 @@ import (
 	"github.com/nknorg/nkn/wallet"
 )
 
-type sigchainer interface {
-	Sign(nextPubkey []byte, signer wallet.Account) error
-	Verify() error
-	Path() [][]byte
-	Length() int
-	IsFinal() bool
-	GetSignerIndex(pubkey []byte) int
-	GetDataHash() *common.Uint256
-}
-
 // for the first relay node
 // 1. NewSigChain : create a new Signature Chain and sign
 //
 // for the next relay node
 // 1. Sign: sign the element created in Sign
 
-type SigChain struct {
+type SigChainEcdsa struct {
 	nonce      [4]byte
 	dataSize   uint32          // payload size
 	dataHash   *common.Uint256 // payload hash
 	srcPubkey  []byte          // source pubkey
 	destPubkey []byte          // destination pubkey
-	elems      []*SigChainElem
+	elems      []*SigChainElemEcdsa
 }
 
-type SigChainElem struct {
+type SigChainElemEcdsa struct {
 	nextPubkey []byte // next signer
 	signature  []byte // signature for signature chain element
 }
 
 // first relay node starts a new signature chain which consists of meta data and the first element.
-func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
+func NewSigChainEcdsa(owner *wallet.Account, dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChainEcdsa, error) {
 	ownPk := owner.PubKey()
 	srcPubkey, err := ownPk.EncodePoint(true)
 	if err != nil {
 		return nil, errors.New("EncodePoint ownpk error")
 	}
 
-	sc := &SigChain{
+	sc := &SigChainEcdsa{
 		dataSize:   dataSize,
 		dataHash:   dataHash,
 		srcPubkey:  srcPubkey,
 		destPubkey: destPubkey,
-		elems: []*SigChainElem{
-			&SigChainElem{
+		elems: []*SigChainElemEcdsa{
+			&SigChainElemEcdsa{
 				nextPubkey: nextPubkey,
 			},
 		},
@@ -84,15 +74,15 @@ func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash *common.Uint25
 	return sc, nil
 }
 
-func NewSigChainElem(nextPubkey []byte) *SigChainElem {
-	return &SigChainElem{
+func NewSigChainElemEcdsa(nextPubkey []byte) *SigChainElemEcdsa {
+	return &SigChainElemEcdsa{
 		nextPubkey: nextPubkey,
 		signature:  nil,
 	}
 }
 
 // Sign new created signature chain with local wallet.
-func (p *SigChain) Sign(nextPubkey []byte, signer *wallet.Account) error {
+func (p *SigChainEcdsa) Sign(nextPubkey []byte, signer *wallet.Account) error {
 	sigNum := p.Length()
 	if sigNum < 1 {
 		return errors.New("there are not enough signatures")
@@ -124,7 +114,7 @@ func (p *SigChain) Sign(nextPubkey []byte, signer *wallet.Account) error {
 	//	return err
 	//}
 	buff := bytes.NewBuffer(lastElem.signature)
-	elem := NewSigChainElem(nextPubkey)
+	elem := NewSigChainElemEcdsa(nextPubkey)
 	err = elem.SerializationUnsigned(buff)
 	if err != nil {
 		return err
@@ -141,7 +131,7 @@ func (p *SigChain) Sign(nextPubkey []byte, signer *wallet.Account) error {
 }
 
 // Verify returns result of signature chain verification.
-func (p *SigChain) Verify() error {
+func (p *SigChainEcdsa) Verify() error {
 
 	prevNextPubkey := p.srcPubkey
 	buff := bytes.NewBuffer(nil)
@@ -176,7 +166,7 @@ func (p *SigChain) Verify() error {
 }
 
 // Path returns signer path in signature chain.
-func (p *SigChain) Path() [][]byte {
+func (p *SigChainEcdsa) Path() [][]byte {
 	publicKeys := [][]byte{p.srcPubkey}
 	for _, e := range p.elems {
 		publicKeys = append(publicKeys, e.nextPubkey)
@@ -186,16 +176,16 @@ func (p *SigChain) Path() [][]byte {
 }
 
 // Length returns element num in current signature chain
-func (p *SigChain) Length() int {
+func (p *SigChainEcdsa) Length() int {
 	return len(p.elems)
 }
 
-func (p *SigChain) GetDataHash() *common.Uint256 {
+func (p *SigChainEcdsa) GetDataHash() *common.Uint256 {
 	return p.dataHash
 }
 
 // firstSigElem returns the first element in signature chain.
-func (p *SigChain) firstSigElem() (*SigChainElem, error) {
+func (p *SigChainEcdsa) firstSigElem() (*SigChainElemEcdsa, error) {
 	if p == nil || len(p.elems) == 0 {
 		return nil, errors.New("nil signature chain")
 	}
@@ -204,7 +194,7 @@ func (p *SigChain) firstSigElem() (*SigChainElem, error) {
 }
 
 // lastSigElem returns the last element in signature chain.
-func (p *SigChain) lastSigElem() (*SigChainElem, error) {
+func (p *SigChainEcdsa) lastSigElem() (*SigChainElemEcdsa, error) {
 	if p == nil || len(p.elems) == 0 {
 		return nil, errors.New("nil signature chain")
 	}
@@ -213,7 +203,7 @@ func (p *SigChain) lastSigElem() (*SigChainElem, error) {
 	return p.elems[num-1], nil
 }
 
-func (p *SigChain) finalSigElem() (*SigChainElem, error) {
+func (p *SigChainEcdsa) finalSigElem() (*SigChainElemEcdsa, error) {
 	if len(p.elems) < 2 && !common.IsEqualBytes(p.destPubkey, p.elems[len(p.elems)-2].nextPubkey) {
 		return nil, errors.New("unfinal")
 	}
@@ -221,14 +211,14 @@ func (p *SigChain) finalSigElem() (*SigChainElem, error) {
 	return p.elems[len(p.elems)-1], nil
 }
 
-func (p *SigChain) IsFinal() bool {
+func (p *SigChainEcdsa) IsFinal() bool {
 	if len(p.elems) < 2 || !common.IsEqualBytes(p.destPubkey, p.elems[len(p.elems)-2].nextPubkey) {
 		return false
 	}
 	return true
 }
 
-func (p *SigChain) getElemByPubkey(pubkey []byte) (*SigChainElem, int, error) {
+func (p *SigChainEcdsa) getElemByPubkey(pubkey []byte) (*SigChainElemEcdsa, int, error) {
 	if p == nil || len(p.elems) == 0 {
 		return nil, 0, errors.New("nil signature chain")
 	}
@@ -245,7 +235,7 @@ func (p *SigChain) getElemByPubkey(pubkey []byte) (*SigChainElem, int, error) {
 	return nil, 0, errors.New("not in sigchain")
 }
 
-func (p *SigChain) getElemByIndex(idx int) (*SigChainElem, error) {
+func (p *SigChainEcdsa) getElemByIndex(idx int) (*SigChainElemEcdsa, error) {
 	if p == nil || len(p.elems) < idx {
 		return nil, errors.New("nil signature chain")
 	}
@@ -253,12 +243,12 @@ func (p *SigChain) getElemByIndex(idx int) (*SigChainElem, error) {
 	return p.elems[idx], nil
 }
 
-func (p *SigChain) GetSignerIndex(pubkey []byte) (int, error) {
+func (p *SigChainEcdsa) GetSignerIndex(pubkey []byte) (int, error) {
 	_, idx, err := p.getElemByPubkey(pubkey)
 	return idx, err
 }
 
-func (p *SigChain) nextSigner() ([]byte, error) {
+func (p *SigChainEcdsa) nextSigner() ([]byte, error) {
 	e, err := p.lastSigElem()
 	if err != nil {
 		return nil, errors.New("no elem")
@@ -266,7 +256,7 @@ func (p *SigChain) nextSigner() ([]byte, error) {
 	return e.nextPubkey, nil
 }
 
-func (p *SigChain) Serialize(w io.Writer) error {
+func (p *SigChainEcdsa) Serialize(w io.Writer) error {
 	var err error
 	err = p.SerializationMetadata(w)
 	if err != nil {
@@ -288,7 +278,7 @@ func (p *SigChain) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChain) SerializationMetadata(w io.Writer) error {
+func (p *SigChainEcdsa) SerializationMetadata(w io.Writer) error {
 	var err error
 
 	err = serialization.WriteVarBytes(w, p.nonce[:])
@@ -319,7 +309,7 @@ func (p *SigChain) SerializationMetadata(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChain) Deserialize(r io.Reader) error {
+func (p *SigChainEcdsa) Deserialize(r io.Reader) error {
 	var err error
 	err = p.DeserializationMetadata(r)
 	if err != nil {
@@ -338,7 +328,7 @@ func (p *SigChain) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (p *SigChain) DeserializationMetadata(r io.Reader) error {
+func (p *SigChainEcdsa) DeserializationMetadata(r io.Reader) error {
 	var err error
 
 	nonce, err := serialization.ReadVarBytes(r)
@@ -370,7 +360,7 @@ func (p *SigChain) DeserializationMetadata(r io.Reader) error {
 	return nil
 }
 
-func (p *SigChainElem) Serialize(w io.Writer) error {
+func (p *SigChainElemEcdsa) Serialize(w io.Writer) error {
 	var err error
 	err = p.SerializationUnsigned(w)
 	if err != nil {
@@ -384,7 +374,7 @@ func (p *SigChainElem) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChainElem) SerializationUnsigned(w io.Writer) error {
+func (p *SigChainElemEcdsa) SerializationUnsigned(w io.Writer) error {
 	var err error
 
 	err = serialization.WriteVarBytes(w, p.nextPubkey)
@@ -395,7 +385,7 @@ func (p *SigChainElem) SerializationUnsigned(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChainElem) Deserialize(r io.Reader) error {
+func (p *SigChainElemEcdsa) Deserialize(r io.Reader) error {
 	var err error
 	err = p.DeserializationUnsigned(r)
 	if err != nil {
@@ -410,7 +400,7 @@ func (p *SigChainElem) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (p *SigChainElem) DeserializationUnsigned(r io.Reader) error {
+func (p *SigChainElemEcdsa) DeserializationUnsigned(r io.Reader) error {
 	var err error
 
 	p.nextPubkey, err = serialization.ReadVarBytes(r)
@@ -421,7 +411,7 @@ func (p *SigChainElem) DeserializationUnsigned(r io.Reader) error {
 	return nil
 }
 
-func (p *SigChain) dump() {
+func (p *SigChainEcdsa) dump() {
 	fmt.Println("dataSize: ", p.dataSize)
 	fmt.Println("dataHash: ", p.dataHash)
 	fmt.Println("srcPubkey: ", common.BytesToHexString(p.srcPubkey))
