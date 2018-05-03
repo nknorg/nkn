@@ -1,4 +1,4 @@
-package sigchain
+package sigchains
 
 import (
 	"bytes"

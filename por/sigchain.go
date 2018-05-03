@@ -1,9 +1,10 @@
-package sigchain
+package por
 
 import (
 	"io"
 
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/por/sigchains"
 	"github.com/nknorg/nkn/wallet"
 )
 
@@ -39,7 +40,7 @@ func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash *common.Uint25
 	case ECDSAP256R1:
 		fallthrough
 	default:
-		sigchain, _ = NewSigChainEcdsa(owner, dataSize, dataHash, destPubkey, nextPubkey)
+		sigchain, _ = sigchains.NewSigChainEcdsa(owner, dataSize, dataHash, destPubkey, nextPubkey)
 	}
 
 	return &SigChain{sigchain}, nil
