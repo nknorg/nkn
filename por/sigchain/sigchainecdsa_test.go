@@ -1,4 +1,4 @@
-package por
+package sigchain
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"github.com/nknorg/nkn/wallet"
 )
 
-func TestSign(t *testing.T) {
+func TestSigChainEcdsa(t *testing.T) {
 	crypto.SetAlg("P256R1")
 	from, _ := wallet.NewAccount()
 	to, _ := wallet.NewAccount()
@@ -20,7 +20,7 @@ func TestSign(t *testing.T) {
 	toPk, _ := to.PubKey().EncodePoint(true)
 	rel1Pk, _ := rel1.PubKey().EncodePoint(true)
 	rel2Pk, _ := rel2.PubKey().EncodePoint(true)
-	sc, _ := NewSigChain(from, 1, &common.Uint256{1, 2, 3}, toPk, rel1Pk)
+	sc, _ := NewSigChainEcdsa(from, 1, &common.Uint256{1, 2, 3}, toPk, rel1Pk)
 	if sc.Verify() == nil {
 		t.Log("[sigchain] verify successfully")
 	} else {
