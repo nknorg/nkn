@@ -22,13 +22,15 @@ func publickKeyToNodeID(pubKey *crypto.PubKey) uint64 {
 	return id
 }
 
-func dumpState(from *crypto.PubKey, description string, s State) {
-	str := ""
-	if s.HasBit(InitialState) {
-		str += "InitialState"
+func dumpState(from *crypto.PubKey, description string, s *State) {
+	node := publickKeyToNodeID(from)
+	if s == nil {
+		log.Infof("From: %d | %s", node, description)
+		return
 	}
+	str := ""
 	if s.HasBit(FloodingFinished) {
-		str += " -> FloodingFinished"
+		str += "FloodingFinished"
 	}
 	if s.HasBit(RequestSent) {
 		str += " -> RequestSent"
@@ -39,6 +41,6 @@ func dumpState(from *crypto.PubKey, description string, s State) {
 	if s.HasBit(OpinionSent) {
 		str += " -> OpinionSent"
 	}
-	node := publickKeyToNodeID(from)
 	log.Infof("From: %d | Current State: %s | %s", node, str, description)
+	return
 }

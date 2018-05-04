@@ -22,6 +22,7 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/websocket"
 )
 
 func init() {
@@ -31,13 +32,13 @@ func init() {
 	crypto.SetAlg(config.Parameters.EncryptAlg)
 }
 
-func InitLedger() error {
+func InitLedger(account *wallet.Account) error {
 	var err error
 	store, err := db.NewLedgerStore()
 	if err != nil {
 		return err
 	}
-	ledger.StandbyBookKeepers = wallet.GetBookKeepers()
+	ledger.StandbyBookKeepers = wallet.GetBookKeepers(account)
 	blockChain, err := ledger.NewBlockchainWithGenesisBlock(store, ledger.StandbyBookKeepers)
 	if err != nil {
 		return err
@@ -51,10 +52,10 @@ func InitLedger() error {
 	return nil
 }
 
-func StartNetworking(pubKey *crypto.PubKey) protocol.Noder {
-	node := net.StartProtocol(pubKey)
+func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
+	node := net.StartProtocol(pubKey, ring)
 	node.SyncNodeHeight()
-	node.WaitForFourPeersStart()
+	// node.WaitForFourPeersStart()
 	node.WaitForSyncBlkFinish()
 	httpjson.RegistRpcNode(node)
 	go httpjson.StartRPCServer()
@@ -79,22 +80,28 @@ func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
 
 func nknMain() error {
 	log.Trace("Node version: ", config.Version)
-	var name = flag.String("test", "value", "usage")
-	var numNode int
-	flag.IntVar(&numNode, "numNode", 1, "usage")
+	var name = flag.String("test", "", "usage")
 	flag.Parse()
 
+	var ring *chord.Ring
+	var transport *chord.TCPTransport
+	var err error
+
 	// Start the Chord ring testing process
-	if len(os.Args) != 1 {
+	if *name != "" {
 		//flag.PrintDefaults()
 		if *name == "create" {
-			go chord.CreateNet()
+			ring, transport, err = chord.CreateNet()
 		} else if *name == "join" {
-			go chord.JoinNet()
+			ring, transport, err = chord.JoinNet()
 		}
-		for {
-			time.Sleep(20 * time.Second)
+
+		if err != nil {
+			return err
 		}
+
+		defer transport.Shutdown()
+		defer ring.Shutdown()
 	}
 
 	// Get local account
@@ -108,14 +115,20 @@ func nknMain() error {
 	}
 
 	// initialize ledger
-	err = InitLedger()
+	err = InitLedger(account)
 	defer ledger.DefaultLedger.Store.Close()
 	if err != nil {
 		return errors.New("ledger initialization error")
 	}
 
 	// start P2P networking
-	node := StartNetworking(account.PublicKey)
+	node := StartNetworking(account.PublicKey, ring)
+
+	// start relay service
+	node.StartRelayer()
+
+	// start websocket server
+	websocket.StartServer(node)
 
 	// start consensus
 	StartConsensus(wallet, node)
@@ -123,7 +136,6 @@ func nknMain() error {
 	httpjson.Wallet = wallet
 	for {
 		time.Sleep(dbft.GenBlockTime)
-		log.Trace("BlockHeight = ", ledger.DefaultLedger.Blockchain.BlockHeight)
 		if log.CheckIfNeedNewFile() {
 			log.ClosePrintLog()
 			log.Init(log.Path, os.Stdout)

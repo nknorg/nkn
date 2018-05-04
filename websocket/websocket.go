@@ -1,4 +1,4 @@
-package ws
+package websocket
 
 import (
 	"bytes"
@@ -10,10 +10,10 @@ import (
 	"github.com/nknorg/nkn/rpc/httprestful/common"
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	. "github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/ws/websocket"
+	"github.com/nknorg/nkn/websocket/server"
 )
 
-var ws *websocket.WsServer
+var ws *server.WsServer
 var (
 	pushBlockFlag    bool = false
 	pushRawBlockFlag bool = false
@@ -24,7 +24,7 @@ func StartServer(n Noder) {
 	common.SetNode(n)
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
 	go func() {
-		ws = websocket.InitWsServer()
+		ws = server.InitWsServer(n)
 		ws.Start()
 	}()
 }
@@ -48,7 +48,8 @@ func Stop() {
 }
 func ReStartServer() {
 	if ws == nil {
-		ws = websocket.InitWsServer()
+		n := common.GetNode()
+		ws = server.InitWsServer(n)
 		ws.Start()
 		return
 	}
@@ -135,4 +136,8 @@ func PushBlockTransactions(v interface{}) {
 		resp["Action"] = "sendblocktransactions"
 		ws.PushResult(resp)
 	}
+}
+
+func GetServer() *server.WsServer {
+	return ws
 }

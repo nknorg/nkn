@@ -18,8 +18,10 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/net/chord"
 	. "github.com/nknorg/nkn/net/message"
 	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/relay"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -63,6 +65,8 @@ type node struct {
 	ConnectingNodes
 	RetryConnAddrs
 	SyncReqSem Semaphore
+	ring       *chord.Ring
+	relayer    *relay.RelayService
 }
 
 type RetryConnAddrs struct {
@@ -156,7 +160,7 @@ func NewNode() *node {
 	return &n
 }
 
-func InitNode(pubKey *crypto.PubKey) Noder {
+func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n := NewNode()
 	n.version = PROTOCOLVERSION
 	if Parameters.NodeType == SERVICENODENAME {
@@ -189,6 +193,9 @@ func InitNode(pubKey *crypto.PubKey) Noder {
 	n.TXNPool = transaction.NewTxnPool()
 	n.eventQueue.init()
 	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnect)
+
+	n.ring = ring
+
 	go n.initConnection()
 	go n.updateConnection()
 	go n.updateNodeInfo()
@@ -522,4 +529,15 @@ func (node *node) AcqSyncReqSem() {
 
 func (node *node) RelSyncReqSem() {
 	node.SyncReqSem.release()
+}
+
+func (node *node) GetChordAddr() []byte {
+	if node.ring == nil {
+		return nil
+	}
+	chordVnode := node.ring.GetFirstVnode()
+	if chordVnode == nil {
+		return nil
+	}
+	return chordVnode.Id
 }

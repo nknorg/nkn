@@ -2,14 +2,29 @@ package chord
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/nknorg/nkn/util/config"
+	nlog "github.com/nknorg/nkn/util/log"
 )
 
 // Converts the ID to string
 func (vn *Vnode) String() string {
 	return fmt.Sprintf("%x", vn.Id)
+}
+
+func (vn *Vnode) NodeAddr() (string, error) {
+	i := strings.Index(vn.Host, ":")
+	if i < 0 {
+		nlog.Error("Parse IP address error\n")
+		return "", errors.New("Parse IP address error")
+	}
+	return vn.Host[:i] + ":" + strconv.Itoa(int(vn.NodePort)), nil
 }
 
 // Initializes a local vnode
@@ -19,6 +34,9 @@ func (vn *localVnode) init(idx int) {
 
 	// Set our host
 	vn.Host = vn.ring.config.Hostname
+
+	// Set node port
+	vn.NodePort = config.Parameters.NodePort
 
 	// Initialize all state
 	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)
@@ -249,7 +267,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 
 	// Try the closest preceeding nodes
 	cp := closestPreceedingVnodeIterator{}
-	cp.init(vn, key)
+	cp.init(vn, key, false, false)
 	for {
 		// Get the next closest node
 		closest := cp.Next()
@@ -346,4 +364,28 @@ func (vn *localVnode) knownSuccessors() (successors int) {
 		}
 	}
 	return
+}
+
+func (vn *localVnode) Neighbors() []*Vnode {
+	seen := make(map[*Vnode]bool)
+	neighbors := []*Vnode{}
+	for _, n := range vn.finger {
+		if n == nil {
+			continue
+		}
+		if n.Host == vn.Host {
+			continue
+		}
+		if _, value := seen[n]; !value {
+			seen[n] = true
+			neighbors = append(neighbors, n)
+		}
+	}
+	return neighbors
+}
+
+func (vn *localVnode) ClosestNeighborIterator(key []byte) (closestPreceedingVnodeIterator, error) {
+	cp := closestPreceedingVnodeIterator{}
+	cp.init(vn, key, true, true)
+	return cp, nil
 }

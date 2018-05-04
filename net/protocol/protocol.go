@@ -1,14 +1,15 @@
 package protocol
 
 import (
+	"bytes"
+	"encoding/binary"
+	"time"
+
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
-	"time"
-	"bytes"
-	"encoding/binary"
 )
 
 type NodeAddr struct {
@@ -96,14 +97,14 @@ type Noder interface {
 	GetHeight() uint64
 	GetConnectionCnt() uint
 	GetTxnByCount(int) map[common.Uint256]*transaction.Transaction
-	GetTxnPool()*transaction.TXNPool
+	GetTxnPool() *transaction.TXNPool
 	AppendTxnPool(*transaction.Transaction) ErrCode
 	ExistedID(id common.Uint256) bool
 	ReqNeighborList()
 	DumpInfo()
 	UpdateInfo(t time.Time, version uint32, services uint64,
 		port uint16, nonce uint64, relay uint8, height uint64)
-	ConnectSeeds()
+	ConnectNeighbors()
 	Connect(nodeAddr string) error
 	Tx(buf []byte)
 	GetTime() int64
@@ -141,6 +142,11 @@ type Noder interface {
 	RemoveFromRetryList(addr string)
 	AcqSyncReqSem()
 	RelSyncReqSem()
+
+	GetChordAddr() []byte
+	StartRelayer()
+	NextHop(key []byte) (Noder, error)
+	SendRelayPacket(interface{}) error
 }
 
 func (msg *NodeAddr) Deserialization(p []byte) error {

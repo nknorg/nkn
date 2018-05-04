@@ -120,32 +120,32 @@ func (node *node) ReqNeighborList() {
 	go node.Tx(buf)
 }
 
-func (node *node) ConnectSeeds() {
-	if node.nbrNodes.GetConnectionCnt() < MINCONNCNT {
-		seedNodes := config.Parameters.SeedList
-		for _, nodeAddr := range seedNodes {
-			found := false
-			var n Noder
-			var ip net.IP
-			node.nbrNodes.Lock()
-			for _, tn := range node.nbrNodes.List {
-				addr := getNodeAddr(tn)
-				ip = addr.IpAddr[:]
-				addrstring := ip.To16().String() + ":" + strconv.Itoa(int(addr.Port))
-				if nodeAddr == addrstring {
-					n = tn
-					found = true
-					break
-				}
+func (node *node) ConnectNeighbors() {
+	chordNode := node.ring.GetFirstVnode()
+	if chordNode == nil {
+		return
+	}
+	neighbors := chordNode.Neighbors()
+	for _, nbr := range neighbors {
+		nodeAddr, err := nbr.NodeAddr()
+		if err != nil {
+			continue
+		}
+		found := false
+		var ip net.IP
+		node.nbrNodes.Lock()
+		for _, tn := range node.nbrNodes.List {
+			addr := getNodeAddr(tn)
+			ip = addr.IpAddr[:]
+			addrstring := ip.To16().String() + ":" + strconv.Itoa(int(addr.Port))
+			if nodeAddr == addrstring {
+				found = true
+				break
 			}
-			node.nbrNodes.Unlock()
-			if found {
-				if n.GetState() == ESTABLISH {
-					n.ReqNeighborList()
-				}
-			} else { //not found
-				go node.Connect(nodeAddr)
-			}
+		}
+		node.nbrNodes.Unlock()
+		if !found {
+			go node.Connect(nodeAddr)
 		}
 	}
 }
@@ -180,16 +180,16 @@ func (node *node) reconnect() {
 }
 
 func (n *node) TryConnect() {
-	if n.fetchRetryNodeFromNeiborList() > 0 {
+	if n.fetchRetryNodeFromNeighborList() > 0 {
 		n.reconnect()
 	}
 }
 
-func (n *node) fetchRetryNodeFromNeiborList() int {
+func (n *node) fetchRetryNodeFromNeighborList() int {
 	n.nbrNodes.Lock()
 	defer n.nbrNodes.Unlock()
 	var ip net.IP
-	neibornodes := make(map[uint64]*node)
+	neighbornodes := make(map[uint64]*node)
 	for _, tn := range n.nbrNodes.List {
 		addr := getNodeAddr(tn)
 		ip = addr.IpAddr[:]
@@ -204,10 +204,10 @@ func (n *node) fetchRetryNodeFromNeiborList() int {
 		} else {
 			//add others to tmp node map
 			n.RemoveFromRetryList(nodeAddr)
-			neibornodes[tn.GetID()] = tn
+			neighbornodes[tn.GetID()] = tn
 		}
 	}
-	n.nbrNodes.List = neibornodes
+	n.nbrNodes.List = neighbornodes
 	return len(n.RetryAddrs)
 }
 
@@ -215,11 +215,10 @@ func (n *node) fetchRetryNodeFromNeiborList() int {
 // a node map method
 // Fixme the Nodes should be a parameter
 func (node *node) updateNodeInfo() {
-	var periodUpdateTime uint = 1
-	if config.Parameters.GenBlockTime > config.MINGENBLOCKTIME {
-		periodUpdateTime = config.Parameters.GenBlockTime / TIMESOFUPDATETIME
-	}
-	ticker := time.NewTicker(time.Second * (time.Duration(periodUpdateTime)))
+	// Fixme: relate ticker time with block generation time.
+	// If the ticker time is inappropriate, the node will
+	// not catch up with neighbor nodes(syncing always).
+	ticker := time.NewTicker(time.Millisecond * 1200)
 	quit := make(chan struct{})
 	for {
 		select {
@@ -242,7 +241,7 @@ func (node *node) updateConnection() {
 	for {
 		select {
 		case <-t.C:
-			node.ConnectSeeds()
+			node.ConnectNeighbors()
 			node.TryConnect()
 			t.Stop()
 			t.Reset(time.Second * CONNMONITOR)

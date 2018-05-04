@@ -1,11 +1,14 @@
 package chord
 
 import (
+	"flag"
 	"fmt"
+	"io"
 	"testing"
 	"time"
-)
 
+	"github.com/cbocovic/chord"
+)
 
 func TestNodeStart(t *testing.T) {
 	ml := InitMLTransport()
@@ -55,10 +58,8 @@ Loop:
 	me.Finalize()
 }
 
-
-
 func prepRing(port int) (*Config, *TCPTransport, error) {
-	listen := fmt.Sprintf("localhost:%d", port)
+	listen := fmt.Sprintf("127.0.0.1:%d", port)
 	conf := DefaultConfig(listen)
 	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
 	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
@@ -95,7 +96,7 @@ func TestTCPCreat(test *testing.T) {
 }
 
 func prepJoinRing(port int) (*Config, *TCPTransport, error) {
-	listen := fmt.Sprintf("localhost:%d", port)
+	listen := fmt.Sprintf("127.0.0.1:%d", port)
 	conf := DefaultConfig(listen)
 	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
 	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
@@ -113,7 +114,7 @@ func TestNodeJoin(test *testing.T) {
 		test.Fatalf("unexpected err. %s", err)
 	}
 	// Join ring
-	r, err := Join(c, t, "localhost:10025")
+	r, err := Join(c, t, "127.0.0.1:10025")
 	if err != nil {
 		test.Fatalf("failed to join local node! Got %s", err)
 	}

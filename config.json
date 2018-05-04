@@ -7,11 +7,12 @@
   "HttpWsPort":10335,
   "HttpJsonPort": 10336,
   "NodePort": 10338,
+  "ChordPort": 10339,
   "PrintLevel": 5,
   "IsTLS": false,
   "MultiCoreNum": 4,
   "ConsensusType": "ising",
   "SeedList": [
-    "127.0.0.1:10338"
+    "127.0.0.1:10339"
   ]
 }

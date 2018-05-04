@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 
 	. "github.com/nknorg/nkn/errors"
@@ -73,6 +74,10 @@ func (u *Uint256) Deserialize(r io.Reader) error {
 
 func (u *Uint256) ToString() string {
 	return string(u.ToArray())
+}
+func (u *Uint256) ToHexString() string {
+	hexStr := fmt.Sprintf("%x", u.ToArrayReverse())
+	return hexStr
 }
 
 func Uint256ParseFromBytes(f []byte) (Uint256, error) {

@@ -10,14 +10,20 @@ type closestPreceedingVnodeIterator struct {
 	finger_idx    int
 	successor_idx int
 	yielded       map[string]struct{}
+	inclusive     bool
 }
 
-func (cp *closestPreceedingVnodeIterator) init(vn *localVnode, key []byte) {
+func (cp *closestPreceedingVnodeIterator) init(vn *localVnode, key []byte, fingerOnly bool, inclusive bool) {
 	cp.key = key
 	cp.vn = vn
-	cp.successor_idx = len(vn.successors) - 1
+	if fingerOnly {
+		cp.successor_idx = -1
+	} else {
+		cp.successor_idx = len(vn.successors) - 1
+	}
 	cp.finger_idx = len(vn.finger) - 1
 	cp.yielded = make(map[string]struct{})
+	cp.inclusive = inclusive
 }
 
 func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
@@ -35,7 +41,11 @@ func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 		if _, ok := cp.yielded[vn.successors[i].String()]; ok {
 			continue
 		}
-		if between(vn.Id, cp.key, vn.successors[i].Id) {
+		if !cp.inclusive && between(vn.Id, cp.key, vn.successors[i].Id) {
+			successor_node = vn.successors[i]
+			break
+		}
+		if cp.inclusive && betweenRightIncl(vn.Id, cp.key, vn.successors[i].Id) {
 			successor_node = vn.successors[i]
 			break
 		}
@@ -50,7 +60,11 @@ func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 		if _, ok := cp.yielded[vn.finger[i].String()]; ok {
 			continue
 		}
-		if between(vn.Id, cp.key, vn.finger[i].Id) {
+		if !cp.inclusive && between(vn.Id, cp.key, vn.finger[i].Id) {
+			finger_node = vn.finger[i]
+			break
+		}
+		if cp.inclusive && betweenRightIncl(vn.Id, cp.key, vn.finger[i].Id) {
 			finger_node = vn.finger[i]
 			break
 		}

@@ -2,8 +2,9 @@ package chord
 
 import (
 	"bytes"
-	"github.com/nknorg/nkn/util/log"
 	"sort"
+
+	"github.com/nknorg/nkn/util/log"
 )
 
 func (r *Ring) DumpInfo(finger bool) {
@@ -13,30 +14,30 @@ func (r *Ring) DumpInfo(finger bool) {
 		log.Infof("\tHost: %s", vnode.Host)
 
 		for sidx, succ := range vnode.successors {
-		        if succ != nil {
-		                log.Infof("\tsucc[%d].Id: %x", sidx, string(succ.Id))
-		                log.Infof("\tsucc[%d].Host: %s", sidx, succ.Host)
-		        } else {
-		                log.Infof("\tsucc[%d]: nil", sidx)
-		        }
+			if succ != nil {
+				log.Infof("\tsucc[%d].Id: %x", sidx, string(succ.Id))
+				log.Infof("\tsucc[%d].Host: %s", sidx, succ.Host)
+			} else {
+				log.Infof("\tsucc[%d]: nil", sidx)
+			}
 		}
 
 		// Only dump []finger when DumpInfo(true)
 		if finger {
-		        for fidx, fing := range vnode.finger {
-		                if fing != nil {
-		                        log.Infof("\tfinger[%d].Id: %x", fidx, string(fing.Id))
-		                        log.Infof("\tfinger[%d].Host: %s", fidx, fing.Host)
-		                } else {
-		                        log.Infof("\tfinger[%d]: nil", fidx)
-		                }
-		        }
+			for fidx, fing := range vnode.finger {
+				if fing != nil {
+					log.Infof("\tfinger[%d].Id: %x", fidx, string(fing.Id))
+					log.Infof("\tfinger[%d].Host: %s", fidx, fing.Host)
+				} else {
+					log.Infof("\tfinger[%d]: nil", fidx)
+				}
+			}
 		}
 
 		log.Infof("\tlast_finger: %d", vnode.last_finger)
 		if vnode.predecessor != nil {
-		        log.Infof("\tpredecessor.Id: %x", string((*vnode.predecessor).Id))
-		        log.Infof("\tpredecessor.Host: %s", (*vnode.predecessor).Host)
+			log.Infof("\tpredecessor.Id: %x", string((*vnode.predecessor).Id))
+			log.Infof("\tpredecessor.Host: %s", (*vnode.predecessor).Host)
 		}
 		log.Infof("\tstabilized: %s", vnode.stabilized.String())
 		log.Infof("}\n")
@@ -164,4 +165,12 @@ func (r *Ring) safeInvoke(f func()) {
 		}
 	}()
 	f()
+}
+
+// Len is the number of vnodes
+func (r *Ring) GetFirstVnode() *localVnode {
+	if r == nil || len(r.vnodes) == 0 {
+		return nil
+	}
+	return r.vnodes[0]
 }
