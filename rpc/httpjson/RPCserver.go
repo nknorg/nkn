@@ -30,7 +30,7 @@ func StartRPCServer() {
 	HandleFunc("getbalance", getBalance)
 
 	HandleFunc("setdebuginfo", setDebugInfo)
-	HandleFunc("setdebuginfo", sendToAddress)
+	HandleFunc("sendtoaddress", sendToAddress)
 	HandleFunc("registasset", registAsset)
 	HandleFunc("issueasset", issueAsset)
 	HandleFunc("prepaidasset", prepaidAsset)

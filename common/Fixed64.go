@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+const (
+	// supported max asset precision is 8
+	MaximumPrecision = 8
+)
+
 //the 64 bit fixed-point number, precise 10^-8
 type Fixed64 int64
 
@@ -65,18 +70,19 @@ func StringToFixed64(s string) (Fixed64, error) {
 	var buffer bytes.Buffer
 	//TODO: check invalid string
 	di := strings.Index(s, ".")
-	if len(s)-di > 9 {
-		return Fixed64(0), errors.New("unsupported precision")
-	}
 	if di == -1 {
 		buffer.WriteString(s)
-		for i := 0; i < 8; i++ {
+		for i := 0; i < MaximumPrecision; i++ {
 			buffer.WriteByte('0')
 		}
 	} else {
+		precision := len(s) - di - 1
+		if precision > MaximumPrecision {
+			return Fixed64(0), errors.New("unsupported precision")
+		}
 		buffer.WriteString(s[:di])
 		buffer.WriteString(s[di+1:])
-		n := 8 - (len(s) - di - 1)
+		n := MaximumPrecision - precision
 		for i := 0; i < n; i++ {
 			buffer.WriteByte('0')
 		}
