@@ -1,6 +1,7 @@
 package por
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/nknorg/nkn/common"
@@ -80,6 +81,22 @@ func TestSigChain(t *testing.T) {
 		t.Log("[sigchain] GetSignerIndex test successfully")
 	} else {
 		t.Error("[sigchain] GetSignerIndex test failed")
+	}
+
+	buff := bytes.NewBuffer(nil)
+	sc.Serialize(buff)
+	scOwner, err := sc.GetOwner()
+	if err != nil {
+		t.Error(err)
+	}
+	var sd SigChain
+	sd.Deserialize(buff)
+	sdOwner, err := sd.GetOwner()
+	if err != nil {
+		t.Error(err)
+	}
+	if !common.IsEqualBytes(scOwner, sdOwner) {
+		t.Error("Serialize error")
 	}
 
 }

@@ -35,44 +35,44 @@ func NewPorServer(account *wallet.Account) *porServer {
 	return ps
 }
 
-func (p *porServer) porHandler() {
+func (ps *porServer) porHandler() {
 out:
 	for {
 		select {
-		case m := <-p.msgChan:
+		case m := <-ps.msgChan:
 			switch msg := m.(type) {
 			case *porPackage:
 				height := msg.GetHeight()
-				if _, ok := p.pors[height]; !ok {
-					p.pors[height] = make([]*porPackage, 0)
+				if _, ok := ps.pors[height]; !ok {
+					ps.pors[height] = make([]*porPackage, 0)
 				}
-				p.pors[height] = append(p.pors[height], msg)
+				ps.pors[height] = append(ps.pors[height], msg)
 			case uint32:
 				if msg == 0 {
-					p.pors = make(map[uint32][]*porPackage)
+					ps.pors = make(map[uint32][]*porPackage)
 				} else {
-					if _, ok := p.pors[msg]; ok {
-						delete(p.pors, msg)
+					if _, ok := ps.pors[msg]; ok {
+						delete(ps.pors, msg)
 					}
 				}
 			}
-		case msg := <-p.relayChan:
+		case msg := <-ps.relayChan:
 			//TODO get minimum sigchain
 			msg <- &porPackage{}
-		case <-p.quit:
+		case <-ps.quit:
 			break out
 		}
 
 	}
 }
 
-func (p *porServer) Stop() {
-	p.quit <- struct{}{}
-	p.started = false
+func (ps *porServer) Stop() {
+	ps.quit <- struct{}{}
+	ps.started = false
 }
 
-func (p *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
-	dcPk, err := p.account.PubKey().EncodePoint(true)
+func (ps *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
+	dcPk, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
 		return nil, errors.New("the account of porServer is wrong")
 	}
@@ -86,7 +86,7 @@ func (p *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 		return nil, errors.New("it's not the right signer")
 	}
 
-	err = sc.Sign(nextPubkey, p.account)
+	err = sc.Sign(nextPubkey, ps.account)
 	if err != nil {
 		return nil, errors.New("sign failed")
 	}
@@ -94,13 +94,13 @@ func (p *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 	if sc.IsFinal() {
 		//TODO send commit tx
 		//TODO create porPackage
-		p.msgChan <- porPackage{}
+		ps.msgChan <- porPackage{}
 	}
 
 	return sc, nil
 }
 
-func (p *porServer) Verify(sc *SigChain) error {
+func (ps *porServer) Verify(sc *SigChain) error {
 	if err := sc.Verify(); err != nil {
 		return errors.New("verify failed")
 	}
@@ -108,55 +108,54 @@ func (p *porServer) Verify(sc *SigChain) error {
 	return nil
 }
 
-func (p *porServer) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
-	return NewSigChain(p.account, dataSize, dataHash, destPubkey, nextPubkey)
+func (ps *porServer) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
+	return NewSigChain(ps.account, dataSize, dataHash, destPubkey, nextPubkey)
 }
 
-func (p *porServer) IsFinal(sc *SigChain) bool {
+func (ps *porServer) IsFinal(sc *SigChain) bool {
 	return sc.IsFinal()
 }
 
-func (p *porServer) GetSignture(sc *SigChain) ([]byte, error) {
+func (ps *porServer) GetSignture(sc *SigChain) ([]byte, error) {
 	return sc.GetSignture()
 }
 
 //TODO subscripter
-func (p *porServer) CleanChainList(height uint32) {
-	if !p.started {
+func (ps *porServer) CleanChainList(height uint32) {
+	if !ps.started {
 		return
 	}
 
-	p.msgChan <- height
+	ps.msgChan <- height
 }
 
-func (p *porServer) LenOfSigChain(sc *SigChain) int {
+func (ps *porServer) LenOfSigChain(sc *SigChain) int {
 	return sc.Length()
 }
 
-func (p *porServer) GetMinSigChain() *SigChain {
-	if !p.started {
-		return nil
+func (ps *porServer) GetMinSigChain() *SigChain {
+	if !ps.started {
 	}
 
 	pr := make(chan *porPackage, 1)
-	p.relayChan <- pr
+	ps.relayChan <- pr
 	minPor := <-pr
 
 	return minPor.GetSigChain()
 }
 
-func (p *porServer) AddSigChainFromTx(txn transaction.Transaction) {
+func (ps *porServer) AddSigChainFromTx(txn *transaction.Transaction) {
 	porpkg := NewPorPackage(txn)
 
-	p.msgChan <- porpkg
+	ps.msgChan <- porpkg
 }
 
-func (p *porServer) GetThreshold() common.Uint256 {
+func (ps *porServer) GetThreshold() common.Uint256 {
 	//TODO get from block
-	return []common.Uint256{}
+	return common.Uint256{}
 }
 
-func (p *porServer) UpdateThreshold() common.Uint256 {
+func (ps *porServer) UpdateThreshold() common.Uint256 {
 	//TODO used for new block
-	return []common.Uint256{}
+	return common.Uint256{}
 }

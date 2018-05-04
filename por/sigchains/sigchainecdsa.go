@@ -84,17 +84,17 @@ func NewSigChainElemEcdsa(nextPubkey []byte) *SigChainElemEcdsa {
 }
 
 // Sign new created signature chain with local wallet.
-func (p *SigChainEcdsa) Sign(nextPubkey []byte, signer *wallet.Account) error {
-	sigNum := p.Length()
+func (sce *SigChainEcdsa) Sign(nextPubkey []byte, signer *wallet.Account) error {
+	sigNum := sce.Length()
 	if sigNum < 1 {
 		return errors.New("there are not enough signatures")
 	}
 
-	if err := p.Verify(); err != nil {
+	if err := sce.Verify(); err != nil {
 		return err
 	}
 
-	pk, err := p.nextSigner()
+	pk, err := sce.nextSigner()
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (p *SigChainEcdsa) Sign(nextPubkey []byte, signer *wallet.Account) error {
 		return errors.New("signer is not the one")
 	}
 
-	lastElem, err := p.lastSigElem()
+	lastElem, err := sce.lastSigElem()
 	//buff := bytes.NewBuffer(nil)
 	//err = serialization.WriteVarBytes(buff, lastElem.signature)
 	//if err != nil {
@@ -127,19 +127,19 @@ func (p *SigChainEcdsa) Sign(nextPubkey []byte, signer *wallet.Account) error {
 		return err
 	}
 	elem.signature = signature
-	p.elems = append(p.elems, elem)
+	sce.elems = append(sce.elems, elem)
 
 	return nil
 }
 
 // Verify returns result of signature chain verification.
-func (p *SigChainEcdsa) Verify() error {
+func (sce *SigChainEcdsa) Verify() error {
 
-	prevNextPubkey := p.srcPubkey
+	prevNextPubkey := sce.srcPubkey
 	buff := bytes.NewBuffer(nil)
-	p.SerializationMetadata(buff)
+	sce.SerializationMetadata(buff)
 	prevSig := buff.Bytes()
-	for _, e := range p.elems {
+	for _, e := range sce.elems {
 		// verify each element public key is correct
 		//if !common.IsEqualBytes(prevNextPubkey, e.pubkey) {
 		//	return errors.New("unmatch public key in signature chain")
@@ -168,9 +168,9 @@ func (p *SigChainEcdsa) Verify() error {
 }
 
 // Path returns signer path in signature chain.
-func (p *SigChainEcdsa) Path() [][]byte {
-	publicKeys := [][]byte{p.srcPubkey}
-	for _, e := range p.elems {
+func (sce *SigChainEcdsa) Path() [][]byte {
+	publicKeys := [][]byte{sce.srcPubkey}
+	for _, e := range sce.elems {
 		publicKeys = append(publicKeys, e.nextPubkey)
 	}
 
@@ -178,79 +178,79 @@ func (p *SigChainEcdsa) Path() [][]byte {
 }
 
 // Length returns element num in current signature chain
-func (p *SigChainEcdsa) Length() int {
-	return len(p.elems)
+func (sce *SigChainEcdsa) Length() int {
+	return len(sce.elems)
 }
 
-func (p *SigChainEcdsa) GetDataHash() *common.Uint256 {
-	return p.dataHash
+func (sce *SigChainEcdsa) GetDataHash() *common.Uint256 {
+	return sce.dataHash
 }
 
 // firstSigElem returns the first element in signature chain.
-func (p *SigChainEcdsa) firstSigElem() (*SigChainElemEcdsa, error) {
-	if p == nil || len(p.elems) == 0 {
+func (sce *SigChainEcdsa) firstSigElem() (*SigChainElemEcdsa, error) {
+	if sce == nil || len(sce.elems) == 0 {
 		return nil, errors.New("nil signature chain")
 	}
 
-	return p.elems[0], nil
+	return sce.elems[0], nil
 }
 
 // lastSigElem returns the last element in signature chain.
-func (p *SigChainEcdsa) lastSigElem() (*SigChainElemEcdsa, error) {
-	if p == nil || len(p.elems) == 0 {
+func (sce *SigChainEcdsa) lastSigElem() (*SigChainElemEcdsa, error) {
+	if sce == nil || len(sce.elems) == 0 {
 		return nil, errors.New("nil signature chain")
 	}
-	num := len(p.elems)
+	num := len(sce.elems)
 
-	return p.elems[num-1], nil
+	return sce.elems[num-1], nil
 }
 
-func (p *SigChainEcdsa) finalSigElem() (*SigChainElemEcdsa, error) {
-	if len(p.elems) < 2 && !common.IsEqualBytes(p.destPubkey, p.elems[len(p.elems)-2].nextPubkey) {
+func (sce *SigChainEcdsa) finalSigElem() (*SigChainElemEcdsa, error) {
+	if len(sce.elems) < 2 && !common.IsEqualBytes(sce.destPubkey, sce.elems[len(sce.elems)-2].nextPubkey) {
 		return nil, errors.New("unfinal")
 	}
 
-	return p.elems[len(p.elems)-1], nil
+	return sce.elems[len(sce.elems)-1], nil
 }
 
-func (p *SigChainEcdsa) IsFinal() bool {
-	if len(p.elems) < 2 || !common.IsEqualBytes(p.destPubkey, p.elems[len(p.elems)-2].nextPubkey) {
+func (sce *SigChainEcdsa) IsFinal() bool {
+	if len(sce.elems) < 2 || !common.IsEqualBytes(sce.destPubkey, sce.elems[len(sce.elems)-2].nextPubkey) {
 		return false
 	}
 	return true
 }
 
-func (p *SigChainEcdsa) getElemByPubkey(pubkey []byte) (*SigChainElemEcdsa, int, error) {
-	if p == nil || len(p.elems) == 0 {
+func (sce *SigChainEcdsa) getElemByPubkey(pubkey []byte) (*SigChainElemEcdsa, int, error) {
+	if sce == nil || len(sce.elems) == 0 {
 		return nil, 0, errors.New("nil signature chain")
 	}
-	if common.IsEqualBytes(p.srcPubkey, pubkey) {
-		return p.elems[0], 0, nil
+	if common.IsEqualBytes(sce.srcPubkey, pubkey) {
+		return sce.elems[0], 0, nil
 	}
 
-	for i, elem := range p.elems {
+	for i, elem := range sce.elems {
 		if common.IsEqualBytes(elem.nextPubkey, pubkey) {
-			return p.elems[i+1], i + 1, nil
+			return sce.elems[i+1], i + 1, nil
 		}
 	}
 
 	return nil, 0, errors.New("not in sigchain")
 }
 
-func (p *SigChainEcdsa) getElemByIndex(idx int) (*SigChainElemEcdsa, error) {
-	if p == nil || len(p.elems) < idx {
+func (sce *SigChainEcdsa) getElemByIndex(idx int) (*SigChainElemEcdsa, error) {
+	if sce == nil || len(sce.elems) < idx {
 		return nil, errors.New("nil signature chain")
 	}
 
-	return p.elems[idx], nil
+	return sce.elems[idx], nil
 }
 
-func (p *SigChainEcdsa) GetSignerIndex(pubkey []byte) (int, error) {
-	_, idx, err := p.getElemByPubkey(pubkey)
+func (sce *SigChainEcdsa) GetSignerIndex(pubkey []byte) (int, error) {
+	_, idx, err := sce.getElemByPubkey(pubkey)
 	return idx, err
 }
-func (p *SigChainEcdsa) GetLastPubkey() ([]byte, error) {
-	e, err := p.lastSigElem()
+func (sce *SigChainEcdsa) GetLastPubkey() ([]byte, error) {
+	e, err := sce.lastSigElem()
 	if err != nil {
 		return nil, err
 	}
@@ -258,28 +258,28 @@ func (p *SigChainEcdsa) GetLastPubkey() ([]byte, error) {
 
 }
 
-func (p *SigChainEcdsa) nextSigner() ([]byte, error) {
-	e, err := p.lastSigElem()
+func (sce *SigChainEcdsa) nextSigner() ([]byte, error) {
+	e, err := sce.lastSigElem()
 	if err != nil {
 		return nil, errors.New("no elem")
 	}
 	return e.nextPubkey, nil
 }
 
-func (p *SigChainEcdsa) Serialize(w io.Writer) error {
+func (sce *SigChainEcdsa) Serialize(w io.Writer) error {
 	var err error
-	err = p.SerializationMetadata(w)
+	err = sce.SerializationMetadata(w)
 	if err != nil {
 		return err
 	}
 
-	num := len(p.elems)
+	num := len(sce.elems)
 	err = serialization.WriteUint32(w, uint32(num))
 	if err != nil {
 		return err
 	}
 	for i := 0; i < num; i++ {
-		err = p.elems[i].Serialize(w)
+		err = sce.elems[i].Serialize(w)
 		if err != nil {
 			return err
 		}
@@ -288,35 +288,35 @@ func (p *SigChainEcdsa) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChainEcdsa) SerializationMetadata(w io.Writer) error {
+func (sce *SigChainEcdsa) SerializationMetadata(w io.Writer) error {
 	var err error
 
-	err = serialization.WriteVarBytes(w, p.nonce[:])
+	err = serialization.WriteVarBytes(w, sce.nonce[:])
 	if err != nil {
 		return err
 	}
 
-	err = serialization.WriteUint32(w, p.height)
+	err = serialization.WriteUint32(w, sce.height)
 	if err != nil {
 		return err
 	}
 
-	err = serialization.WriteUint32(w, p.dataSize)
+	err = serialization.WriteUint32(w, sce.dataSize)
 	if err != nil {
 		return err
 	}
 
-	_, err = p.dataHash.Serialize(w)
+	_, err = sce.dataHash.Serialize(w)
 	if err != nil {
 		return err
 	}
 
-	err = serialization.WriteVarBytes(w, p.srcPubkey)
+	err = serialization.WriteVarBytes(w, sce.srcPubkey)
 	if err != nil {
 		return err
 	}
 
-	err = serialization.WriteVarBytes(w, p.destPubkey)
+	err = serialization.WriteVarBytes(w, sce.destPubkey)
 	if err != nil {
 		return err
 	}
@@ -324,10 +324,10 @@ func (p *SigChainEcdsa) SerializationMetadata(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChainEcdsa) Deserialize(r io.Reader) error {
+func (sce *SigChainEcdsa) Deserialize(r io.Reader) error {
 	var err error
 
-	err = p.DeserializationMetadata(r)
+	err = sce.DeserializationMetadata(r)
 	if err != nil {
 		return err
 	}
@@ -337,57 +337,48 @@ func (p *SigChainEcdsa) Deserialize(r io.Reader) error {
 		return err
 	}
 	for i := 0; i < int(num); i++ {
-		err = p.elems[i].Deserialize(r)
-		return err
+		scee := new(SigChainElemEcdsa)
+		err = scee.Deserialize(r)
+		if err != nil {
+			return err
+		}
+		sce.elems = append(sce.elems, scee)
 	}
 
 	return nil
 }
 
-func (p *SigChainEcdsa) DeserializationMetadata(r io.Reader) error {
+func (sce *SigChainEcdsa) DeserializationMetadata(r io.Reader) error {
 	var err error
 
 	nonce, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
-	copy(p.nonce[:], nonce)
+	copy(sce.nonce[:], nonce)
 
-	p.height, err = serialization.ReadUint32(r)
+	sce.height, err = serialization.ReadUint32(r)
 	if err != nil {
 		return err
 	}
 
-	p.dataSize, err = serialization.ReadUint32(r)
+	sce.dataSize, err = serialization.ReadUint32(r)
 	if err != nil {
 		return err
 	}
 
-	err = p.dataHash.Deserialize(r)
+	sce.dataHash = new(common.Uint256)
+	err = sce.dataHash.Deserialize(r)
 	if err != nil {
 		return err
 	}
 
-	p.srcPubkey, err = serialization.ReadVarBytes(r)
+	sce.srcPubkey, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
 
-	p.destPubkey, err = serialization.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (p *SigChainElemEcdsa) Serialize(w io.Writer) error {
-	var err error
-	err = p.SerializationUnsigned(w)
-	if err != nil {
-		return err
-	}
-	err = serialization.WriteVarBytes(w, p.signature[:])
+	sce.destPubkey, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
@@ -395,10 +386,13 @@ func (p *SigChainElemEcdsa) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChainElemEcdsa) SerializationUnsigned(w io.Writer) error {
+func (sce *SigChainElemEcdsa) Serialize(w io.Writer) error {
 	var err error
-
-	err = serialization.WriteVarBytes(w, p.nextPubkey)
+	err = sce.SerializationUnsigned(w)
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteVarBytes(w, sce.signature[:])
 	if err != nil {
 		return err
 	}
@@ -406,9 +400,20 @@ func (p *SigChainElemEcdsa) SerializationUnsigned(w io.Writer) error {
 	return nil
 }
 
-func (p *SigChainElemEcdsa) Deserialize(r io.Reader) error {
+func (sce *SigChainElemEcdsa) SerializationUnsigned(w io.Writer) error {
 	var err error
-	err = p.DeserializationUnsigned(r)
+
+	err = serialization.WriteVarBytes(w, sce.nextPubkey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (sce *SigChainElemEcdsa) Deserialize(r io.Reader) error {
+	var err error
+	err = sce.DeserializationUnsigned(r)
 	if err != nil {
 		return err
 	}
@@ -416,44 +421,45 @@ func (p *SigChainElemEcdsa) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	p.signature = signature
+	sce.signature = signature
 
 	return nil
 }
 
-func (p *SigChainElemEcdsa) DeserializationUnsigned(r io.Reader) error {
+func (sce *SigChainElemEcdsa) DeserializationUnsigned(r io.Reader) error {
 	var err error
 
-	p.nextPubkey, err = serialization.ReadVarBytes(r)
+	nextPubkey, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
+	sce.nextPubkey = nextPubkey
 
 	return nil
 }
 
-func (p *SigChainEcdsa) GetSignture() ([]byte, error) {
-	sce, err := p.finalSigElem()
+func (sce *SigChainEcdsa) GetSignture() ([]byte, error) {
+	scee, err := sce.finalSigElem()
 	if err != nil {
 		return nil, err
 	}
 
-	return sce.signature, nil
+	return scee.signature, nil
 }
 
-func (p *SigChainEcdsa) Hash() common.Uint256 {
+func (sce *SigChainEcdsa) Hash() common.Uint256 {
 	buff := bytes.NewBuffer(nil)
-	p.Serialize(buff)
+	sce.Serialize(buff)
 	return sha256.Sum256(buff.Bytes())
 }
 
-func (p *SigChainEcdsa) GetCurrentHeight() uint32 {
-	return p.height
+func (sce *SigChainEcdsa) GetCurrentHeight() uint32 {
+	return sce.height
 }
 
-func (p *SigChainEcdsa) GetOwner() ([]byte, error) {
-	if p.IsFinal() {
-		if pk, err := p.GetLastPubkey(); err != nil {
+func (sce *SigChainEcdsa) GetOwner() ([]byte, error) {
+	if sce.IsFinal() {
+		if pk, err := sce.GetLastPubkey(); err != nil {
 			return []byte{}, err
 		} else {
 			return pk, nil
@@ -464,13 +470,13 @@ func (p *SigChainEcdsa) GetOwner() ([]byte, error) {
 
 }
 
-func (p *SigChainEcdsa) dumpInfo() {
-	fmt.Println("dataSize: ", p.dataSize)
-	fmt.Println("dataHash: ", p.dataHash)
-	fmt.Println("srcPubkey: ", common.BytesToHexString(p.srcPubkey))
-	fmt.Println("dstPubkey: ", common.BytesToHexString(p.destPubkey))
+func (sce *SigChainEcdsa) DumpInfo() {
+	fmt.Println("dataSize: ", sce.dataSize)
+	fmt.Println("dataHash: ", sce.dataHash)
+	fmt.Println("srcPubkey: ", common.BytesToHexString(sce.srcPubkey))
+	fmt.Println("dstPubkey: ", common.BytesToHexString(sce.destPubkey))
 
-	for i, e := range p.elems {
+	for i, e := range sce.elems {
 		fmt.Printf("nextPubkey[%d]: %s\n", i, common.BytesToHexString(e.nextPubkey))
 		fmt.Printf("signature[%d]: %s\n", i, common.BytesToHexString(e.signature))
 	}

@@ -1,6 +1,7 @@
 package sigchains
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/nknorg/nkn/common"
@@ -80,6 +81,23 @@ func TestSigChainEcdsa(t *testing.T) {
 		t.Log("[sigchain] GetSignerIndex test successfully")
 	} else {
 		t.Error("[sigchain] GetSignerIndex test failed")
+	}
+
+	buff := bytes.NewBuffer(nil)
+	sc.Serialize(buff)
+	var sd SigChainEcdsa
+	sd.Deserialize(buff)
+
+	scOwner, err := sc.GetOwner()
+	if err != nil {
+		t.Error(err)
+	}
+	sdOwner, err := sd.GetOwner()
+	if err != nil {
+		t.Error(err)
+	}
+	if !common.IsEqualBytes(scOwner, sdOwner) {
+		t.Error("Serialize error")
 	}
 
 }
