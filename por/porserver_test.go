@@ -8,14 +8,14 @@ import (
 	"github.com/nknorg/nkn/wallet"
 )
 
-func TestPorManager(t *testing.T) {
+func TestPorServer(t *testing.T) {
 	crypto.SetAlg("P256R1")
 	from, _ := wallet.NewAccount()
 	rel, _ := wallet.NewAccount()
 	to, _ := wallet.NewAccount()
-	pmFrom := NewPorManager(from)
-	pmRel := NewPorManager(rel)
-	pmTo := NewPorManager(to)
+	pmFrom := NewPorServer(from)
+	pmRel := NewPorServer(rel)
+	pmTo := NewPorServer(to)
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 

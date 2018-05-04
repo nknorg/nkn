@@ -14,7 +14,7 @@ const (
 	cacheChanCap = 10
 )
 
-type porManager struct {
+type porServer struct {
 	account    *wallet.Account
 	maxWorkSig []byte
 	quit       chan struct{}
@@ -27,8 +27,8 @@ type getSigChainsMsg struct {
 	reply chan []*SigChain
 }
 
-func NewPorManager(acc *wallet.Account) *porManager {
-	pm := &porManager{
+func NewPorServer(acc *wallet.Account) *porServer {
+	pm := &porServer{
 		account:   acc,
 		cacheChan: make(chan interface{}, cacheChanCap),
 		quit:      make(chan struct{}, 1),
@@ -40,7 +40,7 @@ func NewPorManager(acc *wallet.Account) *porManager {
 	return pm
 }
 
-func (pm *porManager) cacheSigChain() {
+func (pm *porServer) cacheSigChain() {
 out:
 	for {
 		select {
@@ -75,10 +75,10 @@ out:
 	}
 }
 
-func (pm *porManager) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
+func (pm *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 	dcPk, err := pm.account.PubKey().EncodePoint(true)
 	if err != nil {
-		return nil, errors.New("the account of porManager is wrong")
+		return nil, errors.New("the account of porServer is wrong")
 	}
 
 	nxPk, err := sc.GetLastPubkey()
@@ -102,7 +102,7 @@ func (pm *porManager) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 	return sc, nil
 }
 
-func (pm *porManager) Verify(sc *SigChain) error {
+func (pm *porServer) Verify(sc *SigChain) error {
 	if err := sc.Verify(); err != nil {
 		return errors.New("verify failed")
 	}
@@ -110,19 +110,19 @@ func (pm *porManager) Verify(sc *SigChain) error {
 	return nil
 }
 
-func (pm *porManager) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
+func (pm *porServer) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
 	return NewSigChain(pm.account, dataSize, dataHash, destPubkey, nextPubkey)
 }
 
-func (pm *porManager) IsFinal(sc *SigChain) bool {
+func (pm *porServer) IsFinal(sc *SigChain) bool {
 	return sc.IsFinal()
 }
 
-func (pm *porManager) GetSignture(sc *SigChain) ([]byte, error) {
+func (pm *porServer) GetSignture(sc *SigChain) ([]byte, error) {
 	return sc.GetSignture()
 }
 
-func (pm *porManager) CleanChainCache(sigchainHashs []common.Uint256) {
+func (pm *porServer) CleanChainCache(sigchainHashs []common.Uint256) {
 	if !pm.started {
 		return
 	}
@@ -130,11 +130,11 @@ func (pm *porManager) CleanChainCache(sigchainHashs []common.Uint256) {
 	pm.cacheChan <- sigchainHashs
 }
 
-func (pm *porManager) LenOfSigChain(sc *SigChain) int {
+func (pm *porServer) LenOfSigChain(sc *SigChain) int {
 	return sc.Length()
 }
 
-func (pm *porManager) GetSigChains() []*SigChain {
+func (pm *porServer) GetSigChains() []*SigChain {
 	if !pm.started {
 		return nil
 	}
