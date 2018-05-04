@@ -24,9 +24,12 @@ type sigchainer interface {
 	GetSignerIndex(pubkey []byte) (int, error)
 	GetLastPubkey() ([]byte, error)
 	GetDataHash() *common.Uint256
+	GetCurrentHeight() uint32
 	GetSignture() ([]byte, error)
+	GetOwner() ([]byte, error)
 	Serialize(w io.Writer) error
 	Deserialize(r io.Reader) error
+	Hash() common.Uint256
 }
 
 type SigChain struct {
@@ -94,4 +97,16 @@ func (p *SigChain) GetLastPubkey() ([]byte, error) {
 
 func (p *SigChain) GetSignture() ([]byte, error) {
 	return p.chain.GetLastPubkey()
+}
+
+func (p *SigChain) Hash() common.Uint256 {
+	return p.chain.Hash()
+}
+
+func (p *SigChain) GetCurrentHeight() uint32 {
+	return p.chain.GetCurrentHeight()
+}
+
+func (p *SigChain) GetOwner() ([]byte, error) {
+	return p.chain.GetOwner()
 }

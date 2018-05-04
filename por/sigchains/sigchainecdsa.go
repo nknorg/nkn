@@ -22,6 +22,7 @@ import (
 
 type SigChainEcdsa struct {
 	nonce      [4]byte
+	height     uint32
 	dataSize   uint32          // payload size
 	dataHash   *common.Uint256 // payload hash
 	srcPubkey  []byte          // source pubkey
@@ -43,6 +44,7 @@ func NewSigChainEcdsa(owner *wallet.Account, dataSize uint32, dataHash *common.U
 	}
 
 	sc := &SigChainEcdsa{
+		height:     1, //TODO get height from block header.
 		dataSize:   dataSize,
 		dataHash:   dataHash,
 		srcPubkey:  srcPubkey,
@@ -294,6 +296,11 @@ func (p *SigChainEcdsa) SerializationMetadata(w io.Writer) error {
 		return err
 	}
 
+	err = serialization.WriteUint32(w, p.height)
+	if err != nil {
+		return err
+	}
+
 	err = serialization.WriteUint32(w, p.dataSize)
 	if err != nil {
 		return err
@@ -319,6 +326,7 @@ func (p *SigChainEcdsa) SerializationMetadata(w io.Writer) error {
 
 func (p *SigChainEcdsa) Deserialize(r io.Reader) error {
 	var err error
+
 	err = p.DeserializationMetadata(r)
 	if err != nil {
 		return err
@@ -345,11 +353,16 @@ func (p *SigChainEcdsa) DeserializationMetadata(r io.Reader) error {
 	}
 	copy(p.nonce[:], nonce)
 
-	dataSize, err := serialization.ReadUint32(r)
+	p.height, err = serialization.ReadUint32(r)
 	if err != nil {
 		return err
 	}
-	p.dataSize = dataSize
+
+	p.dataSize, err = serialization.ReadUint32(r)
+	if err != nil {
+		return err
+	}
+
 	err = p.dataHash.Deserialize(r)
 	if err != nil {
 		return err
@@ -428,7 +441,30 @@ func (p *SigChainEcdsa) GetSignture() ([]byte, error) {
 	return sce.signature, nil
 }
 
-func (p *SigChainEcdsa) dump() {
+func (p *SigChainEcdsa) Hash() common.Uint256 {
+	buff := bytes.NewBuffer(nil)
+	p.Serialize(buff)
+	return sha256.Sum256(buff.Bytes())
+}
+
+func (p *SigChainEcdsa) GetCurrentHeight() uint32 {
+	return p.height
+}
+
+func (p *SigChainEcdsa) GetOwner() ([]byte, error) {
+	if p.IsFinal() {
+		if pk, err := p.GetLastPubkey(); err != nil {
+			return []byte{}, err
+		} else {
+			return pk, nil
+		}
+	}
+
+	return []byte{}, errors.New("no owner")
+
+}
+
+func (p *SigChainEcdsa) dumpInfo() {
 	fmt.Println("dataSize: ", p.dataSize)
 	fmt.Println("dataHash: ", p.dataHash)
 	fmt.Println("srcPubkey: ", common.BytesToHexString(p.srcPubkey))
