@@ -30,7 +30,7 @@ var (
 		HttpJsonPort:  10336,
 		NodePort:      10338,
 		ChordPort:     10339,
-		PrintLevel:    5,
+		PrintLevel:    1,
 		ConsensusType: "ising",
 		SeedList: []string{
 			"127.0.0.1:10339",
