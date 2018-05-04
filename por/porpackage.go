@@ -2,12 +2,14 @@ package por
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
+	"github.com/nknorg/nkn/por/sigchains"
 )
 
 type porPackage struct {
@@ -27,7 +29,7 @@ func NewPorPackage(txn *transaction.Transaction) *porPackage {
 	var sigchain SigChain
 	sigchain.Deserialize(buf)
 
-	//TODO thershold
+	//TODO threshold
 
 	owner, _ := sigchain.GetOwner()
 	return &porPackage{
@@ -39,78 +41,87 @@ func NewPorPackage(txn *transaction.Transaction) *porPackage {
 	}
 }
 
-func (p *porPackage) Hash() common.Uint256 {
-	return p.sigchainHash
+func (pp *porPackage) Hash() common.Uint256 {
+	return pp.sigchainHash
 }
 
-func (p *porPackage) GetHeight() uint32 {
-	return p.height
+func (pp *porPackage) GetHeight() uint32 {
+	return pp.height
 }
 
-func (p *porPackage) GetTxHash() *common.Uint256 {
-	return &p.txHash
+func (pp *porPackage) GetTxHash() *common.Uint256 {
+	return &pp.txHash
 }
 
-func (p *porPackage) GetSigChain() *SigChain {
-	return p.sigchain
+func (pp *porPackage) GetSigChain() *SigChain {
+	return pp.sigchain
 }
 
-func (p *porPackage) CompareTo(o *porPackage) int {
-	return (&p.sigchainHash).CompareTo(o.sigchainHash)
+func (pp *porPackage) CompareTo(o *porPackage) int {
+	return (&pp.sigchainHash).CompareTo(o.sigchainHash)
 }
 
-func (p *porPackage) Serialize(w io.Writer) error {
+func (pp *porPackage) Serialize(w io.Writer) error {
 	var err error
 
-	err = serialization.WriteVarBytes(w, p.owner)
+	err = serialization.WriteVarBytes(w, pp.owner)
 	if err != nil {
 		return err
 	}
 
-	err = serialization.WriteUint32(w, p.height)
+	err = serialization.WriteUint32(w, pp.height)
 	if err != nil {
 		return err
 	}
 
-	_, err = p.txHash.Serialize(w)
+	_, err = pp.txHash.Serialize(w)
 	if err != nil {
 		return err
 	}
 
-	_, err = p.sigchainHash.Serialize(w)
+	_, err = pp.sigchainHash.Serialize(w)
 	if err != nil {
 		return err
 	}
 
-	err = p.sigchain.Serialize(w)
+	err = pp.sigchain.Serialize(w)
 
 	return err
 }
 
-func (p *porPackage) Deserialize(r io.Reader) error {
+func (pp *porPackage) Deserialize(r io.Reader) error {
 	var err error
 
-	p.owner, err = serialization.ReadVarBytes(r)
+	pp.owner, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
 
-	p.height, err = serialization.ReadUint32(r)
+	pp.height, err = serialization.ReadUint32(r)
 	if err != nil {
 		return err
 	}
 
-	err = p.txHash.Deserialize(r)
+	err = pp.txHash.Deserialize(r)
 	if err != nil {
 		return err
 	}
 
-	err = p.sigchainHash.Deserialize(r)
+	err = pp.sigchainHash.Deserialize(r)
 	if err != nil {
 		return err
 	}
 
-	err = p.sigchain.Deserialize(r)
+	err = pp.sigchain.Deserialize(r)
 
 	return err
+}
+
+func (pp *porPackage) DumpInfo() {
+	fmt.Println("owner: ", common.BytesToHexString(pp.owner))
+	fmt.Println("txHash: ", pp.txHash)
+	fmt.Println("sigchainHash: ", pp.sigchainHash)
+	if sc, ok := pp.sigchain.chain.(*sigchains.SigChainEcdsa); ok {
+		sc.DumpInfo()
+	}
 }
