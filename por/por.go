@@ -1,15 +1,17 @@
 package por
 
 import (
-	"github.com/nknorg/nkn/core/transaction"
+	"io"
+
+	"github.com/nknorg/nkn/common"
 )
 
-type IPor interface {
-	CalcRelays(txn *transaction.Transaction) error
-	GetRelays(pk []byte) int
-	GetMaxRelay() []byte
-	MergeRelays(por IPor) error
-	IsRelaying(pk []byte) bool
-	TotalRelays() int
-	IsTxProcessed(txn *transaction.Transaction) bool
+type porer interface {
+	Hash() common.Uint256
+	GetHeight() uint32
+	GetTxHash() *common.Uint256
+	GetSigChain() *SigChain
+	CompareTo(p *porer) int
+	Serialize(w io.Writer) error
+	Deserialize(r io.Reader) error
 }
