@@ -1,82 +1,78 @@
 package por
 
 import (
-	"bytes"
-	"crypto/sha256"
 	"errors"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/wallet"
 )
 
 const (
-	cacheChanCap = 10
+	msgChanCap = 10
 )
 
 type porServer struct {
-	account    *wallet.Account
-	maxWorkSig []byte
-	quit       chan struct{}
-	started    bool
-	sigChains  map[common.Uint256]*SigChain
-	cacheChan  chan interface{}
+	started   bool
+	account   *wallet.Account
+	pors      map[uint32][]*porPackage
+	msgChan   chan interface{}
+	relayChan chan chan *porPackage
+	quit      chan struct{}
 }
 
-type getSigChainsMsg struct {
-	reply chan []*SigChain
-}
-
-func NewPorServer(acc *wallet.Account) *porServer {
-	pm := &porServer{
-		account:   acc,
-		cacheChan: make(chan interface{}, cacheChanCap),
+func NewPorServer(account *wallet.Account) *porServer {
+	ps := &porServer{
+		account:   account,
+		msgChan:   make(chan interface{}, msgChanCap),
+		relayChan: make(chan chan *porPackage),
+		pors:      make(map[uint32][]*porPackage),
 		quit:      make(chan struct{}, 1),
-		sigChains: make(map[common.Uint256]*SigChain),
 	}
 
-	go pm.cacheSigChain()
-	pm.started = true
-	return pm
+	go ps.porHandler()
+	ps.started = true
+	return ps
 }
 
-func (pm *porServer) cacheSigChain() {
+func (p *porServer) porHandler() {
 out:
 	for {
 		select {
-		case m := <-pm.cacheChan:
+		case m := <-p.msgChan:
 			switch msg := m.(type) {
-			case *SigChain:
-				buff := bytes.NewBuffer(nil)
-				if err := msg.Serialize(buff); err != nil {
-					log.Error("sigchain Serialize error")
-				} else {
-					hash := sha256.Sum256(buff.Bytes())
-					pm.sigChains[hash] = msg
+			case *porPackage:
+				height := msg.GetHeight()
+				if _, ok := p.pors[height]; !ok {
+					p.pors[height] = make([]*porPackage, 0)
 				}
-			case []common.Uint256:
-				for _, v := range msg {
-					_, ok := pm.sigChains[v]
-					if ok {
-						delete(pm.sigChains, v)
+				p.pors[height] = append(p.pors[height], msg)
+			case uint32:
+				if msg == 0 {
+					p.pors = make(map[uint32][]*porPackage)
+				} else {
+					if _, ok := p.pors[msg]; ok {
+						delete(p.pors, msg)
 					}
 				}
-			case *getSigChainsMsg:
-				sigchains := make([]*SigChain, 0, len(pm.sigChains))
-				for _, sigchain := range pm.sigChains {
-					sigchains = append(sigchains, sigchain)
-				}
-				msg.reply <- sigchains
 			}
-		case <-pm.quit:
+		case msg := <-p.relayChan:
+			//TODO get minimum sigchain
+			msg <- &porPackage{}
+		case <-p.quit:
 			break out
 		}
 
 	}
 }
 
-func (pm *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
-	dcPk, err := pm.account.PubKey().EncodePoint(true)
+func (p *porServer) Stop() {
+	p.quit <- struct{}{}
+	p.started = false
+}
+
+func (p *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
+	dcPk, err := p.account.PubKey().EncodePoint(true)
 	if err != nil {
 		return nil, errors.New("the account of porServer is wrong")
 	}
@@ -90,19 +86,21 @@ func (pm *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 		return nil, errors.New("it's not the right signer")
 	}
 
-	err = sc.Sign(nextPubkey, pm.account)
+	err = sc.Sign(nextPubkey, p.account)
 	if err != nil {
 		return nil, errors.New("sign failed")
 	}
 
 	if sc.IsFinal() {
-		pm.cacheChan <- sc
+		//TODO send commit tx
+		//TODO create porPackage
+		p.msgChan <- porPackage{}
 	}
 
 	return sc, nil
 }
 
-func (pm *porServer) Verify(sc *SigChain) error {
+func (p *porServer) Verify(sc *SigChain) error {
 	if err := sc.Verify(); err != nil {
 		return errors.New("verify failed")
 	}
@@ -110,37 +108,55 @@ func (pm *porServer) Verify(sc *SigChain) error {
 	return nil
 }
 
-func (pm *porServer) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
-	return NewSigChain(pm.account, dataSize, dataHash, destPubkey, nextPubkey)
+func (p *porServer) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
+	return NewSigChain(p.account, dataSize, dataHash, destPubkey, nextPubkey)
 }
 
-func (pm *porServer) IsFinal(sc *SigChain) bool {
+func (p *porServer) IsFinal(sc *SigChain) bool {
 	return sc.IsFinal()
 }
 
-func (pm *porServer) GetSignture(sc *SigChain) ([]byte, error) {
+func (p *porServer) GetSignture(sc *SigChain) ([]byte, error) {
 	return sc.GetSignture()
 }
 
-func (pm *porServer) CleanChainCache(sigchainHashs []common.Uint256) {
-	if !pm.started {
+//TODO subscripter
+func (p *porServer) CleanChainList(height uint32) {
+	if !p.started {
 		return
 	}
 
-	pm.cacheChan <- sigchainHashs
+	p.msgChan <- height
 }
 
-func (pm *porServer) LenOfSigChain(sc *SigChain) int {
+func (p *porServer) LenOfSigChain(sc *SigChain) int {
 	return sc.Length()
 }
 
-func (pm *porServer) GetSigChains() []*SigChain {
-	if !pm.started {
+func (p *porServer) GetMinSigChain() *SigChain {
+	if !p.started {
 		return nil
 	}
 
-	rp := make(chan []*SigChain, 1)
-	pm.cacheChan <- &getSigChainsMsg{reply: rp}
-	ret := <-rp
-	return ret
+	pr := make(chan *porPackage, 1)
+	p.relayChan <- pr
+	minPor := <-pr
+
+	return minPor.GetSigChain()
+}
+
+func (p *porServer) AddSigChainFromTx(txn transaction.Transaction) {
+	porpkg := NewPorPackage(txn)
+
+	p.msgChan <- porpkg
+}
+
+func (p *porServer) GetThreshold() common.Uint256 {
+	//TODO get from block
+	return []common.Uint256{}
+}
+
+func (p *porServer) UpdateThreshold() common.Uint256 {
+	//TODO used for new block
+	return []common.Uint256{}
 }
