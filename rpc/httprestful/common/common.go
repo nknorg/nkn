@@ -17,7 +17,7 @@ import (
 
 var node Noder
 
-const TlsPort int = 443
+const TlsPort uint16 = 443
 
 type ApiServer interface {
 	Start() error

@@ -43,16 +43,16 @@ type Configuration struct {
 	Version        int      `json:"Version"`
 	SeedList       []string `json:"SeedList"`
 	BookKeepers    []string `json:"BookKeepers"`
-	HttpRestPort   int      `json:"HttpRestPort"`
+	HttpRestPort   uint16   `json:"HttpRestPort"`
 	RestCertPath   string   `json:"RestCertPath"`
 	RestKeyPath    string   `json:"RestKeyPath"`
 	HttpInfoPort   uint16   `json:"HttpInfoPort"`
 	HttpInfoStart  bool     `json:"HttpInfoStart"`
-	HttpWsPort     int      `json:"HttpWsPort"`
-	HttpJsonPort   int      `json:"HttpJsonPort"`
-	NodePort       int      `json:"NodePort"`
+	HttpWsPort     uint16   `json:"HttpWsPort"`
+	HttpJsonPort   uint16   `json:"HttpJsonPort"`
+	NodePort       uint16   `json:"NodePort"`
 	NodeType       string   `json:"NodeType"`
-	WebSocketPort  int      `json:"WebSocketPort"`
+	WebSocketPort  uint16   `json:"WebSocketPort"`
 	PrintLevel     int      `json:"PrintLevel"`
 	IsTLS          bool     `json:"IsTLS"`
 	CertPath       string   `json:"CertPath"`
@@ -64,7 +64,7 @@ type Configuration struct {
 	MaxTxInBlock   int      `json:"MaxTransactionInBlock"`
 	MaxHdrSyncReqs int      `json:"MaxConcurrentSyncHeaderReqs"`
 	ConsensusType  string   `json:"ConsensusType"`
-	ChordPort      int      `json:"ChordPort"`
+	ChordPort      uint16   `json:"ChordPort"`
 }
 
 func init() {
@@ -114,16 +114,16 @@ func check(config *Configuration) error {
 }
 
 func IncrementPort() {
-	delta := 0
+	var delta uint16
 	for {
-		conn, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(Parameters.ChordPort+delta))
+		conn, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(int(Parameters.ChordPort+delta)))
 		if err == nil {
 			conn.Close()
 			break
 		}
 		delta += 10
 	}
-	Parameters.HttpInfoPort += uint16(delta)
+	Parameters.HttpInfoPort += delta
 	Parameters.HttpRestPort += delta
 	Parameters.HttpWsPort += delta
 	Parameters.HttpJsonPort += delta

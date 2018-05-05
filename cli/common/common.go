@@ -32,7 +32,7 @@ func NewPortFlag() cli.Flag {
 	return cli.StringFlag{
 		Name:        "port",
 		Usage:       "node's RPC port",
-		Value:       strconv.Itoa(config.Parameters.HttpJsonPort),
+		Value:       strconv.Itoa(int(config.Parameters.HttpJsonPort)),
 		Destination: &Port,
 	}
 }

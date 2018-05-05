@@ -37,7 +37,7 @@ func StartRPCServer() {
 	HandleFunc("withdrawasset", withdrawAsset)
 	HandleFunc("commitpor", commitPor)
 
-	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(config.Parameters.HttpJsonPort), nil)
+	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(int(config.Parameters.HttpJsonPort)), nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err.Error())
 	}
