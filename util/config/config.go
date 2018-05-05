@@ -52,7 +52,6 @@ type Configuration struct {
 	HttpJsonPort   uint16   `json:"HttpJsonPort"`
 	NodePort       uint16   `json:"NodePort"`
 	NodeType       string   `json:"NodeType"`
-	WebSocketPort  uint16   `json:"WebSocketPort"`
 	PrintLevel     int      `json:"PrintLevel"`
 	IsTLS          bool     `json:"IsTLS"`
 	CertPath       string   `json:"CertPath"`
@@ -113,7 +112,31 @@ func check(config *Configuration) error {
 	return nil
 }
 
+func findMinMaxPort(array []uint16) (uint16, uint16) {
+	var max uint16 = array[0]
+	var min uint16 = array[0]
+	for _, value := range array {
+		if max < value {
+			max = value
+		}
+		if min > value {
+			min = value
+		}
+	}
+	return min, max
+}
+
 func IncrementPort() {
+	allPorts := []uint16{
+		Parameters.HttpInfoPort,
+		Parameters.HttpRestPort,
+		Parameters.HttpWsPort,
+		Parameters.HttpJsonPort,
+		Parameters.NodePort,
+		Parameters.ChordPort,
+	}
+	minPort, maxPort := findMinMaxPort(allPorts)
+	step := maxPort - minPort + 1
 	var delta uint16
 	for {
 		conn, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(int(Parameters.ChordPort+delta)))
@@ -121,7 +144,7 @@ func IncrementPort() {
 			conn.Close()
 			break
 		}
-		delta += 10
+		delta += step
 	}
 	Parameters.HttpInfoPort += delta
 	Parameters.HttpRestPort += delta
