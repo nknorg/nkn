@@ -75,7 +75,7 @@ type Config struct {
 type Vnode struct {
 	Id       []byte // Virtual ID
 	Host     string // Chord Host identifier
-	NodePort int    // Node port
+	NodePort uint16 // Node port
 }
 
 // Represents a local Vnode
@@ -232,7 +232,7 @@ func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 }
 
 // Ring create and join functions
-func prepRing(port int) (*Config, *TCPTransport, error) {
+func prepRing(port uint16) (*Config, *TCPTransport, error) {
 	listen := fmt.Sprintf("127.0.0.1:%d", port)
 	conf := DefaultConfig(listen)
 	timeout := time.Duration(20 * time.Millisecond)
@@ -272,7 +272,7 @@ func CreateNet() (*Ring, *TCPTransport, error) {
 	return r, t, nil
 }
 
-func prepJoinRing(port int) (*Config, *TCPTransport, error) {
+func prepJoinRing(port uint16) (*Config, *TCPTransport, error) {
 	listen := fmt.Sprintf("127.0.0.1:%d", port)
 	conf := DefaultConfig(listen)
 	timeout := time.Duration(20 * time.Millisecond)

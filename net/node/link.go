@@ -160,7 +160,7 @@ func (n *node) initConnection() {
 
 func initNonTlsListen() (net.Listener, error) {
 	log.Debug()
-	listener, err := net.Listen("tcp", ":"+strconv.Itoa(Parameters.NodePort))
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(int(Parameters.NodePort)))
 	if err != nil {
 		log.Error("Error listening\n", err.Error())
 		return nil, err
@@ -198,8 +198,8 @@ func initTlsListen() (net.Listener, error) {
 		ClientCAs:    pool,
 	}
 
-	log.Info("TLS listen port is ", strconv.Itoa(Parameters.NodePort))
-	listener, err := tls.Listen("tcp", ":"+strconv.Itoa(Parameters.NodePort), tlsConfig)
+	log.Info("TLS listen port is ", strconv.Itoa(int(Parameters.NodePort)))
+	listener, err := tls.Listen("tcp", ":"+strconv.Itoa(int(Parameters.NodePort)), tlsConfig)
 	if err != nil {
 		log.Error(err)
 		return nil, err
