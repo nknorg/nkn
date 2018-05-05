@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
+	"strconv"
 )
 
 const (
@@ -109,4 +111,22 @@ func check(config *Configuration) error {
 	}
 
 	return nil
+}
+
+func IncrementPort() {
+	delta := 0
+	for {
+		conn, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(Parameters.ChordPort+delta))
+		if err == nil {
+			conn.Close()
+			break
+		}
+		delta += 10
+	}
+	Parameters.HttpInfoPort += uint16(delta)
+	Parameters.HttpRestPort += delta
+	Parameters.HttpWsPort += delta
+	Parameters.HttpJsonPort += delta
+	Parameters.NodePort += delta
+	Parameters.ChordPort += delta
 }
