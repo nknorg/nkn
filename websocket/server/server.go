@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	. "github.com/nknorg/nkn/rpc/httprestful/common"
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
@@ -135,13 +134,12 @@ func (ws *WsServer) registryMethod() {
 		if err != nil {
 			return ResponsePack(Err.INVALID_PARAMS)
 		}
-		payload := []byte(cmd["payload"].(string))
-		relayPacket := &message.RelayPacket{
-			ws.node.GetChordAddr(),
-			destID[:],
-			payload,
+		destPubkey, err := hex.DecodeString(cmd["destPubkey"].(string))
+		if err != nil {
+			return ResponsePack(Err.INVALID_PARAMS)
 		}
-		ws.node.SendRelayPacket(relayPacket)
+		payload := []byte(cmd["payload"].(string))
+		ws.node.SendRelayPacket(destID[:], destPubkey, payload)
 		resp := ResponsePack(Err.SUCCESS)
 		return resp
 	}

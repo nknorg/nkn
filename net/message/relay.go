@@ -9,13 +9,15 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/log"
 )
 
 type RelayPacket struct {
-	SrcID       []byte
-	DestID      []byte
-	PayloadData []byte
+	SrcID    []byte
+	DestID   []byte
+	SigChain *por.SigChain
+	Payload  []byte
 }
 
 type RelayMessage struct {
@@ -56,19 +58,24 @@ func (msg *RelayMessage) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (msg *RelayPacket) Serialize(w io.Writer) error {
+func (packet *RelayPacket) Serialize(w io.Writer) error {
 	var err error
-	err = serialization.WriteVarBytes(w, msg.SrcID)
+	err = serialization.WriteVarBytes(w, packet.SrcID)
 	if err != nil {
 		return err
 	}
 
-	err = serialization.WriteVarBytes(w, msg.DestID)
+	err = serialization.WriteVarBytes(w, packet.DestID)
 	if err != nil {
 		return err
 	}
 
-	err = serialization.WriteVarBytes(w, msg.PayloadData)
+	err = packet.SigChain.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteVarBytes(w, packet.Payload)
 	if err != nil {
 		return err
 	}
@@ -76,24 +83,30 @@ func (msg *RelayPacket) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (msg *RelayPacket) Deserialize(r io.Reader) error {
+func (packet *RelayPacket) Deserialize(r io.Reader) error {
 	srcID, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
-	msg.SrcID = srcID
+	packet.SrcID = srcID
 
 	destID, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
-	msg.DestID = destID
+	packet.DestID = destID
 
-	payloadData, err := serialization.ReadVarBytes(r)
+	packet.SigChain = &por.SigChain{}
+	err = packet.SigChain.Deserialize(r)
 	if err != nil {
 		return err
 	}
-	msg.PayloadData = payloadData
+
+	payload, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	packet.Payload = payload
 
 	return nil
 }
