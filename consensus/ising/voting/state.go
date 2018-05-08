@@ -1,4 +1,4 @@
-package ising
+package voting
 
 const (
 	InitialState State = 1 << iota

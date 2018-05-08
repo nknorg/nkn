@@ -31,13 +31,13 @@ func BuildIsingPayload(msg IsingMessage, sender *crypto.PubKey) (*message.IsingP
 	switch msg.(type) {
 	case *BlockFlooding:
 		err = serialization.WriteByte(buf, byte(BlockFloodingMsg))
-	case *BlockRequest:
+	case *Request:
 		err = serialization.WriteByte(buf, byte(BlockRequestMsg))
-	case *BlockResponse:
+	case *Response:
 		err = serialization.WriteByte(buf, byte(BlockResponseMsg))
-	case *BlockProposal:
+	case *Proposal:
 		err = serialization.WriteByte(buf, byte(BlockProposalMsg))
-	case *BlockVote:
+	case *Voting:
 		err = serialization.WriteByte(buf, byte(BlockVoteMsg))
 	case *StateProbe:
 		err = serialization.WriteByte(buf, byte(StateProbeMsg))
@@ -76,28 +76,28 @@ func RecoverFromIsingPayload(payload *message.IsingPayload) (IsingMessage, error
 		}
 		return bfmsg, nil
 	case BlockRequestMsg:
-		brmsg := &BlockRequest{}
+		brmsg := &Request{}
 		err := brmsg.Deserialize(r)
 		if err != nil {
 			return nil, err
 		}
 		return brmsg, nil
 	case BlockResponseMsg:
-		brmsg := &BlockResponse{}
+		brmsg := &Response{}
 		err := brmsg.Deserialize(r)
 		if err != nil {
 			return nil, err
 		}
 		return brmsg, nil
 	case BlockProposalMsg:
-		bpmsg := &BlockProposal{}
+		bpmsg := &Proposal{}
 		err := bpmsg.Deserialize(r)
 		if err != nil {
 			return nil, err
 		}
 		return bpmsg, nil
 	case BlockVoteMsg:
-		bvmsg := &BlockVote{}
+		bvmsg := &Voting{}
 		err := bvmsg.Deserialize(r)
 		if err != nil {
 			return nil, err

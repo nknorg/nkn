@@ -7,17 +7,25 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 )
 
-type BlockVote struct {
-	blockHash *Uint256
+type Voting struct {
+	hash  *Uint256
 	agree bool
 }
 
-func (p *BlockVote) Serialize(w io.Writer) error {
-	_, err := p.blockHash.Serialize(w)
+func NewVoting(hash *Uint256, agree bool) *Voting {
+	return &Voting{
+		hash: hash,
+		agree: agree,
+	}
+}
+
+
+func (v *Voting) Serialize(w io.Writer) error {
+	_, err := v.hash.Serialize(w)
 	if err != nil {
 		return err
 	}
-	err = serialization.WriteBool(w, p.agree)
+	err = serialization.WriteBool(w, v.agree)
 	if err != nil {
 		return err
 	}
@@ -25,9 +33,9 @@ func (p *BlockVote) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (p *BlockVote) Deserialize(r io.Reader) error {
-	p.blockHash = new(Uint256)
-	err := p.blockHash.Deserialize(r)
+func (v *Voting) Deserialize(r io.Reader) error {
+	v.hash = new(Uint256)
+	err := v.hash.Deserialize(r)
 	if err != nil {
 		return err
 	}
@@ -35,7 +43,7 @@ func (p *BlockVote) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	p.agree = agree
+	v.agree = agree
 
 	return nil
 }

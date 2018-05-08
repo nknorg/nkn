@@ -10,8 +10,14 @@ type BlockFlooding struct {
 	block *ledger.Block
 }
 
-func (p *BlockFlooding) Serialize(w io.Writer) error {
-	err := p.block.Serialize(w)
+func NewBlockFlooding(block *ledger.Block) *BlockFlooding {
+	return &BlockFlooding{
+		block: block,
+	}
+}
+
+func (bf *BlockFlooding) Serialize(w io.Writer) error {
+	err := bf.block.Serialize(w)
 	if err != nil {
 		return err
 	}
@@ -19,13 +25,13 @@ func (p *BlockFlooding) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (p *BlockFlooding) Deserialize(r io.Reader) error {
+func (bf *BlockFlooding) Deserialize(r io.Reader) error {
 	block := new(ledger.Block)
 	err := block.Deserialize(r)
 	if err != nil {
 		return err
 	}
-	p.block = block
+	bf.block = block
 
 	return nil
 }

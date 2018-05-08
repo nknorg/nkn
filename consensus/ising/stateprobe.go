@@ -24,14 +24,14 @@ type StateProbe struct {
 	ProbePayload interface{}
 }
 
-func (p *StateProbe) Serialize(w io.Writer) error {
+func (sp *StateProbe) Serialize(w io.Writer) error {
 	var err error
-	err = serialization.WriteByte(w, byte(p.ProbeType))
+	err = serialization.WriteByte(w, byte(sp.ProbeType))
 	if err != nil {
 		return err
 	}
-	if p.ProbePayload != nil {
-		switch t := p.ProbePayload.(type) {
+	if sp.ProbePayload != nil {
+		switch t := sp.ProbePayload.(type) {
 		case *BlockHistoryPayload:
 			err = serialization.WriteUint32(w, t.StartHeight)
 			if err != nil {
@@ -47,14 +47,14 @@ func (p *StateProbe) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (p *StateProbe) Deserialize(r io.Reader) error {
+func (sp *StateProbe) Deserialize(r io.Reader) error {
 	var err error
 	t, err := serialization.ReadByte(r)
 	if err != nil {
 		return err
 	}
-	p.ProbeType = ProbeType(t)
-	switch p.ProbeType {
+	sp.ProbeType = ProbeType(t)
+	switch sp.ProbeType {
 	case BlockHistory:
 		startHeight, err := serialization.ReadUint32(r)
 		if err != nil {
@@ -64,7 +64,7 @@ func (p *StateProbe) Deserialize(r io.Reader) error {
 		if err != nil {
 			return err
 		}
-		p.ProbePayload = &BlockHistoryPayload{
+		sp.ProbePayload = &BlockHistoryPayload{
 			StartHeight: startHeight,
 			BlockNum:    blockNum,
 		}
