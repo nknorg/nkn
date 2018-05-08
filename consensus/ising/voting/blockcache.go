@@ -1,11 +1,11 @@
-package ising
+package voting
 
 import (
 	"sync"
+	"time"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
-	"time"
 )
 
 const (
@@ -20,19 +20,19 @@ type BlockInfo struct {
 
 type BlockCache struct {
 	sync.RWMutex
-	cap    int
+	cap           int
 	currentHeight uint32                //current block height
-	cache  map[uint32]*BlockInfo // height and block mapping
-	hashes map[Uint256]uint32    // for block fast searching
+	cache         map[uint32]*BlockInfo // height and block mapping
+	hashes        map[Uint256]uint32    // for block fast searching
 }
 
 // When receive new block message from consensus layer, cache it.
 func NewCache() *BlockCache {
 	blockCache := &BlockCache{
-		cap:    MaxCachedBlocks,
+		cap:           MaxCachedBlocks,
 		currentHeight: 0,
-		cache:  make(map[uint32]*BlockInfo),
-		hashes: make(map[Uint256]uint32),
+		cache:         make(map[uint32]*BlockInfo),
+		hashes:        make(map[Uint256]uint32),
 	}
 	go blockCache.Cleanup()
 
@@ -40,11 +40,11 @@ func NewCache() *BlockCache {
 }
 
 // BlockInCache returns whether the block has been cached.
-func (p *BlockCache) BlockInCache(hash Uint256) bool {
-	p.RLock()
-	defer p.RUnlock()
+func (bc *BlockCache) BlockInCache(hash Uint256) bool {
+	bc.RLock()
+	defer bc.RUnlock()
 
-	if _, ok := p.hashes[hash]; ok {
+	if _, ok := bc.hashes[hash]; ok {
 		return true
 	}
 
@@ -52,14 +52,14 @@ func (p *BlockCache) BlockInCache(hash Uint256) bool {
 }
 
 // GetBlockFromCache returns block according to bloch hash passed in.
-func (p *BlockCache) GetBlockFromCache(hash Uint256) *ledger.Block {
-	p.RLock()
-	defer p.RUnlock()
+func (bc *BlockCache) GetBlockFromCache(hash Uint256) *ledger.Block {
+	bc.RLock()
+	defer bc.RUnlock()
 
-	if i, ok := p.hashes[hash]; !ok {
+	if i, ok := bc.hashes[hash]; !ok {
 		return nil
 	} else {
-		if j, ok := p.cache[i]; !ok {
+		if j, ok := bc.cache[i]; !ok {
 			return nil
 		} else {
 			return j.block
@@ -68,11 +68,11 @@ func (p *BlockCache) GetBlockFromCache(hash Uint256) *ledger.Block {
 }
 
 // GetCurrentBlockFromCache returns latest block in cache
-func (p *BlockCache) GetCurrentBlockFromCache() *ledger.Block {
-	p.RLock()
-	defer p.RUnlock()
+func (bc *BlockCache) GetCurrentBlockFromCache() *ledger.Block {
+	bc.RLock()
+	defer bc.RUnlock()
 
-	if v, ok := p.cache[p.currentHeight]; ok {
+	if v, ok := bc.cache[bc.currentHeight]; ok {
 		return v.block
 	}
 
@@ -80,16 +80,16 @@ func (p *BlockCache) GetCurrentBlockFromCache() *ledger.Block {
 }
 
 // RemoveBlockFromCache return true if the block doesn't exist in cache.
-func (p *BlockCache) RemoveBlockFromCache(hash Uint256) error {
-	p.Lock()
-	defer p.Unlock()
+func (bc *BlockCache) RemoveBlockFromCache(hash Uint256) error {
+	bc.Lock()
+	defer bc.Unlock()
 
-	if p.BlockInCache(hash) {
-		h := p.hashes[hash]
-		delete(p.cache, h)
-		delete(p.hashes, hash)
-		if p.currentHeight > 0 {
-			p.currentHeight --
+	if bc.BlockInCache(hash) {
+		h := bc.hashes[hash]
+		delete(bc.cache, h)
+		delete(bc.hashes, hash)
+		if bc.currentHeight > 0 {
+			bc.currentHeight--
 		}
 	}
 
@@ -97,17 +97,17 @@ func (p *BlockCache) RemoveBlockFromCache(hash Uint256) error {
 }
 
 // CachedBlockNum return the block number in cache
-func (p *BlockCache) CachedBlockNum() int {
-	p.RLock()
-	defer p.RUnlock()
+func (bc *BlockCache) CachedBlockNum() int {
+	bc.RLock()
+	defer bc.RUnlock()
 
-	return len(p.cache)
+	return len(bc.cache)
 }
 
 // AddBlockToCache returns nil if block already existed in cache
-func (p *BlockCache) AddBlockToCache(block *ledger.Block) error {
+func (bc *BlockCache) AddBlockToCache(block *ledger.Block) error {
 	hash := block.Hash()
-	if p.BlockInCache(hash) {
+	if bc.BlockInCache(hash) {
 		return nil
 	}
 	// TODO FIFO cleanup, if cap space is not enough then
@@ -116,26 +116,26 @@ func (p *BlockCache) AddBlockToCache(block *ledger.Block) error {
 		block:    block,
 		lifetime: time.NewTimer(time.Hour),
 	}
-	p.Lock()
-	defer p.Unlock()
+	bc.Lock()
+	defer bc.Unlock()
 	blockHeight := block.Header.Height
-	p.cache[blockHeight] = blockInfo
-	p.hashes[hash] = blockHeight
-	p.currentHeight = blockHeight
+	bc.cache[blockHeight] = blockInfo
+	bc.hashes[hash] = blockHeight
+	bc.currentHeight = blockHeight
 
 	return nil
 }
 
 // Cleanup is a background routine used for cleaning up expired block in cache
-func (p *BlockCache) Cleanup() {
+func (bc *BlockCache) Cleanup() {
 	ticket := time.NewTicker(time.Minute)
 	for {
 		select {
 		case <-ticket.C:
-			for _, blockInfo := range p.cache {
+			for _, blockInfo := range bc.cache {
 				select {
 				case <-blockInfo.lifetime.C:
-					p.RemoveBlockFromCache(blockInfo.block.Hash())
+					bc.RemoveBlockFromCache(blockInfo.block.Hash())
 				}
 			}
 		}

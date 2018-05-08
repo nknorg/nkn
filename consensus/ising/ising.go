@@ -1,29 +1,38 @@
 package ising
 
 import (
-	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/wallet"
 )
 
-const (
-	MsgChanCap   = 1
-	BlockChanCap = 1
-)
-
-// chan messaage sent from probe to proposer
-type Notice struct {
-	BlockHistory map[string]uint64
+type ConsensusService struct {
+	proposerService *ProposerService
+	probeService    *ProbeService
 }
 
+func NewConsensusService(account *wallet.Account, node protocol.Noder) *ConsensusService {
+	consensusService := &ConsensusService{
+		proposerService: NewProposerService(account, node),
+		probeService:    NewProbeService(account, node),
+	}
+
+	return consensusService
+}
+
+func (cs *ConsensusService) Start() {
+	go cs.proposerService.Start()
+	go cs.probeService.Start()
+
+	for {
+		select {
+		case msg := <-cs.probeService.msgChan:
+			cs.proposerService.msgChan <- msg
+		}
+	}
+}
+
+
 func StartIsingConsensus(account *wallet.Account, node protocol.Noder) {
-	// TODO communication among goroutines
-	msgChan := make(chan interface{}, MsgChanCap)
-	blockChan := make(chan *ledger.Block, BlockChanCap)
-	proposerService := NewProposerService(account, node, msgChan, blockChan)
-	go proposerService.Start()
-	voterService := NewVoterService(account, node, blockChan)
-	go voterService.Start()
-	probeService := NewProbeService(account, node, msgChan)
-	go probeService.Start()
+	service := NewConsensusService(account, node)
+	service.Start()
 }
