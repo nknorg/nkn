@@ -126,7 +126,7 @@ func nknMain() error {
 	node := StartNetworking(account.PublicKey, ring)
 
 	// start relay service
-	node.StartRelayer()
+	node.StartRelayer(account)
 
 	// start websocket server
 	websocket.StartServer(node)

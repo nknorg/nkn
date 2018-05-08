@@ -8,16 +8,19 @@ import (
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/wallet"
 	"github.com/nknorg/nkn/websocket"
 )
 
 type RelayService struct {
+	account          *wallet.Account
 	localNode        protocol.Noder    // local node
 	relayMsgReceived events.Subscriber // consensus events listening
 }
 
-func NewRelayService(node protocol.Noder) *RelayService {
+func NewRelayService(account *wallet.Account, node protocol.Noder) *RelayService {
 	service := &RelayService{
+		account:   account,
 		localNode: node,
 	}
 	return service
@@ -35,9 +38,9 @@ func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 			"Receive packet:\nSrcID: %x\nDestID: %x\nPayload %x",
 			packet.SrcID,
 			destID,
-			packet.PayloadData,
+			packet.Payload,
 		)
-		websocket.GetServer().Broadcast(packet.PayloadData)
+		websocket.GetServer().Broadcast(packet.Payload)
 		return nil
 	}
 	nextHop, err := p.localNode.NextHop(destID)
@@ -50,11 +53,17 @@ func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 			"No next hop for packet:\nSrcID: %x\nDestID: %x\nPayload %x",
 			packet.SrcID,
 			destID,
-			packet.PayloadData,
+			packet.Payload,
 		)
 		return nil
 	}
-	b, err := message.NewRelayMessage(packet)
+	nextPubkey, err := nextHop.GetPubKey().EncodePoint(true)
+	if err != nil {
+		log.Error("Get next hop public key error: ", err)
+		return err
+	}
+	packet.SigChain.Sign(nextPubkey, p.account)
+	msg, err := message.NewRelayMessage(packet)
 	if err != nil {
 		log.Error("Create relay message error: ", err)
 		return err
@@ -65,9 +74,9 @@ func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 		destID,
 		nextHop.GetAddr(),
 		nextHop.GetPort(),
-		packet.PayloadData,
+		packet.Payload,
 	)
-	nextHop.Tx(b)
+	nextHop.Tx(msg)
 	return nil
 }
 
@@ -84,4 +93,8 @@ func (p *RelayService) ReceiveRelayMsgNoError(v interface{}) {
 	if err != nil {
 		log.Error(err.Error())
 	}
+}
+
+func (rs *RelayService) GetAccount() *wallet.Account {
+	return rs.account
 }

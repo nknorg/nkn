@@ -10,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/wallet"
 )
 
 type NodeAddr struct {
@@ -144,9 +145,9 @@ type Noder interface {
 	RelSyncReqSem()
 
 	GetChordAddr() []byte
-	StartRelayer()
+	StartRelayer(account *wallet.Account)
 	NextHop(key []byte) (Noder, error)
-	SendRelayPacket(interface{}) error
+	SendRelayPacket(destID []byte, destPubkey []byte, payload []byte) error
 }
 
 func (msg *NodeAddr) Deserialization(p []byte) error {
