@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/ethereum/log"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/por/sigchains"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type porPackage struct {
