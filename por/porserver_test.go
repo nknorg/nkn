@@ -19,7 +19,7 @@ func TestPorServer(t *testing.T) {
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 
-	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, toPk, relPk)
+	scFrom, err := pmFrom.CreateSigChain(1, 1, &common.Uint256{}, toPk, relPk)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
@@ -49,7 +49,7 @@ func TestPorServer(t *testing.T) {
 		t.Error("[pormanager] IsFinal test failed 2")
 	}
 
-	sig, _ := pmTo.GetSignture(scTo)
-	t.Log("[pormanager] GetSignture ", sig)
+	sig, _ := pmTo.GetSignature(scTo)
+	t.Log("[pormanager] GetSignature ", sig)
 
 }
