@@ -25,8 +25,8 @@ type sigchainer interface {
 	GetSignerIndex(pubkey []byte) (int, error)
 	GetLastPubkey() ([]byte, error)
 	GetDataHash() *common.Uint256
-	GetCurrentHeight() uint32
-	GetSignture() ([]byte, error)
+	GetHeight() uint32
+	GetSignature() ([]byte, error)
 	GetOwner() ([]byte, error)
 	Serialize(w io.Writer) error
 	Deserialize(r io.Reader) error
@@ -38,7 +38,7 @@ type SigChain struct {
 	chain   sigchainer
 }
 
-func NewSigChain(account *wallet.Account, dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
+func NewSigChain(account *wallet.Account, height, dataSize uint32, dataHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
 	var sigchain sigchainer
 	var sigtype string
 	switch sigChainAlg {
@@ -47,7 +47,7 @@ func NewSigChain(account *wallet.Account, dataSize uint32, dataHash *common.Uint
 		fallthrough
 	default:
 		sigtype = ECDSAP256R1
-		sigchain, _ = sigchains.NewSigChainEcdsa(account, dataSize, dataHash, destPubkey, nextPubkey)
+		sigchain, _ = sigchains.NewSigChainEcdsa(account, height, dataSize, dataHash, destPubkey, nextPubkey)
 	}
 
 	return &SigChain{sigtype, sigchain}, nil
@@ -114,16 +114,16 @@ func (sc *SigChain) GetLastPubkey() ([]byte, error) {
 	return sc.chain.GetLastPubkey()
 }
 
-func (sc *SigChain) GetSignture() ([]byte, error) {
-	return sc.chain.GetLastPubkey()
+func (sc *SigChain) GetSignature() ([]byte, error) {
+	return sc.chain.GetSignature()
 }
 
 func (sc *SigChain) Hash() common.Uint256 {
 	return sc.chain.Hash()
 }
 
-func (sc *SigChain) GetCurrentHeight() uint32 {
-	return sc.chain.GetCurrentHeight()
+func (sc *SigChain) GetHeight() uint32 {
+	return sc.chain.GetHeight()
 }
 
 func (sc *SigChain) GetOwner() ([]byte, error) {

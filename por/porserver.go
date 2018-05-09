@@ -108,16 +108,16 @@ func (ps *porServer) Verify(sc *SigChain) error {
 	return nil
 }
 
-func (ps *porServer) CreateSigChain(dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChain, error) {
-	return NewSigChain(ps.account, dataSize, dataHash, destPubkey, nextPubkey)
+func (ps *porServer) CreateSigChain(height, dataSize uint32, dataHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
+	return NewSigChain(ps.account, height, dataSize, dataHash, destPubkey, nextPubkey)
 }
 
 func (ps *porServer) IsFinal(sc *SigChain) bool {
 	return sc.IsFinal()
 }
 
-func (ps *porServer) GetSignture(sc *SigChain) ([]byte, error) {
-	return sc.GetSignture()
+func (ps *porServer) GetSignature(sc *SigChain) ([]byte, error) {
+	return sc.GetSignature()
 }
 
 //TODO subscripter
