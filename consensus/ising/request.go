@@ -10,18 +10,24 @@ import (
 
 type Request struct {
 	hash        *Uint256
+	height      uint32
 	contentType voting.VotingContentType
 }
 
-func NewRequest(hash *Uint256, ctype voting.VotingContentType) *Request {
+func NewRequest(hash *Uint256, height uint32, ctype voting.VotingContentType) *Request {
 	return &Request{
-		hash: hash,
+		hash:        hash,
+		height:      height,
 		contentType: ctype,
 	}
 }
 
 func (req *Request) Serialize(w io.Writer) error {
 	_, err := req.hash.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteUint32(w, req.height)
 	if err != nil {
 		return err
 	}
@@ -39,6 +45,11 @@ func (req *Request) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	height, err := serialization.ReadUint32(r)
+	if err != nil {
+		return err
+	}
+	req.height = height
 	contentType, err := serialization.ReadByte(r)
 	if err != nil {
 		req.contentType = voting.VotingContentType(contentType)

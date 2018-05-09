@@ -279,7 +279,7 @@ func (ps *ProposerService) ReceiveConsensusMsg(v interface{}) {
 			ps.HandleRequestMsg(t, sender)
 		case *Response:
 			ps.HandleResponseMsg(t, sender)
-		case *Voting:
+		case *Vote:
 			ps.HandleVoteMsg(t, sender)
 		case *StateProbe:
 			ps.HandleStateProbeMsg(t, sender)
@@ -312,8 +312,8 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 	return
 }
 
-func (ps *ProposerService) HandleRequestMsg(brMsg *Request, sender *crypto.PubKey) {
-	hash := *brMsg.hash
+func (ps *ProposerService) HandleRequestMsg(req *Request, sender *crypto.PubKey) {
+	hash := *req.hash
 	current := ps.CurrentVoting()
 	current.DumpState(hash, "when handle request", false)
 
@@ -335,21 +335,21 @@ func (ps *ProposerService) HandleRequestMsg(brMsg *Request, sender *crypto.PubKe
 	return
 }
 
-func (ps *ProposerService) HandleVoteMsg(bvMsg *Voting, sender *crypto.PubKey) {
-	blockHash := *bvMsg.hash
+func (ps *ProposerService) HandleVoteMsg(vote *Vote, sender *crypto.PubKey) {
+	blockHash := *vote.hash
 	current := ps.CurrentVoting()
 	current.DumpState(blockHash, "when handle block voting", false)
 	if !current.HasProposerState(blockHash, voting.FloodingFinished) || !current.HasProposerState(blockHash, voting.ProposalSent) {
-		log.Warn("consensus state error in Voting message handler")
+		log.Warn("consensus state error in Vote message handler")
 		return
 	}
 	// TODO check if the sender is neighbor
-	hash := bvMsg.hash
+	hash := vote.hash
 	if hash.CompareTo(current.GetConfirmingHash()) != 0 {
 		log.Warn("voted block doesn't match with local block in process")
 		return
 	}
-	if bvMsg.agree == true {
+	if vote.agree == true {
 		script, err := contract.CreateSignatureRedeemScript(sender)
 		if err != nil {
 			log.Warn("sender public key to script error")
@@ -414,8 +414,8 @@ func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.P
 	return
 }
 
-func (ps *ProposerService) HandleResponseMsg(brMsg *Response, sender *crypto.PubKey) {
-	hash := brMsg.hash
+func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubKey) {
+	hash := resp.hash
 	nodeID := publickKeyToNodeID(sender)
 	current := ps.CurrentVoting()
 	if !current.HasVoterState(nodeID, *hash, voting.RequestSent) {
@@ -423,22 +423,22 @@ func (ps *ProposerService) HandleResponseMsg(brMsg *Response, sender *crypto.Pub
 		return
 	}
 	// TODO check if the sender is requested neighbor node
-	err := current.Preparing(brMsg.content)
+	err := current.Preparing(resp.content)
 	if err != nil {
 		return
 	}
 	current.SetVoterState(nodeID, *hash, voting.FloodingFinished)
 	// TODO verify block
 	agree := true
-	votingMsg := NewVoting(hash, agree)
+	votingMsg := NewVoting(hash, agree, nil)
 	ps.SendConsensusMsg(votingMsg, sender)
 	current.SetVoterState(nodeID, *hash, voting.OpinionSent)
 }
 
-func (ps *ProposerService) HandleProposalMsg(bpMsg *Proposal, sender *crypto.PubKey) {
+func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.PubKey) {
 	// TODO check if the sender is neighbor
 	nodeID := publickKeyToNodeID(sender)
-	hash := *bpMsg.hash
+	hash := *proposal.hash
 	current := ps.CurrentVoting()
 	if current.HasVoterState(nodeID, hash, voting.OpinionSent) {
 		log.Warn("consensus state error in Proposal message handler")
@@ -458,7 +458,7 @@ func (ps *ProposerService) HandleProposalMsg(bpMsg *Proposal, sender *crypto.Pub
 	}
 	//TODO block verification and mind changing
 	agree := true
-	votingMsg := NewVoting(&hash, agree)
+	votingMsg := NewVoting(&hash, agree, nil)
 	ps.SendConsensusMsg(votingMsg, sender)
 	current.SetVoterState(nodeID, hash, voting.OpinionSent)
 }

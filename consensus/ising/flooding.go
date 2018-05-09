@@ -35,4 +35,3 @@ func (bf *BlockFlooding) Deserialize(r io.Reader) error {
 
 	return nil
 }
-

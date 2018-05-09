@@ -37,7 +37,7 @@ func BuildIsingPayload(msg IsingMessage, sender *crypto.PubKey) (*message.IsingP
 		err = serialization.WriteByte(buf, byte(BlockResponseMsg))
 	case *Proposal:
 		err = serialization.WriteByte(buf, byte(BlockProposalMsg))
-	case *Voting:
+	case *Vote:
 		err = serialization.WriteByte(buf, byte(BlockVoteMsg))
 	case *StateProbe:
 		err = serialization.WriteByte(buf, byte(StateProbeMsg))
@@ -97,7 +97,7 @@ func RecoverFromIsingPayload(payload *message.IsingPayload) (IsingMessage, error
 		}
 		return bpmsg, nil
 	case BlockVoteMsg:
-		bvmsg := &Voting{}
+		bvmsg := &Vote{}
 		err := bvmsg.Deserialize(r)
 		if err != nil {
 			return nil, err
