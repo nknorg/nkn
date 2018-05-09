@@ -5,9 +5,9 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
-	"fmt"
 	"io"
 
+	"github.com/ethereum/log"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
@@ -21,8 +21,8 @@ import (
 // 1. Sign: sign the element created in Sign
 
 type SigChainEcdsa struct {
-	nonce      [4]byte
-	height     uint32
+	nonce      [4]byte         // cryptographic nonce
+	height     uint32          // blockchain height
 	dataSize   uint32          // payload size
 	dataHash   *common.Uint256 // payload hash
 	srcPubkey  []byte          // source pubkey
@@ -36,15 +36,15 @@ type SigChainElemEcdsa struct {
 }
 
 // first relay node starts a new signature chain which consists of meta data and the first element.
-func NewSigChainEcdsa(owner *wallet.Account, dataSize uint32, dataHash *common.Uint256, destPubkey []byte, nextPubkey []byte) (*SigChainEcdsa, error) {
+func NewSigChainEcdsa(owner *wallet.Account, height, dataSize uint32, dataHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChainEcdsa, error) {
 	ownPk := owner.PubKey()
 	srcPubkey, err := ownPk.EncodePoint(true)
 	if err != nil {
-		return nil, errors.New("EncodePoint ownpk error")
+		return nil, err
 	}
 
 	sc := &SigChainEcdsa{
-		height:     1, //TODO get height from block header.
+		height:     height,
 		dataSize:   dataSize,
 		dataHash:   dataHash,
 		srcPubkey:  srcPubkey,
@@ -106,15 +106,10 @@ func (sce *SigChainEcdsa) Sign(nextPubkey []byte, signer *wallet.Account) error 
 	}
 
 	if !crypto.Equal(signer.PubKey(), nxPk) {
-		return errors.New("signer is not the one")
+		return errors.New("signer is not the right one")
 	}
 
 	lastElem, err := sce.lastSigElem()
-	//buff := bytes.NewBuffer(nil)
-	//err = serialization.WriteVarBytes(buff, lastElem.signature)
-	//if err != nil {
-	//	return err
-	//}
 	buff := bytes.NewBuffer(lastElem.signature)
 	elem := NewSigChainElemEcdsa(nextPubkey)
 	err = elem.SerializationUnsigned(buff)
@@ -140,11 +135,6 @@ func (sce *SigChainEcdsa) Verify() error {
 	sce.SerializationMetadata(buff)
 	prevSig := buff.Bytes()
 	for _, e := range sce.elems {
-		// verify each element public key is correct
-		//if !common.IsEqualBytes(prevNextPubkey, e.pubkey) {
-		//	return errors.New("unmatch public key in signature chain")
-		//}
-
 		ePk, err := crypto.DecodePoint(prevNextPubkey)
 		if err != nil {
 			return errors.New("the pubkey of e is wrong")
@@ -261,7 +251,7 @@ func (sce *SigChainEcdsa) GetLastPubkey() ([]byte, error) {
 func (sce *SigChainEcdsa) nextSigner() ([]byte, error) {
 	e, err := sce.lastSigElem()
 	if err != nil {
-		return nil, errors.New("no elem")
+		return nil, errors.New("there is no elem")
 	}
 	return e.nextPubkey, nil
 }
@@ -438,7 +428,7 @@ func (sce *SigChainElemEcdsa) DeserializationUnsigned(r io.Reader) error {
 	return nil
 }
 
-func (sce *SigChainEcdsa) GetSignture() ([]byte, error) {
+func (sce *SigChainEcdsa) GetSignature() ([]byte, error) {
 	scee, err := sce.finalSigElem()
 	if err != nil {
 		return nil, err
@@ -453,7 +443,7 @@ func (sce *SigChainEcdsa) Hash() common.Uint256 {
 	return sha256.Sum256(buff.Bytes())
 }
 
-func (sce *SigChainEcdsa) GetCurrentHeight() uint32 {
+func (sce *SigChainEcdsa) GetHeight() uint32 {
 	return sce.height
 }
 
@@ -471,13 +461,13 @@ func (sce *SigChainEcdsa) GetOwner() ([]byte, error) {
 }
 
 func (sce *SigChainEcdsa) DumpInfo() {
-	fmt.Println("dataSize: ", sce.dataSize)
-	fmt.Println("dataHash: ", sce.dataHash)
-	fmt.Println("srcPubkey: ", common.BytesToHexString(sce.srcPubkey))
-	fmt.Println("dstPubkey: ", common.BytesToHexString(sce.destPubkey))
+	log.Info("dataSize: ", sce.dataSize)
+	log.Info("dataHash: ", sce.dataHash)
+	log.Info("srcPubkey: ", common.BytesToHexString(sce.srcPubkey))
+	log.Info("dstPubkey: ", common.BytesToHexString(sce.destPubkey))
 
 	for i, e := range sce.elems {
-		fmt.Printf("nextPubkey[%d]: %s\n", i, common.BytesToHexString(e.nextPubkey))
-		fmt.Printf("signature[%d]: %s\n", i, common.BytesToHexString(e.signature))
+		log.Info("nextPubkey[%d]: %s\n", i, common.BytesToHexString(e.nextPubkey))
+		log.Info("signature[%d]: %s\n", i, common.BytesToHexString(e.signature))
 	}
 }

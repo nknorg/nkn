@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
@@ -83,6 +84,7 @@ func (node *node) SendRelayPacket(destID []byte, destPubkey []byte, payload []by
 	}
 	sigChain, err := por.NewSigChain(
 		node.relayer.GetAccount(),
+		ledger.DefaultLedger.Store.GetHeight(),
 		uint32(len(payload)),
 		&payloadHash256,
 		destPubkey,

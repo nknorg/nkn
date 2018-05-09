@@ -2,9 +2,9 @@ package por
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 
+	"github.com/ethereum/log"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/transaction"
@@ -34,7 +34,7 @@ func NewPorPackage(txn *transaction.Transaction) *porPackage {
 	owner, _ := sigchain.GetOwner()
 	return &porPackage{
 		owner:        owner,
-		height:       sigchain.GetCurrentHeight(),
+		height:       sigchain.GetHeight(),
 		txHash:       txn.Hash(),
 		sigchainHash: sigchain.Hash(),
 		sigchain:     &sigchain,
@@ -112,15 +112,20 @@ func (pp *porPackage) Deserialize(r io.Reader) error {
 		return err
 	}
 
-	err = pp.sigchain.Deserialize(r)
+	sigchain := new(SigChain)
+	err = sigchain.Deserialize(r)
+	if err != nil {
+		return nil
+	}
+	pp.sigchain = sigchain
 
-	return err
+	return nil
 }
 
 func (pp *porPackage) DumpInfo() {
-	fmt.Println("owner: ", common.BytesToHexString(pp.owner))
-	fmt.Println("txHash: ", pp.txHash)
-	fmt.Println("sigchainHash: ", pp.sigchainHash)
+	log.Info("owner: ", common.BytesToHexString(pp.owner))
+	log.Info("txHash: ", pp.txHash)
+	log.Info("sigchainHash: ", pp.sigchainHash)
 	if sc, ok := pp.sigchain.chain.(*sigchains.SigChainEcdsa); ok {
 		sc.DumpInfo()
 	}
