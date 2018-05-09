@@ -7,10 +7,10 @@ import (
 	"errors"
 	"io"
 
-	"github.com/ethereum/log"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 )
 

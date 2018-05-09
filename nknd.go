@@ -17,7 +17,6 @@ import (
 	"github.com/nknorg/nkn/net"
 	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/net/protocol"
-	_ "github.com/nknorg/nkn/por" // for testing sigchain of PoR feature
 	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"

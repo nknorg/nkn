@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/ethereum/log"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 )
 
