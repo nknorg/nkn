@@ -13,40 +13,65 @@ import (
 
 func TestPorPackage(t *testing.T) {
 	crypto.SetAlg("P256R1")
+
 	from, _ := wallet.NewAccount()
 	rel, _ := wallet.NewAccount()
 	to, _ := wallet.NewAccount()
-	pmFrom := NewPorServer(from)
-	pmRel := NewPorServer(rel)
-	pmTo := NewPorServer(to)
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 
-	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, toPk, relPk)
+	sc, err := NewSigChain(from, 1, 1, &common.Uint256{}, toPk, relPk)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
-	scRel, _ := pmRel.Sign(scFrom, toPk)
-	if pmRel.Verify(scRel) == nil {
-		t.Log("[pormanager] verify successfully")
-	} else {
-		t.Error("[pormanager] verify failed")
+
+	err = sc.Sign(toPk, rel)
+	if err != nil || sc.Verify() != nil {
+		t.Error("'rel' sign in error")
 	}
 
-	scTo, _ := pmTo.Sign(scRel, toPk)
-	if pmTo.Verify(scTo) == nil {
-		t.Log("[pormanager] verify successfully 2")
-	} else {
-		t.Error("[pormanager] verify failed 2")
+	err = sc.Sign(toPk, to)
+	if err != nil || sc.Verify() != nil {
+		t.Error("'to' sign in error")
 	}
 
 	buff := bytes.NewBuffer(nil)
-	scTo.Serialize(buff)
+	sc.Serialize(buff)
 	txn, err := transaction.NewCommitTransaction(buff.Bytes())
 	if err != nil {
 		log.Error("txn wrong", txn)
 	}
 
 	ppkg := NewPorPackage(txn)
-	ppkg.DumpInfo()
+
+	//test Hash
+	ppkgHash := ppkg.Hash()
+	if (&ppkgHash).CompareTo(sc.Hash()) != 0 {
+		t.Error("[TestPorPackage] Hash test failed")
+	}
+
+	//GetHeight
+	if sc.GetHeight() != ppkg.GetHeight() {
+		t.Error("[TestPorPackage] GetHeight test failed")
+	}
+
+	//GetTxHash
+	if ppkg.GetTxHash().CompareTo(txn.Hash()) != 0 {
+		t.Error("[TestPorPackage] GetTxHash test failed")
+	}
+
+	//GetSigChain
+	if (&ppkgHash).CompareTo(ppkg.GetSigChain().Hash()) != 0 {
+		t.Error("[TestPorPackage] GetSigChain test failed")
+	}
+
+	//Serialize & Deserialize
+	ppkg2 := new(porPackage)
+	buff2 := bytes.NewBuffer(nil)
+	ppkg.Serialize(buff2)
+	ppkg2.Deserialize(buff2)
+
+	if ppkg.CompareTo(ppkg2) != 0 {
+		t.Error("[TestPorPackage] Serialize test failed")
+	}
 }
