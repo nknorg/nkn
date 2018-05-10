@@ -2,73 +2,46 @@ package por
 
 import (
 	"errors"
+	"sort"
+	"sync"
 
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/wallet"
 )
 
-const (
-	msgChanCap = 10
-)
-
 type porServer struct {
-	started   bool
-	account   *wallet.Account
-	pors      map[uint32][]*porPackage
-	msgChan   chan interface{}
-	relayChan chan chan *porPackage
-	quit      chan struct{}
+	sync.RWMutex
+	account *wallet.Account
+	pors    map[uint32][]*porPackage
 }
 
 func NewPorServer(account *wallet.Account) *porServer {
 	ps := &porServer{
-		account:   account,
-		msgChan:   make(chan interface{}, msgChanCap),
-		relayChan: make(chan chan *porPackage),
-		pors:      make(map[uint32][]*porPackage),
-		quit:      make(chan struct{}, 1),
+		account: account,
+		pors:    make(map[uint32][]*porPackage),
 	}
 
-	go ps.porHandler()
-	ps.started = true
 	return ps
 }
 
-func (ps *porServer) porHandler() {
-out:
-	for {
-		select {
-		case m := <-ps.msgChan:
-			switch msg := m.(type) {
-			case *porPackage:
-				height := msg.GetHeight()
-				if _, ok := ps.pors[height]; !ok {
-					ps.pors[height] = make([]*porPackage, 0)
-				}
-				ps.pors[height] = append(ps.pors[height], msg)
-			case uint32:
-				if msg == 0 {
-					ps.pors = make(map[uint32][]*porPackage)
-				} else {
-					if _, ok := ps.pors[msg]; ok {
-						delete(ps.pors, msg)
-					}
-				}
-			}
-		case msg := <-ps.relayChan:
-			//TODO get minimum sigchain
-			msg <- &porPackage{}
-		case <-ps.quit:
-			break out
-		}
+type porPackages []*porPackage
 
+func (c porPackages) Len() int {
+	return len(c)
+}
+func (c porPackages) Swap(i, j int) {
+	if i >= 0 && i < len(c) && j >= 0 && j < len(c) { // Unit Test modify
+		c[i], c[j] = c[j], c[i]
 	}
 }
+func (c porPackages) Less(i, j int) bool {
+	if i >= 0 && i < len(c) && j >= 0 && j < len(c) { // Unit Test modify
+		return c[i].CompareTo(c[j]) < 0
+	}
 
-func (ps *porServer) Stop() {
-	ps.quit <- struct{}{}
-	ps.started = false
+	return false
 }
 
 func (ps *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
@@ -89,12 +62,6 @@ func (ps *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 	err = sc.Sign(nextPubkey, ps.account)
 	if err != nil {
 		return nil, errors.New("sign failed")
-	}
-
-	if sc.IsFinal() {
-		//TODO send commit tx
-		//TODO create porPackage
-		ps.msgChan <- porPackage{}
 	}
 
 	return sc, nil
@@ -120,13 +87,18 @@ func (ps *porServer) GetSignature(sc *SigChain) ([]byte, error) {
 	return sc.GetSignature()
 }
 
-//TODO subscripter
+//TODO subscriber
 func (ps *porServer) CleanChainList(height uint32) {
-	if !ps.started {
-		return
-	}
 
-	ps.msgChan <- height
+	ps.Lock()
+	if height == 0 {
+		ps.pors = make(map[uint32][]*porPackage)
+	} else {
+		if _, ok := ps.pors[height]; ok {
+			delete(ps.pors, height)
+		}
+	}
+	ps.Unlock()
 }
 
 func (ps *porServer) LenOfSigChain(sc *SigChain) int {
@@ -134,20 +106,30 @@ func (ps *porServer) LenOfSigChain(sc *SigChain) int {
 }
 
 func (ps *porServer) GetMinSigChain() *SigChain {
-	if !ps.started {
-	}
+	height := ledger.DefaultLedger.Store.GetHeight()
+	ps.RLock()
+	sort.Sort(porPackages(ps.pors[height]))
+	min := ps.pors[height][0]
+	ps.RUnlock()
 
-	pr := make(chan *porPackage, 1)
-	ps.relayChan <- pr
-	minPor := <-pr
-
-	return minPor.GetSigChain()
+	return min.GetSigChain()
 }
 
-func (ps *porServer) AddSigChainFromTx(txn *transaction.Transaction) {
+func (ps *porServer) AddSigChainFromTx(txn *transaction.Transaction) error {
 	porpkg := NewPorPackage(txn)
+	if porpkg == nil {
+		return errors.New("the type of transaction is mismatched")
+	}
 
-	ps.msgChan <- porpkg
+	height := porpkg.GetHeight()
+	ps.Lock()
+	if _, ok := ps.pors[height]; !ok {
+		ps.pors[height] = make([]*porPackage, 0)
+	}
+	ps.pors[height] = append(ps.pors[height], porpkg)
+	ps.Unlock()
+
+	return nil
 }
 
 func (ps *porServer) GetThreshold() common.Uint256 {
