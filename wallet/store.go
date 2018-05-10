@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"sync"
 
@@ -109,7 +110,7 @@ func (p *Store) write(data []byte) error {
 		err = permErr
 	}
 	if err == nil {
-		err = os.Rename(f.Name(), name)
+		err = exec.Command("mv", "-f", f.Name(), name).Run()
 	}
 	if err != nil {
 		os.Remove(f.Name())
