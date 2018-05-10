@@ -83,6 +83,11 @@ func (ps *porServer) IsFinal(sc *SigChain) bool {
 	return sc.IsFinal()
 }
 
+func (ps *porServer) IsSatisfyThreshold() bool {
+	//TODO need to add codes
+	return true
+}
+
 func (ps *porServer) GetSignature(sc *SigChain) ([]byte, error) {
 	return sc.GetSignature()
 }
@@ -130,6 +135,20 @@ func (ps *porServer) AddSigChainFromTx(txn *transaction.Transaction) error {
 	ps.Unlock()
 
 	return nil
+}
+
+func (ps *porServer) IsSigChainExist(sigchain *SigChain) (*common.Uint256, bool) {
+	height := ledger.DefaultLedger.Store.GetHeight()
+	ps.RLock()
+	for _, pkg := range ps.pors[height] {
+		pkgHash := pkg.Hash()
+		if (&pkgHash).CompareTo(sigchain.Hash()) == 0 {
+			ps.RUnlock()
+			return pkg.GetTxHash(), true
+		}
+	}
+	ps.RUnlock()
+	return nil, false
 }
 
 func (ps *porServer) GetThreshold() common.Uint256 {
