@@ -36,6 +36,8 @@ type Voting interface {
 	GetCurrentVotingContent() (VotingContent, error)
 	// get voting content from local by hash
 	GetVotingContent(hash Uint256) (VotingContent, error)
+	// get voting pool
+	GetVotingPool() VotingPool
 	// check if exist in local memory
 	Exist(hash Uint256) bool
 	// dump consensus state for testing

@@ -52,7 +52,7 @@ func NewProposerService(account *wallet.Account, node protocol.Noder) *ProposerS
 	if IsEqualBytes(encPubKey, confPubKey) {
 		flag = true
 	}
-
+	totalWeight := GetTotalVotingWeight(node)
 	service := &ProposerService{
 		ticker:       time.NewTicker(ConsensusTime),
 		spreader:     flag,
@@ -61,7 +61,7 @@ func NewProposerService(account *wallet.Account, node protocol.Noder) *ProposerS
 		txnCollector: transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged),
 		msgChan:      make(chan interface{}, MsgChanCap),
 		index:        0,
-		voting:       []voting.Voting{voting.NewBlockVoting()},
+		voting:       []voting.Voting{voting.NewBlockVoting(totalWeight)},
 	}
 
 	return service
