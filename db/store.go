@@ -650,6 +650,11 @@ func (self *ChainStore) CheckBlockHistory(history map[uint32]Uint256) (uint32, b
 	return 0, true
 }
 
+// TODO get node voting weight form DB
+func (self *ChainStore) GetVotingWeight(hash Uint160) (int, error) {
+	return 1, nil
+}
+
 func (self *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error) {
 	prefix := []byte{byte(SYS_CurrentBookKeeper)}
 	bkListValue, err_get := self.st.Get(prefix)
