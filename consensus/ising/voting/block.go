@@ -92,8 +92,17 @@ func (bv *BlockVoting) GetConfirmingHash() Uint256 {
 	return bv.confirmingHash
 }
 
-func (bv *BlockVoting) GetCurrentVotingContent() (VotingContent, error) {
-	block := bv.blockCache.GetCurrentBlockFromCache()
+func (bv *BlockVoting) GetBestVotingContent() (VotingContent, error) {
+	block := bv.blockCache.GetBestBlockFromCache()
+	if block == nil {
+		return nil, errors.New("no block available")
+	}
+
+	return block, nil
+}
+
+func (bv *BlockVoting) GetWorseVotingContent() (VotingContent, error) {
+	block := bv.blockCache.GetWorseBlockFromCache()
 	if block == nil {
 		return nil, errors.New("no block available")
 	}
