@@ -32,8 +32,10 @@ type Voting interface {
 	SetVoterState(nid uint64, hash Uint256, s State)
 	// check voter state
 	HasVoterState(nid uint64, hash Uint256, s State) bool
-	// get prefer voting content
-	GetCurrentVotingContent() (VotingContent, error)
+	// get best voting content
+	GetBestVotingContent() (VotingContent, error)
+	// get worse voting content for testing mind changing
+	GetWorseVotingContent() (VotingContent, error)
 	// get voting content from local by hash
 	GetVotingContent(hash Uint256) (VotingContent, error)
 	// get voting pool

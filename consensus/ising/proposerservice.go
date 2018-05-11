@@ -98,7 +98,7 @@ func (ps *ProposerService) ProposerRoutine() {
 	}
 	// waiting for other nodes spreader finished
 	time.Sleep(WaitingForBlockFloodingDuration)
-	content, err := current.GetCurrentVotingContent()
+	content, err := current.GetBestVotingContent()
 	if err != nil {
 		return
 	}
