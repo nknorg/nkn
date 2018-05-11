@@ -14,14 +14,16 @@ type BlockVoting struct {
 	pstate         map[Uint256]*State            // consensus state for proposer
 	vstate         map[uint64]map[Uint256]*State // consensus state for voter
 	blockCache     *BlockCache                   // received blocks
+	pool           *BlockVotingPool              // block voting pool
 	confirmingHash Uint256                       // block hash in process
 }
 
-func NewBlockVoting() *BlockVoting {
+func NewBlockVoting(totalWeight int) *BlockVoting {
 	blockVoting := &BlockVoting{
 		pstate:     make(map[Uint256]*State),
 		vstate:     make(map[uint64]map[Uint256]*State),
 		blockCache: NewCache(),
+		pool: NewBlockVotingPool(totalWeight),
 	}
 
 	return blockVoting
@@ -123,6 +125,10 @@ func (bv *BlockVoting) Preparing(content VotingContent) error {
 
 func (bv *BlockVoting) Exist(hash Uint256) bool {
 	return bv.blockCache.BlockInCache(hash)
+}
+
+func (bv *BlockVoting) GetVotingPool() VotingPool {
+	return bv.pool
 }
 
 func (bv *BlockVoting) DumpState(hash Uint256, desc string, verbose bool) {
