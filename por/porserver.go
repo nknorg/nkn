@@ -11,14 +11,14 @@ import (
 	"github.com/nknorg/nkn/wallet"
 )
 
-type porServer struct {
+type PorServer struct {
 	sync.RWMutex
 	account *wallet.Account
 	pors    map[uint32][]*porPackage
 }
 
-func NewPorServer(account *wallet.Account) *porServer {
-	ps := &porServer{
+func NewPorServer(account *wallet.Account) *PorServer {
+	ps := &PorServer{
 		account: account,
 		pors:    make(map[uint32][]*porPackage),
 	}
@@ -44,10 +44,10 @@ func (c porPackages) Less(i, j int) bool {
 	return false
 }
 
-func (ps *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
+func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 	dcPk, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
-		return nil, errors.New("the account of porServer is wrong")
+		return nil, errors.New("the account of PorServer is wrong")
 	}
 
 	nxPk, err := sc.GetLastPubkey()
@@ -67,7 +67,7 @@ func (ps *porServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
 	return sc, nil
 }
 
-func (ps *porServer) Verify(sc *SigChain) error {
+func (ps *PorServer) Verify(sc *SigChain) error {
 	if err := sc.Verify(); err != nil {
 		return errors.New("verify failed")
 	}
@@ -75,25 +75,25 @@ func (ps *porServer) Verify(sc *SigChain) error {
 	return nil
 }
 
-func (ps *porServer) CreateSigChain(height, dataSize uint32, dataHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
+func (ps *PorServer) CreateSigChain(height, dataSize uint32, dataHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
 	return NewSigChain(ps.account, height, dataSize, dataHash, destPubkey, nextPubkey)
 }
 
-func (ps *porServer) IsFinal(sc *SigChain) bool {
+func (ps *PorServer) IsFinal(sc *SigChain) bool {
 	return sc.IsFinal()
 }
 
-func (ps *porServer) IsSatisfyThreshold() bool {
+func (ps *PorServer) IsSatisfyThreshold() bool {
 	//TODO need to add codes
 	return true
 }
 
-func (ps *porServer) GetSignature(sc *SigChain) ([]byte, error) {
+func (ps *PorServer) GetSignature(sc *SigChain) ([]byte, error) {
 	return sc.GetSignature()
 }
 
 //TODO subscriber
-func (ps *porServer) CleanChainList(height uint32) {
+func (ps *PorServer) CleanChainList(height uint32) {
 
 	ps.Lock()
 	if height == 0 {
@@ -106,11 +106,11 @@ func (ps *porServer) CleanChainList(height uint32) {
 	ps.Unlock()
 }
 
-func (ps *porServer) LenOfSigChain(sc *SigChain) int {
+func (ps *PorServer) LenOfSigChain(sc *SigChain) int {
 	return sc.Length()
 }
 
-func (ps *porServer) GetMinSigChain() *SigChain {
+func (ps *PorServer) GetMinSigChain() *SigChain {
 	height := ledger.DefaultLedger.Store.GetHeight()
 	ps.RLock()
 	sort.Sort(porPackages(ps.pors[height]))
@@ -120,7 +120,7 @@ func (ps *porServer) GetMinSigChain() *SigChain {
 	return min.GetSigChain()
 }
 
-func (ps *porServer) AddSigChainFromTx(txn *transaction.Transaction) error {
+func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) error {
 	porpkg := NewPorPackage(txn)
 	if porpkg == nil {
 		return errors.New("the type of transaction is mismatched")
@@ -137,7 +137,7 @@ func (ps *porServer) AddSigChainFromTx(txn *transaction.Transaction) error {
 	return nil
 }
 
-func (ps *porServer) IsSigChainExist(sigchain *SigChain) (*common.Uint256, bool) {
+func (ps *PorServer) IsSigChainExist(sigchain *SigChain) (*common.Uint256, bool) {
 	height := ledger.DefaultLedger.Store.GetHeight()
 	ps.RLock()
 	for _, pkg := range ps.pors[height] {
@@ -151,12 +151,12 @@ func (ps *porServer) IsSigChainExist(sigchain *SigChain) (*common.Uint256, bool)
 	return nil, false
 }
 
-func (ps *porServer) GetThreshold() common.Uint256 {
+func (ps *PorServer) GetThreshold() common.Uint256 {
 	//TODO get from block
 	return common.Uint256{}
 }
 
-func (ps *porServer) UpdateThreshold() common.Uint256 {
+func (ps *PorServer) UpdateThreshold() common.Uint256 {
 	//TODO used for new block
 	return common.Uint256{}
 }
