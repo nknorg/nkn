@@ -17,6 +17,7 @@ type ILedgerStore interface {
 	GetBlockHash(height uint32) (Uint256, error)
 	GetBlockHistory(startHeight, blockNum uint32) map[uint32]Uint256
 	CheckBlockHistory(history map[uint32]Uint256) (uint32, bool)
+	GetVotingWeight(hash Uint160) (int, error)
 
 	IsDoubleSpend(tx *tx.Transaction) bool
 

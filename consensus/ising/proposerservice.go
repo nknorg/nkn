@@ -107,7 +107,7 @@ func (ps *ProposerService) ProposerRoutine() {
 	current.SetProposerState(hash, voting.ProposalSent)
 	current.SetConfirmingHash(hash)
 	ps.SendConsensusMsg(proposalMsg, nil)
-	ps.totalWeight = GetNeighborsVotingWeight(ps.localNode.GetNeighborNoder())
+	ps.totalWeight = GetTotalVotingWeight(ps.localNode)
 
 	// waiting for other nodes voting finished
 	time.Sleep(WaitingForBlockVoteDuration)
@@ -360,7 +360,7 @@ func (ps *ProposerService) HandleVoteMsg(vote *Vote, sender *crypto.PubKey) {
 			log.Warn("sender script to hash error")
 			return
 		}
-		weight, err := GetNeighborWeightFromDB(programHash)
+		weight, err := ledger.DefaultLedger.Store.GetVotingWeight(programHash)
 		if err != nil {
 			log.Warn("get sender weight error")
 			return
@@ -371,34 +371,8 @@ func (ps *ProposerService) HandleVoteMsg(vote *Vote, sender *crypto.PubKey) {
 }
 
 func (ps *ProposerService) Reset() {
-	ps.totalWeight = GetNeighborsVotingWeight(ps.localNode.GetNeighborNoder())
+	ps.totalWeight = GetTotalVotingWeight(ps.localNode)
 	ps.agreedWeight = 0
-}
-
-func GetNeighborWeightFromDB(programHash Uint160) (int, error) {
-	// TODO get node voting weight from database
-	return 1, nil
-}
-
-func GetNeighborsVotingWeight(neighbors []protocol.Noder) int {
-	total := 0
-	for _, n := range neighbors {
-		script, err := contract.CreateSignatureRedeemScript(n.GetPubKey())
-		if err != nil {
-			continue
-		}
-		programHash, err := ToCodeHash(script)
-		if err != nil {
-			continue
-		}
-		weight, err := GetNeighborWeightFromDB(programHash)
-		if err != nil {
-			continue
-		}
-		total += weight
-	}
-
-	return total
 }
 
 func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.PubKey) {
