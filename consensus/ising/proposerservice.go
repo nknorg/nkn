@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
+
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/ising/voting"
-	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/contract/program"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
@@ -25,7 +25,7 @@ const (
 	VoteFactor                      = 3
 	ConsensusTime                   = 6 * time.Second
 	WaitingForBlockFloodingDuration = ConsensusTime / FloodingFactor
-	WaitingForBlockVoteDuration     = ConsensusTime / VoteFactor
+	WaitingForVotingDuration        = ConsensusTime / VoteFactor
 )
 
 type ProposerService struct {
@@ -34,8 +34,7 @@ type ProposerService struct {
 	spreader             bool                      // whether the node could do block flooding
 	localNode            protocol.Noder            // local node
 	txnCollector         *transaction.TxnCollector // collect transaction from where
-	totalWeight          int                       // neighbors total weight
-	agreedWeight         int                       // agreed weight
+	height               uint32                    // current height in consensus
 	msgChan              chan interface{}          // get notice from probe thread
 	consensusMsgReceived events.Subscriber         // consensus events listening
 	index                int                       // index for voting
@@ -59,6 +58,7 @@ func NewProposerService(account *wallet.Account, node protocol.Noder) *ProposerS
 		account:      account,
 		localNode:    node,
 		txnCollector: transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged),
+		height:       ledger.DefaultLedger.Store.GetHeight() + 1,
 		msgChan:      make(chan interface{}, MsgChanCap),
 		index:        0,
 		voting:       []voting.Voting{voting.NewBlockVoting(totalWeight)},
@@ -80,9 +80,10 @@ func (ps *ProposerService) ProposerRoutine() {
 		if err != nil {
 			log.Error("building block error: ", err)
 		}
-		err = ps.CurrentVoting().Preparing(block)
+		err = current.Preparing(block)
 		if err != nil {
 			log.Error("adding block to cache error: ", err)
+			return
 		}
 		blockFlooding := NewBlockFlooding(block)
 		err = ps.SendConsensusMsg(blockFlooding, nil)
@@ -95,36 +96,85 @@ func (ps *ProposerService) ProposerRoutine() {
 			id := publickKeyToNodeID(v.GetPubKey())
 			current.SetVoterState(id, block.Hash(), voting.FloodingFinished)
 		}
+		current.GetVotingPool().SetMind(ps.height, block.Hash())
 	}
-	// waiting for other nodes spreader finished
+	// waiting for flooding finished
 	time.Sleep(WaitingForBlockFloodingDuration)
-	content, err := current.GetBestVotingContent()
+	// send new proposal
+	content, err := ps.SendNewProposal()
 	if err != nil {
+		log.Warn("waiting for receiving proposed entity...")
 		return
 	}
-	hash := content.Hash()
-	proposalMsg := NewProposal(&hash, current.VotingType())
-	current.SetProposerState(hash, voting.ProposalSent)
-	current.SetConfirmingHash(hash)
-	ps.SendConsensusMsg(proposalMsg, nil)
-	ps.totalWeight = GetTotalVotingWeight(ps.localNode)
-
-	// waiting for other nodes voting finished
-	time.Sleep(WaitingForBlockVoteDuration)
-	if ps.agreedWeight <= ps.totalWeight/2 {
-		ps.Reset()
+	// waiting for voting finished
+	time.Sleep(WaitingForVotingDuration)
+	hash, err := ps.VoteCounting()
+	if err != nil {
+		log.Warn("vote counting error: ", err)
 		return
 	}
-
+	// if proposed hash is not original entity, then get it from local cache
+	if hash.CompareTo(content.Hash()) != 0 {
+		content, err = current.GetVotingContent(*hash)
+		if err != nil {
+			log.Warn("get final entity error")
+			return
+		}
+	}
+	// process final block and sigchain(todo)
 	if current.VotingType() == voting.BlockVote {
 		err = ledger.DefaultLedger.Blockchain.AddBlock(content.(*ledger.Block))
 		if err != nil {
 			log.Error("saving block error: ", err)
 		}
 	}
-	ps.Reset()
+	// since neighbor may changed, reset total voting weight
+	ps.Reset(GetTotalVotingWeight(ps.localNode))
+}
 
-	return
+func (ps *ProposerService) SendNewProposal() (voting.VotingContent, error) {
+	current := ps.CurrentVoting()
+	content, err := current.GetWorseVotingContent()
+	if err != nil {
+		return nil, err
+	}
+	hash := content.Hash()
+	log.Info("proposing hash: ", BytesToHexString(hash.ToArray()))
+	votingType := current.VotingType()
+	// create new proposal
+	proposalMsg := NewProposal(&hash, ps.height, votingType)
+	// send proposal to neighbors
+	ps.SendConsensusMsg(proposalMsg, nil)
+	// state changed for current hash
+	current.SetProposerState(hash, voting.ProposalSent)
+	// set confirming hash
+	current.SetConfirmingHash(hash)
+	// add self mind to voting pool
+	current.GetVotingPool().SetMind(ps.height, hash)
+
+	return content, nil
+}
+
+func (ps *ProposerService) VoteCounting() (*Uint256, error) {
+	currentVotingPool := ps.CurrentVoting().GetVotingPool()
+	// get voting results from voting pool
+	maybeFinalHash, err := currentVotingPool.VoteCounting(ps.height)
+	if err != nil {
+		return nil, err
+	}
+	// if current mind is different with voting result then change mind
+	if currentVotingPool.NeedChangeMind(ps.height, *maybeFinalHash) {
+		log.Infof("Mind changed to %s when received votes from neighbors\n",
+			BytesToHexString(maybeFinalHash.ToArray()))
+		currentVotingPool.ChangeMind(ps.height, *maybeFinalHash)
+	}
+	// TODO: change mind again
+
+	return maybeFinalHash, nil
+}
+
+func (ps *ProposerService) SetConsensusHeight() {
+	ps.height = ledger.DefaultLedger.Store.GetHeight() + 1
 }
 
 func (ps *ProposerService) Start() error {
@@ -133,6 +183,7 @@ func (ps *ProposerService) Start() error {
 		for {
 			select {
 			case <-ps.ticker.C:
+				ps.SetConsensusHeight()
 				for k := range ps.voting {
 					ps.index = k
 					ps.ProposerRoutine()
@@ -291,6 +342,12 @@ func (ps *ProposerService) ReceiveConsensusMsg(v interface{}) {
 
 func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *crypto.PubKey) {
 	blockHash := bfMsg.block.Hash()
+	height := bfMsg.block.Header.Height
+	if height < ps.height {
+		log.Warnf("receive out of date block, consensus height: %d, received block height: %d,"+
+			" hash: %s\n", ps.height, height, BytesToHexString(blockHash.ToArray()))
+		return
+	}
 	current := ps.CurrentVoting()
 	if current.HasProposerState(blockHash, voting.FloodingFinished) {
 		log.Warn("consensus state error in BlockFlooding message handler")
@@ -309,14 +366,19 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 		current.SetVoterState(id, bfMsg.block.Hash(), voting.FloodingFinished)
 	}
 	current.DumpState(blockHash, "after handle block flooding", false)
-	return
+	current.GetVotingPool().SetMind(height, blockHash)
 }
 
 func (ps *ProposerService) HandleRequestMsg(req *Request, sender *crypto.PubKey) {
 	hash := *req.hash
+	height := req.height
+	if height < ps.height {
+		log.Warnf("receive invalid request, consensus height: %d, request height: %d,"+
+			" hash: %s\n", ps.height, height, BytesToHexString(hash.ToArray()))
+		return
+	}
 	current := ps.CurrentVoting()
 	current.DumpState(hash, "when handle request", false)
-
 	if !current.HasProposerState(hash, voting.FloodingFinished) {
 		log.Warn("consensus state error in Request message handler")
 		return
@@ -330,49 +392,39 @@ func (ps *ProposerService) HandleRequestMsg(req *Request, sender *crypto.PubKey)
 	if err != nil {
 		return
 	}
-	responseMsg := NewResponse(&hash, current.VotingType(), content)
+	responseMsg := NewResponse(&hash, height, current.VotingType(), content)
 	ps.SendConsensusMsg(responseMsg, sender)
-	return
 }
 
 func (ps *ProposerService) HandleVoteMsg(vote *Vote, sender *crypto.PubKey) {
-	blockHash := *vote.hash
+	hash := *vote.hash
+	height := vote.height
+	if height != ps.height {
+		log.Warnf("receive invalid vote, consensus height: %d, vote height: %d,"+
+			" hash: %s\n", ps.height, height, BytesToHexString(hash.ToArray()))
+		return
+	}
 	current := ps.CurrentVoting()
-	current.DumpState(blockHash, "when handle block voting", false)
-	if !current.HasProposerState(blockHash, voting.FloodingFinished) || !current.HasProposerState(blockHash, voting.ProposalSent) {
+	current.DumpState(hash, "when handle voting message", false)
+	if !current.HasProposerState(hash, voting.FloodingFinished) || !current.HasProposerState(hash, voting.ProposalSent) {
 		log.Warn("consensus state error in Vote message handler")
 		return
 	}
 	// TODO check if the sender is neighbor
-	hash := vote.hash
 	if hash.CompareTo(current.GetConfirmingHash()) != 0 {
 		log.Warn("voted block doesn't match with local block in process")
 		return
 	}
+	nid := publickKeyToNodeID(sender)
 	if vote.agree == true {
-		script, err := contract.CreateSignatureRedeemScript(sender)
-		if err != nil {
-			log.Warn("sender public key to script error")
-			return
-		}
-		programHash, err := ToCodeHash(script)
-		if err != nil {
-			log.Warn("sender script to hash error")
-			return
-		}
-		weight, err := ledger.DefaultLedger.Store.GetVotingWeight(programHash)
-		if err != nil {
-			log.Warn("get sender weight error")
-			return
-		}
-		ps.agreedWeight += weight
+		current.GetVotingPool().AddToReceivePool(nid, height, hash)
+	} else {
+		current.GetVotingPool().AddToReceivePool(nid, height, *vote.preferHash)
 	}
-	return
 }
 
-func (ps *ProposerService) Reset() {
-	ps.totalWeight = GetTotalVotingWeight(ps.localNode)
-	ps.agreedWeight = 0
+func (ps *ProposerService) Reset(totalWeight int) {
+	ps.CurrentVoting().GetVotingPool().Reset(totalWeight)
 }
 
 func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.PubKey) {
@@ -390,6 +442,12 @@ func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.P
 
 func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubKey) {
 	hash := resp.hash
+	height := resp.height
+	if height != ps.height {
+		log.Warnf("receive invalid response, consensus height: %d, response height: %d,"+
+			" hash: %s\n", ps.height, height, BytesToHexString(hash.ToArray()))
+		return
+	}
 	nodeID := publickKeyToNodeID(sender)
 	current := ps.CurrentVoting()
 	if !current.HasVoterState(nodeID, *hash, voting.RequestSent) {
@@ -402,27 +460,39 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubK
 		return
 	}
 	current.SetVoterState(nodeID, *hash, voting.FloodingFinished)
-	// TODO verify block
-	agree := true
-	votingMsg := NewVoting(hash, agree, nil)
+	currentVotingPool := current.GetVotingPool()
+	currentMind := currentVotingPool.GetMind(height)
+	var votingMsg *Vote
+	if hash.CompareTo(currentMind) != 0 {
+		votingMsg = NewVoting(hash, height, false, &currentMind)
+	} else {
+		votingMsg = NewVoting(hash, height, true, nil)
+	}
 	ps.SendConsensusMsg(votingMsg, sender)
 	current.SetVoterState(nodeID, *hash, voting.OpinionSent)
 }
 
 func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.PubKey) {
+	hash := *proposal.hash
+	height := proposal.height
+	if height < ps.height-1 {
+		log.Warnf("receive invalid proposal, consensus height: %d, proposal height: %d,"+
+			" hash: %s\n", ps.height, height, BytesToHexString(hash.ToArray()))
+		return
+	}
 	// TODO check if the sender is neighbor
 	nodeID := publickKeyToNodeID(sender)
-	hash := *proposal.hash
 	current := ps.CurrentVoting()
 	if current.HasVoterState(nodeID, hash, voting.OpinionSent) {
 		log.Warn("consensus state error in Proposal message handler")
 		return
 	}
 	if !current.Exist(hash) {
-		requestMsg := NewRequest(&hash, current.VotingType())
+		requestMsg := NewRequest(&hash, height, current.VotingType())
 		ps.SendConsensusMsg(requestMsg, sender)
 		current.SetVoterState(nodeID, hash, voting.RequestSent)
-		log.Warn("doesn't contain block in local cache, requesting it from neighbor")
+		log.Warnf("doesn't contain block in local cache, requesting it from neighbor %s\n",
+			BytesToHexString(hash.ToArray()))
 		return
 	}
 
@@ -430,9 +500,14 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 		log.Warn("require FloodingFinished state in Proposal message handler")
 		return
 	}
-	//TODO block verification and mind changing
-	agree := true
-	votingMsg := NewVoting(&hash, agree, nil)
+	currentVotingPool := current.GetVotingPool()
+	currentMind := currentVotingPool.GetMind(height)
+	var votingMsg *Vote
+	if hash.CompareTo(currentMind) != 0 {
+		votingMsg = NewVoting(&hash, height, false, &currentMind)
+	} else {
+		votingMsg = NewVoting(&hash, height, true, nil)
+	}
 	ps.SendConsensusMsg(votingMsg, sender)
 	current.SetVoterState(nodeID, hash, voting.OpinionSent)
 }
