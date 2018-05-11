@@ -116,10 +116,11 @@ func nknMain() error {
 
 	// initialize ledger
 	err = InitLedger(account)
-	defer ledger.DefaultLedger.Store.Close()
 	if err != nil {
 		return errors.New("ledger initialization error")
 	}
+	// if InitLedger return err, ledger.DefaultLedger is uninitialized.
+	defer ledger.DefaultLedger.Store.Close()
 
 	// start P2P networking
 	node := StartNetworking(account.PublicKey, ring)
