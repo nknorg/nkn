@@ -18,7 +18,10 @@ NodeNum=$1
 TARGET_DIR=${2}
 [ -z "$TARGET_DIR" ] && TARGET_DIR="testbed"
 
-rm -rf ${TARGET_DIR}
+
+ECANCELED=125
+[ -e $TARGET_DIR ] && printf "The testbed directory already existed\n" && exit ${ECANCELED}
+
 mkdir -p ${TARGET_DIR}
 
 seq 1 ${NodeNum} | xargs printf "%04d\n" | while read i
