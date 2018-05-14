@@ -30,14 +30,14 @@ func NewRelayService(account *wallet.Account, node protocol.Noder) *RelayService
 	return service
 }
 
-func (p *RelayService) Start() error {
-	p.relayMsgReceived = p.localNode.GetEvent("relay").Subscribe(events.EventRelayMsgReceived, p.ReceiveRelayMsgNoError)
+func (rs *RelayService) Start() error {
+	rs.relayMsgReceived = rs.localNode.GetEvent("relay").Subscribe(events.EventRelayMsgReceived, rs.ReceiveRelayMsgNoError)
 	return nil
 }
 
-func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
+func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 	destID := packet.DestID
-	if bytes.Equal(p.localNode.GetChordAddr(), destID) {
+	if bytes.Equal(rs.localNode.GetChordAddr(), destID) {
 		log.Infof(
 			"Receive packet:\nSrcID: %x\nDestID: %x\nPayload %x",
 			packet.SrcID,
@@ -47,7 +47,7 @@ func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 		websocket.GetServer().Broadcast(packet.Payload)
 		return nil
 	}
-	nextHop, err := p.localNode.NextHop(destID)
+	nextHop, err := rs.localNode.NextHop(destID)
 	if err != nil {
 		log.Error("Get next hop error: ", err)
 		return err
@@ -66,7 +66,7 @@ func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 		log.Error("Get next hop public key error: ", err)
 		return err
 	}
-	p.porServer.Sign(packet.SigChain, nextPubkey)
+	rs.porServer.Sign(packet.SigChain, nextPubkey)
 	msg, err := message.NewRelayMessage(packet)
 	if err != nil {
 		log.Error("Create relay message error: ", err)
@@ -84,16 +84,16 @@ func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 	return nil
 }
 
-func (p *RelayService) ReceiveRelayMsg(v interface{}) error {
+func (rs *RelayService) ReceiveRelayMsg(v interface{}) error {
 	if packet, ok := v.(*message.RelayPacket); ok {
-		return p.HandleMsg(packet)
+		return rs.HandleMsg(packet)
 	} else {
 		return errors.New("Decode relay msg failed")
 	}
 }
 
-func (p *RelayService) ReceiveRelayMsgNoError(v interface{}) {
-	err := p.ReceiveRelayMsg(v)
+func (rs *RelayService) ReceiveRelayMsgNoError(v interface{}) {
+	err := rs.ReceiveRelayMsg(v)
 	if err != nil {
 		log.Error(err.Error())
 	}
