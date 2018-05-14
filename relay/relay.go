@@ -7,21 +7,25 @@ import (
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 	"github.com/nknorg/nkn/websocket"
 )
 
 type RelayService struct {
-	account          *wallet.Account
+	account          *wallet.Account   // wallet account
 	localNode        protocol.Noder    // local node
+	porServer        *por.PorServer    // por server to handle signature chain
 	relayMsgReceived events.Subscriber // consensus events listening
 }
 
 func NewRelayService(account *wallet.Account, node protocol.Noder) *RelayService {
+	porServer := por.NewPorServer(account)
 	service := &RelayService{
 		account:   account,
 		localNode: node,
+		porServer: porServer,
 	}
 	return service
 }
@@ -62,7 +66,7 @@ func (p *RelayService) HandleMsg(packet *message.RelayPacket) error {
 		log.Error("Get next hop public key error: ", err)
 		return err
 	}
-	packet.SigChain.Sign(nextPubkey, p.account)
+	p.porServer.Sign(packet.SigChain, nextPubkey)
 	msg, err := message.NewRelayMessage(packet)
 	if err != nil {
 		log.Error("Create relay message error: ", err)
