@@ -52,8 +52,9 @@ func (p *Proposal) Deserialize(r io.Reader) error {
 	p.height = height
 	contentType, err := serialization.ReadByte(r)
 	if err != nil {
-		p.contentType = voting.VotingContentType(contentType)
+		return err
 	}
+	p.contentType = voting.VotingContentType(contentType)
 
 	return nil
 }

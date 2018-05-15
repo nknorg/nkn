@@ -17,6 +17,7 @@ import (
 	"github.com/nknorg/nkn/net"
 	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -62,13 +63,13 @@ func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 	return node
 }
 
-func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
+func StartConsensus(wallet wallet.Wallet, node protocol.Noder, porServer *por.PorServer) {
 	if protocol.SERVICENODENAME != config.Parameters.NodeType {
 		switch config.Parameters.ConsensusType {
 		case "ising":
 			log.Info("ising consensus starting ...")
 			account, _ := wallet.GetDefaultAccount()
-			ising.StartIsingConsensus(account, node)
+			ising.StartIsingConsensus(account, node, porServer)
 		case "dbft":
 			log.Info("dbft consensus starting ...")
 			dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
@@ -132,9 +133,10 @@ func nknMain() error {
 	websocket.StartServer(node)
 
 	// start consensus
-	StartConsensus(wallet, node)
-
 	httpjson.Wallet = wallet
+	porServer := por.NewPorServer(account)
+	StartConsensus(wallet, node, porServer)
+
 	for {
 		time.Sleep(dbft.GenBlockTime)
 		if log.CheckIfNeedNewFile() {
