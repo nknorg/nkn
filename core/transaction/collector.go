@@ -26,6 +26,8 @@ func NewTxnCollector(source TxnSource, num int) *TxnCollector {
 		entityNum = 0
 	} else if num > MaxCollectableEntityNum {
 		entityNum = MaxCollectableEntityNum
+	} else {
+		entityNum = num
 	}
 	return &TxnCollector{
 		TxnNum:    entityNum,

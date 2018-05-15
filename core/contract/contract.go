@@ -1,12 +1,11 @@
 package contract
 
 import (
+	"bytes"
+	"io"
+
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	. "github.com/nknorg/nkn/errors"
-	"bytes"
-	"errors"
-	"io"
 	"github.com/nknorg/nkn/vm"
 )
 
@@ -132,7 +131,11 @@ func (c *Contract) GetType() ContractType {
 }
 
 func (c *Contract) Deserialize(r io.Reader) error {
-	c.OwnerPubkeyHash.Deserialize(r)
+	code, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	c.Code = code
 
 	p, err := serialization.ReadVarBytes(r)
 	if err != nil {
@@ -140,7 +143,7 @@ func (c *Contract) Deserialize(r io.Reader) error {
 	}
 	c.Parameters = ByteToContractParameterType(p)
 
-	c.Code, err = serialization.ReadVarBytes(r)
+	err = c.ProgramHash.Deserialize(r)
 	if err != nil {
 		return err
 	}
@@ -149,20 +152,15 @@ func (c *Contract) Deserialize(r io.Reader) error {
 }
 
 func (c *Contract) Serialize(w io.Writer) error {
-	len, err := c.OwnerPubkeyHash.Serialize(w)
+	err := serialization.WriteVarBytes(w, c.Code)
 	if err != nil {
 		return err
 	}
-	if len != 20 {
-		return NewDetailErr(errors.New("PubkeyHash.Serialize(): len != len(Uint160)"), ErrNoCode, "")
-	}
-
 	err = serialization.WriteVarBytes(w, ContractParameterTypeToByte(c.Parameters))
 	if err != nil {
 		return err
 	}
-
-	err = serialization.WriteVarBytes(w, c.Code)
+	_, err = c.ProgramHash.Serialize(w)
 	if err != nil {
 		return err
 	}

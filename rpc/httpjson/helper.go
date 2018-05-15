@@ -3,6 +3,7 @@ package httpjson
 import (
 	"errors"
 	"fmt"
+
 	. "github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/core/contract"
@@ -241,7 +242,11 @@ func MakeWithdrawTransaction(wallet wallet.Wallet, assetID Uint256, value string
 }
 
 func MakeCommitTransaction(wallet wallet.Wallet, sigChain []byte) (*transaction.Transaction, error) {
-	txn, err := transaction.NewCommitTransaction(sigChain)
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+	txn, err := transaction.NewCommitTransaction(sigChain, account.ProgramHash)
 	if err != nil {
 		return nil, err
 	}

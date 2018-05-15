@@ -10,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/por"
 )
 
 var Wallet wallet.Wallet
@@ -568,6 +569,35 @@ func commitPor(params []interface{}) map[string]interface{} {
 	}
 
 	txn, err := MakeCommitTransaction(Wallet, sigChain)
+	if err != nil {
+		return RpcResultInternalError
+	}
+
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return RpcResultInvalidTransaction
+	}
+
+	txHash := txn.Hash()
+	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
+}
+
+func sigchaintest(params []interface{}) map[string]interface{} {
+	pbk, _ := ledger.StandbyBookKeepers[1].EncodePoint(true)
+
+	if Wallet == nil {
+		return nil
+	}
+
+	account, err := Wallet.GetDefaultAccount()
+	if err != nil {
+		return RpcResultNil
+	}
+	height := ledger.DefaultLedger.Store.GetHeight() + 1
+	sigChain, _ := por.NewSigChain(account, height, 1, &Uint256{}, pbk, pbk )
+	buf := bytes.NewBuffer(nil)
+
+	sigChain.Serialize(buf)
+	txn, err := MakeCommitTransaction(Wallet, buf.Bytes())
 	if err != nil {
 		return RpcResultInternalError
 	}

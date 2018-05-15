@@ -36,6 +36,7 @@ func StartRPCServer() {
 	HandleFunc("prepaidasset", prepaidAsset)
 	HandleFunc("withdrawasset", withdrawAsset)
 	HandleFunc("commitpor", commitPor)
+	HandleFunc("sigchaintest", sigchaintest)
 
 	err := http.ListenAndServe(LocalHost+":"+strconv.Itoa(int(config.Parameters.HttpJsonPort)), nil)
 	if err != nil {

@@ -145,9 +145,10 @@ func NewWithdrawTransaction(output *TxOutput) (*Transaction, error) {
 	}, nil
 }
 
-func NewCommitTransaction(sigChain []byte) (*Transaction, error) {
+func NewCommitTransaction(sigChain []byte, submitter Uint160) (*Transaction, error) {
 	CommitPayload := &payload.Commit{
 		SigChain: sigChain,
+		Submitter: submitter,
 	}
 
 	return &Transaction{
