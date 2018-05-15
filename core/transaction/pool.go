@@ -7,7 +7,6 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	. "github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -53,17 +52,9 @@ func (this *TXNPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
 	this.RLock()
 	defer this.RUnlock()
 
-	n := 0
-	if num <= 0 {
-		n = config.Parameters.MaxTxInBlock
-	} else {
-		n = len(this.txnList)
-		if num < n {
-			n = num
-		}
-		if config.Parameters.MaxTxInBlock < n {
-			n = config.Parameters.MaxTxInBlock
-		}
+	n := len(this.txnList)
+	if num < n {
+		n = num
 	}
 
 	i := 0
