@@ -319,6 +319,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	case Prepaid:
 	case TransferAsset:
 	case Commit:
+		hashs = append(hashs, tx.Payload.(*payload.Commit).Submitter)
 	case Withdraw:
 		hashs = append(hashs, tx.Payload.(*payload.Withdraw).ProgramHash)
 	case BookKeeper:
