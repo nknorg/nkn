@@ -124,6 +124,10 @@ programs:
 
 ## Deployment
 
+**Note: this repository is in the early development stage and may not
+have all functions working properly. It should be used only for testing
+now.**
+
 Create several directories to save exectuable files `nknd` `nknc` and
 config file `config.json`.
 
