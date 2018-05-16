@@ -97,7 +97,6 @@ More details can be found in [Proof of Relay](https://github.com/nknorg/nkn/wiki
 
 The requirements to build are:
 * Go version 1.8 or later
-* Glide (a third-party package management tool)
 * Properly configured Go environment
 
 Create directory $GOPATH/src/github.com/nknorg/ if not exists
@@ -108,16 +107,12 @@ In directory $GOPATH/src/github.com/nknorg/ clone the repository
 $ git clone https://github.com/nknorg/nkn.git
 ```
 
-Fetch the dependent third-party packages with glide
-
-````shell
-$ cd nkn
-$ glide install
-````
-
 Build the source code with make
 
 ```shell
+$ cd nkn
+$ make glide
+$ make vendor
 $ make all
 ```
 
@@ -172,19 +167,16 @@ Config the same bootstrap node address and public key to each
 {
   "Magic": 99281,
   "Version": 1,
-  "HttpInfoPort": 10333,
-  "HttpInfoStart": true,
-  "HttpRestPort": 10334,
-  "HttpWsPort":10335,
-  "HttpJsonPort": 10336,
-  "NodePort": 10338,
-  "ChordPort": 10339,
+  "HttpRestPort": 10663,
+  "HttpWsPort":10664,
+  "HttpJsonPort": 10665,
+  "NodePort": 10666,
+  "ChordPort": 10667,
   "PrintLevel": 1,
   "IsTLS": false,
-  "MultiCoreNum": 4,
   "ConsensusType": "ising",
   "SeedList": [
-    "127.0.0.1:10339"
+    "127.0.0.1:10667"
   ],
   "TestBlockProposer": [
     "0306dd2db26e3cfde2dbe5c8a17ea7c27f13f99c19e2cb59bc13e2d0c41589c7f1"

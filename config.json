@@ -1,18 +1,17 @@
 ﻿{
   "Magic": 99281,
   "Version": 1,
-  "HttpInfoPort": 10333,
-  "HttpInfoStart": true,
-  "HttpRestPort": 10334,
-  "HttpWsPort":10335,
-  "HttpJsonPort": 10336,
-  "NodePort": 10338,
-  "ChordPort": 10339,
+  "HttpRestPort": 10663,
+  "HttpWsPort":10664,
+  "HttpJsonPort": 10665,
+  "NodePort": 10666,
+  "ChordPort": 10667,
   "PrintLevel": 1,
   "IsTLS": false,
-  "MultiCoreNum": 4,
   "ConsensusType": "ising",
   "SeedList": [
-    "127.0.0.1:10339"
+    "127.0.0.1:10667"
+  ],
+  "TestBlockProposer": [
   ]
 }
