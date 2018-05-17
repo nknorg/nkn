@@ -82,7 +82,7 @@ func (rt *restServer) Start() error {
 		}
 	} else {
 		var err error
-		rt.listener, err = net.Listen("tcp", ":"+strconv.Itoa(Parameters.HttpRestPort))
+		rt.listener, err = net.Listen("tcp", ":"+strconv.FormatUint(uint64(Parameters.HttpRestPort), 10))
 		if err != nil {
 			log.Fatal("net.Listen: ", err.Error())
 			return err
@@ -115,7 +115,7 @@ func (rt *restServer) setWebsocketState(cmd map[string]interface{}) map[string]i
 		websocket.SetPushBlockTxsFlag(b)
 	}
 	if wsPort, ok := cmd["Port"].(float64); ok && wsPort != 0 {
-		Parameters.HttpWsPort = int(wsPort)
+		Parameters.HttpWsPort = uint16(wsPort)
 	}
 	if startFlag {
 		websocket.ReStartServer()
@@ -367,8 +367,8 @@ func (rt *restServer) initTlsListen() (net.Listener, error) {
 		Certificates: []tls.Certificate{cert},
 	}
 
-	log.Info("TLS listen port is ", strconv.Itoa(Parameters.HttpRestPort))
-	listener, err := tls.Listen("tcp", ":"+strconv.Itoa(Parameters.HttpRestPort), tlsConfig)
+	log.Info("TLS listen port is ", strconv.FormatUint(uint64(Parameters.HttpRestPort), 10))
+	listener, err := tls.Listen("tcp", ":"+strconv.FormatUint(uint64(Parameters.HttpRestPort), 10), tlsConfig)
 	if err != nil {
 		log.Error(err)
 		return nil, err
