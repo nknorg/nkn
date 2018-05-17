@@ -171,16 +171,16 @@ Config the same bootstrap node address and public key to each
 {
   "Magic": 99281,
   "Version": 1,
-  "HttpRestPort": 10663,
-  "HttpWsPort":10664,
-  "HttpJsonPort": 10665,
-  "NodePort": 10666,
-  "ChordPort": 10667,
+  "ChordPort": 30000,
+  "NodePort": 30001,
+  "HttpWsPort": 30002,
+  "HttpRestPort": 30003,
+  "HttpJsonPort": 30004,
   "PrintLevel": 1,
   "IsTLS": false,
   "ConsensusType": "ising",
   "SeedList": [
-    "127.0.0.1:10667"
+    "127.0.0.1:30000"
   ],
   "TestBlockProposer": [
     "0306dd2db26e3cfde2dbe5c8a17ea7c27f13f99c19e2cb59bc13e2d0c41589c7f1"
