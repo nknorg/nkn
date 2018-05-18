@@ -10,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/net/chord"
 	. "github.com/nknorg/nkn/net/protocol"
 	. "github.com/nknorg/nkn/rpc/httpjson"
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
@@ -39,6 +40,13 @@ func GetConnectionCount(cmd map[string]interface{}) map[string]interface{} {
 		resp["Result"] = node.GetConnectionCnt()
 	}
 
+	return resp
+}
+
+//Chord
+func GetChordRingInfo(cmd map[string]interface{}) map[string]interface{} {
+	resp := ResponsePack(Err.SUCCESS)
+	resp["Result"] = chord.CurrentRing
 	return resp
 }
 
