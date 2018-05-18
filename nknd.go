@@ -18,6 +18,7 @@ import (
 	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/rpc/httpjson"
+	"github.com/nknorg/nkn/rpc/httprestful/restful"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
@@ -136,6 +137,10 @@ func nknMain() error {
 	porServer := por.NewPorServer(account)
 	pool.PorServer = porServer
 	httpjson.Wallet = wallet
+
+	// start HTTP RESTful server
+	restful.InitRestServer().Start()
+
 	// start consensus
 	StartConsensus(wallet, node, porServer)
 

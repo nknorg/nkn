@@ -135,8 +135,8 @@ func (this *TXNPool) removeTransaction(txn *Transaction) {
 		log.Info(fmt.Sprintf("Transaction =%x not Exist in Pool when delete.", txn.Hash()))
 		return
 	}
-	for UTXOTxInput, _ := range result {
-		this.delInputUTXOList(UTXOTxInput)
+	for input := range result {
+		this.delInputUTXOList(input)
 	}
 	//3.remove From Asset Issue Summary map
 	if txn.TxType != IssueAsset {

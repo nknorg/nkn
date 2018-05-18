@@ -94,10 +94,12 @@ type localVnode struct {
 type Ring struct {
 	config     *Config
 	transport  Transport
-	vnodes     []*localVnode
+	Vnodes     []*localVnode
 	delegateCh chan func()
 	shutdown   chan bool
 }
+
+var CurrentRing *Ring
 
 // Returns the default Ring configuration
 func DefaultConfig(hostname string) *Config {
@@ -149,7 +151,7 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	ring.init(conf, trans)
 
 	// Acquire a live successor for each Vnode
-	for _, vn := range ring.vnodes {
+	for _, vn := range ring.Vnodes {
 		// Get the nearest remote vnode
 		nearest := nearestVnodeToKey(hosts, vn.Id)
 
@@ -174,7 +176,7 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	}
 
 	// Do a fast stabilization, will schedule regular execution
-	for _, vn := range ring.vnodes {
+	for _, vn := range ring.Vnodes {
 		vn.stabilize()
 	}
 	return ring, nil
@@ -187,7 +189,7 @@ func (r *Ring) Leave() error {
 
 	// Instruct each vnode to leave
 	var err error
-	for _, vn := range r.vnodes {
+	for _, vn := range r.Vnodes {
 		err = mergeErrors(err, vn.leave())
 	}
 
@@ -258,6 +260,7 @@ func CreateNet() (*Ring, *TCPTransport, error) {
 		log.Fatal("unexpected err. %s", err)
 		return nil, nil, err
 	}
+	CurrentRing = r
 
 	go func() {
 		i := 0
@@ -299,6 +302,7 @@ func JoinNet() (*Ring, *TCPTransport, error) {
 		log.Fatal("failed to join local node! Got %s", err)
 		return nil, nil, err
 	}
+	CurrentRing = r
 
 	go func() {
 		i := 0

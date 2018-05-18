@@ -8,7 +8,7 @@ import (
 )
 
 func (r *Ring) DumpInfo(finger bool) {
-	for idx, vnode := range r.vnodes {
+	for idx, vnode := range r.Vnodes {
 		log.Infof("ring.vnodes[%d]: {", idx)
 		log.Infof("\tId: %x", string(vnode.Id))
 		log.Infof("\tHost: %s", vnode.Host)
@@ -47,14 +47,14 @@ func (r *Ring) DumpInfo(finger bool) {
 func (r *Ring) init(conf *Config, trans Transport) {
 	// Set our variables
 	r.config = conf
-	r.vnodes = make([]*localVnode, conf.NumVnodes)
+	r.Vnodes = make([]*localVnode, conf.NumVnodes)
 	r.transport = InitLocalTransport(trans)
 	r.delegateCh = make(chan func(), 32)
 
 	// Initializes the vnodes
 	for i := 0; i < conf.NumVnodes; i++ {
 		vn := &localVnode{}
-		r.vnodes[i] = vn
+		r.Vnodes[i] = vn
 		vn.ring = r
 		vn.init(i)
 	}
@@ -65,29 +65,29 @@ func (r *Ring) init(conf *Config, trans Transport) {
 
 // Len is the number of vnodes
 func (r *Ring) Len() int {
-	return len(r.vnodes)
+	return len(r.Vnodes)
 }
 
 // Less returns whether the vnode with index i should sort
 // before the vnode with index j.
 func (r *Ring) Less(i, j int) bool {
-	return bytes.Compare(r.vnodes[i].Id, r.vnodes[j].Id) == -1
+	return bytes.Compare(r.Vnodes[i].Id, r.Vnodes[j].Id) == -1
 }
 
 // Swap swaps the vnodes with indexes i and j.
 func (r *Ring) Swap(i, j int) {
-	r.vnodes[i], r.vnodes[j] = r.vnodes[j], r.vnodes[i]
+	r.Vnodes[i], r.Vnodes[j] = r.Vnodes[j], r.Vnodes[i]
 }
 
 // Returns the nearest local vnode to the key
 func (r *Ring) nearestVnode(key []byte) *localVnode {
-	for i := len(r.vnodes) - 1; i >= 0; i-- {
-		if bytes.Compare(r.vnodes[i].Id, key) == -1 {
-			return r.vnodes[i]
+	for i := len(r.Vnodes) - 1; i >= 0; i-- {
+		if bytes.Compare(r.Vnodes[i].Id, key) == -1 {
+			return r.Vnodes[i]
 		}
 	}
 	// Return the last vnode
-	return r.vnodes[len(r.vnodes)-1]
+	return r.Vnodes[len(r.Vnodes)-1]
 }
 
 // Schedules each vnode in the ring
@@ -95,8 +95,8 @@ func (r *Ring) schedule() {
 	if r.config.Delegate != nil {
 		go r.delegateHandler()
 	}
-	for i := 0; i < len(r.vnodes); i++ {
-		r.vnodes[i].schedule()
+	for i := 0; i < len(r.Vnodes); i++ {
+		r.Vnodes[i].schedule()
 	}
 }
 
@@ -119,11 +119,11 @@ func (r *Ring) stopDelegate() {
 
 // Initializes the vnodes with their local successors
 func (r *Ring) setLocalSuccessors() {
-	numV := len(r.vnodes)
+	numV := len(r.Vnodes)
 	numSuc := min(r.config.NumSuccessors, numV-1)
-	for idx, vnode := range r.vnodes {
+	for idx, vnode := range r.Vnodes {
 		for i := 0; i < numSuc; i++ {
-			vnode.successors[i] = &r.vnodes[(idx+i+1)%numV].Vnode
+			vnode.successors[i] = &r.Vnodes[(idx+i+1)%numV].Vnode
 		}
 	}
 }
@@ -169,8 +169,8 @@ func (r *Ring) safeInvoke(f func()) {
 
 // Len is the number of vnodes
 func (r *Ring) GetFirstVnode() *localVnode {
-	if r == nil || len(r.vnodes) == 0 {
+	if r == nil || len(r.Vnodes) == 0 {
 		return nil
 	}
-	return r.vnodes[0]
+	return r.Vnodes[0]
 }
