@@ -139,7 +139,7 @@ func nknMain() error {
 	httpjson.Wallet = wallet
 
 	// start HTTP RESTful server
-	restful.InitRestServer().Start()
+	go restful.InitRestServer().Start()
 
 	// start consensus
 	StartConsensus(wallet, node, porServer)
