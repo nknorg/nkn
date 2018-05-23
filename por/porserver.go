@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/wallet"
 )
@@ -110,14 +109,38 @@ func (ps *PorServer) LenOfSigChain(sc *SigChain) int {
 	return sc.Length()
 }
 
-func (ps *PorServer) GetMinSigChain() *SigChain {
-	height := ledger.DefaultLedger.Store.GetHeight()
+func (ps *PorServer) GetMinSigChain(height uint32) (*SigChain, error) {
 	ps.RLock()
-	sort.Sort(porPackages(ps.pors[height]))
-	min := ps.pors[height][0]
-	ps.RUnlock()
+	defer ps.RUnlock()
 
-	return min.GetSigChain()
+	var minSigChain *SigChain
+	length := len(ps.pors[height])
+	switch {
+	case length > 1:
+		sort.Sort(porPackages(ps.pors[height]))
+		fallthrough
+	case length == 1:
+		minSigChain = ps.pors[height][0].GetSigChain()
+		return minSigChain, nil
+	case length < 1:
+		return nil, errors.New("no available signature chain")
+	}
+
+	return minSigChain, nil
+}
+
+func (ps *PorServer) GetSigChain(height uint32, hash common.Uint256) (*SigChain, error) {
+	ps.RLock()
+	defer ps.RUnlock()
+
+	for _, pkg := range ps.pors[height] {
+		pkgHash := pkg.Hash()
+		if hash.CompareTo(pkgHash) == 0 {
+			return pkg.sigchain, nil
+		}
+	}
+
+	return nil, errors.New("can't find the signature chain")
 }
 
 func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) error {
@@ -137,12 +160,11 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) error {
 	return nil
 }
 
-func (ps *PorServer) IsSigChainExist(sigchain *SigChain) (*common.Uint256, bool) {
-	height := ledger.DefaultLedger.Store.GetHeight()
+func (ps *PorServer) IsSigChainExist(hash common.Uint256, height uint32) (*common.Uint256, bool) {
 	ps.RLock()
 	for _, pkg := range ps.pors[height] {
 		pkgHash := pkg.Hash()
-		if (&pkgHash).CompareTo(sigchain.Hash()) == 0 {
+		if (&pkgHash).CompareTo(hash) == 0 {
 			ps.RUnlock()
 			return pkg.GetTxHash(), true
 		}
