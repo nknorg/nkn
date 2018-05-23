@@ -1,4 +1,4 @@
-package transaction
+package pool
 
 import (
 	"fmt"
@@ -8,7 +8,11 @@ import (
 	"github.com/nknorg/nkn/core/transaction/payload"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/util/log"
+	."github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/por"
 )
+
+var PorServer *por.PorServer
 
 type TXNPool struct {
 	sync.RWMutex
@@ -45,6 +49,12 @@ func (this *TXNPool) AppendTxnPool(txn *Transaction) ErrCode {
 	}
 	//add the transaction to process scope
 	this.addtxnList(txn)
+
+	// get signature chain from commit transaction then add it to POR server
+	if txn.TxType == Commit {
+		PorServer.AddSigChainFromTx(txn)
+	}
+
 	return ErrNoError
 }
 

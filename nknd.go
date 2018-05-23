@@ -22,6 +22,8 @@ import (
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 	"github.com/nknorg/nkn/websocket"
+	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/core/transaction/pool"
 )
 
 func init() {
@@ -131,6 +133,8 @@ func nknMain() error {
 	// start websocket server
 	websocket.StartServer(node)
 
+	porServer := por.NewPorServer(account)
+	pool.PorServer = porServer
 	// start consensus
 	StartConsensus(wallet, node)
 
