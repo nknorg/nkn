@@ -13,17 +13,19 @@ type BlockVoting struct {
 	sync.RWMutex
 	pstate         map[Uint256]*State            // consensus state for proposer
 	vstate         map[uint64]map[Uint256]*State // consensus state for voter
-	blockCache     *BlockCache                   // received blocks
-	pool           *BlockVotingPool              // block voting pool
-	confirmingHash Uint256                       // block hash in process
+	height         uint32			// voting height
+	blockCache     *BlockCache      // received blocks
+	pool           *BlockVotingPool // block voting pool
+	confirmingHash Uint256          // block hash in process
 }
 
 func NewBlockVoting(totalWeight int) *BlockVoting {
 	blockVoting := &BlockVoting{
 		pstate:     make(map[Uint256]*State),
 		vstate:     make(map[uint64]map[Uint256]*State),
+		height:     ledger.DefaultLedger.Store.GetHeight() + 1,
 		blockCache: NewCache(),
-		pool: NewBlockVotingPool(totalWeight),
+		pool:       NewBlockVotingPool(totalWeight),
 	}
 
 	return blockVoting
@@ -84,6 +86,18 @@ func (bv *BlockVoting) HasVoterState(id uint64, blockhash Uint256, state State) 
 	}
 }
 
+func (bv *BlockVoting) SetVotingHeight(height uint32) {
+	bv.height = height
+}
+
+func (bv *BlockVoting) UpdateVotingHeight() {
+	bv.height = ledger.DefaultLedger.Store.GetHeight() + 1
+}
+
+func (bv *BlockVoting) GetVotingHeight() uint32 {
+	return bv.height
+}
+
 func (bv *BlockVoting) SetConfirmingHash(hash Uint256) {
 	bv.confirmingHash = hash
 }
@@ -92,8 +106,8 @@ func (bv *BlockVoting) GetConfirmingHash() Uint256 {
 	return bv.confirmingHash
 }
 
-func (bv *BlockVoting) GetBestVotingContent() (VotingContent, error) {
-	block := bv.blockCache.GetBestBlockFromCache()
+func (bv *BlockVoting) GetBestVotingContent(height uint32) (VotingContent, error) {
+	block := bv.blockCache.GetBestBlockFromCache(height)
 	if block == nil {
 		return nil, errors.New("no block available")
 	}
@@ -101,8 +115,8 @@ func (bv *BlockVoting) GetBestVotingContent() (VotingContent, error) {
 	return block, nil
 }
 
-func (bv *BlockVoting) GetWorseVotingContent() (VotingContent, error) {
-	block := bv.blockCache.GetWorseBlockFromCache()
+func (bv *BlockVoting) GetWorseVotingContent(height uint32) (VotingContent, error) {
+	block := bv.blockCache.GetWorseBlockFromCache(height)
 	if block == nil {
 		return nil, errors.New("no block available")
 	}
@@ -110,8 +124,8 @@ func (bv *BlockVoting) GetWorseVotingContent() (VotingContent, error) {
 	return block, nil
 }
 
-func (bv *BlockVoting) GetVotingContent(hash Uint256) (VotingContent, error) {
-	block := bv.blockCache.GetBlockFromCache(hash)
+func (bv *BlockVoting) GetVotingContent(hash Uint256, height uint32) (VotingContent, error) {
+	block := bv.blockCache.GetBlockFromCache(hash, height)
 	if block == nil {
 		return nil, errors.New("no block")
 	}
@@ -132,8 +146,8 @@ func (bv *BlockVoting) Preparing(content VotingContent) error {
 	return nil
 }
 
-func (bv *BlockVoting) Exist(hash Uint256) bool {
-	return bv.blockCache.BlockInCache(hash)
+func (bv *BlockVoting) Exist(hash Uint256, height uint32) bool {
+	return bv.blockCache.BlockInCache(hash, height)
 }
 
 func (bv *BlockVoting) GetVotingPool() VotingPool {

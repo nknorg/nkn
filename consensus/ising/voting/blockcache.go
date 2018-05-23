@@ -21,19 +21,17 @@ type BlockInfo struct {
 
 type BlockCache struct {
 	sync.RWMutex
-	cap           int
-	currentHeight uint32                  //current block height
-	cache         map[uint32][]*BlockInfo // height and block mapping
-	hashes        map[Uint256]uint32      // for block fast searching
+	cap    int
+	cache  map[uint32][]*BlockInfo // height and block mapping
+	hashes map[Uint256]uint32      // for block fast searching
 }
 
 // When receive new block message from consensus layer, cache it.
 func NewCache() *BlockCache {
 	blockCache := &BlockCache{
-		cap:           MaxCachedBlocks,
-		currentHeight: 0,
-		cache:         make(map[uint32][]*BlockInfo),
-		hashes:        make(map[Uint256]uint32),
+		cap:    MaxCachedBlocks,
+		cache:  make(map[uint32][]*BlockInfo),
+		hashes: make(map[Uint256]uint32),
 	}
 	go blockCache.Cleanup()
 
@@ -41,40 +39,44 @@ func NewCache() *BlockCache {
 }
 
 // BlockInCache returns whether the block has been cached.
-func (bc *BlockCache) BlockInCache(hash Uint256) bool {
+func (bc *BlockCache) BlockInCache(hash Uint256, height uint32) bool {
 	bc.RLock()
 	defer bc.RUnlock()
 
-	if _, ok := bc.hashes[hash]; ok {
-		return true
+	if info, ok := bc.cache[height]; ok {
+		for _, v := range info {
+			if hash.CompareTo(v.block.Hash()) == 0 {
+				return true
+			}
+		}
 	}
 
 	return false
 }
 
 // GetBlockFromCache returns block according to block hash passed in.
-func (bc *BlockCache) GetBlockFromCache(hash Uint256) *ledger.Block {
+func (bc *BlockCache) GetBlockFromCache(hash Uint256, height uint32) *ledger.Block {
 	bc.RLock()
 	defer bc.RUnlock()
 
-	if i, ok := bc.hashes[hash]; !ok {
-		return nil
-	} else {
-		for _, v := range bc.cache[i] {
-			if hash.CompareTo(v.block.Hash()) == 0 {
-				return v.block
-			}
-		}
+	if _, ok := bc.hashes[hash]; !ok {
 		return nil
 	}
+	for _, v := range bc.cache[height] {
+		if hash.CompareTo(v.block.Hash()) == 0 {
+			return v.block
+		}
+	}
+
+	return nil
 }
 
 // GetBestBlockFromCache returns latest block in cache
-func (bc *BlockCache) GetBestBlockFromCache() *ledger.Block {
+func (bc *BlockCache) GetBestBlockFromCache(height uint32) *ledger.Block {
 	bc.RLock()
 	defer bc.RUnlock()
 
-	if blockInfos, ok := bc.cache[bc.currentHeight]; ok {
+	if blockInfos, ok := bc.cache[height]; ok {
 		if blockInfos == nil {
 			return nil
 		}
@@ -93,11 +95,11 @@ func (bc *BlockCache) GetBestBlockFromCache() *ledger.Block {
 }
 
 // GetBestBlockFromCache returns latest block in cache
-func (bc *BlockCache) GetWorseBlockFromCache() *ledger.Block {
+func (bc *BlockCache) GetWorseBlockFromCache(height uint32) *ledger.Block {
 	bc.RLock()
 	defer bc.RUnlock()
 
-	if blockInfos, ok := bc.cache[bc.currentHeight]; ok {
+	if blockInfos, ok := bc.cache[height]; ok {
 		if blockInfos == nil {
 			return nil
 		}
@@ -116,11 +118,11 @@ func (bc *BlockCache) GetWorseBlockFromCache() *ledger.Block {
 }
 
 // RemoveBlockFromCache return true if the block doesn't exist in cache.
-func (bc *BlockCache) RemoveBlockFromCache(hash Uint256) error {
+func (bc *BlockCache) RemoveBlockFromCache(hash Uint256, height uint32) error {
 	bc.Lock()
 	defer bc.Unlock()
 
-	if bc.BlockInCache(hash) {
+	if bc.BlockInCache(hash, height) {
 		height := bc.hashes[hash]
 		delete(bc.hashes, hash)
 
@@ -134,11 +136,6 @@ func (bc *BlockCache) RemoveBlockFromCache(hash Uint256) error {
 		}
 		if blockInfos == nil {
 			delete(bc.cache, height)
-			// if the last block of current height is being removed,
-			// decrease current height together
-			if height == bc.currentHeight {
-				bc.currentHeight--
-			}
 		} else {
 			bc.cache[height] = blockInfos
 		}
@@ -163,7 +160,8 @@ func (bc *BlockCache) CachedBlockNum() int {
 // AddBlockToCache returns nil if block already existed in cache
 func (bc *BlockCache) AddBlockToCache(block *ledger.Block) error {
 	hash := block.Hash()
-	if bc.BlockInCache(hash) {
+	blockHeight := block.Header.Height
+	if bc.BlockInCache(hash, blockHeight) {
 		return nil
 	}
 	bc.Lock()
@@ -174,24 +172,17 @@ func (bc *BlockCache) AddBlockToCache(block *ledger.Block) error {
 		block:    block,
 		lifetime: time.NewTimer(time.Hour),
 	}
-	blockHeight := block.Header.Height
 	bc.cache[blockHeight] = append(bc.cache[blockHeight], blockInfo)
 	bc.hashes[hash] = blockHeight
-	if blockHeight > bc.currentHeight {
-		bc.currentHeight = blockHeight
-	}
 
 	return nil
 }
 
-func (bc *BlockCache) Dump() {
-	log.Infof("current height: %d", bc.currentHeight)
-	for height, blockInfos := range bc.cache {
-		log.Infof("\t height: %d", height)
-		for _, v := range blockInfos {
-			hash := v.block.Hash()
-			log.Infof("\t\t hash: %s", BytesToHexString(hash.ToArray()))
-		}
+func (bc *BlockCache) Dump(height uint32) {
+	log.Infof("\t height: %d", height)
+	for _, blockInfo := range bc.cache[height] {
+		hash := blockInfo.block.Hash()
+		log.Infof("\t\t hash: %s", BytesToHexString(hash.ToArray()))
 	}
 }
 
@@ -205,7 +196,7 @@ func (bc *BlockCache) Cleanup() {
 				for _, info := range blockInfos {
 					select {
 					case <-info.lifetime.C:
-						bc.RemoveBlockFromCache(info.block.Hash())
+						bc.RemoveBlockFromCache(info.block.Hash(), info.block.Header.Height)
 					}
 				}
 			}
