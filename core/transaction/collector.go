@@ -1,8 +1,8 @@
-
 package transaction
 
 import (
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/errors"
 )
 
 const (
@@ -12,6 +12,8 @@ const (
 // Transaction pool should be a concrete entity of this interface
 type TxnSource interface {
 	GetTxnByCount(num int) map[Uint256]*Transaction
+	GetTransaction(hash Uint256) *Transaction
+	AppendTxnPool(txn *Transaction) errors.ErrCode
 }
 
 // TxnCollector collects transactions from transaction pool
@@ -37,4 +39,12 @@ func NewTxnCollector(source TxnSource, num int) *TxnCollector {
 
 func (p *TxnCollector) Collect() map[Uint256]*Transaction {
 	return p.TxnSource.GetTxnByCount(p.TxnNum)
+}
+
+func (p *TxnCollector) GetTransaction(hash Uint256) *Transaction {
+	return p.TxnSource.GetTransaction(hash)
+}
+
+func (p *TxnCollector) Append(txn *Transaction) errors.ErrCode {
+	return p.TxnSource.AppendTxnPool(txn)
 }
