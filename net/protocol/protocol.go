@@ -11,6 +11,7 @@ import (
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/core/transaction/pool"
 )
 
 type NodeAddr struct {
@@ -98,7 +99,7 @@ type Noder interface {
 	GetHeight() uint64
 	GetConnectionCnt() uint
 	GetTxnByCount(int) map[common.Uint256]*transaction.Transaction
-	GetTxnPool() *transaction.TXNPool
+	GetTxnPool() *pool.TXNPool
 	AppendTxnPool(*transaction.Transaction) ErrCode
 	ExistedID(id common.Uint256) bool
 	ReqNeighborList()
