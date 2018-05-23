@@ -39,7 +39,7 @@ func (resp *Response) Serialize(w io.Writer) error {
 		return err
 	}
 	switch resp.contentType {
-	case voting.SigChainVote:
+	case voting.SigChainTxnVote:
 		//TODO serialize sigchain info
 	case voting.BlockVote:
 		if b, ok := resp.content.(*ledger.Block); ok {
@@ -70,7 +70,7 @@ func (resp *Response) Deserialize(r io.Reader) error {
 	}
 	resp.contentType = voting.VotingContentType(contentType)
 	switch resp.contentType {
-	case voting.SigChainVote:
+	case voting.SigChainTxnVote:
 		//TODO deserialize sigchain info
 	case voting.BlockVote:
 		block := new(ledger.Block)
