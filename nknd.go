@@ -64,13 +64,13 @@ func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 	return node
 }
 
-func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
+func StartConsensus(wallet wallet.Wallet, node protocol.Noder, por *por.PorServer) {
 	if protocol.SERVICENODENAME != config.Parameters.NodeType {
 		switch config.Parameters.ConsensusType {
 		case "ising":
 			log.Info("ising consensus starting ...")
 			account, _ := wallet.GetDefaultAccount()
-			ising.StartIsingConsensus(account, node)
+			ising.StartIsingConsensus(account, node, por)
 		case "dbft":
 			log.Info("dbft consensus starting ...")
 			dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
@@ -135,10 +135,10 @@ func nknMain() error {
 
 	porServer := por.NewPorServer(account)
 	pool.PorServer = porServer
-	// start consensus
-	StartConsensus(wallet, node)
-
 	httpjson.Wallet = wallet
+	// start consensus
+	StartConsensus(wallet, node, porServer)
+
 	for {
 		time.Sleep(dbft.GenBlockTime)
 		if log.CheckIfNeedNewFile() {

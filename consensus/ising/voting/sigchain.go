@@ -1,6 +1,7 @@
 package voting
 
 import (
+	"errors"
 	"sync"
 
 	. "github.com/nknorg/nkn/common"
@@ -139,6 +140,11 @@ func (scv *SigChainVoting) VotingType() VotingContentType {
 }
 
 func (scv *SigChainVoting) Preparing(content VotingContent) error {
+	errCode := scv.txnCollector.Append(content.(*transaction.Transaction))
+	if errCode != 0 {
+		return errors.New("append transaction error")
+	}
+
 	return nil
 }
 
