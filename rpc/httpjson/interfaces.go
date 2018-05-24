@@ -2,14 +2,24 @@ package httpjson
 
 import (
 	"bytes"
+	"math/rand"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
+)
+
+const (
+	// The min height of acceptable signature chain which height is local block height + MinHeightThreshold
+	// 3 means that:
+	//  2 (if local block height is n, then n + 1 block and n + 2 signature chain is in consensus) +
+	//  1 (since local node height may lower than neighbors at most 1, increase 1 to prevent forking)
+	MinHeightThreshold = 3
 )
 
 var Wallet wallet.Wallet
@@ -568,6 +578,44 @@ func commitPor(params []interface{}) map[string]interface{} {
 	}
 
 	txn, err := MakeCommitTransaction(Wallet, sigChain)
+	if err != nil {
+		return RpcResultInternalError
+	}
+
+	if errCode := VerifyAndSendTx(txn); errCode != ErrNoError {
+		return RpcResultInvalidTransaction
+	}
+
+	txHash := txn.Hash()
+	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
+}
+
+func sigchaintest(params []interface{}) map[string]interface{} {
+	var height uint32
+	if len(params) < 1 {
+		height = ledger.DefaultLedger.Store.GetHeight() + MinHeightThreshold
+	} else {
+		switch params[0].(type) {
+		case float64:
+			height = uint32(params[0].(float64))
+		default:
+			return RpcResultInvalidParameter
+		}
+	}
+
+	pbk, _ := ledger.StandbyBookKeepers[rand.Uint32()%4].EncodePoint(true)
+	if Wallet == nil {
+		return nil
+	}
+	account, err := Wallet.GetDefaultAccount()
+	if err != nil {
+		return RpcResultNil
+	}
+	sigChain, _ := por.NewSigChain(account, height, 1, &Uint256{}, pbk, pbk)
+	buf := bytes.NewBuffer(nil)
+
+	sigChain.Serialize(buf)
+	txn, err := MakeCommitTransaction(Wallet, buf.Bytes())
 	if err != nil {
 		return RpcResultInternalError
 	}
