@@ -330,8 +330,6 @@ func (ps *ProposerService) ReceiveConsensusMsg(v interface{}) {
 			ps.HandleRequestMsg(t, sender)
 		case *Response:
 			ps.HandleResponseMsg(t, sender)
-		case *Vote:
-			ps.HandleVoteMsg(t, sender)
 		case *StateProbe:
 			ps.HandleStateProbeMsg(t, sender)
 		case *Proposal:
@@ -396,33 +394,6 @@ func (ps *ProposerService) HandleRequestMsg(req *Request, sender *crypto.PubKey)
 	ps.SendConsensusMsg(responseMsg, sender)
 }
 
-func (ps *ProposerService) HandleVoteMsg(vote *Vote, sender *crypto.PubKey) {
-	hash := *vote.hash
-	height := vote.height
-	if height != ps.height {
-		log.Warnf("receive invalid vote, consensus height: %d, vote height: %d,"+
-			" hash: %s\n", ps.height, height, BytesToHexString(hash.ToArray()))
-		return
-	}
-	current := ps.CurrentVoting()
-	current.DumpState(hash, "when handle voting message", false)
-	if !current.HasProposerState(hash, voting.FloodingFinished) || !current.HasProposerState(hash, voting.ProposalSent) {
-		log.Warn("consensus state error in Vote message handler")
-		return
-	}
-	// TODO check if the sender is neighbor
-	if hash.CompareTo(current.GetConfirmingHash()) != 0 {
-		log.Warn("voted block doesn't match with local block in process")
-		return
-	}
-	nid := publickKeyToNodeID(sender)
-	if vote.agree == true {
-		current.GetVotingPool().AddToReceivePool(nid, height, hash)
-	} else {
-		current.GetVotingPool().AddToReceivePool(nid, height, *vote.preferHash)
-	}
-}
-
 func (ps *ProposerService) Reset(totalWeight int) {
 	ps.CurrentVoting().GetVotingPool().Reset(totalWeight)
 }
@@ -459,16 +430,8 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubK
 	if err != nil {
 		return
 	}
-	current.SetVoterState(nodeID, *hash, voting.FloodingFinished)
 	currentVotingPool := current.GetVotingPool()
-	currentMind := currentVotingPool.GetMind(height)
-	var votingMsg *Vote
-	if hash.CompareTo(currentMind) != 0 {
-		votingMsg = NewVoting(hash, height, false, &currentMind)
-	} else {
-		votingMsg = NewVoting(hash, height, true, nil)
-	}
-	ps.SendConsensusMsg(votingMsg, sender)
+	currentVotingPool.AddToReceivePool(nodeID, height, *hash)
 	current.SetVoterState(nodeID, *hash, voting.OpinionSent)
 }
 
@@ -495,19 +458,6 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 			BytesToHexString(hash.ToArray()))
 		return
 	}
-
-	if !current.HasVoterState(nodeID, hash, voting.FloodingFinished) {
-		log.Warn("require FloodingFinished state in Proposal message handler")
-		return
-	}
 	currentVotingPool := current.GetVotingPool()
-	currentMind := currentVotingPool.GetMind(height)
-	var votingMsg *Vote
-	if hash.CompareTo(currentMind) != 0 {
-		votingMsg = NewVoting(&hash, height, false, &currentMind)
-	} else {
-		votingMsg = NewVoting(&hash, height, true, nil)
-	}
-	ps.SendConsensusMsg(votingMsg, sender)
-	current.SetVoterState(nodeID, hash, voting.OpinionSent)
+	currentVotingPool.AddToReceivePool(nodeID, height, hash)
 }
