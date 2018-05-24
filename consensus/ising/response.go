@@ -7,6 +7,7 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/consensus/ising/voting"
 	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core/transaction"
 )
 
 type Response struct {
@@ -40,7 +41,12 @@ func (resp *Response) Serialize(w io.Writer) error {
 	}
 	switch resp.contentType {
 	case voting.SigChainTxnVote:
-		//TODO serialize sigchain info
+		if txn, ok := resp.content.(*transaction.Transaction); ok {
+			err = txn.Serialize(w)
+			if err != nil {
+				return err
+			}
+		}
 	case voting.BlockVote:
 		if b, ok := resp.content.(*ledger.Block); ok {
 			err = b.Serialize(w)
@@ -71,7 +77,12 @@ func (resp *Response) Deserialize(r io.Reader) error {
 	resp.contentType = voting.VotingContentType(contentType)
 	switch resp.contentType {
 	case voting.SigChainTxnVote:
-		//TODO deserialize sigchain info
+		txn := new(transaction.Transaction)
+		err := txn.Deserialize(r)
+		if err != nil {
+			return err
+		}
+		resp.content = txn
 	case voting.BlockVote:
 		block := new(ledger.Block)
 		err := block.Deserialize(r)

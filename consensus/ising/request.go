@@ -52,8 +52,9 @@ func (req *Request) Deserialize(r io.Reader) error {
 	req.height = height
 	contentType, err := serialization.ReadByte(r)
 	if err != nil {
-		req.contentType = voting.VotingContentType(contentType)
+		return err
 	}
+	req.contentType = voting.VotingContentType(contentType)
 
 	return nil
 }
