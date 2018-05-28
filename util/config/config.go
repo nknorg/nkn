@@ -16,7 +16,7 @@ const (
 	DEFAULTGENBLOCKTIME    = 6
 	DefaultConfigFilename  = "./config.json"
 	DefaultBookKeeperCount = 4
-	DefaultMultiCoreNum    = 4
+	DefaultProposerCount   = 1
 )
 
 var (
@@ -64,6 +64,7 @@ type Configuration struct {
 	MaxHdrSyncReqs int      `json:"MaxConcurrentSyncHeaderReqs"`
 	ConsensusType  string   `json:"ConsensusType"`
 	ChordPort      uint16   `json:"ChordPort"`
+	BlockProposer  []string `json:"TestBlockProposer"`
 }
 
 func init() {
@@ -103,6 +104,9 @@ func check(config *Configuration) error {
 	case "ising":
 		if len(config.SeedList) == 0 {
 			return errors.New("seed list in config file should not be blank")
+		}
+		if len(config.BlockProposer) < DefaultProposerCount {
+			log.Fatalln("bootstrap block proposer is required at least one in config.json")
 		}
 	default:
 		fmt.Println(config.ConsensusType)
