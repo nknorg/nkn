@@ -2,8 +2,6 @@ package httpjson
 
 import (
 	"bytes"
-	"math/rand"
-
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
@@ -12,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/crypto"
 )
 
 const (
@@ -591,29 +590,30 @@ func commitPor(params []interface{}) map[string]interface{} {
 }
 
 func sigchaintest(params []interface{}) map[string]interface{} {
-	var height uint32
 	if len(params) < 1 {
-		height = ledger.DefaultLedger.Store.GetHeight() + MinHeightThreshold
-	} else {
-		switch params[0].(type) {
-		case float64:
-			height = uint32(params[0].(float64))
-		default:
+		return RpcResultNil
+	}
+	var pubKey []byte
+	var err error
+	switch params[0].(type) {
+	case string:
+		pubKey, err = HexStringToBytes(params[0].(string))
+		if err != nil || len(pubKey) != crypto.COMPRESSEDLEN {
 			return RpcResultInvalidParameter
 		}
+	default:
+		return RpcResultInvalidParameter
 	}
-
-	pbk, _ := ledger.StandbyBookKeepers[rand.Uint32()%4].EncodePoint(true)
 	if Wallet == nil {
-		return nil
+		return RpcResult("open wallet first")
 	}
 	account, err := Wallet.GetDefaultAccount()
 	if err != nil {
 		return RpcResultNil
 	}
-	sigChain, _ := por.NewSigChain(account, height, 1, &Uint256{}, pbk, pbk)
+	height := ledger.DefaultLedger.Store.GetHeight() + MinHeightThreshold
+	sigChain, _ := por.NewSigChain(account, height, 1, &Uint256{}, pubKey, pubKey)
 	buf := bytes.NewBuffer(nil)
-
 	sigChain.Serialize(buf)
 	txn, err := MakeCommitTransaction(Wallet, buf.Bytes())
 	if err != nil {
