@@ -20,6 +20,7 @@ import (
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/util/config"
 )
 
 const (
@@ -207,7 +208,7 @@ func (ps *ProposerService) IsBlockProposer() bool {
 		proposer = v
 		log.Infof("Block Proposer (signature chain): %s", BytesToHexString(v))
 	} else {
-		proposer, _ = ledger.StandbyBookKeepers[0].EncodePoint(true)
+		proposer, _ = HexStringToBytes(config.Parameters.BlockProposer[0])
 	}
 	if IsEqualBytes(localPublicKey, proposer) {
 		return true
