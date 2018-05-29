@@ -36,6 +36,7 @@ type ProposerService struct {
 	ticker               *time.Ticker              // ticker for proposal service
 	blockProposer        map[uint32][]byte         // height and public key mapping for block proposer
 	localNode            protocol.Noder            // local node
+	neighbors            []protocol.Noder          // neighbor nodes
 	txnCollector         *transaction.TxnCollector // collect transaction from where
 	msgChan              chan interface{}          // get notice from probe thread
 	consensusMsgReceived events.Subscriber         // consensus events listening
@@ -51,6 +52,7 @@ func NewProposerService(account *wallet.Account, node protocol.Noder, porServer 
 		ticker:        time.NewTicker(ConsensusTime),
 		account:       account,
 		localNode:     node,
+		neighbors:     node.GetNeighborNoder(),
 		blockProposer: make(map[uint32][]byte),
 		txnCollector:  txnCollector,
 		msgChan:       make(chan interface{}, MsgChanCap),
@@ -129,6 +131,25 @@ func (ps *ProposerService) ProposerRoutine(vType voting.VotingContentType) {
 		}
 	}
 }
+
+// GetReceiverNode returns neighbors nodes according to neighbor node ID passed in.
+// If 'nids' passed in is nil then returns all neighbor nodes.
+func (ps *ProposerService) GetReceiverNode(nids []uint64) []protocol.Noder {
+	if nids == nil {
+		return ps.neighbors
+	}
+	var nodes []protocol.Noder
+	for _, id := range nids {
+		for _, node := range ps.neighbors {
+			if id == node.GetID() {
+				nodes = append(nodes, node)
+			}
+		}
+	}
+
+	return nodes
+}
+
 func (ps *ProposerService) SendNewProposal(vType voting.VotingContentType) (voting.VotingContent, error) {
 	current := ps.CurrentVoting(vType)
 	votingHeight := current.GetVotingHeight()
@@ -140,8 +161,10 @@ func (ps *ProposerService) SendNewProposal(vType voting.VotingContentType) (voti
 	log.Infof("proposing hash: %s, type: %d", BytesToHexString(hash.ToArray()), vType)
 	// create new proposal
 	proposalMsg := NewProposal(&hash, votingHeight, vType)
+	// get nodes which should receive proposal message
+	nodes := ps.GetReceiverNode(nil)
 	// send proposal to neighbors
-	ps.SendConsensusMsg(proposalMsg, nil)
+	ps.SendConsensusMsg(proposalMsg, nodes)
 	// state changed for current hash
 	current.SetProposerState(hash, voting.ProposalSent)
 	// set confirming hash
@@ -186,9 +209,12 @@ func (ps *ProposerService) ProduceNewBlock() {
 		log.Error("adding block to cache error: ", err)
 		return
 	}
-	// send BlockFlooding message to neighbors
+	// generate BlockFlooding message
 	blockFlooding := NewBlockFlooding(block)
-	err = ps.SendConsensusMsg(blockFlooding, nil)
+	// get nodes which should receive this message
+	nodes := ps.GetReceiverNode(nil)
+	// send BlockFlooding message
+	err = ps.SendConsensusMsg(blockFlooding, nodes)
 	if err != nil {
 		log.Error("sending consensus message error: ", err)
 	}
@@ -253,7 +279,7 @@ func (ps *ProposerService) Start() error {
 	return nil
 }
 
-func (ps *ProposerService) SendConsensusMsg(msg IsingMessage, to *crypto.PubKey) error {
+func (ps *ProposerService) SendConsensusMsg(msg IsingMessage, to []protocol.Noder) error {
 	isingPld, err := BuildIsingPayload(msg, ps.account.PublicKey)
 	if err != nil {
 		return err
@@ -268,23 +294,12 @@ func (ps *ProposerService) SendConsensusMsg(msg IsingMessage, to *crypto.PubKey)
 	}
 	isingPld.Signature = signature
 
-	// send message to all neighbors
-	if to == nil {
-		err = ps.localNode.Xmit(isingPld)
+	for _, node := range to {
+		b, err := message.NewIsingConsensus(isingPld)
 		if err != nil {
 			return err
 		}
-		return nil
-	}
-	neighbors := ps.localNode.GetNeighborNoder()
-	for _, n := range neighbors {
-		if n.GetID() == publickKeyToNodeID(to) {
-			b, err := message.NewIsingConsensus(isingPld)
-			if err != nil {
-				return err
-			}
-			n.Tx(b)
-		}
+		node.Tx(b)
 	}
 
 	return nil
@@ -416,8 +431,12 @@ func (ps *ProposerService) HandleRequestMsg(req *Request, sender *crypto.PubKey)
 	if err != nil {
 		return
 	}
+	// generate response message
 	responseMsg := NewResponse(&hash, height, current.VotingType(), content)
-	ps.SendConsensusMsg(responseMsg, sender)
+	// get node which should receive response message
+	nodes := ps.GetReceiverNode([]uint64{publickKeyToNodeID(sender)})
+	// send response message
+	ps.SendConsensusMsg(responseMsg, nodes)
 }
 
 func (ps *ProposerService) Initialize(vType voting.VotingContentType, totalWeight int) {
@@ -428,6 +447,8 @@ func (ps *ProposerService) Initialize(vType voting.VotingContentType, totalWeigh
 	// initial voting height
 	current := ps.CurrentVoting(vType)
 	current.UpdateVotingHeight()
+	// initial neighbor nodes
+	ps.neighbors = ps.localNode.GetNeighborNoder()
 }
 
 func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.PubKey) {
@@ -437,7 +458,8 @@ func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.P
 		case *BlockHistoryPayload:
 			history := ledger.DefaultLedger.Store.GetBlockHistory(t.StartHeight, t.StartHeight+t.BlockNum)
 			s := &StateResponse{history}
-			ps.SendConsensusMsg(s, sender)
+			nodes := ps.GetReceiverNode([]uint64{publickKeyToNodeID(sender)})
+			ps.SendConsensusMsg(s, nodes)
 		}
 	}
 	return
@@ -485,8 +507,12 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 		return
 	}
 	if !current.Exist(hash, height) {
+		// generate request message
 		requestMsg := NewRequest(&hash, height, current.VotingType())
-		ps.SendConsensusMsg(requestMsg, sender)
+		// get node which should receive request message
+		nodes := ps.GetReceiverNode([]uint64{nodeID})
+		// send request message
+		ps.SendConsensusMsg(requestMsg, nodes)
 		current.SetVoterState(nodeID, hash, voting.RequestSent)
 		log.Warnf("doesn't contain hash in local cache, requesting it from neighbor %s\n",
 			BytesToHexString(hash.ToArray()))
