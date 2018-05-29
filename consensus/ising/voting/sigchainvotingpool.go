@@ -11,70 +11,72 @@ import (
 
 type SigChainVotingPool struct {
 	sync.RWMutex
-	sendPool    map[uint64]map[uint32]Uint256 // record voting history
-	receivePool map[uint64]map[uint32]Uint256 // received votes from neighbor
+	sendPool    map[uint32]map[uint64]Uint256 // record voting history
+	receivePool map[uint32]map[uint64]Uint256 // received votes from neighbor
 	mind        map[uint32]Uint256            // current idea
 	totalWeight int                           // total voting weight
 }
 
 func NewSigChainVotingPool(totalWeight int) *SigChainVotingPool {
 	return &SigChainVotingPool{
-		sendPool:    make(map[uint64]map[uint32]Uint256),
-		receivePool: make(map[uint64]map[uint32]Uint256),
+		sendPool:    make(map[uint32]map[uint64]Uint256),
+		receivePool: make(map[uint32]map[uint64]Uint256),
 		mind:        make(map[uint32]Uint256),
 		totalWeight: totalWeight,
 	}
 }
 
-func (scvp *SigChainVotingPool) SetMind(height uint32, mind Uint256) {
-	scvp.Lock()
-	defer scvp.Unlock()
-
-	if hash, ok := scvp.mind[height]; !ok {
-		scvp.mind[height] = mind
-	} else {
-		if mind.CompareTo(hash) == -1 {
-			scvp.mind[height] = mind
-		}
-	}
-}
-
-func (scvp *SigChainVotingPool) GetMind(height uint32) Uint256 {
+func (scvp *SigChainVotingPool) GetMind(height uint32) (Uint256, bool) {
 	scvp.RLock()
 	defer scvp.RUnlock()
 
-	return scvp.mind[height]
+	if mind, ok := scvp.mind[height]; ok {
+		return mind, true
+	} else {
+		return Uint256{}, false
+	}
 }
 
-func (scvp *SigChainVotingPool) ChangeMind(height uint32, mind Uint256) {
+func (scvp *SigChainVotingPool) ChangeMind(height uint32, mind Uint256) map[uint64]Uint256{
 	scvp.Lock()
-	defer scvp.Unlock()
-
 	scvp.mind[height] = mind
-	// TODO: broadcast
+	scvp.Unlock()
+
+	// add self vote to pool
+	scvp.AddToReceivePool(height, 0, mind)
+
+	scvp.RLock()
+	defer scvp.RUnlock()
+
+	return scvp.sendPool[height]
 }
 
-func (scvp *SigChainVotingPool) AddToReceivePool(nid uint64, height uint32, hash Uint256) {
+func (scvp *SigChainVotingPool) AddToReceivePool(height uint32, nid uint64, hash Uint256) {
 	scvp.Lock()
 	defer scvp.Unlock()
 
-	if _, ok := scvp.receivePool[nid]; !ok {
-		scvp.receivePool[nid] = make(map[uint32]Uint256)
+	if _, ok := scvp.receivePool[height]; !ok {
+		scvp.receivePool[height] = make(map[uint64]Uint256)
 	}
-	if _, ok := scvp.receivePool[nid][height]; !ok {
-		scvp.receivePool[nid][height] = hash
-	}
+	scvp.receivePool[height][nid] = hash
 }
 
-func (scvp *SigChainVotingPool) AddToSendPool(nid uint64, height uint32, hash Uint256) {
+func (bvp *SigChainVotingPool) GetReceivePool(height uint32) map[uint64]Uint256 {
+	bvp.RLock()
+	defer bvp.RUnlock()
+
+	return bvp.receivePool[height]
+}
+
+func (scvp *SigChainVotingPool) AddToSendPool(height uint32, nid uint64, hash Uint256) {
 	scvp.Lock()
 	defer scvp.Unlock()
 
-	if _, ok := scvp.sendPool[nid]; !ok {
-		scvp.sendPool[nid] = make(map[uint32]Uint256)
+	if _, ok := scvp.sendPool[height]; !ok {
+		scvp.sendPool[height] = make(map[uint64]Uint256)
 	}
-	if _, ok := scvp.sendPool[nid][height]; !ok {
-		scvp.sendPool[nid][height] = hash
+	if _, ok := scvp.sendPool[height][nid]; !ok {
+		scvp.sendPool[height][nid] = hash
 	}
 }
 
@@ -83,36 +85,17 @@ func (scvp *SigChainVotingPool) VoteCounting(height uint32) (*Uint256, error) {
 	defer scvp.RUnlock()
 
 	m := make(map[Uint256]int)
-	// counting votes from neighbors
-	for _, item := range scvp.receivePool {
-		for h, hash := range item {
-			if h == height {
-				weight, err := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
-				if err != nil {
-					log.Warn("get voter weight error")
-					return nil, errors.New("get voter weight error")
-				}
-				if _, ok := m[hash]; ok {
-					m[hash] += weight
-				} else {
-					m[hash] = weight
-				}
-			}
-		}
-	}
-	// self vote
-	if selfMind, ok := scvp.mind[height]; !ok {
-		return nil, errors.New("self mind missing")
-	} else {
-		selfWeight, err := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
+	// vote counting
+	for _, hash := range scvp.receivePool[height] {
+		weight, err := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
 		if err != nil {
-			log.Warn("get self weight error")
-			return nil, errors.New("get self weight error")
+			log.Warn("get voter weight error")
+			return nil, errors.New("get voter weight error")
 		}
-		if _, ok := m[selfMind]; ok {
-			m[selfMind] += selfWeight
+		if _, ok := m[hash]; ok {
+			m[hash] += weight
 		} else {
-			m[selfMind] = selfWeight
+			m[hash] = weight
 		}
 	}
 	// returns hash which got >=50% votes
@@ -123,18 +106,6 @@ func (scvp *SigChainVotingPool) VoteCounting(height uint32) (*Uint256, error) {
 	}
 
 	return nil, errors.New("invalid votes")
-}
-
-func (scvp *SigChainVotingPool) NeedChangeMind(height uint32, hash Uint256) bool {
-	if hash.CompareTo(scvp.GetMind(height)) == 0 {
-		return false
-	}
-
-	return true
-}
-
-func (scvp *SigChainVotingPool) SpreadNewMind() {
-	//TODO: notify neighbors in sendpool
 }
 
 func (scvp *SigChainVotingPool) Reset(totalWeight int) {

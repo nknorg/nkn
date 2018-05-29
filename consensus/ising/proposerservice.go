@@ -486,7 +486,7 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubK
 		return
 	}
 	currentVotingPool := current.GetVotingPool()
-	currentVotingPool.AddToReceivePool(nodeID, height, *hash)
+	currentVotingPool.AddToReceivePool(height, nodeID, *hash)
 	current.SetVoterState(nodeID, *hash, voting.OpinionSent)
 }
 
@@ -519,5 +519,5 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 		return
 	}
 	currentVotingPool := current.GetVotingPool()
-	currentVotingPool.AddToReceivePool(nodeID, height, hash)
+	currentVotingPool.AddToReceivePool(height, nodeID, hash)
 }
