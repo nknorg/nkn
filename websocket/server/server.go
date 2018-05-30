@@ -160,7 +160,7 @@ func (ws *WsServer) registryMethod() {
 			return ResponsePack(Err.INVALID_PARAMS)
 		}
 
-		newSessionId := string(clientID)
+		newSessionId := hex.EncodeToString(clientID)
 		err = ws.SessionList.ChangeSessionId(cmd["Userid"].(string), newSessionId)
 		if err != nil {
 			log.Error("Change session id error: ", err)
@@ -462,7 +462,7 @@ func (ws *WsServer) initTlsListen() (net.Listener, error) {
 }
 
 func (ws *WsServer) GetClientById(cliendID []byte) *Session {
-	session := ws.SessionList.GetSessionById(string(cliendID))
+	session := ws.SessionList.GetSessionById(hex.EncodeToString(cliendID))
 	if session == nil {
 		return nil
 	}

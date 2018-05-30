@@ -2,6 +2,7 @@ package relay
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -123,7 +124,7 @@ func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 		client := websocket.GetServer().GetClientById(destID)
 		if client == nil {
 			// TODO: handle client not exists
-			return errors.New("Client Not Exists: " + string(destID))
+			return errors.New("Client Not Exists: " + hex.EncodeToString(destID))
 		}
 		err = rs.SendPacketToClient(client, packet)
 		if err != nil {
