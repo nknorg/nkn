@@ -194,7 +194,7 @@ func (sce *SigChainEcdsa) Verify() error {
 		// verify each element signature
 		// skip first and last element for now, will remove this once client
 		// side signature is ready
-		if i > 0 && i < sce.Length()-1 {
+		if i > 0 && !(sce.IsFinal() && i == sce.Length()-1) {
 			buff := bytes.NewBuffer(prevSig)
 			e.SerializationUnsigned(buff)
 			currHash := sha256.Sum256(buff.Bytes())
