@@ -20,6 +20,24 @@ type porPackage struct {
 	sigchain     *SigChain
 }
 
+type porPackages []*porPackage
+
+func (c porPackages) Len() int {
+	return len(c)
+}
+func (c porPackages) Swap(i, j int) {
+	if i >= 0 && i < len(c) && j >= 0 && j < len(c) { // Unit Test modify
+		c[i], c[j] = c[j], c[i]
+	}
+}
+func (c porPackages) Less(i, j int) bool {
+	if i >= 0 && i < len(c) && j >= 0 && j < len(c) { // Unit Test modify
+		return c[i].CompareTo(c[j]) < 0
+	}
+
+	return false
+}
+
 func NewPorPackage(txn *transaction.Transaction) *porPackage {
 	if txn.TxType != transaction.Commit {
 		return nil

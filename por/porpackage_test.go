@@ -37,7 +37,7 @@ func TestPorPackage(t *testing.T) {
 
 	buff := bytes.NewBuffer(nil)
 	sc.Serialize(buff)
-	txn, err := transaction.NewCommitTransaction(buff.Bytes())
+	txn, err := transaction.NewCommitTransaction(buff.Bytes(), from.ProgramHash)
 	if err != nil {
 		log.Error("txn wrong", txn)
 	}

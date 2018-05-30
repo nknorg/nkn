@@ -23,33 +23,33 @@ func TestPorServer(t *testing.T) {
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
-	scRel, _ := pmRel.Sign(scFrom, toPk)
-	if pmRel.Verify(scRel) == nil {
+	pmRel.Sign(scFrom, toPk)
+	if pmRel.Verify(scFrom) == nil {
 		t.Log("[pormanager] verify successfully")
 	} else {
 		t.Error("[pormanager] verify failed")
 	}
 
-	if !pmTo.IsFinal(scRel) {
+	if !pmTo.IsFinal(scFrom) {
 		t.Log("[pormanager] IsFinal test successfully")
 	} else {
 		t.Error("[pormanager] IsFinal test failed")
 	}
 
-	scTo, _ := pmTo.Sign(scRel, toPk)
-	if pmTo.Verify(scTo) == nil {
+	pmTo.Sign(scFrom, toPk)
+	if pmTo.Verify(scFrom) == nil {
 		t.Log("[pormanager] verify successfully 2")
 	} else {
 		t.Error("[pormanager] verify failed 2")
 	}
 
-	if pmTo.IsFinal(scTo) {
+	if pmTo.IsFinal(scFrom) {
 		t.Log("[pormanager] IsFinal test successfully 2")
 	} else {
 		t.Error("[pormanager] IsFinal test failed 2")
 	}
 
-	sig, _ := pmTo.GetSignature(scTo)
+	sig, _ := pmTo.GetSignature(scFrom)
 	t.Log("[pormanager] GetSignature ", sig)
 
 }

@@ -21,12 +21,12 @@ type SigChainVoting struct {
 	txnCollector   *transaction.TxnCollector     // transaction pool
 }
 
-func NewSigChainVoting(totalWeight int, porServer *por.PorServer, txnCollector *transaction.TxnCollector) *SigChainVoting {
+func NewSigChainVoting(totalWeight int, txnCollector *transaction.TxnCollector) *SigChainVoting {
 	sigChainVoting := &SigChainVoting{
 		pstate:       make(map[Uint256]*State),
 		vstate:       make(map[uint64]map[Uint256]*State),
 		height:       ledger.DefaultLedger.Store.GetHeight() + 2,
-		porServer:    porServer,
+		porServer:    por.GetPorServer(),
 		pool:         NewSigChainVotingPool(totalWeight),
 		txnCollector: txnCollector,
 	}
