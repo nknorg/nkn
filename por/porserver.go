@@ -80,7 +80,7 @@ func (ps *PorServer) CreateSigChain(height, dataSize uint32, dataHash *common.Ui
 	return NewSigChain(ps.account, height, dataSize, dataHash, destPubkey, nextPubkey)
 }
 
-func (ps *PorServer) CreateSigChainForClient(height, dataSize uint32, dataHash *common.Uint256, srcPubkey, destPubkey, nextPubkey, signature []byte) (*SigChain, error) {
+func (ps *PorServer) CreateSigChainForClient(height, dataSize uint32, dataHash *common.Uint256, srcPubkey, destPubkey, signature []byte) (*SigChain, error) {
 	pubKey, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
 		log.Error("Get account public key error:", err)
@@ -89,11 +89,6 @@ func (ps *PorServer) CreateSigChainForClient(height, dataSize uint32, dataHash *
 	sigChain, err := NewSigChainWithSignature(height, dataSize, dataHash, srcPubkey, destPubkey, pubKey, signature)
 	if err != nil {
 		log.Error("New signature chain with signature error:", err)
-		return nil, err
-	}
-	err = ps.Sign(sigChain, nextPubkey)
-	if err != nil {
-		log.Error("Signing signature chain error:", err)
 		return nil, err
 	}
 	return sigChain, nil
