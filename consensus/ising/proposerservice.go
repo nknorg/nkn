@@ -18,9 +18,9 @@ import (
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
-	"github.com/nknorg/nkn/util/config"
 )
 
 const (
@@ -94,15 +94,13 @@ func (ps *ProposerService) ProposerRoutine(vType voting.VotingContentType) {
 	}
 	// waiting for voting finished
 	time.Sleep(WaitingForVoting)
-	hash, err := ps.VoteCounting(vType)
-	if err != nil {
-		log.Warn("vote counting error: ", err)
-		return
-	}
 	current := ps.CurrentVoting(vType)
+	votingPool := current.GetVotingPool()
+	votingHeight := current.GetVotingHeight()
+	finalHash, _ := votingPool.GetMind(votingHeight)
 	// if proposed hash is not original entity, then get it from local cache
-	if hash.CompareTo(content.Hash()) != 0 {
-		content, err = current.GetVotingContent(*hash, current.GetVotingHeight())
+	if finalHash.CompareTo(content.Hash()) != 0 {
+		content, err = current.GetVotingContent(finalHash, votingHeight)
 		if err != nil {
 			log.Warn("get final entity error")
 			return
@@ -158,6 +156,16 @@ func (ps *ProposerService) SendNewProposal(vType voting.VotingContentType) (voti
 		return nil, err
 	}
 	hash := content.Hash()
+	votingPool := current.GetVotingPool()
+	if mind, ok := votingPool.GetMind(votingHeight); ok {
+		// if local hash doesn't better than
+		if mind.CompareTo(hash) == -1 {
+			hash = mind
+		}
+	} else {
+		// set mind if it has not been set
+		votingPool.ChangeMind(votingHeight, hash)
+	}
 	log.Infof("proposing hash: %s, type: %d", BytesToHexString(hash.ToArray()), vType)
 	// create new proposal
 	proposalMsg := NewProposal(&hash, votingHeight, vType)
@@ -169,30 +177,8 @@ func (ps *ProposerService) SendNewProposal(vType voting.VotingContentType) (voti
 	current.SetProposerState(hash, voting.ProposalSent)
 	// set confirming hash
 	current.SetConfirmingHash(hash)
-	// add self mind to voting pool
-	current.GetVotingPool().SetMind(votingHeight, hash)
 
 	return content, nil
-}
-
-func (ps *ProposerService) VoteCounting(vType voting.VotingContentType) (*Uint256, error) {
-	current := ps.CurrentVoting(vType)
-	votingPool := current.GetVotingPool()
-	votingHeight := current.GetVotingHeight()
-	// get voting results from voting pool
-	maybeFinalHash, err := votingPool.VoteCounting(votingHeight)
-	if err != nil {
-		return nil, err
-	}
-	// if current mind is different with voting result then change mind
-	if votingPool.NeedChangeMind(votingHeight, *maybeFinalHash) {
-		log.Infof("Mind changed to %s when received votes from neighbors\n",
-			BytesToHexString(maybeFinalHash.ToArray()))
-		votingPool.ChangeMind(votingHeight, *maybeFinalHash)
-	}
-	// TODO: change mind again
-
-	return maybeFinalHash, nil
 }
 
 func (ps *ProposerService) ProduceNewBlock() {
@@ -219,7 +205,7 @@ func (ps *ProposerService) ProduceNewBlock() {
 		log.Error("sending consensus message error: ", err)
 	}
 	// update mind of local node
-	votingPool.SetMind(votingHeight, block.Hash())
+	votingPool.ChangeMind(votingHeight, block.Hash())
 }
 
 func (ps *ProposerService) IsBlockProposer() bool {
@@ -386,6 +372,8 @@ func (ps *ProposerService) ReceiveConsensusMsg(v interface{}) {
 			ps.HandleStateProbeMsg(t, sender)
 		case *Proposal:
 			ps.HandleProposalMsg(t, sender)
+		case *MindChanging:
+			ps.HandleMindChangingMsg(t, sender)
 		}
 	}
 }
@@ -492,6 +480,7 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubK
 
 func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.PubKey) {
 	current := ps.CurrentVoting(proposal.contentType)
+	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()
 	hash := *proposal.hash
 	height := proposal.height
@@ -508,7 +497,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 	}
 	if !current.Exist(hash, height) {
 		// generate request message
-		requestMsg := NewRequest(&hash, height, current.VotingType())
+		requestMsg := NewRequest(&hash, height, votingType)
 		// get node which should receive request message
 		nodes := ps.GetReceiverNode([]uint64{nodeID})
 		// send request message
@@ -520,4 +509,76 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 	}
 	currentVotingPool := current.GetVotingPool()
 	currentVotingPool.AddToReceivePool(height, nodeID, hash)
+
+	// Get voting result from voting pool. If votes is not enough then return.
+	maybeFinalHash, err := currentVotingPool.VoteCounting(votingHeight)
+	if err != nil {
+		return
+	}
+	if mind, ok := currentVotingPool.GetMind(votingHeight); ok {
+		// When current mind has been set, if voting result is different with
+		// current mind then do mind changing.
+		if mind.CompareTo(*maybeFinalHash) != 0 {
+			history := currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
+			// generate mind changing message
+			mindChangingMsg := NewMindChanging(maybeFinalHash, votingHeight, votingType)
+			// get node which should receive request message
+			var nids []uint64
+			for n := range history {
+				nids = append(nids, n)
+			}
+			nodes := ps.GetReceiverNode(nids)
+			// send mind changing message
+			ps.SendConsensusMsg(mindChangingMsg, nodes)
+		}
+	} else {
+		// Set mind if current mind has not been set.
+		currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
+	}
+}
+
+func (ps *ProposerService) HandleMindChangingMsg(mindChanging *MindChanging, sender *crypto.PubKey) {
+	current := ps.CurrentVoting(mindChanging.contentType)
+	votingType := current.VotingType()
+	votingHeight := current.GetVotingHeight()
+	hash := *mindChanging.hash
+	height := mindChanging.height
+	if height < votingHeight {
+		log.Warnf("receive invalid mind changing, consensus height: %d, mind changing height: %d,"+
+			" hash: %s\n", votingHeight, height, BytesToHexString(hash.ToArray()))
+		return
+	}
+	// TODO check if the sender is neighbor
+	nodeID := publickKeyToNodeID(sender)
+	currentVotingPool := current.GetVotingPool()
+	receivePool := currentVotingPool.GetReceivePool(votingHeight)
+	if _, ok := receivePool[nodeID]; !ok {
+		log.Warn("no proposal received before, so mind changing is invalid")
+		return
+	}
+	// update voting pool when receive valid mind changing message
+	currentVotingPool.AddToReceivePool(height, nodeID, hash)
+
+	// recalculate votes
+	maybeFinalHash, err := currentVotingPool.VoteCounting(votingHeight)
+	if err != nil {
+		return
+	}
+	if mind, ok := currentVotingPool.GetMind(votingHeight); ok {
+		// When current mind has been set, if voting result is different with
+		// current mind then do mind changing.
+		if mind.CompareTo(*maybeFinalHash) != 0 {
+			history := currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
+			// generate mind changing message
+			mindChangingMsg := NewMindChanging(maybeFinalHash, votingHeight, votingType)
+			// get node which should receive request message
+			var nids []uint64
+			for n := range history {
+				nids = append(nids, n)
+			}
+			nodes := ps.GetReceiverNode(nids)
+			// send mind changing message
+			ps.SendConsensusMsg(mindChangingMsg, nodes)
+		}
+	}
 }
