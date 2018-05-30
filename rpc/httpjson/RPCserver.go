@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -28,6 +29,7 @@ func StartRPCServer() {
 	HandleFunc("getneighbor", getNeighbor)
 	HandleFunc("getnodestate", getNodeState)
 	HandleFunc("getbalance", getBalance)
+	HandleFunc("getwsaddr", getWsAddr)
 
 	HandleFunc("setdebuginfo", setDebugInfo)
 	HandleFunc("sendtoaddress", sendToAddress)
@@ -42,4 +44,9 @@ func StartRPCServer() {
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err.Error())
 	}
+}
+
+func StartServer(n protocol.Noder) {
+	RegistRpcNode(n)
+	go StartRPCServer()
 }

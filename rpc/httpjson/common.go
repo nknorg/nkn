@@ -157,6 +157,10 @@ func SetDefaultFunc(def func(http.ResponseWriter, *http.Request)) {
 func Handle(w http.ResponseWriter, r *http.Request) {
 	mainMux.RLock()
 	defer mainMux.RUnlock()
+
+	// Allow cross site call for clients running in browsers
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	//JSON RPC commands should be POSTs
 	if r.Method != "POST" {
 		if mainMux.defaultFunction != nil {

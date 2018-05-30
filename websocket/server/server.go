@@ -138,12 +138,13 @@ func (ws *WsServer) registryMethod() {
 		}
 		clientID, pubKey, err := address.ParseClientAddress(addrStr)
 		if err != nil {
+			log.Error("Parse client address error:", err)
 			return ResponsePack(Err.INVALID_PARAMS)
 		}
 
 		_, err = crypto.DecodePoint(pubKey)
 		if err != nil {
-			log.Error("Invalid public key hex decoding to point")
+			log.Error("Invalid public key hex decoding to point:", err)
 			return ResponsePack(Err.INVALID_PARAMS)
 		}
 
@@ -177,11 +178,13 @@ func (ws *WsServer) registryMethod() {
 	relayHandler := func(cmd map[string]interface{}) map[string]interface{} {
 		session := ws.SessionList.GetSessionById(cmd["Userid"].(string))
 		if !session.IsClient() {
+			log.Error("Session is not client")
 			return ResponsePack(Err.INVALID_METHOD)
 		}
 		srcID := session.GetID()
 		srcPubkey := session.GetPubKey()
 		if srcPubkey == nil {
+			log.Error("Session does not have a public key")
 			return ResponsePack(Err.INVALID_METHOD)
 		}
 		addrStr, ok := cmd["Dest"].(string)
@@ -190,14 +193,20 @@ func (ws *WsServer) registryMethod() {
 		}
 		destID, destPubkey, err := address.ParseClientAddress(addrStr)
 		if err != nil {
+			log.Error("Parse client address error:", err)
 			return ResponsePack(Err.INVALID_PARAMS)
 		}
 		payload := []byte(cmd["Payload"].(string))
 		signature, err := hex.DecodeString(cmd["Signature"].(string))
 		if err != nil {
+			log.Error("Decode signature error:", err)
 			return ResponsePack(Err.INVALID_PARAMS)
 		}
-		ws.node.SendRelayPacket(srcID, srcPubkey, destID[:], destPubkey, payload, signature)
+		err = ws.node.SendRelayPacket(srcID, srcPubkey, destID[:], destPubkey, payload, signature)
+		if err != nil {
+			log.Error("Send relay packet error:", err)
+			return ResponsePack(Err.INTERNAL_ERROR)
+		}
 		resp := ResponsePack(Err.SUCCESS)
 		return resp
 	}

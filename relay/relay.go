@@ -53,6 +53,7 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 	}
 	fmt.Println(packet.SigChain.Length())
 	response := map[string]interface{}{
+		"Action":  "receivePacket",
 		"Payload": string(packet.Payload),
 		"Digest":  digest,
 	}

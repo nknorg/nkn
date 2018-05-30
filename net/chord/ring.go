@@ -2,6 +2,7 @@ package chord
 
 import (
 	"bytes"
+	"errors"
 	"sort"
 
 	"github.com/nknorg/nkn/util/log"
@@ -167,10 +168,23 @@ func (r *Ring) safeInvoke(f func()) {
 	f()
 }
 
-// Len is the number of vnodes
-func (r *Ring) GetFirstVnode() *localVnode {
-	if r == nil || len(r.Vnodes) == 0 {
-		return nil
+func (r *Ring) GetFirstVnode() (*localVnode, error) {
+	if r == nil {
+		return nil, errors.New("Ring is empty")
 	}
-	return r.Vnodes[0]
+	if len(r.Vnodes) == 0 {
+		return nil, errors.New("No vnode available")
+	}
+	return r.Vnodes[0], nil
+}
+
+func (r *Ring) GetPredecessor(key []byte) (*Vnode, error) {
+	vnode, err := r.GetFirstVnode()
+	if err != nil {
+		return nil, err
+	}
+	if vnode == nil {
+		return nil, errors.New("No vnode in ring")
+	}
+	return vnode.FindPredecessor(key)
 }
