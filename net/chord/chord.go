@@ -73,9 +73,10 @@ type Config struct {
 
 // Represents an Vnode, local or remote
 type Vnode struct {
-	Id       []byte // Virtual ID
-	Host     string // Chord Host identifier
-	NodePort uint16 // Node port
+	Id         []byte // Virtual ID
+	Host       string // Chord Host identifier
+	NodePort   uint16 // Node port
+	HttpWsPort uint16 // Websocket port
 }
 
 // Represents a local Vnode

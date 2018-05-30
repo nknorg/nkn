@@ -6,7 +6,9 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
@@ -626,4 +628,32 @@ func sigchaintest(params []interface{}) map[string]interface{} {
 
 	txHash := txn.Hash()
 	return RpcResult(BytesToHexString(txHash.ToArrayReverse()))
+}
+
+func getWsAddr(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+	switch params[0].(type) {
+	case string:
+		clientID, _, err := address.ParseClientAddress(params[0].(string))
+		ring := chord.GetRing()
+		if ring == nil {
+			log.Error("Empty ring")
+			return RpcResultInternalError
+		}
+		vnode, err := ring.GetPredecessor(clientID)
+		if err != nil {
+			log.Error("Cannot get predecessor")
+			return RpcResultInternalError
+		}
+		addr, err := vnode.HttpWsAddr()
+		if err != nil {
+			log.Error("Cannot get websocket address")
+			return RpcResultInternalError
+		}
+		return RpcResult(addr)
+	default:
+		return RpcResultInvalidParameter
+	}
 }

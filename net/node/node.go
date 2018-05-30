@@ -16,6 +16,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/core/transaction/pool"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/chord"
@@ -24,7 +25,6 @@ import (
 	"github.com/nknorg/nkn/relay"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/core/transaction/pool"
 )
 
 type Semaphore chan struct{}
@@ -49,13 +49,13 @@ type node struct {
 	rxTxnCnt  uint64   // The transaction received by this node
 	publicKey *crypto.PubKey
 	// TODO does this channel should be a buffer channel
-	chF                  chan func() error // Channel used to operate the node without lock
-	link                                   // The link status and infomation
-	local                *node             // The pointer to local node
-	nbrNodes                               // The neighbor node connect with currently node except itself
-	eventQueue                             // The event queue to notice notice other modules
-	*pool.TXNPool                          // Unconfirmed transaction pool
-	idCache                                // The buffer to store the id of the items which already be processed
+	chF           chan func() error // Channel used to operate the node without lock
+	link                            // The link status and infomation
+	local         *node             // The pointer to local node
+	nbrNodes                        // The neighbor node connect with currently node except itself
+	eventQueue                      // The event queue to notice notice other modules
+	*pool.TXNPool                   // Unconfirmed transaction pool
+	idCache                         // The buffer to store the id of the items which already be processed
 	/*
 	 * |--|--|--|--|--|--|isSyncFailed|isSyncHeaders|
 	 */
@@ -536,8 +536,8 @@ func (node *node) GetChordAddr() []byte {
 	if node.ring == nil {
 		return nil
 	}
-	chordVnode := node.ring.GetFirstVnode()
-	if chordVnode == nil {
+	chordVnode, err := node.ring.GetFirstVnode()
+	if err != nil || chordVnode == nil {
 		return nil
 	}
 	return chordVnode.Id

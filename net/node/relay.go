@@ -23,8 +23,8 @@ func (node *node) StartRelayer(account *wallet.Account) {
 }
 
 func (node *node) NextHop(key []byte) (protocol.Noder, error) {
-	chordNode := node.ring.GetFirstVnode()
-	if chordNode == nil {
+	chordNode, err := node.ring.GetFirstVnode()
+	if err != nil || chordNode == nil {
 		return nil, errors.New("No chord node binded")
 	}
 	iter, err := chordNode.ClosestNeighborIterator(key)

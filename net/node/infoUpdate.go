@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nknorg/nkn/consensus/ising"
 	"github.com/nknorg/nkn/core/ledger"
 	. "github.com/nknorg/nkn/net/message"
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/consensus/ising"
 )
 
 const (
@@ -126,8 +126,8 @@ func (node *node) ReqNeighborList() {
 }
 
 func (node *node) ConnectNeighbors() {
-	chordNode := node.ring.GetFirstVnode()
-	if chordNode == nil {
+	chordNode, err := node.ring.GetFirstVnode()
+	if err != nil || chordNode == nil {
 		return
 	}
 	neighbors := chordNode.Neighbors()

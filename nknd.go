@@ -19,7 +19,7 @@ import (
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/rpc/httpjson"
-	"github.com/nknorg/nkn/rpc/httprestful/restful"
+	"github.com/nknorg/nkn/rpc/httprestful"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
@@ -58,8 +58,8 @@ func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 	node.SyncNodeHeight()
 	// node.WaitForFourPeersStart()
 	node.WaitForSyncBlkFinish()
-	httpjson.RegistRpcNode(node)
-	go httpjson.StartRPCServer()
+	httpjson.StartServer(node)
+	httprestful.StartServer(node)
 
 	return node
 }
@@ -139,9 +139,6 @@ func nknMain() error {
 	websocket.StartServer(node)
 
 	httpjson.Wallet = wallet
-
-	// start HTTP RESTful server
-	go restful.InitRestServer().Start()
 
 	// start consensus
 	StartConsensus(wallet, node)
