@@ -2,6 +2,7 @@ package chord
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -318,7 +319,7 @@ func (vn *localVnode) FindPredecessor(key []byte) (*Vnode, error) {
 		return nil, err
 	}
 	if len(vnodes) == 0 {
-		return nil, errors.New("Cannot get successors for key " + string(key))
+		return nil, errors.New("Cannot get successors for key " + hex.EncodeToString(key))
 	}
 
 	trans := vn.ring.transport
@@ -328,7 +329,7 @@ func (vn *localVnode) FindPredecessor(key []byte) (*Vnode, error) {
 		return nil, err
 	}
 	if pred == nil {
-		return nil, errors.New("Cannot get predecessor for key " + string(key))
+		return nil, errors.New("Cannot get predecessor for key " + hex.EncodeToString(key))
 	}
 
 	return pred, nil
