@@ -99,7 +99,7 @@ type Ring struct {
 	shutdown   chan bool
 }
 
-var CurrentRing *Ring
+var ring *Ring
 
 // Returns the default Ring configuration
 func DefaultConfig(hostname string) *Config {
@@ -260,7 +260,7 @@ func CreateNet() (*Ring, *TCPTransport, error) {
 		log.Fatal("unexpected err. %s", err)
 		return nil, nil, err
 	}
-	CurrentRing = r
+	ring = r
 
 	go func() {
 		i := 0
@@ -302,7 +302,7 @@ func JoinNet() (*Ring, *TCPTransport, error) {
 		log.Fatal("failed to join local node! Got %s", err)
 		return nil, nil, err
 	}
-	CurrentRing = r
+	ring = r
 
 	go func() {
 		i := 0
@@ -315,4 +315,8 @@ func JoinNet() (*Ring, *TCPTransport, error) {
 	}()
 
 	return r, t, nil
+}
+
+func GetRing() *Ring {
+	return ring
 }

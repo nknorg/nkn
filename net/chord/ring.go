@@ -9,7 +9,7 @@ import (
 
 func (r *Ring) DumpInfo(finger bool) {
 	for idx, vnode := range r.Vnodes {
-		log.Infof("ring.vnodes[%d]: {", idx)
+		log.Infof("ring.Vnodes[%d]: {", idx)
 		log.Infof("\tId: %x", string(vnode.Id))
 		log.Infof("\tHost: %s", vnode.Host)
 

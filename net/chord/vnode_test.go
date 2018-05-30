@@ -167,9 +167,9 @@ func TestVnodeCheckNewSuccDeadAlternate(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
-	vn3 := r.vnodes[2]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
+	vn3 := r.Vnodes[2]
 
 	vn1.successors[0] = &vn2.Vnode
 	vn1.successors[1] = &vn3.Vnode
@@ -195,9 +195,9 @@ func TestVnodeCheckNewSuccAllDeadAlternates(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
-	vn3 := r.vnodes[2]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
+	vn3 := r.Vnodes[2]
 
 	vn1.successors[0] = &vn2.Vnode
 	vn1.successors[1] = &vn3.Vnode
@@ -224,9 +224,9 @@ func TestVnodeCheckNewSuccNewSucc(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
-	vn3 := r.vnodes[2]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
+	vn3 := r.Vnodes[2]
 
 	vn1.successors[0] = &vn3.Vnode
 	vn2.predecessor = &vn1.Vnode
@@ -259,9 +259,9 @@ func TestVnodeCheckNewSuccNewSuccDead(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
-	vn3 := r.vnodes[2]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
+	vn3 := r.Vnodes[2]
 
 	vn1.successors[0] = &vn3.Vnode
 	vn2.predecessor = &vn1.Vnode
@@ -290,8 +290,8 @@ func TestVnodeNotifySucc(t *testing.T) {
 	s2 := &Vnode{Id: []byte{2}}
 	s3 := &Vnode{Id: []byte{3}}
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
 	vn1.successors[0] = &vn2.Vnode
 	vn2.predecessor = &vn1.Vnode
 	vn2.successors[0] = s1
@@ -325,8 +325,8 @@ func TestVnodeNotifySuccDead(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
 	vn1.successors[0] = &vn2.Vnode
 	vn2.predecessor = &vn1.Vnode
 
@@ -347,8 +347,8 @@ func TestVnodeNotifySamePred(t *testing.T) {
 	s2 := &Vnode{Id: []byte{2}}
 	s3 := &Vnode{Id: []byte{3}}
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
 	vn1.successors[0] = &vn2.Vnode
 	vn2.predecessor = &vn1.Vnode
 	vn2.successors[0] = s1
@@ -381,8 +381,8 @@ func TestVnodeNotifyNoPred(t *testing.T) {
 	s2 := &Vnode{Id: []byte{2}}
 	s3 := &Vnode{Id: []byte{3}}
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
 	vn2.successors[0] = s1
 	vn2.successors[1] = s2
 	vn2.successors[2] = s3
@@ -409,9 +409,9 @@ func TestVnodeNotifyNewPred(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
-	vn3 := r.vnodes[2]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
+	vn3 := r.Vnodes[2]
 	vn3.predecessor = &vn1.Vnode
 
 	_, err := vn3.Notify(&vn2.Vnode)
@@ -426,14 +426,14 @@ func TestVnodeNotifyNewPred(t *testing.T) {
 func TestVnodeFixFinger(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
-	num := len(r.vnodes)
+	num := len(r.Vnodes)
 	for i := 0; i < num; i++ {
-		r.vnodes[i].init(i)
-		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
+		r.Vnodes[i].init(i)
+		r.Vnodes[i].successors[0] = &r.Vnodes[(i+1)%num].Vnode
 	}
 
 	// Fix finger should not error
-	vn := r.vnodes[0]
+	vn := r.Vnodes[0]
 	if err := vn.fixFingerTable(); err != nil {
 		t.Fatalf("unexpected err, %s", err)
 	}
@@ -471,8 +471,8 @@ func TestVnodeCheckLivePred(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
 	vn2.predecessor = &vn1.Vnode
 
 	if err := vn2.checkPredecessor(); err != nil {
@@ -487,8 +487,8 @@ func TestVnodeCheckDeadPred(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
 
-	vn1 := r.vnodes[0]
-	vn2 := r.vnodes[1]
+	vn1 := r.Vnodes[0]
+	vn2 := r.Vnodes[1]
 	vn2.predecessor = &vn1.Vnode
 
 	// Deregister vn1
@@ -505,9 +505,9 @@ func TestVnodeCheckDeadPred(t *testing.T) {
 func TestVnodeFindSuccessors(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
-	num := len(r.vnodes)
+	num := len(r.Vnodes)
 	for i := 0; i < num; i++ {
-		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
+		r.Vnodes[i].successors[0] = &r.Vnodes[(i+1)%num].Vnode
 	}
 
 	// Get a random key
@@ -520,8 +520,8 @@ func TestVnodeFindSuccessors(t *testing.T) {
 	exp := nearest.successors[0]
 
 	// Do a lookup on the key
-	for i := 0; i < len(r.vnodes); i++ {
-		vn := r.vnodes[i]
+	for i := 0; i < len(r.Vnodes); i++ {
+		vn := r.Vnodes[i]
 		succ, err := vn.FindSuccessors(1, key)
 		if err != nil {
 			t.Fatalf("unexpected err! %s", err)
@@ -539,11 +539,11 @@ func TestVnodeFindSuccessors(t *testing.T) {
 func TestVnodeFindSuccessorsMultSucc(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
-	num := len(r.vnodes)
+	num := len(r.Vnodes)
 	for i := 0; i < num; i++ {
-		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
-		r.vnodes[i].successors[1] = &r.vnodes[(i+2)%num].Vnode
-		r.vnodes[i].successors[2] = &r.vnodes[(i+3)%num].Vnode
+		r.Vnodes[i].successors[0] = &r.Vnodes[(i+1)%num].Vnode
+		r.Vnodes[i].successors[1] = &r.Vnodes[(i+2)%num].Vnode
+		r.Vnodes[i].successors[2] = &r.Vnodes[(i+3)%num].Vnode
 	}
 
 	// Get a random key
@@ -556,8 +556,8 @@ func TestVnodeFindSuccessorsMultSucc(t *testing.T) {
 	exp := nearest.successors[0]
 
 	// Do a lookup on the key
-	for i := 0; i < len(r.vnodes); i++ {
-		vn := r.vnodes[i]
+	for i := 0; i < len(r.Vnodes); i++ {
+		vn := r.Vnodes[i]
 		succ, err := vn.FindSuccessors(1, key)
 		if err != nil {
 			t.Fatalf("unexpected err! %s", err)
@@ -575,15 +575,15 @@ func TestVnodeFindSuccessorsMultSucc(t *testing.T) {
 func TestVnodeFindSuccessorsSomeDead(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
-	num := len(r.vnodes)
+	num := len(r.Vnodes)
 	for i := 0; i < num; i++ {
-		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
-		r.vnodes[i].successors[1] = &r.vnodes[(i+2)%num].Vnode
+		r.Vnodes[i].successors[0] = &r.Vnodes[(i+1)%num].Vnode
+		r.Vnodes[i].successors[1] = &r.Vnodes[(i+2)%num].Vnode
 	}
 
 	// Kill 2 of the nodes
-	(r.transport.(*LocalTransport)).Deregister(&r.vnodes[0].Vnode)
-	(r.transport.(*LocalTransport)).Deregister(&r.vnodes[3].Vnode)
+	(r.transport.(*LocalTransport)).Deregister(&r.Vnodes[0].Vnode)
+	(r.transport.(*LocalTransport)).Deregister(&r.Vnodes[3].Vnode)
 
 	// Get a random key
 	h := r.config.HashFunc()
@@ -595,8 +595,8 @@ func TestVnodeFindSuccessorsSomeDead(t *testing.T) {
 	exp := nearest.successors[0]
 
 	// Do a lookup on the key
-	for i := 0; i < len(r.vnodes); i++ {
-		vn := r.vnodes[i]
+	for i := 0; i < len(r.Vnodes); i++ {
+		vn := r.Vnodes[i]
 		succ, err := vn.FindSuccessors(1, key)
 		if err != nil {
 			t.Fatalf("(%d) unexpected err! %s", i, err)
@@ -663,22 +663,22 @@ func TestVnodeSkipSucc(t *testing.T) {
 func TestVnodeLeave(t *testing.T) {
 	r := makeRing()
 	sort.Sort(r)
-	num := len(r.vnodes)
+	num := len(r.Vnodes)
 	for i := int(0); i < num; i++ {
-		r.vnodes[i].predecessor = &r.vnodes[(i+num-1)%num].Vnode
-		r.vnodes[i].successors[0] = &r.vnodes[(i+1)%num].Vnode
-		r.vnodes[i].successors[1] = &r.vnodes[(i+2)%num].Vnode
+		r.Vnodes[i].predecessor = &r.Vnodes[(i+num-1)%num].Vnode
+		r.Vnodes[i].successors[0] = &r.Vnodes[(i+1)%num].Vnode
+		r.Vnodes[i].successors[1] = &r.Vnodes[(i+2)%num].Vnode
 	}
 
 	// Make node 0 leave
-	if err := r.vnodes[0].leave(); err != nil {
+	if err := r.Vnodes[0].leave(); err != nil {
 		t.Fatalf("unexpected err")
 	}
 
-	if r.vnodes[4].successors[0] != &r.vnodes[1].Vnode {
+	if r.Vnodes[4].successors[0] != &r.Vnodes[1].Vnode {
 		t.Fatalf("unexpected suc!")
 	}
-	if r.vnodes[1].predecessor != nil {
+	if r.Vnodes[1].predecessor != nil {
 		t.Fatalf("unexpected pred!")
 	}
 }

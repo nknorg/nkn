@@ -55,13 +55,13 @@ func TestRingInit(t *testing.T) {
 
 	// Check the vnodes
 	for i := 0; i < conf.NumVnodes; i++ {
-		if ring.vnodes[i] == nil {
+		if ring.Vnodes[i] == nil {
 			t.Fatalf("missing vnode!")
 		}
-		if ring.vnodes[i].ring != ring {
+		if ring.Vnodes[i].ring != ring {
 			t.Fatalf("ring missing!")
 		}
-		if ring.vnodes[i].Id == nil {
+		if ring.Vnodes[i].Id == nil {
 			t.Fatalf("ID not initialized!")
 		}
 	}
@@ -77,37 +77,37 @@ func TestRingLen(t *testing.T) {
 func TestRingSort(t *testing.T) {
 	ring := makeRing()
 	sort.Sort(ring)
-	if bytes.Compare(ring.vnodes[0].Id, ring.vnodes[1].Id) != -1 {
+	if bytes.Compare(ring.Vnodes[0].Id, ring.Vnodes[1].Id) != -1 {
 		t.Fatalf("bad sort")
 	}
-	if bytes.Compare(ring.vnodes[1].Id, ring.vnodes[2].Id) != -1 {
+	if bytes.Compare(ring.Vnodes[1].Id, ring.Vnodes[2].Id) != -1 {
 		t.Fatalf("bad sort")
 	}
-	if bytes.Compare(ring.vnodes[2].Id, ring.vnodes[3].Id) != -1 {
+	if bytes.Compare(ring.Vnodes[2].Id, ring.Vnodes[3].Id) != -1 {
 		t.Fatalf("bad sort")
 	}
-	if bytes.Compare(ring.vnodes[3].Id, ring.vnodes[4].Id) != -1 {
+	if bytes.Compare(ring.Vnodes[3].Id, ring.Vnodes[4].Id) != -1 {
 		t.Fatalf("bad sort")
 	}
 }
 
 func TestRingNearest(t *testing.T) {
 	ring := makeRing()
-	ring.vnodes[0].Id = []byte{2}
-	ring.vnodes[1].Id = []byte{4}
-	ring.vnodes[2].Id = []byte{7}
-	ring.vnodes[3].Id = []byte{10}
-	ring.vnodes[4].Id = []byte{14}
+	ring.Vnodes[0].Id = []byte{2}
+	ring.Vnodes[1].Id = []byte{4}
+	ring.Vnodes[2].Id = []byte{7}
+	ring.Vnodes[3].Id = []byte{10}
+	ring.Vnodes[4].Id = []byte{14}
 	key := []byte{6}
 
 	near := ring.nearestVnode(key)
-	if near != ring.vnodes[1] {
+	if near != ring.Vnodes[1] {
 		t.Fatalf("got wrong node back!")
 	}
 
 	key = []byte{0}
 	near = ring.nearestVnode(key)
-	if near != ring.vnodes[4] {
+	if near != ring.Vnodes[4] {
 		t.Fatalf("got wrong node back!")
 	}
 }
@@ -116,8 +116,8 @@ func TestRingSchedule(t *testing.T) {
 	ring := makeRing()
 	ring.setLocalSuccessors()
 	ring.schedule()
-	for i := 0; i < len(ring.vnodes); i++ {
-		if ring.vnodes[i].timer == nil {
+	for i := 0; i < len(ring.Vnodes); i++ {
+		if ring.Vnodes[i].timer == nil {
 			t.Fatalf("expected timer!")
 		}
 	}
@@ -127,29 +127,29 @@ func TestRingSchedule(t *testing.T) {
 func TestRingSetLocalSucc(t *testing.T) {
 	ring := makeRing()
 	ring.setLocalSuccessors()
-	for i := 0; i < len(ring.vnodes); i++ {
+	for i := 0; i < len(ring.Vnodes); i++ {
 		for j := 0; j < 4; j++ {
-			if ring.vnodes[i].successors[j] == nil {
+			if ring.Vnodes[i].successors[j] == nil {
 				t.Fatalf("expected successor!")
 			}
 		}
-		if ring.vnodes[i].successors[4] != nil {
+		if ring.Vnodes[i].successors[4] != nil {
 			t.Fatalf("should not have 5th successor!")
 		}
 	}
 
 	// Verify the successor manually for node 3
-	vn := ring.vnodes[2]
-	if vn.successors[0] != &ring.vnodes[3].Vnode {
+	vn := ring.Vnodes[2]
+	if vn.successors[0] != &ring.Vnodes[3].Vnode {
 		t.Fatalf("bad succ!")
 	}
-	if vn.successors[1] != &ring.vnodes[4].Vnode {
+	if vn.successors[1] != &ring.Vnodes[4].Vnode {
 		t.Fatalf("bad succ!")
 	}
-	if vn.successors[2] != &ring.vnodes[0].Vnode {
+	if vn.successors[2] != &ring.Vnodes[0].Vnode {
 		t.Fatalf("bad succ!")
 	}
-	if vn.successors[3] != &ring.vnodes[1].Vnode {
+	if vn.successors[3] != &ring.Vnodes[1].Vnode {
 		t.Fatalf("bad succ!")
 	}
 }

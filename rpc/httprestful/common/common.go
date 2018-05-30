@@ -46,7 +46,7 @@ func GetConnectionCount(cmd map[string]interface{}) map[string]interface{} {
 //Chord
 func GetChordRingInfo(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(Err.SUCCESS)
-	resp["Result"] = chord.CurrentRing
+	resp["Result"] = chord.GetRing()
 	return resp
 }
 

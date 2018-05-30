@@ -92,7 +92,7 @@ func TestDefaultConfig(t *testing.T) {
 	if conf.Hostname != "test" {
 		t.Fatalf("bad hostname")
 	}
-	if conf.NumVnodes != 8 {
+	if conf.NumVnodes != 1 {
 		t.Fatalf("bad num vnodes")
 	}
 	if conf.NumSuccessors != 8 {
@@ -101,13 +101,13 @@ func TestDefaultConfig(t *testing.T) {
 	if conf.HashFunc == nil {
 		t.Fatalf("bad hash")
 	}
-	if conf.hashBits != 160 {
+	if conf.hashBits != 256 {
 		t.Fatalf("bad hash bits")
 	}
-	if conf.StabilizeMin != time.Duration(15*time.Second) {
+	if conf.StabilizeMin != 150*time.Millisecond {
 		t.Fatalf("bad min stable")
 	}
-	if conf.StabilizeMax != time.Duration(45*time.Second) {
+	if conf.StabilizeMax != 450*time.Millisecond {
 		t.Fatalf("bad max stable")
 	}
 	if conf.Delegate != nil {
@@ -119,6 +119,7 @@ func fastConf() *Config {
 	conf := DefaultConfig("test")
 	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
 	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
+	conf.NumVnodes = 8
 	return conf
 }
 
@@ -204,9 +205,9 @@ func TestLeave(t *testing.T) {
 	<-time.After(100 * time.Millisecond)
 
 	// Verify r2 ring is still in tact
-	num := len(r2.vnodes)
-	for idx, vn := range r2.vnodes {
-		if vn.successors[0] != &r2.vnodes[(idx+1)%num].Vnode {
+	num := len(r2.Vnodes)
+	for idx, vn := range r2.Vnodes {
+		if vn.successors[0] != &r2.Vnodes[(idx+1)%num].Vnode {
 			t.Fatalf("bad successor! Got:%s:%s", vn.successors[0].Host,
 				vn.successors[0])
 		}

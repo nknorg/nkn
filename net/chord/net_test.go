@@ -69,7 +69,7 @@ func TestTCPLeave(t *testing.T) {
 	<-time.After(100 * time.Millisecond)
 
 	// Verify r2 ring is still in tact
-	for _, vn := range r2.vnodes {
+	for _, vn := range r2.Vnodes {
 		if vn.successors[0].Host != r2.config.Hostname {
 			t.Fatalf("bad successor! Got:%s:%s", vn.successors[0].Host,
 				vn.successors[0])
