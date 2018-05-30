@@ -2,7 +2,6 @@ package ising
 
 import (
 	"github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/wallet"
 )
 
@@ -11,9 +10,9 @@ type ConsensusService struct {
 	probeService    *ProbeService
 }
 
-func NewConsensusService(account *wallet.Account, node protocol.Noder, porServer *por.PorServer) *ConsensusService {
+func NewConsensusService(account *wallet.Account, node protocol.Noder) *ConsensusService {
 	consensusService := &ConsensusService{
-		proposerService: NewProposerService(account, node, porServer),
+		proposerService: NewProposerService(account, node),
 		probeService:    NewProbeService(account, node),
 	}
 
@@ -32,7 +31,7 @@ func (cs *ConsensusService) Start() {
 	}
 }
 
-func StartIsingConsensus(account *wallet.Account, node protocol.Noder, porServer *por.PorServer) {
-	service := NewConsensusService(account, node, porServer)
+func StartIsingConsensus(account *wallet.Account, node protocol.Noder) {
+	service := NewConsensusService(account, node)
 	service.Start()
 }

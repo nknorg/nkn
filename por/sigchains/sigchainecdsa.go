@@ -35,6 +35,23 @@ type SigChainElemEcdsa struct {
 	signature  []byte // signature for signature chain element
 }
 
+func NewSigChainWithSignature(height, dataSize uint32, dataHash *common.Uint256, srcPubkey, destPubkey, nextPubkey, signature []byte) (*SigChainEcdsa, error) {
+	sc := &SigChainEcdsa{
+		height:     height,
+		dataSize:   dataSize,
+		dataHash:   dataHash,
+		srcPubkey:  srcPubkey,
+		destPubkey: destPubkey,
+		elems: []*SigChainElemEcdsa{
+			&SigChainElemEcdsa{
+				nextPubkey: nextPubkey,
+				signature:  signature,
+			},
+		},
+	}
+	return sc, nil
+}
+
 // first relay node starts a new signature chain which consists of meta data and the first element.
 func NewSigChainEcdsa(owner *wallet.Account, height, dataSize uint32, dataHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChainEcdsa, error) {
 	ownPk := owner.PubKey()
@@ -83,6 +100,34 @@ func NewSigChainElemEcdsa(nextPubkey []byte) *SigChainElemEcdsa {
 	}
 }
 
+func (sce *SigChainEcdsa) ExtendElement(nextPubkey []byte) ([]byte, error) {
+	elem := NewSigChainElemEcdsa(nextPubkey)
+	lastElem, err := sce.lastSigElem()
+	if err != nil {
+		return nil, err
+	}
+	buff := bytes.NewBuffer(lastElem.signature)
+	err = elem.SerializationUnsigned(buff)
+	if err != nil {
+		return nil, err
+	}
+	hash := sha256.Sum256(buff.Bytes())
+	sce.elems = append(sce.elems, elem)
+	return hash[:], nil
+}
+
+func (sce *SigChainEcdsa) AddLastSignature(signature []byte) error {
+	lastElem, err := sce.lastSigElem()
+	if err != nil {
+		return err
+	}
+	if lastElem.signature != nil {
+		return errors.New("Last signature is already set")
+	}
+	lastElem.signature = signature
+	return nil
+}
+
 // Sign new created signature chain with local wallet.
 func (sce *SigChainEcdsa) Sign(nextPubkey []byte, signer *wallet.Account) error {
 	sigNum := sce.Length()
@@ -91,17 +136,20 @@ func (sce *SigChainEcdsa) Sign(nextPubkey []byte, signer *wallet.Account) error 
 	}
 
 	if err := sce.Verify(); err != nil {
+		log.Error("Signature chain verification error:", err)
 		return err
 	}
 
 	pk, err := sce.nextSigner()
 	if err != nil {
+		log.Error("Get next signer error:", err)
 		return err
 	}
 
 	//TODO decode nextpk or encode signer pubkey
 	nxPk, err := crypto.DecodePoint(pk)
 	if err != nil {
+		log.Error("Next publick key decoding error:", err)
 		return errors.New("the next pubkey is wrong")
 	}
 
@@ -109,45 +157,52 @@ func (sce *SigChainEcdsa) Sign(nextPubkey []byte, signer *wallet.Account) error 
 		return errors.New("signer is not the right one")
 	}
 
-	lastElem, err := sce.lastSigElem()
-	buff := bytes.NewBuffer(lastElem.signature)
-	elem := NewSigChainElemEcdsa(nextPubkey)
-	err = elem.SerializationUnsigned(buff)
+	digest, err := sce.ExtendElement(nextPubkey)
 	if err != nil {
+		log.Error("Signature chain extent element error:", err)
 		return err
 	}
-	hash := sha256.Sum256(buff.Bytes())
-	signature, err := crypto.Sign(signer.PrivKey(), hash[:])
+
+	signature, err := crypto.Sign(signer.PrivKey(), digest)
 	if err != nil {
+		log.Error("Compute signature error:", err)
 		return err
 	}
-	elem.signature = signature
-	sce.elems = append(sce.elems, elem)
+
+	err = sce.AddLastSignature(signature)
+	if err != nil {
+		log.Error("Add last signature error:", err)
+		return err
+	}
 
 	return nil
 }
 
 // Verify returns result of signature chain verification.
 func (sce *SigChainEcdsa) Verify() error {
-
 	prevNextPubkey := sce.srcPubkey
 	buff := bytes.NewBuffer(nil)
 	sce.SerializationMetadata(buff)
 	prevSig := buff.Bytes()
-	for _, e := range sce.elems {
+	for i, e := range sce.elems {
 		ePk, err := crypto.DecodePoint(prevNextPubkey)
 		if err != nil {
+			log.Error("Decode public key error:", err)
 			return errors.New("the pubkey of e is wrong")
 		}
 
 		// verify each element signature
-		buff := bytes.NewBuffer(prevSig)
-		//	serialization.WriteVarBytes(buff, prevSig)
-		e.SerializationUnsigned(buff)
-		currHash := sha256.Sum256(buff.Bytes())
-		err = crypto.Verify(*ePk, currHash[:], e.signature)
-		if err != nil {
-			return err
+		// skip first and last element for now, will remove this once client
+		// side signature is ready
+		if i > 0 && i < sce.Length()-1 {
+			buff := bytes.NewBuffer(prevSig)
+			e.SerializationUnsigned(buff)
+			currHash := sha256.Sum256(buff.Bytes())
+			err = crypto.Verify(*ePk, currHash[:], e.signature)
+			if err != nil {
+				log.Error("Verify signature error:", err)
+				return err
+			}
 		}
 
 		prevNextPubkey = e.nextPubkey
@@ -176,6 +231,14 @@ func (sce *SigChainEcdsa) GetDataHash() *common.Uint256 {
 	return sce.dataHash
 }
 
+func (sce *SigChainEcdsa) GetSrcPubkey() []byte {
+	return sce.srcPubkey
+}
+
+func (sce *SigChainEcdsa) GetDestPubkey() []byte {
+	return sce.destPubkey
+}
+
 // firstSigElem returns the first element in signature chain.
 func (sce *SigChainEcdsa) firstSigElem() (*SigChainElemEcdsa, error) {
 	if sce == nil || len(sce.elems) == 0 {
@@ -183,6 +246,20 @@ func (sce *SigChainEcdsa) firstSigElem() (*SigChainElemEcdsa, error) {
 	}
 
 	return sce.elems[0], nil
+}
+
+// secondLastSigElem returns the second last element in signature chain.
+func (sce *SigChainEcdsa) secondLastSigElem() (*SigChainElemEcdsa, error) {
+	if sce == nil || len(sce.elems) == 0 {
+		return nil, errors.New("nil signature chain")
+	}
+
+	num := len(sce.elems)
+	if num < 2 {
+		return nil, errors.New("signature chain length less than 2")
+	}
+
+	return sce.elems[num-2], nil
 }
 
 // lastSigElem returns the last element in signature chain.
@@ -196,8 +273,8 @@ func (sce *SigChainEcdsa) lastSigElem() (*SigChainElemEcdsa, error) {
 }
 
 func (sce *SigChainEcdsa) finalSigElem() (*SigChainElemEcdsa, error) {
-	if len(sce.elems) < 2 && !common.IsEqualBytes(sce.destPubkey, sce.elems[len(sce.elems)-2].nextPubkey) {
-		return nil, errors.New("unfinal")
+	if !sce.IsFinal() {
+		return nil, errors.New("not final")
 	}
 
 	return sce.elems[len(sce.elems)-1], nil

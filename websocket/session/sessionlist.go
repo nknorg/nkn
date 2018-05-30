@@ -1,8 +1,10 @@
 package session
 
 import (
-	"github.com/gorilla/websocket"
+	"errors"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 type SessionList struct {
@@ -15,6 +17,7 @@ func NewSessionList() *SessionList {
 		mapOnlineList: make(map[string]*Session),
 	}
 }
+
 func (sl *SessionList) NewSession(wsConn *websocket.Conn) (session *Session, err error) {
 	session, err = newSession(wsConn)
 	if err == nil {
@@ -22,6 +25,7 @@ func (sl *SessionList) NewSession(wsConn *websocket.Conn) (session *Session, err
 	}
 	return session, err
 }
+
 func (sl *SessionList) CloseSession(session *Session) {
 	if session == nil {
 		return
@@ -29,6 +33,7 @@ func (sl *SessionList) CloseSession(session *Session) {
 	sl.removeSession(session)
 	session.close()
 }
+
 func (sl *SessionList) addOnlineSession(session *Session) {
 	if session.GetSessionId() == "" {
 		return
@@ -43,7 +48,6 @@ func (sl *SessionList) removeSession(iSession *Session) (err error) {
 }
 
 func (sl *SessionList) removeSessionById(sSessionId string) (err error) {
-
 	if sSessionId == "" {
 		return err
 	}
@@ -60,17 +64,35 @@ func (sl *SessionList) GetSessionById(sSessionId string) *Session {
 		return session
 	}
 	return nil
-
 }
+
 func (sl *SessionList) GetSessionCount() int {
 	sl.RLock()
 	defer sl.RUnlock()
 	return len(sl.mapOnlineList)
 }
+
 func (sl *SessionList) ForEachSession(visit func(*Session)) {
 	sl.RLock()
 	defer sl.RUnlock()
 	for _, v := range sl.mapOnlineList {
 		visit(v)
 	}
+}
+
+func (sl *SessionList) ChangeSessionId(oldId, newId string) error {
+	sl.RLock()
+	defer sl.RUnlock()
+	if oldId == newId {
+		return nil
+	}
+	if _, ok := sl.mapOnlineList[oldId]; !ok {
+		return errors.New("Old session ID not exists")
+	}
+	if _, ok := sl.mapOnlineList[newId]; ok {
+		return errors.New("New session ID already exists")
+	}
+	sl.mapOnlineList[newId] = sl.mapOnlineList[oldId]
+	delete(sl.mapOnlineList, oldId)
+	return nil
 }

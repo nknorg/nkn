@@ -2,17 +2,20 @@ package session
 
 import (
 	"errors"
-	"github.com/gorilla/websocket"
-	"github.com/pborman/uuid"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/pborman/uuid"
 )
 
 type Session struct {
 	sync.Mutex
-	mConnection *websocket.Conn
-	nLastActive int64
-	sSessionId  string
+	mConnection   *websocket.Conn
+	nLastActive   int64
+	sSessionId    string
+	clientChordID []byte
+	clientPubKey  []byte
 }
 
 const sessionTimeOut int64 = 120
@@ -56,10 +59,36 @@ func (s *Session) Send(data []byte) error {
 }
 
 func (s *Session) SessionTimeoverCheck() bool {
-
+	if s.IsClient() {
+		return false
+	}
 	nCurTime := time.Now().Unix()
 	if nCurTime-s.nLastActive > sessionTimeOut { //sec
 		return true
 	}
 	return false
+}
+
+func (s *Session) SetClient(chordID, pubKey []byte) {
+	s.clientChordID = chordID
+	s.clientPubKey = pubKey
+	s.sSessionId = string(chordID)
+}
+
+func (s *Session) IsClient() bool {
+	return len(s.clientChordID) > 0 && s.clientPubKey != nil
+}
+
+func (s *Session) GetID() []byte {
+	if !s.IsClient() {
+		return nil
+	}
+	return s.clientChordID
+}
+
+func (s *Session) GetPubKey() []byte {
+	if !s.IsClient() {
+		return nil
+	}
+	return s.clientPubKey
 }

@@ -5,14 +5,12 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	. "github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/util/log"
-	."github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/util/log"
 )
-
-var PorServer *por.PorServer
 
 type TXNPool struct {
 	sync.RWMutex
@@ -52,7 +50,7 @@ func (this *TXNPool) AppendTxnPool(txn *Transaction) ErrCode {
 
 	// get signature chain from commit transaction then add it to POR server
 	if txn.TxType == Commit {
-		PorServer.AddSigChainFromTx(txn)
+		por.GetPorServer().AddSigChainFromTx(txn)
 	}
 
 	return ErrNoError

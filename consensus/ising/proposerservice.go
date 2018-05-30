@@ -43,7 +43,7 @@ type ProposerService struct {
 	voting               []voting.Voting           // array for sigchain and block voting
 }
 
-func NewProposerService(account *wallet.Account, node protocol.Noder, porServer *por.PorServer) *ProposerService {
+func NewProposerService(account *wallet.Account, node protocol.Noder) *ProposerService {
 	totalWeight := GetTotalVotingWeight(node)
 	txnCollector := transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged)
 
@@ -56,7 +56,7 @@ func NewProposerService(account *wallet.Account, node protocol.Noder, porServer 
 		msgChan:       make(chan interface{}, MsgChanCap),
 		voting: []voting.Voting{
 			voting.NewBlockVoting(totalWeight),
-			voting.NewSigChainVoting(totalWeight, porServer, txnCollector),
+			voting.NewSigChainVoting(totalWeight, txnCollector),
 		},
 	}
 

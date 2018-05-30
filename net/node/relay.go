@@ -62,7 +62,7 @@ func (node *node) NextHop(key []byte) (protocol.Noder, error) {
 	return nil, nil
 }
 
-func (node *node) SendRelayPacket(destID []byte, destPubkey []byte, payload []byte) error {
+func (node *node) SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload, signature []byte) error {
 	nextHop, err := node.NextHop(destID)
 	if err != nil {
 		log.Error("Get next hop error: ", err)
@@ -82,29 +82,34 @@ func (node *node) SendRelayPacket(destID []byte, destPubkey []byte, payload []by
 		log.Error("Compute uint256 data hash error: ", err)
 		return err
 	}
-	sigChain, err := por.NewSigChain(
-		node.relayer.GetAccount(),
+	sigChain, err := por.GetPorServer().CreateSigChainForClient(
 		ledger.DefaultLedger.Store.GetHeight(),
 		uint32(len(payload)),
 		&payloadHash256,
+		srcPubkey,
 		destPubkey,
 		nextPubkey,
+		signature,
 	)
 	if err != nil {
-		log.Error("Create signature chain error: ", err)
+		log.Error("Create signature chain for client error: ", err)
 		return err
 	}
-	relayPacket := &message.RelayPacket{
-		node.GetChordAddr(),
-		destID,
-		sigChain,
-		payload,
+	relayPacket, err := message.NewRelayPacket(srcID, destID, payload, sigChain)
+	if err != nil {
+		log.Error("Create relay packet error: ", err)
+		return err
 	}
 	msg, err := message.NewRelayMessage(relayPacket)
 	if err != nil {
 		log.Error("Create relay message error: ", err)
 		return err
 	}
-	nextHop.Tx(msg)
+	msgBytes, err := msg.ToBytes()
+	if err != nil {
+		log.Error("Convert relay message to bytes error: ", err)
+		return err
+	}
+	nextHop.Tx(msgBytes)
 	return nil
 }

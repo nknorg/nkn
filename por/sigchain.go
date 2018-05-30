@@ -17,6 +17,8 @@ var (
 )
 
 type sigchainer interface {
+	ExtendElement([]byte) ([]byte, error)
+	AddLastSignature([]byte) error
 	Sign(nextPubkey []byte, signer *wallet.Account) error
 	Verify() error
 	Path() [][]byte
@@ -25,6 +27,8 @@ type sigchainer interface {
 	GetSignerIndex(pubkey []byte) (int, error)
 	GetLastPubkey() ([]byte, error)
 	GetDataHash() *common.Uint256
+	GetSrcPubkey() []byte
+	GetDestPubkey() []byte
 	GetHeight() uint32
 	GetSignature() ([]byte, error)
 	GetOwner() ([]byte, error)
@@ -53,6 +57,29 @@ func NewSigChain(account *wallet.Account, height, dataSize uint32, dataHash *com
 	return &SigChain{sigtype, sigchain}, nil
 }
 
+func NewSigChainWithSignature(height, dataSize uint32, dataHash *common.Uint256, srcPubkey, destPubkey, nextPubkey, signature []byte) (*SigChain, error) {
+	var sigchain sigchainer
+	var sigtype string
+	switch sigChainAlg {
+	case Ed25519:
+	case ECDSAP256R1:
+		fallthrough
+	default:
+		sigtype = ECDSAP256R1
+		sigchain, _ = sigchains.NewSigChainWithSignature(height, dataSize, dataHash, srcPubkey, destPubkey, nextPubkey, signature)
+	}
+
+	return &SigChain{sigtype, sigchain}, nil
+}
+
+func (sc *SigChain) ExtendElement(nextPubkey []byte) ([]byte, error) {
+	return sc.chain.ExtendElement(nextPubkey)
+}
+
+func (sc *SigChain) AddLastSignature(signature []byte) error {
+	return sc.chain.AddLastSignature(signature)
+}
+
 func (sc *SigChain) Sign(nextPubkey []byte, signer *wallet.Account) error {
 	return sc.chain.Sign(nextPubkey, signer)
 }
@@ -79,6 +106,14 @@ func (sc *SigChain) GetSignerIndex(pubkey []byte) (int, error) {
 
 func (sc *SigChain) GetDataHash() *common.Uint256 {
 	return sc.chain.GetDataHash()
+}
+
+func (sc *SigChain) GetSrcPubkey() []byte {
+	return sc.chain.GetSrcPubkey()
+}
+
+func (sc *SigChain) GetDestPubkey() []byte {
+	return sc.chain.GetDestPubkey()
 }
 
 func (sc *SigChain) Serialize(w io.Writer) error {

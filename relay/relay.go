@@ -2,7 +2,9 @@ package relay
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
@@ -21,17 +23,81 @@ type RelayService struct {
 }
 
 func NewRelayService(account *wallet.Account, node protocol.Noder) *RelayService {
-	porServer := por.NewPorServer(account)
 	service := &RelayService{
 		account:   account,
 		localNode: node,
-		porServer: porServer,
+		porServer: por.GetPorServer(),
 	}
 	return service
 }
 
 func (rs *RelayService) Start() error {
 	rs.relayMsgReceived = rs.localNode.GetEvent("relay").Subscribe(events.EventRelayMsgReceived, rs.ReceiveRelayMsgNoError)
+	return nil
+}
+
+func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayPacket) error {
+	destPubKey := packet.SigChain.GetDestPubkey()
+	if !bytes.Equal(client.GetPubKey(), destPubKey) {
+		return errors.New("Client pubkey is different from destination pubkey")
+	}
+	err := rs.porServer.Sign(packet.SigChain, destPubKey)
+	if err != nil {
+		log.Error("Signing signature chain error: ", err)
+		return err
+	}
+	// TODO: only pick sigchain to sign when threshold is smaller than
+	digest, err := packet.SigChain.ExtendElement(destPubKey)
+	if err != nil {
+		return err
+	}
+	fmt.Println(packet.SigChain.Length())
+	response := map[string]interface{}{
+		"Payload": string(packet.Payload),
+		"Digest":  digest,
+	}
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		return err
+	}
+	err = client.Send(responseJSON)
+	if err != nil {
+		log.Error("Send to client error: ", err)
+		return err
+	}
+	return nil
+}
+
+func (rs *RelayService) SendPacketToNode(nextHop protocol.Noder, packet *message.RelayPacket) error {
+	nextPubkey, err := nextHop.GetPubKey().EncodePoint(true)
+	if err != nil {
+		log.Error("Get next hop public key error: ", err)
+		return err
+	}
+	err = rs.porServer.Sign(packet.SigChain, nextPubkey)
+	if err != nil {
+		log.Error("Signing signature chain error: ", err)
+		return err
+	}
+	msg, err := message.NewRelayMessage(packet)
+	if err != nil {
+		log.Error("Create relay message error: ", err)
+		return err
+	}
+	msgBytes, err := msg.ToBytes()
+	if err != nil {
+		log.Error("Convert relay message to bytes error: ", err)
+		return err
+	}
+	log.Infof(
+		"Relay packet:\nSrcID: %x\nDestID: %x\nNext Hop: %s:%d\nPayload %x",
+		packet.SrcID,
+		packet.DestID,
+		nextHop.GetAddr(),
+		nextHop.GetPort(),
+		packet.Payload,
+	)
+	nextHop.Tx(msgBytes)
 	return nil
 }
 
@@ -44,7 +110,7 @@ func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 			destID,
 			packet.Payload,
 		)
-		websocket.GetServer().Broadcast(packet.Payload)
+		// TODO: handle packet send to self
 		return nil
 	}
 	nextHop, err := rs.localNode.NextHop(destID)
@@ -53,34 +119,21 @@ func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 		return err
 	}
 	if nextHop == nil {
-		log.Infof(
-			"No next hop for packet:\nSrcID: %x\nDestID: %x\nPayload %x",
-			packet.SrcID,
-			destID,
-			packet.Payload,
-		)
+		client := websocket.GetServer().GetClientById(destID)
+		if client == nil {
+			// TODO: handle client not exists
+			return errors.New("Client Not Exists: " + string(destID))
+		}
+		err = rs.SendPacketToClient(client, packet)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
-	nextPubkey, err := nextHop.GetPubKey().EncodePoint(true)
+	err = rs.SendPacketToNode(nextHop, packet)
 	if err != nil {
-		log.Error("Get next hop public key error: ", err)
 		return err
 	}
-	rs.porServer.Sign(packet.SigChain, nextPubkey)
-	msg, err := message.NewRelayMessage(packet)
-	if err != nil {
-		log.Error("Create relay message error: ", err)
-		return err
-	}
-	log.Infof(
-		"Relay packet:\nSrcID: %x\nDestID: %x\nNext Hop: %s:%d\nPayload %x",
-		packet.SrcID,
-		destID,
-		nextHop.GetAddr(),
-		nextHop.GetPort(),
-		packet.Payload,
-	)
-	nextHop.Tx(msg)
 	return nil
 }
 

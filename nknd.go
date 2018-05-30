@@ -17,14 +17,13 @@ import (
 	"github.com/nknorg/nkn/net"
 	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/rpc/httprestful/restful"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 	"github.com/nknorg/nkn/websocket"
-	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/core/transaction/pool"
 )
 
 func init() {
@@ -65,13 +64,13 @@ func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 	return node
 }
 
-func StartConsensus(wallet wallet.Wallet, node protocol.Noder, por *por.PorServer) {
+func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
 	if protocol.SERVICENODENAME != config.Parameters.NodeType {
 		switch config.Parameters.ConsensusType {
 		case "ising":
 			log.Info("ising consensus starting ...")
 			account, _ := wallet.GetDefaultAccount()
-			ising.StartIsingConsensus(account, node, por)
+			ising.StartIsingConsensus(account, node)
 		case "dbft":
 			log.Info("dbft consensus starting ...")
 			dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
@@ -125,6 +124,11 @@ func nknMain() error {
 	// if InitLedger return err, ledger.DefaultLedger is uninitialized.
 	defer ledger.DefaultLedger.Store.Close()
 
+	err = por.InitPorServer(account)
+	if err != nil {
+		return errors.New("PorServer initialization error")
+	}
+
 	// start P2P networking
 	node := StartNetworking(account.PublicKey, ring)
 
@@ -134,15 +138,13 @@ func nknMain() error {
 	// start websocket server
 	websocket.StartServer(node)
 
-	porServer := por.NewPorServer(account)
-	pool.PorServer = porServer
 	httpjson.Wallet = wallet
 
 	// start HTTP RESTful server
 	go restful.InitRestServer().Start()
 
 	// start consensus
-	StartConsensus(wallet, node, porServer)
+	StartConsensus(wallet, node)
 
 	for {
 		time.Sleep(dbft.GenBlockTime)

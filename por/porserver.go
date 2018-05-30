@@ -7,6 +7,7 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 )
 
@@ -16,59 +17,60 @@ type PorServer struct {
 	pors    map[uint32][]*porPackage
 }
 
+var porServer *PorServer
+
 func NewPorServer(account *wallet.Account) *PorServer {
 	ps := &PorServer{
 		account: account,
 		pors:    make(map[uint32][]*porPackage),
 	}
-
 	return ps
 }
 
-type porPackages []*porPackage
-
-func (c porPackages) Len() int {
-	return len(c)
-}
-func (c porPackages) Swap(i, j int) {
-	if i >= 0 && i < len(c) && j >= 0 && j < len(c) { // Unit Test modify
-		c[i], c[j] = c[j], c[i]
+func InitPorServer(account *wallet.Account) error {
+	if porServer != nil {
+		return errors.New("PorServer already initialized")
 	}
+	porServer = NewPorServer(account)
+	return nil
 }
-func (c porPackages) Less(i, j int) bool {
-	if i >= 0 && i < len(c) && j >= 0 && j < len(c) { // Unit Test modify
-		return c[i].CompareTo(c[j]) < 0
+
+func GetPorServer() *PorServer {
+	if porServer == nil {
+		panic("PorServer not initialized")
 	}
-
-	return false
+	return porServer
 }
 
-func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte) (*SigChain, error) {
+func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte) error {
 	dcPk, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
-		return nil, errors.New("the account of PorServer is wrong")
+		log.Error("Get account public key error:", err)
+		return err
 	}
 
 	nxPk, err := sc.GetLastPubkey()
 	if err != nil {
-		return nil, errors.New("can't get nexpubkey")
+		log.Error("Get last public key error:", err)
+		return err
 	}
 
 	if !common.IsEqualBytes(dcPk, nxPk) {
-		return nil, errors.New("it's not the right signer")
+		return errors.New("it's not the right signer")
 	}
 
 	err = sc.Sign(nextPubkey, ps.account)
 	if err != nil {
-		return nil, errors.New("sign failed")
+		log.Error("Signature chain signing error:", err)
+		return err
 	}
 
-	return sc, nil
+	return nil
 }
 
 func (ps *PorServer) Verify(sc *SigChain) error {
 	if err := sc.Verify(); err != nil {
-		return errors.New("verify failed")
+		return err
 	}
 
 	return nil
@@ -76,6 +78,25 @@ func (ps *PorServer) Verify(sc *SigChain) error {
 
 func (ps *PorServer) CreateSigChain(height, dataSize uint32, dataHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
 	return NewSigChain(ps.account, height, dataSize, dataHash, destPubkey, nextPubkey)
+}
+
+func (ps *PorServer) CreateSigChainForClient(height, dataSize uint32, dataHash *common.Uint256, srcPubkey, destPubkey, nextPubkey, signature []byte) (*SigChain, error) {
+	pubKey, err := ps.account.PubKey().EncodePoint(true)
+	if err != nil {
+		log.Error("Get account public key error:", err)
+		return nil, err
+	}
+	sigChain, err := NewSigChainWithSignature(height, dataSize, dataHash, srcPubkey, destPubkey, pubKey, signature)
+	if err != nil {
+		log.Error("New signature chain with signature error:", err)
+		return nil, err
+	}
+	err = ps.Sign(sigChain, nextPubkey)
+	if err != nil {
+		log.Error("Signing signature chain error:", err)
+		return nil, err
+	}
+	return sigChain, nil
 }
 
 func (ps *PorServer) IsFinal(sc *SigChain) bool {
