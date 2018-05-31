@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
@@ -52,9 +51,9 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 	if err != nil {
 		return err
 	}
-	fmt.Println(packet.SigChain.Length())
 	response := map[string]interface{}{
 		"Action":  "receivePacket",
+		"Src":     string(packet.SrcID),
 		"Payload": string(packet.Payload),
 		"Digest":  digest,
 	}
