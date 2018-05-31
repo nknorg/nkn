@@ -58,7 +58,9 @@ func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 	node.SyncNodeHeight()
 	// node.WaitForFourPeersStart()
 	node.WaitForSyncBlkFinish()
-	httpjson.StartServer(node)
+
+	rpcServer := httpjson.NewServer(node)
+	go rpcServer.Start()
 	httprestful.StartServer(node)
 
 	return node
