@@ -171,18 +171,18 @@ func (ws *WsServer) registryMethod() {
 			log.Error("Nil session with id: ", newSessionId)
 			return ResponsePack(Err.INTERNAL_ERROR)
 		}
-		session.SetClient(clientID, pubKey)
+		session.SetClient(clientID, pubKey, &addrStr)
 		resp := ResponsePack(Err.SUCCESS)
 		return resp
 	}
 	relayHandler := func(cmd map[string]interface{}) map[string]interface{} {
-		session := ws.SessionList.GetSessionById(cmd["Userid"].(string))
-		if !session.IsClient() {
+		client := ws.SessionList.GetSessionById(cmd["Userid"].(string))
+		if !client.IsClient() {
 			log.Error("Session is not client")
 			return ResponsePack(Err.INVALID_METHOD)
 		}
-		srcID := session.GetID()
-		srcPubkey := session.GetPubKey()
+		srcAddrStr := client.GetAddrStr()
+		srcPubkey := client.GetPubKey()
 		if srcPubkey == nil {
 			log.Error("Session does not have a public key")
 			return ResponsePack(Err.INVALID_METHOD)
@@ -202,7 +202,7 @@ func (ws *WsServer) registryMethod() {
 			log.Error("Decode signature error:", err)
 			return ResponsePack(Err.INVALID_PARAMS)
 		}
-		err = ws.node.SendRelayPacket(srcID, srcPubkey, destID[:], destPubkey, payload, signature)
+		err = ws.node.SendRelayPacket([]byte(*srcAddrStr), srcPubkey, destID[:], destPubkey, payload, signature)
 		if err != nil {
 			log.Error("Send relay packet error:", err)
 			return ResponsePack(Err.INTERNAL_ERROR)

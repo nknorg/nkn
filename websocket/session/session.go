@@ -17,6 +17,7 @@ type Session struct {
 	sSessionId    string
 	clientChordID []byte
 	clientPubKey  []byte
+	clientAddrStr *string
 }
 
 const sessionTimeOut int64 = 120
@@ -70,14 +71,15 @@ func (s *Session) SessionTimeoverCheck() bool {
 	return false
 }
 
-func (s *Session) SetClient(chordID, pubKey []byte) {
+func (s *Session) SetClient(chordID, pubKey []byte, addrStr *string) {
 	s.clientChordID = chordID
 	s.clientPubKey = pubKey
+	s.clientAddrStr = addrStr
 	s.sSessionId = hex.EncodeToString(chordID)
 }
 
 func (s *Session) IsClient() bool {
-	return len(s.clientChordID) > 0 && s.clientPubKey != nil
+	return s.clientChordID != nil && s.clientPubKey != nil && s.clientAddrStr != nil
 }
 
 func (s *Session) GetID() []byte {
@@ -92,4 +94,11 @@ func (s *Session) GetPubKey() []byte {
 		return nil
 	}
 	return s.clientPubKey
+}
+
+func (s *Session) GetAddrStr() *string {
+	if !s.IsClient() {
+		return nil
+	}
+	return s.clientAddrStr
 }

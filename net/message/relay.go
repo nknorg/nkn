@@ -27,10 +27,10 @@ type RelayMessage struct {
 
 func NewRelayPacket(srcID, destID, payload []byte, sigChain *por.SigChain) (*RelayPacket, error) {
 	relayPakcet := &RelayPacket{
-		srcID,
-		destID,
-		sigChain,
-		payload,
+		SrcID:    srcID,
+		DestID:   destID,
+		SigChain: sigChain,
+		Payload:  payload,
 	}
 	return relayPakcet, nil
 }
