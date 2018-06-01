@@ -13,7 +13,6 @@ import (
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/wallet"
 )
 
 const (
@@ -45,8 +44,6 @@ var initialRPCHandlers = map[string]funcHandler{
 	"withdrawasset":      withdrawAsset,
 	"commitpor":          commitPor,
 }
-
-var Wallet wallet.Wallet
 
 func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 
@@ -337,7 +334,7 @@ func getVersion(s *RPCServer, params []interface{}) map[string]interface{} {
 }
 
 func getBalance(s *RPCServer, params []interface{}) map[string]interface{} {
-	unspent, _ := Wallet.GetUnspent()
+	unspent, _ := s.wallet.GetUnspent()
 	assets := make(map[Uint256]Fixed64)
 	for id, list := range unspent {
 		for _, item := range list {
@@ -373,11 +370,11 @@ func registAsset(s *RPCServer, params []interface{}) map[string]interface{} {
 	default:
 		return RpcResultInvalidParameter
 	}
-	if Wallet == nil {
+	if s.wallet == nil {
 		return RpcResult("open wallet first")
 	}
 
-	txn, err := MakeRegTransaction(Wallet, assetName, assetValue)
+	txn, err := MakeRegTransaction(s.wallet, assetName, assetValue)
 	if err != nil {
 		return RpcResultInternalError
 	}
@@ -413,7 +410,7 @@ func issueAsset(s *RPCServer, params []interface{}) map[string]interface{} {
 	default:
 		return RpcResultInvalidParameter
 	}
-	if Wallet == nil {
+	if s.wallet == nil {
 		return RpcResult("open wallet first")
 	}
 	tmp, err := HexStringToBytesReverse(asset)
@@ -424,7 +421,7 @@ func issueAsset(s *RPCServer, params []interface{}) map[string]interface{} {
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
 		return RpcResult("invalid asset hash")
 	}
-	txn, err := MakeIssueTransaction(Wallet, assetID, address, value)
+	txn, err := MakeIssueTransaction(s.wallet, assetID, address, value)
 	if err != nil {
 		return RpcResultInternalError
 	}
@@ -460,7 +457,7 @@ func sendToAddress(s *RPCServer, params []interface{}) map[string]interface{} {
 	default:
 		return RpcResultInvalidParameter
 	}
-	if Wallet == nil {
+	if s.wallet == nil {
 		return RpcResult("error : wallet is not opened")
 	}
 
@@ -476,7 +473,7 @@ func sendToAddress(s *RPCServer, params []interface{}) map[string]interface{} {
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
 		return RpcResult("error: invalid asset hash")
 	}
-	txn, err := MakeTransferTransaction(Wallet, assetID, batchOut)
+	txn, err := MakeTransferTransaction(s.wallet, assetID, batchOut)
 	if err != nil {
 		return RpcResult("error: " + err.Error())
 	}
@@ -511,7 +508,7 @@ func prepaidAsset(s *RPCServer, params []interface{}) map[string]interface{} {
 	default:
 		return RpcResultInvalidParameter
 	}
-	if Wallet == nil {
+	if s.wallet == nil {
 		return RpcResult("open wallet first")
 	}
 	tmp, err := HexStringToBytesReverse(assetName)
@@ -522,7 +519,7 @@ func prepaidAsset(s *RPCServer, params []interface{}) map[string]interface{} {
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
 		return RpcResult("error: invalid asset hash")
 	}
-	txn, err := MakePrepaidTransaction(Wallet, assetID, assetValue, rates)
+	txn, err := MakePrepaidTransaction(s.wallet, assetID, assetValue, rates)
 	if err != nil {
 		return RpcResultInternalError
 	}
@@ -553,7 +550,7 @@ func withdrawAsset(s *RPCServer, params []interface{}) map[string]interface{} {
 	default:
 		return RpcResultInvalidParameter
 	}
-	if Wallet == nil {
+	if s.wallet == nil {
 		return RpcResult("open wallet first")
 	}
 
@@ -566,7 +563,7 @@ func withdrawAsset(s *RPCServer, params []interface{}) map[string]interface{} {
 		return RpcResult("error: invalid asset hash")
 	}
 
-	txn, err := MakeWithdrawTransaction(Wallet, assetID, assetValue)
+	txn, err := MakeWithdrawTransaction(s.wallet, assetID, assetValue)
 	if err != nil {
 		return RpcResultInternalError
 	}
@@ -597,11 +594,11 @@ func commitPor(s *RPCServer, params []interface{}) map[string]interface{} {
 		return RpcResultInvalidParameter
 	}
 
-	if Wallet == nil {
+	if s.wallet == nil {
 		return RpcResult("open wallet first")
 	}
 
-	txn, err := MakeCommitTransaction(Wallet, sigChain)
+	txn, err := MakeCommitTransaction(s.wallet, sigChain)
 	if err != nil {
 		return RpcResultInternalError
 	}
@@ -629,10 +626,10 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 	default:
 		return RpcResultInvalidParameter
 	}
-	if Wallet == nil {
+	if s.wallet == nil {
 		return RpcResult("open wallet first")
 	}
-	account, err := Wallet.GetDefaultAccount()
+	account, err := s.wallet.GetDefaultAccount()
 	if err != nil {
 		return RpcResultNil
 	}
@@ -640,7 +637,7 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 	sigChain, _ := por.NewSigChain(account, height, 1, &Uint256{}, pubKey, pubKey)
 	buf := bytes.NewBuffer(nil)
 	sigChain.Serialize(buf)
-	txn, err := MakeCommitTransaction(Wallet, buf.Bytes())
+	txn, err := MakeCommitTransaction(s.wallet, buf.Bytes())
 	if err != nil {
 		return RpcResultInternalError
 	}

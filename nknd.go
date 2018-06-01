@@ -58,9 +58,6 @@ func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 	node.SyncNodeHeight()
 	// node.WaitForFourPeersStart()
 	node.WaitForSyncBlkFinish()
-
-	rpcServer := httpjson.NewServer(node)
-	go rpcServer.Start()
 	httprestful.StartServer(node)
 
 	return node
@@ -137,10 +134,12 @@ func nknMain() error {
 	// start relay service
 	node.StartRelayer(account)
 
+	//start JsonRPC
+	rpcServer := httpjson.NewServer(node, wallet)
+	go rpcServer.Start()
+
 	// start websocket server
 	websocket.StartServer(node)
-
-	httpjson.Wallet = wallet
 
 	// start consensus
 	StartConsensus(wallet, node)
