@@ -69,13 +69,15 @@ func (node *node) SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload,
 		return err
 	}
 
+	blockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
 	sigChain, err := por.GetPorServer().CreateSigChainForClient(
-		ledger.DefaultLedger.Store.GetHeight(),
 		uint32(len(payload)),
 		&payloadHash256,
+		&blockHash,
 		srcPubkey,
 		destPubkey,
 		signature,
+		por.ECDSA,
 	)
 
 	relayPacket, err := message.NewRelayPacket(srcID, destID, payload, sigChain)

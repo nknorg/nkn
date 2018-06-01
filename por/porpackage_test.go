@@ -20,7 +20,7 @@ func TestPorPackage(t *testing.T) {
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 
-	sc, err := NewSigChain(from, 1, 1, &common.Uint256{}, toPk, relPk)
+	sc, err := NewSigChain(from, 1, &common.Uint256{}, &common.Uint256{}, toPk, relPk)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
@@ -42,7 +42,10 @@ func TestPorPackage(t *testing.T) {
 		log.Error("txn wrong", txn)
 	}
 
-	ppkg := NewPorPackage(txn)
+	ppkg, err := NewPorPackage(txn)
+	if err != nil {
+		log.Error("Create por package error", err)
+	}
 
 	//test Hash
 	ppkgHash := ppkg.Hash()
@@ -50,9 +53,9 @@ func TestPorPackage(t *testing.T) {
 		t.Error("[TestPorPackage] Hash test failed")
 	}
 
-	//GetHeight
-	if sc.GetHeight() != ppkg.GetHeight() {
-		t.Error("[TestPorPackage] GetHeight test failed")
+	//GetblockHash
+	if sc.GetblockHash() != ppkg.GetblockHash() {
+		t.Error("[TestPorPackage] GetBlockHeight test failed")
 	}
 
 	//GetTxHash

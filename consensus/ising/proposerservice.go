@@ -115,9 +115,18 @@ func (ps *ProposerService) ProposerRoutine(vType voting.VotingContentType) {
 		var sigchain por.SigChain
 		sigchain.Deserialize(buff)
 		// TODO: get a determinate public key on signature chain
-		pbk, _ := sigchain.GetLastPubkey()
+		pbk, err := sigchain.GetLastPubkey()
+		if err != nil {
+			log.Warn("Get last public key error", err)
+			return
+		}
 		ps.Lock()
-		ps.blockProposer[sigchain.GetHeight()] = pbk
+		blockHeight, err := sigchain.GetBlockHeight()
+		if err != nil {
+			log.Warn("Get block height error", err)
+			return
+		}
+		ps.blockProposer[*blockHeight] = pbk
 		ps.Unlock()
 		sigChainTxnHash := content.Hash()
 		log.Info("sigchain transaction consensus: ", BytesToHexString(sigChainTxnHash.ToArray()))

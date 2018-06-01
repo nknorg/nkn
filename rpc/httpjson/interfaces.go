@@ -633,8 +633,8 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 	if err != nil {
 		return RpcResultNil
 	}
-	height := ledger.DefaultLedger.Store.GetHeight() + MinHeightThreshold
-	sigChain, _ := por.NewSigChain(account, height, 1, &Uint256{}, pubKey, pubKey)
+	blockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
+	sigChain, _ := por.NewSigChain(account, 1, &Uint256{}, &blockHash, pubKey, pubKey)
 	buf := bytes.NewBuffer(nil)
 	sigChain.Serialize(buf)
 	txn, err := MakeCommitTransaction(s.wallet, buf.Bytes())
