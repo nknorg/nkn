@@ -11,12 +11,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/core/transaction"
 	tx "github.com/nknorg/nkn/core/transaction"
-	. "github.com/nknorg/nkn/errors"
-	. "github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/util/log"
 )
-
-var node Noder
 
 type TxAttributeInfo struct {
 	Usage TransactionAttributeUsage
@@ -120,12 +115,6 @@ type ConsensusInfo struct {
 	// TODO
 }
 
-func RegistRpcNode(n Noder) {
-	if node == nil {
-		node = n
-	}
-}
-
 func responsePacking(result interface{}) map[string]interface{} {
 	resp := map[string]interface{}{
 		"result": result,
@@ -158,18 +147,4 @@ func Call(address string, method string, id interface{}, params []interface{}) (
 	}
 
 	return body, nil
-}
-
-func VerifyAndSendTx(txn *tx.Transaction) ErrCode {
-	// if transaction is verified unsucessfully then will not put it into transaction pool
-	if errCode := node.AppendTxnPool(txn); errCode != ErrNoError {
-		log.Warn("Can NOT add the transaction to TxnPool")
-		log.Info("[httpjsonrpc] VerifyTransaction failed when AppendTxnPool.")
-		return errCode
-	}
-	if err := node.Xmit(txn); err != nil {
-		log.Error("Xmit Tx Error:Xmit transaction failed.", err)
-		return ErrXmitFail
-	}
-	return ErrNoError
 }

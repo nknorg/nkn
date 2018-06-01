@@ -1,14 +1,14 @@
 package common
 
 import (
-	. "github.com/nknorg/nkn/common"
-	tx "github.com/nknorg/nkn/core/transaction"
-	. "github.com/nknorg/nkn/errors"
-	. "github.com/nknorg/nkn/rpc/httpjson"
-	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	"bytes"
 	"encoding/json"
 	"time"
+
+	. "github.com/nknorg/nkn/common"
+	tx "github.com/nknorg/nkn/core/transaction"
+	. "github.com/nknorg/nkn/errors"
+	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 )
 
 const AttributeMaxLen = 252

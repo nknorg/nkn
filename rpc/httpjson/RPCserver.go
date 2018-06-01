@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -27,11 +29,13 @@ type RPCServer struct {
 	node protocol.Noder
 }
 
+type funcHandler func(*RPCServer, []interface{}) map[string]interface{}
+
 type ServeMux struct {
 	sync.RWMutex
 
 	//collection of Handlers
-	m map[string]func([]interface{}) map[string]interface{}
+	m map[string]funcHandler
 
 	//will be called when the request of rpc client contains no implemented functions.
 	defaultFunction func(http.ResponseWriter, *http.Request)
@@ -41,13 +45,11 @@ type ServeMux struct {
 func NewServer(node protocol.Noder) *RPCServer {
 	server := &RPCServer{
 		mainMux: ServeMux{
-			m: make(map[string]func([]interface{}) map[string]interface{}),
+			m: make(map[string]funcHandler),
 		},
 		listeners: []string{LocalHost + ":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
 		node:      node,
 	}
-
-	RegistRpcNode(node) //TODO delete it soon
 
 	return server
 }
@@ -97,7 +99,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	//get the corresponding function
 	function, ok := s.mainMux.m[request["method"].(string)]
 	if ok {
-		response := function(request["params"].([]interface{}))
+		response := function(s, request["params"].([]interface{}))
 		data, err := json.Marshal(map[string]interface{}{
 			"jsonpc": "2.0",
 			"result": response["result"],
@@ -129,7 +131,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 }
 
 //a function to register functions to be called for specific rpc calls
-func (s *RPCServer) HandleFunc(pattern string, handler func([]interface{}) map[string]interface{}) {
+func (s *RPCServer) HandleFunc(pattern string, handler funcHandler) {
 	s.mainMux.Lock()
 	defer s.mainMux.Unlock()
 	s.mainMux.m[pattern] = handler
@@ -144,29 +146,26 @@ func (s *RPCServer) Start() {
 	log.Debug()
 	http.HandleFunc("/", s.Handle)
 
-	s.HandleFunc("getbestblockhash", getBestBlockHash)
-	s.HandleFunc("getblock", getBlock)
-	s.HandleFunc("getblockcount", getBlockCount)
-	s.HandleFunc("getblockhash", getBlockHash)
-	s.HandleFunc("getconnectioncount", getConnectionCount)
-	s.HandleFunc("getrawmempool", getRawMemPool)
-	s.HandleFunc("getrawtransaction", getRawTransaction)
-	s.HandleFunc("sendrawtransaction", sendRawTransaction)
-	s.HandleFunc("getversion", getVersion)
-	s.HandleFunc("getneighbor", getNeighbor)
-	s.HandleFunc("getnodestate", getNodeState)
-	s.HandleFunc("getbalance", getBalance)
-
-	s.HandleFunc("setdebuginfo", setDebugInfo)
-	s.HandleFunc("sendtoaddress", sendToAddress)
-	s.HandleFunc("registasset", registAsset)
-	s.HandleFunc("issueasset", issueAsset)
-	s.HandleFunc("prepaidasset", prepaidAsset)
-	s.HandleFunc("withdrawasset", withdrawAsset)
-	s.HandleFunc("commitpor", commitPor)
+	for name, handler := range initialRPCHandlers {
+		s.HandleFunc(name, handler)
+	}
 
 	err := http.ListenAndServe(s.listeners[0], nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err.Error())
 	}
+}
+
+func (s *RPCServer) VerifyAndSendTx(txn *transaction.Transaction) errors.ErrCode {
+	// if transaction is verified unsucessfully then will not put it into transaction pool
+	if errCode := s.node.AppendTxnPool(txn); errCode != errors.ErrNoError {
+		log.Warn("Can NOT add the transaction to TxnPool")
+		log.Info("[httpjsonrpc] VerifyTransaction failed when AppendTxnPool.")
+		return errCode
+	}
+	if err := s.node.Xmit(txn); err != nil {
+		log.Error("Xmit Tx Error:Xmit transaction failed.", err)
+		return errors.ErrXmitFail
+	}
+	return errors.ErrNoError
 }

@@ -14,6 +14,7 @@ import (
 	. "github.com/nknorg/nkn/net/protocol"
 	. "github.com/nknorg/nkn/rpc/httpjson"
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
+	"github.com/nknorg/nkn/util/log"
 )
 
 var node Noder
@@ -31,6 +32,20 @@ func SetNode(n Noder) {
 
 func GetNode() Noder {
 	return node
+}
+
+func VerifyAndSendTx(txn *tx.Transaction) ErrCode {
+	// if transaction is verified unsucessfully then will not put it into transaction pool
+	if errCode := node.AppendTxnPool(txn); errCode != ErrNoError {
+		log.Warn("Can NOT add the transaction to TxnPool")
+		log.Info("[httpjsonrpc] VerifyTransaction failed when AppendTxnPool.")
+		return errCode
+	}
+	if err := node.Xmit(txn); err != nil {
+		log.Error("Xmit Tx Error:Xmit transaction failed.", err)
+		return ErrXmitFail
+	}
+	return ErrNoError
 }
 
 //Node
