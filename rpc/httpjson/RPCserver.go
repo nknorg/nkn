@@ -12,6 +12,7 @@ import (
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/wallet"
 )
 
 const (
@@ -25,8 +26,11 @@ type RPCServer struct {
 	//defines a slice of listeners for RPCServer, such as "127.0.0.1:30004"
 	listeners []string
 
-	//the instance of Noder
+	//the reference of Noder
 	node protocol.Noder
+
+	//the reference of Wallet
+	wallet wallet.Wallet
 }
 
 type funcHandler func(*RPCServer, []interface{}) map[string]interface{}
@@ -42,13 +46,14 @@ type ServeMux struct {
 }
 
 // NewServer will create a new RPC server instance.
-func NewServer(node protocol.Noder) *RPCServer {
+func NewServer(node protocol.Noder, wallet wallet.Wallet) *RPCServer {
 	server := &RPCServer{
 		mainMux: ServeMux{
 			m: make(map[string]funcHandler),
 		},
 		listeners: []string{LocalHost + ":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
 		node:      node,
+		wallet:    wallet,
 	}
 
 	return server
