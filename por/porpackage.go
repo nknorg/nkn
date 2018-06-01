@@ -2,19 +2,21 @@ package por
 
 import (
 	"bytes"
+	"errors"
 	"io"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
-	"github.com/nknorg/nkn/por/sigchains"
 	"github.com/nknorg/nkn/util/log"
 )
 
 type porPackage struct {
 	owner        []byte
 	height       uint32
+	blockHash    common.Uint256
 	txHash       common.Uint256
 	sigchainHash common.Uint256
 	sigchain     *SigChain
@@ -38,9 +40,9 @@ func (c porPackages) Less(i, j int) bool {
 	return false
 }
 
-func NewPorPackage(txn *transaction.Transaction) *porPackage {
+func NewPorPackage(txn *transaction.Transaction) (*porPackage, error) {
 	if txn.TxType != transaction.Commit {
-		return nil
+		return nil, errors.New("Transaction type mismatch")
 	}
 	rs := txn.Payload.(*payload.Commit)
 	buf := bytes.NewBuffer(rs.SigChain)
@@ -49,14 +51,27 @@ func NewPorPackage(txn *transaction.Transaction) *porPackage {
 
 	//TODO threshold
 
-	owner, _ := sigchain.GetOwner()
-	return &porPackage{
+	blockHeader, err := ledger.DefaultLedger.Store.GetHeader(*sigchain.blockHash)
+	if err != nil {
+		log.Error("Get block header error:", err)
+		return nil, err
+	}
+
+	owner, err := sigchain.GetOwner()
+	if err != nil {
+		log.Error("Get owner error:", err)
+		return nil, err
+	}
+
+	pp := &porPackage{
 		owner:        owner,
-		height:       sigchain.GetHeight(),
+		height:       blockHeader.Height,
+		blockHash:    *sigchain.blockHash,
 		txHash:       txn.Hash(),
 		sigchainHash: sigchain.Hash(),
 		sigchain:     &sigchain,
 	}
+	return pp, nil
 }
 
 func (pp *porPackage) Hash() common.Uint256 {
@@ -65,6 +80,10 @@ func (pp *porPackage) Hash() common.Uint256 {
 
 func (pp *porPackage) GetHeight() uint32 {
 	return pp.height
+}
+
+func (pp *porPackage) GetblockHash() *common.Uint256 {
+	return &pp.blockHash
 }
 
 func (pp *porPackage) GetTxHash() *common.Uint256 {
@@ -144,7 +163,6 @@ func (pp *porPackage) DumpInfo() {
 	log.Info("owner: ", common.BytesToHexString(pp.owner))
 	log.Info("txHash: ", pp.txHash)
 	log.Info("sigchainHash: ", pp.sigchainHash)
-	if sc, ok := pp.sigchain.chain.(*sigchains.SigChainEcdsa); ok {
-		sc.DumpInfo()
-	}
+	sc := pp.sigchain
+	sc.DumpInfo()
 }

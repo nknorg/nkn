@@ -76,17 +76,17 @@ func (ps *PorServer) Verify(sc *SigChain) error {
 	return nil
 }
 
-func (ps *PorServer) CreateSigChain(height, dataSize uint32, dataHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
-	return NewSigChain(ps.account, height, dataSize, dataHash, destPubkey, nextPubkey)
+func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
+	return NewSigChain(ps.account, dataSize, dataHash, blockHash, destPubkey, nextPubkey)
 }
 
-func (ps *PorServer) CreateSigChainForClient(height, dataSize uint32, dataHash *common.Uint256, srcPubkey, destPubkey, signature []byte) (*SigChain, error) {
+func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcPubkey, destPubkey, signature []byte, sigAlgo SigAlgo) (*SigChain, error) {
 	pubKey, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
 		log.Error("Get account public key error:", err)
 		return nil, err
 	}
-	sigChain, err := NewSigChainWithSignature(height, dataSize, dataHash, srcPubkey, destPubkey, pubKey, signature)
+	sigChain, err := NewSigChainWithSignature(dataSize, dataHash, blockHash, srcPubkey, destPubkey, pubKey, signature, sigAlgo)
 	if err != nil {
 		log.Error("New signature chain with signature error:", err)
 		return nil, err
@@ -160,9 +160,9 @@ func (ps *PorServer) GetSigChain(height uint32, hash common.Uint256) (*SigChain,
 }
 
 func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) error {
-	porpkg := NewPorPackage(txn)
-	if porpkg == nil {
-		return errors.New("the type of transaction is mismatched")
+	porpkg, err := NewPorPackage(txn)
+	if err != nil {
+		return err
 	}
 
 	height := porpkg.GetHeight()

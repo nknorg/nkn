@@ -19,7 +19,7 @@ func TestPorServer(t *testing.T) {
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 
-	scFrom, err := pmFrom.CreateSigChain(1, 1, &common.Uint256{}, toPk, relPk)
+	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, &common.Uint256{}, toPk, relPk)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
