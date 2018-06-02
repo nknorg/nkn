@@ -31,6 +31,7 @@ var initialRPCHandlers = map[string]funcHandler{
 	"getconnectioncount": getConnectionCount,
 	"getrawmempool":      getRawMemPool,
 	"getrawtransaction":  getRawTransaction,
+	"getwsaddr":          getWsAddr,
 	"sendrawtransaction": sendRawTransaction,
 	"getversion":         getVersion,
 	"getneighbor":        getNeighbor,

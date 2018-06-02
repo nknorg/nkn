@@ -162,8 +162,6 @@ func (s *RPCServer) Start() {
 		s.HandleFunc(name, handler)
 	}
 
-	s.HandleFunc("getwsaddr", getWsAddr)
-
 	err := http.ListenAndServe(s.listeners[0], nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err.Error())
