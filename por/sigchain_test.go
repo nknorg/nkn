@@ -23,7 +23,9 @@ func TestSigChain(t *testing.T) {
 	relay2Pk, _ := relay2.PubKey().EncodePoint(true)
 
 	// test Sign & Verify
-	sc, err := NewSigChain(from, 1, &common.Uint256{1, 2, 3}, &common.Uint256{4, 5, 6}, toPk, relay1Pk)
+	dataHash := common.Uint256{1, 2, 3}
+	blockHash := common.Uint256{4, 5, 6}
+	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], toPk, relay1Pk)
 	if err != nil || sc.Verify() != nil {
 		t.Error("[TestSigChain] 'from' create new SigChain in error")
 	}
@@ -75,8 +77,8 @@ func TestSigChain(t *testing.T) {
 	}
 
 	// test GetDataHash
-	dataHash := sc.GetDataHash()
-	if dataHash.CompareTo(common.Uint256{1, 2, 3}) != 0 {
+	gotDataHash := sc.GetDataHash()
+	if bytes.Compare(dataHash[:], gotDataHash[:]) != 0 {
 		t.Error("[TestSigChain] GetDataHash test failed")
 	}
 
@@ -85,10 +87,10 @@ func TestSigChain(t *testing.T) {
 		t.Error("[TestSigChain] Get GetSignature error", len(sig))
 	}
 
-	// test GetblockHash
-	blockHash := sc.GetblockHash()
-	if blockHash.CompareTo(common.Uint256{4, 5, 6}) != 0 {
-		t.Error("[TestSigChain] GetblockHash test failed")
+	// test GetBlockHash
+	gotBlockHash := sc.GetBlockHash()
+	if bytes.Compare(blockHash[:], gotBlockHash[:]) != 0 {
+		t.Error("[TestSigChain] GetBlockHash test failed")
 	}
 
 	// test GetOwner
@@ -105,7 +107,9 @@ func TestSigChain(t *testing.T) {
 	buff := bytes.NewBuffer(nil)
 	sc.Serialize(buff)
 	sd.Deserialize(buff)
-	if scHash := sc.Hash(); scHash.CompareTo(sd.Hash()) != 0 {
+	scHash := sc.Hash()
+	sdHash := sd.Hash()
+	if bytes.Compare(scHash[:], sdHash[:]) != 0 {
 		t.Error("[TestSigChain] Serialize test failed")
 	}
 

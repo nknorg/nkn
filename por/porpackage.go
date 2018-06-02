@@ -16,9 +16,9 @@ import (
 type porPackage struct {
 	owner        []byte
 	height       uint32
-	blockHash    common.Uint256
-	txHash       common.Uint256
-	sigchainHash common.Uint256
+	blockHash    []byte
+	txHash       []byte
+	sigchainHash []byte
 	sigchain     *SigChain
 }
 
@@ -51,7 +51,12 @@ func NewPorPackage(txn *transaction.Transaction) (*porPackage, error) {
 
 	//TODO threshold
 
-	blockHeader, err := ledger.DefaultLedger.Store.GetHeader(*sigchain.blockHash)
+	blockHash, err := common.Uint256ParseFromBytes(sigchain.blockHash)
+	if err != nil {
+		log.Error("Parse block hash uint256 from bytes error:", err)
+		return nil, err
+	}
+	blockHeader, err := ledger.DefaultLedger.Store.GetHeader(blockHash)
 	if err != nil {
 		log.Error("Get block header error:", err)
 		return nil, err
@@ -63,18 +68,20 @@ func NewPorPackage(txn *transaction.Transaction) (*porPackage, error) {
 		return nil, err
 	}
 
+	txHash := txn.Hash()
+	sigchainHash := sigchain.Hash()
 	pp := &porPackage{
 		owner:        owner,
 		height:       blockHeader.Height,
-		blockHash:    *sigchain.blockHash,
-		txHash:       txn.Hash(),
-		sigchainHash: sigchain.Hash(),
+		blockHash:    sigchain.blockHash,
+		txHash:       txHash[:],
+		sigchainHash: sigchainHash[:],
 		sigchain:     &sigchain,
 	}
 	return pp, nil
 }
 
-func (pp *porPackage) Hash() common.Uint256 {
+func (pp *porPackage) Hash() []byte {
 	return pp.sigchainHash
 }
 
@@ -82,12 +89,12 @@ func (pp *porPackage) GetHeight() uint32 {
 	return pp.height
 }
 
-func (pp *porPackage) GetblockHash() *common.Uint256 {
-	return &pp.blockHash
+func (pp *porPackage) GetBlockHash() []byte {
+	return pp.blockHash
 }
 
-func (pp *porPackage) GetTxHash() *common.Uint256 {
-	return &pp.txHash
+func (pp *porPackage) GetTxHash() []byte {
+	return pp.txHash
 }
 
 func (pp *porPackage) GetSigChain() *SigChain {
@@ -95,7 +102,7 @@ func (pp *porPackage) GetSigChain() *SigChain {
 }
 
 func (pp *porPackage) CompareTo(o *porPackage) int {
-	return (&pp.sigchainHash).CompareTo(o.sigchainHash)
+	return bytes.Compare(pp.sigchainHash, o.sigchainHash)
 }
 
 func (pp *porPackage) Serialize(w io.Writer) error {
@@ -111,12 +118,12 @@ func (pp *porPackage) Serialize(w io.Writer) error {
 		return err
 	}
 
-	_, err = pp.txHash.Serialize(w)
+	err = serialization.WriteVarBytes(w, pp.txHash)
 	if err != nil {
 		return err
 	}
 
-	_, err = pp.sigchainHash.Serialize(w)
+	err = serialization.WriteVarBytes(w, pp.sigchainHash)
 	if err != nil {
 		return err
 	}
@@ -139,12 +146,12 @@ func (pp *porPackage) Deserialize(r io.Reader) error {
 		return err
 	}
 
-	err = pp.txHash.Deserialize(r)
+	pp.txHash, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
 
-	err = pp.sigchainHash.Deserialize(r)
+	pp.sigchainHash, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}

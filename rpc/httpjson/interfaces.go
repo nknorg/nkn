@@ -634,8 +634,9 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 	if err != nil {
 		return RpcResultNil
 	}
+	dataHash := Uint256{}
 	blockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
-	sigChain, _ := por.NewSigChain(account, 1, &Uint256{}, &blockHash, pubKey, pubKey)
+	sigChain, _ := por.NewSigChain(account, 1, dataHash[:], blockHash[:], pubKey, pubKey)
 	buf := bytes.NewBuffer(nil)
 	sigChain.Serialize(buf)
 	txn, err := MakeCommitTransaction(s.wallet, buf.Bytes())

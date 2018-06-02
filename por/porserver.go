@@ -1,6 +1,7 @@
 package por
 
 import (
+	"bytes"
 	"errors"
 	"sort"
 	"sync"
@@ -77,7 +78,7 @@ func (ps *PorServer) Verify(sc *SigChain) error {
 }
 
 func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
-	return NewSigChain(ps.account, dataSize, dataHash, blockHash, destPubkey, nextPubkey)
+	return NewSigChain(ps.account, dataSize, dataHash[:], blockHash[:], destPubkey, nextPubkey)
 }
 
 func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcPubkey, destPubkey, signature []byte, sigAlgo SigAlgo) (*SigChain, error) {
@@ -86,7 +87,7 @@ func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHas
 		log.Error("Get account public key error:", err)
 		return nil, err
 	}
-	sigChain, err := NewSigChainWithSignature(dataSize, dataHash, blockHash, srcPubkey, destPubkey, pubKey, signature, sigAlgo)
+	sigChain, err := NewSigChainWithSignature(dataSize, dataHash[:], blockHash[:], srcPubkey, destPubkey, pubKey, signature, sigAlgo)
 	if err != nil {
 		log.Error("New signature chain with signature error:", err)
 		return nil, err
@@ -151,7 +152,7 @@ func (ps *PorServer) GetSigChain(height uint32, hash common.Uint256) (*SigChain,
 
 	for _, pkg := range ps.pors[height] {
 		pkgHash := pkg.Hash()
-		if hash.CompareTo(pkgHash) == 0 {
+		if bytes.Compare(hash[:], pkgHash) == 0 {
 			return pkg.sigchain, nil
 		}
 	}
@@ -180,9 +181,13 @@ func (ps *PorServer) IsSigChainExist(hash common.Uint256, height uint32) (*commo
 	ps.RLock()
 	for _, pkg := range ps.pors[height] {
 		pkgHash := pkg.Hash()
-		if (&pkgHash).CompareTo(hash) == 0 {
+		if bytes.Compare(pkgHash, hash[:]) == 0 {
 			ps.RUnlock()
-			return pkg.GetTxHash(), true
+			txHash, err := common.Uint256ParseFromBytes(pkg.GetTxHash())
+			if err != nil {
+				return nil, false
+			}
+			return &txHash, true
 		}
 	}
 	ps.RUnlock()

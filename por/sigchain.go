@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/binary"
 	"errors"
 	"io"
 
@@ -31,13 +32,13 @@ const (
 const sigAlgo SigAlgo = ECDSA
 
 type SigChain struct {
-	nonce      [4]byte         // cryptographic nonce
+	nonce      uint32          // cryptographic nonce
 	dataSize   uint32          // payload size
-	dataHash   *common.Uint256 // payload hash
-	blockHash  *common.Uint256 // latest block hash
+	dataHash   []byte          // payload hash
+	blockHash  []byte          // latest block hash
 	srcPubkey  []byte          // source pubkey
 	destPubkey []byte          // destination pubkey
-	elems      []*SigChainElem
+	elems      []*SigChainElem // signature chain elements
 }
 
 type SigChainElem struct {
@@ -46,7 +47,7 @@ type SigChainElem struct {
 	signature  []byte  // signature for signature chain element
 }
 
-func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash *common.Uint256, srcPubkey, destPubkey, nextPubkey, signature []byte, algo SigAlgo) (*SigChain, error) {
+func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash, srcPubkey, destPubkey, nextPubkey, signature []byte, algo SigAlgo) (*SigChain, error) {
 	sc := &SigChain{
 		dataSize:   dataSize,
 		dataHash:   dataHash,
@@ -65,7 +66,7 @@ func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash *common.Uint2
 }
 
 // first relay node starts a new signature chain which consists of meta data and the first element.
-func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash, blockHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
+func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash, blockHash, destPubkey, nextPubkey []byte) (*SigChain, error) {
 	ownPk := owner.PubKey()
 	srcPubkey, err := ownPk.EncodePoint(true)
 	if err != nil {
@@ -86,7 +87,12 @@ func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash, blockHash *co
 		},
 	}
 
-	rand.Read(sc.nonce[:])
+	b := make([]byte, 4)
+	_, err = rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+	sc.nonce = binary.LittleEndian.Uint32(b)
 
 	buff := bytes.NewBuffer(nil)
 	if err := sc.SerializationMetadata(buff); err != nil {
@@ -242,7 +248,7 @@ func (sc *SigChain) Length() int {
 	return len(sc.elems)
 }
 
-func (sc *SigChain) GetDataHash() *common.Uint256 {
+func (sc *SigChain) GetDataHash() []byte {
 	return sc.dataHash
 }
 
@@ -373,7 +379,7 @@ func (sc *SigChain) Serialize(w io.Writer) error {
 func (sc *SigChain) SerializationMetadata(w io.Writer) error {
 	var err error
 
-	err = serialization.WriteVarBytes(w, sc.nonce[:])
+	err = serialization.WriteUint32(w, sc.nonce)
 	if err != nil {
 		return err
 	}
@@ -383,12 +389,12 @@ func (sc *SigChain) SerializationMetadata(w io.Writer) error {
 		return err
 	}
 
-	_, err = sc.dataHash.Serialize(w)
+	err = serialization.WriteVarBytes(w, sc.dataHash)
 	if err != nil {
 		return err
 	}
 
-	_, err = sc.blockHash.Serialize(w)
+	err = serialization.WriteVarBytes(w, sc.blockHash)
 	if err != nil {
 		return err
 	}
@@ -433,25 +439,22 @@ func (sc *SigChain) Deserialize(r io.Reader) error {
 func (sc *SigChain) DeserializationMetadata(r io.Reader) error {
 	var err error
 
-	nonce, err := serialization.ReadVarBytes(r)
+	sc.nonce, err = serialization.ReadUint32(r)
 	if err != nil {
 		return err
 	}
-	copy(sc.nonce[:], nonce)
 
 	sc.dataSize, err = serialization.ReadUint32(r)
 	if err != nil {
 		return err
 	}
 
-	sc.dataHash = new(common.Uint256)
-	err = sc.dataHash.Deserialize(r)
+	sc.dataHash, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
 
-	sc.blockHash = new(common.Uint256)
-	err = sc.blockHash.Deserialize(r)
+	sc.blockHash, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
@@ -536,12 +539,17 @@ func (sc *SigChain) Hash() common.Uint256 {
 	return sha256.Sum256(buff.Bytes())
 }
 
-func (sc *SigChain) GetBlockHash() *common.Uint256 {
+func (sc *SigChain) GetBlockHash() []byte {
 	return sc.blockHash
 }
 
 func (sc *SigChain) GetBlockHeight() (*uint32, error) {
-	blockHeader, err := ledger.DefaultLedger.Store.GetHeader(*sc.blockHash)
+	blockHash, err := common.Uint256ParseFromBytes(sc.blockHash)
+	if err != nil {
+		log.Error("Parse block hash uint256 from bytes error:", err)
+		return nil, err
+	}
+	blockHeader, err := ledger.DefaultLedger.Store.GetHeader(blockHash)
 	if err != nil {
 		log.Error("Get block header error:", err)
 		return nil, err

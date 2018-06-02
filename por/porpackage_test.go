@@ -20,7 +20,9 @@ func TestPorPackage(t *testing.T) {
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 
-	sc, err := NewSigChain(from, 1, &common.Uint256{}, &common.Uint256{}, toPk, relPk)
+	dataHash := common.Uint256{}
+	blockHash := common.Uint256{}
+	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], toPk, relPk)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
@@ -49,22 +51,25 @@ func TestPorPackage(t *testing.T) {
 
 	//test Hash
 	ppkgHash := ppkg.Hash()
-	if (&ppkgHash).CompareTo(sc.Hash()) != 0 {
+	sigChainHash := sc.Hash()
+	if bytes.Compare(ppkgHash, sigChainHash[:]) != 0 {
 		t.Error("[TestPorPackage] Hash test failed")
 	}
 
-	//GetblockHash
-	if sc.GetblockHash() != ppkg.GetblockHash() {
+	//GetBlockHash
+	if bytes.Compare(sc.GetBlockHash(), ppkg.GetBlockHash()) != 0 {
 		t.Error("[TestPorPackage] GetBlockHeight test failed")
 	}
 
 	//GetTxHash
-	if ppkg.GetTxHash().CompareTo(txn.Hash()) != 0 {
+	txHash := txn.Hash()
+	if bytes.Compare(ppkg.GetTxHash(), txHash[:]) != 0 {
 		t.Error("[TestPorPackage] GetTxHash test failed")
 	}
 
 	//GetSigChain
-	if (&ppkgHash).CompareTo(ppkg.GetSigChain().Hash()) != 0 {
+	sigChainHash = ppkg.GetSigChain().Hash()
+	if bytes.Compare(ppkgHash, sigChainHash[:]) != 0 {
 		t.Error("[TestPorPackage] GetSigChain test failed")
 	}
 
