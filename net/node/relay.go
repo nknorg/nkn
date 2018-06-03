@@ -77,7 +77,7 @@ func (node *node) SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload,
 		srcPubkey,
 		destPubkey,
 		signature,
-		por.ECDSA,
+		por.SigAlgo_ECDSA,
 	)
 
 	relayPacket, err := message.NewRelayPacket(srcID, destID, payload, sigChain)

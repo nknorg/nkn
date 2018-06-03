@@ -1,11 +1,12 @@
 package httpjson
 
 import (
-	"github.com/nknorg/nkn/common/log"
 	"fmt"
 	"os"
 	"os/exec"
 	"testing"
+
+	"github.com/nknorg/nkn/util/log"
 )
 
 func TestAddFileIPFS(t *testing.T) {

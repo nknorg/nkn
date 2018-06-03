@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/wallet"
@@ -103,10 +104,9 @@ func TestSigChain(t *testing.T) {
 	}
 
 	// test Serialize & Deserialize & Hash
-	var sd SigChain
-	buff := bytes.NewBuffer(nil)
-	sc.Serialize(buff)
-	sd.Deserialize(buff)
+	sd := &SigChain{}
+	buf, err := proto.Marshal(sc)
+	err = proto.Unmarshal(buf, sd)
 	scHash := sc.Hash()
 	sdHash := sd.Hash()
 	if bytes.Compare(scHash[:], sdHash[:]) != 0 {
@@ -117,7 +117,7 @@ func TestSigChain(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !common.IsEqualBytes(elem2.signature, sc.elems[2].signature) {
+	if !common.IsEqualBytes(elem2.Signature, sc.Elems[2].Signature) {
 		t.Error("[TestSigChain] getElemByIndex error")
 	}
 

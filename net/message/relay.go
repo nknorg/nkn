@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"io"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/protocol"
@@ -16,8 +17,8 @@ import (
 type RelayPacket struct {
 	SrcID    []byte
 	DestID   []byte
-	SigChain *por.SigChain
 	Payload  []byte
+	SigChain *por.SigChain
 }
 
 type RelayMessage struct {
@@ -29,8 +30,8 @@ func NewRelayPacket(srcID, destID, payload []byte, sigChain *por.SigChain) (*Rel
 	relayPakcet := &RelayPacket{
 		SrcID:    srcID,
 		DestID:   destID,
-		SigChain: sigChain,
 		Payload:  payload,
+		SigChain: sigChain,
 	}
 	return relayPakcet, nil
 }
@@ -114,12 +115,16 @@ func (packet *RelayPacket) Serialize(w io.Writer) error {
 		return err
 	}
 
-	err = packet.SigChain.Serialize(w)
+	err = serialization.WriteVarBytes(w, packet.Payload)
 	if err != nil {
 		return err
 	}
 
-	err = serialization.WriteVarBytes(w, packet.Payload)
+	buf, err := proto.Marshal(packet.SigChain)
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteVarBytes(w, buf)
 	if err != nil {
 		return err
 	}
@@ -140,17 +145,21 @@ func (packet *RelayPacket) Deserialize(r io.Reader) error {
 	}
 	packet.DestID = destID
 
-	packet.SigChain = &por.SigChain{}
-	err = packet.SigChain.Deserialize(r)
-	if err != nil {
-		return err
-	}
-
 	payload, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
 	packet.Payload = payload
+
+	buf, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	packet.SigChain = &por.SigChain{}
+	err = proto.Unmarshal(buf, packet.SigChain)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
