@@ -3,6 +3,7 @@ package httpjson
 import (
 	"bytes"
 
+	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
@@ -637,9 +638,8 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 	dataHash := Uint256{}
 	blockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
 	sigChain, _ := por.NewSigChain(account, 1, dataHash[:], blockHash[:], pubKey, pubKey)
-	buf := bytes.NewBuffer(nil)
-	sigChain.Serialize(buf)
-	txn, err := MakeCommitTransaction(s.wallet, buf.Bytes())
+	buf, err := proto.Marshal(sigChain)
+	txn, err := MakeCommitTransaction(s.wallet, buf)
 	if err != nil {
 		return RpcResultInternalError
 	}

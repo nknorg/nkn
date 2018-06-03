@@ -1,12 +1,12 @@
 package ising
 
 import (
-	"bytes"
 	"fmt"
 	"math/rand"
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/ising/voting"
 	"github.com/nknorg/nkn/core/contract/program"
@@ -111,9 +111,8 @@ func (ps *ProposerService) ProposerRoutine(vType voting.VotingContentType) {
 	case voting.SigChainTxnVote:
 		txn := content.(*transaction.Transaction)
 		payload := txn.Payload.(*payload.Commit)
-		buff := bytes.NewBuffer(payload.SigChain)
-		var sigchain por.SigChain
-		sigchain.Deserialize(buff)
+		sigchain := &por.SigChain{}
+		proto.Unmarshal(payload.SigChain, sigchain)
 		// TODO: get a determinate public key on signature chain
 		pbk, err := sigchain.GetLastPubkey()
 		if err != nil {

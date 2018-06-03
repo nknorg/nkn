@@ -1,5 +1,5 @@
-hash: cd8c1b38e78fe9494ff681049ea0721a7c41e56bf94adc9d78a0cf867905c4c0
-updated: 2018-04-16T14:18:41.165119+08:00
+hash: 7b71386f97f10edd4d967cd3dc9458dd143b0a174d25a2c3d5cd2102fe282b0d
+updated: 2018-06-04T00:12:13.958659+08:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: da1a8928f709389522c8023062a3739f3b4af419
@@ -15,7 +15,7 @@ imports:
   - ripemd160
   - ssh/terminal
 - name: github.com/golang/protobuf
-  version: e09c5db296004fbe3f74490e84dcd62c3c5ddb1b
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
   - proto
 - name: github.com/golang/snappy

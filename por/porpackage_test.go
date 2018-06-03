@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
@@ -37,9 +38,8 @@ func TestPorPackage(t *testing.T) {
 		t.Error("'to' sign in error")
 	}
 
-	buff := bytes.NewBuffer(nil)
-	sc.Serialize(buff)
-	txn, err := transaction.NewCommitTransaction(buff.Bytes(), from.ProgramHash)
+	buf, err := proto.Marshal(sc)
+	txn, err := transaction.NewCommitTransaction(buf, from.ProgramHash)
 	if err != nil {
 		log.Error("txn wrong", txn)
 	}
@@ -74,10 +74,9 @@ func TestPorPackage(t *testing.T) {
 	}
 
 	//Serialize & Deserialize
-	ppkg2 := new(porPackage)
-	buff2 := bytes.NewBuffer(nil)
-	ppkg.Serialize(buff2)
-	ppkg2.Deserialize(buff2)
+	buf, err = proto.Marshal(ppkg)
+	ppkg2 := new(PorPackage)
+	proto.Unmarshal(buf, ppkg2)
 
 	if ppkg.CompareTo(ppkg2) != 0 {
 		t.Error("[TestPorPackage] Serialize test failed")

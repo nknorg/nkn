@@ -1,4 +1,6 @@
 package: github.com/nknorg/nkn
+ignore:
+- golang.org/x/sys/unix
 import:
 - package: github.com/golang/crypto
   subpackages:
@@ -21,5 +23,4 @@ import:
   - crypto/secp256k1
   - crypto/sha3
   - params
-ignore:
-  - golang.org/x/sys/unix
+- package: github.com/golang/protobuf

@@ -1,0 +1,13 @@
+syntax = "proto3";
+package por;
+
+import "sigchain.proto";
+
+message PorPackage {
+	uint32 Height = 1;
+	bytes Owner = 2;
+  bytes BlockHash = 3;
+  bytes TxHash = 4;
+  bytes SigChainHash = 5;
+  SigChain SigChain = 6;
+}

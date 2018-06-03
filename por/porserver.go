@@ -15,7 +15,7 @@ import (
 type PorServer struct {
 	sync.RWMutex
 	account *wallet.Account
-	pors    map[uint32][]*porPackage
+	pors    map[uint32][]*PorPackage
 }
 
 var porServer *PorServer
@@ -23,7 +23,7 @@ var porServer *PorServer
 func NewPorServer(account *wallet.Account) *PorServer {
 	ps := &PorServer{
 		account: account,
-		pors:    make(map[uint32][]*porPackage),
+		pors:    make(map[uint32][]*PorPackage),
 	}
 	return ps
 }
@@ -113,7 +113,7 @@ func (ps *PorServer) CleanChainList(height uint32) {
 
 	ps.Lock()
 	if height == 0 {
-		ps.pors = make(map[uint32][]*porPackage)
+		ps.pors = make(map[uint32][]*PorPackage)
 	} else {
 		if _, ok := ps.pors[height]; ok {
 			delete(ps.pors, height)
@@ -134,7 +134,7 @@ func (ps *PorServer) GetMinSigChain(height uint32) (*SigChain, error) {
 	length := len(ps.pors[height])
 	switch {
 	case length > 1:
-		sort.Sort(porPackages(ps.pors[height]))
+		sort.Sort(PorPackages(ps.pors[height]))
 		fallthrough
 	case length == 1:
 		minSigChain = ps.pors[height][0].GetSigChain()
@@ -153,7 +153,7 @@ func (ps *PorServer) GetSigChain(height uint32, hash common.Uint256) (*SigChain,
 	for _, pkg := range ps.pors[height] {
 		pkgHash := pkg.Hash()
 		if bytes.Compare(hash[:], pkgHash) == 0 {
-			return pkg.sigchain, nil
+			return pkg.SigChain, nil
 		}
 	}
 
@@ -169,7 +169,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) error {
 	height := porpkg.GetHeight()
 	ps.Lock()
 	if _, ok := ps.pors[height]; !ok {
-		ps.pors[height] = make([]*porPackage, 0)
+		ps.pors[height] = make([]*PorPackage, 0)
 	}
 	ps.pors[height] = append(ps.pors[height], porpkg)
 	ps.Unlock()

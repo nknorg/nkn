@@ -1,0 +1,22 @@
+syntax = "proto3";
+package por;
+
+enum SigAlgo {
+  ECDSA = 0;
+}
+
+message SigChainElem {
+  SigAlgo SigAlgo = 1;
+  bytes NextPubkey = 2;
+  bytes Signature = 3;
+}
+
+message SigChain {
+  uint32 Nonce = 1;
+  uint32 DataSize = 2;
+  bytes DataHash = 3;
+  bytes BlockHash = 4;
+  bytes SrcPubkey = 5;
+  bytes DestPubkey = 6;
+  repeated SigChainElem Elems = 7;
+}
