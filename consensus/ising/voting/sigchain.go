@@ -34,17 +34,16 @@ func NewSigChainVoting(totalWeight int, txnCollector *transaction.TxnCollector) 
 	return sigChainVoting
 }
 
-func (scv *SigChainVoting) SetProposerState(hash Uint256, s State) {
+func (scv *SigChainVoting) SetSelfState(hash Uint256, s State) {
 	scv.Lock()
 	defer scv.Unlock()
-
 	if _, ok := scv.pstate[hash]; !ok {
 		scv.pstate[hash] = new(State)
 	}
 	scv.pstate[hash].SetBit(s)
 }
 
-func (scv *SigChainVoting) HasProposerState(hash Uint256, state State) bool {
+func (scv *SigChainVoting) HasSelfState(hash Uint256, state State) bool {
 	scv.RLock()
 	defer scv.RUnlock()
 
@@ -58,7 +57,7 @@ func (scv *SigChainVoting) HasProposerState(hash Uint256, state State) bool {
 	}
 }
 
-func (scv *SigChainVoting) SetVoterState(id uint64, hash Uint256, s State) {
+func (scv *SigChainVoting) SetNeighborState(id uint64, hash Uint256, s State) {
 	scv.Lock()
 	defer scv.Unlock()
 
@@ -71,7 +70,7 @@ func (scv *SigChainVoting) SetVoterState(id uint64, hash Uint256, s State) {
 	scv.vstate[id][hash].SetBit(s)
 }
 
-func (scv *SigChainVoting) HasVoterState(id uint64, hash Uint256, state State) bool {
+func (scv *SigChainVoting) HasNeighborState(id uint64, hash Uint256, state State) bool {
 	scv.RLock()
 	defer scv.RUnlock()
 
