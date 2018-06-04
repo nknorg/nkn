@@ -2,6 +2,7 @@ package ledger
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"time"
 
@@ -213,4 +214,83 @@ func (b *Block) RebuildMerkleRoot() error {
 
 func (bd *Block) SerializeUnsigned(w io.Writer) error {
 	return bd.Header.SerializeUnsigned(w)
+}
+
+func (bd *Block) MarshalJson() ([]byte, error) {
+	var blockInfo BlocksInfo
+
+	info, err := bd.Header.MarshalJson()
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(info, &blockInfo.Header)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range bd.Transactions {
+		info, err := v.MarshalJson()
+		if err != nil {
+			return nil, err
+		}
+		var t tx.TransactionInfo
+		err = json.Unmarshal(info, &t)
+		if err != nil {
+			return nil, err
+		}
+		blockInfo.Transactions = append(blockInfo.Transactions, &t)
+	}
+
+	if bd.hash != nil {
+		blockInfo.Hash = BytesToHexString(bd.hash.ToArrayReverse())
+	}
+
+	data, err := json.Marshal(blockInfo)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (bd *Block) UnmarshalJson(data []byte) error {
+	blockInfo := new(BlocksInfo)
+	var err error
+	if err = json.Unmarshal(data, &blockInfo); err != nil {
+		return err
+	}
+
+	info, err := json.Marshal(blockInfo.Header)
+	if err != nil {
+		return err
+	}
+	var header Header
+	err = header.UnmarshalJson(info)
+	bd.Header = &header
+
+	for _, v := range blockInfo.Transactions {
+		info, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		var txn tx.Transaction
+		err = txn.UnmarshalJson(info)
+		if err != nil {
+			return err
+		}
+		bd.Transactions = append(bd.Transactions, &txn)
+	}
+
+	if blockInfo.Hash != "" {
+		hashSlice, err := HexStringToBytesReverse(blockInfo.Hash)
+		if err != nil {
+			return err
+		}
+		hash, err := Uint256ParseFromBytes(hashSlice)
+		if err != nil {
+			return err
+		}
+		bd.hash = &hash
+	}
+
+	return nil
 }

@@ -3,6 +3,7 @@ package transaction
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -45,6 +46,10 @@ type Payload interface {
 	Serialize(w io.Writer, version byte) error
 
 	Deserialize(r io.Reader, version byte) error
+
+	MarshalJson() ([]byte, error)
+
+	UnmarshalJson(data []byte) error
 }
 
 //Transaction is used for carry information or action to Ledger
@@ -479,4 +484,179 @@ func (a byProgramHashes) Less(i, j int) bool {
 	} else {
 		return true
 	}
+}
+
+func (tx *Transaction) MarshalJson() ([]byte, error) {
+	var txInfo TransactionInfo
+
+	txInfo.TxType = tx.TxType
+	txInfo.PayloadVersion = tx.PayloadVersion
+
+	if tx.Payload != nil {
+		info, err := tx.Payload.MarshalJson()
+		if err != nil {
+			return nil, err
+		}
+		var t interface{}
+		json.Unmarshal(info, &t)
+
+		txInfo.Payload = t
+	}
+
+	for _, v := range tx.Attributes {
+		info, err := v.MarshalJson()
+		if err != nil {
+			return nil, err
+		}
+		var t TxAttributeInfo
+		json.Unmarshal(info, &t)
+		txInfo.Attributes = append(txInfo.Attributes, t)
+	}
+
+	for _, v := range tx.UTXOInputs {
+		info, err := v.MarshalJson()
+		if err != nil {
+			return nil, err
+		}
+		var t UTXOTxInputInfo
+		json.Unmarshal(info, &t)
+		txInfo.UTXOInputs = append(txInfo.UTXOInputs, t)
+	}
+
+	for _, v := range tx.Outputs {
+		info, err := v.MarshalJson()
+		if err != nil {
+			return nil, err
+		}
+		var t TxOutputInfo
+		json.Unmarshal(info, &t)
+		txInfo.Outputs = append(txInfo.Outputs, t)
+	}
+
+	for _, v := range tx.Programs {
+		info, err := v.MarshalJson()
+		if err != nil {
+			return nil, err
+		}
+		var t program.ProgramInfo
+		json.Unmarshal(info, &t)
+		txInfo.Programs = append(txInfo.Programs, t)
+	}
+
+	if tx.hash != nil {
+		txInfo.Hash = BytesToHexString(tx.hash.ToArrayReverse())
+	}
+
+	data, err := json.Marshal(txInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (tx *Transaction) UnmarshalJson(data []byte) error {
+	txInfo := new(TransactionInfo)
+	var err error
+	if err = json.Unmarshal(data, &txInfo); err != nil {
+		return err
+	}
+
+	tx.TxType = txInfo.TxType
+	tx.PayloadVersion = txInfo.PayloadVersion
+
+	info, err := json.Marshal(txInfo.Payload)
+	if err != nil {
+		return err
+	}
+	switch tx.TxType {
+	case RegisterAsset:
+		tx.Payload = new(payload.RegisterAsset)
+	case IssueAsset:
+		tx.Payload = new(payload.IssueAsset)
+	case TransferAsset:
+		tx.Payload = new(payload.TransferAsset)
+	case BookKeeping:
+		tx.Payload = new(payload.BookKeeping)
+	case BookKeeper:
+		tx.Payload = new(payload.BookKeeper)
+	case Prepaid:
+		tx.Payload = new(payload.Prepaid)
+	case Withdraw:
+		tx.Payload = new(payload.Withdraw)
+	case Commit:
+		tx.Payload = new(payload.Commit)
+	default:
+		return errors.New("[Transaction],invalide transaction type.")
+	}
+	err = tx.Payload.UnmarshalJson(info)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range txInfo.Attributes {
+		info, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		var at TxAttribute
+		err = at.UnmarshalJson(info)
+		if err != nil {
+			return err
+		}
+		tx.Attributes = append(tx.Attributes, &at)
+	}
+
+	for _, v := range txInfo.UTXOInputs {
+		info, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		var ui UTXOTxInput
+		err = ui.UnmarshalJson(info)
+		if err != nil {
+			return err
+		}
+		tx.UTXOInputs = append(tx.UTXOInputs, &ui)
+	}
+
+	for _, v := range txInfo.Outputs {
+		info, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		var o TxOutput
+		err = o.UnmarshalJson(info)
+		if err != nil {
+			return err
+		}
+		tx.Outputs = append(tx.Outputs, &o)
+	}
+
+	for _, v := range txInfo.Programs {
+		info, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		var p program.Program
+		err = p.UnmarshalJson(info)
+		if err != nil {
+			return err
+		}
+		tx.Programs = append(tx.Programs, &p)
+	}
+
+	if txInfo.Hash != "" {
+		hashSlice, err := HexStringToBytesReverse(txInfo.Hash)
+		if err != nil {
+			return err
+		}
+		hash, err := Uint256ParseFromBytes(hashSlice)
+		if err != nil {
+			return err
+		}
+		tx.hash = &hash
+	}
+
+	return nil
 }
