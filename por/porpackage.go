@@ -63,30 +63,29 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	}
 
 	txHash := txn.Hash()
-	sigChainHash := sigChain.Hash()
+	sigHash, err := sigChain.SignatureHash()
+	if err != nil {
+		return nil, err
+	}
 	pp := &PorPackage{
-		Height:       blockHeader.Height,
-		Owner:        owner,
-		BlockHash:    sigChain.BlockHash,
-		TxHash:       txHash[:],
-		SigChainHash: sigChainHash[:],
-		SigChain:     sigChain,
+		VoteForHeight: blockHeader.Height,
+		Owner:         owner,
+		BlockHash:     sigChain.BlockHash,
+		TxHash:        txHash[:],
+		SigHash:       sigHash,
+		SigChain:      sigChain,
 	}
 	return pp, nil
 }
 
-func (pp *PorPackage) Hash() []byte {
-	return pp.SigChainHash
-}
-
 func (pp *PorPackage) CompareTo(o *PorPackage) int {
-	return bytes.Compare(pp.SigChainHash, o.SigChainHash)
+	return bytes.Compare(pp.SigHash, o.SigHash)
 }
 
 func (pp *PorPackage) DumpInfo() {
 	log.Info("owner: ", common.BytesToHexString(pp.Owner))
 	log.Info("txHash: ", pp.TxHash)
-	log.Info("sigchainHash: ", pp.SigChainHash)
+	log.Info("sigHash: ", pp.SigHash)
 	sc := pp.SigChain
 	sc.DumpInfo()
 }

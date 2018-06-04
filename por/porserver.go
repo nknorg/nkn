@@ -151,8 +151,7 @@ func (ps *PorServer) GetSigChain(height uint32, hash common.Uint256) (*SigChain,
 	defer ps.RUnlock()
 
 	for _, pkg := range ps.pors[height] {
-		pkgHash := pkg.Hash()
-		if bytes.Compare(hash[:], pkgHash) == 0 {
+		if bytes.Compare(pkg.SigHash, hash[:]) == 0 {
 			return pkg.SigChain, nil
 		}
 	}
@@ -166,7 +165,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) error {
 		return err
 	}
 
-	height := porpkg.GetHeight()
+	height := porpkg.GetVoteForHeight()
 	ps.Lock()
 	if _, ok := ps.pors[height]; !ok {
 		ps.pors[height] = make([]*PorPackage, 0)
@@ -177,11 +176,10 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) error {
 	return nil
 }
 
-func (ps *PorServer) IsSigChainExist(hash common.Uint256, height uint32) (*common.Uint256, bool) {
+func (ps *PorServer) IsSigChainExist(hash []byte, height uint32) (*common.Uint256, bool) {
 	ps.RLock()
 	for _, pkg := range ps.pors[height] {
-		pkgHash := pkg.Hash()
-		if bytes.Compare(pkgHash, hash[:]) == 0 {
+		if bytes.Compare(pkg.SigHash, hash[:]) == 0 {
 			ps.RUnlock()
 			txHash, err := common.Uint256ParseFromBytes(pkg.GetTxHash())
 			if err != nil {

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
@@ -289,28 +288,13 @@ func (sc *SigChain) firstSigElem() (*SigChainElem, error) {
 	return sc.Elems[0], nil
 }
 
-// secondLastSigElem returns the second last element in signature chain.
-func (sc *SigChain) secondLastSigElem() (*SigChainElem, error) {
-	if sc == nil || len(sc.Elems) == 0 {
-		return nil, errors.New("nil signature chain")
-	}
-
-	num := len(sc.Elems)
-	if num < 2 {
-		return nil, errors.New("signature chain length less than 2")
-	}
-
-	return sc.Elems[num-2], nil
-}
-
 // lastSigElem returns the last element in signature chain.
 func (sc *SigChain) lastSigElem() (*SigChainElem, error) {
 	if sc == nil || len(sc.Elems) == 0 {
 		return nil, errors.New("nil signature chain")
 	}
-	num := len(sc.Elems)
 
-	return sc.Elems[num-1], nil
+	return sc.Elems[sc.Length()-1], nil
 }
 
 func (sc *SigChain) finalSigElem() (*SigChainElem, error) {
@@ -318,7 +302,12 @@ func (sc *SigChain) finalSigElem() (*SigChainElem, error) {
 		return nil, errors.New("not final")
 	}
 
-	return sc.Elems[len(sc.Elems)-1], nil
+	n := sc.Length()
+	if n < 2 {
+		return nil, errors.New("not enough elements")
+	}
+
+	return sc.Elems[n-2], nil
 }
 
 func (sc *SigChain) IsFinal() bool {
@@ -357,6 +346,7 @@ func (sc *SigChain) GetSignerIndex(pubkey []byte) (int, error) {
 	_, idx, err := sc.getElemByPubkey(pubkey)
 	return idx, err
 }
+
 func (sc *SigChain) GetLastPubkey() ([]byte, error) {
 	e, err := sc.lastSigElem()
 	if err != nil {
@@ -383,10 +373,13 @@ func (sc *SigChain) GetSignature() ([]byte, error) {
 	return sce.Signature, nil
 }
 
-func (sc *SigChain) Hash() common.Uint256 {
-	// TODO: use last signature
-	buf, _ := proto.Marshal(sc)
-	return sha256.Sum256(buf)
+func (sc *SigChain) SignatureHash() ([]byte, error) {
+	signature, err := sc.GetSignature()
+	if err != nil {
+		return nil, err
+	}
+	sigHash := sha256.Sum256(signature)
+	return sigHash[:], nil
 }
 
 func (sc *SigChain) GetBlockHeight() (*uint32, error) {
