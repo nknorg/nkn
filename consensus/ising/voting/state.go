@@ -3,18 +3,20 @@ package voting
 const (
 	InitialState State = 1 << iota
 
-	// proposer node get into this state after broadcast block
-	// voter node get into this state after received block
+	// set self state after receive block
 	FloodingFinished
 
-	// voter node request block from proposer node
+	// set neighbor state after sending request
 	RequestSent
 
-	// proposer node sent the proposal
+	// set neighbor state after receive request
+	RequestReceived
+
+	// set self state after sending proposal
 	ProposalSent
 
-	// voter node sent the idea of the proposal
-	OpinionSent
+	// set neighbor state after receive proposal
+	ProposalReceived
 )
 
 type State uint32

@@ -169,17 +169,19 @@ func (ps *ProposerService) SendNewProposal(vType voting.VotingContentType) (voti
 		// set mind if it has not been set
 		votingPool.ChangeMind(votingHeight, hash)
 	}
-	log.Infof("proposing hash: %s, type: %d", BytesToHexString(hash.ToArray()), vType)
-	// create new proposal
-	proposalMsg := NewProposal(&hash, votingHeight, vType)
-	// get nodes which should receive proposal message
-	nodes := ps.GetReceiverNode(nil)
-	// send proposal to neighbors
-	ps.SendConsensusMsg(proposalMsg, nodes)
-	// state changed for current hash
-	current.SetProposerState(hash, voting.ProposalSent)
-	// set confirming hash
-	current.SetConfirmingHash(hash)
+	if !current.HasSelfState(hash, voting.ProposalSent) {
+		log.Infof("proposing hash: %s, type: %d", BytesToHexString(hash.ToArray()), vType)
+		// create new proposal
+		proposalMsg := NewProposal(&hash, votingHeight, vType)
+		// get nodes which should receive proposal message
+		nodes := ps.GetReceiverNode(nil)
+		// send proposal to neighbors
+		ps.SendConsensusMsg(proposalMsg, nodes)
+		// state changed for current hash
+		current.SetSelfState(hash, voting.ProposalSent)
+		// set confirming hash
+		current.SetConfirmingHash(hash)
+	}
 
 	return content, nil
 }
@@ -391,10 +393,14 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 			" hash: %s\n", votingHeight, height, BytesToHexString(blockHash.ToArray()))
 		return
 	}
-	if current.HasProposerState(blockHash, voting.FloodingFinished) {
-		log.Warn("consensus state error in BlockFlooding message handler")
+	// returns if receive duplicate block
+	if current.HasSelfState(blockHash, voting.FloodingFinished) {
+		log.Warn("Duplicate block received for hash: ", BytesToHexString(blockHash.ToArray()))
 		return
 	}
+	// set state for flooding block
+	current.SetSelfState(blockHash, voting.FloodingFinished)
+
 	// TODO check if the sender is PoR node
 	err := current.Preparing(bfMsg.block)
 	if err != nil {
@@ -418,6 +424,18 @@ func (ps *ProposerService) HandleRequestMsg(req *Request, sender *crypto.PubKey)
 		log.Warn("requested block doesn't match with local block in process")
 		return
 	}
+	if !current.HasSelfState(hash, voting.ProposalSent) {
+		log.Warn("receive invalid request for hash: ", BytesToHexString(hash.ToArray()))
+		return
+	}
+	nodeID := publickKeyToNodeID(sender)
+	// returns if receive duplicate request
+	if current.HasNeighborState(nodeID, hash, voting.RequestReceived) {
+		log.Warn("duplicate request received for hash: ", BytesToHexString(hash.ToArray()))
+		return
+	}
+	// set state for request
+	current.SetNeighborState(nodeID, hash, voting.RequestReceived)
 	content, err := current.GetVotingContent(hash, height)
 	if err != nil {
 		return
@@ -467,8 +485,14 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubK
 		return
 	}
 	nodeID := publickKeyToNodeID(sender)
-	if !current.HasVoterState(nodeID, *hash, voting.RequestSent) {
+	// returns if no request sent before
+	if !current.HasNeighborState(nodeID, *hash, voting.RequestSent) {
 		log.Warn("consensus state error in Response message handler")
+		return
+	}
+	// returns if receive duplicate response
+	if current.HasNeighborState(nodeID, *hash, voting.ProposalReceived) {
+		log.Warn("duplicate response received for hash: ", BytesToHexString(hash.ToArray()))
 		return
 	}
 	// TODO check if the sender is requested neighbor node
@@ -478,7 +502,7 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubK
 	}
 	currentVotingPool := current.GetVotingPool()
 	currentVotingPool.AddToReceivePool(height, nodeID, *hash)
-	current.SetVoterState(nodeID, *hash, voting.OpinionSent)
+	current.SetNeighborState(nodeID, *hash, voting.ProposalReceived)
 }
 
 func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.PubKey) {
@@ -494,10 +518,6 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 	}
 	// TODO check if the sender is neighbor
 	nodeID := publickKeyToNodeID(sender)
-	if current.HasVoterState(nodeID, hash, voting.OpinionSent) {
-		log.Warn("consensus state error in Proposal message handler")
-		return
-	}
 	if !current.Exist(hash, height) {
 		// generate request message
 		requestMsg := NewRequest(&hash, height, votingType)
@@ -505,11 +525,18 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 		nodes := ps.GetReceiverNode([]uint64{nodeID})
 		// send request message
 		ps.SendConsensusMsg(requestMsg, nodes)
-		current.SetVoterState(nodeID, hash, voting.RequestSent)
+		current.SetNeighborState(nodeID, hash, voting.RequestSent)
 		log.Warnf("doesn't contain hash in local cache, requesting it from neighbor %s\n",
 			BytesToHexString(hash.ToArray()))
 		return
 	}
+	// returns if receive duplicated proposal
+	if current.HasNeighborState(nodeID, hash, voting.ProposalReceived) {
+		log.Warn("duplicate proposal received for hash: ", BytesToHexString(hash.ToArray()))
+		return
+	}
+	// set state when receive a proposal from a neighbor
+	current.SetNeighborState(nodeID, hash, voting.ProposalReceived)
 	currentVotingPool := current.GetVotingPool()
 	currentVotingPool.AddToReceivePool(height, nodeID, hash)
 

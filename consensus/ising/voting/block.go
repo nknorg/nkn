@@ -31,7 +31,7 @@ func NewBlockVoting(totalWeight int) *BlockVoting {
 	return blockVoting
 }
 
-func (bv *BlockVoting) SetProposerState(blockhash Uint256, s State) {
+func (bv *BlockVoting) SetSelfState(blockhash Uint256, s State) {
 	bv.Lock()
 	defer bv.Unlock()
 
@@ -41,7 +41,7 @@ func (bv *BlockVoting) SetProposerState(blockhash Uint256, s State) {
 	bv.pstate[blockhash].SetBit(s)
 }
 
-func (bv *BlockVoting) HasProposerState(blockhash Uint256, state State) bool {
+func (bv *BlockVoting) HasSelfState(blockhash Uint256, state State) bool {
 	bv.RLock()
 	defer bv.RUnlock()
 
@@ -55,7 +55,7 @@ func (bv *BlockVoting) HasProposerState(blockhash Uint256, state State) bool {
 	}
 }
 
-func (bv *BlockVoting) SetVoterState(id uint64, blockhash Uint256, s State) {
+func (bv *BlockVoting) SetNeighborState(id uint64, blockhash Uint256, s State) {
 	bv.Lock()
 	defer bv.Unlock()
 
@@ -68,7 +68,7 @@ func (bv *BlockVoting) SetVoterState(id uint64, blockhash Uint256, s State) {
 	bv.vstate[id][blockhash].SetBit(s)
 }
 
-func (bv *BlockVoting) HasVoterState(id uint64, blockhash Uint256, state State) bool {
+func (bv *BlockVoting) HasNeighborState(id uint64, blockhash Uint256, state State) bool {
 	bv.RLock()
 	defer bv.RUnlock()
 
@@ -163,11 +163,8 @@ func (bv *BlockVoting) DumpState(hash Uint256, desc string, verbose bool) {
 	if s.HasBit(RequestSent) {
 		str += " -> RequestSent"
 	}
-	if s.HasBit(ProposalSent) {
-		str += " -> ProposalSent"
-	}
-	if s.HasBit(OpinionSent) {
-		str += " -> OpinionSent"
+	if s.HasBit(ProposalReceived) {
+		str += " -> ProposalReceived"
 	}
 	h := BytesToHexString(hash.ToArray())
 	if !verbose {
