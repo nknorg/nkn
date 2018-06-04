@@ -1,11 +1,13 @@
 package transaction
 
 import (
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/serialization"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
-	"bytes"
+
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common/serialization"
 )
 
 type UTXOTxInput struct {
@@ -47,7 +49,54 @@ func (ui *UTXOTxInput) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (ui *UTXOTxInput) ToArray() ([]byte) {
+func (ui *UTXOTxInput) Equal(ui2 *UTXOTxInput) bool {
+	if ui.ReferTxID.CompareTo(ui2.ReferTxID) != 0 {
+		return false
+	}
+
+	if ui.ReferTxOutputIndex != ui.ReferTxOutputIndex {
+		return false
+	}
+
+	return true
+}
+
+func (ui *UTXOTxInput) MarshalJson() ([]byte, error) {
+
+	inputInfo := UTXOTxInputInfo{
+		ReferTxID:          common.BytesToHexString(ui.ReferTxID.ToArrayReverse()),
+		ReferTxOutputIndex: ui.ReferTxOutputIndex,
+	}
+
+	data, err := json.Marshal(inputInfo)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (ui *UTXOTxInput) UnmarshalJson(data []byte) error {
+
+	inputInfo := new(UTXOTxInputInfo)
+	var err error
+	if err = json.Unmarshal(data, &inputInfo); err != nil {
+		return err
+	}
+
+	txid, err := common.HexStringToBytesReverse(inputInfo.ReferTxID)
+	if err != nil {
+		return err
+	}
+	ui.ReferTxID, err = common.Uint256ParseFromBytes(txid)
+	if err != nil {
+		return err
+	}
+	ui.ReferTxOutputIndex = inputInfo.ReferTxOutputIndex
+
+	return nil
+}
+
+func (ui *UTXOTxInput) ToArray() []byte {
 	b := new(bytes.Buffer)
 	ui.Serialize(b)
 	return b.Bytes()
