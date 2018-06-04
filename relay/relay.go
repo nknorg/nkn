@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
@@ -46,11 +48,25 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 		log.Error("Signing signature chain error: ", err)
 		return err
 	}
+
 	// TODO: only pick sigchain to sign when threshold is smaller than
+
 	digest, err := packet.SigChain.ExtendElement(destPubKey)
 	if err != nil {
 		return err
 	}
+
+	// TODO: create and send tx only after client sign
+	buf, err := proto.Marshal(packet.SigChain)
+	if err != nil {
+		return err
+	}
+	txn, err := transaction.NewCommitTransaction(buf, rs.account.ProgramHash)
+	if err != nil {
+		return err
+	}
+	rs.localNode.Xmit(txn)
+
 	response := map[string]interface{}{
 		"Action":  "receivePacket",
 		"Src":     string(packet.SrcID),
