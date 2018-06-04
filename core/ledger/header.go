@@ -1,15 +1,17 @@
 package ledger
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/json"
+	"errors"
+	"io"
+
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	. "github.com/nknorg/nkn/errors"
-	"crypto/sha256"
-	"errors"
-	"io"
-	"bytes"
 )
 
 type Header struct {
@@ -160,8 +162,95 @@ func (bd *Header) GetMessage() []byte {
 	return sig.GetHashData(bd)
 }
 
-func (bd *Header) ToArray() ([]byte) {
+func (bd *Header) ToArray() []byte {
 	b := new(bytes.Buffer)
 	bd.Serialize(b)
 	return b.Bytes()
+}
+
+func (bd *Header) MarshalJson() ([]byte, error) {
+	headerInfo := &HeaderInfo{
+		Version:          bd.Version,
+		PrevBlockHash:    BytesToHexString(bd.PrevBlockHash.ToArrayReverse()),
+		TransactionsRoot: BytesToHexString(bd.TransactionsRoot.ToArrayReverse()),
+		Timestamp:        bd.Timestamp,
+		Height:           bd.Height,
+		ConsensusData:    bd.ConsensusData,
+		NextBookKeeper:   BytesToHexString(bd.NextBookKeeper.ToArrayReverse()),
+		Hash:             BytesToHexString(bd.hash.ToArrayReverse()),
+	}
+
+	info, err := bd.Program.MarshalJson()
+	if err != nil {
+		return nil, err
+	}
+	json.Unmarshal(info, &headerInfo.Program)
+
+	data, err := json.Marshal(headerInfo)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (bd *Header) UnmarshalJson(data []byte) error {
+	headerInfo := new(HeaderInfo)
+	var err error
+	if err = json.Unmarshal(data, &headerInfo); err != nil {
+		return err
+	}
+
+	bd.Version = headerInfo.Version
+	bd.Timestamp = headerInfo.Timestamp
+	bd.Height = headerInfo.Height
+	bd.ConsensusData = headerInfo.ConsensusData
+
+	prevHash, err := HexStringToBytesReverse(headerInfo.PrevBlockHash)
+	if err != nil {
+		return err
+	}
+	bd.PrevBlockHash, err = Uint256ParseFromBytes(prevHash)
+	if err != nil {
+		return err
+	}
+
+	root, err := HexStringToBytesReverse(headerInfo.TransactionsRoot)
+	if err != nil {
+		return err
+	}
+	bd.TransactionsRoot, err = Uint256ParseFromBytes(root)
+	if err != nil {
+		return err
+	}
+
+	nextBookKeeper, err := HexStringToBytesReverse(headerInfo.NextBookKeeper)
+	if err != nil {
+		return err
+	}
+	bd.NextBookKeeper, err = Uint160ParseFromBytes(nextBookKeeper)
+	if err != nil {
+		return err
+	}
+
+	info, err := json.Marshal(headerInfo.Program)
+	if err != nil {
+		return err
+	}
+	var pg program.Program
+	err = pg.UnmarshalJson(info)
+	if err != nil {
+		return err
+	}
+	bd.Program = &pg
+
+	hash, err := HexStringToBytesReverse(headerInfo.Hash)
+	if err != nil {
+		return err
+	}
+	bd.hash, err = Uint256ParseFromBytes(hash)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
