@@ -16,8 +16,8 @@ import (
 	"github.com/nknorg/nkn/wallet"
 )
 
-func (node *node) StartRelayer(account *wallet.Account) {
-	node.relayer = relay.NewRelayService(account, node)
+func (node *node) StartRelayer(wallet wallet.Wallet) {
+	node.relayer = relay.NewRelayService(wallet, node)
 	node.relayer.Start()
 }
 

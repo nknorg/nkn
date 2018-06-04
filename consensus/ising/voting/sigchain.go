@@ -114,7 +114,11 @@ func (scv *SigChainVoting) GetBestVotingContent(height uint32) (VotingContent, e
 	if err != nil {
 		return nil, err
 	}
-	txnHash, _ := scv.porServer.IsSigChainExist(sigChain.Hash(), height)
+	sigHash, err := sigChain.SignatureHash()
+	if err != nil {
+		return nil, err
+	}
+	txnHash, _ := scv.porServer.IsSigChainExist(sigHash, height)
 	txn := scv.txnCollector.GetTransaction(*txnHash)
 
 	return txn, nil
@@ -129,7 +133,11 @@ func (scv *SigChainVoting) GetVotingContent(hash Uint256, height uint32) (Voting
 	if err != nil {
 		return nil, err
 	}
-	txnHash, _ := scv.porServer.IsSigChainExist(sigChain.Hash(), height)
+	sigHash, err := sigChain.SignatureHash()
+	if err != nil {
+		return nil, err
+	}
+	txnHash, _ := scv.porServer.IsSigChainExist(sigHash, height)
 	txn := scv.txnCollector.GetTransaction(*txnHash)
 
 	return txn, nil

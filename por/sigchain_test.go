@@ -107,9 +107,9 @@ func TestSigChain(t *testing.T) {
 	sd := &SigChain{}
 	buf, err := proto.Marshal(sc)
 	err = proto.Unmarshal(buf, sd)
-	scHash := sc.Hash()
-	sdHash := sd.Hash()
-	if bytes.Compare(scHash[:], sdHash[:]) != 0 {
+	scHash, err := sc.SignatureHash()
+	sdHash, err := sd.SignatureHash()
+	if err == nil || bytes.Compare(scHash[:], sdHash[:]) != 0 {
 		t.Error("[TestSigChain] Serialize test failed")
 	}
 

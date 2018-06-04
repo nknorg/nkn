@@ -146,7 +146,7 @@ type Noder interface {
 	RelSyncReqSem()
 
 	GetChordAddr() []byte
-	StartRelayer(account *wallet.Account)
+	StartRelayer(wallet wallet.Wallet)
 	NextHop(key []byte) (Noder, error)
 	SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload, signature []byte) error
 }

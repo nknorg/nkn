@@ -132,7 +132,7 @@ func nknMain() error {
 	node := StartNetworking(account.PublicKey, ring)
 
 	// start relay service
-	node.StartRelayer(account)
+	node.StartRelayer(wallet)
 
 	//start JsonRPC
 	rpcServer := httpjson.NewServer(node, wallet)

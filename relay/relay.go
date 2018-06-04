@@ -7,26 +7,26 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 	"github.com/nknorg/nkn/websocket"
 )
 
 type RelayService struct {
-	account          *wallet.Account   // wallet account
+	wallet           wallet.Wallet     // wallet
 	localNode        protocol.Noder    // local node
 	porServer        *por.PorServer    // por server to handle signature chain
 	relayMsgReceived events.Subscriber // consensus events listening
 }
 
-func NewRelayService(account *wallet.Account, node protocol.Noder) *RelayService {
+func NewRelayService(wallet wallet.Wallet, node protocol.Noder) *RelayService {
 	service := &RelayService{
-		account:   account,
+		wallet:    wallet,
 		localNode: node,
 		porServer: por.GetPorServer(),
 	}
@@ -55,18 +55,6 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 	if err != nil {
 		return err
 	}
-
-	// TODO: create and send tx only after client sign
-	buf, err := proto.Marshal(packet.SigChain)
-	if err != nil {
-		return err
-	}
-	txn, err := transaction.NewCommitTransaction(buf, rs.account.ProgramHash)
-	if err != nil {
-		return err
-	}
-	rs.localNode.Xmit(txn)
-
 	response := map[string]interface{}{
 		"Action":  "receivePacket",
 		"Src":     string(packet.SrcID),
@@ -82,6 +70,15 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 		log.Error("Send to client error: ", err)
 		return err
 	}
+
+	// TODO: create and send tx only after client sign
+	buf, err := proto.Marshal(packet.SigChain)
+	txn, err := httpjson.MakeCommitTransaction(rs.wallet, buf)
+	if err != nil {
+		return err
+	}
+	rs.localNode.Xmit(txn)
+
 	return nil
 }
 
@@ -167,8 +164,4 @@ func (rs *RelayService) ReceiveRelayMsgNoError(v interface{}) {
 	if err != nil {
 		log.Error(err.Error())
 	}
-}
-
-func (rs *RelayService) GetAccount() *wallet.Account {
-	return rs.account
 }
