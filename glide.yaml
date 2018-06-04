@@ -24,3 +24,4 @@ import:
   - crypto/sha3
   - params
 - package: github.com/golang/protobuf
+  version: v1.1.0
