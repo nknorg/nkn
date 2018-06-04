@@ -1,11 +1,13 @@
 package payload
 
 import (
+	"encoding/json"
+	"io"
+
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
-	"io"
 )
 
 const RegisterPayloadVersion byte = 0x00
@@ -71,5 +73,63 @@ func (a *RegisterAsset) Deserialize(r io.Reader, version byte) error {
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[RegisterAsset], Ammount Deserialize failed.")
 	}
+	return nil
+}
+func (a *RegisterAsset) Equal(b *RegisterAsset) bool {
+	if !a.Asset.Equal(b.Asset) {
+		return false
+	}
+	if a.Amount.GetData() != b.Amount.GetData() {
+		return false
+	}
+	if !crypto.Equal(a.Issuer, b.Issuer) {
+		return false
+	}
+
+	if a.Controller.CompareTo(b.Controller) != 0 {
+		return false
+	}
+
+	return true
+}
+
+func (a *RegisterAsset) MarshalJson() ([]byte, error) {
+	ra := &RegisterAssetInfo{
+		Asset:      a.Asset,
+		Amount:     a.Amount.String(),
+		Issuer:     a.Issuer,
+		Controller: common.BytesToHexString(a.Controller.ToArray()),
+	}
+
+	data, err := json.Marshal(ra)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (a *RegisterAsset) UnmarshalJson(data []byte) error {
+	ra := new(RegisterAssetInfo)
+	var err error
+	if err = json.Unmarshal(data, &ra); err != nil {
+		return err
+	}
+
+	a.Asset = ra.Asset
+	a.Amount, err = common.StringToFixed64(ra.Amount)
+	if err != nil {
+		return err
+	}
+	a.Issuer = ra.Issuer
+
+	controller, err := common.HexStringToBytes(ra.Controller)
+	if err != nil {
+		return err
+	}
+	a.Controller, err = common.Uint160ParseFromBytes(controller)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

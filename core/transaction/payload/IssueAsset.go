@@ -20,3 +20,12 @@ func (a *IssueAsset) Serialize(w io.Writer, version byte) error {
 func (a *IssueAsset) Deserialize(r io.Reader, version byte) error {
 	return nil
 }
+
+func (a *IssueAsset) MarshalJson() ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (a *IssueAsset) UnmarshalJson(data []byte) error {
+	a = &IssueAsset{}
+	return nil
+}

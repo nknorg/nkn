@@ -1,8 +1,10 @@
 package payload
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
+
 	. "github.com/nknorg/nkn/common"
 )
 
@@ -26,6 +28,46 @@ func (p *Withdraw) Deserialize(r io.Reader, version byte) error {
 	err = p.ProgramHash.Deserialize(r)
 	if err != nil {
 		return errors.New("programhash deserialization error")
+	}
+
+	return nil
+}
+
+func (p *Withdraw) Equal(p2 *Withdraw) bool {
+	if p.ProgramHash.CompareTo(p2.ProgramHash) != 0 {
+		return false
+	}
+
+	return true
+}
+
+func (p *Withdraw) MarshalJson() ([]byte, error) {
+	wd := &WithdrawInfo{
+		ProgramHash: BytesToHexString(p.ProgramHash.ToArray()),
+	}
+
+	data, err := json.Marshal(wd)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (p *Withdraw) UnmarshalJson(data []byte) error {
+	wd := new(WithdrawInfo)
+	var err error
+	if err = json.Unmarshal(data, &wd); err != nil {
+		return err
+	}
+
+	hash, err := HexStringToBytes(wd.ProgramHash)
+	if err != nil {
+		return err
+	}
+	p.ProgramHash, err = Uint160ParseFromBytes(hash)
+	if err != nil {
+		return err
 	}
 
 	return nil

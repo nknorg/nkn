@@ -1,11 +1,12 @@
 package asset
 
 import (
-	"github.com/nknorg/nkn/common/serialization"
-	. "github.com/nknorg/nkn/errors"
+	"bytes"
 	"errors"
 	"io"
-	"bytes"
+
+	"github.com/nknorg/nkn/common/serialization"
+	. "github.com/nknorg/nkn/errors"
 )
 
 //AssetType
@@ -97,8 +98,17 @@ func (a *Asset) Deserialize(r io.Reader) error {
 	return nil
 }
 
+func (a *Asset) Equal(b *Asset) bool {
+	if a.Name != b.Name || a.Description != b.Description ||
+		a.Precision != b.Precision || a.AssetType != b.AssetType ||
+		a.RecordType != b.RecordType {
+		return false
+	}
 
-func (a *Asset) ToArray() ([]byte) {
+	return true
+}
+
+func (a *Asset) ToArray() []byte {
 	b := new(bytes.Buffer)
 	a.Serialize(b)
 	return b.Bytes()
