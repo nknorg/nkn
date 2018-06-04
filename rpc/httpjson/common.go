@@ -13,16 +13,6 @@ import (
 	tx "github.com/nknorg/nkn/core/transaction"
 )
 
-type TxAttributeInfo struct {
-	Usage TransactionAttributeUsage
-	Data  string
-}
-
-type UTXOTxInputInfo struct {
-	ReferTxID          string
-	ReferTxOutputIndex uint16
-}
-
 type BalanceTxInputInfo struct {
 	AssetID     string
 	Value       string

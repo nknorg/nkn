@@ -55,7 +55,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	trans.Payload = TransPayloadToHex(ptx.Payload)
 
 	n := 0
-	trans.Attributes = make([]TxAttributeInfo, len(ptx.Attributes))
+	trans.Attributes = make([]tx.TxAttributeInfo, len(ptx.Attributes))
 	for _, v := range ptx.Attributes {
 		trans.Attributes[n].Usage = v.Usage
 		trans.Attributes[n].Data = BytesToHexString(v.Data)
@@ -63,7 +63,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	}
 
 	n = 0
-	trans.UTXOInputs = make([]UTXOTxInputInfo, len(ptx.UTXOInputs))
+	trans.UTXOInputs = make([]tx.UTXOTxInputInfo, len(ptx.UTXOInputs))
 	for _, v := range ptx.UTXOInputs {
 		trans.UTXOInputs[n].ReferTxID = BytesToHexString(v.ReferTxID.ToArrayReverse())
 		trans.UTXOInputs[n].ReferTxOutputIndex = v.ReferTxOutputIndex

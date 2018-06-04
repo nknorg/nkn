@@ -9,7 +9,6 @@ import (
 	"math/big"
 
 	. "github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/util/log"
 
 	"github.com/itchyny/base58-go"
 )
@@ -111,21 +110,16 @@ func ToScriptHash(address string) (Uint160, error) {
 	}
 
 	x, _ := new(big.Int).SetString(string(decoded), 10)
-	log.Tracef("[ToAddress] x: ", x.Bytes())
 
 	ph, err := Uint160ParseFromBytes(x.Bytes()[1:21])
 	if err != nil {
 		return Uint160{}, err
 	}
 
-	log.Tracef("[AddressToProgramHash] programhash: %x", ph.ToArray())
-
 	addr, err := ph.ToAddress()
 	if err != nil {
 		return Uint160{}, err
 	}
-
-	log.Tracef("[AddressToProgramHash] address: %s", addr)
 
 	if addr != address {
 		return Uint160{}, errors.New("[AddressToProgramHash]: decode address verify failed.")
