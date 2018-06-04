@@ -1,15 +1,17 @@
 package payload
 
 import (
-	"github.com/nknorg/nkn/common/serialization"
+	"encoding/json"
 	"io"
+
+	"github.com/nknorg/nkn/common/serialization"
 )
 
 const BookKeepingPayloadVersion byte = 0x03
 const BookKeepingPayloadVersionBase byte = 0x02
 
 type BookKeeping struct {
-	Nonce uint64
+	Nonce uint64 `json:"nonce"`
 }
 
 func (a *BookKeeping) Data(version byte) []byte {
@@ -36,5 +38,28 @@ func (a *BookKeeping) Deserialize(r io.Reader, version byte) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+func (a *BookKeeping) Equal(b *BookKeeping) bool {
+	if a.Nonce != b.Nonce {
+		return false
+	}
+
+	return true
+}
+
+func (a *BookKeeping) MarshalJson() ([]byte, error) {
+	data, err := json.Marshal(a)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (a *BookKeeping) UnmarshalJson(data []byte) error {
+	if err := json.Unmarshal(data, a); err != nil {
+		return err
+	}
+
 	return nil
 }

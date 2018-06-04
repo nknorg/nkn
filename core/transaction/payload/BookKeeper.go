@@ -1,11 +1,12 @@
 package payload
 
 import (
+	"bytes"
+	"io"
+
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
-	"bytes"
-	"io"
 )
 
 const BookKeeperPayloadVersion byte = 0x00
@@ -62,5 +63,14 @@ func (self *BookKeeper) Deserialize(r io.Reader, version byte) error {
 		return NewDetailErr(err, ErrNoCode, "[BookKeeper], Issuer Deserialize failed.")
 	}
 
+	return nil
+}
+
+//Bookkeeper will not be used, So the MarshalJson & UnmarshalJson has no content.
+func (self *BookKeeper) MarshalJson() ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (self *BookKeeper) UnmarshalJson(data []byte) error {
 	return nil
 }
