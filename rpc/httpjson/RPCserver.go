@@ -15,10 +15,6 @@ import (
 	"github.com/nknorg/nkn/wallet"
 )
 
-const (
-	LocalHost = "127.0.0.1"
-)
-
 type RPCServer struct {
 	//keeps track of every function to be called on specific rpc call
 	mainMux ServeMux
@@ -51,7 +47,7 @@ func NewServer(node protocol.Noder, wallet wallet.Wallet) *RPCServer {
 		mainMux: ServeMux{
 			m: make(map[string]funcHandler),
 		},
-		listeners: []string{LocalHost + ":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
+		listeners: []string{":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
 		node:      node,
 		wallet:    wallet,
 	}
