@@ -1,4 +1,4 @@
-package httpjson
+package common
 
 import (
 	. "github.com/nknorg/nkn/common"
@@ -38,7 +38,7 @@ type TransferAssetInfo struct {
 //implement PayloadInfo define BookKeepingInfo
 type PrepaidInfo struct {
 	Amount string
-	Rates string
+	Rates  string
 }
 
 type BookkeeperInfo struct {
@@ -47,7 +47,6 @@ type BookkeeperInfo struct {
 	Issuer     IssuerInfo
 	Controller string
 }
-
 
 func TransPayloadToHex(p Payload) PayloadInfo {
 	switch object := p.(type) {
