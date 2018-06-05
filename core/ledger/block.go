@@ -157,11 +157,6 @@ func (b *Block) Type() InventoryType {
 }
 
 func GenesisBlockInit(defaultBookKeeper []*crypto.PubKey) (*Block, error) {
-	//getBookKeeper
-	nextBookKeeper, err := GetBookKeeperAddress(defaultBookKeeper)
-	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Block],GenesisBlockInit err with GetBookKeeperAddress")
-	}
 	//blockdata
 	genesisBlockdata := &Header{
 		Version:          BlockVersion,
@@ -170,7 +165,7 @@ func GenesisBlockInit(defaultBookKeeper []*crypto.PubKey) (*Block, error) {
 		Timestamp:        uint32(uint32(time.Date(2017, time.February, 23, 0, 0, 0, 0, time.UTC).Unix())),
 		Height:           uint32(0),
 		ConsensusData:    GenesisNonce,
-		NextBookKeeper:   nextBookKeeper,
+		NextBookKeeper:   Uint160{},
 		Program: &program.Program{
 			Code:      []byte{},
 			Parameter: []byte{byte(vm.PUSHT)},
