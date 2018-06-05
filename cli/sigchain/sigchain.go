@@ -18,12 +18,7 @@ func sigchainAction(c *cli.Context) error {
 	var resp []byte
 	switch {
 	case c.Bool("create"):
-		pubkey := c.String("pubkey")
-		if pubkey == "" {
-			fmt.Println("public key is required with [--pubkey]")
-			return nil
-		}
-		resp, err = httpjson.Call(Address(), "sigchaintest", 0, []interface{}{pubkey})
+		resp, err = httpjson.Call(Address(), "sigchaintest", 0, []interface{}{})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -47,10 +42,6 @@ func NewCommand() *cli.Command {
 			cli.BoolFlag{
 				Name:  "create, c",
 				Usage: "create a new signature chain",
-			},
-			cli.StringFlag{
-				Name:  "pubkey, k",
-				Usage: "last public key of sigchain",
 			},
 		},
 		Action: sigchainAction,

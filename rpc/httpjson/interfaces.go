@@ -8,21 +8,12 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-)
-
-const (
-	// The min height of acceptable signature chain which height is local block height + MinHeightThreshold
-	// 3 means that:
-	//  2 (if local block height is n, then n + 1 block and n + 2 signature chain is in consensus) +
-	//  1 (since local node height may lower than neighbors at most 1, increase 1 to prevent forking)
-	MinHeightThreshold = 3
 )
 
 var initialRPCHandlers = map[string]funcHandler{
@@ -46,6 +37,7 @@ var initialRPCHandlers = map[string]funcHandler{
 	"prepaidasset":       prepaidAsset,
 	"withdrawasset":      withdrawAsset,
 	"commitpor":          commitPor,
+	"sigchaintest":       sigchaintest,
 }
 
 func getBestBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
@@ -563,20 +555,6 @@ func commitPor(s *RPCServer, params []interface{}) map[string]interface{} {
 }
 
 func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return RpcResultNil
-	}
-	var pubKey []byte
-	var err error
-	switch params[0].(type) {
-	case string:
-		pubKey, err = HexStringToBytes(params[0].(string))
-		if err != nil || len(pubKey) != crypto.COMPRESSEDLEN {
-			return RpcResultInvalidParameter
-		}
-	default:
-		return RpcResultInvalidParameter
-	}
 	if s.wallet == nil {
 		return RpcResult("open wallet first")
 	}
@@ -585,8 +563,22 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 		return RpcResultNil
 	}
 	dataHash := Uint256{}
-	blockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
-	sigChain, _ := por.NewSigChain(account, 1, dataHash[:], blockHash[:], pubKey, pubKey)
+	currentHeight := ledger.DefaultLedger.Store.GetHeight()
+	blockHash, err := ledger.DefaultLedger.Store.GetBlockHash(currentHeight-1)
+	if err != nil {
+		return RpcResultInternalError
+	}
+	encodedPublickKey, err := account.PubKey().EncodePoint(true)
+	if err != nil {
+		return RpcResultInternalError
+	}
+	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], encodedPublickKey, encodedPublickKey)
+	if err != nil {
+		return RpcResultInternalError
+	}
+	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
+		return RpcResultInternalError
+	}
 	buf, err := proto.Marshal(sigChain)
 	txn, err := MakeCommitTransaction(s.wallet, buf)
 	if err != nil {

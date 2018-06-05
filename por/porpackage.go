@@ -12,6 +12,19 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
+
+const (
+	// The height of signature chain which run for block proposer should be (local block height -1 + 4)
+	// -1 means that:
+	//  local block height may heigher than neighbor node at most 1
+	// +4 means that:
+	//  2 (if local block height is n, then n + 2 signature chain is in consensus) +
+	//  1 (since local node height may lower than neighbors at most 1) +
+	//  1 (for fully propagate)
+	HeightThreshold = 4
+)
+
+
 type PorPackages []*PorPackage
 
 func (c PorPackages) Len() int {
@@ -68,7 +81,7 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 		return nil, err
 	}
 	pp := &PorPackage{
-		VoteForHeight: blockHeader.Height,
+		VoteForHeight: blockHeader.Height + HeightThreshold,
 		Owner:         owner,
 		BlockHash:     sigChain.BlockHash,
 		TxHash:        txHash[:],

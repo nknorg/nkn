@@ -120,12 +120,7 @@ func (ps *ProposerService) ProposerRoutine(vType voting.VotingContentType) {
 			return
 		}
 		ps.Lock()
-		blockHeight, err := sigchain.GetBlockHeight()
-		if err != nil {
-			log.Warn("Get block height error", err)
-			return
-		}
-		ps.blockProposer[*blockHeight] = pbk
+		ps.blockProposer[votingHeight] = pbk
 		ps.Unlock()
 		sigChainTxnHash := content.Hash()
 		log.Info("sigchain transaction consensus: ", BytesToHexString(sigChainTxnHash.ToArray()))
