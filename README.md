@@ -34,7 +34,7 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 * Transmit any data to any node/client without any centralized server
 * Proof-of-Relay, a useful proof of work: mining is relaying data
 * Extremely scalable consensus algorithm (millions or even billions of nodes)
-* Strong consistency (no fork)
+* Strong consistency rather than eventual consistency
 * Dynamic, large-scale network
 * Verifiable topology and routes
 
