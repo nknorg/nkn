@@ -12,7 +12,6 @@ import (
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/chord"
 	. "github.com/nknorg/nkn/net/protocol"
-	. "github.com/nknorg/nkn/rpc/httpjson"
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -526,4 +525,130 @@ func ResponsePack(errCode int64) map[string]interface{} {
 		"Version": "1.0.0",
 	}
 	return resp
+}
+
+type BalanceTxInputInfo struct {
+	AssetID     string
+	Value       string
+	ProgramHash string
+}
+
+type TxoutputInfo struct {
+	AssetID string
+	Value   string
+	Address string
+}
+
+type TxoutputMap struct {
+	Key   Uint256
+	Txout []TxoutputInfo
+}
+
+type AmountMap struct {
+	Key   Uint256
+	Value Fixed64
+}
+
+type ProgramInfo struct {
+	Code      string
+	Parameter string
+}
+
+type Transactions struct {
+	TxType         tx.TransactionType
+	PayloadVersion byte
+	Payload        PayloadInfo
+	Attributes     []tx.TxAttributeInfo
+	UTXOInputs     []tx.UTXOTxInputInfo
+	BalanceInputs  []BalanceTxInputInfo
+	Outputs        []TxoutputInfo
+	Programs       []ProgramInfo
+
+	AssetOutputs      []TxoutputMap
+	AssetInputAmount  []AmountMap
+	AssetOutputAmount []AmountMap
+
+	Hash string
+}
+
+type BlockHead struct {
+	Version          uint32
+	PrevBlockHash    string
+	TransactionsRoot string
+	Timestamp        uint32
+	Height           uint32
+	ConsensusData    uint64
+	NextBookKeeper   string
+	Program          ProgramInfo
+
+	Hash string
+}
+
+type BlockInfo struct {
+	Hash         string
+	BlockData    *BlockHead
+	Transactions []*Transactions
+}
+
+type TxInfo struct {
+	Hash string
+	Hex  string
+	Tx   *Transactions
+}
+
+type TxoutInfo struct {
+	High  uint32
+	Low   uint32
+	Txout tx.TxOutput
+}
+
+type ConsensusInfo struct {
+	// TODO
+}
+
+func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
+
+	trans := new(Transactions)
+	trans.TxType = ptx.TxType
+	trans.PayloadVersion = ptx.PayloadVersion
+	trans.Payload = TransPayloadToHex(ptx.Payload)
+
+	n := 0
+	trans.Attributes = make([]tx.TxAttributeInfo, len(ptx.Attributes))
+	for _, v := range ptx.Attributes {
+		trans.Attributes[n].Usage = v.Usage
+		trans.Attributes[n].Data = BytesToHexString(v.Data)
+		n++
+	}
+
+	n = 0
+	trans.UTXOInputs = make([]tx.UTXOTxInputInfo, len(ptx.UTXOInputs))
+	for _, v := range ptx.UTXOInputs {
+		trans.UTXOInputs[n].ReferTxID = BytesToHexString(v.ReferTxID.ToArrayReverse())
+		trans.UTXOInputs[n].ReferTxOutputIndex = v.ReferTxOutputIndex
+		n++
+	}
+
+	n = 0
+	trans.Outputs = make([]TxoutputInfo, len(ptx.Outputs))
+	for _, v := range ptx.Outputs {
+		trans.Outputs[n].AssetID = BytesToHexString(v.AssetID.ToArrayReverse())
+		trans.Outputs[n].Value = v.Value.String()
+		address, _ := v.ProgramHash.ToAddress()
+		trans.Outputs[n].Address = address
+		n++
+	}
+
+	n = 0
+	trans.Programs = make([]ProgramInfo, len(ptx.Programs))
+	for _, v := range ptx.Programs {
+		trans.Programs[n].Code = BytesToHexString(v.Code)
+		trans.Programs[n].Parameter = BytesToHexString(v.Parameter)
+		n++
+	}
+
+	mHash := ptx.Hash()
+	trans.Hash = BytesToHexString(mHash.ToArrayReverse())
+
+	return trans
 }

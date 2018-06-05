@@ -2,6 +2,7 @@ package httpjson
 
 import (
 	"bytes"
+	"encoding/json"
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
@@ -47,53 +48,6 @@ var initialRPCHandlers = map[string]funcHandler{
 	"commitpor":          commitPor,
 }
 
-func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
-
-	trans := new(Transactions)
-	trans.TxType = ptx.TxType
-	trans.PayloadVersion = ptx.PayloadVersion
-	trans.Payload = TransPayloadToHex(ptx.Payload)
-
-	n := 0
-	trans.Attributes = make([]tx.TxAttributeInfo, len(ptx.Attributes))
-	for _, v := range ptx.Attributes {
-		trans.Attributes[n].Usage = v.Usage
-		trans.Attributes[n].Data = BytesToHexString(v.Data)
-		n++
-	}
-
-	n = 0
-	trans.UTXOInputs = make([]tx.UTXOTxInputInfo, len(ptx.UTXOInputs))
-	for _, v := range ptx.UTXOInputs {
-		trans.UTXOInputs[n].ReferTxID = BytesToHexString(v.ReferTxID.ToArrayReverse())
-		trans.UTXOInputs[n].ReferTxOutputIndex = v.ReferTxOutputIndex
-		n++
-	}
-
-	n = 0
-	trans.Outputs = make([]TxoutputInfo, len(ptx.Outputs))
-	for _, v := range ptx.Outputs {
-		trans.Outputs[n].AssetID = BytesToHexString(v.AssetID.ToArrayReverse())
-		trans.Outputs[n].Value = v.Value.String()
-		address, _ := v.ProgramHash.ToAddress()
-		trans.Outputs[n].Address = address
-		n++
-	}
-
-	n = 0
-	trans.Programs = make([]ProgramInfo, len(ptx.Programs))
-	for _, v := range ptx.Programs {
-		trans.Programs[n].Code = BytesToHexString(v.Code)
-		trans.Programs[n].Parameter = BytesToHexString(v.Parameter)
-		n++
-	}
-
-	mHash := ptx.Hash()
-	trans.Hash = BytesToHexString(mHash.ToArrayReverse())
-
-	return trans
-}
-
 func getBestBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
 	hash := ledger.DefaultLedger.Blockchain.CurrentBlockHash()
 	return RpcResult(BytesToHexString(hash.ToArrayReverse()))
@@ -134,32 +88,12 @@ func getBlock(s *RPCServer, params []interface{}) map[string]interface{} {
 	if err != nil {
 		return RpcResultUnknownBlock
 	}
+	block.Hash()
 
-	blockHead := &BlockHead{
-		Version:          block.Header.Version,
-		PrevBlockHash:    BytesToHexString(block.Header.PrevBlockHash.ToArrayReverse()),
-		TransactionsRoot: BytesToHexString(block.Header.TransactionsRoot.ToArrayReverse()),
-		Timestamp:        block.Header.Timestamp,
-		Height:           block.Header.Height,
-		ConsensusData:    block.Header.ConsensusData,
-		NextBookKeeper:   BytesToHexString(block.Header.NextBookKeeper.ToArrayReverse()),
-		Program: ProgramInfo{
-			Code:      BytesToHexString(block.Header.Program.Code),
-			Parameter: BytesToHexString(block.Header.Program.Parameter),
-		},
-		Hash: BytesToHexString(hash.ToArrayReverse()),
-	}
+	var b interface{}
+	info, _ := block.MarshalJson()
+	json.Unmarshal(info, &b)
 
-	trans := make([]*Transactions, len(block.Transactions))
-	for i := 0; i < len(block.Transactions); i++ {
-		trans[i] = TransArryByteToHexString(block.Transactions[i])
-	}
-
-	b := BlockInfo{
-		Hash:         BytesToHexString(hash.ToArrayReverse()),
-		BlockData:    blockHead,
-		Transactions: trans,
-	}
 	return RpcResult(b)
 }
 
@@ -191,14 +125,24 @@ func getConnectionCount(s *RPCServer, params []interface{}) map[string]interface
 }
 
 func getRawMemPool(s *RPCServer, params []interface{}) map[string]interface{} {
-	txs := []*Transactions{}
+	txs := []interface{}{}
 	txpool := s.node.GetTxnPool()
 	for _, t := range txpool.GetAllTransactions() {
-		txs = append(txs, TransArryByteToHexString(t))
+		info, err := t.MarshalJson()
+		if err != nil {
+			return RpcResultInvalidTransaction
+		}
+		var x interface{}
+		err = json.Unmarshal(info, &x)
+		if err != nil {
+			return RpcResultInvalidTransaction
+		}
+		txs = append(txs, x)
 	}
 	if len(txs) == 0 {
 		return RpcResultNil
 	}
+
 	return RpcResult(txs)
 }
 
@@ -224,7 +168,12 @@ func getRawTransaction(s *RPCServer, params []interface{}) map[string]interface{
 		if err != nil {
 			return RpcResultUnknownTransaction
 		}
-		tran := TransArryByteToHexString(tx)
+
+		tx.Hash()
+		var tran interface{}
+		info, _ := tx.MarshalJson()
+		json.Unmarshal(info, &tran)
+
 		return RpcResult(tran)
 	default:
 		return RpcResultInvalidParameter
