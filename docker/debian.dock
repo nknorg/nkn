@@ -1,0 +1,29 @@
+FROM debian:stable
+MAINTAINER GDMMX <gdmmx@nkn.org>
+
+# apt-get
+RUN apt-get update
+RUN apt-get upgrade -y
+RUN apt-get install wget -y
+RUN apt-get install make -y
+RUN apt-get install golang-glide -y
+
+# golang
+RUN cd $HOME
+RUN wget https://dl.google.com/go/go1.10.1.linux-amd64.tar.gz
+RUN tar -xf go1.10.1.linux-amd64.tar.gz -C /usr/local/
+RUN export GOROOT=/usr/local/go
+RUN export PATH=$GOROOT/bin:$PATH
+
+# nkn dir tree
+RUN mkdir -p $HOME/nknorg/src/github.com/nknorg
+RUN cd $HOME/nknorg/src/github.com/nknorg
+RUN export GOPATH=$HOME/nknorg
+
+# Download from git and build
+# Unavailable until git repo to be public
+RUN git clone https://github.com/nknorg/nkn.git
+RUN cd nkn
+RUN glide install
+RUN go build nknc.go
+RUN go build nknd.go
