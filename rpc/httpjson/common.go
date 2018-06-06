@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
 )
 
 type NodeInfo struct {
@@ -54,4 +57,24 @@ func Call(address string, method string, id interface{}, params []interface{}) (
 	}
 
 	return body, nil
+}
+
+func getBlockTransactions(block *ledger.Block) interface{} {
+	trans := make([]string, len(block.Transactions))
+	for i := 0; i < len(block.Transactions); i++ {
+		h := block.Transactions[i].Hash()
+		trans[i] = common.BytesToHexString(h.ToArrayReverse())
+	}
+	hash := block.Hash()
+	type BlockTransactions struct {
+		Hash         string
+		Height       uint32
+		Transactions []string
+	}
+	b := BlockTransactions{
+		Hash:         common.BytesToHexString(hash.ToArrayReverse()),
+		Height:       block.Header.Height,
+		Transactions: trans,
+	}
+	return b
 }
