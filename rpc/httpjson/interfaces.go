@@ -37,7 +37,9 @@ var initialRPCHandlers = map[string]funcHandler{
 	"prepaidasset":         prepaidAsset,
 	"withdrawasset":        withdrawAsset,
 	"commitpor":            commitPor,
-	"getlatestblockheight": GetLatestBlockHeight,
+	"getlatestblockheight": getLatestBlockHeight,
+	"getblocktxsbyheight":  getBlockTxsByHeight,
+	"getchordringinfo":     getChordRingInfo,
 	"sigchaintest":         sigchaintest,
 }
 
@@ -94,7 +96,11 @@ func getBlockCount(s *RPCServer, params []interface{}) map[string]interface{} {
 	return RpcResult(ledger.DefaultLedger.Blockchain.BlockHeight + 1)
 }
 
-func GetLatestBlockHeight(s *RPCServer, params []interface{}) map[string]interface{} {
+func getChordRingInfo(s *RPCServer, params []interface{}) map[string]interface{} {
+	return RpcResult(chord.GetRing())
+}
+
+func getLatestBlockHeight(s *RPCServer, params []interface{}) map[string]interface{} {
 	return RpcResult(ledger.DefaultLedger.Blockchain.BlockHeight)
 }
 
@@ -115,6 +121,33 @@ func getBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
 	default:
 		return RpcResultInvalidParameter
 	}
+}
+
+// Input JSON string examples for getblocktxsbyheight method as following:
+//   {"jsonrpc": "2.0", "method": "getblocktxsbyheight", "params": [1], "id": 0}
+func getBlockTxsByHeight(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+	var err error
+
+	if _, ok := params[0].(float64); !ok {
+		return RpcResultInvalidParameter
+	}
+	index := uint32(params[0].(float64))
+	hash, err := ledger.DefaultLedger.Store.GetBlockHash(index)
+	if err != nil {
+		return RpcResultUnknownBlock
+	}
+
+	block, err := ledger.DefaultLedger.Store.GetBlock(hash)
+	if err != nil {
+		return RpcResultUnknownBlock
+	}
+
+	txs := getBlockTransactions(block)
+
+	return RpcResult(txs)
 }
 
 func getConnectionCount(s *RPCServer, params []interface{}) map[string]interface{} {
