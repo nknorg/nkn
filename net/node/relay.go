@@ -69,11 +69,12 @@ func (node *node) SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload,
 		return err
 	}
 
-	blockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
+	height := ledger.DefaultLedger.Store.GetHeaderHeight()
+	prevHeaderHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(height - 1)
 	sigChain, err := por.GetPorServer().CreateSigChainForClient(
 		uint32(len(payload)),
 		&payloadHash256,
-		&blockHash,
+		&prevHeaderHash,
 		srcPubkey,
 		destPubkey,
 		signature,
