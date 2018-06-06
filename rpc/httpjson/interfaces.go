@@ -17,30 +17,31 @@ import (
 )
 
 var initialRPCHandlers = map[string]funcHandler{
-	"getbestblockhash":   getBestBlockHash,
-	"getblock":           getBlock,
-	"getblockcount":      getBlockCount,
-	"getblockhash":       getBlockHash,
-	"getconnectioncount": getConnectionCount,
-	"getrawmempool":      getRawMemPool,
-	"getrawtransaction":  getRawTransaction,
-	"getwsaddr":          getWsAddr,
-	"sendrawtransaction": sendRawTransaction,
-	"getversion":         getVersion,
-	"getneighbor":        getNeighbor,
-	"getnodestate":       getNodeState,
-	"getbalance":         getBalance,
-	"setdebuginfo":       setDebugInfo,
-	"sendtoaddress":      sendToAddress,
-	"registasset":        registAsset,
-	"issueasset":         issueAsset,
-	"prepaidasset":       prepaidAsset,
-	"withdrawasset":      withdrawAsset,
-	"commitpor":          commitPor,
-	"sigchaintest":       sigchaintest,
+	"getlatestblockhash":   getLatestBlockHash,
+	"getblock":             getBlock,
+	"getblockcount":        getBlockCount,
+	"getblockhash":         getBlockHash,
+	"getconnectioncount":   getConnectionCount,
+	"getrawmempool":        getRawMemPool,
+	"gettransaction":       getTransaction,
+	"getwsaddr":            getWsAddr,
+	"sendrawtransaction":   sendRawTransaction,
+	"getversion":           getVersion,
+	"getneighbor":          getNeighbor,
+	"getnodestate":         getNodeState,
+	"getbalance":           getBalance,
+	"setdebuginfo":         setDebugInfo,
+	"sendtoaddress":        sendToAddress,
+	"registasset":          registAsset,
+	"issueasset":           issueAsset,
+	"prepaidasset":         prepaidAsset,
+	"withdrawasset":        withdrawAsset,
+	"commitpor":            commitPor,
+	"getlatestblockheight": GetLatestBlockHeight,
+	"sigchaintest":         sigchaintest,
 }
 
-func getBestBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
+func getLatestBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
 	hash := ledger.DefaultLedger.Blockchain.CurrentBlockHash()
 	return RpcResult(BytesToHexString(hash.ToArrayReverse()))
 }
@@ -93,6 +94,10 @@ func getBlockCount(s *RPCServer, params []interface{}) map[string]interface{} {
 	return RpcResult(ledger.DefaultLedger.Blockchain.BlockHeight + 1)
 }
 
+func GetLatestBlockHeight(s *RPCServer, params []interface{}) map[string]interface{} {
+	return RpcResult(ledger.DefaultLedger.Blockchain.BlockHeight)
+}
+
 // A JSON example for getblockhash method as following:
 //   {"jsonrpc": "2.0", "method": "getblockhash", "params": [1], "id": 0}
 func getBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
@@ -138,9 +143,9 @@ func getRawMemPool(s *RPCServer, params []interface{}) map[string]interface{} {
 	return RpcResult(txs)
 }
 
-// A JSON example for getrawtransaction method as following:
-//   {"jsonrpc": "2.0", "method": "getrawtransaction", "params": ["transactioin hash in hex"], "id": 0}
-func getRawTransaction(s *RPCServer, params []interface{}) map[string]interface{} {
+// A JSON example for gettransaction method as following:
+//   {"jsonrpc": "2.0", "method": "gettransaction", "params": ["transactioin hash in hex"], "id": 0}
+func getTransaction(s *RPCServer, params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
 		return RpcResultNil
 	}
@@ -564,7 +569,7 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 	}
 	dataHash := Uint256{}
 	currentHeight := ledger.DefaultLedger.Store.GetHeight()
-	blockHash, err := ledger.DefaultLedger.Store.GetBlockHash(currentHeight-1)
+	blockHash, err := ledger.DefaultLedger.Store.GetBlockHash(currentHeight - 1)
 	if err != nil {
 		return RpcResultInternalError
 	}
