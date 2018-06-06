@@ -3,6 +3,7 @@ package httpjson
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
@@ -41,6 +42,8 @@ var initialRPCHandlers = map[string]funcHandler{
 	"getblocktxsbyheight":  getBlockTxsByHeight,
 	"getchordringinfo":     getChordRingInfo,
 	"sigchaintest":         sigchaintest,
+	"gettotalissued":       getTotalIssued,
+	"getassetbyhash":       getAssetByHash,
 }
 
 func getLatestBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
@@ -657,4 +660,62 @@ func getWsAddr(s *RPCServer, params []interface{}) map[string]interface{} {
 	default:
 		return RpcResultInvalidParameter
 	}
+}
+
+func getTotalIssued(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+
+	assetid, ok := params[0].(string)
+	if !ok {
+		return RpcResultInvalidParameter
+	}
+
+	var assetHash Uint256
+	bys, err := HexStringToBytesReverse(assetid)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	amount, err := ledger.DefaultLedger.Store.GetQuantityIssued(assetHash)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	val := float64(amount) / math.Pow(10, 8)
+	return RpcResult(val)
+}
+
+func getAssetByHash(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+
+	str, ok := params[0].(string)
+	if !ok {
+		return RpcResultInvalidParameter
+	}
+
+	hex, err := HexStringToBytesReverse(str)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	var hash Uint256
+	err = hash.Deserialize(bytes.NewReader(hex))
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	asset, err := ledger.DefaultLedger.Store.GetAsset(hash)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	return RpcResult(asset)
 }
