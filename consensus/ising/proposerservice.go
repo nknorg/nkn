@@ -114,7 +114,7 @@ func (ps *ProposerService) ProposerRoutine(vType voting.VotingContentType) {
 		sigchain := &por.SigChain{}
 		proto.Unmarshal(payload.SigChain, sigchain)
 		// TODO: get a determinate public key on signature chain
-		pbk, err := sigchain.GetLastPubkey()
+		pbk, err := sigchain.GetLedgerNodePubkey()
 		if err != nil {
 			log.Warn("Get last public key error", err)
 			return
