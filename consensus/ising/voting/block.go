@@ -124,13 +124,28 @@ func (bv *BlockVoting) GetWorseVotingContent(height uint32) (VotingContent, erro
 	return block, nil
 }
 
-func (bv *BlockVoting) GetVotingContent(hash Uint256, height uint32) (VotingContent, error) {
+func (bv *BlockVoting) GetVotingContentFromPool(hash Uint256, height uint32) (VotingContent, error) {
 	block := bv.blockCache.GetBlockFromCache(hash, height)
-	if block == nil {
-		return nil, errors.New("no block")
+	if block != nil {
+		return block, nil
 	}
 
-	return block, nil
+	return nil, errors.New("invalid hash and height for block")
+}
+
+func (bv *BlockVoting) GetVotingContent(hash Uint256, height uint32) (VotingContent, error) {
+	// get block from cache
+	block, err := bv.GetVotingContentFromPool(hash, height)
+	if err == nil {
+		return block, nil
+	}
+	// get block from ledger
+	block, err = ledger.DefaultLedger.Store.GetBlock(hash)
+	if err == nil {
+		return block, nil
+	}
+
+	return nil, errors.New("invalid hash for block")
 }
 
 func (bv *BlockVoting) VotingType() VotingContentType {

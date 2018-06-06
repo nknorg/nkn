@@ -100,7 +100,7 @@ func (ps *ProposerService) ProposerRoutine(vType voting.VotingContentType) {
 	finalHash, _ := votingPool.GetMind(votingHeight)
 	// if proposed hash is not original entity, then get it from local cache
 	if finalHash.CompareTo(content.Hash()) != 0 {
-		content, err = current.GetVotingContent(finalHash, votingHeight)
+		content, err = current.GetVotingContentFromPool(finalHash, votingHeight)
 		if err != nil {
 			log.Warn("get final entity error")
 			return
@@ -125,10 +125,13 @@ func (ps *ProposerService) ProposerRoutine(vType voting.VotingContentType) {
 		sigChainTxnHash := content.Hash()
 		log.Info("sigchain transaction consensus: ", BytesToHexString(sigChainTxnHash.ToArray()))
 	case voting.BlockVote:
-		//TODO: transaction pool cleanup
-		err = ledger.DefaultLedger.Blockchain.AddBlock(content.(*ledger.Block))
-		if err != nil {
-			log.Error("saving block error: ", err)
+		if block, ok := content.(*ledger.Block); ok {
+			err = ledger.DefaultLedger.Blockchain.AddBlock(block)
+			if err != nil {
+				log.Error("saving block error: ", err)
+				return
+			}
+			ps.txnCollector.Cleanup(block.Transactions)
 		}
 	}
 }
