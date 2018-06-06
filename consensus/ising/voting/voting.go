@@ -40,7 +40,9 @@ type Voting interface {
 	GetBestVotingContent(height uint32) (VotingContent, error)
 	// get worse voting content for testing mind changing
 	GetWorseVotingContent(height uint32) (VotingContent, error)
-	// get voting content from local by hash
+	// get voting content from memory pool
+	GetVotingContentFromPool(hash Uint256, height uint32) (VotingContent, error)
+	// get voting content from memory pool and ledger
 	GetVotingContent(hash Uint256, height uint32) (VotingContent, error)
 	// get voting pool
 	GetVotingPool() VotingPool
