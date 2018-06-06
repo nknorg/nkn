@@ -121,13 +121,13 @@ Config the same bootstrap node address and public key to each
   "HttpWsPort": 30002,
   "HttpRestPort": 30003,
   "HttpJsonPort": 30004,
-  "PrintLevel": 1,
+  "LogLevel": 1,
   "IsTLS": false,
   "ConsensusType": "ising",
   "SeedList": [
     "127.0.0.1:30000"
   ],
-  "TestBlockProposer": [
+  "GenesisBlockProposer": [
     "0306dd2db26e3cfde2dbe5c8a17ea7c27f13f99c19e2cb59bc13e2d0c41589c7f1"
   ]
 }

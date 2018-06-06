@@ -30,7 +30,7 @@ var (
 		HttpWsPort:    30002,
 		HttpRestPort:  30003,
 		HttpJsonPort:  30004,
-		PrintLevel:    1,
+		LogLevel:      1,
 		ConsensusType: "ising",
 		SeedList: []string{
 			"127.0.0.1:30000",
@@ -39,32 +39,32 @@ var (
 )
 
 type Configuration struct {
-	Magic          int64    `json:"Magic"`
-	Version        int      `json:"Version"`
-	SeedList       []string `json:"SeedList"`
-	BookKeepers    []string `json:"BookKeepers"`
-	HttpRestPort   uint16   `json:"HttpRestPort"`
-	RestCertPath   string   `json:"RestCertPath"`
-	RestKeyPath    string   `json:"RestKeyPath"`
-	HttpInfoPort   uint16   `json:"HttpInfoPort"`
-	HttpInfoStart  bool     `json:"HttpInfoStart"`
-	HttpWsPort     uint16   `json:"HttpWsPort"`
-	HttpJsonPort   uint16   `json:"HttpJsonPort"`
-	NodePort       uint16   `json:"NodePort"`
-	NodeType       string   `json:"NodeType"`
-	PrintLevel     int      `json:"PrintLevel"`
-	IsTLS          bool     `json:"IsTLS"`
-	CertPath       string   `json:"CertPath"`
-	KeyPath        string   `json:"KeyPath"`
-	CAPath         string   `json:"CAPath"`
-	GenBlockTime   uint     `json:"GenBlockTime"`
-	EncryptAlg     string   `json:"EncryptAlg"`
-	MaxLogSize     int64    `json:"MaxLogSize"`
-	MaxTxInBlock   int      `json:"MaxTransactionInBlock"`
-	MaxHdrSyncReqs int      `json:"MaxConcurrentSyncHeaderReqs"`
-	ConsensusType  string   `json:"ConsensusType"`
-	ChordPort      uint16   `json:"ChordPort"`
-	BlockProposer  []string `json:"TestBlockProposer"`
+	Magic                int64    `json:"Magic"`
+	Version              int      `json:"Version"`
+	SeedList             []string `json:"SeedList"`
+	BookKeepers          []string `json:"BookKeepers"`
+	HttpRestPort         uint16   `json:"HttpRestPort"`
+	RestCertPath         string   `json:"RestCertPath"`
+	RestKeyPath          string   `json:"RestKeyPath"`
+	HttpInfoPort         uint16   `json:"HttpInfoPort"`
+	HttpInfoStart        bool     `json:"HttpInfoStart"`
+	HttpWsPort           uint16   `json:"HttpWsPort"`
+	HttpJsonPort         uint16   `json:"HttpJsonPort"`
+	NodePort             uint16   `json:"NodePort"`
+	NodeType             string   `json:"NodeType"`
+	LogLevel             int      `json:"LogLevel"`
+	IsTLS                bool     `json:"IsTLS"`
+	CertPath             string   `json:"CertPath"`
+	KeyPath              string   `json:"KeyPath"`
+	CAPath               string   `json:"CAPath"`
+	GenBlockTime         uint     `json:"GenBlockTime"`
+	EncryptAlg           string   `json:"EncryptAlg"`
+	MaxLogSize           int64    `json:"MaxLogSize"`
+	MaxTxInBlock         int      `json:"MaxTransactionInBlock"`
+	MaxHdrSyncReqs       int      `json:"MaxConcurrentSyncHeaderReqs"`
+	ConsensusType        string   `json:"ConsensusType"`
+	ChordPort            uint16   `json:"ChordPort"`
+	GenesisBlockProposer []string `json:"GenesisBlockProposer"`
 }
 
 func init() {
@@ -105,7 +105,7 @@ func check(config *Configuration) error {
 		if len(config.SeedList) == 0 {
 			return errors.New("seed list in config file should not be blank")
 		}
-		if len(config.BlockProposer) < DefaultProposerCount {
+		if len(config.GenesisBlockProposer) < DefaultProposerCount {
 			log.Fatalln("bootstrap block proposer is required at least one in config.json")
 		}
 	default:
