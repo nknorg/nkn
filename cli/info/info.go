@@ -17,7 +17,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 	blockhash := c.String("blockhash")
 	txhash := c.String("txhash")
-	bestblockhash := c.Bool("bestblockhash")
+	latestblockhash := c.Bool("latestblockhash")
 	height := c.Int("height")
 	blockcount := c.Bool("blockcount")
 	connections := c.Bool("connections")
@@ -45,8 +45,8 @@ func infoAction(c *cli.Context) (err error) {
 		output = append(output, resp)
 	}
 
-	if bestblockhash {
-		resp, err = httpjson.Call(Address(), "getbestblockhash", 0, []interface{}{})
+	if latestblockhash {
+		resp, err = httpjson.Call(Address(), "getlatestblockhash", 0, []interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -91,7 +91,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if txhash != "" {
-		resp, err = httpjson.Call(Address(), "getrawtransaction", 0, []interface{}{txhash})
+		resp, err = httpjson.Call(Address(), "gettransaction", 0, []interface{}{txhash})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -131,7 +131,7 @@ func NewCommand() *cli.Command {
 				Usage: "hash for querying a transaction",
 			},
 			cli.BoolFlag{
-				Name:  "bestblockhash",
+				Name:  "latestblockhash",
 				Usage: "latest block hash",
 			},
 			cli.IntFlag{
