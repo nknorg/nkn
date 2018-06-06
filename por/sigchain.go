@@ -353,7 +353,19 @@ func (sc *SigChain) GetLastPubkey() ([]byte, error) {
 		return nil, err
 	}
 	return e.NextPubkey, nil
+}
 
+func (sc *SigChain) GetLedgerNodePubkey() ([]byte, error) {
+	if !sc.IsFinal() {
+		return nil, errors.New("not final")
+	}
+
+	n := sc.Length()
+	if n < 3 {
+		return nil, errors.New("not enough elements")
+	}
+
+	return sc.Elems[n-3].NextPubkey, nil
 }
 
 func (sc *SigChain) nextSigner() ([]byte, error) {
