@@ -228,7 +228,7 @@ func (ps *ProposerService) IsBlockProposer() bool {
 		proposer = v
 		log.Infof("Block Proposer (signature chain): %s", BytesToHexString(v))
 	} else {
-		proposer, _ = HexStringToBytes(config.Parameters.BlockProposer[0])
+		proposer, _ = HexStringToBytes(config.Parameters.GenesisBlockProposer[0])
 	}
 	if IsEqualBytes(localPublicKey, proposer) {
 		return true

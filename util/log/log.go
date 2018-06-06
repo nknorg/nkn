@@ -338,8 +338,8 @@ func Init(a ...interface{}) {
 		}
 	}
 	fileAndStdoutWrite := io.MultiWriter(writers...)
-	var printlevel int = config.Parameters.PrintLevel
-	Log = New(fileAndStdoutWrite, "", log.Ldate|log.Lmicroseconds, printlevel, logFile)
+	var loglevel int = config.Parameters.LogLevel
+	Log = New(fileAndStdoutWrite, "", log.Ldate|log.Lmicroseconds, loglevel, logFile)
 }
 
 func GetLogFileSize() (int64, error) {
