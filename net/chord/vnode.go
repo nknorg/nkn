@@ -291,7 +291,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		if err == nil {
 			return res, nil
 		} else {
-			log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
+			nlog.Info("[ERR] Failed to contact %s. Got %s", closest.String(), err)
 		}
 	}
 
