@@ -31,12 +31,13 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 
 ## Technical Highlights
 
-* Transmit any data to any node/client without any centralized server
-* Proof-of-Relay, a useful proof of work: mining is relaying data
-* Extremely scalable consensus algorithm (millions or even billions of nodes)
-* Strong consistency rather than eventual consistency
-* Dynamic, large-scale network
-* Verifiable topology and routes
+* Transmit any data to any node/client without any centralized server. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Distributed-Data-Transmission-Network-%28DDTN%29)
+* Proof-of-Relay, a useful proof of work: mining is relaying data. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Proof-of-Relay-%28PoR%29)
+* Extremely scalable consensus algorithm (millions or even billions of nodes). [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Consensus-and-Blockchain)
+* Strong consistency rather than eventual consistency. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Consensus-and-Blockchain)
+* Dynamic, large-scale network.
+* Verifiable topology and routes. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Relay-Path-Validation)
+* Next generation address scheme with public key embedded. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-NKN-Address-Scheme)
 
 ## Building
 
@@ -74,31 +75,7 @@ have all functions working properly. It should be used only for testing
 now.**
 
 Create several directories to save exectuable files `nknd` `nknc` and
-config file `config.json`.
-
-``` shell
-$ tree
-.
-├── n1
-│   ├── config.json
-│   ├── nknd
-│   └── nknc
-├── n2
-│   ├── config.json
-│   ├── nknd
-│   └── nknc
-├── n3
-│   ├── config.json
-│   ├── nknd
-│   └── nknc
-├── n4
-│   ├── config.json
-│   ├── nknd
-│   └── nknc
-├── ...
-```
-
-Create new wallet in each directory
+config file `config.json`. Create new wallet in each directory
 
 ``` shell
 $ ./nknc wallet -c
