@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
+	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
@@ -73,11 +74,21 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 
 	// TODO: create and send tx only after client sign
 	buf, err := proto.Marshal(packet.SigChain)
+	if err != nil {
+		return err
+	}
 	txn, err := httpjson.MakeCommitTransaction(rs.wallet, buf)
 	if err != nil {
 		return err
 	}
-	rs.localNode.Xmit(txn)
+	errCode := rs.localNode.AppendTxnPool(txn)
+	if errCode != nknErrors.ErrNoError {
+		return errCode
+	}
+	err = rs.localNode.Xmit(txn)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
