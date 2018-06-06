@@ -44,6 +44,10 @@ var initialRPCHandlers = map[string]funcHandler{
 	// "sigchaintest":         sigchaintest,
 	// "gettotalissued":       getTotalIssued,
 	// "getassetbyhash":       getAssetByHash,
+	// "getbalancebyaddr":     getBalanceByAddr,
+	// "getbalancebyasset":    getBalanceByAsset,
+	// "getunspendoutput":     getUnspendOutput,
+	// "getunspends":          getUnspends,
 }
 
 func getLatestBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
@@ -718,4 +722,160 @@ func getAssetByHash(s *RPCServer, params []interface{}) map[string]interface{} {
 	}
 
 	return RpcResult(asset)
+}
+
+func getBalanceByAddr(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+
+	addr, ok := params[0].(string)
+	if !ok {
+		return RpcResultInvalidParameter
+	}
+
+	var programHash Uint160
+	programHash, err := ToScriptHash(addr)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
+	var balance Fixed64 = 0
+	for _, u := range unspends {
+		for _, v := range u {
+			balance = balance + v.Value
+		}
+	}
+
+	val := float64(balance) / math.Pow(10, 8)
+	return RpcResult(val)
+}
+
+func getBalanceByAsset(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 2 {
+		return RpcResultNil
+	}
+
+	addr, ok := params[0].(string)
+	assetid, k := params[1].(string)
+	if !ok || !k {
+		return RpcResultInvalidParameter
+	}
+
+	var programHash Uint160
+	programHash, err := ToScriptHash(addr)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
+	var balance Fixed64 = 0
+	for k, u := range unspends {
+		assid := BytesToHexString(k.ToArrayReverse())
+		for _, v := range u {
+			if assetid == assid {
+				balance = balance + v.Value
+			}
+		}
+	}
+
+	val := float64(balance) / math.Pow(10, 8)
+	return RpcResult(val)
+}
+
+func getUnspendOutput(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 2 {
+		return RpcResultNil
+	}
+
+	addr, ok := params[0].(string)
+	assetid, k := params[1].(string)
+	if !ok || !k {
+		return RpcResultInvalidParameter
+	}
+
+	var programHash Uint160
+	var assetHash Uint256
+	programHash, err := ToScriptHash(addr)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	bys, err := HexStringToBytesReverse(assetid)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	type UTXOUnspentInfo struct {
+		Txid  string
+		Index uint32
+		Value float64
+	}
+
+	infos, err := ledger.DefaultLedger.Store.GetUnspentFromProgramHash(programHash, assetHash)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	var UTXOoutputs []UTXOUnspentInfo
+	for _, v := range infos {
+		val := float64(v.Value) / math.Pow(10, 8)
+		UTXOoutputs = append(UTXOoutputs, UTXOUnspentInfo{Txid: BytesToHexString(v.Txid.ToArrayReverse()), Index: v.Index, Value: val})
+	}
+
+	return RpcResult(UTXOoutputs)
+}
+
+func getUnspends(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+
+	addr, ok := params[0].(string)
+	if !ok {
+		return RpcResultInvalidParameter
+	}
+	var programHash Uint160
+
+	programHash, err := ToScriptHash(addr)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	type UTXOUnspentInfo struct {
+		Txid  string
+		Index uint32
+		Value float64
+	}
+	type Result struct {
+		AssetId   string
+		AssetName string
+		Utxo      []UTXOUnspentInfo
+	}
+
+	var results []Result
+	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
+
+	for k, u := range unspends {
+		assetid := BytesToHexString(k.ToArrayReverse())
+		asset, err := ledger.DefaultLedger.Store.GetAsset(k)
+		if err != nil {
+			return RpcResultInvalidParameter
+		}
+
+		var unspendsInfo []UTXOUnspentInfo
+		for _, v := range u {
+			val := float64(v.Value) / math.Pow(10, 8)
+			unspendsInfo = append(unspendsInfo, UTXOUnspentInfo{BytesToHexString(v.Txid.ToArrayReverse()), v.Index, val})
+		}
+
+		results = append(results, Result{assetid, asset.Name, unspendsInfo})
+	}
+
+	return RpcResult(results)
 }

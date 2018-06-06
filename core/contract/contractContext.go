@@ -46,7 +46,9 @@ func (cxt *ContractContext) Add(contract *Contract, index int, parameter []byte)
 	i := cxt.GetIndex(contract.ProgramHash)
 	if i < 0 {
 		log.Warn("Program Hash is not exist, using 0 by default")
-		i = 0
+		//i = 0
+		return errors.New("Program Hash is not exist")
+
 	}
 	if cxt.Codes[i] == nil {
 		cxt.Codes[i] = contract.Code
