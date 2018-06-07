@@ -25,3 +25,4 @@ import:
   - params
 - package: github.com/golang/protobuf
   version: v1.1.0
+- package: github.com/rdegges/go-ipify

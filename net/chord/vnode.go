@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/nknorg/nkn/util/config"
@@ -19,22 +17,14 @@ func (vn *Vnode) String() string {
 	return fmt.Sprintf("%x", vn.Id)
 }
 
-func (vn *Vnode) NodeAddr() (string, error) {
-	i := strings.Index(vn.Host, ":")
-	if i < 0 {
-		nlog.Error("Parse IP address error\n")
-		return "", errors.New("Parse IP address error")
-	}
-	return vn.Host[:i] + ":" + strconv.Itoa(int(vn.NodePort)), nil
+func (vn *Vnode) NodeAddr() string {
+	addr := fmt.Sprintf("%s:%d", config.Parameters.Hostname, vn.NodePort)
+	return addr
 }
 
-func (vn *Vnode) HttpWsAddr() (string, error) {
-	i := strings.Index(vn.Host, ":")
-	if i < 0 {
-		nlog.Error("Parse IP address error\n")
-		return "", errors.New("Parse IP address error")
-	}
-	return vn.Host[:i] + ":" + strconv.Itoa(int(vn.HttpWsPort)), nil
+func (vn *Vnode) HttpWsAddr() string {
+	addr := fmt.Sprintf("%s:%d", config.Parameters.Hostname, vn.HttpWsPort)
+	return addr
 }
 
 // Initializes a local vnode
@@ -68,7 +58,7 @@ func (vn *localVnode) genId(idx uint16) {
 	// Use the hash funciton
 	conf := vn.ring.config
 	hash := conf.HashFunc()
-	hash.Write([]byte(conf.Hostname))
+	hash.Write([]byte(config.Parameters.Hostname + conf.Hostname))
 	binary.Write(hash, binary.BigEndian, idx)
 
 	// Use the hash as the ID
@@ -291,7 +281,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		if err == nil {
 			return res, nil
 		} else {
-			nlog.Info("[ERR] Failed to contact %s. Got %s", closest.String(), err)
+			nlog.Infof("[ERR] Failed to contact %s. Got %s", closest.String(), err)
 		}
 	}
 

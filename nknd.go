@@ -95,7 +95,6 @@ func nknMain() error {
 		if *name == "create" {
 			ring, transport, err = chord.CreateNet()
 		} else if *name == "join" {
-			config.IncrementPort()
 			ring, transport, err = chord.JoinNet()
 		}
 

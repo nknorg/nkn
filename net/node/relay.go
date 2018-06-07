@@ -35,10 +35,7 @@ func (node *node) NextHop(key []byte) (protocol.Noder, error) {
 		if nbr == nil {
 			break
 		}
-		nbrAddr, err := nbr.NodeAddr()
-		if err != nil {
-			continue
-		}
+		nbrAddr := nbr.NodeAddr()
 		found := false
 		var n protocol.Noder
 		var ip net.IP

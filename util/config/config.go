@@ -9,6 +9,8 @@ import (
 	"log"
 	"net"
 	"strconv"
+
+	ipify "github.com/rdegges/go-ipify"
 )
 
 const (
@@ -64,6 +66,7 @@ type Configuration struct {
 	ConsensusType        string   `json:"ConsensusType"`
 	ChordPort            uint16   `json:"ChordPort"`
 	GenesisBlockProposer []string `json:"GenesisBlockProposer"`
+	Hostname             string   `json:"Hostname"`
 }
 
 func init() {
@@ -83,6 +86,18 @@ func init() {
 		Parameters = defaultParameters
 		return
 	}
+
+	if config.Hostname == "" {
+		ip, err := ipify.GetIp()
+		if err != nil {
+			log.Printf("Couldn't get my IP address: %v", err)
+			ip = "127.0.0.1"
+		}
+		config.Hostname = ip
+	}
+
+	config.IncrementPort()
+
 	err = check(&config)
 	if err != nil {
 		log.Printf("invalid config file: %v, use default parameters.", err)
@@ -125,28 +140,28 @@ func findMinMaxPort(array []uint16) (uint16, uint16) {
 	return min, max
 }
 
-func IncrementPort() {
+func (config *Configuration) IncrementPort() {
 	allPorts := []uint16{
-		Parameters.ChordPort,
-		Parameters.NodePort,
-		Parameters.HttpWsPort,
-		Parameters.HttpRestPort,
-		Parameters.HttpJsonPort,
+		config.ChordPort,
+		config.NodePort,
+		config.HttpWsPort,
+		config.HttpRestPort,
+		config.HttpJsonPort,
 	}
 	minPort, maxPort := findMinMaxPort(allPorts)
 	step := maxPort - minPort + 1
 	var delta uint16
 	for {
-		conn, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(int(Parameters.ChordPort+delta)))
+		conn, err := net.Listen("tcp", ":"+strconv.Itoa(int(config.ChordPort+delta)))
 		if err == nil {
 			conn.Close()
 			break
 		}
 		delta += step
 	}
-	Parameters.ChordPort += delta
-	Parameters.NodePort += delta
-	Parameters.HttpWsPort += delta
-	Parameters.HttpRestPort += delta
-	Parameters.HttpJsonPort += delta
+	config.ChordPort += delta
+	config.NodePort += delta
+	config.HttpWsPort += delta
+	config.HttpRestPort += delta
+	config.HttpJsonPort += delta
 }
