@@ -115,12 +115,12 @@ func (rs *RelayService) SendPacketToNode(nextHop protocol.Noder, packet *message
 		return err
 	}
 	log.Infof(
-		"Relay packet:\nSrcID: %x\nDestID: %x\nNext Hop: %s:%d\nPayload %x",
+		"Relay packet:\nSrcID: %x\nDestID: %x\nNext Hop: %s:%d\nPayload Size: %d",
 		packet.SrcID,
 		packet.DestID,
 		nextHop.GetAddr(),
 		nextHop.GetPort(),
-		packet.Payload,
+		len(packet.Payload),
 	)
 	nextHop.Tx(msgBytes)
 	return nil
@@ -130,10 +130,10 @@ func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 	destID := packet.DestID
 	if bytes.Equal(rs.localNode.GetChordAddr(), destID) {
 		log.Infof(
-			"Receive packet:\nSrcID: %x\nDestID: %x\nPayload %x",
+			"Receive packet:\nSrcID: %x\nDestID: %x\nPayload Size: %d",
 			packet.SrcID,
 			destID,
-			packet.Payload,
+			len(packet.Payload),
 		)
 		// TODO: handle packet send to self
 		return nil
