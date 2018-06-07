@@ -1,5 +1,5 @@
-hash: ee909cf2bd7e1d5171e6501dc02985bf48ef3948370a9555e9bedd284a55dd82
-updated: 2018-06-07T12:13:21.798709+08:00
+hash: 3d296a88be4e613104375eabb72e92c5cc4722c13e54b54009fd71f15b2e9615
+updated: 2018-06-07T17:00:24.863834+08:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: da1a8928f709389522c8023062a3739f3b4af419
@@ -24,6 +24,8 @@ imports:
   version: a91eba7f97777409bc2c443f5534d41dd20c5720
 - name: github.com/itchyny/base58-go
   version: 4b24a7dfa1bfba3724ffb3598b1c6ded1cff087f
+- name: github.com/jpillora/backoff
+  version: 8eab2debe79d12b7bd3d10653910df25fa9552ba
 - name: github.com/pborman/uuid
   version: 1b00554d822231195d1babd97ff4a781231955c9
   subpackages:
