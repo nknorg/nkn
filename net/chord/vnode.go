@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nknorg/nkn/util/config"
@@ -17,14 +19,22 @@ func (vn *Vnode) String() string {
 	return fmt.Sprintf("%x", vn.Id)
 }
 
-func (vn *Vnode) NodeAddr() string {
-	addr := fmt.Sprintf("%s:%d", config.Parameters.Hostname, vn.NodePort)
-	return addr
+func (vn *Vnode) NodeAddr() (string, error) {
+	i := strings.Index(vn.Host, ":")
+	if i < 0 {
+		nlog.Error("Parse IP address error\n")
+		return "", errors.New("Parse IP address error")
+	}
+	return vn.Host[:i] + ":" + strconv.Itoa(int(vn.NodePort)), nil
 }
 
-func (vn *Vnode) HttpWsAddr() string {
-	addr := fmt.Sprintf("%s:%d", config.Parameters.Hostname, vn.HttpWsPort)
-	return addr
+func (vn *Vnode) HttpWsAddr() (string, error) {
+	i := strings.Index(vn.Host, ":")
+	if i < 0 {
+		nlog.Error("Parse IP address error\n")
+		return "", errors.New("Parse IP address error")
+	}
+	return vn.Host[:i] + ":" + strconv.Itoa(int(vn.HttpWsPort)), nil
 }
 
 // Initializes a local vnode
