@@ -1,11 +1,12 @@
 package crypto
 
 import (
-	. "github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/errors"
 	"bytes"
 	"crypto/sha256"
 	"errors"
+
+	. "github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/errors"
 )
 
 var (

@@ -1,10 +1,9 @@
 package message
 
 import (
+	"bytes"
 	"errors"
 	"strconv"
-
-	"bytes"
 
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"

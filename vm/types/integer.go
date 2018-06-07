@@ -2,21 +2,22 @@ package types
 
 import (
 	"math/big"
-	"github.com/nknorg/nkn/vm/interfaces"
+
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/vm/interfaces"
 )
 
 type Integer struct {
 	value *big.Int
 }
 
-func NewInteger(value *big.Int) *Integer{
-	var  i Integer
+func NewInteger(value *big.Int) *Integer {
+	var i Integer
 	i.value = value
 	return &i
 }
 
-func (i *Integer) Equals(other StackItemInterface) bool{
+func (i *Integer) Equals(other StackItemInterface) bool {
 	if _, ok := other.(*Integer); !ok {
 		return false
 	}
@@ -30,7 +31,6 @@ func (i *Integer) GetBigInteger() *big.Int {
 	return i.value
 }
 
-
 func (i *Integer) GetBoolean() bool {
 	if i.value.Cmp(big.NewInt(0)) == 0 {
 		return false
@@ -38,7 +38,7 @@ func (i *Integer) GetBoolean() bool {
 	return true
 }
 
-func (i *Integer) GetByteArray() []byte{
+func (i *Integer) GetByteArray() []byte {
 	return common.ToArrayReverse(i.value.Bytes())
 }
 

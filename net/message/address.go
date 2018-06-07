@@ -117,13 +117,13 @@ func (msg addr) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (msg *addr)Deserialize(r io.Reader) error {
+func (msg *addr) Deserialize(r io.Reader) error {
 	err := binary.Read(r, binary.LittleEndian, &(msg.hdr))
 	if err != nil {
 		return err
 	}
 	err = binary.Read(r, binary.LittleEndian, &(msg.nodeCnt))
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	msg.nodeAddrs = make([]NodeAddr, msg.nodeCnt)

@@ -1,8 +1,9 @@
 package vm
 
 import (
-	"testing"
 	"math/big"
+	"testing"
+
 	"github.com/nknorg/nkn/vm/types"
 )
 
@@ -27,7 +28,7 @@ func TestOpBigInt(t *testing.T) {
 
 	engine.opCode = DEC
 
-	state, err =opBigInt(engine)
+	state, err = opBigInt(engine)
 
 	if err != nil {
 		t.Fatal(err)
@@ -36,7 +37,7 @@ func TestOpBigInt(t *testing.T) {
 	t.Log("2 dec result 1, execute result:", engine.evaluationStack.Peek(0).GetStackItem().GetBigInteger())
 
 	engine.opCode = NEGATE
-	state, err =opBigInt(engine)
+	state, err = opBigInt(engine)
 
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +46,7 @@ func TestOpBigInt(t *testing.T) {
 	t.Log("1 negate result -1, execute result:", engine.evaluationStack.Peek(0).GetStackItem().GetBigInteger())
 
 	engine.opCode = ABS
-	state, err =opBigInt(engine)
+	state, err = opBigInt(engine)
 
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +62,7 @@ func TestOpNot(t *testing.T) {
 
 	engine.evaluationStack.Push(NewStackItem(types.NewBoolean(false)))
 	engine.opCode = NOT
-	state, err =opNot(engine)
+	state, err = opNot(engine)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +133,7 @@ func TestBigIntZip(t *testing.T) {
 
 	engine.opCode = MUL
 
-	state, err =opBigIntZip(engine)
+	state, err = opBigIntZip(engine)
 
 	if err != nil {
 		t.Fatal(err)
@@ -144,7 +145,7 @@ func TestBigIntZip(t *testing.T) {
 
 	engine.opCode = DIV
 
-	state, err =opBigIntZip(engine)
+	state, err = opBigIntZip(engine)
 
 	if err != nil {
 		t.Fatal(err)
@@ -156,7 +157,7 @@ func TestBigIntZip(t *testing.T) {
 
 	engine.opCode = MOD
 
-	state, err =opBigIntZip(engine)
+	state, err = opBigIntZip(engine)
 
 	if err != nil {
 		t.Fatal(err)
@@ -267,7 +268,6 @@ func TestOpBoolZip(t *testing.T) {
 	engine.evaluationStack.Push(NewStackItem(types.NewBoolean(true)))
 	engine.evaluationStack.Push(NewStackItem(types.NewBoolean(true)))
 
-
 	engine.opCode = BOOLAND
 
 	_, err = opBoolZip(engine)
@@ -280,7 +280,6 @@ func TestOpBoolZip(t *testing.T) {
 
 	engine.evaluationStack.Push(NewStackItem(types.NewBoolean(false)))
 	engine.evaluationStack.Push(NewStackItem(types.NewBoolean(false)))
-
 
 	engine.opCode = BOOLOR
 
@@ -295,7 +294,6 @@ func TestOpBoolZip(t *testing.T) {
 	engine.evaluationStack.Push(NewStackItem(types.NewBoolean(true)))
 	engine.evaluationStack.Push(NewStackItem(types.NewBoolean(false)))
 
-
 	engine.opCode = BOOLOR
 
 	_, err = opBoolZip(engine)
@@ -306,7 +304,6 @@ func TestOpBoolZip(t *testing.T) {
 
 	t.Log("true boolor false result true, execute result", engine.evaluationStack.Peek(0).GetStackItem().GetBoolean())
 }
-
 
 func TestOpOpWithIn(t *testing.T) {
 	engine.evaluationStack.Push(NewStackItem(types.NewInteger(big.NewInt(4))))
@@ -337,4 +334,3 @@ func TestOpOpWithIn(t *testing.T) {
 
 	t.Log("1 >= 2 && 1 < 3 result false, execute result", engine.evaluationStack.Peek(0).GetStackItem().GetBoolean())
 }
-

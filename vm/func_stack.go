@@ -18,7 +18,9 @@ func opXDrop(e *ExecutionEngine) (VMState, error) {
 
 func opXSwap(e *ExecutionEngine) (VMState, error) {
 	n := PopInt(e)
-	if n == 0 { return NONE, nil }
+	if n == 0 {
+		return NONE, nil
+	}
 	e.evaluationStack.Swap(0, n)
 	return NONE, nil
 }
@@ -67,7 +69,9 @@ func opPick(e *ExecutionEngine) (VMState, error) {
 
 func opRoll(e *ExecutionEngine) (VMState, error) {
 	n := PopInt(e)
-	if n == 0 { return NONE, nil }
+	if n == 0 {
+		return NONE, nil
+	}
 	Push(e, e.evaluationStack.Remove(n))
 	return NONE, nil
 }
@@ -98,4 +102,3 @@ func opTuck(e *ExecutionEngine) (VMState, error) {
 	Push(e, x2)
 	return NONE, nil
 }
-

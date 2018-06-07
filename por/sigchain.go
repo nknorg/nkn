@@ -23,7 +23,7 @@ import (
 // 1. Sign: sign the element created in Sign
 
 // TODO: move sigAlgo to config.json
-const sigAlgo SigAlgo = SigAlgo_ECDSA
+const sigAlgo = SigAlgo_ECDSA
 
 func (sc *SigChainElem) SerializationUnsigned(w io.Writer) error {
 	err := serialization.WriteVarBytes(w, sc.NextPubkey)

@@ -1,12 +1,13 @@
 package crypto
 
 import (
-	. "github.com/nknorg/nkn/errors"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"errors"
 	"math/big"
+
+	. "github.com/nknorg/nkn/errors"
 )
 
 const (

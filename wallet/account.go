@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"errors"
+
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/crypto"

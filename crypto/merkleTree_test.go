@@ -1,10 +1,11 @@
 package crypto
 
 import (
-	. "github.com/nknorg/nkn/common"
 	"crypto/sha256"
 	"fmt"
 	"testing"
+
+	. "github.com/nknorg/nkn/common"
 )
 
 func TestHash(t *testing.T) {

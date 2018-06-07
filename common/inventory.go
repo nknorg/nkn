@@ -3,8 +3,8 @@ package common
 type InventoryType byte
 
 const (
-	TRANSACTION	InventoryType = 0x01
-	BLOCK		InventoryType = 0x02
+	TRANSACTION InventoryType = 0x01
+	BLOCK       InventoryType = 0x02
 )
 
 //TODO: temp inventory
@@ -14,4 +14,3 @@ type Inventory interface {
 	Verify() error
 	Type() InventoryType
 }
-

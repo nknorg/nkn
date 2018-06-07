@@ -13,10 +13,10 @@ type BlockVoting struct {
 	sync.RWMutex
 	pstate         map[Uint256]*State            // consensus state for proposer
 	vstate         map[uint64]map[Uint256]*State // consensus state for voter
-	height         uint32			// voting height
-	blockCache     *BlockCache      // received blocks
-	pool           *BlockVotingPool // block voting pool
-	confirmingHash Uint256          // block hash in process
+	height         uint32                        // voting height
+	blockCache     *BlockCache                   // received blocks
+	pool           *BlockVotingPool              // block voting pool
+	confirmingHash Uint256                       // block hash in process
 }
 
 func NewBlockVoting(totalWeight int) *BlockVoting {

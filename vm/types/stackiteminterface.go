@@ -2,6 +2,7 @@ package types
 
 import (
 	"math/big"
+
 	"github.com/nknorg/nkn/vm/interfaces"
 )
 
@@ -13,4 +14,3 @@ type StackItemInterface interface {
 	GetInterface() interfaces.IInteropInterface
 	GetArray() []StackItemInterface
 }
-

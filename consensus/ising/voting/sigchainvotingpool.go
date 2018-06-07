@@ -37,7 +37,7 @@ func (scvp *SigChainVotingPool) GetMind(height uint32) (Uint256, bool) {
 	}
 }
 
-func (scvp *SigChainVotingPool) ChangeMind(height uint32, mind Uint256) map[uint64]Uint256{
+func (scvp *SigChainVotingPool) ChangeMind(height uint32, mind Uint256) map[uint64]Uint256 {
 	scvp.Lock()
 	scvp.mind[height] = mind
 	scvp.Unlock()

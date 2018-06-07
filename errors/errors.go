@@ -10,16 +10,17 @@ type DetailError interface {
 	error
 	ErrCoder
 	CallStacker
-	GetRoot()  error
+	GetRoot() error
 }
 
-
-func  NewErr(errmsg string) error {
+func NewErr(errmsg string) error {
 	return errors.New(errmsg)
 }
 
-func NewDetailErr(err error,errcode ErrCode,errmsg string) DetailError{
-	if err == nil {return nil}
+func NewDetailErr(err error, errcode ErrCode, errmsg string) DetailError {
+	if err == nil {
+		return nil
+	}
 
 	e, ok := err.(nknError)
 	if !ok {
@@ -33,7 +34,6 @@ func NewDetailErr(err error,errcode ErrCode,errmsg string) DetailError{
 		e.errmsg = errmsg + ": " + e.errmsg
 	}
 
-
 	return e
 }
 
@@ -43,6 +43,3 @@ func RootErr(err error) error {
 	}
 	return err
 }
-
-
-

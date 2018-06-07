@@ -10,7 +10,7 @@ type OpExec struct {
 var (
 	OpExecList = [256]OpExec{
 		// control flow
-		PUSH0:       {Opcode: PUSH0, Name: "PUSH0", Exec: opPushData,},
+		PUSH0:       {Opcode: PUSH0, Name: "PUSH0", Exec: opPushData},
 		PUSHBYTES1:  {Opcode: PUSHBYTES1, Name: "PUSHBYTES1", Exec: opPushData},
 		PUSHBYTES75: {Opcode: PUSHBYTES75, Name: "PUSHBYTES75", Exec: opPushData},
 		PUSHDATA1:   {Opcode: PUSHDATA1, Name: "PUSHDATA1", Exec: opPushData},

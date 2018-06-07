@@ -3,6 +3,8 @@ package dbft
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	. "github.com/nknorg/nkn/common"
 	ct "github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/contract/program"
@@ -19,7 +21,6 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	cl "github.com/nknorg/nkn/wallet"
-	"time"
 )
 
 var GenBlockTime = (config.DEFAULTGENBLOCKTIME * time.Second)
