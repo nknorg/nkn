@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-//https://github.com/emostafa/garson
 type Params map[string]string
 
 type Route struct {

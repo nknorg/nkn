@@ -2,6 +2,7 @@ package types
 
 import (
 	"math/big"
+
 	"github.com/nknorg/nkn/vm/interfaces"
 )
 
@@ -9,13 +10,13 @@ type Boolean struct {
 	value bool
 }
 
-func NewBoolean(value bool) *Boolean{
+func NewBoolean(value bool) *Boolean {
 	var b Boolean
 	b.value = value
 	return &b
 }
 
-func (b *Boolean) Equals(other StackItemInterface) bool{
+func (b *Boolean) Equals(other StackItemInterface) bool {
 	if _, ok := other.(*Boolean); !ok {
 		return false
 	}
@@ -32,7 +33,7 @@ func (b *Boolean) GetBigInteger() *big.Int {
 	return big.NewInt(0)
 }
 
-func (b *Boolean) GetBoolean() bool{
+func (b *Boolean) GetBoolean() bool {
 	return b.value
 }
 

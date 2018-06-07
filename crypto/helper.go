@@ -1,26 +1,27 @@
 package crypto
 
 import (
-	"errors"
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"bytes"
 	"crypto/sha256"
+	"errors"
+
 	. "github.com/nknorg/nkn/common"
 )
 
-func ToAesKey( pwd []byte ) []byte {
+func ToAesKey(pwd []byte) []byte {
 	pwdhash := sha256.Sum256(pwd)
 	pwdhash2 := sha256.Sum256(pwdhash[:])
 
 	// Fixme clean the password buffer
 	// ClearBytes(pwd,len(pwd))
-	ClearBytes(pwdhash[:],32)
+	ClearBytes(pwdhash[:], 32)
 
 	return pwdhash2[:]
 }
 
-func AesEncrypt(plaintext []byte, key []byte, iv[]byte) ([]byte, error) {
+func AesEncrypt(plaintext []byte, key []byte, iv []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, errors.New("invalid decrypt key")
@@ -35,7 +36,7 @@ func AesEncrypt(plaintext []byte, key []byte, iv[]byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func AesDecrypt(ciphertext []byte, key []byte, iv[]byte) ([]byte, error) {
+func AesDecrypt(ciphertext []byte, key []byte, iv []byte) ([]byte, error) {
 
 	block, err := aes.NewCipher(key)
 	if err != nil {

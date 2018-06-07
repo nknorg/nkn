@@ -12,7 +12,6 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
-
 const (
 	// The height of signature chain which run for block proposer should be (local block height -1 + 4)
 	// -1 means that:
@@ -23,7 +22,6 @@ const (
 	//  1 (for fully propagate)
 	HeightThreshold = 4
 )
-
 
 type PorPackages []*PorPackage
 

@@ -1,9 +1,10 @@
 package transaction
 
 import (
+	"io"
+
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"io"
 )
 
 type UTXOUnspent struct {

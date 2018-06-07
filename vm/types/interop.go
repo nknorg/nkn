@@ -2,6 +2,7 @@ package types
 
 import (
 	"math/big"
+
 	"github.com/nknorg/nkn/vm/interfaces"
 )
 

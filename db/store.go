@@ -1063,7 +1063,7 @@ func (bd *ChainStore) persist(b *Block) error {
 
 	for programHash, value := range accounts {
 		accountKey := new(bytes.Buffer)
-		accountKey.WriteByte(byte(ST_ACCOUNT))
+		accountKey.WriteByte(byte(ST_Account))
 		programHash.Serialize(accountKey)
 
 		accountValue := new(bytes.Buffer)
@@ -1318,7 +1318,7 @@ func (bd *ChainStore) GetHeight() uint32 {
 }
 
 func (bd *ChainStore) GetAccount(programHash Uint160) (*account.AccountState, error) {
-	accountPrefix := []byte{byte(ST_ACCOUNT)}
+	accountPrefix := []byte{byte(ST_Account)}
 
 	state, err := bd.st.Get(append(accountPrefix, programHash.ToArray()...))
 

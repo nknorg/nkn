@@ -36,4 +36,3 @@ func (p *State) ClearBit(bit State) {
 func (p *State) ClearAll() {
 	*p = 0
 }
-

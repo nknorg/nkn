@@ -13,7 +13,7 @@ import (
 	"github.com/itchyny/base58-go"
 )
 
-const UINT160SIZE int = 20
+const UINT160SIZE = 20
 
 type Uint160 [UINT160SIZE]uint8
 
@@ -34,7 +34,7 @@ func (u *Uint160) CompareTo(o Uint160) int {
 }
 
 func (u *Uint160) ToArray() []byte {
-	var x []byte = make([]byte, UINT160SIZE)
+	var x = make([]byte, UINT160SIZE)
 	for i := 0; i < 20; i++ {
 		x[i] = byte(u[i])
 	}
@@ -42,7 +42,7 @@ func (u *Uint160) ToArray() []byte {
 	return x
 }
 func (u *Uint160) ToArrayReverse() []byte {
-	var x []byte = make([]byte, UINT160SIZE)
+	var x = make([]byte, UINT160SIZE)
 	for i, j := 0, UINT160SIZE-1; i < j; i, j = i+1, j-1 {
 		x[i], x[j] = byte(u[j]), byte(u[i])
 	}

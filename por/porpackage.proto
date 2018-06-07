@@ -4,10 +4,10 @@ package por;
 import "sigchain.proto";
 
 message PorPackage {
-	uint32 VoteForHeight = 1;
-	bytes Owner = 2;
+  uint32 VoteForHeight = 1;
+  bytes Owner = 2;
   bytes BlockHash = 3;
   bytes TxHash = 4;
-	bytes SigHash = 5;
+  bytes SigHash = 5;
   SigChain SigChain = 6;
 }

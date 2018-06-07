@@ -24,10 +24,9 @@ import (
 )
 
 const (
-	DefaultBookKeeperCount = 4
-	WalletIVLength         = 16
-	WalletMasterKeyLength  = 32
-	WalletFileName         = "wallet.dat"
+	WalletIVLength        = 16
+	WalletMasterKeyLength = 32
+	WalletFileName        = "wallet.dat"
 )
 
 type Wallet interface {

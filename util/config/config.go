@@ -16,7 +16,6 @@ const (
 	DEFAULTGENBLOCKTIME    = 6
 	DefaultConfigFilename  = "./config.json"
 	DefaultBookKeeperCount = 4
-	DefaultProposerCount   = 1
 )
 
 var (
@@ -113,8 +112,8 @@ func check(config *Configuration) error {
 }
 
 func findMinMaxPort(array []uint16) (uint16, uint16) {
-	var max uint16 = array[0]
-	var min uint16 = array[0]
+	var max = array[0]
+	var min = array[0]
 	for _, value := range array {
 		if max < value {
 			max = value

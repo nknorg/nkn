@@ -1,9 +1,10 @@
 package program
 
 import (
-	. "github.com/nknorg/nkn/common"
 	"bytes"
 	"math/big"
+
+	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/vm"
 )
 

@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"io"
 
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
-	"io"
 )
 
 type ping struct {

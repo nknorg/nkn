@@ -1,6 +1,5 @@
 package vm
 
-
 func opHash(e *ExecutionEngine) (VMState, error) {
 	x := PopByteArray(e)
 	PushData(e, Hash(x, e))
@@ -11,14 +10,18 @@ func opCheckSig(e *ExecutionEngine) (VMState, error) {
 	pubkey := PopByteArray(e)
 	signature := PopByteArray(e)
 	ver, err := e.crypto.VerifySignature(e.codeContainer.GetMessage(), signature, pubkey)
-	if err != nil { return FAULT, err }
+	if err != nil {
+		return FAULT, err
+	}
 	PushData(e, ver)
 	return NONE, nil
 }
 
 func opCheckMultiSig(e *ExecutionEngine) (VMState, error) {
 	n := PopInt(e)
-	if n < 1 { return FAULT, nil }
+	if n < 1 {
+		return FAULT, nil
+	}
 	if Count(e) < n+2 {
 		return FAULT, nil
 	}
@@ -30,7 +33,9 @@ func opCheckMultiSig(e *ExecutionEngine) (VMState, error) {
 	}
 
 	m := PopInt(e)
-	if m < 1 || m > n { return FAULT, nil }
+	if m < 1 || m > n {
+		return FAULT, nil
+	}
 
 	signatures := make([][]byte, m)
 	for i := 0; i < m; i++ {

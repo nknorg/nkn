@@ -1,17 +1,16 @@
 package vm
 
 import (
-	"github.com/nknorg/nkn/vm/interfaces"
 	"io"
-	_ "math/big"
-	_ "sort"
-	. "github.com/nknorg/nkn/vm/errors"
+
 	"github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/vm/errors"
+	"github.com/nknorg/nkn/vm/interfaces"
 )
 
 const (
-	ratio = 100000
-	gasFree = 10 * 100000000;
+	ratio   = 100000
+	gasFree = 10 * 100000000
 )
 
 func NewExecutionEngine(container interfaces.ICodeContainer, crypto interfaces.ICrypto, table interfaces.ICodeTable, service IInteropService, gas common.Fixed64) *ExecutionEngine {
@@ -41,9 +40,9 @@ func NewExecutionEngine(container interfaces.ICodeContainer, crypto interfaces.I
 }
 
 type ExecutionEngine struct {
-	crypto          interfaces.ICrypto
-	table           interfaces.ICodeTable
-	service         *InteropService
+	crypto  interfaces.ICrypto
+	table   interfaces.ICodeTable
+	service *InteropService
 
 	codeContainer   interfaces.ICodeContainer
 	invocationStack *RandomAccessStack
@@ -53,11 +52,11 @@ type ExecutionEngine struct {
 	altStack        *RandomAccessStack
 	state           VMState
 
-	context         *ExecutionContext
+	context *ExecutionContext
 
 	//current opcode
-	opCode          OpCode
-	gas             int64
+	opCode OpCode
+	gas    int64
 }
 
 func (e *ExecutionEngine) Create(caller common.Uint160, code []byte) ([]byte, error) {
@@ -307,14 +306,14 @@ func (e *ExecutionEngine) getPriceForSysCall() int64 {
 	context := e.context
 	i := context.GetInstructionPointer() - 1
 	c := len(context.Code)
-	if i >= c - 3 {
+	if i >= c-3 {
 		return 1
 	}
 	l := int(context.Code[i+1])
-	if i >= c - l - 2 {
+	if i >= c-l-2 {
 		return 1
 	}
-	name := string(context.Code[i+2:l])
+	name := string(context.Code[i+2 : l])
 	switch name {
 	case "Neo.Blockchain.GetHeader":
 		return 100
@@ -325,7 +324,7 @@ func (e *ExecutionEngine) getPriceForSysCall() int64 {
 	case "Neo.Blockchain.GetAccount":
 		return 100
 	case "Neo.Blockchain.RegisterValidator":
-		return 1000 * 100000000 / ratio;
+		return 1000 * 100000000 / ratio
 	case "Neo.Blockchain.GetValidators":
 		return 200
 	case "Neo.Blockchain.CreateAsset":

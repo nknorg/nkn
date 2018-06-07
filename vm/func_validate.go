@@ -2,8 +2,8 @@ package vm
 
 import (
 	"bytes"
-
 	"encoding/binary"
+
 	. "github.com/nknorg/nkn/vm/errors"
 	"github.com/nknorg/nkn/vm/types"
 )

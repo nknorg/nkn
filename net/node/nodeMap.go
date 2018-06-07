@@ -1,9 +1,10 @@
 package node
 
 import (
-	. "github.com/nknorg/nkn/net/protocol"
 	"fmt"
 	"sync"
+
+	. "github.com/nknorg/nkn/net/protocol"
 )
 
 // The neigbor node list

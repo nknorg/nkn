@@ -14,5 +14,5 @@ const (
 	String
 	Object
 	Array = 0x10
-	Void = 0xff
+	Void  = 0xff
 )

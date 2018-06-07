@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/net/message"
 )
 
 type IsingMessageType byte
