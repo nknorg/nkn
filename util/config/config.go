@@ -105,12 +105,8 @@ func check(config *Configuration) error {
 		if len(config.SeedList) == 0 {
 			return errors.New("seed list in config file should not be blank")
 		}
-		if len(config.GenesisBlockProposer) < DefaultProposerCount {
-			log.Fatalln("bootstrap block proposer is required at least one in config.json")
-		}
 	default:
-		fmt.Println(config.ConsensusType)
-		return errors.New("consensus type in config file should not be blank")
+		return fmt.Errorf("invalid consensus type %s in config file\n", config.ConsensusType)
 	}
 
 	return nil
