@@ -128,7 +128,10 @@ func (node *node) ConnectNeighbors() {
 	}
 	neighbors := chordNode.Neighbors()
 	for _, nbr := range neighbors {
-		nodeAddr := nbr.NodeAddr()
+		nodeAddr, err := nbr.NodeAddr()
+		if err != nil {
+			continue
+		}
 		found := false
 		var ip net.IP
 		node.nbrNodes.Lock()
