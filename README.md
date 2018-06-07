@@ -101,6 +101,7 @@ Config the same bootstrap node address and public key to each
   "HttpWsPort": 30002,
   "HttpRestPort": 30003,
   "HttpJsonPort": 30004,
+  "Hostname": "127.0.0.1",
   "LogLevel": 1,
   "IsTLS": false,
   "ConsensusType": "ising",
