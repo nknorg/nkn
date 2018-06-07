@@ -217,24 +217,33 @@ func (ps *ProposerService) ProduceNewBlock() {
 }
 
 func (ps *ProposerService) IsBlockProposer() bool {
+	var err error
+	var proposer []byte
 	localPublicKey, err := ps.account.PublicKey.EncodePoint(true)
 	if err != nil {
 		return false
 	}
 	current := ps.CurrentVoting(voting.BlockVote)
 	votingHeight := current.GetVotingHeight()
-	var proposer []byte
 	if v, ok := ps.blockProposer[votingHeight]; ok {
 		proposer = v
 		log.Infof("Block Proposer (signature chain): %s", BytesToHexString(v))
 	} else {
-		proposer, _ = HexStringToBytes(config.Parameters.GenesisBlockProposer[0])
+		if len(config.Parameters.GenesisBlockProposer) < 1 {
+			log.Warn("no GenesisBlockProposer configured")
+			return false
+		}
+		proposer, err = HexStringToBytes(config.Parameters.GenesisBlockProposer[0])
+		if err != nil || len(proposer) != crypto.COMPRESSEDLEN {
+			log.Error("invalid GenesisBlockProposer configured")
+			return false
+		}
 	}
-	if IsEqualBytes(localPublicKey, proposer) {
-		return true
+	if !IsEqualBytes(localPublicKey, proposer) {
+		return false
 	}
 
-	return false
+	return true
 }
 
 func (ps *ProposerService) Start() error {
