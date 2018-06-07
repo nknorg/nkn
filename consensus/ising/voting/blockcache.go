@@ -119,26 +119,26 @@ func (bc *BlockCache) GetWorseBlockFromCache(height uint32) *ledger.Block {
 
 // RemoveBlockFromCache return true if the block doesn't exist in cache.
 func (bc *BlockCache) RemoveBlockFromCache(hash Uint256, height uint32) error {
+	if !bc.BlockInCache(hash, height) {
+		return nil
+	}
 	bc.Lock()
 	defer bc.Unlock()
 
-	if bc.BlockInCache(hash, height) {
-		height := bc.hashes[hash]
-		delete(bc.hashes, hash)
-
-		var blockInfos []*BlockInfo
-		for k, v := range bc.cache[height] {
-			if hash.CompareTo(v.block.Hash()) == 0 {
-				blockInfos = append(blockInfos, bc.cache[height][:k]...)
-				blockInfos = append(blockInfos, bc.cache[height][k+1:]...)
-				break
-			}
+	h := bc.hashes[hash]
+	delete(bc.hashes, hash)
+	var blockInfos []*BlockInfo
+	for k, v := range bc.cache[h] {
+		if hash.CompareTo(v.block.Hash()) == 0 {
+			blockInfos = append(blockInfos, bc.cache[h][:k]...)
+			blockInfos = append(blockInfos, bc.cache[h][k+1:]...)
+			break
 		}
-		if blockInfos == nil {
-			delete(bc.cache, height)
-		} else {
-			bc.cache[height] = blockInfos
-		}
+	}
+	if blockInfos == nil {
+		delete(bc.cache, h)
+	} else {
+		bc.cache[h] = blockInfos
 	}
 
 	return nil
@@ -197,6 +197,7 @@ func (bc *BlockCache) Cleanup() {
 					select {
 					case <-info.lifetime.C:
 						bc.RemoveBlockFromCache(info.block.Hash(), info.block.Header.Height)
+					default:
 					}
 				}
 			}
