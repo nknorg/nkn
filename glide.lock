@@ -1,5 +1,5 @@
-hash: ed6f98bada179cdab8a314ccd1f65d4fab7198c77cf107ed44f694e384df23c6
-updated: 2018-06-04T13:38:53.505711+08:00
+hash: ee909cf2bd7e1d5171e6501dc02985bf48ef3948370a9555e9bedd284a55dd82
+updated: 2018-06-07T12:13:21.798709+08:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: da1a8928f709389522c8023062a3739f3b4af419
@@ -30,6 +30,8 @@ imports:
   - crypto/secp256k1
   - crypto/sha3
   - params
+- name: github.com/rdegges/go-ipify
+  version: 2d94a6a86c4055118cc30fae2aaed47ec01f2210
 - name: github.com/syndtr/goleveldb
   version: 3c5717caf1475fd25964109a0fc640bd150fce43
   subpackages:

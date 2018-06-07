@@ -651,11 +651,7 @@ func getWsAddr(s *RPCServer, params []interface{}) map[string]interface{} {
 			log.Error("Cannot get predecessor")
 			return RpcResultInternalError
 		}
-		addr, err := vnode.HttpWsAddr()
-		if err != nil {
-			log.Error("Cannot get websocket address")
-			return RpcResultInternalError
-		}
+		addr := vnode.HttpWsAddr()
 		return RpcResult(addr)
 	default:
 		return RpcResultInvalidParameter
