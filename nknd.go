@@ -21,7 +21,6 @@ import (
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/rpc/httpjson"
-	"github.com/nknorg/nkn/rpc/httprestful"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
@@ -58,10 +57,7 @@ func InitLedger(account *wallet.Account) error {
 func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 	node := net.StartProtocol(pubKey, ring)
 	node.SyncNodeHeight()
-	// node.WaitForFourPeersStart()
 	node.WaitForSyncBlkFinish()
-	httprestful.StartServer(node)
-
 	return node
 }
 

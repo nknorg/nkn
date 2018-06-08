@@ -17,7 +17,7 @@ import (
 	. "github.com/nknorg/nkn/rpc/httprestful/common"
 	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	"github.com/nknorg/nkn/util/address"
-	. "github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	. "github.com/nknorg/nkn/websocket/session"
 
@@ -52,7 +52,7 @@ func InitWsServer(node protocol.Noder) *WsServer {
 }
 
 func (ws *WsServer) Start() error {
-	if Parameters.HttpWsPort == 0 {
+	if config.Parameters.HttpWsPort == 0 {
 		log.Error("Not configure HttpWsPort port ")
 		return nil
 	}
@@ -62,7 +62,7 @@ func (ws *WsServer) Start() error {
 	}
 
 	tlsFlag := false
-	if tlsFlag || Parameters.HttpWsPort%1000 == TlsPort {
+	if tlsFlag || config.Parameters.HttpWsPort%1000 == TlsPort {
 		var err error
 		ws.listener, err = ws.initTlsListen()
 		if err != nil {
@@ -71,7 +71,7 @@ func (ws *WsServer) Start() error {
 		}
 	} else {
 		var err error
-		ws.listener, err = net.Listen("tcp", ":"+strconv.Itoa(int(Parameters.HttpWsPort)))
+		ws.listener, err = net.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWsPort)))
 		if err != nil {
 			log.Fatal("net.Listen: ", err.Error())
 			return err
@@ -115,15 +115,6 @@ func (ws *WsServer) registryMethod() {
 		resp["Action"] = "heartbeat"
 		resp["Result"] = cmd["Userid"]
 		return resp
-	}
-	sendtest := func(cmd map[string]interface{}) map[string]interface{} {
-		go func() {
-			time.Sleep(time.Second * 5)
-			resp := ResponsePack(Err.SUCCESS)
-			resp["Action"] = "pushresult"
-			ws.PushTxResult(cmd["Userid"].(string), resp)
-		}()
-		return heartbeat(cmd)
 	}
 	getsessioncount := func(cmd map[string]interface{}) map[string]interface{} {
 		resp := ResponsePack(Err.SUCCESS)
@@ -216,20 +207,13 @@ func (ws *WsServer) registryMethod() {
 		"getblockbyhash":     {handler: GetBlockByHash},
 		"getblockheight":     {handler: GetBlockHeight},
 		"gettransaction":     {handler: GetTransactionByHash},
-		"getasset":           {handler: GetAssetByHash},
 		"getunspendoutput":   {handler: GetUnspendOutput},
-
 		"sendrawtransaction": {handler: sendRawTransaction},
-		"sendrecord":         {handler: SendRecord},
 		"heartbeat":          {handler: heartbeat},
-
-		"sendtest": {handler: sendtest, pushFlag: true},
-
-		"gettxhashmap":    {handler: gettxhashmap},
-		"getsessioncount": {handler: getsessioncount},
-
-		"setClient":  {handler: setClient},
-		"sendPacket": {handler: relayHandler},
+		"gettxhashmap":       {handler: gettxhashmap},
+		"getsessioncount":    {handler: getsessioncount},
+		"setClient":          {handler: setClient},
+		"sendPacket":         {handler: relayHandler},
 	}
 	ws.ActionMap = actionMap
 }
@@ -438,8 +422,8 @@ func (ws *WsServer) Broadcast(data []byte) error {
 
 func (ws *WsServer) initTlsListen() (net.Listener, error) {
 
-	CertPath := Parameters.RestCertPath
-	KeyPath := Parameters.RestKeyPath
+	CertPath := config.Parameters.RestCertPath
+	KeyPath := config.Parameters.RestKeyPath
 
 	// load cert
 	cert, err := tls.LoadX509KeyPair(CertPath, KeyPath)
@@ -452,8 +436,8 @@ func (ws *WsServer) initTlsListen() (net.Listener, error) {
 		Certificates: []tls.Certificate{cert},
 	}
 
-	log.Info("TLS listen port is ", strconv.Itoa(int(Parameters.HttpWsPort)))
-	listener, err := tls.Listen("tcp", ":"+strconv.Itoa(int(Parameters.HttpWsPort)), tlsConfig)
+	log.Info("TLS listen port is ", strconv.Itoa(int(config.Parameters.HttpWsPort)))
+	listener, err := tls.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWsPort)), tlsConfig)
 	if err != nil {
 		log.Error(err)
 		return nil, err
