@@ -10,9 +10,7 @@ import (
 )
 
 func TestCoinbase(t *testing.T) {
-	bk := &Coinbase{
-		Nonce: 10,
-	}
+	bk := &Coinbase{}
 
 	data, err := bk.MarshalJson()
 	if err != nil {
@@ -24,10 +22,6 @@ func TestCoinbase(t *testing.T) {
 	if err != nil {
 		t.Error("Coinbase UnmarshalJson error")
 	}
-
-	if !newBk.Equal(bk) {
-		t.Error("Coinbase not equal")
-	}
 }
 
 func TestRegiserAsset(t *testing.T) {
@@ -37,7 +31,6 @@ func TestRegiserAsset(t *testing.T) {
 			Description: "world",
 			Precision:   8,
 			AssetType:   0x11,
-			RecordType:  0x1,
 		},
 		Amount: 100,
 		Issuer: &crypto.PubKey{

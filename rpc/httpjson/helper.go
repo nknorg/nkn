@@ -22,7 +22,7 @@ func MakeRegTransaction(wallet wallet.Wallet, name string, value string) (*trans
 		return nil, err
 	}
 	issuer := admin
-	asset := &Asset{name, name, byte(MaxPrecision), AssetType(Token), UTXO}
+	asset := &Asset{name, name, MaxPrecision, AssetType(Token)}
 	transactionContract, err := contract.CreateSignatureContract(admin.PubKey())
 	if err != nil {
 		fmt.Println("CreateSignatureContract failed")
