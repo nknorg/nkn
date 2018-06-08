@@ -1,0 +1,13 @@
+**/.git
+.git
+!.git/HEAD
+!.git/refs/heads
+
+**/*~
+**/*.DS_Store
+
+Log
+vendor
+Chain
+nknd
+nknc
