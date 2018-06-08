@@ -143,6 +143,21 @@ When the network contains enough nodes (usually 8+), stop the node that created
 the network in order for the relay service to work properly. Nodes joining the
 network later should use a live node as seed.
 
+## Docker
+
+Build and tag Docker image. Note that `config.json` should be modified before
+building.
+
+```shell
+$ docker build -t nkn .
+```
+
+Run Docker image
+
+```shell
+$ docker run -p 30000-30003:30000-30003 -it nkn bash -c "./nknc wallet -c && ./nknd -test create"
+```
+
 ## Contributing
 
 Can I contribute patches to NKN project?
