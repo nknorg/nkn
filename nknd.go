@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"math/rand"
 	"os"
+	"os/signal"
 	"runtime"
 	"time"
 
@@ -69,7 +71,7 @@ func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
 		case "ising":
 			log.Info("ising consensus starting ...")
 			account, _ := wallet.GetDefaultAccount()
-			ising.StartIsingConsensus(account, node)
+			go ising.StartIsingConsensus(account, node)
 		case "dbft":
 			log.Info("dbft consensus starting ...")
 			dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
@@ -93,7 +95,6 @@ func nknMain() error {
 		if *name == "create" {
 			ring, transport, err = chord.CreateNet()
 		} else if *name == "join" {
-			config.IncrementPort()
 			ring, transport, err = chord.JoinNet()
 		}
 
@@ -102,7 +103,7 @@ func nknMain() error {
 		}
 
 		defer transport.Shutdown()
-		defer ring.Shutdown()
+		defer ring.Leave()
 	}
 
 	// Get local account
@@ -132,7 +133,7 @@ func nknMain() error {
 	node := StartNetworking(account.PublicKey, ring)
 
 	// start relay service
-	node.StartRelayer(account)
+	node.StartRelayer(wallet)
 
 	//start JsonRPC
 	rpcServer := httpjson.NewServer(node, wallet)
@@ -144,13 +145,24 @@ func nknMain() error {
 	// start consensus
 	StartConsensus(wallet, node)
 
-	for {
-		time.Sleep(dbft.GenBlockTime)
-		if log.CheckIfNeedNewFile() {
-			log.ClosePrintLog()
-			log.Init(log.Path, os.Stdout)
+	go func() {
+		for {
+			time.Sleep(ising.ConsensusTime)
+			if log.CheckIfNeedNewFile() {
+				log.ClosePrintLog()
+				log.Init(log.Path, os.Stdout)
+			}
 		}
+	}()
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	for _ = range signalChan {
+		fmt.Println("\nReceived an interrupt, stopping services...\n")
+		return nil
 	}
+
+	return nil
 }
 
 func main() {

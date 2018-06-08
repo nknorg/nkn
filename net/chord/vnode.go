@@ -68,7 +68,7 @@ func (vn *localVnode) genId(idx uint16) {
 	// Use the hash funciton
 	conf := vn.ring.config
 	hash := conf.HashFunc()
-	hash.Write([]byte(conf.Hostname))
+	hash.Write([]byte(config.Parameters.Hostname + conf.Hostname))
 	binary.Write(hash, binary.BigEndian, idx)
 
 	// Use the hash as the ID
@@ -291,7 +291,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		if err == nil {
 			return res, nil
 		} else {
-			log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
+			nlog.Infof("[ERR] Failed to contact %s. Got %s", closest.String(), err)
 		}
 	}
 

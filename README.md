@@ -1,3 +1,6 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/nknorg/nkn)](https://goreportcard.com/report/github.com/nknorg/nkn)
+[![Build Status](https://travis-ci.org/nknorg/nkn.svg?branch=master)](https://travis-ci.org/nknorg/nkn)
+
 [![NKN](https://github.com/nknorg/nkn/wiki/img/nkn_logo.png)](https://nkn.org)
 
 # NKN: a Scalable Self-Evolving and Self-Incentivized Decentralized Network
@@ -31,12 +34,13 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 
 ## Technical Highlights
 
-* Transmit any data to any node/client without any centralized server
-* Proof-of-Relay, a useful proof of work: mining is relaying data
-* Extremely scalable consensus algorithm (millions or even billions of nodes)
-* Strong consistency rather than eventual consistency
-* Dynamic, large-scale network
-* Verifiable topology and routes
+* Transmit any data to any node/client without any centralized server. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Distributed-Data-Transmission-Network-%28DDTN%29)
+* Proof-of-Relay, a useful proof of work: mining is relaying data. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Proof-of-Relay-%28PoR%29)
+* Extremely scalable consensus algorithm (millions or even billions of nodes). [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Consensus-and-Blockchain)
+* Strong consistency rather than eventual consistency. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Consensus-and-Blockchain)
+* Dynamic, large-scale network.
+* Verifiable topology and routes. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Relay-Path-Validation)
+* Next generation address scheme with public key embedded. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-NKN-Address-Scheme)
 
 ## Building
 
@@ -74,31 +78,7 @@ have all functions working properly. It should be used only for testing
 now.**
 
 Create several directories to save exectuable files `nknd` `nknc` and
-config file `config.json`.
-
-``` shell
-$ tree
-.
-├── n1
-│   ├── config.json
-│   ├── nknd
-│   └── nknc
-├── n2
-│   ├── config.json
-│   ├── nknd
-│   └── nknc
-├── n3
-│   ├── config.json
-│   ├── nknd
-│   └── nknc
-├── n4
-│   ├── config.json
-│   ├── nknd
-│   └── nknc
-├── ...
-```
-
-Create new wallet in each directory
+config file `config.json`. Create new wallet in each directory
 
 ``` shell
 $ ./nknc wallet -c
@@ -121,13 +101,14 @@ Config the same bootstrap node address and public key to each
   "HttpWsPort": 30002,
   "HttpRestPort": 30003,
   "HttpJsonPort": 30004,
-  "PrintLevel": 1,
+  "Hostname": "127.0.0.1",
+  "LogLevel": 1,
   "IsTLS": false,
   "ConsensusType": "ising",
   "SeedList": [
     "127.0.0.1:30000"
   ],
-  "TestBlockProposer": [
+  "GenesisBlockProposer": [
     "0306dd2db26e3cfde2dbe5c8a17ea7c27f13f99c19e2cb59bc13e2d0c41589c7f1"
   ]
 }

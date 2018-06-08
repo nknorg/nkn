@@ -50,9 +50,9 @@ func TestPorPackage(t *testing.T) {
 	}
 
 	//test Hash
-	ppkgHash := ppkg.Hash()
-	sigChainHash := sc.Hash()
-	if bytes.Compare(ppkgHash, sigChainHash[:]) != 0 {
+	ppkgHash := ppkg.SigHash
+	sigChainHash, err := sc.SignatureHash()
+	if bytes.Compare(ppkgHash, sigChainHash) != 0 {
 		t.Error("[TestPorPackage] Hash test failed")
 	}
 
@@ -68,8 +68,8 @@ func TestPorPackage(t *testing.T) {
 	}
 
 	//GetSigChain
-	sigChainHash = ppkg.GetSigChain().Hash()
-	if bytes.Compare(ppkgHash, sigChainHash[:]) != 0 {
+	sigChainHash, err = ppkg.GetSigChain().SignatureHash()
+	if bytes.Compare(ppkgHash, sigChainHash) != 0 {
 		t.Error("[TestPorPackage] GetSigChain test failed")
 	}
 

@@ -25,3 +25,6 @@ import:
   - params
 - package: github.com/golang/protobuf
   version: v1.1.0
+- package: github.com/rdegges/go-ipify
+- package: github.com/jpillora/backoff
+  version: 1.0.0

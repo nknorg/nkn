@@ -18,10 +18,6 @@ const (
 	NodeInfoUpdateTime = ising.ConsensusTime / 2
 )
 
-func keepAlive(from *Noder, dst *Noder) {
-	// Need move to node function or keep here?
-}
-
 func (node *node) GetBlkHdrs() {
 	if node.local.GetNbrNodeCnt() < MINCONNCNT {
 		return

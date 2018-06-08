@@ -1,6 +1,8 @@
 package ledger
 
 import (
+	"errors"
+
 	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/asset"
@@ -8,7 +10,6 @@ import (
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
-	"errors"
 )
 
 var DefaultLedger *Ledger

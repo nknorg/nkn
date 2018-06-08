@@ -6,25 +6,28 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/golang/protobuf/proto"
+	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/wallet"
 	"github.com/nknorg/nkn/websocket"
 )
 
 type RelayService struct {
-	account          *wallet.Account   // wallet account
+	wallet           wallet.Wallet     // wallet
 	localNode        protocol.Noder    // local node
 	porServer        *por.PorServer    // por server to handle signature chain
 	relayMsgReceived events.Subscriber // consensus events listening
 }
 
-func NewRelayService(account *wallet.Account, node protocol.Noder) *RelayService {
+func NewRelayService(wallet wallet.Wallet, node protocol.Noder) *RelayService {
 	service := &RelayService{
-		account:   account,
+		wallet:    wallet,
 		localNode: node,
 		porServer: por.GetPorServer(),
 	}
@@ -46,7 +49,9 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 		log.Error("Signing signature chain error: ", err)
 		return err
 	}
+
 	// TODO: only pick sigchain to sign when threshold is smaller than
+
 	digest, err := packet.SigChain.ExtendElement(destPubKey)
 	if err != nil {
 		return err
@@ -66,6 +71,25 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 		log.Error("Send to client error: ", err)
 		return err
 	}
+
+	// TODO: create and send tx only after client sign
+	buf, err := proto.Marshal(packet.SigChain)
+	if err != nil {
+		return err
+	}
+	txn, err := httpjson.MakeCommitTransaction(rs.wallet, buf)
+	if err != nil {
+		return err
+	}
+	errCode := rs.localNode.AppendTxnPool(txn)
+	if errCode != nknErrors.ErrNoError {
+		return errCode
+	}
+	err = rs.localNode.Xmit(txn)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -91,12 +115,12 @@ func (rs *RelayService) SendPacketToNode(nextHop protocol.Noder, packet *message
 		return err
 	}
 	log.Infof(
-		"Relay packet:\nSrcID: %x\nDestID: %x\nNext Hop: %s:%d\nPayload %x",
+		"Relay packet:\nSrcID: %x\nDestID: %x\nNext Hop: %s:%d\nPayload Size: %d",
 		packet.SrcID,
 		packet.DestID,
 		nextHop.GetAddr(),
 		nextHop.GetPort(),
-		packet.Payload,
+		len(packet.Payload),
 	)
 	nextHop.Tx(msgBytes)
 	return nil
@@ -106,10 +130,10 @@ func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 	destID := packet.DestID
 	if bytes.Equal(rs.localNode.GetChordAddr(), destID) {
 		log.Infof(
-			"Receive packet:\nSrcID: %x\nDestID: %x\nPayload %x",
+			"Receive packet:\nSrcID: %x\nDestID: %x\nPayload Size: %d",
 			packet.SrcID,
 			destID,
-			packet.Payload,
+			len(packet.Payload),
 		)
 		// TODO: handle packet send to self
 		return nil
@@ -151,8 +175,4 @@ func (rs *RelayService) ReceiveRelayMsgNoError(v interface{}) {
 	if err != nil {
 		log.Error(err.Error())
 	}
-}
-
-func (rs *RelayService) GetAccount() *wallet.Account {
-	return rs.account
 }

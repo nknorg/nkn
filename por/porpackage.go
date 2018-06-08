@@ -12,6 +12,17 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
+const (
+	// The height of signature chain which run for block proposer should be (local block height -1 + 4)
+	// -1 means that:
+	//  local block height may heigher than neighbor node at most 1
+	// +4 means that:
+	//  2 (if local block height is n, then n + 2 signature chain is in consensus) +
+	//  1 (since local node height may lower than neighbors at most 1) +
+	//  1 (for fully propagate)
+	HeightThreshold = 4
+)
+
 type PorPackages []*PorPackage
 
 func (c PorPackages) Len() int {
@@ -63,30 +74,29 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	}
 
 	txHash := txn.Hash()
-	sigChainHash := sigChain.Hash()
+	sigHash, err := sigChain.SignatureHash()
+	if err != nil {
+		return nil, err
+	}
 	pp := &PorPackage{
-		Height:       blockHeader.Height,
-		Owner:        owner,
-		BlockHash:    sigChain.BlockHash,
-		TxHash:       txHash[:],
-		SigChainHash: sigChainHash[:],
-		SigChain:     sigChain,
+		VoteForHeight: blockHeader.Height + HeightThreshold,
+		Owner:         owner,
+		BlockHash:     sigChain.BlockHash,
+		TxHash:        txHash[:],
+		SigHash:       sigHash,
+		SigChain:      sigChain,
 	}
 	return pp, nil
 }
 
-func (pp *PorPackage) Hash() []byte {
-	return pp.SigChainHash
-}
-
 func (pp *PorPackage) CompareTo(o *PorPackage) int {
-	return bytes.Compare(pp.SigChainHash, o.SigChainHash)
+	return bytes.Compare(pp.SigHash, o.SigHash)
 }
 
 func (pp *PorPackage) DumpInfo() {
 	log.Info("owner: ", common.BytesToHexString(pp.Owner))
 	log.Info("txHash: ", pp.TxHash)
-	log.Info("sigchainHash: ", pp.SigChainHash)
+	log.Info("sigHash: ", pp.SigHash)
 	sc := pp.SigChain
 	sc.DumpInfo()
 }

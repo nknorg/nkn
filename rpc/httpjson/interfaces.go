@@ -2,12 +2,13 @@ package httpjson
 
 import (
 	"bytes"
+	"encoding/json"
+	"math"
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/por"
@@ -16,85 +17,36 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
-const (
-	// The min height of acceptable signature chain which height is local block height + MinHeightThreshold
-	// 3 means that:
-	//  2 (if local block height is n, then n + 1 block and n + 2 signature chain is in consensus) +
-	//  1 (since local node height may lower than neighbors at most 1, increase 1 to prevent forking)
-	MinHeightThreshold = 3
-)
-
 var initialRPCHandlers = map[string]funcHandler{
-	"getbestblockhash":   getBestBlockHash,
-	"getblock":           getBlock,
-	"getblockcount":      getBlockCount,
-	"getblockhash":       getBlockHash,
-	"getconnectioncount": getConnectionCount,
-	"getrawmempool":      getRawMemPool,
-	"getrawtransaction":  getRawTransaction,
-	"getwsaddr":          getWsAddr,
-	"sendrawtransaction": sendRawTransaction,
-	"getversion":         getVersion,
-	"getneighbor":        getNeighbor,
-	"getnodestate":       getNodeState,
-	"getbalance":         getBalance,
-	"setdebuginfo":       setDebugInfo,
-	"sendtoaddress":      sendToAddress,
-	"registasset":        registAsset,
-	"issueasset":         issueAsset,
-	"prepaidasset":       prepaidAsset,
-	"withdrawasset":      withdrawAsset,
-	"commitpor":          commitPor,
+	"getlatestblockhash":   getLatestBlockHash,
+	"getblock":             getBlock,
+	"getblockcount":        getBlockCount,
+	"getblockhash":         getBlockHash,
+	"getconnectioncount":   getConnectionCount,
+	"getrawmempool":        getRawMemPool,
+	"gettransaction":       getTransaction,
+	"getwsaddr":            getWsAddr,
+	"sendrawtransaction":   sendRawTransaction,
+	"getversion":           getVersion,
+	"getneighbor":          getNeighbor,
+	"getnodestate":         getNodeState,
+	"getbalance":           getBalance,
+	"setdebuginfo":         setDebugInfo,
+	"sendtoaddress":        sendToAddress,
+	"registasset":          registAsset,
+	"issueasset":           issueAsset,
+	"prepaidasset":         prepaidAsset,
+	"withdrawasset":        withdrawAsset,
+	"commitpor":            commitPor,
+	"getlatestblockheight": getLatestBlockHeight,
+	"getblocktxsbyheight":  getBlockTxsByHeight,
+	"getchordringinfo":     getChordRingInfo,
+	"sigchaintest":         sigchaintest,
+	"gettotalissued":       getTotalIssued,
+	"getassetbyhash":       getAssetByHash,
 }
 
-func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
-
-	trans := new(Transactions)
-	trans.TxType = ptx.TxType
-	trans.PayloadVersion = ptx.PayloadVersion
-	trans.Payload = TransPayloadToHex(ptx.Payload)
-
-	n := 0
-	trans.Attributes = make([]tx.TxAttributeInfo, len(ptx.Attributes))
-	for _, v := range ptx.Attributes {
-		trans.Attributes[n].Usage = v.Usage
-		trans.Attributes[n].Data = BytesToHexString(v.Data)
-		n++
-	}
-
-	n = 0
-	trans.UTXOInputs = make([]tx.UTXOTxInputInfo, len(ptx.UTXOInputs))
-	for _, v := range ptx.UTXOInputs {
-		trans.UTXOInputs[n].ReferTxID = BytesToHexString(v.ReferTxID.ToArrayReverse())
-		trans.UTXOInputs[n].ReferTxOutputIndex = v.ReferTxOutputIndex
-		n++
-	}
-
-	n = 0
-	trans.Outputs = make([]TxoutputInfo, len(ptx.Outputs))
-	for _, v := range ptx.Outputs {
-		trans.Outputs[n].AssetID = BytesToHexString(v.AssetID.ToArrayReverse())
-		trans.Outputs[n].Value = v.Value.String()
-		address, _ := v.ProgramHash.ToAddress()
-		trans.Outputs[n].Address = address
-		n++
-	}
-
-	n = 0
-	trans.Programs = make([]ProgramInfo, len(ptx.Programs))
-	for _, v := range ptx.Programs {
-		trans.Programs[n].Code = BytesToHexString(v.Code)
-		trans.Programs[n].Parameter = BytesToHexString(v.Parameter)
-		n++
-	}
-
-	mHash := ptx.Hash()
-	trans.Hash = BytesToHexString(mHash.ToArrayReverse())
-
-	return trans
-}
-
-func getBestBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
+func getLatestBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
 	hash := ledger.DefaultLedger.Blockchain.CurrentBlockHash()
 	return RpcResult(BytesToHexString(hash.ToArrayReverse()))
 }
@@ -134,37 +86,25 @@ func getBlock(s *RPCServer, params []interface{}) map[string]interface{} {
 	if err != nil {
 		return RpcResultUnknownBlock
 	}
+	block.Hash()
 
-	blockHead := &BlockHead{
-		Version:          block.Header.Version,
-		PrevBlockHash:    BytesToHexString(block.Header.PrevBlockHash.ToArrayReverse()),
-		TransactionsRoot: BytesToHexString(block.Header.TransactionsRoot.ToArrayReverse()),
-		Timestamp:        block.Header.Timestamp,
-		Height:           block.Header.Height,
-		ConsensusData:    block.Header.ConsensusData,
-		NextBookKeeper:   BytesToHexString(block.Header.NextBookKeeper.ToArrayReverse()),
-		Program: ProgramInfo{
-			Code:      BytesToHexString(block.Header.Program.Code),
-			Parameter: BytesToHexString(block.Header.Program.Parameter),
-		},
-		Hash: BytesToHexString(hash.ToArrayReverse()),
-	}
+	var b interface{}
+	info, _ := block.MarshalJson()
+	json.Unmarshal(info, &b)
 
-	trans := make([]*Transactions, len(block.Transactions))
-	for i := 0; i < len(block.Transactions); i++ {
-		trans[i] = TransArryByteToHexString(block.Transactions[i])
-	}
-
-	b := BlockInfo{
-		Hash:         BytesToHexString(hash.ToArrayReverse()),
-		BlockData:    blockHead,
-		Transactions: trans,
-	}
 	return RpcResult(b)
 }
 
 func getBlockCount(s *RPCServer, params []interface{}) map[string]interface{} {
 	return RpcResult(ledger.DefaultLedger.Blockchain.BlockHeight + 1)
+}
+
+func getChordRingInfo(s *RPCServer, params []interface{}) map[string]interface{} {
+	return RpcResult(chord.GetRing())
+}
+
+func getLatestBlockHeight(s *RPCServer, params []interface{}) map[string]interface{} {
+	return RpcResult(ledger.DefaultLedger.Blockchain.BlockHeight)
 }
 
 // A JSON example for getblockhash method as following:
@@ -186,25 +126,62 @@ func getBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
 	}
 }
 
+// Input JSON string examples for getblocktxsbyheight method as following:
+//   {"jsonrpc": "2.0", "method": "getblocktxsbyheight", "params": [1], "id": 0}
+func getBlockTxsByHeight(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+	var err error
+
+	if _, ok := params[0].(float64); !ok {
+		return RpcResultInvalidParameter
+	}
+	index := uint32(params[0].(float64))
+	hash, err := ledger.DefaultLedger.Store.GetBlockHash(index)
+	if err != nil {
+		return RpcResultUnknownBlock
+	}
+
+	block, err := ledger.DefaultLedger.Store.GetBlock(hash)
+	if err != nil {
+		return RpcResultUnknownBlock
+	}
+
+	txs := getBlockTransactions(block)
+
+	return RpcResult(txs)
+}
+
 func getConnectionCount(s *RPCServer, params []interface{}) map[string]interface{} {
 	return RpcResult(s.node.GetConnectionCnt())
 }
 
 func getRawMemPool(s *RPCServer, params []interface{}) map[string]interface{} {
-	txs := []*Transactions{}
+	txs := []interface{}{}
 	txpool := s.node.GetTxnPool()
 	for _, t := range txpool.GetAllTransactions() {
-		txs = append(txs, TransArryByteToHexString(t))
+		info, err := t.MarshalJson()
+		if err != nil {
+			return RpcResultInvalidTransaction
+		}
+		var x interface{}
+		err = json.Unmarshal(info, &x)
+		if err != nil {
+			return RpcResultInvalidTransaction
+		}
+		txs = append(txs, x)
 	}
 	if len(txs) == 0 {
 		return RpcResultNil
 	}
+
 	return RpcResult(txs)
 }
 
-// A JSON example for getrawtransaction method as following:
-//   {"jsonrpc": "2.0", "method": "getrawtransaction", "params": ["transactioin hash in hex"], "id": 0}
-func getRawTransaction(s *RPCServer, params []interface{}) map[string]interface{} {
+// A JSON example for gettransaction method as following:
+//   {"jsonrpc": "2.0", "method": "gettransaction", "params": ["transactioin hash in hex"], "id": 0}
+func getTransaction(s *RPCServer, params []interface{}) map[string]interface{} {
 	if len(params) < 1 {
 		return RpcResultNil
 	}
@@ -224,7 +201,12 @@ func getRawTransaction(s *RPCServer, params []interface{}) map[string]interface{
 		if err != nil {
 			return RpcResultUnknownTransaction
 		}
-		tran := TransArryByteToHexString(tx)
+
+		tx.Hash()
+		var tran interface{}
+		info, _ := tx.MarshalJson()
+		json.Unmarshal(info, &tran)
+
 		return RpcResult(tran)
 	default:
 		return RpcResultInvalidParameter
@@ -614,20 +596,6 @@ func commitPor(s *RPCServer, params []interface{}) map[string]interface{} {
 }
 
 func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return RpcResultNil
-	}
-	var pubKey []byte
-	var err error
-	switch params[0].(type) {
-	case string:
-		pubKey, err = HexStringToBytes(params[0].(string))
-		if err != nil || len(pubKey) != crypto.COMPRESSEDLEN {
-			return RpcResultInvalidParameter
-		}
-	default:
-		return RpcResultInvalidParameter
-	}
 	if s.wallet == nil {
 		return RpcResult("open wallet first")
 	}
@@ -636,8 +604,22 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 		return RpcResultNil
 	}
 	dataHash := Uint256{}
-	blockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
-	sigChain, _ := por.NewSigChain(account, 1, dataHash[:], blockHash[:], pubKey, pubKey)
+	currentHeight := ledger.DefaultLedger.Store.GetHeight()
+	blockHash, err := ledger.DefaultLedger.Store.GetBlockHash(currentHeight - 1)
+	if err != nil {
+		return RpcResultInternalError
+	}
+	encodedPublickKey, err := account.PubKey().EncodePoint(true)
+	if err != nil {
+		return RpcResultInternalError
+	}
+	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], encodedPublickKey, encodedPublickKey)
+	if err != nil {
+		return RpcResultInternalError
+	}
+	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
+		return RpcResultInternalError
+	}
 	buf, err := proto.Marshal(sigChain)
 	txn, err := MakeCommitTransaction(s.wallet, buf)
 	if err != nil {
@@ -678,4 +660,62 @@ func getWsAddr(s *RPCServer, params []interface{}) map[string]interface{} {
 	default:
 		return RpcResultInvalidParameter
 	}
+}
+
+func getTotalIssued(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+
+	assetid, ok := params[0].(string)
+	if !ok {
+		return RpcResultInvalidParameter
+	}
+
+	var assetHash Uint256
+	bys, err := HexStringToBytesReverse(assetid)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	amount, err := ledger.DefaultLedger.Store.GetQuantityIssued(assetHash)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	val := float64(amount) / math.Pow(10, 8)
+	return RpcResult(val)
+}
+
+func getAssetByHash(s *RPCServer, params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return RpcResultNil
+	}
+
+	str, ok := params[0].(string)
+	if !ok {
+		return RpcResultInvalidParameter
+	}
+
+	hex, err := HexStringToBytesReverse(str)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	var hash Uint256
+	err = hash.Deserialize(bytes.NewReader(hex))
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	asset, err := ledger.DefaultLedger.Store.GetAsset(hash)
+	if err != nil {
+		return RpcResultInvalidParameter
+	}
+
+	return RpcResult(asset)
 }

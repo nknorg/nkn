@@ -13,10 +13,10 @@ type BlockVoting struct {
 	sync.RWMutex
 	pstate         map[Uint256]*State            // consensus state for proposer
 	vstate         map[uint64]map[Uint256]*State // consensus state for voter
-	height         uint32			// voting height
-	blockCache     *BlockCache      // received blocks
-	pool           *BlockVotingPool // block voting pool
-	confirmingHash Uint256          // block hash in process
+	height         uint32                        // voting height
+	blockCache     *BlockCache                   // received blocks
+	pool           *BlockVotingPool              // block voting pool
+	confirmingHash Uint256                       // block hash in process
 }
 
 func NewBlockVoting(totalWeight int) *BlockVoting {
@@ -31,7 +31,7 @@ func NewBlockVoting(totalWeight int) *BlockVoting {
 	return blockVoting
 }
 
-func (bv *BlockVoting) SetProposerState(blockhash Uint256, s State) {
+func (bv *BlockVoting) SetSelfState(blockhash Uint256, s State) {
 	bv.Lock()
 	defer bv.Unlock()
 
@@ -41,7 +41,7 @@ func (bv *BlockVoting) SetProposerState(blockhash Uint256, s State) {
 	bv.pstate[blockhash].SetBit(s)
 }
 
-func (bv *BlockVoting) HasProposerState(blockhash Uint256, state State) bool {
+func (bv *BlockVoting) HasSelfState(blockhash Uint256, state State) bool {
 	bv.RLock()
 	defer bv.RUnlock()
 
@@ -55,7 +55,7 @@ func (bv *BlockVoting) HasProposerState(blockhash Uint256, state State) bool {
 	}
 }
 
-func (bv *BlockVoting) SetVoterState(id uint64, blockhash Uint256, s State) {
+func (bv *BlockVoting) SetNeighborState(id uint64, blockhash Uint256, s State) {
 	bv.Lock()
 	defer bv.Unlock()
 
@@ -68,7 +68,7 @@ func (bv *BlockVoting) SetVoterState(id uint64, blockhash Uint256, s State) {
 	bv.vstate[id][blockhash].SetBit(s)
 }
 
-func (bv *BlockVoting) HasVoterState(id uint64, blockhash Uint256, state State) bool {
+func (bv *BlockVoting) HasNeighborState(id uint64, blockhash Uint256, state State) bool {
 	bv.RLock()
 	defer bv.RUnlock()
 
@@ -124,13 +124,28 @@ func (bv *BlockVoting) GetWorseVotingContent(height uint32) (VotingContent, erro
 	return block, nil
 }
 
-func (bv *BlockVoting) GetVotingContent(hash Uint256, height uint32) (VotingContent, error) {
+func (bv *BlockVoting) GetVotingContentFromPool(hash Uint256, height uint32) (VotingContent, error) {
 	block := bv.blockCache.GetBlockFromCache(hash, height)
-	if block == nil {
-		return nil, errors.New("no block")
+	if block != nil {
+		return block, nil
 	}
 
-	return block, nil
+	return nil, errors.New("invalid hash and height for block")
+}
+
+func (bv *BlockVoting) GetVotingContent(hash Uint256, height uint32) (VotingContent, error) {
+	// get block from cache
+	block, err := bv.GetVotingContentFromPool(hash, height)
+	if err == nil {
+		return block, nil
+	}
+	// get block from ledger
+	block, err = ledger.DefaultLedger.Store.GetBlock(hash)
+	if err == nil {
+		return block, nil
+	}
+
+	return nil, errors.New("invalid hash for block")
 }
 
 func (bv *BlockVoting) VotingType() VotingContentType {
@@ -163,11 +178,8 @@ func (bv *BlockVoting) DumpState(hash Uint256, desc string, verbose bool) {
 	if s.HasBit(RequestSent) {
 		str += " -> RequestSent"
 	}
-	if s.HasBit(ProposalSent) {
-		str += " -> ProposalSent"
-	}
-	if s.HasBit(OpinionSent) {
-		str += " -> OpinionSent"
+	if s.HasBit(ProposalReceived) {
+		str += " -> ProposalReceived"
 	}
 	h := BytesToHexString(hash.ToArray())
 	if !verbose {

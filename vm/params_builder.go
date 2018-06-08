@@ -3,6 +3,7 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
+
 	"github.com/nknorg/nkn/common"
 )
 
@@ -11,7 +12,7 @@ type ParamsBuilder struct {
 }
 
 func NewParamsBuilder(buffer *bytes.Buffer) *ParamsBuilder {
-	return &ParamsBuilder{ buffer }
+	return &ParamsBuilder{buffer}
 }
 
 func (p *ParamsBuilder) Emit(op OpCode) {
@@ -19,7 +20,7 @@ func (p *ParamsBuilder) Emit(op OpCode) {
 }
 
 func (p *ParamsBuilder) EmitPushBool(data bool) {
-	if(data) {
+	if data {
 		p.Emit(PUSHT)
 		return
 	}
@@ -73,4 +74,3 @@ func (p *ParamsBuilder) EmitPushCall(codeHash []byte) {
 func (p *ParamsBuilder) ToArray() []byte {
 	return p.buffer.Bytes()
 }
-

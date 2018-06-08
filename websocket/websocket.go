@@ -14,8 +14,9 @@ import (
 )
 
 var ws *server.WsServer
+
 var (
-	pushBlockFlag    bool = true
+	pushBlockFlag    bool = false
 	pushRawBlockFlag bool = false
 	pushBlockTxsFlag bool = false
 )
@@ -28,7 +29,11 @@ func StartServer(n Noder) {
 		ws.Start()
 	}()
 }
+
 func SendBlock2WSclient(v interface{}) {
+	go func() {
+		PushSigChainBlockHash(v)
+	}()
 	if Parameters.HttpWsPort != 0 && pushBlockFlag {
 		go func() {
 			PushBlock(v)
@@ -40,12 +45,14 @@ func SendBlock2WSclient(v interface{}) {
 		}()
 	}
 }
+
 func Stop() {
 	if ws == nil {
 		return
 	}
 	ws.Stop()
 }
+
 func ReStartServer() {
 	if ws == nil {
 		n := common.GetNode()
@@ -55,24 +62,31 @@ func ReStartServer() {
 	}
 	ws.Restart()
 }
+
 func GetWsPushBlockFlag() bool {
 	return pushBlockFlag
 }
+
 func SetWsPushBlockFlag(b bool) {
 	pushBlockFlag = b
 }
+
 func GetPushRawBlockFlag() bool {
 	return pushRawBlockFlag
 }
+
 func SetPushRawBlockFlag(b bool) {
 	pushRawBlockFlag = b
 }
+
 func GetPushBlockTxsFlag() bool {
 	return pushBlockTxsFlag
 }
+
 func SetPushBlockTxsFlag(b bool) {
 	pushBlockTxsFlag = b
 }
+
 func SetTxHashMap(txhash string, sessionid string) {
 	if ws == nil {
 		return
@@ -107,6 +121,7 @@ func PushSmartCodeInvokeResult(txHash Uint256, errcode int64, result interface{}
 	resp["Desc"] = Err.ErrMap[errcode]
 	ws.PushTxResult(txHashStr, resp)
 }
+
 func PushBlock(v interface{}) {
 	if ws == nil {
 		return
@@ -124,6 +139,7 @@ func PushBlock(v interface{}) {
 		ws.PushResult(resp)
 	}
 }
+
 func PushBlockTransactions(v interface{}) {
 	if ws == nil {
 		return
@@ -134,6 +150,18 @@ func PushBlockTransactions(v interface{}) {
 			resp["Result"] = common.GetBlockTransactions(block)
 		}
 		resp["Action"] = "sendblocktransactions"
+		ws.PushResult(resp)
+	}
+}
+
+func PushSigChainBlockHash(v interface{}) {
+	if ws == nil {
+		return
+	}
+	resp := common.ResponsePack(Err.SUCCESS)
+	if block, ok := v.(*ledger.Block); ok {
+		resp["Action"] = "updateSigChainBlockHash"
+		resp["Result"] = common.GetBlockInfo(block).BlockData.PrevBlockHash
 		ws.PushResult(resp)
 	}
 }

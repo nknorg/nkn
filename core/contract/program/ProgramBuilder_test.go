@@ -13,5 +13,4 @@ func TestProgramBuilder_PushData(t *testing.T) {
 		pb.PushNumber(testx)
 		fmt.Printf("%d=%#v\n", i, pb.ToArray())
 	}
-
 }

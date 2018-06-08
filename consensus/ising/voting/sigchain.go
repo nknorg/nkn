@@ -34,17 +34,16 @@ func NewSigChainVoting(totalWeight int, txnCollector *transaction.TxnCollector) 
 	return sigChainVoting
 }
 
-func (scv *SigChainVoting) SetProposerState(hash Uint256, s State) {
+func (scv *SigChainVoting) SetSelfState(hash Uint256, s State) {
 	scv.Lock()
 	defer scv.Unlock()
-
 	if _, ok := scv.pstate[hash]; !ok {
 		scv.pstate[hash] = new(State)
 	}
 	scv.pstate[hash].SetBit(s)
 }
 
-func (scv *SigChainVoting) HasProposerState(hash Uint256, state State) bool {
+func (scv *SigChainVoting) HasSelfState(hash Uint256, state State) bool {
 	scv.RLock()
 	defer scv.RUnlock()
 
@@ -58,7 +57,7 @@ func (scv *SigChainVoting) HasProposerState(hash Uint256, state State) bool {
 	}
 }
 
-func (scv *SigChainVoting) SetVoterState(id uint64, hash Uint256, s State) {
+func (scv *SigChainVoting) SetNeighborState(id uint64, hash Uint256, s State) {
 	scv.Lock()
 	defer scv.Unlock()
 
@@ -71,7 +70,7 @@ func (scv *SigChainVoting) SetVoterState(id uint64, hash Uint256, s State) {
 	scv.vstate[id][hash].SetBit(s)
 }
 
-func (scv *SigChainVoting) HasVoterState(id uint64, hash Uint256, state State) bool {
+func (scv *SigChainVoting) HasNeighborState(id uint64, hash Uint256, state State) bool {
 	scv.RLock()
 	defer scv.RUnlock()
 
@@ -114,25 +113,79 @@ func (scv *SigChainVoting) GetBestVotingContent(height uint32) (VotingContent, e
 	if err != nil {
 		return nil, err
 	}
-	txnHash, _ := scv.porServer.IsSigChainExist(sigChain.Hash(), height)
-	txn := scv.txnCollector.GetTransaction(*txnHash)
+	sigHash, err := sigChain.SignatureHash()
+	if err != nil {
+		return nil, err
+	}
+	txnHash, exist := scv.porServer.IsSigChainExist(sigHash, height)
+	if !exist {
+		return nil, errors.New("signature chain doesn't exist")
+	}
+	txnInPool := scv.txnCollector.GetTransaction(*txnHash)
+	if txnInPool != nil {
+		return txnInPool, nil
+	}
+	txnInLedger, err := ledger.DefaultLedger.Store.GetTransaction(*txnHash)
+	if err == nil {
+		return txnInLedger, nil
+	}
 
-	return txn, nil
+	return nil, errors.New("invalid commit transaction")
+
 }
 
 func (scv *SigChainVoting) GetWorseVotingContent(height uint32) (VotingContent, error) {
 	return nil, nil
 }
 
-func (scv *SigChainVoting) GetVotingContent(hash Uint256, height uint32) (VotingContent, error) {
+func (scv *SigChainVoting) GetVotingContentFromPool(hash Uint256, height uint32) (VotingContent, error) {
 	sigChain, err := scv.porServer.GetSigChain(height, hash)
 	if err != nil {
 		return nil, err
 	}
-	txnHash, _ := scv.porServer.IsSigChainExist(sigChain.Hash(), height)
+	sigHash, err := sigChain.SignatureHash()
+	if err != nil {
+		return nil, err
+	}
+	txnHash, exist := scv.porServer.IsSigChainExist(sigHash, height)
+	if !exist {
+		return nil, errors.New("signature chain doesn't exist")
+	}
 	txn := scv.txnCollector.GetTransaction(*txnHash)
+	if txn == nil {
+		return nil, errors.New("invalid hash for transaction")
+	}
 
 	return txn, nil
+}
+
+func (scv *SigChainVoting) GetVotingContent(hash Uint256, height uint32) (VotingContent, error) {
+	// get signature chain by height and hash
+	sigChain, err := scv.porServer.GetSigChain(height, hash)
+	if err != nil {
+		return nil, err
+	}
+	sigHash, err := sigChain.SignatureHash()
+	if err != nil {
+		return nil, err
+	}
+	// get transaction hash by signature chain
+	txnHash, exist := scv.porServer.IsSigChainExist(sigHash, height)
+	if !exist {
+		return nil, errors.New("signature chain doesn't exist")
+	}
+	// get transaction from transaction pool
+	txnInPool := scv.txnCollector.GetTransaction(*txnHash)
+	if txnInPool != nil {
+		return txnInPool, nil
+	}
+	// get transaction from ledger
+	txnInLedger, err := ledger.DefaultLedger.Store.GetTransaction(*txnHash)
+	if err == nil {
+		return txnInLedger, nil
+	}
+
+	return nil, errors.New("invalid commit transaction")
 }
 
 func (scv *SigChainVoting) VotingType() VotingContentType {
@@ -150,7 +203,10 @@ func (scv *SigChainVoting) Preparing(content VotingContent) error {
 
 func (scv *SigChainVoting) Exist(hash Uint256, height uint32) bool {
 	ret := scv.txnCollector.GetTransaction(hash)
-	if ret == nil {
+	_, err := ledger.DefaultLedger.Store.GetTransaction(hash)
+	// return false if the Commit transaction doesn't exist in transaction pool and ledger
+	// TODO: need to check if the err returned from DB is NOTFOUND
+	if ret == nil && err != nil {
 		return false
 	}
 

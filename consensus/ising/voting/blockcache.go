@@ -2,7 +2,6 @@ package voting
 
 import (
 	"sync"
-	"time"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
@@ -10,30 +9,23 @@ import (
 )
 
 const (
-	MaxCachedBlocks = 1000
+	MaxCachedBlockHeight = 5
 )
-
-// BlockInfo hold the block which waiting for voting
-type BlockInfo struct {
-	block    *ledger.Block
-	lifetime *time.Timer // expired block will be auto removed
-}
 
 type BlockCache struct {
 	sync.RWMutex
 	cap    int
-	cache  map[uint32][]*BlockInfo // height and block mapping
-	hashes map[Uint256]uint32      // for block fast searching
+	cache  map[uint32][]*ledger.Block // height and block mapping
+	hashes map[Uint256]uint32         // for block fast searching
 }
 
 // When receive new block message from consensus layer, cache it.
 func NewCache() *BlockCache {
 	blockCache := &BlockCache{
-		cap:    MaxCachedBlocks,
-		cache:  make(map[uint32][]*BlockInfo),
+		cap:    MaxCachedBlockHeight,
+		cache:  make(map[uint32][]*ledger.Block),
 		hashes: make(map[Uint256]uint32),
 	}
-	go blockCache.Cleanup()
 
 	return blockCache
 }
@@ -43,9 +35,9 @@ func (bc *BlockCache) BlockInCache(hash Uint256, height uint32) bool {
 	bc.RLock()
 	defer bc.RUnlock()
 
-	if info, ok := bc.cache[height]; ok {
-		for _, v := range info {
-			if hash.CompareTo(v.block.Hash()) == 0 {
+	if blocks, ok := bc.cache[height]; ok {
+		for _, b := range blocks {
+			if hash.CompareTo(b.Hash()) == 0 {
 				return true
 			}
 		}
@@ -62,9 +54,9 @@ func (bc *BlockCache) GetBlockFromCache(hash Uint256, height uint32) *ledger.Blo
 	if _, ok := bc.hashes[hash]; !ok {
 		return nil
 	}
-	for _, v := range bc.cache[height] {
-		if hash.CompareTo(v.block.Hash()) == 0 {
-			return v.block
+	for _, b := range bc.cache[height] {
+		if hash.CompareTo(b.Hash()) == 0 {
+			return b
 		}
 	}
 
@@ -76,19 +68,21 @@ func (bc *BlockCache) GetBestBlockFromCache(height uint32) *ledger.Block {
 	bc.RLock()
 	defer bc.RUnlock()
 
-	if blockInfos, ok := bc.cache[height]; ok {
-		if blockInfos == nil {
+	if blocks, ok := bc.cache[height]; !ok {
+		return nil
+	} else {
+		if len(blocks) == 0 {
 			return nil
 		}
-		minBlock := blockInfos[0]
-		minBlockHash := minBlock.block.Hash()
-		for _, v := range blockInfos[1:] {
-			if minBlockHash.CompareTo(v.block.Hash()) == 1 {
+		minBlock := blocks[0]
+		minBlockHash := minBlock.Hash()
+		for _, v := range blocks[1:] {
+			if minBlockHash.CompareTo(v.Hash()) == 1 {
 				minBlock = v
-				minBlockHash = v.block.Hash()
+				minBlockHash = v.Hash()
 			}
 		}
-		return minBlock.block
+		return minBlock
 	}
 
 	return nil
@@ -99,19 +93,21 @@ func (bc *BlockCache) GetWorseBlockFromCache(height uint32) *ledger.Block {
 	bc.RLock()
 	defer bc.RUnlock()
 
-	if blockInfos, ok := bc.cache[height]; ok {
-		if blockInfos == nil {
+	if blocks, ok := bc.cache[height]; !ok {
+		return nil
+	} else {
+		if len(blocks) == 0 {
 			return nil
 		}
-		minBlock := blockInfos[0]
-		minBlockHash := minBlock.block.Hash()
-		for _, v := range blockInfos[1:] {
-			if minBlockHash.CompareTo(v.block.Hash()) == -1 {
+		minBlock := blocks[0]
+		minBlockHash := minBlock.Hash()
+		for _, v := range blocks[1:] {
+			if minBlockHash.CompareTo(v.Hash()) == -1 {
 				minBlock = v
-				minBlockHash = v.block.Hash()
+				minBlockHash = v.Hash()
 			}
 		}
-		return minBlock.block
+		return minBlock
 	}
 
 	return nil
@@ -126,19 +122,36 @@ func (bc *BlockCache) RemoveBlockFromCache(hash Uint256, height uint32) error {
 		height := bc.hashes[hash]
 		delete(bc.hashes, hash)
 
-		var blockInfos []*BlockInfo
+		var blocks []*ledger.Block
 		for k, v := range bc.cache[height] {
-			if hash.CompareTo(v.block.Hash()) == 0 {
-				blockInfos = append(blockInfos, bc.cache[height][:k]...)
-				blockInfos = append(blockInfos, bc.cache[height][k+1:]...)
+			if hash.CompareTo(v.Hash()) == 0 {
+				blocks = append(blocks, bc.cache[height][:k]...)
+				blocks = append(blocks, bc.cache[height][k+1:]...)
 				break
 			}
 		}
-		if blockInfos == nil {
+		if blocks == nil {
 			delete(bc.cache, height)
 		} else {
-			bc.cache[height] = blockInfos
+			bc.cache[height] = blocks
 		}
+	}
+
+	return nil
+}
+
+// RemoveBlocksByHeight removes cached blocks according to the height.
+func (bc *BlockCache) RemoveBlocksByHeight(height uint32) error {
+	bc.Lock()
+	defer bc.Unlock()
+
+	if blocks, ok := bc.cache[height]; !ok {
+		return nil
+	} else {
+		for _, block := range blocks {
+			delete(bc.hashes, block.Hash())
+		}
+		delete(bc.cache, height)
 	}
 
 	return nil
@@ -157,6 +170,32 @@ func (bc *BlockCache) CachedBlockNum() int {
 	return count
 }
 
+// CachedBlockHeight return cached block height
+func (bc *BlockCache) CachedBlockHeight() int {
+	bc.RLock()
+	defer bc.RUnlock()
+
+	return len(bc.cache)
+}
+
+// GetMinCachedHeight returns min block height cached
+func (bc *BlockCache) GetMinCachedHeight() uint32 {
+	bc.RLock()
+	defer bc.RUnlock()
+
+	var minHeight uint32
+	for height := range bc.cache {
+		minHeight = height
+	}
+	for height := range bc.cache {
+		if height < minHeight {
+			minHeight = height
+		}
+	}
+
+	return minHeight
+}
+
 // AddBlockToCache returns nil if block already existed in cache
 func (bc *BlockCache) AddBlockToCache(block *ledger.Block) error {
 	hash := block.Hash()
@@ -164,15 +203,13 @@ func (bc *BlockCache) AddBlockToCache(block *ledger.Block) error {
 	if bc.BlockInCache(hash, blockHeight) {
 		return nil
 	}
+	if bc.CachedBlockHeight() >= bc.cap {
+		minHeight := bc.GetMinCachedHeight()
+		bc.RemoveBlocksByHeight(minHeight)
+	}
 	bc.Lock()
 	defer bc.Unlock()
-	// TODO FIFO cleanup, if cap space is not enough then
-	// remove block from cache according to FIFO
-	blockInfo := &BlockInfo{
-		block:    block,
-		lifetime: time.NewTimer(time.Hour),
-	}
-	bc.cache[blockHeight] = append(bc.cache[blockHeight], blockInfo)
+	bc.cache[blockHeight] = append(bc.cache[blockHeight], block)
 	bc.hashes[hash] = blockHeight
 
 	return nil
@@ -180,26 +217,8 @@ func (bc *BlockCache) AddBlockToCache(block *ledger.Block) error {
 
 func (bc *BlockCache) Dump(height uint32) {
 	log.Infof("\t height: %d", height)
-	for _, blockInfo := range bc.cache[height] {
-		hash := blockInfo.block.Hash()
+	for _, block := range bc.cache[height] {
+		hash := block.Hash()
 		log.Infof("\t\t hash: %s", BytesToHexString(hash.ToArray()))
-	}
-}
-
-// Cleanup is a background routine used for cleaning up expired block in cache
-func (bc *BlockCache) Cleanup() {
-	ticket := time.NewTicker(time.Minute)
-	for {
-		select {
-		case <-ticket.C:
-			for _, blockInfos := range bc.cache {
-				for _, info := range blockInfos {
-					select {
-					case <-info.lifetime.C:
-						bc.RemoveBlockFromCache(info.block.Hash(), info.block.Header.Height)
-					}
-				}
-			}
-		}
 	}
 }

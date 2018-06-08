@@ -3,7 +3,7 @@ package common
 import "math/big"
 
 const (
-	HashLength    = 32
+	HashLength = 32
 )
 
 type Hash [HashLength]byte
@@ -21,6 +21,6 @@ func (h *Hash) SetBytes(b []byte) {
 	copy(h[HashLength-len(b):], b)
 }
 
-func BigToHash(b *big.Int) Hash  { return BytesToHash(b.Bytes()) }
-func (h Hash) Big() *big.Int { return new(big.Int).SetBytes(h[:]) }
-func (h Hash) Bytes() []byte { return h[:] }
+func BigToHash(b *big.Int) Hash { return BytesToHash(b.Bytes()) }
+func (h Hash) Big() *big.Int    { return new(big.Int).SetBytes(h[:]) }
+func (h Hash) Bytes() []byte    { return h[:] }

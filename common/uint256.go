@@ -10,7 +10,7 @@ import (
 	. "github.com/nknorg/nkn/errors"
 )
 
-const UINT256SIZE int = 32
+const UINT256SIZE = 32
 
 type Uint256 [UINT256SIZE]uint8
 
@@ -31,7 +31,7 @@ func (u *Uint256) CompareTo(o Uint256) int {
 }
 
 func (u *Uint256) ToArray() []byte {
-	var x []byte = make([]byte, UINT256SIZE)
+	var x = make([]byte, UINT256SIZE)
 	for i := 0; i < 32; i++ {
 		x[i] = byte(u[i])
 	}
@@ -39,7 +39,7 @@ func (u *Uint256) ToArray() []byte {
 	return x
 }
 func (u *Uint256) ToArrayReverse() []byte {
-	var x []byte = make([]byte, UINT256SIZE)
+	var x = make([]byte, UINT256SIZE)
 	for i, j := 0, UINT256SIZE-1; i < j; i, j = i+1, j-1 {
 		x[i], x[j] = byte(u[j]), byte(u[i])
 	}

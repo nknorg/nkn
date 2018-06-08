@@ -8,85 +8,9 @@ import (
 	"os"
 	"strings"
 
-	. "github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/core/transaction"
-	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
 )
-
-type BalanceTxInputInfo struct {
-	AssetID     string
-	Value       string
-	ProgramHash string
-}
-
-type TxoutputInfo struct {
-	AssetID string
-	Value   string
-	Address string
-}
-
-type TxoutputMap struct {
-	Key   Uint256
-	Txout []TxoutputInfo
-}
-
-type AmountMap struct {
-	Key   Uint256
-	Value Fixed64
-}
-
-type ProgramInfo struct {
-	Code      string
-	Parameter string
-}
-
-type Transactions struct {
-	TxType         TransactionType
-	PayloadVersion byte
-	Payload        PayloadInfo
-	Attributes     []TxAttributeInfo
-	UTXOInputs     []UTXOTxInputInfo
-	BalanceInputs  []BalanceTxInputInfo
-	Outputs        []TxoutputInfo
-	Programs       []ProgramInfo
-
-	AssetOutputs      []TxoutputMap
-	AssetInputAmount  []AmountMap
-	AssetOutputAmount []AmountMap
-
-	Hash string
-}
-
-type BlockHead struct {
-	Version          uint32
-	PrevBlockHash    string
-	TransactionsRoot string
-	Timestamp        uint32
-	Height           uint32
-	ConsensusData    uint64
-	NextBookKeeper   string
-	Program          ProgramInfo
-
-	Hash string
-}
-
-type BlockInfo struct {
-	Hash         string
-	BlockData    *BlockHead
-	Transactions []*Transactions
-}
-
-type TxInfo struct {
-	Hash string
-	Hex  string
-	Tx   *Transactions
-}
-
-type TxoutInfo struct {
-	High  uint32
-	Low   uint32
-	Txout tx.TxOutput
-}
 
 type NodeInfo struct {
 	State    uint   // node status
@@ -99,10 +23,6 @@ type NodeInfo struct {
 	Height   uint64 // The node latest block height
 	TxnCnt   uint64 // The transactions be transmit by this node
 	RxTxnCnt uint64 // The transaction received by this node
-}
-
-type ConsensusInfo struct {
-	// TODO
 }
 
 func responsePacking(result interface{}) map[string]interface{} {
@@ -137,4 +57,24 @@ func Call(address string, method string, id interface{}, params []interface{}) (
 	}
 
 	return body, nil
+}
+
+func getBlockTransactions(block *ledger.Block) interface{} {
+	trans := make([]string, len(block.Transactions))
+	for i := 0; i < len(block.Transactions); i++ {
+		h := block.Transactions[i].Hash()
+		trans[i] = common.BytesToHexString(h.ToArrayReverse())
+	}
+	hash := block.Hash()
+	type BlockTransactions struct {
+		Hash         string
+		Height       uint32
+		Transactions []string
+	}
+	b := BlockTransactions{
+		Hash:         common.BytesToHexString(hash.ToArrayReverse()),
+		Height:       block.Header.Height,
+		Transactions: trans,
+	}
+	return b
 }

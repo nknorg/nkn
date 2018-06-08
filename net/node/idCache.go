@@ -1,8 +1,9 @@
 package node
 
 import (
-	"github.com/nknorg/nkn/common"
 	"sync"
+
+	"github.com/nknorg/nkn/common"
 )
 
 type idCache struct {

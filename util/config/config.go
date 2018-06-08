@@ -9,6 +9,8 @@ import (
 	"log"
 	"net"
 	"strconv"
+
+	ipify "github.com/rdegges/go-ipify"
 )
 
 const (
@@ -16,7 +18,6 @@ const (
 	DEFAULTGENBLOCKTIME    = 6
 	DefaultConfigFilename  = "./config.json"
 	DefaultBookKeeperCount = 4
-	DefaultProposerCount   = 1
 )
 
 var (
@@ -30,7 +31,7 @@ var (
 		HttpWsPort:    30002,
 		HttpRestPort:  30003,
 		HttpJsonPort:  30004,
-		PrintLevel:    1,
+		LogLevel:      1,
 		ConsensusType: "ising",
 		SeedList: []string{
 			"127.0.0.1:30000",
@@ -39,32 +40,33 @@ var (
 )
 
 type Configuration struct {
-	Magic          int64    `json:"Magic"`
-	Version        int      `json:"Version"`
-	SeedList       []string `json:"SeedList"`
-	BookKeepers    []string `json:"BookKeepers"`
-	HttpRestPort   uint16   `json:"HttpRestPort"`
-	RestCertPath   string   `json:"RestCertPath"`
-	RestKeyPath    string   `json:"RestKeyPath"`
-	HttpInfoPort   uint16   `json:"HttpInfoPort"`
-	HttpInfoStart  bool     `json:"HttpInfoStart"`
-	HttpWsPort     uint16   `json:"HttpWsPort"`
-	HttpJsonPort   uint16   `json:"HttpJsonPort"`
-	NodePort       uint16   `json:"NodePort"`
-	NodeType       string   `json:"NodeType"`
-	PrintLevel     int      `json:"PrintLevel"`
-	IsTLS          bool     `json:"IsTLS"`
-	CertPath       string   `json:"CertPath"`
-	KeyPath        string   `json:"KeyPath"`
-	CAPath         string   `json:"CAPath"`
-	GenBlockTime   uint     `json:"GenBlockTime"`
-	EncryptAlg     string   `json:"EncryptAlg"`
-	MaxLogSize     int64    `json:"MaxLogSize"`
-	MaxTxInBlock   int      `json:"MaxTransactionInBlock"`
-	MaxHdrSyncReqs int      `json:"MaxConcurrentSyncHeaderReqs"`
-	ConsensusType  string   `json:"ConsensusType"`
-	ChordPort      uint16   `json:"ChordPort"`
-	BlockProposer  []string `json:"TestBlockProposer"`
+	Magic                int64    `json:"Magic"`
+	Version              int      `json:"Version"`
+	SeedList             []string `json:"SeedList"`
+	BookKeepers          []string `json:"BookKeepers"`
+	HttpRestPort         uint16   `json:"HttpRestPort"`
+	RestCertPath         string   `json:"RestCertPath"`
+	RestKeyPath          string   `json:"RestKeyPath"`
+	HttpInfoPort         uint16   `json:"HttpInfoPort"`
+	HttpInfoStart        bool     `json:"HttpInfoStart"`
+	HttpWsPort           uint16   `json:"HttpWsPort"`
+	HttpJsonPort         uint16   `json:"HttpJsonPort"`
+	NodePort             uint16   `json:"NodePort"`
+	NodeType             string   `json:"NodeType"`
+	LogLevel             int      `json:"LogLevel"`
+	IsTLS                bool     `json:"IsTLS"`
+	CertPath             string   `json:"CertPath"`
+	KeyPath              string   `json:"KeyPath"`
+	CAPath               string   `json:"CAPath"`
+	GenBlockTime         uint     `json:"GenBlockTime"`
+	EncryptAlg           string   `json:"EncryptAlg"`
+	MaxLogSize           int64    `json:"MaxLogSize"`
+	MaxTxInBlock         int      `json:"MaxTransactionInBlock"`
+	MaxHdrSyncReqs       int      `json:"MaxConcurrentSyncHeaderReqs"`
+	ConsensusType        string   `json:"ConsensusType"`
+	ChordPort            uint16   `json:"ChordPort"`
+	GenesisBlockProposer []string `json:"GenesisBlockProposer"`
+	Hostname             string   `json:"Hostname"`
 }
 
 func init() {
@@ -84,6 +86,18 @@ func init() {
 		Parameters = defaultParameters
 		return
 	}
+
+	if config.Hostname == "" {
+		ip, err := ipify.GetIp()
+		if err != nil {
+			log.Printf("Couldn't get my IP address: %v", err)
+			ip = "127.0.0.1"
+		}
+		config.Hostname = ip
+	}
+
+	config.IncrementPort()
+
 	err = check(&config)
 	if err != nil {
 		log.Printf("invalid config file: %v, use default parameters.", err)
@@ -105,20 +119,16 @@ func check(config *Configuration) error {
 		if len(config.SeedList) == 0 {
 			return errors.New("seed list in config file should not be blank")
 		}
-		if len(config.BlockProposer) < DefaultProposerCount {
-			log.Fatalln("bootstrap block proposer is required at least one in config.json")
-		}
 	default:
-		fmt.Println(config.ConsensusType)
-		return errors.New("consensus type in config file should not be blank")
+		return fmt.Errorf("invalid consensus type %s in config file\n", config.ConsensusType)
 	}
 
 	return nil
 }
 
 func findMinMaxPort(array []uint16) (uint16, uint16) {
-	var max uint16 = array[0]
-	var min uint16 = array[0]
+	var max = array[0]
+	var min = array[0]
 	for _, value := range array {
 		if max < value {
 			max = value
@@ -130,28 +140,28 @@ func findMinMaxPort(array []uint16) (uint16, uint16) {
 	return min, max
 }
 
-func IncrementPort() {
+func (config *Configuration) IncrementPort() {
 	allPorts := []uint16{
-		Parameters.ChordPort,
-		Parameters.NodePort,
-		Parameters.HttpWsPort,
-		Parameters.HttpRestPort,
-		Parameters.HttpJsonPort,
+		config.ChordPort,
+		config.NodePort,
+		config.HttpWsPort,
+		config.HttpRestPort,
+		config.HttpJsonPort,
 	}
 	minPort, maxPort := findMinMaxPort(allPorts)
 	step := maxPort - minPort + 1
 	var delta uint16
 	for {
-		conn, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(int(Parameters.ChordPort+delta)))
+		conn, err := net.Listen("tcp", ":"+strconv.Itoa(int(config.ChordPort+delta)))
 		if err == nil {
 			conn.Close()
 			break
 		}
 		delta += step
 	}
-	Parameters.ChordPort += delta
-	Parameters.NodePort += delta
-	Parameters.HttpWsPort += delta
-	Parameters.HttpRestPort += delta
-	Parameters.HttpJsonPort += delta
+	config.ChordPort += delta
+	config.NodePort += delta
+	config.HttpWsPort += delta
+	config.HttpRestPort += delta
+	config.HttpJsonPort += delta
 }

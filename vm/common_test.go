@@ -1,9 +1,9 @@
 package vm
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
-	"fmt"
 )
 
 func TestCommon(t *testing.T) {
@@ -16,7 +16,7 @@ func TestCommon(t *testing.T) {
 func ToArrayReverse(arr []byte) []byte {
 	l := len(arr)
 	x := make([]byte, 0)
-	for i := l - 1; i >= 0 ;i--{
+	for i := l - 1; i >= 0; i-- {
 		x = append(x, arr[i])
 	}
 	return x

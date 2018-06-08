@@ -14,6 +14,7 @@ type TxnSource interface {
 	GetTxnByCount(num int) map[Uint256]*Transaction
 	GetTransaction(hash Uint256) *Transaction
 	AppendTxnPool(txn *Transaction) errors.ErrCode
+	CleanSubmittedTransactions(txns []*Transaction) error
 }
 
 // TxnCollector collects transactions from transaction pool
@@ -47,4 +48,8 @@ func (p *TxnCollector) GetTransaction(hash Uint256) *Transaction {
 
 func (p *TxnCollector) Append(txn *Transaction) errors.ErrCode {
 	return p.TxnSource.AppendTxnPool(txn)
+}
+
+func (p *TxnCollector) Cleanup(txns []*Transaction) error {
+	return p.TxnSource.CleanSubmittedTransactions(txns)
 }

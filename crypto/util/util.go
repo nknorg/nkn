@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	//"math/big"
 )
 
 const (

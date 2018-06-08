@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/nknorg/nkn/core/ledger"
@@ -13,7 +14,6 @@ import (
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"io"
 )
 
 const (
@@ -101,7 +101,7 @@ func NewVersion(n Noder) ([]byte, error) {
 }
 
 func (msg version) Verify(buf []byte) error {
-	return  msg.Hdr.Verify(buf)
+	return msg.Hdr.Verify(buf)
 }
 
 func (msg version) Serialize(w io.Writer) error {

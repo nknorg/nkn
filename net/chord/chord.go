@@ -236,9 +236,10 @@ func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 
 // Ring create and join functions
 func prepRing(port uint16) (*Config, *TCPTransport, error) {
-	listen := fmt.Sprintf("127.0.0.1:%d", port)
-	conf := DefaultConfig(listen)
-	timeout := time.Duration(20 * time.Millisecond)
+	hostname := fmt.Sprintf("%s:%d", config.Parameters.Hostname, port)
+	listen := fmt.Sprintf(":%d", port)
+	conf := DefaultConfig(hostname)
+	timeout := time.Duration(2 * time.Second)
 	trans, err := InitTCPTransport(listen, timeout)
 	if err != nil {
 		return nil, nil, err
@@ -277,9 +278,10 @@ func CreateNet() (*Ring, *TCPTransport, error) {
 }
 
 func prepJoinRing(port uint16) (*Config, *TCPTransport, error) {
-	listen := fmt.Sprintf("127.0.0.1:%d", port)
-	conf := DefaultConfig(listen)
-	timeout := time.Duration(20 * time.Millisecond)
+	hostname := fmt.Sprintf("%s:%d", config.Parameters.Hostname, port)
+	listen := fmt.Sprintf(":%d", port)
+	conf := DefaultConfig(hostname)
+	timeout := time.Duration(2 * time.Second)
 	trans, err := InitTCPTransport(listen, timeout)
 	if err != nil {
 		return nil, nil, err
