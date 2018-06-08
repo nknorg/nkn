@@ -435,6 +435,7 @@ func (node *node) SyncNodeHeight() {
 }
 
 func (node *node) WaitForSyncBlkFinish() {
+	// TODO: Move to consensus logic
 	for {
 		headerHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
 		currentBlkHeight := ledger.DefaultLedger.Blockchain.BlockHeight
