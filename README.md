@@ -56,12 +56,21 @@ In directory $GOPATH/src/github.com/nknorg/ clone the repository
 $ git clone https://github.com/nknorg/nkn.git
 ```
 
-Build the source code with make
+Install package management tool `glide` if it's not installed on your system.
 
 ```shell
 $ cd nkn
 $ make glide
+```
+
+Download dependencies for building
+```shell
 $ make vendor
+```
+
+Build the source code with make
+
+```shell
 $ make all
 ```
 
