@@ -13,13 +13,15 @@ import (
 
 type Blockchain struct {
 	BlockHeight uint32
+	AssetID     Uint256
 	BCEvents    *events.Event
 	mutex       sync.Mutex
 }
 
-func NewBlockchain(height uint32) *Blockchain {
+func NewBlockchain(height uint32, asset Uint256) *Blockchain {
 	return &Blockchain{
 		BlockHeight: height,
+		AssetID:     asset,
 		BCEvents:    events.NewEvent(),
 	}
 }
@@ -37,7 +39,8 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore, defaultBookKeeper []*cryp
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], InitLevelDBStoreWithGenesisBlock failed.")
 	}
-	blockchain := NewBlockchain(height)
+	blockchain := NewBlockchain(height, genesisBlock.Transactions[0].Hash())
+
 	return blockchain, nil
 }
 

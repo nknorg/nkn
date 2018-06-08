@@ -309,7 +309,7 @@ func (ps *ProposerService) SendConsensusMsg(msg IsingMessage, to []protocol.Node
 	return nil
 }
 
-func CreateCoinbaseTransaction() *transaction.Transaction {
+func (ps *ProposerService) CreateCoinbaseTransaction() *transaction.Transaction {
 	return &transaction.Transaction{
 		TxType:         transaction.Coinbase,
 		PayloadVersion: 0,
@@ -321,15 +321,21 @@ func CreateCoinbaseTransaction() *transaction.Transaction {
 			},
 		},
 		UTXOInputs: []*transaction.UTXOTxInput{},
-		Outputs:    []*transaction.TxOutput{},
-		Programs:   []*program.Program{},
+		Outputs: []*transaction.TxOutput{
+			{
+				AssetID:     ledger.DefaultLedger.Blockchain.AssetID,
+				Value:       10 * StorageFactor,
+				ProgramHash: ps.account.ProgramHash,
+			},
+		},
+		Programs: []*program.Program{},
 	}
 }
 
 func (ps *ProposerService) BuildBlock() (*ledger.Block, error) {
 	var txnList []*transaction.Transaction
 	var txnHashList []Uint256
-	coinbase := CreateCoinbaseTransaction()
+	coinbase := ps.CreateCoinbaseTransaction()
 	txnList = append(txnList, coinbase)
 	txnHashList = append(txnHashList, coinbase.Hash())
 	txns := ps.txnCollector.Collect()

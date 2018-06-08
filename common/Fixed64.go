@@ -12,6 +12,7 @@ import (
 const (
 	// supported max asset precision is 8
 	MaximumPrecision = 8
+	StorageFactor    = 100000000
 )
 
 //the 64 bit fixed-point number, precise 10^-8
@@ -53,8 +54,8 @@ func (f Fixed64) String() string {
 		buffer.WriteRune('-')
 		value = uint64(-f)
 	}
-	buffer.WriteString(strconv.FormatUint(value/100000000, 10))
-	value %= 100000000
+	buffer.WriteString(strconv.FormatUint(value/StorageFactor, 10))
+	value %= StorageFactor
 	if value > 0 {
 		buffer.WriteRune('.')
 		s := strconv.FormatUint(value, 10)

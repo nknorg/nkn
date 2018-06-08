@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"math/big"
 	"time"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	tx "github.com/nknorg/nkn/core/transaction"
@@ -15,7 +17,6 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/vm"
 )
 
 const BlockVersion uint32 = 0
@@ -157,33 +158,48 @@ func (b *Block) Type() InventoryType {
 }
 
 func GenesisBlockInit() (*Block, error) {
-	//blockdata
-	genesisBlockdata := &Header{
+	// block header
+	genesisBlockHeader := &Header{
 		Version:          BlockVersion,
 		PrevBlockHash:    Uint256{},
 		TransactionsRoot: Uint256{},
-		Timestamp:        uint32(uint32(time.Date(2017, time.February, 23, 0, 0, 0, 0, time.UTC).Unix())),
+		Timestamp:        uint32(uint32(time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix())),
 		Height:           uint32(0),
 		ConsensusData:    GenesisNonce,
 		NextBookKeeper:   Uint160{},
 		Program: &program.Program{
-			Code:      []byte{},
-			Parameter: []byte{byte(vm.PUSHT)},
+			Code:      []byte{0x00},
+			Parameter: []byte{0x00},
 		},
 	}
-	//transaction
+	// asset transaction
 	trans := &tx.Transaction{
-		TxType:         tx.Coinbase,
+		TxType:         tx.RegisterAsset,
 		PayloadVersion: 0,
-		Payload:        &payload.Coinbase{},
-		Attributes:     []*tx.TxAttribute{},
-		UTXOInputs:     []*tx.UTXOTxInput{},
-		Outputs:        []*tx.TxOutput{},
-		Programs:       []*program.Program{},
+		Payload: &payload.RegisterAsset{
+			Asset: &asset.Asset{
+				Name:        "NKN",
+				Description: "NKN Test Token",
+				Precision:   MaximumPrecision,
+			},
+			Amount: 700000000 * StorageFactor,
+			Issuer: &crypto.PubKey{
+				X: big.NewInt(0),
+				Y: big.NewInt(0),
+			},
+			Controller: Uint160{},
+		},
+		Attributes: []*tx.TxAttribute{},
+		Programs: []*program.Program{
+			{
+				Code:      []byte{0x00},
+				Parameter: []byte{0x00},
+			},
+		},
 	}
-	//block
+	// genesis block
 	genesisBlock := &Block{
-		Header:       genesisBlockdata,
+		Header:       genesisBlockHeader,
 		Transactions: []*tx.Transaction{trans},
 	}
 

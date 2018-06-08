@@ -87,24 +87,10 @@ func Verify(publicKey PubKey, data []byte, signature []byte) error {
 }
 
 func (e *PubKey) Serialize(w io.Writer) error {
-	bufX := []byte{}
-	if e.X.Sign() == -1 {
-		// prefix 0x00 means the big number X is negative
-		bufX = append(bufX, 0x00)
-	}
-	bufX = append(bufX, e.X.Bytes()...)
-
-	if err := serialization.WriteVarBytes(w, bufX); err != nil {
+	if err := serialization.WriteVarBytes(w, e.X.Bytes()); err != nil {
 		return err
 	}
-
-	bufY := []byte{}
-	if e.Y.Sign() == -1 {
-		// prefix 0x00 means the big number Y is negative
-		bufY = append(bufY, 0x00)
-	}
-	bufY = append(bufY, e.Y.Bytes()...)
-	if err := serialization.WriteVarBytes(w, bufY); err != nil {
+	if err := serialization.WriteVarBytes(w, e.Y.Bytes()); err != nil {
 		return err
 	}
 	return nil
@@ -117,18 +103,14 @@ func (e *PubKey) Deserialize(r io.Reader) error {
 	}
 	e.X = big.NewInt(0)
 	e.X = e.X.SetBytes(bufX)
-	if len(bufX) == util.NEGBIGNUMLEN {
-		e.X.Neg(e.X)
-	}
+
 	bufY, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
 	e.Y = big.NewInt(0)
 	e.Y = e.Y.SetBytes(bufY)
-	if len(bufY) == util.NEGBIGNUMLEN {
-		e.Y.Neg(e.Y)
-	}
+
 	return nil
 }
 
