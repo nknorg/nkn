@@ -29,8 +29,7 @@ var (
 		ChordPort:     30000,
 		NodePort:      30001,
 		HttpWsPort:    30002,
-		HttpRestPort:  30003,
-		HttpJsonPort:  30004,
+		HttpJsonPort:  30003,
 		LogLevel:      1,
 		ConsensusType: "ising",
 		SeedList: []string{
@@ -44,7 +43,6 @@ type Configuration struct {
 	Version              int      `json:"Version"`
 	SeedList             []string `json:"SeedList"`
 	BookKeepers          []string `json:"BookKeepers"`
-	HttpRestPort         uint16   `json:"HttpRestPort"`
 	RestCertPath         string   `json:"RestCertPath"`
 	RestKeyPath          string   `json:"RestKeyPath"`
 	HttpInfoPort         uint16   `json:"HttpInfoPort"`
@@ -145,7 +143,6 @@ func (config *Configuration) IncrementPort() {
 		config.ChordPort,
 		config.NodePort,
 		config.HttpWsPort,
-		config.HttpRestPort,
 		config.HttpJsonPort,
 	}
 	minPort, maxPort := findMinMaxPort(allPorts)
@@ -162,6 +159,5 @@ func (config *Configuration) IncrementPort() {
 	config.ChordPort += delta
 	config.NodePort += delta
 	config.HttpWsPort += delta
-	config.HttpRestPort += delta
 	config.HttpJsonPort += delta
 }
