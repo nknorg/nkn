@@ -220,7 +220,7 @@ func (this *TXNPool) cleanTransactionList(txns []*Transaction) error {
 	cleaned := 0
 	txnsNum := len(txns)
 	for _, txn := range txns {
-		if txn.TxType == BookKeeping {
+		if txn.TxType == Coinbase {
 			txnsNum = txnsNum - 1
 			continue
 		}

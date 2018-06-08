@@ -9,8 +9,8 @@ import (
 
 type PayloadInfo interface{}
 
-//implement PayloadInfo define BookKeepingInfo
-type BookKeepingInfo struct {
+//implement PayloadInfo define CoinbaseInfo
+type CoinbaseInfo struct {
 	Nonce  uint64
 	Issuer IssuerInfo
 }
@@ -35,7 +35,7 @@ type RegisterAssetInfo struct {
 type TransferAssetInfo struct {
 }
 
-//implement PayloadInfo define BookKeepingInfo
+//implement PayloadInfo define CoinbaseInfo
 type PrepaidInfo struct {
 	Amount string
 	Rates  string
@@ -50,10 +50,7 @@ type BookkeeperInfo struct {
 
 func TransPayloadToHex(p Payload) PayloadInfo {
 	switch object := p.(type) {
-	case *payload.BookKeeping:
-		obj := new(BookKeepingInfo)
-		obj.Nonce = object.Nonce
-		return obj
+	case *payload.Coinbase:
 	case *payload.BookKeeper:
 		obj := new(BookkeeperInfo)
 		encodedPubKey, _ := object.PubKey.EncodePoint(true)

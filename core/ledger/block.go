@@ -156,7 +156,7 @@ func (b *Block) Type() InventoryType {
 	return BLOCK
 }
 
-func GenesisBlockInit(defaultBookKeeper []*crypto.PubKey) (*Block, error) {
+func GenesisBlockInit() (*Block, error) {
 	//blockdata
 	genesisBlockdata := &Header{
 		Version:          BlockVersion,
@@ -173,15 +173,13 @@ func GenesisBlockInit(defaultBookKeeper []*crypto.PubKey) (*Block, error) {
 	}
 	//transaction
 	trans := &tx.Transaction{
-		TxType:         tx.BookKeeping,
-		PayloadVersion: payload.BookKeepingPayloadVersion,
-		Payload: &payload.BookKeeping{
-			Nonce: GenesisNonce,
-		},
-		Attributes: []*tx.TxAttribute{},
-		UTXOInputs: []*tx.UTXOTxInput{},
-		Outputs:    []*tx.TxOutput{},
-		Programs:   []*program.Program{},
+		TxType:         tx.Coinbase,
+		PayloadVersion: 0,
+		Payload:        &payload.Coinbase{},
+		Attributes:     []*tx.TxAttribute{},
+		UTXOInputs:     []*tx.UTXOTxInput{},
+		Outputs:        []*tx.TxOutput{},
+		Programs:       []*program.Program{},
 	}
 	//block
 	genesisBlock := &Block{

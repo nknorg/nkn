@@ -14,6 +14,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
@@ -308,25 +309,27 @@ func (ps *ProposerService) SendConsensusMsg(msg IsingMessage, to []protocol.Node
 	return nil
 }
 
-func CreateBookkeepingTransaction() *transaction.Transaction {
-	bookKeepingPayload := &payload.BookKeeping{
-		Nonce: rand.Uint64(),
-	}
+func CreateCoinbaseTransaction() *transaction.Transaction {
 	return &transaction.Transaction{
-		TxType:         transaction.BookKeeping,
-		PayloadVersion: payload.BookKeepingPayloadVersion,
-		Payload:        bookKeepingPayload,
-		Attributes:     []*transaction.TxAttribute{},
-		UTXOInputs:     []*transaction.UTXOTxInput{},
-		Outputs:        []*transaction.TxOutput{},
-		Programs:       []*program.Program{},
+		TxType:         transaction.Coinbase,
+		PayloadVersion: 0,
+		Payload:        &payload.Coinbase{},
+		Attributes: []*transaction.TxAttribute{
+			{
+				Usage: transaction.Nonce,
+				Data:  util.RandomBytes(transaction.TransactionNonceLength),
+			},
+		},
+		UTXOInputs: []*transaction.UTXOTxInput{},
+		Outputs:    []*transaction.TxOutput{},
+		Programs:   []*program.Program{},
 	}
 }
 
 func (ps *ProposerService) BuildBlock() (*ledger.Block, error) {
 	var txnList []*transaction.Transaction
 	var txnHashList []Uint256
-	coinbase := CreateBookkeepingTransaction()
+	coinbase := CreateCoinbaseTransaction()
 	txnList = append(txnList, coinbase)
 	txnHashList = append(txnHashList, coinbase.Hash())
 	txns := ps.txnCollector.Collect()
