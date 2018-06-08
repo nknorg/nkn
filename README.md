@@ -129,14 +129,12 @@ Start bootstrap node by creating a network
 
 ```shell
 $ ./nknd -test create
-Password:
 ```
 
 Start other nodes by joining the network
 
 ```shell
 $ ./nknd -test join
-Password:
 ```
 
 When the network contains enough nodes (usually 8+), stop the node that created
@@ -145,17 +143,32 @@ network later should use a live node as seed.
 
 ## Docker
 
-Build and tag Docker image. Note that `config.json` should be modified before
-building.
+Build and tag Docker image
 
 ```shell
 $ docker build -t nkn .
 ```
 
-Run Docker image
+When starting the container, a local directory containing `config.json` and
+`wallet.dat` (if exists) should be mapped to `/nkn` directory in the container.
+This local directory will also be used for wallet, block data and logs storage.
+Assuming the local directory is the current directory, creating a wallet can be
+done by
 
 ```shell
-$ docker run -p 30000-30003:30000-30003 -it nkn bash -c "./nknc wallet -c && ./nknd -test create"
+$ docker run -v $PWD:/nkn -it nkn nknc wallet -c
+```
+
+Start bootstrap node by creating a network
+
+```shell
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -test create
+```
+
+Start other nodes by joining the network
+
+```shell
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -test join
 ```
 
 ## Contributing
