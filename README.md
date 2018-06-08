@@ -86,7 +86,7 @@ Password:
 Re-enter Password:
 Address                            Public Key
 -------                            ----------
-AbgUvnaiDYbwmKEwSH532W3LPB8Ma2aYYx 0306dd2db26e3cfde2dbe5c8a17ea7c27f13f99c19e2cb59bc13e2d0c41589c7f1
+NjCWGM1EfJeopJopSQGC6aLEkuug5GiwLM 03d45f701e7e330e1fd1c7cce09ffb95f7b1870e5c429ad8e8c950ddb879093f52
 ```
 
 Config the same bootstrap node address and public key to each
@@ -109,7 +109,7 @@ Config the same bootstrap node address and public key to each
     "127.0.0.1:30000"
   ],
   "GenesisBlockProposer": [
-    "0306dd2db26e3cfde2dbe5c8a17ea7c27f13f99c19e2cb59bc13e2d0c41589c7f1"
+    "03d45f701e7e330e1fd1c7cce09ffb95f7b1870e5c429ad8e8c950ddb879093f52"
   ]
 }
 ```
