@@ -285,7 +285,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 		}
 	case *payload.IssueAsset:
 	case *payload.TransferAsset:
-	case *payload.BookKeeping:
+	case *payload.Coinbase:
 	case *payload.Commit:
 	case *payload.Prepaid:
 		var inputAmount, outputAmount Fixed64

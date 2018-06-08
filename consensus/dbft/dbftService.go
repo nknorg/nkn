@@ -14,6 +14,7 @@ import (
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	va "github.com/nknorg/nkn/core/validation"
+	"github.com/nknorg/nkn/crypto/util"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	msg "github.com/nknorg/nkn/net/message"
@@ -164,20 +165,20 @@ func (ds *DbftService) CheckSignatures() error {
 	return nil
 }
 
-func (ds *DbftService) CreateBookkeepingTransaction(nonce uint64) *tx.Transaction {
-	log.Debug()
-	//TODO: sysfee
-	bookKeepingPayload := &payload.BookKeeping{
-		Nonce: uint64(time.Now().UnixNano()),
-	}
+func (ds *DbftService) CreateCoinbaseTransaction(nonce uint64) *tx.Transaction {
 	return &tx.Transaction{
-		TxType:         tx.BookKeeping,
-		PayloadVersion: payload.BookKeepingPayloadVersion,
-		Payload:        bookKeepingPayload,
-		Attributes:     []*tx.TxAttribute{},
-		UTXOInputs:     []*tx.UTXOTxInput{},
-		Outputs:        []*tx.TxOutput{},
-		Programs:       []*program.Program{},
+		TxType:         tx.Coinbase,
+		PayloadVersion: 0,
+		Payload:        &payload.Coinbase{},
+		Attributes: []*tx.TxAttribute{
+			{
+				Usage: tx.Nonce,
+				Data:  util.RandomBytes(tx.TransactionNonceLength),
+			},
+		},
+		UTXOInputs: []*tx.UTXOTxInput{},
+		Outputs:    []*tx.TxOutput{},
+		Programs:   []*program.Program{},
 	}
 }
 
@@ -324,7 +325,7 @@ func (ds *DbftService) GetUnverifiedTxs(txs []*tx.Transaction) []*tx.Transaction
 	ret := []*tx.Transaction{}
 	for _, t := range txs {
 		if _, ok := txpool[t.Hash()]; !ok {
-			if t.TxType != tx.BookKeeping {
+			if t.TxType != tx.Coinbase {
 				ret = append(ret, t)
 			}
 		}
@@ -534,9 +535,9 @@ func (ds *DbftService) Timeout() {
 			//TODO: add policy
 			//TODO: add max TX limitation
 
-			txBookkeeping := ds.CreateBookkeepingTransaction(ds.context.Nonce)
+			coinbase := ds.CreateCoinbaseTransaction(ds.context.Nonce)
 			//add book keeping transaction first
-			ds.context.Transactions = append(ds.context.Transactions, txBookkeeping)
+			ds.context.Transactions = append(ds.context.Transactions, coinbase)
 			//add transactions from transaction pool
 			for _, tx := range transactionsPool {
 				ds.context.Transactions = append(ds.context.Transactions, tx)

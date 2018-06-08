@@ -26,12 +26,12 @@ func VerifyBlock(block *Block, ld *Ledger, completely bool) error {
 	if block.Transactions == nil {
 		return errors.New(fmt.Sprintf("No Transactions Exist in Block."))
 	}
-	if block.Transactions[0].TxType != tx.BookKeeping {
-		return errors.New(fmt.Sprintf("Header Verify failed first Transacion in block is not BookKeeping type."))
+	if block.Transactions[0].TxType != tx.Coinbase {
+		return errors.New(fmt.Sprintf("Header Verify failed first Transacion in block is not Coinbase type."))
 	}
 	for index, v := range block.Transactions {
-		if v.TxType == tx.BookKeeping && index != 0 {
-			return errors.New(fmt.Sprintf("This Block Has BookKeeping transaction after first transaction in block."))
+		if v.TxType == tx.Coinbase && index != 0 {
+			return errors.New(fmt.Sprintf("This Block Has Coinbase transaction after first transaction in block."))
 		}
 	}
 

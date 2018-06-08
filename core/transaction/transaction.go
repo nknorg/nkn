@@ -24,7 +24,7 @@ import (
 type TransactionType byte
 
 const (
-	BookKeeping   TransactionType = 0x00
+	Coinbase      TransactionType = 0x00
 	TransferAsset TransactionType = 0x10
 	RegisterAsset TransactionType = 0x11
 	IssueAsset    TransactionType = 0x12
@@ -195,8 +195,8 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		tx.Payload = new(payload.IssueAsset)
 	case TransferAsset:
 		tx.Payload = new(payload.TransferAsset)
-	case BookKeeping:
-		tx.Payload = new(payload.BookKeeping)
+	case Coinbase:
+		tx.Payload = new(payload.Coinbase)
 	case BookKeeper:
 		tx.Payload = new(payload.BookKeeper)
 	case Prepaid:
@@ -576,8 +576,8 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 		tx.Payload = new(payload.IssueAsset)
 	case TransferAsset:
 		tx.Payload = new(payload.TransferAsset)
-	case BookKeeping:
-		tx.Payload = new(payload.BookKeeping)
+	case Coinbase:
+		tx.Payload = new(payload.Coinbase)
 	case BookKeeper:
 		tx.Payload = new(payload.BookKeeper)
 	case Prepaid:
