@@ -207,7 +207,8 @@ func CheckAssetPrecision(Tx *Transaction) error {
 }
 
 func CheckTransactionBalance(txn *Transaction) error {
-	if txn.TxType == Prepaid || txn.TxType == Withdraw || txn.TxType == Commit {
+	if txn.TxType == Coinbase || txn.TxType == Prepaid ||
+		txn.TxType == Withdraw || txn.TxType == Commit {
 		return nil
 	}
 	for _, v := range txn.Outputs {
