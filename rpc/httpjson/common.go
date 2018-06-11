@@ -23,6 +23,7 @@ type NodeInfo struct {
 	Height   uint64 // The node latest block height
 	TxnCnt   uint64 // The transactions be transmit by this node
 	RxTxnCnt uint64 // The transaction received by this node
+	ChordID  string // Chord ID
 }
 
 func responsePacking(result interface{}) map[string]interface{} {

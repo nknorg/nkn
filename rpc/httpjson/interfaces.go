@@ -2,6 +2,7 @@ package httpjson
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"math"
 
@@ -297,6 +298,7 @@ func getNodeState(s *RPCServer, params []interface{}) map[string]interface{} {
 		Height:   s.node.GetHeight(),
 		TxnCnt:   s.node.GetTxnCnt(),
 		RxTxnCnt: s.node.GetRxTxnCnt(),
+		ChordID:  hex.EncodeToString(s.node.GetChordAddr()),
 	}
 	return RpcResult(n)
 }
