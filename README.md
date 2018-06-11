@@ -44,9 +44,9 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 
 ## Building
 
-The requirements to build are:
-* Go version 1.8 or later
-* Properly configured Go environment
+To build from source, you need a properly configured Go environment (Go 1.8+,
+$GOROOT and $GOPATH set up, see [Go Official Installation
+Documentation](https://golang.org/doc/install) for more details).
 
 Create directory $GOPATH/src/github.com/nknorg/ if not exists
 
@@ -74,11 +74,10 @@ Build the source code with make
 $ make all
 ```
 
-After building the source code, you should see two executable
-programs:
+After building is successful, you should see two executables:
 
-* `nknd`: the nkn program
-* `nknc`: command line tool for nkn control
+* `nknd`: the nkn node program
+* `nknc`: command line tool for nkn node control
 
 ## Deployment
 
@@ -173,20 +172,23 @@ $ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -test join
 
 ## Contributing
 
-Can I contribute patches to NKN project?
+**Can I submit a bug, suggestion or feature request?**
 
-Yes! Please open a pull request with signed-off commits. We appreciate
-your help!
+Yes. Please open an issue for that.
+
+**Can I contribute patches to NKN project?**
+
+Yes, we appreciate your help! To make contributions, please fork the repo, push
+your changes to the forked repo with signed-off commits, and open a pull request
+here.
 
 Please follow our [Golang Style Guide](https://github.com/nknorg/nkn/wiki/NKN-Golang-Style-Guide)
 for coding style.
 
-Please sign off your commit. If you don't sign off your patches, we
-will not accept them. This means adding a line that says
-"Signed-off-by: Name <email>" at the end of each commit, indicating
-that you wrote the code and have the right to pass it on as an open
-source patch. This can be done automatically by adding -s when
-committing:
+Please sign off your commit. This means adding a line "Signed-off-by: Name
+<email>" at the end of each commit, indicating that you wrote the code and have
+the right to pass it on as an open source patch. This can be done automatically
+by adding -s when committing:
 
 ```shell
 git commit -s
