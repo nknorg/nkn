@@ -6,11 +6,11 @@ BUILD_NKND_PARAM = -ldflags "-X github.com/nknorg/nkn/util/config.Version=$(VERS
 BUILD_NKNC_PARAM = -ldflags "-X github.com/nknorg/nkn/cli/common.Version=$(VERSION)"
 
 .PHONY: nknd
-nknd:
+nknd: vendor
 	$(GC)  $(BUILD_NKND_PARAM) nknd.go
 
 .PHONY: all
-all:
+all: vendor
 	$(GC)  $(BUILD_NKND_PARAM) nknd.go
 	$(GC)  $(BUILD_NKNC_PARAM) nknc.go
 
@@ -23,7 +23,6 @@ glide:
 	@ mkdir -p $$GOPATH/bin
 	@ curl https://glide.sh/get | sh;
 
-.PHONY: vendor
 vendor: glide.yaml glide.lock
 	@ glide install
 
