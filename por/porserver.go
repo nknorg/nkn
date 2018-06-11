@@ -9,18 +9,18 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/vault"
 )
 
 type PorServer struct {
 	sync.RWMutex
-	account *wallet.Account
+	account *vault.Account
 	pors    map[uint32][]*PorPackage
 }
 
 var porServer *PorServer
 
-func NewPorServer(account *wallet.Account) *PorServer {
+func NewPorServer(account *vault.Account) *PorServer {
 	ps := &PorServer{
 		account: account,
 		pors:    make(map[uint32][]*PorPackage),
@@ -28,7 +28,7 @@ func NewPorServer(account *wallet.Account) *PorServer {
 	return ps
 }
 
-func InitPorServer(account *wallet.Account) error {
+func InitPorServer(account *vault.Account) error {
 	if porServer != nil {
 		return errors.New("PorServer already initialized")
 	}

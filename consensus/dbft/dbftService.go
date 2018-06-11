@@ -21,7 +21,7 @@ import (
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	cl "github.com/nknorg/nkn/wallet"
+	cl "github.com/nknorg/nkn/vault"
 )
 
 var GenBlockTime = (config.DEFAULTGENBLOCKTIME * time.Second)

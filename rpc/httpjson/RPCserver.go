@@ -12,7 +12,7 @@ import (
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/vault"
 )
 
 type RPCServer struct {
@@ -26,7 +26,7 @@ type RPCServer struct {
 	node protocol.Noder
 
 	//the reference of Wallet
-	wallet wallet.Wallet
+	wallet vault.Wallet
 }
 
 type funcHandler func(*RPCServer, []interface{}) map[string]interface{}
@@ -42,7 +42,7 @@ type ServeMux struct {
 }
 
 // NewServer will create a new RPC server instance.
-func NewServer(node protocol.Noder, wallet wallet.Wallet) *RPCServer {
+func NewServer(node protocol.Noder, wallet vault.Wallet) *RPCServer {
 	server := &RPCServer{
 		mainMux: ServeMux{
 			m: make(map[string]funcHandler),

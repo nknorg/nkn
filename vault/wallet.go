@@ -1,4 +1,4 @@
-package wallet
+package vault
 
 import (
 	"crypto/rand"

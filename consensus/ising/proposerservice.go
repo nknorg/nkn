@@ -21,7 +21,7 @@ import (
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/vault"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 
 type ProposerService struct {
 	sync.RWMutex
-	account              *wallet.Account           // local account
+	account              *vault.Account            // local account
 	ticker               *time.Ticker              // ticker for proposal service
 	blockProposer        map[uint32][]byte         // height and public key mapping for block proposer
 	localNode            protocol.Noder            // local node
@@ -45,7 +45,7 @@ type ProposerService struct {
 	voting               []voting.Voting           // array for sigchain and block voting
 }
 
-func NewProposerService(account *wallet.Account, node protocol.Noder) *ProposerService {
+func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerService {
 	totalWeight := GetTotalVotingWeight(node)
 	txnCollector := transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged)
 

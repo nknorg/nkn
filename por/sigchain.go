@@ -13,7 +13,7 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/vault"
 )
 
 // for the first relay node
@@ -97,7 +97,7 @@ func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash, srcPubkey, d
 }
 
 // first relay node starts a new signature chain which consists of meta data and the first element.
-func NewSigChain(owner *wallet.Account, dataSize uint32, dataHash, blockHash, destPubkey, nextPubkey []byte) (*SigChain, error) {
+func NewSigChain(owner *vault.Account, dataSize uint32, dataHash, blockHash, destPubkey, nextPubkey []byte) (*SigChain, error) {
 	ownPk := owner.PubKey()
 	srcPubkey, err := ownPk.EncodePoint(true)
 	if err != nil {
@@ -181,7 +181,7 @@ func (sc *SigChain) AddLastSignature(signature []byte) error {
 }
 
 // Sign new created signature chain with local wallet.
-func (sc *SigChain) Sign(nextPubkey []byte, signer *wallet.Account) error {
+func (sc *SigChain) Sign(nextPubkey []byte, signer *vault.Account) error {
 	sigNum := sc.Length()
 	if sigNum < 1 {
 		return errors.New("there are not enough signatures")
