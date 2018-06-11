@@ -20,7 +20,7 @@ type BlockCache struct {
 }
 
 // When receive new block message from consensus layer, cache it.
-func NewCache() *BlockCache {
+func NewBlockCache() *BlockCache {
 	blockCache := &BlockCache{
 		cap:    MaxCachedBlockHeight,
 		cache:  make(map[uint32][]*ledger.Block),
