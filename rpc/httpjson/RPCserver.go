@@ -1,8 +1,10 @@
 package httpjson
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
@@ -150,18 +152,55 @@ func (s *RPCServer) SetDefaultFunc(def func(http.ResponseWriter, *http.Request))
 	s.mainMux.defaultFunction = def
 }
 
+func (s *RPCServer) initTlsListen(cert, key string) (net.Listener, error) {
+
+	pair, err := tls.LoadX509KeyPair(cert, key)
+	if err != nil {
+		log.Error("load keys fail", err)
+		return nil, err
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{pair},
+	}
+
+	listener, err := tls.Listen("tcp", s.listeners[0], tlsConfig)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return listener, nil
+}
+
 func (s *RPCServer) Start() {
 	log.Debug()
-	http.HandleFunc("/", s.Handle)
 
 	for name, handler := range initialRPCHandlers {
 		s.HandleFunc(name, handler)
 	}
 
-	err := http.ListenAndServe(s.listeners[0], nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err.Error())
+	var listener net.Listener
+	var err error
+	if config.Parameters.IsTLS {
+		listener, err = s.initTlsListen(config.Parameters.RPCCert, config.Parameters.RPCKey)
+		if err != nil {
+			log.Error("Https Cert: ", err.Error())
+			return
+		}
+	} else {
+		listener, err = net.Listen("tcp", s.listeners[0])
+		if err != nil {
+			log.Error("net.Listen: ", err.Error())
+			return
+		}
 	}
+
+	rpcServeMux := http.NewServeMux()
+	rpcServeMux.HandleFunc("/", s.Handle)
+	httpServer := &http.Server{
+		Handler: rpcServeMux,
+	}
+	httpServer.Serve(listener)
 }
 
 func (s *RPCServer) VerifyAndSendTx(txn *transaction.Transaction) errors.ErrCode {

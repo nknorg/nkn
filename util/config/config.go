@@ -45,6 +45,8 @@ type Configuration struct {
 	BookKeepers          []string `json:"BookKeepers"`
 	RestCertPath         string   `json:"RestCertPath"`
 	RestKeyPath          string   `json:"RestKeyPath"`
+	RPCCert              string   `json:"RPCCert"`
+	RPCKey               string   `json:"RPCKey"`
 	HttpInfoPort         uint16   `json:"HttpInfoPort"`
 	HttpInfoStart        bool     `json:"HttpInfoStart"`
 	HttpWsPort           uint16   `json:"HttpWsPort"`
