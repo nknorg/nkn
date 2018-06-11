@@ -8,7 +8,7 @@ import (
 	. "github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/vault"
 )
 
 type BatchOut struct {
@@ -16,7 +16,7 @@ type BatchOut struct {
 	Value   string
 }
 
-func MakeRegTransaction(wallet wallet.Wallet, name string, value string) (*transaction.Transaction, error) {
+func MakeRegTransaction(wallet vault.Wallet, name string, value string) (*transaction.Transaction, error) {
 	admin, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func MakeRegTransaction(wallet wallet.Wallet, name string, value string) (*trans
 	return txn, nil
 }
 
-func MakeIssueTransaction(wallet wallet.Wallet, assetID Uint256, address string, value string) (*transaction.Transaction, error) {
+func MakeIssueTransaction(wallet vault.Wallet, assetID Uint256, address string, value string) (*transaction.Transaction, error) {
 	programHash, err := ToScriptHash(address)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func MakeIssueTransaction(wallet wallet.Wallet, assetID Uint256, address string,
 	return txn, nil
 }
 
-func MakeTransferTransaction(wallet wallet.Wallet, assetID Uint256, batchOut ...BatchOut) (*transaction.Transaction, error) {
+func MakeTransferTransaction(wallet vault.Wallet, assetID Uint256, batchOut ...BatchOut) (*transaction.Transaction, error) {
 	outputNum := len(batchOut)
 	if outputNum == 0 {
 		return nil, errors.New("nil outputs")
@@ -155,7 +155,7 @@ func MakeTransferTransaction(wallet wallet.Wallet, assetID Uint256, batchOut ...
 	return txn, nil
 }
 
-func MakePrepaidTransaction(wallet wallet.Wallet, assetID Uint256, value, rates string) (*transaction.Transaction, error) {
+func MakePrepaidTransaction(wallet vault.Wallet, assetID Uint256, value, rates string) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func MakePrepaidTransaction(wallet wallet.Wallet, assetID Uint256, value, rates 
 	return txn, nil
 }
 
-func MakeWithdrawTransaction(wallet wallet.Wallet, assetID Uint256, value string) (*transaction.Transaction, error) {
+func MakeWithdrawTransaction(wallet vault.Wallet, assetID Uint256, value string) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func MakeWithdrawTransaction(wallet wallet.Wallet, assetID Uint256, value string
 	return txn, nil
 }
 
-func MakeCommitTransaction(wallet wallet.Wallet, sigChain []byte) (*transaction.Transaction, error) {
+func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err

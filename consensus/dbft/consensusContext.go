@@ -12,7 +12,7 @@ import (
 	msg "github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
-	cl "github.com/nknorg/nkn/wallet"
+	cl "github.com/nknorg/nkn/vault"
 )
 
 const ContextVersion uint32 = 0

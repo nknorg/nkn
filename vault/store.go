@@ -1,4 +1,4 @@
-package wallet
+package vault
 
 import (
 	"encoding/json"

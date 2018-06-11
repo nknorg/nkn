@@ -10,7 +10,7 @@ import (
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/vault"
 )
 
 const (
@@ -34,7 +34,7 @@ type Notice struct {
 
 type ProbeService struct {
 	sync.RWMutex
-	account              *wallet.Account          // local account
+	account              *vault.Account           // local account
 	localNode            protocol.Noder           // local node
 	ticker               *time.Ticker             // ticker for probing
 	neighborInfo         map[uint64]StateResponse // collected neighbor block info
@@ -43,7 +43,7 @@ type ProbeService struct {
 	msgChan              chan interface{}         // send probe message
 }
 
-func NewProbeService(account *wallet.Account, node protocol.Noder) *ProbeService {
+func NewProbeService(account *vault.Account, node protocol.Noder) *ProbeService {
 	service := &ProbeService{
 		account:      account,
 		localNode:    node,

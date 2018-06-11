@@ -14,18 +14,18 @@ import (
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nkn/websocket"
 )
 
 type RelayService struct {
-	wallet           wallet.Wallet     // wallet
+	wallet           vault.Wallet      // wallet
 	localNode        protocol.Noder    // local node
 	porServer        *por.PorServer    // por server to handle signature chain
 	relayMsgReceived events.Subscriber // consensus events listening
 }
 
-func NewRelayService(wallet wallet.Wallet, node protocol.Noder) *RelayService {
+func NewRelayService(wallet vault.Wallet, node protocol.Noder) *RelayService {
 	service := &RelayService{
 		wallet:    wallet,
 		localNode: node,

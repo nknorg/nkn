@@ -23,7 +23,7 @@ import (
 	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nkn/websocket"
 )
 
@@ -34,13 +34,13 @@ func init() {
 	crypto.SetAlg(config.Parameters.EncryptAlg)
 }
 
-func InitLedger(account *wallet.Account) error {
+func InitLedger(account *vault.Account) error {
 	var err error
 	store, err := db.NewLedgerStore()
 	if err != nil {
 		return err
 	}
-	ledger.StandbyBookKeepers = wallet.GetBookKeepers(account)
+	ledger.StandbyBookKeepers = vault.GetBookKeepers(account)
 	blockChain, err := ledger.NewBlockchainWithGenesisBlock(store, ledger.StandbyBookKeepers)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 	return node
 }
 
-func StartConsensus(wallet wallet.Wallet, node protocol.Noder) {
+func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
 	if protocol.SERVICENODENAME != config.Parameters.NodeType {
 		switch config.Parameters.ConsensusType {
 		case "ising":
@@ -103,7 +103,7 @@ func nknMain() error {
 	}
 
 	// Get local account
-	wallet := wallet.GetWallet()
+	wallet := vault.GetWallet()
 	if wallet == nil {
 		return errors.New("open local wallet error")
 	}

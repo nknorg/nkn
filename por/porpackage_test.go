@@ -9,15 +9,15 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/wallet"
+	"github.com/nknorg/nkn/vault"
 )
 
 func TestPorPackage(t *testing.T) {
 	crypto.SetAlg("P256R1")
 
-	from, _ := wallet.NewAccount()
-	rel, _ := wallet.NewAccount()
-	to, _ := wallet.NewAccount()
+	from, _ := vault.NewAccount()
+	rel, _ := vault.NewAccount()
+	to, _ := vault.NewAccount()
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 
