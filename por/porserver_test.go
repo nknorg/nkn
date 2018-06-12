@@ -5,17 +5,19 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/vault"
 )
 
 func TestPorServer(t *testing.T) {
 	crypto.SetAlg("P256R1")
+	ring, _, err := chord.CreateNet()
 	from, _ := vault.NewAccount()
 	rel, _ := vault.NewAccount()
 	to, _ := vault.NewAccount()
-	pmFrom := NewPorServer(from)
-	pmRel := NewPorServer(rel)
-	pmTo := NewPorServer(to)
+	pmFrom := NewPorServer(from, ring)
+	pmRel := NewPorServer(rel, ring)
+	pmTo := NewPorServer(to, ring)
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 

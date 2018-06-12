@@ -6,9 +6,10 @@ enum SigAlgo {
 }
 
 message SigChainElem {
-  SigAlgo SigAlgo = 1;
+  bytes Addr = 1;
   bytes NextPubkey = 2;
-  bytes Signature = 3;
+  SigAlgo SigAlgo = 3;
+  bytes Signature = 4;
 }
 
 message SigChain {

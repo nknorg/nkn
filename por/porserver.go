@@ -8,6 +8,7 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -15,24 +16,26 @@ import (
 type PorServer struct {
 	sync.RWMutex
 	account *vault.Account
+	ring    *chord.Ring
 	pors    map[uint32][]*PorPackage
 }
 
 var porServer *PorServer
 
-func NewPorServer(account *vault.Account) *PorServer {
+func NewPorServer(account *vault.Account, ring *chord.Ring) *PorServer {
 	ps := &PorServer{
 		account: account,
+		ring:    ring,
 		pors:    make(map[uint32][]*PorPackage),
 	}
 	return ps
 }
 
-func InitPorServer(account *vault.Account) error {
+func InitPorServer(account *vault.Account, ring *chord.Ring) error {
 	if porServer != nil {
 		return errors.New("PorServer already initialized")
 	}
-	porServer = NewPorServer(account)
+	porServer = NewPorServer(account, ring)
 	return nil
 }
 
@@ -78,16 +81,20 @@ func (ps *PorServer) Verify(sc *SigChain) error {
 }
 
 func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
-	return NewSigChain(ps.account, dataSize, dataHash[:], blockHash[:], destPubkey, nextPubkey)
+	vnode, err := ps.ring.GetFirstVnode()
+	if err != nil {
+		return nil, err
+	}
+	return NewSigChain(ps.account, dataSize, dataHash[:], blockHash[:], vnode.Id, destPubkey, nextPubkey)
 }
 
-func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcPubkey, destPubkey, signature []byte, sigAlgo SigAlgo) (*SigChain, error) {
+func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcID, srcPubkey, destPubkey, signature []byte, sigAlgo SigAlgo) (*SigChain, error) {
 	pubKey, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
 		log.Error("Get account public key error:", err)
 		return nil, err
 	}
-	sigChain, err := NewSigChainWithSignature(dataSize, dataHash[:], blockHash[:], srcPubkey, destPubkey, pubKey, signature, sigAlgo)
+	sigChain, err := NewSigChainWithSignature(dataSize, dataHash[:], blockHash[:], srcID, srcPubkey, destPubkey, pubKey, signature, sigAlgo)
 	if err != nil {
 		log.Error("New signature chain with signature error:", err)
 		return nil, err
