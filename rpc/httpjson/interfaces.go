@@ -615,11 +615,12 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 	if err != nil {
 		return RpcResultInternalError
 	}
+	srcID := s.node.GetChordAddr()
 	encodedPublickKey, err := account.PubKey().EncodePoint(true)
 	if err != nil {
 		return RpcResultInternalError
 	}
-	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], encodedPublickKey, encodedPublickKey)
+	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], srcID, encodedPublickKey, encodedPublickKey)
 	if err != nil {
 		return RpcResultInternalError
 	}

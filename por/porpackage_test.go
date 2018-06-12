@@ -21,9 +21,10 @@ func TestPorPackage(t *testing.T) {
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 
+	var srcID []byte
 	dataHash := common.Uint256{}
 	blockHash := common.Uint256{}
-	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], toPk, relPk)
+	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], srcID, toPk, relPk)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
