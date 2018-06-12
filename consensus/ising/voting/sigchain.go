@@ -92,12 +92,8 @@ func (scv *SigChainVoting) SetVotingHeight(height uint32) {
 	scv.height = height
 }
 
-func (scv *SigChainVoting) UpdateVotingHeight() {
-	scv.height = ledger.DefaultLedger.Store.GetHeight() + 2
-}
-
 func (scv *SigChainVoting) GetVotingHeight() uint32 {
-	return scv.height
+	return ledger.DefaultLedger.Store.GetHeight() + 2
 }
 
 func (scv *SigChainVoting) SetConfirmingHash(hash Uint256) {

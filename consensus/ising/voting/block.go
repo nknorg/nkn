@@ -92,12 +92,8 @@ func (bv *BlockVoting) SetVotingHeight(height uint32) {
 	bv.height = height
 }
 
-func (bv *BlockVoting) UpdateVotingHeight() {
-	bv.height = ledger.DefaultLedger.Store.GetHeight() + 1
-}
-
 func (bv *BlockVoting) GetVotingHeight() uint32 {
-	return bv.height
+	return ledger.DefaultLedger.Store.GetHeight() + 1
 }
 
 func (bv *BlockVoting) SetConfirmingHash(hash Uint256) {

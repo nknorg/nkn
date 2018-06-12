@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	NodeInfoUpdateTime = ising.ConsensusTime / 2
+	NodeInfoUpdateTime = ising.ConsensusTime / 5
 )
 
 func (node *node) GetBlkHdrs() {
