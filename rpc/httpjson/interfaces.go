@@ -627,6 +627,9 @@ func sigchaintest(s *RPCServer, params []interface{}) map[string]interface{} {
 	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
 		return RpcResultInternalError
 	}
+	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
+		return RpcResultInternalError
+	}
 	buf, err := proto.Marshal(sigChain)
 	txn, err := MakeCommitTransaction(s.wallet, buf)
 	if err != nil {

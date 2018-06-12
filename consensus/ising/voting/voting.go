@@ -34,8 +34,6 @@ type Voting interface {
 	HasNeighborState(nid uint64, hash Uint256, s State) bool
 	// get current voting height
 	GetVotingHeight() uint32
-	// update voting height for next round
-	UpdateVotingHeight()
 	// get best voting content
 	GetBestVotingContent(height uint32) (VotingContent, error)
 	// get worse voting content for testing mind changing
