@@ -43,7 +43,6 @@ const (
 	MAXBLKHDRCNT      = 500
 	MAXINVHDRCNT      = 500
 	DIVHASHLEN        = 5
-	MINCONNCNT        = 3
 	MAXREQBLKONCE     = 16
 	TIMESOFUPDATETIME = 2
 )
@@ -134,7 +133,6 @@ type Noder interface {
 	RemoveFlightHeight(height uint32)
 	GetLastRXTime() time.Time
 	SetHeight(height uint64)
-	WaitForFourPeersStart()
 	WaitForSyncBlkFinish()
 	GetFlightHeights() []uint32
 	IsAddrInNbrList(addr string) bool
