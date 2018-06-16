@@ -19,9 +19,6 @@ const (
 )
 
 func (node *node) GetBlkHdrs() {
-	if node.local.GetNbrNodeCnt() < MINCONNCNT {
-		return
-	}
 	noders := node.local.GetNeighborNoder()
 	if len(noders) == 0 {
 		return
