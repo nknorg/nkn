@@ -11,7 +11,6 @@ import (
 	"os"
 
 	. "github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/util/log"
 
 	"github.com/golang/crypto/ripemd160"
 )
@@ -30,7 +29,6 @@ func ToCodeHash(code []byte) (Uint160, error) {
 }
 
 func GetNonce() uint64 {
-	log.Debug()
 	// Fixme replace with the real random number generator
 	nonce := uint64(rand.Uint32())<<32 + uint64(rand.Uint32())
 	return nonce
