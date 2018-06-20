@@ -13,6 +13,7 @@ import (
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/rpc/common"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -51,65 +52,39 @@ var initialRPCHandlers = map[string]funcHandler{
 	// "getunspends":          getUnspends,
 }
 
+func processUnify(cmd string, s *RPCServer, params []interface{}) map[string]interface{} {
+	handler := common.InitialAPIHandlers[cmd]
+	if !handler.IsAccessableByJsonrpc() {
+		return RpcResultNil
+	}
+	resp, err := handler.Handler(s, params)
+	if err != common.SUCCESS {
+		return RpcResultInvalidParameter
+	}
+	return resp
+}
+
 func getLatestBlockHash(s *RPCServer, params []interface{}) map[string]interface{} {
-	hash := ledger.DefaultLedger.Blockchain.CurrentBlockHash()
-	return RpcResult(BytesToHexString(hash.ToArrayReverse()))
+	return processUnify("getlatestblockhash", s, params)
 }
 
 // Input JSON string examples for getblock method as following:
 //   {"jsonrpc": "2.0", "method": "getblock", "params": [1], "id": 0}
 //   {"jsonrpc": "2.0", "method": "getblock", "params": ["aabbcc.."], "id": 0}
 func getBlock(s *RPCServer, params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return RpcResultNil
-	}
-	var err error
-	var hash Uint256
-	switch (params[0]).(type) {
-	// block height
-	case float64:
-		index := uint32(params[0].(float64))
-		hash, err = ledger.DefaultLedger.Store.GetBlockHash(index)
-		if err != nil {
-			return RpcResultUnknownBlock
-		}
-	// block hash
-	case string:
-		str := params[0].(string)
-		hex, err := HexStringToBytesReverse(str)
-		if err != nil {
-			return RpcResultInvalidParameter
-		}
-		if err := hash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return RpcResultInvalidTransaction
-		}
-	default:
-		return RpcResultInvalidParameter
-	}
-
-	block, err := ledger.DefaultLedger.Store.GetBlock(hash)
-	if err != nil {
-		return RpcResultUnknownBlock
-	}
-	block.Hash()
-
-	var b interface{}
-	info, _ := block.MarshalJson()
-	json.Unmarshal(info, &b)
-
-	return RpcResult(b)
+	return processUnify("getblock", s, params)
 }
 
 func getBlockCount(s *RPCServer, params []interface{}) map[string]interface{} {
-	return RpcResult(ledger.DefaultLedger.Blockchain.BlockHeight + 1)
+	return processUnify("getblockcount", s, params)
 }
 
 func getChordRingInfo(s *RPCServer, params []interface{}) map[string]interface{} {
-	return RpcResult(chord.GetRing())
+	return processUnify("getchordringinfo", s, params)
 }
 
 func getLatestBlockHeight(s *RPCServer, params []interface{}) map[string]interface{} {
-	return RpcResult(ledger.DefaultLedger.Blockchain.BlockHeight)
+	return processUnify("getlatestblockheight", s, params)
 }
 
 // A JSON example for getblockhash method as following:
