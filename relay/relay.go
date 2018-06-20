@@ -12,7 +12,7 @@ import (
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/rpc/httpjson"
+	"github.com/nknorg/nkn/rpc/common"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nkn/websocket"
@@ -77,7 +77,7 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 	if err != nil {
 		return err
 	}
-	txn, err := httpjson.MakeCommitTransaction(rs.wallet, buf)
+	txn, err := common.MakeCommitTransaction(rs.wallet, buf)
 	if err != nil {
 		return err
 	}

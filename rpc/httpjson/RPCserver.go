@@ -12,6 +12,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/rpc/common"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -31,13 +32,11 @@ type RPCServer struct {
 	wallet vault.Wallet
 }
 
-type funcHandler func(*RPCServer, []interface{}) map[string]interface{}
-
 type ServeMux struct {
 	sync.RWMutex
 
 	//collection of Handlers
-	m map[string]funcHandler
+	m map[string]common.Handler
 
 	//will be called when the request of rpc client contains no implemented functions.
 	defaultFunction func(http.ResponseWriter, *http.Request)
@@ -47,7 +46,7 @@ type ServeMux struct {
 func NewServer(node protocol.Noder, wallet vault.Wallet) *RPCServer {
 	server := &RPCServer{
 		mainMux: ServeMux{
-			m: make(map[string]funcHandler),
+			m: make(map[string]common.Handler),
 		},
 		listeners: []string{":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
 		node:      node,
@@ -109,12 +108,25 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	//get the corresponding function
 	function, ok := s.mainMux.m[request["method"].(string)]
 	if ok {
-		response := function(s, request["params"].([]interface{}))
-		data, err := json.Marshal(map[string]interface{}{
-			"jsonpc": "2.0",
-			"result": response["result"],
-			"id":     request["id"],
-		})
+		var data []byte
+		var err error
+		response, errcode := function(s, request["params"].([]interface{}))
+		if errcode != common.SUCCESS {
+			data, err = json.Marshal(map[string]interface{}{
+				"jsonpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    -errcode,
+					"message": common.ErrMessage[errcode],
+				},
+				"id": request["id"],
+			})
+		} else {
+			data, err = json.Marshal(map[string]interface{}{
+				"jsonpc": "2.0",
+				"result": response["result"],
+				"id":     request["id"],
+			})
+		}
 		if err != nil {
 			log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
 			return
@@ -124,7 +136,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		//if the function does not exist
 		log.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
 		data, err := json.Marshal(map[string]interface{}{
-			"result": nil,
+			"jsonpc": "2.0",
 			"error": map[string]interface{}{
 				"code":    -32601,
 				"message": "Method not found",
@@ -141,7 +153,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 }
 
 //a function to register functions to be called for specific rpc calls
-func (s *RPCServer) HandleFunc(pattern string, handler funcHandler) {
+func (s *RPCServer) HandleFunc(pattern string, handler common.Handler) {
 	s.mainMux.Lock()
 	defer s.mainMux.Unlock()
 	s.mainMux.m[pattern] = handler
@@ -175,8 +187,10 @@ func (s *RPCServer) initTlsListen(cert, key string) (net.Listener, error) {
 func (s *RPCServer) Start() {
 	log.Debug()
 
-	for name, handler := range initialRPCHandlers {
-		s.HandleFunc(name, handler)
+	for name, handler := range common.InitialAPIHandlers {
+		if handler.IsAccessableByJsonrpc() {
+			s.HandleFunc(name, handler.Handler)
+		}
 	}
 
 	var listener net.Listener
