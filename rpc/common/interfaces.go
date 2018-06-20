@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"math"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/chord"
+	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -662,6 +666,361 @@ func withdrawAsset(s Serverer, params []interface{}) (map[string]interface{}, Er
 	return resp, SUCCESS
 }
 
+func commitPor(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
+	resp := make(map[string]interface{})
+
+	if len(params) < 1 {
+		return nil, INTERNAL_ERROR
+	}
+
+	var sigChain []byte
+	var err error
+	switch params[0].(type) {
+	case string:
+		str := params[0].(string)
+		sigChain, err = common.HexStringToBytes(str)
+		if err != nil {
+			return nil, INTERNAL_ERROR
+		}
+	default:
+		return nil, INTERNAL_ERROR
+	}
+
+	wallet, err := s.GetWallet()
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	txn, err := MakeCommitTransaction(wallet, sigChain)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
+		return nil, INTERNAL_ERROR
+	}
+
+	txHash := txn.Hash()
+	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
+	return resp, SUCCESS
+}
+
+func sigchaintest(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
+	resp := make(map[string]interface{})
+
+	wallet, err := s.GetWallet()
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+	dataHash := common.Uint256{}
+	currentHeight := ledger.DefaultLedger.Store.GetHeight()
+	blockHash, err := ledger.DefaultLedger.Store.GetBlockHash(currentHeight - 1)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	node, err := s.GetNetNode()
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+	srcID := node.GetChordAddr()
+	encodedPublickKey, err := account.PubKey().EncodePoint(true)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], srcID, encodedPublickKey, encodedPublickKey)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
+		return nil, INTERNAL_ERROR
+	}
+	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
+		return nil, INTERNAL_ERROR
+	}
+	buf, err := proto.Marshal(sigChain)
+	txn, err := MakeCommitTransaction(wallet, buf)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
+		return nil, INTERNAL_ERROR
+	}
+
+	txHash := txn.Hash()
+	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
+	return resp, SUCCESS
+}
+
+func getWsAddr(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
+	resp := make(map[string]interface{})
+
+	if len(params) < 1 {
+		return nil, INTERNAL_ERROR
+	}
+	switch params[0].(type) {
+	case string:
+		clientID, _, err := address.ParseClientAddress(params[0].(string))
+		ring := chord.GetRing()
+		if ring == nil {
+			log.Error("Empty ring")
+			return nil, INTERNAL_ERROR
+		}
+		vnode, err := ring.GetPredecessor(clientID)
+		if err != nil {
+			log.Error("Cannot get predecessor")
+			return nil, INTERNAL_ERROR
+		}
+		addr, err := vnode.HttpWsAddr()
+		if err != nil {
+			log.Error("Cannot get websocket address")
+			return nil, INTERNAL_ERROR
+		}
+		resp["result"] = addr
+		return resp, SUCCESS
+	default:
+		return nil, INTERNAL_ERROR
+	}
+}
+
+func getTotalIssued(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
+	resp := make(map[string]interface{})
+
+	if len(params) < 1 {
+		return nil, INTERNAL_ERROR
+	}
+
+	assetid, ok := params[0].(string)
+	if !ok {
+		return nil, INTERNAL_ERROR
+	}
+
+	var assetHash common.Uint256
+	bys, err := common.HexStringToBytesReverse(assetid)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	amount, err := ledger.DefaultLedger.Store.GetQuantityIssued(assetHash)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	val := float64(amount) / math.Pow(10, 8)
+	resp["result"] = val
+	return resp, SUCCESS
+}
+
+func getAssetByHash(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
+	resp := make(map[string]interface{})
+
+	if len(params) < 1 {
+		return nil, INTERNAL_ERROR
+	}
+
+	str, ok := params[0].(string)
+	if !ok {
+		return nil, INTERNAL_ERROR
+	}
+
+	hex, err := common.HexStringToBytesReverse(str)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	var hash common.Uint256
+	err = hash.Deserialize(bytes.NewReader(hex))
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	asset, err := ledger.DefaultLedger.Store.GetAsset(hash)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	resp["result"] = asset
+	return resp, SUCCESS
+}
+
+func getBalanceByAddr(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
+	resp := make(map[string]interface{})
+
+	if len(params) < 1 {
+		return nil, INTERNAL_ERROR
+	}
+
+	addr, ok := params[0].(string)
+	if !ok {
+		return nil, INTERNAL_ERROR
+	}
+
+	var programHash common.Uint160
+	programHash, err := common.ToScriptHash(addr)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
+	var balance common.Fixed64 = 0
+	for _, u := range unspends {
+		for _, v := range u {
+			balance = balance + v.Value
+		}
+	}
+
+	val := float64(balance) / math.Pow(10, 8)
+	resp["result"] = val
+	return resp, SUCCESS
+}
+
+func getBalanceByAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
+	resp := make(map[string]interface{})
+
+	if len(params) < 2 {
+		return nil, INTERNAL_ERROR
+	}
+
+	addr, ok := params[0].(string)
+	assetid, k := params[1].(string)
+	if !ok || !k {
+		return nil, INTERNAL_ERROR
+	}
+
+	var programHash common.Uint160
+	programHash, err := common.ToScriptHash(addr)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
+	var balance common.Fixed64 = 0
+	for k, u := range unspends {
+		assid := common.BytesToHexString(k.ToArrayReverse())
+		for _, v := range u {
+			if assetid == assid {
+				balance = balance + v.Value
+			}
+		}
+	}
+
+	val := float64(balance) / math.Pow(10, 8)
+	resp["result"] = val
+	return resp, SUCCESS
+}
+
+func getUnspendOutput(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
+	resp := make(map[string]interface{})
+
+	if len(params) < 2 {
+		return nil, INTERNAL_ERROR
+	}
+
+	addr, ok := params[0].(string)
+	assetid, k := params[1].(string)
+	if !ok || !k {
+		return nil, INTERNAL_ERROR
+	}
+
+	var programHash common.Uint160
+	var assetHash common.Uint256
+	programHash, err := common.ToScriptHash(addr)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	bys, err := common.HexStringToBytesReverse(assetid)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	type UTXOUnspentInfo struct {
+		Txid  string
+		Index uint32
+		Value float64
+	}
+
+	infos, err := ledger.DefaultLedger.Store.GetUnspentFromProgramHash(programHash, assetHash)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	var UTXOoutputs []UTXOUnspentInfo
+	for _, v := range infos {
+		val := float64(v.Value) / math.Pow(10, 8)
+		UTXOoutputs = append(UTXOoutputs, UTXOUnspentInfo{Txid: common.BytesToHexString(v.Txid.ToArrayReverse()), Index: v.Index, Value: val})
+	}
+
+	resp["result"] = UTXOoutputs
+	return resp, SUCCESS
+}
+
+func getUnspends(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
+	resp := make(map[string]interface{})
+
+	if len(params) < 1 {
+		return nil, INTERNAL_ERROR
+	}
+
+	addr, ok := params[0].(string)
+	if !ok {
+		return nil, INTERNAL_ERROR
+	}
+	var programHash common.Uint160
+
+	programHash, err := common.ToScriptHash(addr)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
+	type UTXOUnspentInfo struct {
+		Txid  string
+		Index uint32
+		Value float64
+	}
+	type Result struct {
+		AssetId   string
+		AssetName string
+		Utxo      []UTXOUnspentInfo
+	}
+
+	var results []Result
+	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
+
+	for k, u := range unspends {
+		assetid := common.BytesToHexString(k.ToArrayReverse())
+		asset, err := ledger.DefaultLedger.Store.GetAsset(k)
+		if err != nil {
+			return nil, INTERNAL_ERROR
+		}
+
+		var unspendsInfo []UTXOUnspentInfo
+		for _, v := range u {
+			val := float64(v.Value) / math.Pow(10, 8)
+			unspendsInfo = append(unspendsInfo, UTXOUnspentInfo{common.BytesToHexString(v.Txid.ToArrayReverse()), v.Index, val})
+		}
+
+		results = append(results, Result{assetid, asset.Name, unspendsInfo})
+	}
+
+	resp["result"] = results
+	return resp, SUCCESS
+}
+
 var InitialAPIHandlers = map[string]APIHandler{
 	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
@@ -684,4 +1043,14 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"sendtoaddress":        {Handler: sendToAddress, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"prepaidasset":         {Handler: prepaidAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"withdrawasset":        {Handler: withdrawAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+
+	"commitpor":         {Handler: commitPor, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"sigchaintest":      {Handler: sigchaintest, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getwsaddr":         {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"gettotalissued":    {Handler: getTotalIssued, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getassetbyhash":    {Handler: getAssetByHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getbalancebyaddr":  {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getbalancebyasset": {Handler: getBalanceByAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getunspendoutput":  {Handler: getUnspendOutput, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getunspends":       {Handler: getUnspends, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 }
