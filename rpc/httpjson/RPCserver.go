@@ -216,3 +216,11 @@ func (s *RPCServer) VerifyAndSendTx(txn *transaction.Transaction) errors.ErrCode
 	}
 	return errors.ErrNoError
 }
+
+func (s *RPCServer) GetNetNode() (protocol.Noder, error) {
+	return s.node, nil
+}
+
+func (s *RPCServer) GetWallet() (vault.Wallet, error) {
+	return s.wallet, nil
+}
