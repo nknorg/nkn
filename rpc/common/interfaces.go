@@ -31,6 +31,8 @@ type APIHandler struct {
 	AccessCtrl byte
 }
 
+// IsAccessableByJsonrpc return true if the handler is
+// able to be invoked by jsonrpc
 func (ah *APIHandler) IsAccessableByJsonrpc() bool {
 	if ah.AccessCtrl&BIT_JSONRPC != BIT_JSONRPC {
 		return false
@@ -39,6 +41,8 @@ func (ah *APIHandler) IsAccessableByJsonrpc() bool {
 	return true
 }
 
+// IsAccessableByRestful return true if the handler is
+// able to be invoked by restful
 func (ah *APIHandler) IsAccessableByRestful() bool {
 	if ah.AccessCtrl&BIT_RESTFUL != BIT_RESTFUL {
 		return false
@@ -47,6 +51,8 @@ func (ah *APIHandler) IsAccessableByRestful() bool {
 	return true
 }
 
+// IsAccessableByWebsocket return true if the handler is
+// able to be invoked by websocket
 func (ah *APIHandler) IsAccessableByWebsocket() bool {
 	if ah.AccessCtrl&BIT_WEBSOCKET != BIT_WEBSOCKET {
 		return false
@@ -55,6 +61,8 @@ func (ah *APIHandler) IsAccessableByWebsocket() bool {
 	return true
 }
 
+// getLatestBlockHash gets the latest block hash
+// params: []
 func getLatestBlockHash(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -64,11 +72,13 @@ func getLatestBlockHash(s Serverer, params []interface{}) (map[string]interface{
 	return resp, SUCCESS
 }
 
+// getBlock gets block by height or hash
+// params: [<height>|<hash>]
 func getBlock(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var hash common.Uint256
@@ -77,24 +87,24 @@ func getBlock(s Serverer, params []interface{}) (map[string]interface{}, ErrCode
 		index := uint32(params[0].(float64))
 		var err error
 		if hash, err = ledger.DefaultLedger.Store.GetBlockHash(index); err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, UNKNOWN_HASH
 		}
 	case string: // block hash
 		str := params[0].(string)
 		hex, err := common.HexStringToBytesReverse(str)
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, INVALID_PARAMS
 		}
 		if err := hash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, UNKNOWN_HASH
 		}
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	block, err := ledger.DefaultLedger.Store.GetBlock(hash)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, UNKNOWN_BLOCK
 	}
 	block.Hash()
 
@@ -106,6 +116,8 @@ func getBlock(s Serverer, params []interface{}) (map[string]interface{}, ErrCode
 	return resp, SUCCESS
 }
 
+// getBlockCount return The total number of blocks
+// params: []
 func getBlockCount(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -114,6 +126,8 @@ func getBlockCount(s Serverer, params []interface{}) (map[string]interface{}, Er
 	return resp, SUCCESS
 }
 
+// getChordRingInfo gets the information of Chord
+// params: []
 func getChordRingInfo(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -122,6 +136,8 @@ func getChordRingInfo(s Serverer, params []interface{}) (map[string]interface{},
 	return resp, SUCCESS
 }
 
+// getLatestBlockHeight gets the latest block height
+// params: []
 func getLatestBlockHeight(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -130,11 +146,13 @@ func getLatestBlockHeight(s Serverer, params []interface{}) (map[string]interfac
 	return resp, SUCCESS
 }
 
+// getBlockHash gets the block hash by height
+// params: [<height>]
 func getBlockHash(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	switch params[0].(type) {
@@ -142,36 +160,38 @@ func getBlockHash(s Serverer, params []interface{}) (map[string]interface{}, Err
 		height := uint32(params[0].(float64))
 		hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, UNKNOWN_HASH
 		}
 
 		resp["result"] = common.BytesToHexString(hash.ToArrayReverse())
 		return resp, SUCCESS
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 }
 
+// getBlockTxsByHeight gets the transactions of block referenced by height
+// params: [<height>]
 func getBlockTxsByHeight(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var err error
 	if _, ok := params[0].(float64); !ok {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	index := uint32(params[0].(float64))
 	hash, err := ledger.DefaultLedger.Store.GetBlockHash(index)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, UNKNOWN_HASH
 	}
 
 	block, err := ledger.DefaultLedger.Store.GetBlock(hash)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, UNKNOWN_BLOCK
 	}
 
 	txs := func(block *ledger.Block) interface{} {
@@ -198,6 +218,8 @@ func getBlockTxsByHeight(s Serverer, params []interface{}) (map[string]interface
 	return resp, SUCCESS
 }
 
+// getConnectionCount gets the the number of Connections
+// params: []
 func getConnectionCount(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -211,6 +233,8 @@ func getConnectionCount(s Serverer, params []interface{}) (map[string]interface{
 	return resp, SUCCESS
 }
 
+// getRawMemPool gets the transactions in txpool
+// params: []
 func getRawMemPool(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -242,11 +266,13 @@ func getRawMemPool(s Serverer, params []interface{}) (map[string]interface{}, Er
 	return resp, SUCCESS
 }
 
+// getTransaction gets the transaction by hash
+// params: [<hash>]
 func getTransaction(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	switch params[0].(type) {
@@ -254,16 +280,16 @@ func getTransaction(s Serverer, params []interface{}) (map[string]interface{}, E
 		str := params[0].(string)
 		hex, err := common.HexStringToBytesReverse(str)
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, INVALID_PARAMS
 		}
 		var hash common.Uint256
 		err = hash.Deserialize(bytes.NewReader(hex))
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, INVALID_PARAMS
 		}
 		tx, err := ledger.DefaultLedger.Store.GetTransaction(hash)
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, UNKNOWN_TRANSACTION
 		}
 
 		tx.Hash()
@@ -274,15 +300,17 @@ func getTransaction(s Serverer, params []interface{}) (map[string]interface{}, E
 		resp["result"] = tran
 		return resp, SUCCESS
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 }
 
+// sendRawTransaction  sends raw transaction to the block chain
+// params: [<transaction>]
 func sendRawTransaction(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var hash common.Uint256
@@ -291,25 +319,27 @@ func sendRawTransaction(s Serverer, params []interface{}) (map[string]interface{
 		str := params[0].(string)
 		hex, err := common.HexStringToBytes(str)
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, INVALID_PARAMS
 		}
 		var txn transaction.Transaction
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, INVALID_TRANSACTION
 		}
 
 		hash = txn.Hash()
 		if errCode := s.VerifyAndSendTx(&txn); errCode != errors.ErrNoError {
-			return nil, INTERNAL_ERROR
+			return nil, INVALID_TRANSACTION
 		}
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	resp["result"] = common.BytesToHexString(hash.ToArrayReverse())
 	return resp, SUCCESS
 }
 
+// getNeighbor gets neighbors of this node
+// params: []
 func getNeighbor(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -322,6 +352,8 @@ func getNeighbor(s Serverer, params []interface{}) (map[string]interface{}, ErrC
 	return resp, SUCCESS
 }
 
+// getNodeState gets the state of this node
+// params: []
 func getNodeState(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -361,11 +393,13 @@ func getNodeState(s Serverer, params []interface{}) (map[string]interface{}, Err
 	return resp, SUCCESS
 }
 
+// setDebugInfo sets log level
+// params: [<log leverl>]
 func setDebugInfo(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	switch params[0].(type) {
@@ -375,13 +409,15 @@ func setDebugInfo(s Serverer, params []interface{}) (map[string]interface{}, Err
 			return nil, INTERNAL_ERROR
 		}
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	resp["result"] = ""
 	return resp, SUCCESS
 }
 
+// getVersion gets version of this server
+// params: []
 func getVersion(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -389,6 +425,8 @@ func getVersion(s Serverer, params []interface{}) (map[string]interface{}, ErrCo
 	return resp, SUCCESS
 }
 
+// getBalance gets the balance of the wallet used by this server
+// params: []
 func getBalance(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -417,11 +455,13 @@ func getBalance(s Serverer, params []interface{}) (map[string]interface{}, ErrCo
 	return resp, SUCCESS
 }
 
+// registAsset regist an asset to blockchain
+// params: [<name>, <value>]
 func registAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 2 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var assetName, assetValue string
@@ -429,13 +469,13 @@ func registAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrC
 	case string:
 		assetName = params[0].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	switch params[1].(type) {
 	case string:
 		assetValue = params[1].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	wallet, err := s.GetWallet()
@@ -449,7 +489,7 @@ func registAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrC
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_TRANSACTION
 	}
 
 	txHash := txn.Hash()
@@ -457,30 +497,32 @@ func registAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrC
 	return resp, SUCCESS
 }
 
+// issueAsset issue an asset to an address
+// params: [<asset>, <address>, <value>]
 func issueAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 3 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	var asset, value, address string
 	switch params[0].(type) {
 	case string:
 		asset = params[0].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	switch params[1].(type) {
 	case string:
 		address = params[1].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	switch params[2].(type) {
 	case string:
 		value = params[2].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	wallet, err := s.GetWallet()
@@ -493,7 +535,7 @@ func issueAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCo
 	}
 	var assetID common.Uint256
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_ASSET
 	}
 	txn, err := MakeIssueTransaction(wallet, assetID, address, value)
 	if err != nil {
@@ -501,7 +543,7 @@ func issueAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCo
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_TRANSACTION
 	}
 
 	txHash := txn.Hash()
@@ -509,30 +551,32 @@ func issueAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCo
 	return resp, SUCCESS
 }
 
+// sendToAddress transfers asset to an address
+// params: [<asset>, <address>, <value>]
 func sendToAddress(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 3 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	var asset, address, value string
 	switch params[0].(type) {
 	case string:
 		asset = params[0].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	switch params[1].(type) {
 	case string:
 		address = params[1].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	switch params[2].(type) {
 	case string:
 		value = params[2].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	wallet, err := s.GetWallet()
@@ -550,7 +594,7 @@ func sendToAddress(s Serverer, params []interface{}) (map[string]interface{}, Er
 	}
 	var assetID common.Uint256
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_ASSET
 	}
 	txn, err := MakeTransferTransaction(wallet, assetID, batchOut)
 	if err != nil {
@@ -558,37 +602,39 @@ func sendToAddress(s Serverer, params []interface{}) (map[string]interface{}, Er
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_TRANSACTION
 	}
 	txHash := txn.Hash()
 	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
 	return resp, SUCCESS
 }
 
+// prepaid prepaid asset to system
+// params: [<asset>, <value>, <rates>]
 func prepaidAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 3 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	var assetName, assetValue, rates string
 	switch params[0].(type) {
 	case string:
 		assetName = params[0].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	switch params[1].(type) {
 	case string:
 		assetValue = params[1].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	switch params[2].(type) {
 	case string:
 		rates = params[2].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	wallet, err := s.GetWallet()
@@ -597,11 +643,11 @@ func prepaidAsset(s Serverer, params []interface{}) (map[string]interface{}, Err
 	}
 	tmp, err := common.HexStringToBytesReverse(assetName)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	var assetID common.Uint256
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_ASSET
 	}
 	txn, err := MakePrepaidTransaction(wallet, assetID, assetValue, rates)
 	if err != nil {
@@ -609,7 +655,7 @@ func prepaidAsset(s Serverer, params []interface{}) (map[string]interface{}, Err
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_TRANSACTION
 	}
 
 	txHash := txn.Hash()
@@ -617,11 +663,13 @@ func prepaidAsset(s Serverer, params []interface{}) (map[string]interface{}, Err
 	return resp, SUCCESS
 }
 
+// withdraw withdraw asset from system
+// params: [<asset>, <value>]
 func withdrawAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 2 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var assetName, assetValue string
@@ -629,13 +677,13 @@ func withdrawAsset(s Serverer, params []interface{}) (map[string]interface{}, Er
 	case string:
 		assetName = params[0].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	switch params[1].(type) {
 	case string:
 		assetValue = params[1].(string)
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	wallet, err := s.GetWallet()
@@ -645,11 +693,11 @@ func withdrawAsset(s Serverer, params []interface{}) (map[string]interface{}, Er
 
 	tmp, err := common.HexStringToBytesReverse(assetName)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	var assetID common.Uint256
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_ASSET
 	}
 
 	txn, err := MakeWithdrawTransaction(wallet, assetID, assetValue)
@@ -658,7 +706,7 @@ func withdrawAsset(s Serverer, params []interface{}) (map[string]interface{}, Er
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_TRANSACTION
 	}
 
 	txHash := txn.Hash()
@@ -666,11 +714,13 @@ func withdrawAsset(s Serverer, params []interface{}) (map[string]interface{}, Er
 	return resp, SUCCESS
 }
 
+// commitPor send por transaction
+// params: [<sigchain>]
 func commitPor(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var sigChain []byte
@@ -680,10 +730,10 @@ func commitPor(s Serverer, params []interface{}) (map[string]interface{}, ErrCod
 		str := params[0].(string)
 		sigChain, err = common.HexStringToBytes(str)
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, INVALID_PARAMS
 		}
 	default:
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	wallet, err := s.GetWallet()
@@ -697,7 +747,7 @@ func commitPor(s Serverer, params []interface{}) (map[string]interface{}, ErrCod
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_TRANSACTION
 	}
 
 	txHash := txn.Hash()
@@ -705,6 +755,8 @@ func commitPor(s Serverer, params []interface{}) (map[string]interface{}, ErrCod
 	return resp, SUCCESS
 }
 
+// sigchaintest send por transaction
+// params: []
 func sigchaintest(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
@@ -721,7 +773,7 @@ func sigchaintest(s Serverer, params []interface{}) (map[string]interface{}, Err
 	currentHeight := ledger.DefaultLedger.Store.GetHeight()
 	blockHash, err := ledger.DefaultLedger.Store.GetBlockHash(currentHeight - 1)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, UNKNOWN_HASH
 	}
 
 	node, err := s.GetNetNode()
@@ -750,7 +802,7 @@ func sigchaintest(s Serverer, params []interface{}) (map[string]interface{}, Err
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_TRANSACTION
 	}
 
 	txHash := txn.Hash()
@@ -758,11 +810,13 @@ func sigchaintest(s Serverer, params []interface{}) (map[string]interface{}, Err
 	return resp, SUCCESS
 }
 
+// getWsAddr get a websocket address
+// params: [<address>]
 func getWsAddr(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	switch params[0].(type) {
 	case string:
@@ -770,7 +824,7 @@ func getWsAddr(s Serverer, params []interface{}) (map[string]interface{}, ErrCod
 		ring := chord.GetRing()
 		if ring == nil {
 			log.Error("Empty ring")
-			return nil, INTERNAL_ERROR
+			return nil, INVALID_PARAMS
 		}
 		vnode, err := ring.GetPredecessor(clientID)
 		if err != nil {
@@ -789,16 +843,18 @@ func getWsAddr(s Serverer, params []interface{}) (map[string]interface{}, ErrCod
 	}
 }
 
+// getTotalIssued gets total issued asset
+// params: [<asset>]
 func getTotalIssued(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	assetid, ok := params[0].(string)
 	if !ok {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var assetHash common.Uint256
@@ -808,7 +864,7 @@ func getTotalIssued(s Serverer, params []interface{}) (map[string]interface{}, E
 	}
 
 	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_ASSET
 	}
 
 	amount, err := ledger.DefaultLedger.Store.GetQuantityIssued(assetHash)
@@ -821,21 +877,23 @@ func getTotalIssued(s Serverer, params []interface{}) (map[string]interface{}, E
 	return resp, SUCCESS
 }
 
+// getAssetByHash gets asset by hash
+// params: [<hash>]
 func getAssetByHash(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	str, ok := params[0].(string)
 	if !ok {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	hex, err := common.HexStringToBytesReverse(str)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var hash common.Uint256
@@ -846,29 +904,31 @@ func getAssetByHash(s Serverer, params []interface{}) (map[string]interface{}, E
 
 	asset, err := ledger.DefaultLedger.Store.GetAsset(hash)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_ASSET
 	}
 
 	resp["result"] = asset
 	return resp, SUCCESS
 }
 
+// getBalanceByAddr gets balance by address
+// params: [<address>]
 func getBalanceByAddr(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	addr, ok := params[0].(string)
 	if !ok {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var programHash common.Uint160
 	programHash, err := common.ToScriptHash(addr)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
@@ -884,26 +944,32 @@ func getBalanceByAddr(s Serverer, params []interface{}) (map[string]interface{},
 	return resp, SUCCESS
 }
 
+// getBalanceByAsset gets balance by asset
+// params: [<address>,<asset>]
 func getBalanceByAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 2 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	addr, ok := params[0].(string)
 	assetid, k := params[1].(string)
 	if !ok || !k {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var programHash common.Uint160
 	programHash, err := common.ToScriptHash(addr)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, UNKNOWN_HASH
 	}
 
 	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
+	if err != nil {
+		return nil, INTERNAL_ERROR
+	}
+
 	var balance common.Fixed64 = 0
 	for k, u := range unspends {
 		assid := common.BytesToHexString(k.ToArrayReverse())
@@ -919,17 +985,19 @@ func getBalanceByAsset(s Serverer, params []interface{}) (map[string]interface{}
 	return resp, SUCCESS
 }
 
+// getUnspendOutput gets unspents by address
+// params: [<address>, <assetid>]
 func getUnspendOutput(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 2 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	addr, ok := params[0].(string)
 	assetid, k := params[1].(string)
 	if !ok || !k {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	var programHash common.Uint160
@@ -941,11 +1009,11 @@ func getUnspendOutput(s Serverer, params []interface{}) (map[string]interface{},
 
 	bys, err := common.HexStringToBytesReverse(assetid)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_ASSET
 	}
 
 	type UTXOUnspentInfo struct {
@@ -969,16 +1037,18 @@ func getUnspendOutput(s Serverer, params []interface{}) (map[string]interface{},
 	return resp, SUCCESS
 }
 
+// getUnspends gets all assets by address
+// params: [<address>]
 func getUnspends(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
 	resp := make(map[string]interface{})
 
 	if len(params) < 1 {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 
 	addr, ok := params[0].(string)
 	if !ok {
-		return nil, INTERNAL_ERROR
+		return nil, INVALID_PARAMS
 	}
 	var programHash common.Uint160
 
@@ -1005,7 +1075,7 @@ func getUnspends(s Serverer, params []interface{}) (map[string]interface{}, ErrC
 		assetid := common.BytesToHexString(k.ToArrayReverse())
 		asset, err := ledger.DefaultLedger.Store.GetAsset(k)
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return nil, INVALID_ASSET
 		}
 
 		var unspendsInfo []UTXOUnspentInfo
@@ -1043,14 +1113,13 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"sendtoaddress":        {Handler: sendToAddress, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"prepaidasset":         {Handler: prepaidAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"withdrawasset":        {Handler: withdrawAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-
-	"commitpor":         {Handler: commitPor, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"sigchaintest":      {Handler: sigchaintest, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getwsaddr":         {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"gettotalissued":    {Handler: getTotalIssued, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getassetbyhash":    {Handler: getAssetByHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getbalancebyaddr":  {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getbalancebyasset": {Handler: getBalanceByAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getunspendoutput":  {Handler: getUnspendOutput, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getunspends":       {Handler: getUnspends, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"commitpor":            {Handler: commitPor, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"sigchaintest":         {Handler: sigchaintest, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"gettotalissued":       {Handler: getTotalIssued, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getassetbyhash":       {Handler: getAssetByHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getbalancebyasset":    {Handler: getBalanceByAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getunspendoutput":     {Handler: getUnspendOutput, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getunspends":          {Handler: getUnspends, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 }
