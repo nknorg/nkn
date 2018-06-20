@@ -24,10 +24,10 @@ const (
 	BIT_WEBSOCKET byte = 4
 )
 
-type handler func(Serverer, []interface{}) (map[string]interface{}, ErrCode)
+type Handler func(Serverer, []interface{}) (map[string]interface{}, ErrCode)
 
 type APIHandler struct {
-	Handler    handler
+	Handler    Handler
 	AccessCtrl byte
 }
 
@@ -1095,31 +1095,31 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getblockhash":         {Handler: getBlockHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getrawmempool":        {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"setdebuginfo":         {Handler: setDebugInfo, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getbalance":           {Handler: getBalance, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"registasset":          {Handler: registAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"issueasset":           {Handler: issueAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"sendtoaddress":        {Handler: sendToAddress, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"prepaidasset":         {Handler: prepaidAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"withdrawasset":        {Handler: withdrawAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"commitpor":            {Handler: commitPor, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"sigchaintest":         {Handler: sigchaintest, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"gettotalissued":       {Handler: getTotalIssued, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getassetbyhash":       {Handler: getAssetByHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getbalancebyasset":    {Handler: getBalanceByAsset, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getunspendoutput":     {Handler: getUnspendOutput, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getunspends":          {Handler: getUnspends, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"setdebuginfo":         {Handler: setDebugInfo, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"getbalance":           {Handler: getBalance, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"registasset":          {Handler: registAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"issueasset":           {Handler: issueAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"sendtoaddress":        {Handler: sendToAddress, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"prepaidasset":         {Handler: prepaidAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"withdrawasset":        {Handler: withdrawAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"commitpor":            {Handler: commitPor, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"sigchaintest":         {Handler: sigchaintest, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"gettotalissued":       {Handler: getTotalIssued, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"getassetbyhash":       {Handler: getAssetByHash, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"getbalancebyasset":    {Handler: getBalanceByAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"getunspendoutput":     {Handler: getUnspendOutput, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"getunspends":          {Handler: getUnspends, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
 }
