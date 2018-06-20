@@ -8,12 +8,12 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/nknorg/nkn/api/httpjson"
 	. "github.com/nknorg/nkn/cli/common"
 	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/vault"
 
 	"github.com/urfave/cli"

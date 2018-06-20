@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/nknorg/nkn/api/httpjson"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
 

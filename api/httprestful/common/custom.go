@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
+	Err "github.com/nknorg/nkn/api/httprestful/error"
 	. "github.com/nknorg/nkn/common"
 	tx "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
-	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 )
 
 const AttributeMaxLen = 252

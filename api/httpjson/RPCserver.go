@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/rpc/common"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
