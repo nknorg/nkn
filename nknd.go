@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/nknorg/nkn/api/httpjson"
+	"github.com/nknorg/nkn/api/websocket"
 	"github.com/nknorg/nkn/consensus/dbft"
 	"github.com/nknorg/nkn/consensus/ising"
 	"github.com/nknorg/nkn/core/ledger"
@@ -20,11 +22,9 @@ import (
 	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/rpc/httpjson"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
-	"github.com/nknorg/nkn/websocket"
 )
 
 func init() {

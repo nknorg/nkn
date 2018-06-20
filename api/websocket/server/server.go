@@ -11,14 +11,14 @@ import (
 	"sync"
 	"time"
 
+	. "github.com/nknorg/nkn/api/httprestful/common"
+	Err "github.com/nknorg/nkn/api/httprestful/error"
+	. "github.com/nknorg/nkn/api/websocket/session"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/net/protocol"
-	. "github.com/nknorg/nkn/rpc/httprestful/common"
-	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	. "github.com/nknorg/nkn/websocket/session"
 
 	"github.com/gorilla/websocket"
 )

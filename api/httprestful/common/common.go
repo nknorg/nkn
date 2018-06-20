@@ -6,13 +6,13 @@ import (
 	"math"
 	"strconv"
 
+	Err "github.com/nknorg/nkn/api/httprestful/error"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/chord"
 	. "github.com/nknorg/nkn/net/protocol"
-	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	"github.com/nknorg/nkn/util/log"
 )
 

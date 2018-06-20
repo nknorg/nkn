@@ -8,16 +8,16 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/nknorg/nkn/api/common"
+	"github.com/nknorg/nkn/api/websocket"
+	"github.com/nknorg/nkn/api/websocket/session"
 	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/rpc/common"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
-	"github.com/nknorg/nkn/websocket"
-	"github.com/nknorg/nkn/websocket/session"
 )
 
 type RelayService struct {

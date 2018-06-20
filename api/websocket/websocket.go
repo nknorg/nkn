@@ -3,14 +3,14 @@ package websocket
 import (
 	"bytes"
 
+	"github.com/nknorg/nkn/api/httprestful/common"
+	Err "github.com/nknorg/nkn/api/httprestful/error"
+	"github.com/nknorg/nkn/api/websocket/server"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/events"
 	. "github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/rpc/httprestful/common"
-	Err "github.com/nknorg/nkn/rpc/httprestful/error"
 	. "github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/websocket/server"
 )
 
 var ws *server.WsServer
