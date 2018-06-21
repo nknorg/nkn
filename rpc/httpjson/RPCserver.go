@@ -110,7 +110,8 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		var data []byte
 		var err error
-		response, errcode := function(s, request["params"].([]interface{}))
+		response := function(s, request["params"].(map[string]interface{}))
+		errcode := response["error"].(common.ErrCode)
 		if errcode != common.SUCCESS {
 			data, err = json.Marshal(map[string]interface{}{
 				"jsonpc": "2.0",

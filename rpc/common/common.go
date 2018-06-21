@@ -12,3 +12,11 @@ type Serverer interface {
 	GetWallet() (vault.Wallet, error)
 	VerifyAndSendTx(txn *transaction.Transaction) errors.ErrCode
 }
+
+func respPacking(result interface{}, errcode ErrCode) map[string]interface{} {
+	resp := map[string]interface{}{
+		"result": result,
+		"error":  errcode,
+	}
+	return resp
+}

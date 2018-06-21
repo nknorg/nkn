@@ -17,7 +17,7 @@ func responsePacking(result interface{}) map[string]interface{} {
 }
 
 // Call sends RPC request to server
-func Call(address string, method string, id interface{}, params []interface{}) ([]byte, error) {
+func Call(address string, method string, id interface{}, params map[string]interface{}) ([]byte, error) {
 	data, err := json.Marshal(map[string]interface{}{
 		"method": method,
 		"id":     id,

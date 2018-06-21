@@ -96,7 +96,7 @@ func walletAction(c *cli.Context) error {
 			case "account":
 				showAccountInfo(wallet)
 			case "balance":
-				resp, err := httpjson.Call(Address(), "getbalance", 0, []interface{}{})
+				resp, err := httpjson.Call(Address(), "getbalance", 0, map[string]interface{}{})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					return err
