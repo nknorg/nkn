@@ -135,19 +135,7 @@ func (scv *SigChainVoting) GetWorseVotingContent(height uint32) (VotingContent, 
 }
 
 func (scv *SigChainVoting) GetVotingContentFromPool(hash Uint256, height uint32) (VotingContent, error) {
-	sigChain, err := scv.porServer.GetSigChain(height, hash)
-	if err != nil {
-		return nil, err
-	}
-	sigHash, err := sigChain.SignatureHash()
-	if err != nil {
-		return nil, err
-	}
-	txnHash, exist := scv.porServer.IsSigChainExist(sigHash, height)
-	if !exist {
-		return nil, errors.New("signature chain doesn't exist")
-	}
-	txn := scv.txnCollector.GetTransaction(*txnHash)
+	txn := scv.txnCollector.GetTransaction(hash)
 	if txn == nil {
 		return nil, errors.New("invalid hash for transaction")
 	}
