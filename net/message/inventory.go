@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
-	"fmt"
 	"io"
 
 	. "github.com/nknorg/nkn/common"
@@ -21,8 +19,8 @@ type blocksReq struct {
 	msgHdr
 	p struct {
 		HeaderHashCount uint8
-		hashStart       [HASHLEN]byte
-		hashStop        [HASHLEN]byte
+		hashStart       [HashLen]byte
+		hashStop        [HashLen]byte
 	}
 }
 
@@ -39,7 +37,6 @@ type Inv struct {
 
 func NewBlocksReq(n Noder) ([]byte, error) {
 	var h blocksReq
-	log.Debug("request block hash")
 	// Fixme correct with the exactly request length
 	h.p.HeaderHashCount = 1
 	//Fixme! Should get the remote Node height.
@@ -71,8 +68,6 @@ func (msg blocksReq) Verify(buf []byte) error {
 }
 
 func (msg blocksReq) Handle(node Noder) error {
-	log.Debug()
-	log.Debug("handle blocks request")
 	var starthash Uint256
 	var stophash Uint256
 	starthash = msg.p.hashStart
@@ -104,26 +99,19 @@ func (msg Inv) Verify(buf []byte) error {
 
 func (msg Inv) Handle(node Noder) error {
 	var id Uint256
-	str := hex.EncodeToString(msg.P.Blk)
-	log.Debug(fmt.Sprintf("The inv type: 0x%x block len: %d, %s\n",
-		msg.P.InvType, len(msg.P.Blk), str))
-
 	invType := InventoryType(msg.P.InvType)
 	switch invType {
 	case TRANSACTION:
-		log.Debug("RX TRX message")
 		// TODO check the ID queue
 		id.Deserialize(bytes.NewReader(msg.P.Blk[:32]))
 		if !node.ExistedID(id) {
 			reqTxnData(node, id)
 		}
 	case BLOCK:
-		log.Debug("RX block message")
 		var i uint32
 		count := msg.P.Cnt
-		log.Debug("RX inv-block message, hash is ", msg.P.Blk)
 		for i = 0; i < count; i++ {
-			id.Deserialize(bytes.NewReader(msg.P.Blk[HASHLEN*i:]))
+			id.Deserialize(bytes.NewReader(msg.P.Blk[HashLen*i:]))
 			// TODO check the ID queue
 			if !ledger.DefaultLedger.Store.BlockInCache(id) &&
 				!ledger.DefaultLedger.BlockInLedger(id) &&
@@ -188,8 +176,8 @@ func GetInvFromBlockHash(starthash Uint256, stophash Uint256) (*InvPayload, erro
 	curHeight := ledger.DefaultLedger.GetLocalBlockChainHeight()
 	if starthash == empty {
 		if stophash == empty {
-			if curHeight > MAXBLKHDRCNT {
-				count = MAXBLKHDRCNT
+			if curHeight > MaxHdrCnt {
+				count = MaxHdrCnt
 			} else {
 				count = curHeight
 			}
@@ -200,8 +188,8 @@ func GetInvFromBlockHash(starthash Uint256, stophash Uint256) (*InvPayload, erro
 			}
 			stopheight = bkstop.Height
 			count = curHeight - stopheight
-			if curHeight > MAXINVHDRCNT {
-				count = MAXINVHDRCNT
+			if curHeight > MaxInvHdrCnt {
+				count = MaxInvHdrCnt
 			}
 		}
 	} else {
@@ -217,14 +205,14 @@ func GetInvFromBlockHash(starthash Uint256, stophash Uint256) (*InvPayload, erro
 			}
 			stopheight = bkstop.Height
 			count = startheight - stopheight
-			if count >= MAXINVHDRCNT {
-				count = MAXINVHDRCNT
-				stopheight = startheight + MAXINVHDRCNT
+			if count >= MaxInvHdrCnt {
+				count = MaxInvHdrCnt
+				stopheight = startheight + MaxInvHdrCnt
 			}
 		} else {
 
-			if startheight > MAXINVHDRCNT {
-				count = MAXINVHDRCNT
+			if startheight > MaxInvHdrCnt {
+				count = MaxInvHdrCnt
 			} else {
 				count = startheight
 			}
@@ -234,10 +222,9 @@ func GetInvFromBlockHash(starthash Uint256, stophash Uint256) (*InvPayload, erro
 	for i = 1; i <= count; i++ {
 		//FIXME need add error handle for GetBlockWithHash
 		hash, _ := ledger.DefaultLedger.Store.GetBlockHash(stopheight + i)
-		log.Debug("GetInvFromBlockHash i is ", i, " , hash is ", hash)
 		hash.Serialize(tmpBuffer)
 	}
-	log.Debug("GetInvFromBlockHash hash is ", tmpBuffer.Bytes())
+
 	return NewInvPayload(BLOCK, count, tmpBuffer.Bytes()), nil
 }
 
@@ -255,7 +242,7 @@ func NewInv(inv *InvPayload) ([]byte, error) {
 	msg.P.Blk = inv.Blk
 	msg.P.InvType = inv.InvType
 	msg.P.Cnt = inv.Cnt
-	msg.Hdr.Magic = NETMAGIC
+	msg.Hdr.Magic = NetID
 	cmd := "inv"
 	copy(msg.Hdr.CMD[0:len(cmd)], cmd)
 	tmpBuffer := bytes.NewBuffer([]byte{})

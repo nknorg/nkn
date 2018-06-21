@@ -19,11 +19,9 @@ type block struct {
 }
 
 func (msg block) Handle(node Noder) error {
-	log.Debug("RX block message")
 	hash := msg.blk.Hash()
 	if ledger.DefaultLedger.BlockInLedger(hash) {
-		ReceiveDuplicateBlockCnt++
-		log.Debug("Receive ", ReceiveDuplicateBlockCnt, " duplicated block.")
+		log.Debug("Receive duplicated block", common.BytesToHexString(hash.ToArrayReverse()))
 		return nil
 	}
 	if err := ledger.DefaultLedger.Blockchain.AddBlock(&msg.blk); err != nil {
@@ -36,19 +34,16 @@ func (msg block) Handle(node Noder) error {
 }
 
 func (msg dataReq) Handle(node Noder) error {
-	log.Debug()
 	reqtype := common.InventoryType(msg.dataType)
 	hash := msg.hash
 	switch reqtype {
 	case common.BLOCK:
 		block, err := NewBlockFromHash(hash)
 		if err != nil {
-			log.Debug("Can't get block from hash: ", hash, " ,send not found message")
 			b, err := NewNotFound(hash)
 			node.Tx(b)
 			return err
 		}
-		log.Debug("block height is ", block.Header.Height, " ,hash is ", hash)
 		buf, err := NewBlock(block)
 		if err != nil {
 			return err
@@ -79,10 +74,9 @@ func NewBlockFromHash(hash common.Uint256) (*ledger.Block, error) {
 }
 
 func NewBlock(bk *ledger.Block) ([]byte, error) {
-	log.Debug()
 	var msg block
 	msg.blk = *bk
-	msg.msgHdr.Magic = NETMAGIC
+	msg.msgHdr.Magic = NetID
 	cmd := "block"
 	copy(msg.msgHdr.CMD[0:len(cmd)], cmd)
 	tmpBuffer := bytes.NewBuffer([]byte{})
@@ -99,7 +93,6 @@ func NewBlock(bk *ledger.Block) ([]byte, error) {
 	buf := bytes.NewBuffer(s[:4])
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(p.Bytes()))
-	log.Debug("The message payload length is ", msg.msgHdr.Length)
 
 	msgBuff := bytes.NewBuffer(nil)
 	err = msg.Serialize(msgBuff)
@@ -116,7 +109,7 @@ func ReqBlkData(node Noder, hash common.Uint256) error {
 	msg.dataType = common.BLOCK
 	msg.hash = hash
 
-	msg.msgHdr.Magic = NETMAGIC
+	msg.msgHdr.Magic = NetID
 	copy(msg.msgHdr.CMD[0:7], "getdata")
 	p := bytes.NewBuffer([]byte{})
 	err := binary.Write(p, binary.LittleEndian, &(msg.dataType))

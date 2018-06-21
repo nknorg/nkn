@@ -558,8 +558,8 @@ type Transactions struct {
 	TxType         tx.TransactionType
 	PayloadVersion byte
 	Payload        PayloadInfo
-	Attributes     []tx.TxAttributeInfo
-	UTXOInputs     []tx.UTXOTxInputInfo
+	Attributes     []tx.TxnAttributeInfo
+	UTXOInputs     []tx.TxnInputInfo
 	BalanceInputs  []BalanceTxInputInfo
 	Outputs        []TxoutputInfo
 	Programs       []ProgramInfo
@@ -599,7 +599,7 @@ type TxInfo struct {
 type TxoutInfo struct {
 	High  uint32
 	Low   uint32
-	Txout tx.TxOutput
+	Txout tx.TxnOutput
 }
 
 type ConsensusInfo struct {
@@ -614,7 +614,7 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	trans.Payload = TransPayloadToHex(ptx.Payload)
 
 	n := 0
-	trans.Attributes = make([]tx.TxAttributeInfo, len(ptx.Attributes))
+	trans.Attributes = make([]tx.TxnAttributeInfo, len(ptx.Attributes))
 	for _, v := range ptx.Attributes {
 		trans.Attributes[n].Usage = v.Usage
 		trans.Attributes[n].Data = BytesToHexString(v.Data)
@@ -622,8 +622,8 @@ func TransArryByteToHexString(ptx *tx.Transaction) *Transactions {
 	}
 
 	n = 0
-	trans.UTXOInputs = make([]tx.UTXOTxInputInfo, len(ptx.UTXOInputs))
-	for _, v := range ptx.UTXOInputs {
+	trans.UTXOInputs = make([]tx.TxnInputInfo, len(ptx.Inputs))
+	for _, v := range ptx.Inputs {
 		trans.UTXOInputs[n].ReferTxID = BytesToHexString(v.ReferTxID.ToArrayReverse())
 		trans.UTXOInputs[n].ReferTxOutputIndex = v.ReferTxOutputIndex
 		n++

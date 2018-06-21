@@ -10,7 +10,7 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 )
 
-type UTXOTxInput struct {
+type TxnInput struct {
 
 	//Indicate the previous Tx which include the UTXO output for usage
 	ReferTxID common.Uint256
@@ -19,12 +19,12 @@ type UTXOTxInput struct {
 	ReferTxOutputIndex uint16
 }
 
-func (ui *UTXOTxInput) Serialize(w io.Writer) error {
-	_, err := ui.ReferTxID.Serialize(w)
+func (input *TxnInput) Serialize(w io.Writer) error {
+	_, err := input.ReferTxID.Serialize(w)
 	if err != nil {
 		return err
 	}
-	err = serialization.WriteUint16(w, ui.ReferTxOutputIndex)
+	err = serialization.WriteUint16(w, input.ReferTxOutputIndex)
 	if err != nil {
 		return err
 	}
@@ -32,16 +32,16 @@ func (ui *UTXOTxInput) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (ui *UTXOTxInput) Deserialize(r io.Reader) error {
+func (input *TxnInput) Deserialize(r io.Reader) error {
 	//referTxID
-	err := ui.ReferTxID.Deserialize(r)
+	err := input.ReferTxID.Deserialize(r)
 	if err != nil {
 		return err
 	}
 
 	//Output Index
 	temp, err := serialization.ReadUint16(r)
-	ui.ReferTxOutputIndex = uint16(temp)
+	input.ReferTxOutputIndex = uint16(temp)
 	if err != nil {
 		return err
 	}
@@ -49,23 +49,23 @@ func (ui *UTXOTxInput) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (ui *UTXOTxInput) Equal(ui2 *UTXOTxInput) bool {
-	if ui.ReferTxID.CompareTo(ui2.ReferTxID) != 0 {
+func (input *TxnInput) Equal(ui2 *TxnInput) bool {
+	if input.ReferTxID.CompareTo(ui2.ReferTxID) != 0 {
 		return false
 	}
 
-	if ui.ReferTxOutputIndex != ui.ReferTxOutputIndex {
+	if input.ReferTxOutputIndex != input.ReferTxOutputIndex {
 		return false
 	}
 
 	return true
 }
 
-func (ui *UTXOTxInput) MarshalJson() ([]byte, error) {
+func (input *TxnInput) MarshalJson() ([]byte, error) {
 
-	inputInfo := UTXOTxInputInfo{
-		ReferTxID:          common.BytesToHexString(ui.ReferTxID.ToArrayReverse()),
-		ReferTxOutputIndex: ui.ReferTxOutputIndex,
+	inputInfo := TxnInputInfo{
+		ReferTxID:          common.BytesToHexString(input.ReferTxID.ToArrayReverse()),
+		ReferTxOutputIndex: input.ReferTxOutputIndex,
 	}
 
 	data, err := json.Marshal(inputInfo)
@@ -75,9 +75,9 @@ func (ui *UTXOTxInput) MarshalJson() ([]byte, error) {
 	return data, nil
 }
 
-func (ui *UTXOTxInput) UnmarshalJson(data []byte) error {
+func (input *TxnInput) UnmarshalJson(data []byte) error {
 
-	inputInfo := new(UTXOTxInputInfo)
+	inputInfo := new(TxnInputInfo)
 	var err error
 	if err = json.Unmarshal(data, &inputInfo); err != nil {
 		return err
@@ -87,33 +87,33 @@ func (ui *UTXOTxInput) UnmarshalJson(data []byte) error {
 	if err != nil {
 		return err
 	}
-	ui.ReferTxID, err = common.Uint256ParseFromBytes(txid)
+	input.ReferTxID, err = common.Uint256ParseFromBytes(txid)
 	if err != nil {
 		return err
 	}
-	ui.ReferTxOutputIndex = inputInfo.ReferTxOutputIndex
+	input.ReferTxOutputIndex = inputInfo.ReferTxOutputIndex
 
 	return nil
 }
 
-func (ui *UTXOTxInput) ToArray() []byte {
+func (input *TxnInput) ToArray() []byte {
 	b := new(bytes.Buffer)
-	ui.Serialize(b)
+	input.Serialize(b)
 	return b.Bytes()
 }
 
-func (ui *UTXOTxInput) ToString() string {
-	return fmt.Sprintf("%x%x", ui.ReferTxID.ToString(), ui.ReferTxOutputIndex)
+func (input *TxnInput) ToString() string {
+	return fmt.Sprintf("%x%x", input.ReferTxID.ToString(), input.ReferTxOutputIndex)
 }
 
-func (ui *UTXOTxInput) Equals(other *UTXOTxInput) bool {
-	if ui == other {
+func (input *TxnInput) Equals(other *TxnInput) bool {
+	if input == other {
 		return true
 	}
 	if other == nil {
 		return false
 	}
-	if ui.ReferTxID == other.ReferTxID && ui.ReferTxOutputIndex == other.ReferTxOutputIndex {
+	if input.ReferTxID == other.ReferTxID && input.ReferTxOutputIndex == other.ReferTxOutputIndex {
 		return true
 	} else {
 		return false

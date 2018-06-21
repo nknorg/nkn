@@ -61,9 +61,9 @@ type Transaction struct {
 	TxType         TransactionType
 	PayloadVersion byte
 	Payload        Payload
-	Attributes     []*TxAttribute
-	UTXOInputs     []*UTXOTxInput
-	Outputs        []*TxOutput
+	Attributes     []*TxnAttribute
+	Inputs         []*TxnInput
+	Outputs        []*TxnOutput
 	Programs       []*program.Program
 
 	hash *Uint256
@@ -114,13 +114,13 @@ func (tx *Transaction) SerializeUnsigned(w io.Writer) error {
 			attr.Serialize(w)
 		}
 	}
-	//[]*UTXOInputs
-	err = serialization.WriteVarUint(w, uint64(len(tx.UTXOInputs)))
+	//[]*Inputs
+	err = serialization.WriteVarUint(w, uint64(len(tx.Inputs)))
 	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Transaction item UTXOInputs length serialization failed.")
+		return NewDetailErr(err, ErrNoCode, "Transaction item Inputs length serialization failed.")
 	}
-	if len(tx.UTXOInputs) > 0 {
-		for _, utxo := range tx.UTXOInputs {
+	if len(tx.Inputs) > 0 {
+		for _, utxo := range tx.Inputs {
 			utxo.Serialize(w)
 		}
 	}
@@ -221,7 +221,7 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	}
 	if Len > uint64(0) {
 		for i := uint64(0); i < Len; i++ {
-			attr := new(TxAttribute)
+			attr := new(TxnAttribute)
 			err = attr.Deserialize(r)
 			if err != nil {
 				return err
@@ -229,21 +229,21 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 			tx.Attributes = append(tx.Attributes, attr)
 		}
 	}
-	//UTXOInputs
+	//Inputs
 	Len, err = serialization.ReadVarUint(r, 0)
 	if err != nil {
-		log.Error("tx UTXOInputs Deserialize:", err)
+		log.Error("tx Inputs Deserialize:", err)
 
 		return err
 	}
 	if Len > uint64(0) {
 		for i := uint64(0); i < Len; i++ {
-			utxo := new(UTXOTxInput)
+			utxo := new(TxnInput)
 			err = utxo.Deserialize(r)
 			if err != nil {
 				return err
 			}
-			tx.UTXOInputs = append(tx.UTXOInputs, utxo)
+			tx.Inputs = append(tx.Inputs, utxo)
 		}
 	}
 	//TODO balanceInputs
@@ -254,7 +254,7 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	}
 	if Len > uint64(0) {
 		for i := uint64(0); i < Len; i++ {
-			output := new(TxOutput)
+			output := new(TxnOutput)
 			output.Deserialize(r)
 
 			tx.Outputs = append(tx.Outputs, output)
@@ -404,14 +404,14 @@ func (tx *Transaction) Verify() error {
 	return nil
 }
 
-func (tx *Transaction) GetReference() (map[*UTXOTxInput]*TxOutput, error) {
+func (tx *Transaction) GetReference() (map[*TxnInput]*TxnOutput, error) {
 	if tx.TxType == RegisterAsset {
 		return nil, nil
 	}
 	//UTXO input /  Outputs
-	reference := make(map[*UTXOTxInput]*TxOutput)
+	reference := make(map[*TxnInput]*TxnOutput)
 	// Key index，v UTXOInput
-	for _, utxo := range tx.UTXOInputs {
+	for _, utxo := range tx.Inputs {
 		transaction, err := TxStore.GetTransaction(utxo.ReferTxID)
 		if err != nil {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetReference failed.")
@@ -508,19 +508,19 @@ func (tx *Transaction) MarshalJson() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		var t TxAttributeInfo
+		var t TxnAttributeInfo
 		json.Unmarshal(info, &t)
 		txInfo.Attributes = append(txInfo.Attributes, t)
 	}
 
-	for _, v := range tx.UTXOInputs {
+	for _, v := range tx.Inputs {
 		info, err := v.MarshalJson()
 		if err != nil {
 			return nil, err
 		}
-		var t UTXOTxInputInfo
+		var t TxnInputInfo
 		json.Unmarshal(info, &t)
-		txInfo.UTXOInputs = append(txInfo.UTXOInputs, t)
+		txInfo.Inputs = append(txInfo.Inputs, t)
 	}
 
 	for _, v := range tx.Outputs {
@@ -528,7 +528,7 @@ func (tx *Transaction) MarshalJson() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		var t TxOutputInfo
+		var t TxnOutputInfo
 		json.Unmarshal(info, &t)
 		txInfo.Outputs = append(txInfo.Outputs, t)
 	}
@@ -599,7 +599,7 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 		if err != nil {
 			return err
 		}
-		var at TxAttribute
+		var at TxnAttribute
 		err = at.UnmarshalJson(info)
 		if err != nil {
 			return err
@@ -607,17 +607,17 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 		tx.Attributes = append(tx.Attributes, &at)
 	}
 
-	for _, v := range txInfo.UTXOInputs {
+	for _, v := range txInfo.Inputs {
 		info, err := json.Marshal(v)
 		if err != nil {
 			return err
 		}
-		var ui UTXOTxInput
+		var ui TxnInput
 		err = ui.UnmarshalJson(info)
 		if err != nil {
 			return err
 		}
-		tx.UTXOInputs = append(tx.UTXOInputs, &ui)
+		tx.Inputs = append(tx.Inputs, &ui)
 	}
 
 	for _, v := range txInfo.Outputs {
@@ -625,7 +625,7 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 		if err != nil {
 			return err
 		}
-		var o TxOutput
+		var o TxnOutput
 		err = o.UnmarshalJson(info)
 		if err != nil {
 			return err

@@ -1,13 +1,11 @@
 package code
 
 import (
-	"fmt"
 	"io"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/core/contract"
-	"github.com/nknorg/nkn/util/log"
 )
 
 type FunctionCode struct {
@@ -87,7 +85,6 @@ func (fc *FunctionCode) CodeHash() Uint160 {
 	if fc.codeHash == u160 {
 		u160, err := ToCodeHash(fc.Code)
 		if err != nil {
-			log.Debug(fmt.Sprintf("[FunctionCode] ToCodeHash err=%s", err))
 			return u160
 		}
 		fc.codeHash = u160

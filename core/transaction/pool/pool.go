@@ -12,16 +12,16 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
-type TXNPool struct {
+type TxnPool struct {
 	sync.RWMutex
-	txnCnt        uint64                            // count
-	txnList       map[common.Uint256]*Transaction   // transaction which have been verifyed will put into this map
+	txnCnt        uint64                            // transaction count
+	txnList       map[common.Uint256]*Transaction   // transaction which have been verified will put into this map
 	issueSummary  map[common.Uint256]common.Fixed64 // transaction which pass the verify will summary the amout to this map
 	inputUTXOList map[string]*Transaction           // transaction which pass the verify will add the UTXO to this map
 }
 
-func NewTxnPool() *TXNPool {
-	return &TXNPool{
+func NewTxnPool() *TxnPool {
+	return &TxnPool{
 		txnCnt:        0,
 		inputUTXOList: make(map[string]*Transaction),
 		issueSummary:  make(map[common.Uint256]common.Fixed64),
@@ -31,7 +31,7 @@ func NewTxnPool() *TXNPool {
 
 //append transaction to txnpool when check ok.
 //1.check transaction. 2.check with ledger(db) 3.check with pool
-func (this *TXNPool) AppendTxnPool(txn *Transaction) ErrCode {
+func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	//verify transaction with Concurrency
 	if errCode := VerifyTransaction(txn); errCode != ErrNoError {
 		log.Info("Transaction verification failed", txn.Hash())
@@ -42,11 +42,11 @@ func (this *TXNPool) AppendTxnPool(txn *Transaction) ErrCode {
 		return errCode
 	}
 	//verify transaction by pool with lock
-	if ok := this.verifyTransactionWithTxnPool(txn); !ok {
+	if ok := tp.verifyTransactionWithTxnPool(txn); !ok {
 		return ErrSummaryAsset
 	}
 	//add the transaction to process scope
-	this.addtxnList(txn)
+	tp.addtxnList(txn)
 
 	// get signature chain from commit transaction then add it to POR server
 	if txn.TxType == Commit {
@@ -56,11 +56,11 @@ func (this *TXNPool) AppendTxnPool(txn *Transaction) ErrCode {
 	return ErrNoError
 }
 
-func (this *TXNPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
-	this.RLock()
-	defer this.RUnlock()
+func (tp *TxnPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
+	tp.RLock()
+	defer tp.RUnlock()
 
-	n := len(this.txnList)
+	n := len(tp.txnList)
 	if num < n {
 		n = num
 	}
@@ -68,7 +68,7 @@ func (this *TXNPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
 	i := 0
 	txns := make(map[common.Uint256]*Transaction, n)
 	//TODO sort transaction list
-	for hash, txn := range this.txnList {
+	for hash, txn := range tp.txnList {
 		txns[hash] = txn
 		i++
 		if i >= n {
@@ -80,26 +80,26 @@ func (this *TXNPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
 }
 
 //clean the trasaction Pool with committed block.
-func (this *TXNPool) CleanSubmittedTransactions(txns []*Transaction) error {
-	this.cleanTransactionList(txns)
-	this.cleanUTXOList(txns)
-	this.cleanIssueSummary(txns)
+func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
+	tp.cleanTransactionList(txns)
+	tp.cleanUTXOList(txns)
+	tp.cleanIssueSummary(txns)
 	return nil
 }
 
 //get the transaction by hash
-func (this *TXNPool) GetTransaction(hash common.Uint256) *Transaction {
-	this.RLock()
-	defer this.RUnlock()
-	return this.txnList[hash]
+func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {
+	tp.RLock()
+	defer tp.RUnlock()
+	return tp.txnList[hash]
 }
 
-func (this *TXNPool) GetAllTransactions() map[common.Uint256]*Transaction {
-	this.RLock()
-	defer this.RUnlock()
+func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
+	tp.RLock()
+	defer tp.RUnlock()
 
-	txns := make(map[common.Uint256]*Transaction, len(this.txnList))
-	for hash, txn := range this.txnList {
+	txns := make(map[common.Uint256]*Transaction, len(tp.txnList))
+	for hash, txn := range tp.txnList {
 		txns[hash] = txn
 	}
 
@@ -107,26 +107,26 @@ func (this *TXNPool) GetAllTransactions() map[common.Uint256]*Transaction {
 }
 
 //verify transaction with txnpool
-func (this *TXNPool) verifyTransactionWithTxnPool(txn *Transaction) bool {
+func (tp *TxnPool) verifyTransactionWithTxnPool(txn *Transaction) bool {
 	//check weather have duplicate UTXO input,if occurs duplicate, just keep the latest txn.
-	ok, duplicateTxn := this.apendToUTXOPool(txn)
+	ok, duplicateTxn := tp.apendToUTXOPool(txn)
 	if !ok && duplicateTxn != nil {
 		log.Info(fmt.Sprintf("txn=%x duplicateTxn UTXO occurs with txn in pool=%x,keep the latest one.", txn.Hash(), duplicateTxn.Hash()))
-		this.removeTransaction(duplicateTxn)
+		tp.removeTransaction(duplicateTxn)
 	}
 	//check issue transaction weather occur exceed issue range.
-	if ok := this.summaryAssetIssueAmount(txn); !ok {
+	if ok := tp.summaryAssetIssueAmount(txn); !ok {
 		log.Info(fmt.Sprintf("Check summary Asset Issue Amount failed with txn=%x", txn.Hash()))
-		this.removeTransaction(txn)
+		tp.removeTransaction(txn)
 		return false
 	}
 	return true
 }
 
 //remove from associated map
-func (this *TXNPool) removeTransaction(txn *Transaction) {
+func (tp *TxnPool) removeTransaction(txn *Transaction) {
 	//1.remove from txnList
-	this.deltxnList(txn)
+	tp.deltxnList(txn)
 	//2.remove from UTXO list map
 	result, err := txn.GetReference()
 	if err != nil {
@@ -134,7 +134,7 @@ func (this *TXNPool) removeTransaction(txn *Transaction) {
 		return
 	}
 	for input := range result {
-		this.delInputUTXOList(input)
+		tp.delInputUTXOList(input)
 	}
 	//3.remove From Asset Issue Summary map
 	if txn.TxType != IssueAsset {
@@ -142,45 +142,45 @@ func (this *TXNPool) removeTransaction(txn *Transaction) {
 	}
 	transactionResult := txn.GetMergedAssetIDValueFromOutputs()
 	for k, delta := range transactionResult {
-		this.decrAssetIssueAmountSummary(k, delta)
+		tp.decrAssetIssueAmountSummary(k, delta)
 	}
 }
 
 //check and add to utxo list pool
-func (this *TXNPool) apendToUTXOPool(txn *Transaction) (bool, *Transaction) {
+func (tp *TxnPool) apendToUTXOPool(txn *Transaction) (bool, *Transaction) {
 	reference, err := txn.GetReference()
 	if err != nil {
 		return false, nil
 	}
 	for k, _ := range reference {
-		t := this.getInputUTXOList(k)
+		t := tp.getInputUTXOList(k)
 		if t != nil {
 			return false, t
 		}
-		this.addInputUTXOList(txn, k)
+		tp.addInputUTXOList(txn, k)
 	}
 	return true, nil
 }
 
 //clean txnpool utxo map
-func (this *TXNPool) cleanUTXOList(txs []*Transaction) {
+func (tp *TxnPool) cleanUTXOList(txs []*Transaction) {
 	for _, txn := range txs {
 		inputUtxos, _ := txn.GetReference()
 		for Utxoinput, _ := range inputUtxos {
-			this.delInputUTXOList(Utxoinput)
+			tp.delInputUTXOList(Utxoinput)
 		}
 	}
 }
 
 //check and summary to issue amount Pool
-func (this *TXNPool) summaryAssetIssueAmount(txn *Transaction) bool {
+func (tp *TxnPool) summaryAssetIssueAmount(txn *Transaction) bool {
 	if txn.TxType != IssueAsset {
 		return true
 	}
 	transactionResult := txn.GetMergedAssetIDValueFromOutputs()
 	for k, delta := range transactionResult {
 		//update the amount in txnPool
-		this.incrAssetIssueAmountSummary(k, delta)
+		tp.incrAssetIssueAmountSummary(k, delta)
 
 		//Check weather occur exceed the amount when RegisterAsseted
 		//1. Get the Asset amount when RegisterAsseted.
@@ -193,7 +193,7 @@ func (this *TXNPool) summaryAssetIssueAmount(txn *Transaction) bool {
 		}
 		AssetReg := txn.Payload.(*payload.RegisterAsset)
 
-		//2. Get the amount has been issued of this assetID
+		//2. Get the amount has been issued of tp assetID
 		var quantity_issued common.Fixed64
 		if AssetReg.Amount < common.Fixed64(0) {
 			continue
@@ -205,10 +205,10 @@ func (this *TXNPool) summaryAssetIssueAmount(txn *Transaction) bool {
 		}
 
 		//3. calc weather out off the amount when Registed.
-		//AssetReg.Amount : amount when RegisterAsset of this assedID
-		//quantity_issued : amount has been issued of this assedID
-		//txnPool.issueSummary[k] : amount in transactionPool of this assedID
-		if AssetReg.Amount-quantity_issued < this.getAssetIssueAmount(k) {
+		//AssetReg.Amount : amount when RegisterAsset of tp assedID
+		//quantity_issued : amount has been issued of tp assedID
+		//txnPool.issueSummary[k] : amount in transactionPool of tp assedID
+		if AssetReg.Amount-quantity_issued < tp.getAssetIssueAmount(k) {
 			return false
 		}
 	}
@@ -216,7 +216,7 @@ func (this *TXNPool) summaryAssetIssueAmount(txn *Transaction) bool {
 }
 
 // clean the trasaction Pool with committed transactions.
-func (this *TXNPool) cleanTransactionList(txns []*Transaction) error {
+func (tp *TxnPool) cleanTransactionList(txns []*Transaction) error {
 	cleaned := 0
 	txnsNum := len(txns)
 	for _, txn := range txns {
@@ -224,96 +224,96 @@ func (this *TXNPool) cleanTransactionList(txns []*Transaction) error {
 			txnsNum = txnsNum - 1
 			continue
 		}
-		if this.deltxnList(txn) {
+		if tp.deltxnList(txn) {
 			cleaned++
 		}
 	}
 	if txnsNum != cleaned {
-		log.Info(fmt.Sprintf("The Transactions num Unmatched. Expect %d, got %d .\n", txnsNum, cleaned))
+		log.Warn(fmt.Sprintf("cleaned transactions number unmatched, expected: %d, got %d", txnsNum, cleaned))
 	}
-	log.Debug(fmt.Sprintf("[cleanTransactionList],transaction %d Requested, %d cleaned, Remains %d in TxPool", txnsNum, cleaned, this.GetTransactionCount()))
+	log.Debug(fmt.Sprintf("transaction pool cleaning, requested: %d, cleaned: %d, remains %d", txnsNum, cleaned, tp.GetTransactionCount()))
 	return nil
 }
 
-func (this *TXNPool) addtxnList(txn *Transaction) bool {
-	this.Lock()
-	defer this.Unlock()
+func (tp *TxnPool) addtxnList(txn *Transaction) bool {
+	tp.Lock()
+	defer tp.Unlock()
 	txnHash := txn.Hash()
-	if _, ok := this.txnList[txnHash]; ok {
+	if _, ok := tp.txnList[txnHash]; ok {
 		return false
 	}
-	this.txnList[txnHash] = txn
+	tp.txnList[txnHash] = txn
 	return true
 }
 
-func (this *TXNPool) deltxnList(tx *Transaction) bool {
-	this.Lock()
-	defer this.Unlock()
+func (tp *TxnPool) deltxnList(tx *Transaction) bool {
+	tp.Lock()
+	defer tp.Unlock()
 	txHash := tx.Hash()
-	if _, ok := this.txnList[txHash]; !ok {
+	if _, ok := tp.txnList[txHash]; !ok {
 		return false
 	}
-	delete(this.txnList, tx.Hash())
+	delete(tp.txnList, tx.Hash())
 	return true
 }
 
-func (this *TXNPool) copytxnList() map[common.Uint256]*Transaction {
-	this.RLock()
-	defer this.RUnlock()
-	txnMap := make(map[common.Uint256]*Transaction, len(this.txnList))
-	for txnId, txn := range this.txnList {
+func (tp *TxnPool) copytxnList() map[common.Uint256]*Transaction {
+	tp.RLock()
+	defer tp.RUnlock()
+	txnMap := make(map[common.Uint256]*Transaction, len(tp.txnList))
+	for txnId, txn := range tp.txnList {
 		txnMap[txnId] = txn
 	}
 	return txnMap
 }
 
-func (this *TXNPool) GetTransactionCount() int {
-	this.RLock()
-	defer this.RUnlock()
-	return len(this.txnList)
+func (tp *TxnPool) GetTransactionCount() int {
+	tp.RLock()
+	defer tp.RUnlock()
+	return len(tp.txnList)
 }
 
-func (this *TXNPool) getInputUTXOList(input *UTXOTxInput) *Transaction {
-	this.RLock()
-	defer this.RUnlock()
-	return this.inputUTXOList[input.ToString()]
+func (tp *TxnPool) getInputUTXOList(input *TxnInput) *Transaction {
+	tp.RLock()
+	defer tp.RUnlock()
+	return tp.inputUTXOList[input.ToString()]
 }
 
-func (this *TXNPool) addInputUTXOList(tx *Transaction, input *UTXOTxInput) bool {
-	this.Lock()
-	defer this.Unlock()
+func (tp *TxnPool) addInputUTXOList(tx *Transaction, input *TxnInput) bool {
+	tp.Lock()
+	defer tp.Unlock()
 	id := input.ToString()
-	_, ok := this.inputUTXOList[id]
+	_, ok := tp.inputUTXOList[id]
 	if ok {
 		return false
 	}
-	this.inputUTXOList[id] = tx
+	tp.inputUTXOList[id] = tx
 
 	return true
 }
 
-func (this *TXNPool) delInputUTXOList(input *UTXOTxInput) bool {
-	this.Lock()
-	defer this.Unlock()
+func (tp *TxnPool) delInputUTXOList(input *TxnInput) bool {
+	tp.Lock()
+	defer tp.Unlock()
 	id := input.ToString()
-	_, ok := this.inputUTXOList[id]
+	_, ok := tp.inputUTXOList[id]
 	if !ok {
 		return false
 	}
-	delete(this.inputUTXOList, id)
+	delete(tp.inputUTXOList, id)
 	return true
 }
 
-func (this *TXNPool) incrAssetIssueAmountSummary(assetId common.Uint256, delta common.Fixed64) {
-	this.Lock()
-	defer this.Unlock()
-	this.issueSummary[assetId] = this.issueSummary[assetId] + delta
+func (tp *TxnPool) incrAssetIssueAmountSummary(assetId common.Uint256, delta common.Fixed64) {
+	tp.Lock()
+	defer tp.Unlock()
+	tp.issueSummary[assetId] = tp.issueSummary[assetId] + delta
 }
 
-func (this *TXNPool) decrAssetIssueAmountSummary(assetId common.Uint256, delta common.Fixed64) {
-	this.Lock()
-	defer this.Unlock()
-	amount, ok := this.issueSummary[assetId]
+func (tp *TxnPool) decrAssetIssueAmountSummary(assetId common.Uint256, delta common.Fixed64) {
+	tp.Lock()
+	defer tp.Unlock()
+	amount, ok := tp.issueSummary[assetId]
 	if !ok {
 		return
 	}
@@ -321,22 +321,22 @@ func (this *TXNPool) decrAssetIssueAmountSummary(assetId common.Uint256, delta c
 	if amount < common.Fixed64(0) {
 		amount = common.Fixed64(0)
 	}
-	this.issueSummary[assetId] = amount
+	tp.issueSummary[assetId] = amount
 }
 
-func (this *TXNPool) cleanIssueSummary(txs []*Transaction) {
+func (tp *TxnPool) cleanIssueSummary(txs []*Transaction) {
 	for _, v := range txs {
 		if v.TxType == IssueAsset {
 			transactionResult := v.GetMergedAssetIDValueFromOutputs()
 			for k, delta := range transactionResult {
-				this.decrAssetIssueAmountSummary(k, delta)
+				tp.decrAssetIssueAmountSummary(k, delta)
 			}
 		}
 	}
 }
 
-func (this *TXNPool) getAssetIssueAmount(assetId common.Uint256) common.Fixed64 {
-	this.RLock()
-	defer this.RUnlock()
-	return this.issueSummary[assetId]
+func (tp *TxnPool) getAssetIssueAmount(assetId common.Uint256) common.Fixed64 {
+	tp.RLock()
+	defer tp.RUnlock()
+	return tp.issueSummary[assetId]
 }

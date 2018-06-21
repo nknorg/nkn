@@ -19,7 +19,7 @@ type ping struct {
 
 func NewPingMsg() ([]byte, error) {
 	var msg ping
-	msg.msgHdr.Magic = NETMAGIC
+	msg.msgHdr.Magic = NetID
 	copy(msg.msgHdr.CMD[0:7], "ping")
 	msg.height = uint64(ledger.DefaultLedger.Store.GetHeaderHeight())
 	tmpBuffer := bytes.NewBuffer([]byte{})

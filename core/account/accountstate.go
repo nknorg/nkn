@@ -22,24 +22,24 @@ func NewAccountState(programHash common.Uint160, balances map[common.Uint256]com
 	return &accountState
 }
 
-func (accountState *AccountState) Serialize(w io.Writer) error {
-	accountState.ProgramHash.Serialize(w)
-	serialization.WriteBool(w, accountState.IsFrozen)
-	serialization.WriteUint64(w, uint64(len(accountState.Balances)))
-	for k, v := range accountState.Balances {
+func (as *AccountState) Serialize(w io.Writer) error {
+	as.ProgramHash.Serialize(w)
+	serialization.WriteBool(w, as.IsFrozen)
+	serialization.WriteUint64(w, uint64(len(as.Balances)))
+	for k, v := range as.Balances {
 		k.Serialize(w)
 		v.Serialize(w)
 	}
 	return nil
 }
 
-func (accountState *AccountState) Deserialize(r io.Reader) error {
-	accountState.ProgramHash.Deserialize(r)
+func (as *AccountState) Deserialize(r io.Reader) error {
+	as.ProgramHash.Deserialize(r)
 	isFrozen, err := serialization.ReadBool(r)
 	if err != nil {
 		return err
 	}
-	accountState.IsFrozen = isFrozen
+	as.IsFrozen = isFrozen
 	l, err := serialization.ReadUint64(r)
 	if err != nil {
 		return err
@@ -58,12 +58,12 @@ func (accountState *AccountState) Deserialize(r io.Reader) error {
 		}
 		balances[*u] = *f
 	}
-	accountState.Balances = balances
+	as.Balances = balances
 	return nil
 }
 
-func (accountState *AccountState) ToArray() []byte {
+func (as *AccountState) ToArray() []byte {
 	b := new(bytes.Buffer)
-	accountState.Serialize(b)
+	as.Serialize(b)
 	return b.Bytes()
 }

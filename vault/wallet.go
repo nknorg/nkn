@@ -167,7 +167,7 @@ func RecoverWallet(path string, password []byte, privateKeyHex string) (*WalletI
 	return wallet, nil
 }
 
-func (p *WalletImpl) CreateAccount(privateKey []byte) error {
+func (w *WalletImpl) CreateAccount(privateKey []byte) error {
 	var account *Account
 	var err error
 	if privateKey == nil {
@@ -178,7 +178,7 @@ func (p *WalletImpl) CreateAccount(privateKey []byte) error {
 	if err != nil {
 		return err
 	}
-	encryptedPrivateKey, err := crypto.AesEncrypt(account.PrivateKey, p.masterKey, p.iv)
+	encryptedPrivateKey, err := crypto.AesEncrypt(account.PrivateKey, w.masterKey, w.iv)
 	if err != nil {
 		return err
 	}
@@ -186,23 +186,23 @@ func (p *WalletImpl) CreateAccount(privateKey []byte) error {
 	if err != nil {
 		return err
 	}
-	err = p.SaveAccountData(account.ProgramHash.ToArray(), encryptedPrivateKey, contract.ToArray())
+	err = w.SaveAccountData(account.ProgramHash.ToArray(), encryptedPrivateKey, contract.ToArray())
 	if err != nil {
 		return err
 	}
-	p.account = account
+	w.account = account
 
 	return nil
 }
 
-func (cl *WalletImpl) GetDefaultAccount() (*Account, error) {
-	if cl.account == nil {
+func (w *WalletImpl) GetDefaultAccount() (*Account, error) {
+	if w.account == nil {
 		return nil, errors.New("account error")
 	}
-	return cl.account, nil
+	return w.account, nil
 }
 
-func (cl *WalletImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
+func (w *WalletImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
 	signatureRedeemScript, err := contract.CreateSignatureRedeemScript(pubKey)
 	if err != nil {
 		return nil, err
@@ -212,20 +212,20 @@ func (cl *WalletImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
 		return nil, err
 	}
 
-	if programHash != cl.account.ProgramHash {
+	if programHash != w.account.ProgramHash {
 		return nil, errors.New("invalid account")
 	}
 
-	return cl.account, nil
+	return w.account, nil
 }
 
-func (cl *WalletImpl) Sign(context *ct.ContractContext) error {
+func (w *WalletImpl) Sign(context *ct.ContractContext) error {
 	var err error
-	contract, err := cl.GetContract()
+	contract, err := w.GetContract()
 	if err != nil {
 		return errors.New("no available contract in wallet")
 	}
-	account, err := cl.GetDefaultAccount()
+	account, err := w.GetDefaultAccount()
 	if err != nil {
 		return errors.New("no available account in wallet")
 	}
@@ -252,10 +252,10 @@ func verifyPasswordKey(passwordKey []byte, passwordHash []byte) bool {
 	return true
 }
 
-func (cl *WalletImpl) ChangePassword(oldPassword []byte, newPassword []byte) bool {
+func (w *WalletImpl) ChangePassword(oldPassword []byte, newPassword []byte) bool {
 	// check original password
 	oldPasswordKey := crypto.ToAesKey(oldPassword)
-	passwordKeyHash, err := HexStringToBytes(cl.Data.PasswordHash)
+	passwordKeyHash, err := HexStringToBytes(w.Data.PasswordHash)
 	if err != nil {
 		return false
 	}
@@ -266,14 +266,14 @@ func (cl *WalletImpl) ChangePassword(oldPassword []byte, newPassword []byte) boo
 	// encrypt master key with new password
 	newPasswordKey := crypto.ToAesKey(newPassword)
 	newPasswordHash := sha256.Sum256(newPasswordKey)
-	newMasterKey, err := crypto.AesEncrypt(cl.masterKey, newPasswordKey, cl.iv)
+	newMasterKey, err := crypto.AesEncrypt(w.masterKey, newPasswordKey, w.iv)
 	if err != nil {
 		fmt.Println("error: set new password failed")
 		return false
 	}
 
 	// update wallet file
-	err = cl.SaveBasicData([]byte(WalletStoreVersion), cl.iv, newMasterKey, newPasswordHash[:])
+	err = w.SaveBasicData([]byte(WalletStoreVersion), w.iv, newMasterKey, newPasswordHash[:])
 	if err != nil {
 		return false
 	}
@@ -281,16 +281,16 @@ func (cl *WalletImpl) ChangePassword(oldPassword []byte, newPassword []byte) boo
 	return true
 }
 
-func (cl *WalletImpl) GetContract() (*ct.Contract, error) {
-	if cl.contract == nil {
+func (w *WalletImpl) GetContract() (*ct.Contract, error) {
+	if w.contract == nil {
 		return nil, errors.New("contract error")
 	}
 
-	return cl.contract, nil
+	return w.contract, nil
 }
 
-func (cl *WalletImpl) GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error) {
-	account, err := cl.GetDefaultAccount()
+func (w *WalletImpl) GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error) {
+	account, err := w.GetDefaultAccount()
 	if err != nil {
 		return nil, err
 	}

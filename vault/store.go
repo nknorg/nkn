@@ -83,18 +83,18 @@ func LoadStore(fullPath string) (*Store, error) {
 	}, nil
 }
 
-func (p *Store) read() ([]byte, error) {
-	p.RLock()
-	defer p.RUnlock()
+func (s *Store) read() ([]byte, error) {
+	s.RLock()
+	defer s.RUnlock()
 
-	return ioutil.ReadFile(p.Path)
+	return ioutil.ReadFile(s.Path)
 }
 
-func (p *Store) write(data []byte) error {
-	p.Lock()
-	defer p.Unlock()
+func (s *Store) write(data []byte) error {
+	s.Lock()
+	defer s.Unlock()
 
-	dir, name := path.Split(p.Path)
+	dir, name := path.Split(s.Path)
 	f, err := ioutil.TempFile(dir, name)
 	if err != nil {
 		return err
@@ -119,12 +119,12 @@ func (p *Store) write(data []byte) error {
 	return err
 }
 
-func (p *Store) SaveAccountData(programHash []byte, encryptedPrivateKey []byte, contract []byte) error {
-	oldBlob, err := p.read()
+func (s *Store) SaveAccountData(programHash []byte, encryptedPrivateKey []byte, contract []byte) error {
+	oldBlob, err := s.read()
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal(oldBlob, &p.Data); err != nil {
+	if err := json.Unmarshal(oldBlob, &s.Data); err != nil {
 		return err
 	}
 	pHash, err := Uint160ParseFromBytes(programHash)
@@ -135,17 +135,17 @@ func (p *Store) SaveAccountData(programHash []byte, encryptedPrivateKey []byte, 
 	if err != nil {
 		return err
 	}
-	p.Data.AccountData = AccountData{
+	s.Data.AccountData = AccountData{
 		Address:             addr,
 		ProgramHash:         BytesToHexString(programHash),
 		PrivateKeyEncrypted: BytesToHexString(encryptedPrivateKey),
 		ContractData:        BytesToHexString(contract),
 	}
-	newBlob, err := json.Marshal(p.Data)
+	newBlob, err := json.Marshal(s.Data)
 	if err != nil {
 		return err
 	}
-	err = p.write(newBlob)
+	err = s.write(newBlob)
 	if err != nil {
 		return err
 	}
@@ -153,25 +153,25 @@ func (p *Store) SaveAccountData(programHash []byte, encryptedPrivateKey []byte, 
 	return nil
 }
 
-func (p *Store) SaveBasicData(version, iv, masterKey, passwordHash []byte) error {
-	oldBlob, err := p.read()
+func (s *Store) SaveBasicData(version, iv, masterKey, passwordHash []byte) error {
+	oldBlob, err := s.read()
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal(oldBlob, &p.Data); err != nil {
+	if err := json.Unmarshal(oldBlob, &s.Data); err != nil {
 		return err
 	}
 
-	p.Data.Version = string(version)
-	p.Data.IV = BytesToHexString(iv)
-	p.Data.MasterKey = BytesToHexString(masterKey)
-	p.Data.PasswordHash = BytesToHexString(passwordHash)
+	s.Data.Version = string(version)
+	s.Data.IV = BytesToHexString(iv)
+	s.Data.MasterKey = BytesToHexString(masterKey)
+	s.Data.PasswordHash = BytesToHexString(passwordHash)
 
-	newBlob, err := json.Marshal(p.Data)
+	newBlob, err := json.Marshal(s.Data)
 	if err != nil {
 		return err
 	}
-	err = p.write(newBlob)
+	err = s.write(newBlob)
 	if err != nil {
 		return err
 	}

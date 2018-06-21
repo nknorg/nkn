@@ -11,38 +11,38 @@ import (
 )
 
 func TestTxAttribute(t *testing.T) {
-	ta := &TxAttribute{
+	ta := &TxnAttribute{
 		Usage: 1,
 		Data:  []byte{1, 2, 3, 4},
 		Size:  5,
 	}
 	data, err := ta.MarshalJson()
 	if err != nil {
-		t.Error("TxAttribute MarshalJson error")
+		t.Error("TxnAttribute MarshalJson error")
 	}
-	txa := new(TxAttribute)
+	txa := new(TxnAttribute)
 	err = txa.UnmarshalJson(data)
 	if err != nil {
-		t.Error("TxAttribute unmarshalJson error")
+		t.Error("TxnAttribute unmarshalJson error")
 	}
 
 	if !txa.Equal(ta) {
 		t.Log(ta, txa)
-		t.Error("TxAttribute compare error")
+		t.Error("TxnAttribute compare error")
 	}
 }
 
 func TestUTXOTxInput(t *testing.T) {
-	ui := &UTXOTxInput{
+	ui := &TxnInput{
 		ReferTxID:          common.Uint256{0, 1, 2, 4},
 		ReferTxOutputIndex: 5,
 	}
 	data, err := ui.MarshalJson()
 	if err != nil {
-		t.Error("UTXOTxInput MarshalJson error")
+		t.Error("TxnInput MarshalJson error")
 	}
 
-	input := new(UTXOTxInput)
+	input := new(TxnInput)
 	err = input.UnmarshalJson(data)
 	if err != nil {
 		t.Error("TestUTXOTxInput unmarshalJson error")
@@ -55,20 +55,20 @@ func TestUTXOTxInput(t *testing.T) {
 }
 
 func TestTxOutput(t *testing.T) {
-	to := &TxOutput{
+	to := &TxnOutput{
 		AssetID:     common.Uint256{0, 1, 2, 3, 4},
 		Value:       common.Fixed64(314159260),
 		ProgramHash: common.Uint160{1, 2, 3, 4, 5, 6, 7, 8},
 	}
 	data, err := to.MarshalJson()
 	if err != nil {
-		t.Error("TxOutput MarshalJson error")
+		t.Error("TxnOutput MarshalJson error")
 	}
 
-	output := new(TxOutput)
+	output := new(TxnOutput)
 	err = output.UnmarshalJson(data)
 	if err != nil {
-		t.Error("TxOutput unmarshalJson error")
+		t.Error("TxnOutput unmarshalJson error")
 	}
 
 	if !output.Equal(to) {
@@ -85,34 +85,34 @@ func TestTransaction(t *testing.T) {
 			SigChain:  []byte{1, 2, 3, 4},
 			Submitter: common.Uint160{5, 6, 7, 8},
 		},
-		Attributes: []*TxAttribute{
-			&TxAttribute{
+		Attributes: []*TxnAttribute{
+			&TxnAttribute{
 				Usage: 1,
 				Data:  []byte{1, 2, 3, 4},
 				Size:  5,
 			},
-			&TxAttribute{
+			&TxnAttribute{
 				Usage: 1,
 				Data:  []byte{3, 6, 2, 1},
 			},
 		},
-		UTXOInputs: []*UTXOTxInput{
-			&UTXOTxInput{
+		Inputs: []*TxnInput{
+			&TxnInput{
 				ReferTxID:          common.Uint256{0, 1, 2, 4},
 				ReferTxOutputIndex: 5,
 			},
-			&UTXOTxInput{
+			&TxnInput{
 				ReferTxID:          common.Uint256{6, 7},
 				ReferTxOutputIndex: 3,
 			},
 		},
-		Outputs: []*TxOutput{
-			&TxOutput{
+		Outputs: []*TxnOutput{
+			&TxnOutput{
 				AssetID:     common.Uint256{0, 1, 2, 3, 4},
 				Value:       common.Fixed64(314159260),
 				ProgramHash: common.Uint160{1, 2, 3, 4, 5, 6, 7, 8},
 			},
-			&TxOutput{
+			&TxnOutput{
 				AssetID:     common.Uint256{0, 1, 3, 4},
 				Value:       common.Fixed64(7788),
 				ProgramHash: common.Uint160{1, 2, 5, 6, 7, 8},
@@ -158,34 +158,34 @@ func TestTransaction2(t *testing.T) {
 		TxType:         0x10,
 		PayloadVersion: 1,
 		Payload:        &payload.TransferAsset{},
-		Attributes: []*TxAttribute{
-			&TxAttribute{
+		Attributes: []*TxnAttribute{
+			&TxnAttribute{
 				Usage: 1,
 				Data:  []byte{1, 2, 3, 4},
 				Size:  5,
 			},
-			&TxAttribute{
+			&TxnAttribute{
 				Usage: 1,
 				Data:  []byte{3, 6, 2, 1},
 			},
 		},
-		UTXOInputs: []*UTXOTxInput{
-			&UTXOTxInput{
+		Inputs: []*TxnInput{
+			&TxnInput{
 				ReferTxID:          common.Uint256{0, 1, 2, 4},
 				ReferTxOutputIndex: 5,
 			},
-			&UTXOTxInput{
+			&TxnInput{
 				ReferTxID:          common.Uint256{6, 7},
 				ReferTxOutputIndex: 3,
 			},
 		},
-		Outputs: []*TxOutput{
-			&TxOutput{
+		Outputs: []*TxnOutput{
+			&TxnOutput{
 				AssetID:     common.Uint256{0, 1, 2, 3, 4},
 				Value:       common.Fixed64(314159260),
 				ProgramHash: common.Uint160{1, 2, 3, 4, 5, 6, 7, 8},
 			},
-			&TxOutput{
+			&TxnOutput{
 				AssetID:     common.Uint256{0, 1, 3, 4},
 				Value:       common.Fixed64(7788),
 				ProgramHash: common.Uint160{1, 2, 5, 6, 7, 8},

@@ -14,56 +14,7 @@ import (
 	"github.com/nknorg/nkn/vault"
 )
 
-type NodeAddr struct {
-	Time     int64
-	Services uint64
-	IpAddr   [16]byte
-	Port     uint16
-	ID       uint64 // Unique ID
-}
-
-// The node capability type
-const (
-	VERIFYNODE  = 1
-	SERVICENODE = 2
-)
-
-const (
-	VERIFYNODENAME  = "verify"
-	SERVICENODENAME = "service"
-)
-
-const (
-	MSGCMDLEN         = 12
-	CMDOFFSET         = 4
-	CHECKSUMLEN       = 4
-	HASHLEN           = 32 // hash length in byte
-	MSGHDRLEN         = 24
-	NETMAGIC          = 0x74746e41
-	MAXBLKHDRCNT      = 500
-	MAXINVHDRCNT      = 500
-	DIVHASHLEN        = 5
-	MAXREQBLKONCE     = 16
-	TIMESOFUPDATETIME = 2
-)
-
-const (
-	HELLOTIMEOUT     = 3 // Seconds
-	MAXHELLORETYR    = 3
-	MAXBUFLEN        = 1024 * 16 // Fixme The maximum buffer to receive message
-	MAXCHANBUF       = 512
-	PROTOCOLVERSION  = 0
-	PERIODUPDATETIME = 3 // Time to update and sync information with other nodes
-	HEARTBEAT        = 2
-	KEEPALIVETIMEOUT = 3
-	DIALTIMEOUT      = 6
-	CONNMONITOR      = 6
-	CONNMAXBACK      = 4000
-	MAXRETRYCOUNT    = 3
-	MAXSYNCHDRREQ    = 2 //Max Concurrent Sync Header Request
-)
-
-// The node state
+// node connection state
 const (
 	INIT       = 0
 	HAND       = 1
@@ -72,8 +23,6 @@ const (
 	ESTABLISH  = 4
 	INACTIVITY = 5
 )
-
-var ReceiveDuplicateBlockCnt uint64 //an index to detecting networking status
 
 type Noder interface {
 	Version() uint32
@@ -86,8 +35,8 @@ type Noder interface {
 	GetHttpInfoState() bool
 	SetHttpInfoState(bool)
 	GetState() uint32
-	GetRelay() bool
 	SetState(state uint32)
+	GetRelay() bool
 	GetPubKey() *crypto.PubKey
 	CompareAndSetState(old, new uint32) bool
 	UpdateRXTime(t time.Time)
@@ -98,13 +47,12 @@ type Noder interface {
 	GetHeight() uint64
 	GetConnectionCnt() uint
 	GetTxnByCount(int) map[common.Uint256]*transaction.Transaction
-	GetTxnPool() *pool.TXNPool
+	GetTxnPool() *pool.TxnPool
 	AppendTxnPool(*transaction.Transaction) ErrCode
 	ExistedID(id common.Uint256) bool
 	ReqNeighborList()
 	DumpInfo()
-	UpdateInfo(t time.Time, version uint32, services uint64,
-		port uint16, nonce uint64, relay uint8, height uint64)
+	UpdateInfo(t time.Time, version uint32, services uint64, port uint16, nonce uint64, relay uint8, height uint64)
 	ConnectNeighbors()
 	Connect(nodeAddr string) error
 	Tx(buf []byte)
@@ -140,6 +88,8 @@ type Noder interface {
 	RemoveAddrInConnectingList(addr string)
 	AddInRetryList(addr string)
 	RemoveFromRetryList(addr string)
+	GetBlkHdrs()
+	SyncBlk()
 	AcqSyncReqSem()
 	RelSyncReqSem()
 
@@ -147,6 +97,14 @@ type Noder interface {
 	StartRelayer(wallet vault.Wallet)
 	NextHop(key []byte) (Noder, error)
 	SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload, signature []byte) error
+}
+
+type NodeAddr struct {
+	Time     int64
+	Services uint64
+	IpAddr   [16]byte
+	Port     uint16
+	ID       uint64
 }
 
 func (msg *NodeAddr) Deserialization(p []byte) error {

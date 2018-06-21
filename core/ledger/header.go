@@ -28,31 +28,29 @@ type Header struct {
 }
 
 //Serialize the blockheader
-func (bd *Header) Serialize(w io.Writer) error {
-	bd.SerializeUnsigned(w)
+func (h *Header) Serialize(w io.Writer) error {
+	h.SerializeUnsigned(w)
 	w.Write([]byte{byte(1)})
-	if bd.Program != nil {
-		bd.Program.Serialize(w)
+	if h.Program != nil {
+		h.Program.Serialize(w)
 	}
 	return nil
 }
 
 //Serialize the blockheader data without program
-func (bd *Header) SerializeUnsigned(w io.Writer) error {
-	//REVD: implement blockheader SerializeUnsigned
-	serialization.WriteUint32(w, bd.Version)
-	bd.PrevBlockHash.Serialize(w)
-	bd.TransactionsRoot.Serialize(w)
-	serialization.WriteUint32(w, bd.Timestamp)
-	serialization.WriteUint32(w, bd.Height)
-	serialization.WriteUint64(w, bd.ConsensusData)
-	bd.NextBookKeeper.Serialize(w)
+func (h *Header) SerializeUnsigned(w io.Writer) error {
+	serialization.WriteUint32(w, h.Version)
+	h.PrevBlockHash.Serialize(w)
+	h.TransactionsRoot.Serialize(w)
+	serialization.WriteUint32(w, h.Timestamp)
+	serialization.WriteUint32(w, h.Height)
+	serialization.WriteUint64(w, h.ConsensusData)
+	h.NextBookKeeper.Serialize(w)
 	return nil
 }
 
-func (bd *Header) Deserialize(r io.Reader) error {
-	//REVD：Header Deserialize
-	bd.DeserializeUnsigned(r)
+func (h *Header) Deserialize(r io.Reader) error {
+	h.DeserializeUnsigned(r)
 	p := make([]byte, 1)
 	n, err := r.Read(p)
 	if n > 0 {
@@ -70,17 +68,17 @@ func (bd *Header) Deserialize(r io.Reader) error {
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "Header item Program Deserialize failed.")
 	}
-	bd.Program = pg
+	h.Program = pg
 	return nil
 }
 
-func (bd *Header) DeserializeUnsigned(r io.Reader) error {
+func (h *Header) DeserializeUnsigned(r io.Reader) error {
 	//Version
 	temp, err := serialization.ReadUint32(r)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "Header item Version Deserialize failed.")
 	}
-	bd.Version = temp
+	h.Version = temp
 
 	//PrevBlockHash
 	preBlock := new(Uint256)
@@ -88,7 +86,7 @@ func (bd *Header) DeserializeUnsigned(r io.Reader) error {
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "Header item preBlock Deserialize failed.")
 	}
-	bd.PrevBlockHash = *preBlock
+	h.PrevBlockHash = *preBlock
 
 	//TransactionsRoot
 	txRoot := new(Uint256)
@@ -96,31 +94,31 @@ func (bd *Header) DeserializeUnsigned(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	bd.TransactionsRoot = *txRoot
+	h.TransactionsRoot = *txRoot
 
 	//Timestamp
 	temp, _ = serialization.ReadUint32(r)
-	bd.Timestamp = uint32(temp)
+	h.Timestamp = uint32(temp)
 
 	//Height
 	temp, _ = serialization.ReadUint32(r)
-	bd.Height = uint32(temp)
+	h.Height = uint32(temp)
 
 	//consensusData
-	bd.ConsensusData, _ = serialization.ReadUint64(r)
+	h.ConsensusData, _ = serialization.ReadUint64(r)
 
 	//NextBookKeeper
-	bd.NextBookKeeper.Deserialize(r)
+	h.NextBookKeeper.Deserialize(r)
 
 	return nil
 }
 
-func (bd *Header) GetProgramHashes() ([]Uint160, error) {
+func (h *Header) GetProgramHashes() ([]Uint160, error) {
 	programHashes := []Uint160{}
 	zero := Uint256{}
 
-	if bd.PrevBlockHash == zero {
-		pg := *bd.Program
+	if h.PrevBlockHash == zero {
+		pg := *h.Program
 		outputHashes, err := ToCodeHash(pg.Code)
 		if err != nil {
 			return nil, NewDetailErr(err, ErrNoCode, "[Header], GetProgramHashes failed.")
@@ -128,7 +126,7 @@ func (bd *Header) GetProgramHashes() ([]Uint160, error) {
 		programHashes = append(programHashes, outputHashes)
 		return programHashes, nil
 	} else {
-		prev_header, err := DefaultLedger.Store.GetHeader(bd.PrevBlockHash)
+		prev_header, err := DefaultLedger.Store.GetHeader(h.PrevBlockHash)
 		if err != nil {
 			return programHashes, err
 		}
@@ -138,49 +136,49 @@ func (bd *Header) GetProgramHashes() ([]Uint160, error) {
 
 }
 
-func (bd *Header) SetPrograms(programs []*program.Program) {
+func (h *Header) SetPrograms(programs []*program.Program) {
 	if len(programs) != 1 {
 		return
 	}
-	bd.Program = programs[0]
+	h.Program = programs[0]
 }
 
-func (bd *Header) GetPrograms() []*program.Program {
-	return []*program.Program{bd.Program}
+func (h *Header) GetPrograms() []*program.Program {
+	return []*program.Program{h.Program}
 }
 
-func (bd *Header) Hash() Uint256 {
+func (h *Header) Hash() Uint256 {
 
-	d := sig.GetHashData(bd)
+	d := sig.GetHashData(h)
 	temp := sha256.Sum256([]byte(d))
 	f := sha256.Sum256(temp[:])
 	hash := Uint256(f)
 	return hash
 }
 
-func (bd *Header) GetMessage() []byte {
-	return sig.GetHashData(bd)
+func (h *Header) GetMessage() []byte {
+	return sig.GetHashData(h)
 }
 
-func (bd *Header) ToArray() []byte {
+func (h *Header) ToArray() []byte {
 	b := new(bytes.Buffer)
-	bd.Serialize(b)
+	h.Serialize(b)
 	return b.Bytes()
 }
 
-func (bd *Header) MarshalJson() ([]byte, error) {
+func (h *Header) MarshalJson() ([]byte, error) {
 	headerInfo := &HeaderInfo{
-		Version:          bd.Version,
-		PrevBlockHash:    BytesToHexString(bd.PrevBlockHash.ToArrayReverse()),
-		TransactionsRoot: BytesToHexString(bd.TransactionsRoot.ToArrayReverse()),
-		Timestamp:        bd.Timestamp,
-		Height:           bd.Height,
-		ConsensusData:    bd.ConsensusData,
-		NextBookKeeper:   BytesToHexString(bd.NextBookKeeper.ToArrayReverse()),
-		Hash:             BytesToHexString(bd.hash.ToArrayReverse()),
+		Version:          h.Version,
+		PrevBlockHash:    BytesToHexString(h.PrevBlockHash.ToArrayReverse()),
+		TransactionsRoot: BytesToHexString(h.TransactionsRoot.ToArrayReverse()),
+		Timestamp:        h.Timestamp,
+		Height:           h.Height,
+		ConsensusData:    h.ConsensusData,
+		NextBookKeeper:   BytesToHexString(h.NextBookKeeper.ToArrayReverse()),
+		Hash:             BytesToHexString(h.hash.ToArrayReverse()),
 	}
 
-	info, err := bd.Program.MarshalJson()
+	info, err := h.Program.MarshalJson()
 	if err != nil {
 		return nil, err
 	}
@@ -193,23 +191,23 @@ func (bd *Header) MarshalJson() ([]byte, error) {
 	return data, nil
 }
 
-func (bd *Header) UnmarshalJson(data []byte) error {
+func (h *Header) UnmarshalJson(data []byte) error {
 	headerInfo := new(HeaderInfo)
 	var err error
 	if err = json.Unmarshal(data, &headerInfo); err != nil {
 		return err
 	}
 
-	bd.Version = headerInfo.Version
-	bd.Timestamp = headerInfo.Timestamp
-	bd.Height = headerInfo.Height
-	bd.ConsensusData = headerInfo.ConsensusData
+	h.Version = headerInfo.Version
+	h.Timestamp = headerInfo.Timestamp
+	h.Height = headerInfo.Height
+	h.ConsensusData = headerInfo.ConsensusData
 
 	prevHash, err := HexStringToBytesReverse(headerInfo.PrevBlockHash)
 	if err != nil {
 		return err
 	}
-	bd.PrevBlockHash, err = Uint256ParseFromBytes(prevHash)
+	h.PrevBlockHash, err = Uint256ParseFromBytes(prevHash)
 	if err != nil {
 		return err
 	}
@@ -218,7 +216,7 @@ func (bd *Header) UnmarshalJson(data []byte) error {
 	if err != nil {
 		return err
 	}
-	bd.TransactionsRoot, err = Uint256ParseFromBytes(root)
+	h.TransactionsRoot, err = Uint256ParseFromBytes(root)
 	if err != nil {
 		return err
 	}
@@ -227,7 +225,7 @@ func (bd *Header) UnmarshalJson(data []byte) error {
 	if err != nil {
 		return err
 	}
-	bd.NextBookKeeper, err = Uint160ParseFromBytes(nextBookKeeper)
+	h.NextBookKeeper, err = Uint160ParseFromBytes(nextBookKeeper)
 	if err != nil {
 		return err
 	}
@@ -241,13 +239,13 @@ func (bd *Header) UnmarshalJson(data []byte) error {
 	if err != nil {
 		return err
 	}
-	bd.Program = &pg
+	h.Program = &pg
 
 	hash, err := HexStringToBytesReverse(headerInfo.Hash)
 	if err != nil {
 		return err
 	}
-	bd.hash, err = Uint256ParseFromBytes(hash)
+	h.hash, err = Uint256ParseFromBytes(hash)
 	if err != nil {
 		return err
 	}

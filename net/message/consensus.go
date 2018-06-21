@@ -39,8 +39,6 @@ type consensus struct {
 }
 
 func (cp *ConsensusPayload) GetProgramHashes() ([]common.Uint160, error) {
-	log.Debug()
-
 	if ledger.DefaultLedger == nil {
 		return nil, errors.New("The Default ledger not exists.")
 	}
@@ -91,7 +89,6 @@ func (b *ConsensusPayload) ToArray() []byte {
 }
 
 func (msg consensus) Handle(node Noder) error {
-	log.Debug()
 	node.LocalNode().GetEvent("consensus").Notify(events.EventConsensusMsgReceived, &msg.cons)
 	return nil
 }
@@ -217,9 +214,8 @@ func (msg *consensus) Deserialize(r io.Reader) error {
 }
 
 func NewConsensus(cp *ConsensusPayload) ([]byte, error) {
-	log.Debug()
 	var msg consensus
-	msg.msgHdr.Magic = NETMAGIC
+	msg.msgHdr.Magic = NetID
 	cmd := "consensus"
 	copy(msg.msgHdr.CMD[0:len(cmd)], cmd)
 	tmpBuffer := bytes.NewBuffer([]byte{})
@@ -237,7 +233,6 @@ func NewConsensus(cp *ConsensusPayload) ([]byte, error) {
 	buf := bytes.NewBuffer(s[:4])
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(b.Bytes()))
-	log.Debug("NewConsensus The message payload length is ", msg.msgHdr.Length)
 
 	consensusBuff := bytes.NewBuffer(nil)
 	err = msg.Serialize(consensusBuff)

@@ -18,8 +18,8 @@ type headersReq struct {
 	hdr msgHdr
 	p   struct {
 		len       uint8
-		hashStart [HASHLEN]byte
-		hashEnd   [HASHLEN]byte
+		hashStart [HashLen]byte
+		hashEnd   [HashLen]byte
 	}
 }
 
@@ -146,12 +146,10 @@ func (msg *blkHeader) Deserialize(r io.Reader) error {
 }
 
 func (msg headersReq) Handle(node Noder) error {
-	log.Debug()
-	// lock
 	node.LocalNode().AcqSyncReqSem()
 	defer node.LocalNode().RelSyncReqSem()
-	var startHash [HASHLEN]byte
-	var stopHash [HASHLEN]byte
+	var startHash [HashLen]byte
+	var stopHash [HashLen]byte
 	startHash = msg.p.hashStart
 	stopHash = msg.p.hashEnd
 	//FIXME if HeaderHashCount > 1
@@ -177,7 +175,6 @@ func SendMsgSyncHeaders(node Noder) {
 }
 
 func (msg blkHeader) Handle(node Noder) error {
-	log.Debug()
 	err := ledger.DefaultLedger.Store.AddHeaders(msg.blkHdr, ledger.DefaultLedger)
 	if err != nil {
 		log.Warn("Add block Header error")
@@ -188,15 +185,15 @@ func (msg blkHeader) Handle(node Noder) error {
 
 func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]ledger.Header, uint32, error) {
 	var count uint32 = 0
-	var empty [HASHLEN]byte
+	var empty [HashLen]byte
 	headers := []ledger.Header{}
 	var startHeight uint32
 	var stopHeight uint32
 	curHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
 	if startHash == empty {
 		if stopHash == empty {
-			if curHeight > MAXBLKHDRCNT {
-				count = MAXBLKHDRCNT
+			if curHeight > MaxHdrCnt {
+				count = MaxHdrCnt
 			} else {
 				count = curHeight
 			}
@@ -207,8 +204,8 @@ func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]le
 			}
 			stopHeight = bkstop.Height
 			count = curHeight - stopHeight
-			if count > MAXBLKHDRCNT {
-				count = MAXBLKHDRCNT
+			if count > MaxHdrCnt {
+				count = MaxHdrCnt
 			}
 		}
 	} else {
@@ -230,14 +227,14 @@ func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]le
 			}
 			count = startHeight - stopHeight
 
-			if count >= MAXBLKHDRCNT {
-				count = MAXBLKHDRCNT
-				stopHeight = startHeight - MAXBLKHDRCNT
+			if count >= MaxHdrCnt {
+				count = MaxHdrCnt
+				stopHeight = startHeight - MaxHdrCnt
 			}
 		} else {
 
-			if startHeight > MAXBLKHDRCNT {
-				count = MAXBLKHDRCNT
+			if startHeight > MaxHdrCnt {
+				count = MaxHdrCnt
 			} else {
 				count = startHeight
 			}
@@ -262,7 +259,7 @@ func NewHeaders(headers []ledger.Header, count uint32) ([]byte, error) {
 	var msg blkHeader
 	msg.cnt = count
 	msg.blkHdr = headers
-	msg.hdr.Magic = NETMAGIC
+	msg.hdr.Magic = NetID
 	cmd := "headers"
 	copy(msg.hdr.CMD[0:len(cmd)], cmd)
 

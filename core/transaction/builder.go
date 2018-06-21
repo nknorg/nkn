@@ -23,8 +23,8 @@ func NewRegisterAssetTransaction(asset *asset.Asset, amount Fixed64, issuer *cry
 	}
 
 	return &Transaction{
-		UTXOInputs: []*UTXOTxInput{},
-		Attributes: []*TxAttribute{
+		Inputs: []*TxnInput{},
+		Attributes: []*TxnAttribute{
 			{
 				Usage: Nonce,
 				Data:  util.RandomBytes(TransactionNonceLength),
@@ -50,52 +50,55 @@ func NewBookKeeperTransaction(pubKey *crypto.PubKey, isAdd bool, cert []byte, is
 	}
 
 	return &Transaction{
-		TxType:     BookKeeper,
-		Payload:    bookKeeperPayload,
-		UTXOInputs: []*UTXOTxInput{},
-		Attributes: []*TxAttribute{
+		TxType:  BookKeeper,
+		Payload: bookKeeperPayload,
+		Inputs:  []*TxnInput{},
+		Attributes: []*TxnAttribute{
 			{
 				Usage: Nonce,
 				Data:  util.RandomBytes(TransactionNonceLength),
 			},
-		}, Programs: []*program.Program{},
+		},
+		Programs: []*program.Program{},
 	}, nil
 }
 
-func NewIssueAssetTransaction(outputs []*TxOutput) (*Transaction, error) {
+func NewIssueAssetTransaction(outputs []*TxnOutput) (*Transaction, error) {
 	assetRegPayload := &payload.IssueAsset{}
 
 	return &Transaction{
 		TxType:  IssueAsset,
 		Payload: assetRegPayload,
-		Attributes: []*TxAttribute{
+		Attributes: []*TxnAttribute{
 			{
 				Usage: Nonce,
 				Data:  util.RandomBytes(TransactionNonceLength),
 			},
-		}, Outputs: outputs,
-		Programs: []*program.Program{},
-	}, nil
-}
-
-func NewTransferAssetTransaction(inputs []*UTXOTxInput, outputs []*TxOutput) (*Transaction, error) {
-	assetRegPayload := &payload.TransferAsset{}
-
-	return &Transaction{
-		TxType:  TransferAsset,
-		Payload: assetRegPayload,
-		Attributes: []*TxAttribute{
-			{
-				Usage: Nonce,
-				Data:  util.RandomBytes(TransactionNonceLength),
-			},
-		}, UTXOInputs: inputs,
+		},
 		Outputs:  outputs,
 		Programs: []*program.Program{},
 	}, nil
 }
 
-func NewPrepaidTransaction(inputs []*UTXOTxInput, changes *TxOutput, assetID Uint256, amount, rates string) (*Transaction, error) {
+func NewTransferAssetTransaction(inputs []*TxnInput, outputs []*TxnOutput) (*Transaction, error) {
+	assetRegPayload := &payload.TransferAsset{}
+
+	return &Transaction{
+		TxType:  TransferAsset,
+		Payload: assetRegPayload,
+		Attributes: []*TxnAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		},
+		Inputs:   inputs,
+		Outputs:  outputs,
+		Programs: []*program.Program{},
+	}, nil
+}
+
+func NewPrepaidTransaction(inputs []*TxnInput, changes *TxnOutput, assetID Uint256, amount, rates string) (*Transaction, error) {
 	a, err := StringToFixed64(amount)
 	if err != nil {
 		return nil, err
@@ -113,18 +116,19 @@ func NewPrepaidTransaction(inputs []*UTXOTxInput, changes *TxOutput, assetID Uin
 	return &Transaction{
 		TxType:  Prepaid,
 		Payload: prepaidPayload,
-		Attributes: []*TxAttribute{
+		Attributes: []*TxnAttribute{
 			{
 				Usage: Nonce,
 				Data:  util.RandomBytes(TransactionNonceLength),
 			},
-		}, UTXOInputs: inputs,
-		Outputs:  []*TxOutput{changes},
+		},
+		Inputs:   inputs,
+		Outputs:  []*TxnOutput{changes},
 		Programs: []*program.Program{},
 	}, nil
 }
 
-func NewWithdrawTransaction(output *TxOutput) (*Transaction, error) {
+func NewWithdrawTransaction(output *TxnOutput) (*Transaction, error) {
 	withdrawPayload := &payload.Withdraw{
 		// TODO programhash should be passed in then
 		// user could withdraw asset to another address
@@ -134,13 +138,14 @@ func NewWithdrawTransaction(output *TxOutput) (*Transaction, error) {
 	return &Transaction{
 		TxType:  Withdraw,
 		Payload: withdrawPayload,
-		Attributes: []*TxAttribute{
+		Attributes: []*TxnAttribute{
 			{
 				Usage: Nonce,
 				Data:  util.RandomBytes(TransactionNonceLength),
 			},
-		}, UTXOInputs: nil,
-		Outputs:  []*TxOutput{output},
+		},
+		Inputs:   nil,
+		Outputs:  []*TxnOutput{output},
 		Programs: []*program.Program{},
 	}, nil
 }
@@ -154,12 +159,13 @@ func NewCommitTransaction(sigChain []byte, submitter Uint160) (*Transaction, err
 	return &Transaction{
 		TxType:  Commit,
 		Payload: CommitPayload,
-		Attributes: []*TxAttribute{
+		Attributes: []*TxnAttribute{
 			{
 				Usage: Nonce,
 				Data:  util.RandomBytes(TransactionNonceLength),
 			},
-		}, UTXOInputs: nil,
+		},
+		Inputs:   nil,
 		Programs: []*program.Program{},
 	}, nil
 }

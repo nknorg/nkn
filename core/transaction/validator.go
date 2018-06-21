@@ -67,7 +67,7 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) error {
 	var txPoolInputs []string
 	//sum all inputs in TxPool
 	for _, Tx := range TxPool {
-		for _, UTXOinput := range Tx.UTXOInputs {
+		for _, UTXOinput := range Tx.Inputs {
 			txPoolInputs = append(txPoolInputs, UTXOinput.ToString())
 		}
 	}
@@ -150,12 +150,12 @@ func VerifyTransactionWithLedger(Tx *Transaction) ErrCode {
 
 //validate the transaction of duplicate UTXO input
 func CheckDuplicateInput(tx *Transaction) error {
-	if len(tx.UTXOInputs) == 0 {
+	if len(tx.Inputs) == 0 {
 		return nil
 	}
-	for i, utxoin := range tx.UTXOInputs {
+	for i, utxoin := range tx.Inputs {
 		for j := 0; j < i; j++ {
-			if utxoin.ReferTxID == tx.UTXOInputs[j].ReferTxID && utxoin.ReferTxOutputIndex == tx.UTXOInputs[j].ReferTxOutputIndex {
+			if utxoin.ReferTxID == tx.Inputs[j].ReferTxID && utxoin.ReferTxOutputIndex == tx.Inputs[j].ReferTxOutputIndex {
 				return errors.New("invalid transaction")
 			}
 		}
@@ -165,7 +165,7 @@ func CheckDuplicateInput(tx *Transaction) error {
 
 func CheckDuplicateUtxoInBlock(tx *Transaction, txPoolInputs []string) error {
 	var txInputs []string
-	for _, t := range tx.UTXOInputs {
+	for _, t := range tx.Inputs {
 		txInputs = append(txInputs, t.ToString())
 	}
 	for _, i := range txInputs {
@@ -186,7 +186,7 @@ func CheckAssetPrecision(Tx *Transaction) error {
 	if len(Tx.Outputs) == 0 {
 		return nil
 	}
-	assetOutputs := make(map[Uint256][]*TxOutput, len(Tx.Outputs))
+	assetOutputs := make(map[Uint256][]*TxnOutput, len(Tx.Outputs))
 
 	for _, v := range Tx.Outputs {
 		assetOutputs[v.AssetID] = append(assetOutputs[v.AssetID], v)
@@ -217,7 +217,7 @@ func CheckTransactionBalance(txn *Transaction) error {
 		}
 	}
 	if txn.TxType == IssueAsset {
-		if len(txn.UTXOInputs) > 0 {
+		if len(txn.Inputs) > 0 {
 			return errors.New("Invalide Issue transaction.")
 		}
 		return nil
@@ -257,11 +257,10 @@ func checkIssuerInBookkeeperList(issuer *crypto.PubKey, bookKeepers []*crypto.Pu
 	for _, bk := range bookKeepers {
 		r := crypto.Equal(issuer, bk)
 		if r == true {
-			log.Debug("issuer is in bookkeeperlist")
 			return true
 		}
 	}
-	log.Debug("issuer is NOT in bookkeeperlist")
+
 	return false
 }
 
@@ -290,7 +289,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 	case *payload.Commit:
 	case *payload.Prepaid:
 		var inputAmount, outputAmount Fixed64
-		for _, input := range txn.UTXOInputs {
+		for _, input := range txn.Inputs {
 			reftxn, err := TxStore.GetTransaction(input.ReferTxID)
 			if err != nil {
 				return err

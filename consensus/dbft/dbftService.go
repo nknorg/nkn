@@ -170,15 +170,15 @@ func (ds *DbftService) CreateCoinbaseTransaction(nonce uint64) *tx.Transaction {
 		TxType:         tx.Coinbase,
 		PayloadVersion: 0,
 		Payload:        &payload.Coinbase{},
-		Attributes: []*tx.TxAttribute{
+		Attributes: []*tx.TxnAttribute{
 			{
 				Usage: tx.Nonce,
 				Data:  util.RandomBytes(tx.TransactionNonceLength),
 			},
 		},
-		UTXOInputs: []*tx.UTXOTxInput{},
-		Outputs:    []*tx.TxOutput{},
-		Programs:   []*program.Program{},
+		Inputs:   []*tx.TxnInput{},
+		Outputs:  []*tx.TxnOutput{},
+		Programs: []*program.Program{},
 	}
 }
 
