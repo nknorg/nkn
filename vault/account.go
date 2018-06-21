@@ -53,10 +53,10 @@ func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
 	}, nil
 }
 
-func (ac *Account) PrivKey() []byte {
-	return ac.PrivateKey
+func (a *Account) PrivKey() []byte {
+	return a.PrivateKey
 }
 
-func (ac *Account) PubKey() *crypto.PubKey {
-	return ac.PublicKey
+func (a *Account) PubKey() *crypto.PubKey {
+	return a.PublicKey
 }

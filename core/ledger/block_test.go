@@ -67,34 +67,34 @@ func TestBlock(t *testing.T) {
 					SigChain:  []byte{1, 2, 3, 4},
 					Submitter: common.Uint160{5, 6, 7, 8},
 				},
-				Attributes: []*transaction.TxAttribute{
-					&transaction.TxAttribute{
+				Attributes: []*transaction.TxnAttribute{
+					&transaction.TxnAttribute{
 						Usage: 1,
 						Data:  []byte{1, 2, 3, 4},
 						Size:  5,
 					},
-					&transaction.TxAttribute{
+					&transaction.TxnAttribute{
 						Usage: 1,
 						Data:  []byte{3, 6, 2, 1},
 					},
 				},
-				UTXOInputs: []*transaction.UTXOTxInput{
-					&transaction.UTXOTxInput{
+				Inputs: []*transaction.TxnInput{
+					&transaction.TxnInput{
 						ReferTxID:          common.Uint256{0, 1, 2, 4},
 						ReferTxOutputIndex: 5,
 					},
-					&transaction.UTXOTxInput{
+					&transaction.TxnInput{
 						ReferTxID:          common.Uint256{6, 7},
 						ReferTxOutputIndex: 3,
 					},
 				},
-				Outputs: []*transaction.TxOutput{
-					&transaction.TxOutput{
+				Outputs: []*transaction.TxnOutput{
+					&transaction.TxnOutput{
 						AssetID:     common.Uint256{0, 1, 2, 3, 4},
 						Value:       common.Fixed64(314159260),
 						ProgramHash: common.Uint160{1, 2, 3, 4, 5, 6, 7, 8},
 					},
-					&transaction.TxOutput{
+					&transaction.TxnOutput{
 						AssetID:     common.Uint256{0, 1, 3, 4},
 						Value:       common.Fixed64(7788),
 						ProgramHash: common.Uint160{1, 2, 5, 6, 7, 8},

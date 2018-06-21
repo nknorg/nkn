@@ -6,7 +6,6 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/util/log"
 )
 
 type ECDsaCrypto struct {
@@ -22,11 +21,6 @@ func (c *ECDsaCrypto) Hash256(message []byte) []byte {
 }
 
 func (c *ECDsaCrypto) VerifySignature(message []byte, signature []byte, pubkey []byte) (bool, error) {
-
-	log.Debug("message: %x \n", message)
-	log.Debug("signature: %x \n", signature)
-	log.Debug("pubkey: %x \n", pubkey)
-
 	pk, err := crypto.DecodePoint(pubkey)
 	if err != nil {
 		return false, NewDetailErr(errors.New("[ECDsaCrypto], crypto.DecodePoint failed."), ErrNoCode, "")

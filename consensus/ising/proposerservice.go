@@ -351,14 +351,14 @@ func (ps *ProposerService) CreateCoinbaseTransaction() *transaction.Transaction 
 		TxType:         transaction.Coinbase,
 		PayloadVersion: 0,
 		Payload:        &payload.Coinbase{},
-		Attributes: []*transaction.TxAttribute{
+		Attributes: []*transaction.TxnAttribute{
 			{
 				Usage: transaction.Nonce,
 				Data:  util.RandomBytes(transaction.TransactionNonceLength),
 			},
 		},
-		UTXOInputs: []*transaction.UTXOTxInput{},
-		Outputs: []*transaction.TxOutput{
+		Inputs: []*transaction.TxnInput{},
+		Outputs: []*transaction.TxnOutput{
 			{
 				AssetID:     ledger.DefaultLedger.Blockchain.AssetID,
 				Value:       10 * StorageFactor,

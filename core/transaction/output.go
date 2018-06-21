@@ -8,39 +8,22 @@ import (
 	"github.com/nknorg/nkn/common"
 )
 
-type TxOutput struct {
+type TxnOutput struct {
 	AssetID     common.Uint256
 	Value       common.Fixed64
 	ProgramHash common.Uint160
 }
 
-func (o *TxOutput) Serialize(w io.Writer) error {
-	_, err := o.AssetID.Serialize(w)
+func (output *TxnOutput) Serialize(w io.Writer) error {
+	_, err := output.AssetID.Serialize(w)
 	if err != nil {
 		return err
 	}
-	err = o.Value.Serialize(w)
+	err = output.Value.Serialize(w)
 	if err != nil {
 		return err
 	}
-	_, err = o.ProgramHash.Serialize(w)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (o *TxOutput) Deserialize(r io.Reader) error {
-	err := o.AssetID.Deserialize(r)
-	if err != nil {
-		return err
-	}
-	err = o.Value.Deserialize(r)
-	if err != nil {
-		return err
-	}
-	err = o.ProgramHash.Deserialize(r)
+	_, err = output.ProgramHash.Serialize(w)
 	if err != nil {
 		return err
 	}
@@ -48,27 +31,44 @@ func (o *TxOutput) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (o *TxOutput) Equal(o2 *TxOutput) bool {
-	if o.AssetID.CompareTo(o2.AssetID) != 0 {
+func (output *TxnOutput) Deserialize(r io.Reader) error {
+	err := output.AssetID.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	err = output.Value.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	err = output.ProgramHash.Deserialize(r)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (output *TxnOutput) Equal(o2 *TxnOutput) bool {
+	if output.AssetID.CompareTo(o2.AssetID) != 0 {
 		return false
 	}
 
-	if o.Value.GetData() != o2.Value.GetData() {
+	if output.Value.GetData() != o2.Value.GetData() {
 		return false
 	}
 
-	if o.ProgramHash.CompareTo(o2.ProgramHash) != 0 {
+	if output.ProgramHash.CompareTo(o2.ProgramHash) != 0 {
 		return false
 	}
 
 	return true
 }
 
-func (o *TxOutput) MarshalJson() ([]byte, error) {
-	address, _ := o.ProgramHash.ToAddress()
-	outputInfo := TxOutputInfo{
-		AssetID: common.BytesToHexString(o.AssetID.ToArrayReverse()),
-		Value:   o.Value.String(),
+func (output *TxnOutput) MarshalJson() ([]byte, error) {
+	address, _ := output.ProgramHash.ToAddress()
+	outputInfo := TxnOutputInfo{
+		AssetID: common.BytesToHexString(output.AssetID.ToArrayReverse()),
+		Value:   output.Value.String(),
 		Address: address,
 	}
 
@@ -79,8 +79,8 @@ func (o *TxOutput) MarshalJson() ([]byte, error) {
 	return data, nil
 }
 
-func (o *TxOutput) UnmarshalJson(data []byte) error {
-	outputInfo := new(TxOutputInfo)
+func (output *TxnOutput) UnmarshalJson(data []byte) error {
+	outputInfo := new(TxnOutputInfo)
 	var err error
 	if err = json.Unmarshal(data, &outputInfo); err != nil {
 		return err
@@ -90,17 +90,17 @@ func (o *TxOutput) UnmarshalJson(data []byte) error {
 	if err != nil {
 		return err
 	}
-	o.AssetID, err = common.Uint256ParseFromBytes(assetID)
+	output.AssetID, err = common.Uint256ParseFromBytes(assetID)
 	if err != nil {
 		return err
 	}
 
-	o.Value, err = common.StringToFixed64(outputInfo.Value)
+	output.Value, err = common.StringToFixed64(outputInfo.Value)
 	if err != nil {
 		return err
 	}
 
-	o.ProgramHash, err = common.ToScriptHash(outputInfo.Address)
+	output.ProgramHash, err = common.ToScriptHash(outputInfo.Address)
 	//fmt.Println(common.ToScriptHash(outputInfo.Address))
 
 	if err != nil {
@@ -110,8 +110,8 @@ func (o *TxOutput) UnmarshalJson(data []byte) error {
 	return nil
 }
 
-func (o *TxOutput) ToArray() []byte {
+func (output *TxnOutput) ToArray() []byte {
 	b := new(bytes.Buffer)
-	o.Serialize(b)
+	output.Serialize(b)
 	return b.Bytes()
 }

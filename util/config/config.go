@@ -52,7 +52,6 @@ type Configuration struct {
 	HttpWsPort           uint16   `json:"HttpWsPort"`
 	HttpJsonPort         uint16   `json:"HttpJsonPort"`
 	NodePort             uint16   `json:"NodePort"`
-	NodeType             string   `json:"NodeType"`
 	LogLevel             int      `json:"LogLevel"`
 	IsTLS                bool     `json:"IsTLS"`
 	CertPath             string   `json:"CertPath"`

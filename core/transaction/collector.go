@@ -38,18 +38,18 @@ func NewTxnCollector(source TxnSource, num int) *TxnCollector {
 	}
 }
 
-func (p *TxnCollector) Collect() map[Uint256]*Transaction {
-	return p.TxnSource.GetTxnByCount(p.TxnNum)
+func (tc *TxnCollector) Collect() map[Uint256]*Transaction {
+	return tc.TxnSource.GetTxnByCount(tc.TxnNum)
 }
 
-func (p *TxnCollector) GetTransaction(hash Uint256) *Transaction {
-	return p.TxnSource.GetTransaction(hash)
+func (tc *TxnCollector) GetTransaction(hash Uint256) *Transaction {
+	return tc.TxnSource.GetTransaction(hash)
 }
 
-func (p *TxnCollector) Append(txn *Transaction) errors.ErrCode {
-	return p.TxnSource.AppendTxnPool(txn)
+func (tc *TxnCollector) Append(txn *Transaction) errors.ErrCode {
+	return tc.TxnSource.AppendTxnPool(txn)
 }
 
-func (p *TxnCollector) Cleanup(txns []*Transaction) error {
-	return p.TxnSource.CleanSubmittedTransactions(txns)
+func (tc *TxnCollector) Cleanup(txns []*Transaction) error {
+	return tc.TxnSource.CleanSubmittedTransactions(txns)
 }

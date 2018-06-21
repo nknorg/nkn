@@ -189,7 +189,7 @@ func GenesisBlockInit() (*Block, error) {
 			},
 			Controller: Uint160{},
 		},
-		Attributes: []*tx.TxAttribute{},
+		Attributes: []*tx.TxnAttribute{},
 		Programs: []*program.Program{
 			{
 				Code:      []byte{0x00},

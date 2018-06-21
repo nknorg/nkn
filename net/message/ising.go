@@ -125,7 +125,7 @@ func (p *IsingPayload) DataHash() ([]byte, error) {
 
 func NewIsingConsensus(pld *IsingPayload) ([]byte, error) {
 	var msg IsingMessage
-	msg.msgHdr.Magic = NETMAGIC
+	msg.msgHdr.Magic = NetID
 	cmd := "ising"
 	copy(msg.msgHdr.CMD[0:len(cmd)], cmd)
 	tmpBuffer := bytes.NewBuffer(nil)

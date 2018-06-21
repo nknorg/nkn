@@ -38,7 +38,7 @@ func NewRelayPacket(srcID, destID, payload []byte, sigChain *por.SigChain) (*Rel
 
 func NewRelayMessage(packet *RelayPacket) (*RelayMessage, error) {
 	var msg RelayMessage
-	msg.msgHdr.Magic = protocol.NETMAGIC
+	msg.msgHdr.Magic = NetID
 	cmd := "relay"
 	copy(msg.msgHdr.CMD[0:len(cmd)], cmd)
 	tmpBuffer := bytes.NewBuffer(nil)

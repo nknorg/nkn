@@ -13,16 +13,16 @@ type Commit struct {
 	Submitter Uint160
 }
 
-func (p *Commit) Data(version byte) []byte {
+func (c *Commit) Data(version byte) []byte {
 	return []byte{0}
 }
 
-func (p *Commit) Serialize(w io.Writer, version byte) error {
-	err := serialization.WriteVarBytes(w, p.SigChain)
+func (c *Commit) Serialize(w io.Writer, version byte) error {
+	err := serialization.WriteVarBytes(w, c.SigChain)
 	if err != nil {
 		return err
 	}
-	_, err = p.Submitter.Serialize(w)
+	_, err = c.Submitter.Serialize(w)
 	if err != nil {
 		return err
 	}
@@ -30,13 +30,13 @@ func (p *Commit) Serialize(w io.Writer, version byte) error {
 	return nil
 }
 
-func (p *Commit) Deserialize(r io.Reader, version byte) error {
+func (c *Commit) Deserialize(r io.Reader, version byte) error {
 	var err error
-	p.SigChain, err = serialization.ReadVarBytes(r)
+	c.SigChain, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
-	err = p.Submitter.Deserialize(r)
+	err = c.Submitter.Deserialize(r)
 	if err != nil {
 		return err
 	}
@@ -44,21 +44,21 @@ func (p *Commit) Deserialize(r io.Reader, version byte) error {
 	return nil
 }
 
-func (p *Commit) Equal(p2 *Commit) bool {
-	if !IsEqualBytes(p.SigChain, p2.SigChain) {
+func (c *Commit) Equal(p2 *Commit) bool {
+	if !IsEqualBytes(c.SigChain, p2.SigChain) {
 		return false
 	}
-	if p.Submitter.CompareTo(p2.Submitter) != 0 {
+	if c.Submitter.CompareTo(p2.Submitter) != 0 {
 		return false
 	}
 
 	return true
 }
 
-func (p *Commit) MarshalJson() ([]byte, error) {
+func (c *Commit) MarshalJson() ([]byte, error) {
 	cm := &CommitInfo{
-		SigChain:  BytesToHexString(p.SigChain),
-		Submitter: BytesToHexString(p.Submitter.ToArray()),
+		SigChain:  BytesToHexString(c.SigChain),
+		Submitter: BytesToHexString(c.Submitter.ToArray()),
 	}
 
 	data, err := json.Marshal(cm)
@@ -69,14 +69,14 @@ func (p *Commit) MarshalJson() ([]byte, error) {
 	return data, nil
 }
 
-func (p *Commit) UnmarshalJson(data []byte) error {
+func (c *Commit) UnmarshalJson(data []byte) error {
 	cmInfo := new(CommitInfo)
 	var err error
 	if err = json.Unmarshal(data, &cmInfo); err != nil {
 		return err
 	}
 
-	p.SigChain, err = HexStringToBytes(cmInfo.SigChain)
+	c.SigChain, err = HexStringToBytes(cmInfo.SigChain)
 	if err != nil {
 		return nil
 	}
@@ -85,7 +85,7 @@ func (p *Commit) UnmarshalJson(data []byte) error {
 	if err != nil {
 		return err
 	}
-	p.Submitter, err = Uint160ParseFromBytes(submitter)
+	c.Submitter, err = Uint160ParseFromBytes(submitter)
 	if err != nil {
 		return err
 	}

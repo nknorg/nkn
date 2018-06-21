@@ -28,16 +28,12 @@ type trn struct {
 }
 
 func (msg trn) Handle(node Noder) error {
-	log.Debug()
-	log.Debug("RX Transaction message")
 	tx := &msg.txn
 	if !node.LocalNode().ExistedID(tx.Hash()) {
 		if errCode := node.LocalNode().AppendTxnPool(&(msg.txn)); errCode != ErrNoError {
 			return errors.New("[message] VerifyTransaction failed when AppendTxnPool.")
 		}
 		node.LocalNode().IncRxTxnCnt()
-		log.Debug("RX Transaction message hash", msg.txn.Hash())
-		log.Debug("RX Transaction message type", msg.txn.TxType)
 	}
 
 	return nil
@@ -47,8 +43,6 @@ func reqTxnData(node Noder, hash common.Uint256) error {
 	var msg dataReq
 	msg.dataType = common.TRANSACTION
 	// TODO handle the hash array case
-	//msg.hash = hash
-
 	buff := bytes.NewBuffer(nil)
 	err := msg.Serialize(buff)
 	if err != nil {
@@ -106,10 +100,8 @@ func NewTxnFromHash(hash common.Uint256) (*transaction.Transaction, error) {
 	return txn, nil
 }
 func NewTxn(txn *transaction.Transaction) ([]byte, error) {
-	log.Debug()
 	var msg trn
-
-	msg.msgHdr.Magic = NETMAGIC
+	msg.msgHdr.Magic = NetID
 	cmd := "tx"
 	copy(msg.msgHdr.CMD[0:len(cmd)], cmd)
 	tmpBuffer := bytes.NewBuffer([]byte{})
@@ -127,7 +119,6 @@ func NewTxn(txn *transaction.Transaction) ([]byte, error) {
 	buf := bytes.NewBuffer(s[:4])
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(b.Bytes()))
-	log.Debug("The message payload length is ", msg.msgHdr.Length)
 
 	txnBuff := bytes.NewBuffer(nil)
 	err = msg.Serialize(txnBuff)

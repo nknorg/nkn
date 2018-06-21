@@ -14,6 +14,17 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
+const (
+	MsgHdrLen      = 24
+	MsgCmdLen      = 12
+	MsgCmdOffset   = 4
+	MsgChecksumLen = 4
+	NetID          = 0x00000000
+	MaxHdrCnt      = 500
+	MaxInvHdrCnt   = 500
+	HashLen        = 32
+)
+
 type Messager interface {
 	Verify([]byte) error
 	Handle(Noder) error
@@ -24,9 +35,9 @@ type Messager interface {
 type msgHdr struct {
 	Magic uint32
 	//ID	 uint64
-	CMD      [MSGCMDLEN]byte // The message type
+	CMD      [MsgCmdLen]byte // The message type
 	Length   uint32
-	Checksum [CHECKSUMLEN]byte
+	Checksum [MsgChecksumLen]byte
 }
 
 // The message body and header
@@ -98,7 +109,7 @@ func AllocMsg(t string, length int) Messager {
 		var msg Inv
 		copy(msg.Hdr.CMD[0:len(t)], t)
 		// the 1 is the inv type lenght
-		msg.P.Blk = make([]byte, length-MSGHDRLEN-1)
+		msg.P.Blk = make([]byte, length-MsgHdrLen-1)
 		return &msg
 	case "getdata":
 		var msg dataReq
@@ -174,9 +185,9 @@ func AllocMsg(t string, length int) Messager {
 }
 
 func MsgType(buf []byte) (string, error) {
-	cmd := buf[CMDOFFSET : CMDOFFSET+MSGCMDLEN]
+	cmd := buf[MsgCmdOffset : MsgCmdOffset+MsgCmdLen]
 	n := bytes.IndexByte(cmd, 0)
-	if n < 0 || n >= MSGCMDLEN {
+	if n < 0 || n >= MsgCmdLen {
 		return "", errors.New("Unexpected length of CMD command")
 	}
 	s := string(cmd[:n])
@@ -202,12 +213,10 @@ func NewMsg(t string, n Noder) ([]byte, error) {
 
 // FIXME the length exceed int32 case?
 func HandleNodeMsg(node Noder, buf []byte, len int) error {
-	if len < MSGHDRLEN {
+	if len < MsgHdrLen {
 		log.Warn("Unexpected size of received message")
 		return errors.New("Unexpected size of received message")
 	}
-
-	log.Debugf("Received data len:  %d\n%x", len, buf[:len])
 
 	s, err := MsgType(buf)
 	if err != nil {
@@ -227,7 +236,7 @@ func HandleNodeMsg(node Noder, buf []byte, len int) error {
 	if err != nil {
 		return err
 	}
-	err = msg.Verify(buf[MSGHDRLEN:len])
+	err = msg.Verify(buf[MsgHdrLen:len])
 	if err != nil {
 		return err
 	}
@@ -236,7 +245,7 @@ func HandleNodeMsg(node Noder, buf []byte, len int) error {
 }
 
 func magicVerify(magic uint32) bool {
-	if magic != NETMAGIC {
+	if magic != NetID {
 		return false
 	}
 	return true
@@ -262,7 +271,7 @@ func checkSum(p []byte) []byte {
 	s := sha256.Sum256(t[:])
 
 	// Currently we only need the front 4 bytes as checksum
-	return s[:CHECKSUMLEN]
+	return s[:MsgChecksumLen]
 }
 
 func reverse(input []byte) []byte {
@@ -273,9 +282,9 @@ func reverse(input []byte) []byte {
 }
 
 func (hdr *msgHdr) init(cmd string, checksum []byte, length uint32) {
-	hdr.Magic = NETMAGIC
+	hdr.Magic = NetID
 	copy(hdr.CMD[0:uint32(len(cmd))], cmd)
-	copy(hdr.Checksum[:], checksum[:CHECKSUMLEN])
+	copy(hdr.Checksum[:], checksum[:MsgChecksumLen])
 	hdr.Length = length
 	//hdr.ID = id
 }
@@ -308,7 +317,6 @@ func (hdr msgHdr) Serialize(w io.Writer) error {
 }
 
 func (hdr msgHdr) Handle(n Noder) error {
-	log.Debug()
 	// TBD
 	return nil
 }

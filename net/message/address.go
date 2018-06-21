@@ -41,7 +41,7 @@ func NewAddrs(nodeaddrs []NodeAddr, count uint64) ([]byte, error) {
 	var msg addr
 	msg.nodeAddrs = nodeaddrs
 	msg.nodeCnt = count
-	msg.hdr.Magic = NETMAGIC
+	msg.hdr.Magic = NetID
 	cmd := "addr"
 	copy(msg.hdr.CMD[0:7], cmd)
 	p := new(bytes.Buffer)
@@ -62,7 +62,6 @@ func NewAddrs(nodeaddrs []NodeAddr, count uint64) ([]byte, error) {
 	buf := bytes.NewBuffer(s[:4])
 	binary.Read(buf, binary.LittleEndian, &(msg.hdr.Checksum))
 	msg.hdr.Length = uint32(len(p.Bytes()))
-	log.Debug("The message payload length is ", msg.hdr.Length)
 
 	buff := bytes.NewBuffer(nil)
 	err = msg.Serialize(buff)
@@ -142,7 +141,6 @@ func (msg addr) Verify(buf []byte) error {
 }
 
 func (msg addr) Handle(node Noder) error {
-	log.Debug()
 	for _, v := range msg.nodeAddrs {
 		var ip net.IP
 		ip = v.IpAddr[:]

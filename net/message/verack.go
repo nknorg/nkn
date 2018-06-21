@@ -49,8 +49,6 @@ func NewVerack() ([]byte, error) {
  */
 // TODO The process should be adjusted based on above table
 func (msg verACK) Handle(node Noder) error {
-	log.Debug()
-
 	s := node.GetState()
 	if s != HANDSHAKE && s != HANDSHAKED {
 		log.Warn("Unknown status to received verack")

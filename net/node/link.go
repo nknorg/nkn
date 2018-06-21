@@ -20,6 +20,11 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
+const (
+	MaxBufLen   = 1024 * 16       // maximum buffer to receive message
+	DialTimeout = 3 * time.Second // timeout for dialing
+)
+
 type link struct {
 	//Todo Add lock here
 	addr         string    // The address of the node
@@ -45,7 +50,7 @@ func unpackNodeBuf(node *node, buf []byte) {
 	}
 
 	if node.rxBuf.len == 0 {
-		length := MSGHDRLEN - len(node.rxBuf.p)
+		length := msg.MsgHdrLen - len(node.rxBuf.p)
 		if length > len(buf) {
 			length = len(buf)
 			node.rxBuf.p = append(node.rxBuf.p, buf[0:length]...)
@@ -86,10 +91,10 @@ func unpackNodeBuf(node *node, buf []byte) {
 
 func (node *node) rx() {
 	conn := node.getConn()
-	buf := make([]byte, MAXBUFLEN)
+	buf := make([]byte, MaxBufLen)
 	for {
-		len, err := conn.Read(buf[0:(MAXBUFLEN - 1)])
-		buf[MAXBUFLEN-1] = 0 //Prevent overflow
+		len, err := conn.Read(buf[0:(MaxBufLen - 1)])
+		buf[MaxBufLen-1] = 0 //Prevent overflow
 		switch err {
 		case nil:
 			t := time.Now()
@@ -155,11 +160,9 @@ func (n *node) initConnection() {
 		node.conn = conn
 		go node.rx()
 	}
-	//TODO Release the net listen resouce
 }
 
 func initNonTlsListen() (net.Listener, error) {
-	log.Debug()
 	listener, err := net.Listen("tcp", ":"+strconv.Itoa(int(Parameters.NodePort)))
 	if err != nil {
 		log.Error("Error listening\n", err.Error())
@@ -217,19 +220,16 @@ func parseIPaddr(s string) (string, error) {
 }
 
 func (node *node) Connect(nodeAddr string) error {
-	log.Debug()
-
-	if node.IsAddrInNbrList(nodeAddr) == true {
+	if node.IsAddrInNbrList(nodeAddr) {
 		return nil
 	}
-	if added := node.SetAddrInConnectingList(nodeAddr); added == false {
+	if !node.SetAddrInConnectingList(nodeAddr) {
 		return errors.New("node exist in connecting list, cancel")
 	}
 
 	isTls := Parameters.IsTLS
 	var conn net.Conn
 	var err error
-
 	if isTls {
 		conn, err = TLSDial(nodeAddr)
 		if err != nil {
@@ -264,11 +264,11 @@ func (node *node) Connect(nodeAddr string) error {
 }
 
 func NonTLSDial(nodeAddr string) (net.Conn, error) {
-	log.Debug()
-	conn, err := net.DialTimeout("tcp", nodeAddr, time.Second*DIALTIMEOUT)
+	conn, err := net.DialTimeout("tcp", nodeAddr, DialTimeout)
 	if err != nil {
 		return nil, err
 	}
+
 	return conn, nil
 }
 
@@ -296,7 +296,7 @@ func TLSDial(nodeAddr string) (net.Conn, error) {
 	}
 
 	var dialer net.Dialer
-	dialer.Timeout = time.Second * DIALTIMEOUT
+	dialer.Timeout = DialTimeout
 	conn, err := tls.DialWithDialer(&dialer, "tcp", nodeAddr, conf)
 	if err != nil {
 		return nil, err
@@ -305,8 +305,6 @@ func TLSDial(nodeAddr string) (net.Conn, error) {
 }
 
 func (node *node) Tx(buf []byte) {
-	log.Debugf("TX buf length: %d\n%x", len(buf), buf)
-
 	if node.GetState() == INACTIVITY {
 		return
 	}

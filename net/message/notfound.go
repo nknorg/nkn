@@ -18,10 +18,9 @@ type notFound struct {
 }
 
 func NewNotFound(hash common.Uint256) ([]byte, error) {
-	log.Debug()
 	var msg notFound
 	msg.hash = hash
-	msg.msgHdr.Magic = NETMAGIC
+	msg.msgHdr.Magic = NetID
 	cmd := "notfound"
 	copy(msg.msgHdr.CMD[0:len(cmd)], cmd)
 	tmpBuffer := bytes.NewBuffer([]byte{})
@@ -38,7 +37,6 @@ func NewNotFound(hash common.Uint256) ([]byte, error) {
 	buf := bytes.NewBuffer(s[:4])
 	binary.Read(buf, binary.LittleEndian, &(msg.msgHdr.Checksum))
 	msg.msgHdr.Length = uint32(len(p.Bytes()))
-	log.Debug("The message payload length is ", msg.msgHdr.Length)
 
 	notfoundBuff := bytes.NewBuffer(nil)
 	err = msg.Serialize(notfoundBuff)
@@ -83,6 +81,5 @@ func (msg *notFound) Deserialize(r io.Reader) error {
 }
 
 func (msg notFound) Handle(node Noder) error {
-	log.Debug("RX notfound message, hash is ", msg.hash)
 	return nil
 }

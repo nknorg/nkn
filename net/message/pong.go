@@ -19,7 +19,7 @@ type pong struct {
 
 func NewPongMsg() ([]byte, error) {
 	var msg pong
-	msg.msgHdr.Magic = NETMAGIC
+	msg.msgHdr.Magic = NetID
 	copy(msg.msgHdr.CMD[0:7], "pong")
 	msg.height = uint64(ledger.DefaultLedger.Store.GetHeaderHeight())
 	tmpBuffer := bytes.NewBuffer([]byte{})

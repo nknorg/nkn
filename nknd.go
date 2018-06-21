@@ -62,17 +62,15 @@ func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 }
 
 func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
-	if protocol.SERVICENODENAME != config.Parameters.NodeType {
-		switch config.Parameters.ConsensusType {
-		case "ising":
-			log.Info("ising consensus starting ...")
-			account, _ := wallet.GetDefaultAccount()
-			go ising.StartIsingConsensus(account, node)
-		case "dbft":
-			log.Info("dbft consensus starting ...")
-			dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
-			go dbftServices.Start()
-		}
+	switch config.Parameters.ConsensusType {
+	case "ising":
+		log.Info("ising consensus starting ...")
+		account, _ := wallet.GetDefaultAccount()
+		go ising.StartIsingConsensus(account, node)
+	case "dbft":
+		log.Info("dbft consensus starting ...")
+		dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
+		go dbftServices.Start()
 	}
 }
 

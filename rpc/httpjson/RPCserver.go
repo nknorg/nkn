@@ -186,8 +186,6 @@ func (s *RPCServer) initTlsListen(cert, key string) (net.Listener, error) {
 }
 
 func (s *RPCServer) Start() {
-	log.Debug()
-
 	for name, handler := range common.InitialAPIHandlers {
 		if handler.IsAccessableByJsonrpc() {
 			s.HandleFunc(name, handler.Handler)

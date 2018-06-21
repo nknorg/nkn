@@ -86,8 +86,8 @@ func SendRecord(cmd map[string]interface{}) map[string]interface{} {
 		return resp
 	}
 
-	var inputs []*tx.UTXOTxInput
-	var outputs []*tx.TxOutput
+	var inputs []*tx.TxnInput
+	var outputs []*tx.TxnOutput
 
 	transferTx, _ := tx.NewTransferAssetTransaction(inputs, outputs)
 

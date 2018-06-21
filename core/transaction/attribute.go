@@ -14,59 +14,54 @@ import (
 type TransactionAttributeUsage byte
 
 const (
-	Nonce          TransactionAttributeUsage = 0x00
-	Script         TransactionAttributeUsage = 0x20
-	DescriptionUrl TransactionAttributeUsage = 0x81
-	Description    TransactionAttributeUsage = 0x90
+	Nonce       TransactionAttributeUsage = 0x00
+	Script      TransactionAttributeUsage = 0x20
+	Description TransactionAttributeUsage = 0x90
 )
 
 func IsValidAttributeType(usage TransactionAttributeUsage) bool {
-	return usage == Nonce || usage == Script ||
-		usage == DescriptionUrl || usage == Description
+	return usage == Nonce || usage == Script || usage == Description
 }
 
-type TxAttribute struct {
+type TxnAttribute struct {
 	Usage TransactionAttributeUsage
 	Data  []byte
 	Size  uint32
 }
 
-func NewTxAttribute(u TransactionAttributeUsage, d []byte) TxAttribute {
-	tx := TxAttribute{u, d, 0}
+func NewTxAttribute(u TransactionAttributeUsage, d []byte) TxnAttribute {
+	tx := TxnAttribute{u, d, 0}
 	tx.Size = tx.GetSize()
 	return tx
 }
 
-func (u *TxAttribute) GetSize() uint32 {
-	if u.Usage == DescriptionUrl {
-		return uint32(len([]byte{(byte(0xff))}) + len([]byte{(byte(0xff))}) + len(u.Data))
-	}
+func (attr *TxnAttribute) GetSize() uint32 {
 	return 0
 }
 
-func (tx *TxAttribute) Serialize(w io.Writer) error {
-	if err := serialization.WriteUint8(w, byte(tx.Usage)); err != nil {
+func (attr *TxnAttribute) Serialize(w io.Writer) error {
+	if err := serialization.WriteUint8(w, byte(attr.Usage)); err != nil {
 		return NewDetailErr(err, ErrNoCode, "Transaction attribute Usage serialization error.")
 	}
-	if !IsValidAttributeType(tx.Usage) {
-		return NewDetailErr(errors.New("[TxAttribute] error"), ErrNoCode, "Unsupported attribute Description.")
+	if !IsValidAttributeType(attr.Usage) {
+		return NewDetailErr(errors.New("[TxnAttribute] error"), ErrNoCode, "Unsupported attribute Description.")
 	}
-	if err := serialization.WriteVarBytes(w, tx.Data); err != nil {
+	if err := serialization.WriteVarBytes(w, attr.Data); err != nil {
 		return NewDetailErr(err, ErrNoCode, "Transaction attribute Data serialization error.")
 	}
 	return nil
 }
 
-func (tx *TxAttribute) Deserialize(r io.Reader) error {
+func (attr *TxnAttribute) Deserialize(r io.Reader) error {
 	val, err := serialization.ReadBytes(r, 1)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "Transaction attribute Usage deserialization error.")
 	}
-	tx.Usage = TransactionAttributeUsage(val[0])
-	if !IsValidAttributeType(tx.Usage) {
-		return NewDetailErr(errors.New("[TxAttribute] error"), ErrNoCode, "Unsupported attribute Description.")
+	attr.Usage = TransactionAttributeUsage(val[0])
+	if !IsValidAttributeType(attr.Usage) {
+		return NewDetailErr(errors.New("[TxnAttribute] error"), ErrNoCode, "Unsupported attribute Description.")
 	}
-	tx.Data, err = serialization.ReadVarBytes(r)
+	attr.Data, err = serialization.ReadVarBytes(r)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "Transaction attribute Data deserialization error.")
 	}
@@ -74,51 +69,51 @@ func (tx *TxAttribute) Deserialize(r io.Reader) error {
 
 }
 
-func (tx *TxAttribute) Equal(tx2 *TxAttribute) bool {
-	if tx.Usage != tx2.Usage {
+func (attr *TxnAttribute) Equal(tx2 *TxnAttribute) bool {
+	if attr.Usage != tx2.Usage {
 		return false
 	}
 
-	if !common.IsEqualBytes(tx.Data, tx2.Data) {
+	if !common.IsEqualBytes(attr.Data, tx2.Data) {
 		return false
 	}
 
 	return true
 }
 
-func (tx *TxAttribute) MarshalJson() ([]byte, error) {
-	ta := TxAttributeInfo{
-		Usage: tx.Usage,
-		Data:  common.BytesToHexString(tx.Data),
+func (attr *TxnAttribute) MarshalJson() ([]byte, error) {
+	txnInfo := TxnAttributeInfo{
+		Usage: attr.Usage,
+		Data:  common.BytesToHexString(attr.Data),
 	}
 
-	data, err := json.Marshal(ta)
+	data, err := json.Marshal(txnInfo)
 	if err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
-func (tx *TxAttribute) UnmarshalJson(data []byte) error {
-	ta := new(TxAttributeInfo)
+func (attr *TxnAttribute) UnmarshalJson(data []byte) error {
+	txnInfo := new(TxnAttributeInfo)
 	var err error
-	if err = json.Unmarshal(data, &ta); err != nil {
+	if err = json.Unmarshal(data, &txnInfo); err != nil {
 		return err
 	}
 
-	tx.Usage = ta.Usage
-	tx.Data, err = common.HexStringToBytes(ta.Data)
+	attr.Usage = txnInfo.Usage
+	attr.Data, err = common.HexStringToBytes(txnInfo.Data)
 	if err != nil {
 		return nil
 	}
 
-	tx.Size = tx.GetSize()
+	attr.Size = attr.GetSize()
 
 	return nil
 }
 
-func (tx *TxAttribute) ToArray() []byte {
+func (attr *TxnAttribute) ToArray() []byte {
 	b := new(bytes.Buffer)
-	tx.Serialize(b)
+	attr.Serialize(b)
 	return b.Bytes()
 }

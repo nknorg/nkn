@@ -54,12 +54,12 @@ func MakeIssueTransaction(wallet vault.Wallet, assetID Uint256, address string, 
 	if err != nil {
 		return nil, err
 	}
-	issueTxOutput := &transaction.TxOutput{
+	issueTxOutput := &transaction.TxnOutput{
 		AssetID:     assetID,
 		Value:       fixedValue,
 		ProgramHash: programHash,
 	}
-	outputs := []*transaction.TxOutput{issueTxOutput}
+	outputs := []*transaction.TxnOutput{issueTxOutput}
 	txn, err := transaction.NewIssueAssetTransaction(outputs)
 	if err != nil {
 		return nil, err
@@ -85,8 +85,8 @@ func MakeTransferTransaction(wallet vault.Wallet, assetID Uint256, batchOut ...B
 	}
 	perOutputFee := Fixed64(0)
 	var expected Fixed64
-	input := []*transaction.UTXOTxInput{}
-	output := []*transaction.TxOutput{}
+	input := []*transaction.TxnInput{}
+	output := []*transaction.TxnOutput{}
 	// construct transaction outputs
 	for _, o := range batchOut {
 		outputValue, err := StringToFixed64(o.Value)
@@ -101,7 +101,7 @@ func MakeTransferTransaction(wallet vault.Wallet, assetID Uint256, batchOut ...B
 		if err != nil {
 			return nil, errors.New("invalid address")
 		}
-		tmp := &transaction.TxOutput{
+		tmp := &transaction.TxnOutput{
 			AssetID:     assetID,
 			Value:       outputValue - perOutputFee,
 			ProgramHash: address,
@@ -115,13 +115,13 @@ func MakeTransferTransaction(wallet vault.Wallet, assetID Uint256, batchOut ...B
 		return nil, errors.New("get asset error")
 	}
 	for _, item := range unspent[assetID] {
-		tmpInput := &transaction.UTXOTxInput{
+		tmpInput := &transaction.TxnInput{
 			ReferTxID:          item.Txid,
 			ReferTxOutputIndex: uint16(item.Index),
 		}
 		input = append(input, tmpInput)
 		if item.Value > expected {
-			changes := &transaction.TxOutput{
+			changes := &transaction.TxnOutput{
 				AssetID:     assetID,
 				Value:       item.Value - expected,
 				ProgramHash: account.ProgramHash,
@@ -170,16 +170,16 @@ func MakePrepaidTransaction(wallet vault.Wallet, assetID Uint256, value, rates s
 	if err != nil {
 		return nil, errors.New("get asset error")
 	}
-	inputs := []*transaction.UTXOTxInput{}
-	var changes *transaction.TxOutput
+	inputs := []*transaction.TxnInput{}
+	var changes *transaction.TxnOutput
 	for _, item := range unspent[assetID] {
-		tmpInput := &transaction.UTXOTxInput{
+		tmpInput := &transaction.TxnInput{
 			ReferTxID:          item.Txid,
 			ReferTxOutputIndex: uint16(item.Index),
 		}
 		inputs = append(inputs, tmpInput)
 		if item.Value > amount {
-			changes = &transaction.TxOutput{
+			changes = &transaction.TxnOutput{
 				AssetID:     assetID,
 				Value:       item.Value - amount,
 				ProgramHash: account.ProgramHash,
@@ -222,7 +222,7 @@ func MakeWithdrawTransaction(wallet vault.Wallet, assetID Uint256, value string)
 		return nil, err
 	}
 
-	output := &transaction.TxOutput{
+	output := &transaction.TxnOutput{
 		AssetID:     assetID,
 		Value:       amount,
 		ProgramHash: account.ProgramHash,
