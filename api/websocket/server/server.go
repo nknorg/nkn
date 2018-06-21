@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nknorg/nkn/api/common"
 	. "github.com/nknorg/nkn/api/httprestful/common"
 	Err "github.com/nknorg/nkn/api/httprestful/error"
 	. "github.com/nknorg/nkn/api/websocket/session"
@@ -19,13 +20,13 @@ import (
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/vault"
 
 	"github.com/gorilla/websocket"
 )
 
-type handler func(map[string]interface{}) map[string]interface{}
 type Handler struct {
-	handler  handler
+	handler  common.Handler
 	pushFlag bool
 }
 
@@ -38,14 +39,16 @@ type WsServer struct {
 	ActionMap   map[string]Handler
 	TxHashMap   map[string]string //key: txHash   value:sessionid
 	node        protocol.Noder
+	wallet      vault.Wallet
 }
 
-func InitWsServer(node protocol.Noder) *WsServer {
+func InitWsServer(node protocol.Noder, wallet vault.Wallet) *WsServer {
 	ws := &WsServer{
 		Upgrader:    websocket.Upgrader{},
 		SessionList: NewSessionList(),
 		TxHashMap:   make(map[string]string),
 		node:        node,
+		wallet:      wallet,
 	}
 	return ws
 }
@@ -92,50 +95,37 @@ func (ws *WsServer) Start() error {
 }
 
 func (ws *WsServer) registryMethod() {
-	gettxhashmap := func(cmd map[string]interface{}) map[string]interface{} {
-		resp := ResponsePack(Err.SUCCESS)
+	gettxhashmap := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
 		ws.Lock()
 		defer ws.Unlock()
-		resp["Result"] = len(ws.TxHashMap)
+		resp := common.RespPacking(len(ws.TxHashMap), common.SUCCESS)
 		return resp
 	}
-	sendRawTransaction := func(cmd map[string]interface{}) map[string]interface{} {
-		resp := SendRawTransaction(cmd)
-		if userid, ok := resp["Userid"].(string); ok && len(userid) > 0 {
-			if result, ok := resp["Result"].(string); ok {
-				ws.SetTxHashMap(result, userid)
-			}
-			delete(resp, "Userid")
-		}
-		return resp
+
+	heartbeat := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
+		return common.RespPacking(cmd["Userid"], common.SUCCESS)
+
 	}
-	heartbeat := func(cmd map[string]interface{}) map[string]interface{} {
-		resp := ResponsePack(Err.SUCCESS)
-		resp["Action"] = "heartbeat"
-		resp["Result"] = cmd["Userid"]
-		return resp
+
+	getsessioncount := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
+		return common.RespPacking(ws.SessionList.GetSessionCount(), common.SUCCESS)
 	}
-	getsessioncount := func(cmd map[string]interface{}) map[string]interface{} {
-		resp := ResponsePack(Err.SUCCESS)
-		resp["Action"] = "getsessioncount"
-		resp["Result"] = ws.SessionList.GetSessionCount()
-		return resp
-	}
-	setClient := func(cmd map[string]interface{}) map[string]interface{} {
+
+	setClient := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
 		addrStr, ok := cmd["Addr"].(string)
 		if !ok {
-			return ResponsePack(Err.INVALID_PARAMS)
+			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 		clientID, pubKey, err := address.ParseClientAddress(addrStr)
 		if err != nil {
 			log.Error("Parse client address error:", err)
-			return ResponsePack(Err.INVALID_PARAMS)
+			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 
 		_, err = crypto.DecodePoint(pubKey)
 		if err != nil {
 			log.Error("Invalid public key hex decoding to point:", err)
-			return ResponsePack(Err.INVALID_PARAMS)
+			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 
 		// TODO: use signature (or better, with one-time challange) to verify identity
@@ -143,78 +133,79 @@ func (ws *WsServer) registryMethod() {
 		nextHop, err := ws.node.NextHop(clientID)
 		if err != nil {
 			log.Error("Get next hop error: ", err)
-			return ResponsePack(Err.INTERNAL_ERROR)
+			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 		if nextHop != nil {
 			log.Error("This is not the correct node to connect")
-			return ResponsePack(Err.INVALID_PARAMS)
+			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 
 		newSessionId := hex.EncodeToString(clientID)
 		session, err := ws.SessionList.ChangeSessionToClient(cmd["Userid"].(string), newSessionId)
 		if err != nil {
 			log.Error("Change session id error: ", err)
-			return ResponsePack(Err.INTERNAL_ERROR)
+			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
 		session.SetClient(clientID, pubKey, &addrStr)
 		go ws.node.SendRelayPacketsInBuffer(clientID)
-		resp := ResponsePack(Err.SUCCESS)
-		return resp
+
+		return common.RespPacking(nil, common.SUCCESS)
 	}
-	relayHandler := func(cmd map[string]interface{}) map[string]interface{} {
+
+	relayHandler := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
 		clients := ws.SessionList.GetSessionsById(cmd["Userid"].(string))
 		if clients == nil {
 			log.Error("Session not found")
-			return ResponsePack(Err.INTERNAL_ERROR)
+			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
 		client := clients[0]
 		if !client.IsClient() {
 			log.Error("Session is not client")
-			return ResponsePack(Err.INVALID_METHOD)
+			return common.RespPacking(nil, common.INVALID_METHOD)
 		}
 		srcAddrStr := client.GetAddrStr()
 		srcPubkey := client.GetPubKey()
 		if srcPubkey == nil {
 			log.Error("Session does not have a public key")
-			return ResponsePack(Err.INVALID_METHOD)
+			return common.RespPacking(nil, common.INVALID_METHOD)
 		}
 		addrStr, ok := cmd["Dest"].(string)
 		if !ok {
-			return ResponsePack(Err.INVALID_PARAMS)
+			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 		destID, destPubkey, err := address.ParseClientAddress(addrStr)
 		if err != nil {
 			log.Error("Parse client address error:", err)
-			return ResponsePack(Err.INVALID_PARAMS)
+			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 		payload := []byte(cmd["Payload"].(string))
 		signature, err := hex.DecodeString(cmd["Signature"].(string))
 		if err != nil {
 			log.Error("Decode signature error:", err)
-			return ResponsePack(Err.INVALID_PARAMS)
+			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 		err = ws.node.SendRelayPacket([]byte(*srcAddrStr), srcPubkey, destID[:], destPubkey, payload, signature)
 		if err != nil {
 			log.Error("Send relay packet error:", err)
-			return ResponsePack(Err.INTERNAL_ERROR)
+			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
-		resp := ResponsePack(Err.SUCCESS)
-		return resp
+		return common.RespPacking(nil, common.SUCCESS)
 	}
+
 	actionMap := map[string]Handler{
-		"getconnectioncount": {handler: GetConnectionCount},
-		"getblockbyheight":   {handler: GetBlockByHeight},
-		"getblockbyhash":     {handler: GetBlockByHash},
-		"getblockheight":     {handler: GetBlockHeight},
-		"gettransaction":     {handler: GetTransactionByHash},
-		"getunspendoutput":   {handler: GetUnspendOutput},
-		"sendrawtransaction": {handler: sendRawTransaction},
-		"heartbeat":          {handler: heartbeat},
-		"gettxhashmap":       {handler: gettxhashmap},
-		"getsessioncount":    {handler: getsessioncount},
-		"setClient":          {handler: setClient},
-		"sendPacket":         {handler: relayHandler},
+		"heartbeat":       {handler: heartbeat},
+		"gettxhashmap":    {handler: gettxhashmap},
+		"getsessioncount": {handler: getsessioncount},
+		"setClient":       {handler: setClient},
+		"sendPacket":      {handler: relayHandler},
 	}
+
+	for name, handler := range common.InitialAPIHandlers {
+		if handler.IsAccessableByWebsocket() {
+			actionMap[name] = Handler{handler: handler.Handler}
+		}
+	}
+
 	ws.ActionMap = actionMap
 }
 
@@ -345,8 +336,10 @@ func (ws *WsServer) OnDataHandle(curSession *Session, bysMsg []byte, r *http.Req
 		req["Raw"] = strconv.FormatInt(int64(raw), 10)
 	}
 	req["Userid"] = curSession.GetSessionId()
-	resp := action.handler(req)
+	ret := action.handler(ws, req)
+	resp := ResponsePack(int64(ret["error"].(common.ErrCode)))
 	resp["Action"] = actionName
+	resp["Result"] = ret["result"]
 	if txHash, ok := resp["Result"].(string); ok && action.pushFlag {
 		ws.Lock()
 		defer ws.Unlock()
@@ -450,4 +443,12 @@ func (ws *WsServer) initTlsListen() (net.Listener, error) {
 func (ws *WsServer) GetClientsById(cliendID []byte) []*Session {
 	sessions := ws.SessionList.GetSessionsById(hex.EncodeToString(cliendID))
 	return sessions
+}
+
+func (ws *WsServer) GetNetNode() (protocol.Noder, error) {
+	return ws.node, nil
+}
+
+func (ws *WsServer) GetWallet() (vault.Wallet, error) {
+	return ws.wallet, nil
 }

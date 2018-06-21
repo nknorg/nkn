@@ -1,8 +1,6 @@
 package common
 
 import (
-	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/vault"
 )
@@ -10,7 +8,6 @@ import (
 type Serverer interface {
 	GetNetNode() (protocol.Noder, error)
 	GetWallet() (vault.Wallet, error)
-	VerifyAndSendTx(txn *transaction.Transaction) errors.ErrCode
 }
 
 func respPacking(result interface{}, errcode ErrCode) map[string]interface{} {
@@ -19,4 +16,8 @@ func respPacking(result interface{}, errcode ErrCode) map[string]interface{} {
 		"error":  errcode,
 	}
 	return resp
+}
+
+func RespPacking(result interface{}, errcode ErrCode) map[string]interface{} {
+	return respPacking(result, errcode)
 }

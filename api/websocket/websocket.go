@@ -11,6 +11,7 @@ import (
 	"github.com/nknorg/nkn/events"
 	. "github.com/nknorg/nkn/net/protocol"
 	. "github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/vault"
 )
 
 var ws *server.WsServer
@@ -21,11 +22,11 @@ var (
 	pushBlockTxsFlag bool = false
 )
 
-func StartServer(n Noder) {
-	common.SetNode(n)
+func StartServer(n Noder, w vault.Wallet) {
+	//	common.SetNode(n)
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
 	go func() {
-		ws = server.InitWsServer(n)
+		ws = server.InitWsServer(n, w)
 		ws.Start()
 	}()
 }
@@ -54,13 +55,14 @@ func Stop() {
 }
 
 func ReStartServer() {
-	if ws == nil {
-		n := common.GetNode()
-		ws = server.InitWsServer(n)
-		ws.Start()
-		return
-	}
-	ws.Restart()
+	// TODO
+	//	if ws == nil {
+	//		n := common.GetNode()
+	//		ws = server.InitWsServer(n)
+	//		ws.Start()
+	//		return
+	//	}
+	//	ws.Restart()
 }
 
 func GetWsPushBlockFlag() bool {

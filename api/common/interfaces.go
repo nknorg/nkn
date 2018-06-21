@@ -12,6 +12,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/chord"
+	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
@@ -284,6 +285,11 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
 	var hash common.Uint256
 	if str, ok := params["tx"].(string); ok {
 		hex, err := common.HexStringToBytes(str)
@@ -296,7 +302,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		}
 
 		hash = txn.Hash()
-		if errCode := s.VerifyAndSendTx(&txn); errCode != errors.ErrNoError {
+		if errCode := VerifyAndSendTx(node, &txn); errCode != errors.ErrNoError {
 			return respPacking(nil, INVALID_TRANSACTION)
 		}
 	} else {
@@ -436,7 +442,12 @@ func registAsset(s Serverer, params map[string]interface{}) map[string]interface
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -476,7 +487,12 @@ func issueAsset(s Serverer, params map[string]interface{}) map[string]interface{
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -520,8 +536,12 @@ func sendToAddress(s Serverer, params map[string]interface{}) map[string]interfa
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
 
-	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -560,8 +580,12 @@ func prepaidAsset(s Serverer, params map[string]interface{}) map[string]interfac
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
 
-	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -602,7 +626,12 @@ func withdrawAsset(s Serverer, params map[string]interface{}) map[string]interfa
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -639,7 +668,12 @@ func commitPor(s Serverer, params map[string]interface{}) map[string]interface{}
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -692,7 +726,7 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -972,34 +1006,46 @@ func getUnspends(s Serverer, params map[string]interface{}) map[string]interface
 	return respPacking(results, SUCCESS)
 }
 
+func VerifyAndSendTx(n protocol.Noder, txn *transaction.Transaction) errors.ErrCode {
+	if errCode := n.AppendTxnPool(txn); errCode != errors.ErrNoError {
+		log.Warn("Can NOT add the transaction to TxnPool")
+		return errCode
+	}
+	if err := n.Xmit(txn); err != nil {
+		log.Error("Xmit Tx Error:Xmit transaction failed.", err)
+		return errors.ErrXmitFail
+	}
+	return errors.ErrNoError
+}
+
 var InitialAPIHandlers = map[string]APIHandler{
-	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
 	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
 	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
 	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getrawmempool":        {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
+	"getrawmempool":        {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
 	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"setdebuginfo":         {Handler: setDebugInfo, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"getbalance":           {Handler: getBalance, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"registasset":          {Handler: registAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"issueasset":           {Handler: issueAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"sendtoaddress":        {Handler: sendToAddress, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"prepaidasset":         {Handler: prepaidAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"withdrawasset":        {Handler: withdrawAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"commitpor":            {Handler: commitPor, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"sigchaintest":         {Handler: sigchaintest, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"gettotalissued":       {Handler: getTotalIssued, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"getassetbyhash":       {Handler: getAssetByHash, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"getbalancebyasset":    {Handler: getBalanceByAsset, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"getunspendoutput":     {Handler: getUnspendOutput, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
-	"getunspends":          {Handler: getUnspends, AccessCtrl: BIT_RESTFUL | BIT_WEBSOCKET},
+	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
+	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
+	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
+	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
+	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
+	"setdebuginfo":         {Handler: setDebugInfo, AccessCtrl: BIT_RESTFUL},
+	"getbalance":           {Handler: getBalance, AccessCtrl: BIT_RESTFUL},
+	"registasset":          {Handler: registAsset, AccessCtrl: BIT_RESTFUL},
+	"issueasset":           {Handler: issueAsset, AccessCtrl: BIT_RESTFUL},
+	"sendtoaddress":        {Handler: sendToAddress, AccessCtrl: BIT_RESTFUL},
+	"prepaidasset":         {Handler: prepaidAsset, AccessCtrl: BIT_RESTFUL},
+	"withdrawasset":        {Handler: withdrawAsset, AccessCtrl: BIT_RESTFUL},
+	"commitpor":            {Handler: commitPor, AccessCtrl: BIT_RESTFUL},
+	"sigchaintest":         {Handler: sigchaintest, AccessCtrl: BIT_RESTFUL},
+	"gettotalissued":       {Handler: getTotalIssued, AccessCtrl: BIT_RESTFUL},
+	"getassetbyhash":       {Handler: getAssetByHash, AccessCtrl: BIT_RESTFUL},
+	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_RESTFUL},
+	"getbalancebyasset":    {Handler: getBalanceByAsset, AccessCtrl: BIT_RESTFUL},
+	"getunspendoutput":     {Handler: getUnspendOutput, AccessCtrl: BIT_RESTFUL},
+	"getunspends":          {Handler: getUnspends, AccessCtrl: BIT_RESTFUL},
 }
