@@ -10,8 +10,6 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/api/common"
-	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -214,20 +212,6 @@ func (s *RPCServer) Start() {
 		Handler: rpcServeMux,
 	}
 	httpServer.Serve(listener)
-}
-
-func (s *RPCServer) VerifyAndSendTx(txn *transaction.Transaction) errors.ErrCode {
-	// if transaction is verified unsucessfully then will not put it into transaction pool
-	if errCode := s.node.AppendTxnPool(txn); errCode != errors.ErrNoError {
-		log.Warn("Can NOT add the transaction to TxnPool")
-		log.Info("[httpjsonrpc] VerifyTransaction failed when AppendTxnPool.")
-		return errCode
-	}
-	if err := s.node.Xmit(txn); err != nil {
-		log.Error("Xmit Tx Error:Xmit transaction failed.", err)
-		return errors.ErrXmitFail
-	}
-	return errors.ErrNoError
 }
 
 func (s *RPCServer) GetNetNode() (protocol.Noder, error) {

@@ -134,7 +134,7 @@ func nknMain() error {
 	go rpcServer.Start()
 
 	// start websocket server
-	websocket.StartServer(node)
+	websocket.StartServer(node, wallet)
 
 	// start consensus
 	StartConsensus(wallet, node)
