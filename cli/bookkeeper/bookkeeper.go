@@ -106,7 +106,7 @@ func assetAction(c *cli.Context) error {
 		return err
 	}
 
-	resp, err := httpjson.Call(Address(), "sendrawtransaction", 0, []interface{}{txHex})
+	resp, err := httpjson.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": txHex})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

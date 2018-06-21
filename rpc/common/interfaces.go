@@ -24,7 +24,7 @@ const (
 	BIT_WEBSOCKET byte = 4
 )
 
-type Handler func(Serverer, []interface{}) (map[string]interface{}, ErrCode)
+type Handler func(Serverer, map[string]interface{}) map[string]interface{}
 
 type APIHandler struct {
 	Handler    Handler
@@ -63,135 +63,118 @@ func (ah *APIHandler) IsAccessableByWebsocket() bool {
 
 // getLatestBlockHash gets the latest block hash
 // params: []
-func getLatestBlockHash(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// return: {"result":<result>, "error":<errcode>}
+func getLatestBlockHash(s Serverer, params map[string]interface{}) map[string]interface{} {
 	hash := ledger.DefaultLedger.Blockchain.CurrentBlockHash()
-	resp["result"] = common.BytesToHexString(hash.ToArrayReverse())
-
-	return resp, SUCCESS
+	return respPacking(common.BytesToHexString(hash.ToArrayReverse()), SUCCESS)
 }
 
 // getBlock gets block by height or hash
-// params: [<height>|<hash>]
-func getBlock(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["height":<height> | "hash":<hash>]
+// return: {"result":<result>, "error":<errcode>}
+func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	var hash common.Uint256
-	switch (params[0]).(type) {
-	case float64: // block height
-		index := uint32(params[0].(float64))
+	if index, ok := params["height"].(float64); ok {
 		var err error
-		if hash, err = ledger.DefaultLedger.Store.GetBlockHash(index); err != nil {
-			return nil, UNKNOWN_HASH
+		height := uint32(index)
+		if hash, err = ledger.DefaultLedger.Store.GetBlockHash(height); err != nil {
+			return respPacking(nil, UNKNOWN_HASH)
 		}
-	case string: // block hash
-		str := params[0].(string)
+	} else if str, ok := params["hash"].(string); ok {
 		hex, err := common.HexStringToBytesReverse(str)
 		if err != nil {
-			return nil, INVALID_PARAMS
+			return respPacking(nil, INVALID_PARAMS)
 		}
 		if err := hash.Deserialize(bytes.NewReader(hex)); err != nil {
-			return nil, UNKNOWN_HASH
+			return respPacking(nil, UNKNOWN_HASH)
 		}
-	default:
-		return nil, INVALID_PARAMS
+	} else {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	block, err := ledger.DefaultLedger.Store.GetBlock(hash)
 	if err != nil {
-		return nil, UNKNOWN_BLOCK
+		return respPacking(nil, UNKNOWN_BLOCK)
 	}
 	block.Hash()
 
 	var b interface{}
 	info, _ := block.MarshalJson()
 	json.Unmarshal(info, &b)
-	resp["result"] = b
 
-	return resp, SUCCESS
+	return respPacking(b, SUCCESS)
 }
 
 // getBlockCount return The total number of blocks
 // params: []
-func getBlockCount(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
-	resp["result"] = ledger.DefaultLedger.Blockchain.BlockHeight + 1
-
-	return resp, SUCCESS
+// return: {"result":<result>, "error":<errcode>}
+func getBlockCount(s Serverer, params map[string]interface{}) map[string]interface{} {
+	return respPacking(ledger.DefaultLedger.Blockchain.BlockHeight+1, SUCCESS)
 }
 
 // getChordRingInfo gets the information of Chord
 // params: []
-func getChordRingInfo(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
-	resp["result"] = chord.GetRing()
-
-	return resp, SUCCESS
+// return: {"result":<result>, "error":<errcode>}
+func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]interface{} {
+	return respPacking(chord.GetRing(), SUCCESS)
 }
 
 // getLatestBlockHeight gets the latest block height
 // params: []
-func getLatestBlockHeight(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
-	resp["result"] = ledger.DefaultLedger.Blockchain.BlockHeight
-
-	return resp, SUCCESS
+// return: {"result":<result>, "error":<errcode>}
+func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]interface{} {
+	return respPacking(ledger.DefaultLedger.Blockchain.BlockHeight, SUCCESS)
 }
 
-// getBlockHash gets the block hash by height
-// params: [<height>]
-func getBlockHash(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
-	if len(params) < 1 {
-		return nil, INVALID_PARAMS
-	}
-
-	switch params[0].(type) {
-	case float64:
-		height := uint32(params[0].(float64))
-		hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
-		if err != nil {
-			return nil, UNKNOWN_HASH
-		}
-
-		resp["result"] = common.BytesToHexString(hash.ToArrayReverse())
-		return resp, SUCCESS
-	default:
-		return nil, INVALID_PARAMS
-	}
-}
+//// getBlockHash gets the block hash by height
+//// params: [<height>]
+//func getBlockHash(s Serverer, params map[string]interface{}) map[string]interface{} {
+//	resp := make(map[string]interface{})
+//
+//	if len(params) < 1 {
+//		return nil, INVALID_PARAMS
+//	}
+//
+//	switch params[0].(type) {
+//	case float64:
+//		height := uint32(params[0].(float64))
+//		hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
+//		if err != nil {
+//			return nil, UNKNOWN_HASH
+//		}
+//
+//		resp["result"] = common.BytesToHexString(hash.ToArrayReverse())
+//		return resp, SUCCESS
+//	default:
+//		return nil, INVALID_PARAMS
+//	}
+//}
 
 // getBlockTxsByHeight gets the transactions of block referenced by height
-// params: [<height>]
-func getBlockTxsByHeight(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["height":<height>]
+// return: {"result":<result>, "error":<errcode>}
+func getBlockTxsByHeight(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	var err error
-	if _, ok := params[0].(float64); !ok {
-		return nil, INVALID_PARAMS
+	if _, ok := params["height"].(float64); !ok {
+		return respPacking(nil, INVALID_PARAMS)
 	}
-	index := uint32(params[0].(float64))
+	index := uint32(params["height"].(float64))
 	hash, err := ledger.DefaultLedger.Store.GetBlockHash(index)
 	if err != nil {
-		return nil, UNKNOWN_HASH
+		return respPacking(nil, UNKNOWN_HASH)
 	}
 
 	block, err := ledger.DefaultLedger.Store.GetBlock(hash)
 	if err != nil {
-		return nil, UNKNOWN_BLOCK
+		return respPacking(nil, UNKNOWN_BLOCK)
 	}
 
 	txs := func(block *ledger.Block) interface{} {
@@ -214,33 +197,28 @@ func getBlockTxsByHeight(s Serverer, params []interface{}) (map[string]interface
 		return b
 	}(block)
 
-	resp["result"] = txs
-	return resp, SUCCESS
+	return respPacking(txs, SUCCESS)
 }
 
 // getConnectionCount gets the the number of Connections
 // params: []
-func getConnectionCount(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// return: {"result":<result>, "error":<errcode>}
+func getConnectionCount(s Serverer, params map[string]interface{}) map[string]interface{} {
 	node, err := s.GetNetNode()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	resp["result"] = node.GetConnectionCnt()
-
-	return resp, SUCCESS
+	return respPacking(node.GetConnectionCnt(), SUCCESS)
 }
 
 // getRawMemPool gets the transactions in txpool
 // params: []
-func getRawMemPool(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// return: {"result":<result>, "error":<errcode>}
+func getRawMemPool(s Serverer, params map[string]interface{}) map[string]interface{} {
 	node, err := s.GetNetNode()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	txs := []interface{}{}
@@ -248,48 +226,43 @@ func getRawMemPool(s Serverer, params []interface{}) (map[string]interface{}, Er
 	for _, t := range txpool.GetAllTransactions() {
 		info, err := t.MarshalJson()
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return respPacking(nil, INTERNAL_ERROR)
 		}
 		var x interface{}
 		err = json.Unmarshal(info, &x)
 		if err != nil {
-			return nil, INTERNAL_ERROR
+			return respPacking(nil, INTERNAL_ERROR)
 		}
 		txs = append(txs, x)
 	}
-	if len(txs) == 0 {
-		return nil, INTERNAL_ERROR
-	}
+	//	if len(txs) == 0 {
+	//		return respPacking(nil, INTERNAL_ERROR)
+	//	}
 
-	resp["result"] = txs
-
-	return resp, SUCCESS
+	return respPacking(txs, SUCCESS)
 }
 
 // getTransaction gets the transaction by hash
-// params: [<hash>]
-func getTransaction(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["hash":<hash>]
+// return: {"result":<result>, "error":<errcode>}
+func getTransaction(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	switch params[0].(type) {
-	case string:
-		str := params[0].(string)
+	if str, ok := params["hash"].(string); ok {
 		hex, err := common.HexStringToBytesReverse(str)
 		if err != nil {
-			return nil, INVALID_PARAMS
+			return respPacking(nil, INVALID_PARAMS)
 		}
 		var hash common.Uint256
 		err = hash.Deserialize(bytes.NewReader(hex))
 		if err != nil {
-			return nil, INVALID_PARAMS
+			return respPacking(nil, INVALID_PARAMS)
 		}
 		tx, err := ledger.DefaultLedger.Store.GetTransaction(hash)
 		if err != nil {
-			return nil, UNKNOWN_TRANSACTION
+			return respPacking(nil, UNKNOWN_TRANSACTION)
 		}
 
 		tx.Hash()
@@ -297,69 +270,62 @@ func getTransaction(s Serverer, params []interface{}) (map[string]interface{}, E
 		info, _ := tx.MarshalJson()
 		json.Unmarshal(info, &tran)
 
-		resp["result"] = tran
-		return resp, SUCCESS
-	default:
-		return nil, INVALID_PARAMS
+		return respPacking(tran, SUCCESS)
+	} else {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 }
 
 // sendRawTransaction  sends raw transaction to the block chain
-// params: [<transaction>]
-func sendRawTransaction(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["tx":<transaction>]
+// return: {"result":<result>, "error":<errcode>}
+func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	var hash common.Uint256
-	switch params[0].(type) {
-	case string:
-		str := params[0].(string)
+	if str, ok := params["tx"].(string); ok {
 		hex, err := common.HexStringToBytes(str)
 		if err != nil {
-			return nil, INVALID_PARAMS
+			return respPacking(nil, INVALID_PARAMS)
 		}
 		var txn transaction.Transaction
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
-			return nil, INVALID_TRANSACTION
+			return respPacking(nil, INVALID_TRANSACTION)
 		}
 
 		hash = txn.Hash()
 		if errCode := s.VerifyAndSendTx(&txn); errCode != errors.ErrNoError {
-			return nil, INVALID_TRANSACTION
+			return respPacking(nil, INVALID_TRANSACTION)
 		}
-	default:
-		return nil, INVALID_PARAMS
+	} else {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	resp["result"] = common.BytesToHexString(hash.ToArrayReverse())
-	return resp, SUCCESS
+	return respPacking(common.BytesToHexString(hash.ToArrayReverse()), SUCCESS)
 }
 
 // getNeighbor gets neighbors of this node
 // params: []
-func getNeighbor(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// return: {"result":<result>, "error":<errcode>}
+func getNeighbor(s Serverer, params map[string]interface{}) map[string]interface{} {
 	node, err := s.GetNetNode()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	resp["result"], _ = node.GetNeighborAddrs()
-	return resp, SUCCESS
+	result, _ := node.GetNeighborAddrs()
+	return respPacking(result, SUCCESS)
 }
 
 // getNodeState gets the state of this node
 // params: []
-func getNodeState(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// return: {"result":<result>, "error":<errcode>}
+func getNodeState(s Serverer, params map[string]interface{}) map[string]interface{} {
 	node, err := s.GetNetNode()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 	type NodeInfo struct {
 		State    uint   // node status
@@ -389,50 +355,42 @@ func getNodeState(s Serverer, params []interface{}) (map[string]interface{}, Err
 		ChordID:  hex.EncodeToString(node.GetChordAddr()),
 	}
 
-	resp["result"] = n
-	return resp, SUCCESS
+	return respPacking(n, SUCCESS)
 }
 
 // setDebugInfo sets log level
-// params: [<log leverl>]
-func setDebugInfo(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["level":<log leverl>]
+// return: {"result":<result>, "error":<errcode>}
+func setDebugInfo(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	switch params[0].(type) {
-	case float64:
-		level := params[0].(float64)
+	if level, ok := params["level"].(float64); ok {
 		if err := log.Log.SetDebugLevel(int(level)); err != nil {
-			return nil, INTERNAL_ERROR
+			return respPacking(nil, INTERNAL_ERROR)
 		}
-	default:
-		return nil, INVALID_PARAMS
+	} else {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	resp["result"] = ""
-	return resp, SUCCESS
+	return respPacking(nil, SUCCESS)
 }
 
 // getVersion gets version of this server
 // params: []
-func getVersion(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
-	resp["result"] = config.Version
-	return resp, SUCCESS
+// return: {"result":<result>, "error":<errcode>}
+func getVersion(s Serverer, params map[string]interface{}) map[string]interface{} {
+	return respPacking(config.Version, SUCCESS)
 }
 
 // getBalance gets the balance of the wallet used by this server
 // params: []
-func getBalance(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// return: {"result":<result>, "error":<errcode>}
+func getBalance(s Serverer, params map[string]interface{}) map[string]interface{} {
 	wallet, err := s.GetWallet()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	unspent, _ := wallet.GetUnspent()
@@ -451,137 +409,99 @@ func getBalance(s Serverer, params []interface{}) (map[string]interface{}, ErrCo
 		ret[common.BytesToHexString(id.ToArrayReverse())] = value.String()
 	}
 
-	resp["result"] = ret
-	return resp, SUCCESS
+	return respPacking(ret, SUCCESS)
 }
 
 // registAsset regist an asset to blockchain
-// params: [<name>, <value>]
-func registAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["name":<name>, "value":<value>]
+// return: {"result":<result>, "error":<errcode>}
+func registAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 2 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	var assetName, assetValue string
-	switch params[0].(type) {
-	case string:
-		assetName = params[0].(string)
-	default:
-		return nil, INVALID_PARAMS
-	}
-	switch params[1].(type) {
-	case string:
-		assetValue = params[1].(string)
-	default:
-		return nil, INVALID_PARAMS
+	assetName, ok1 := params["name"].(string)
+	assetValue, ok2 := params["value"].(string)
+	if !ok1 || !ok2 {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	wallet, err := s.GetWallet()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	txn, err := MakeRegTransaction(wallet, assetName, assetValue)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INVALID_TRANSACTION
+		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
 	txHash := txn.Hash()
-	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
-	return resp, SUCCESS
+	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
 }
 
 // issueAsset issue an asset to an address
-// params: [<asset>, <address>, <value>]
-func issueAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["assetid":<assetd>, "address":<address>, "value":<value>]
+// return: {"result":<result>, "error":<errcode>}
+func issueAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 3 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
-	var asset, value, address string
-	switch params[0].(type) {
-	case string:
-		asset = params[0].(string)
-	default:
-		return nil, INVALID_PARAMS
-	}
-	switch params[1].(type) {
-	case string:
-		address = params[1].(string)
-	default:
-		return nil, INVALID_PARAMS
-	}
-	switch params[2].(type) {
-	case string:
-		value = params[2].(string)
-	default:
-		return nil, INVALID_PARAMS
+
+	asset, ok1 := params["assetid"].(string)
+	address, ok2 := params["address"].(string)
+	value, ok3 := params["value"].(string)
+	if !ok1 || !ok2 || !ok3 {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	wallet, err := s.GetWallet()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 	tmp, err := common.HexStringToBytesReverse(asset)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INVALID_PARAMS)
 	}
 	var assetID common.Uint256
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
-		return nil, INVALID_ASSET
+		return respPacking(nil, INVALID_ASSET)
 	}
 	txn, err := MakeIssueTransaction(wallet, assetID, address, value)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INVALID_TRANSACTION
+		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
 	txHash := txn.Hash()
-	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
-	return resp, SUCCESS
+	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
 }
 
 // sendToAddress transfers asset to an address
-// params: [<asset>, <address>, <value>]
-func sendToAddress(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["assetid":<assetid>, "addresss":<address>, "value":<value>]
+// return: {"result":<result>, "error":<errcode>}
+func sendToAddress(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 3 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
-	var asset, address, value string
-	switch params[0].(type) {
-	case string:
-		asset = params[0].(string)
-	default:
-		return nil, INVALID_PARAMS
-	}
-	switch params[1].(type) {
-	case string:
-		address = params[1].(string)
-	default:
-		return nil, INVALID_PARAMS
-	}
-	switch params[2].(type) {
-	case string:
-		value = params[2].(string)
-	default:
-		return nil, INVALID_PARAMS
+
+	asset, ok1 := params["assetid"].(string)
+	address, ok2 := params["address"].(string)
+	value, ok3 := params["value"].(string)
+	if !ok1 || !ok2 || !ok3 {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	wallet, err := s.GetWallet()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	batchOut := BatchOut{
@@ -590,345 +510,308 @@ func sendToAddress(s Serverer, params []interface{}) (map[string]interface{}, Er
 	}
 	tmp, err := common.HexStringToBytesReverse(asset)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INVALID_PARAMS)
 	}
 	var assetID common.Uint256
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
-		return nil, INVALID_ASSET
+		return respPacking(nil, INVALID_ASSET)
 	}
 	txn, err := MakeTransferTransaction(wallet, assetID, batchOut)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INVALID_TRANSACTION
+		return respPacking(nil, INVALID_TRANSACTION)
 	}
+
 	txHash := txn.Hash()
-	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
-	return resp, SUCCESS
+	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
 }
 
 // prepaid prepaid asset to system
-// params: [<asset>, <value>, <rates>]
-func prepaidAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["assetid":<assetid>, "vaule":<value>, "rates":<rates>]
+// return: {"result":<result>, "error":<errcode>}
+func prepaidAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 3 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
-	var assetName, assetValue, rates string
-	switch params[0].(type) {
-	case string:
-		assetName = params[0].(string)
-	default:
-		return nil, INVALID_PARAMS
-	}
-	switch params[1].(type) {
-	case string:
-		assetValue = params[1].(string)
-	default:
-		return nil, INVALID_PARAMS
-	}
-	switch params[2].(type) {
-	case string:
-		rates = params[2].(string)
-	default:
-		return nil, INVALID_PARAMS
+
+	asset, ok1 := params["assetid"].(string)
+	assetValue, ok2 := params["value"].(string)
+	rates, ok3 := params["rates"].(string)
+	if !ok1 || !ok2 || !ok3 {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	wallet, err := s.GetWallet()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
-	tmp, err := common.HexStringToBytesReverse(assetName)
+	tmp, err := common.HexStringToBytesReverse(asset)
 	if err != nil {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 	var assetID common.Uint256
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
-		return nil, INVALID_ASSET
+		return respPacking(nil, INVALID_ASSET)
 	}
 	txn, err := MakePrepaidTransaction(wallet, assetID, assetValue, rates)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INVALID_TRANSACTION
+		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
 	txHash := txn.Hash()
-	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
-	return resp, SUCCESS
+	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
 }
 
 // withdraw withdraw asset from system
-// params: [<asset>, <value>]
-func withdrawAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["assetid":<assetid>, "value":<value>]
+// return: {"result":<result>, "error":<errcode>}
+func withdrawAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 2 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	var assetName, assetValue string
-	switch params[0].(type) {
-	case string:
-		assetName = params[0].(string)
-	default:
-		return nil, INVALID_PARAMS
-	}
-	switch params[1].(type) {
-	case string:
-		assetValue = params[1].(string)
-	default:
-		return nil, INVALID_PARAMS
+	asset, ok1 := params["assetid"].(string)
+	assetValue, ok2 := params["value"].(string)
+	if !ok1 || !ok2 {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	wallet, err := s.GetWallet()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	tmp, err := common.HexStringToBytesReverse(assetName)
+	tmp, err := common.HexStringToBytesReverse(asset)
 	if err != nil {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 	var assetID common.Uint256
 	if err := assetID.Deserialize(bytes.NewReader(tmp)); err != nil {
-		return nil, INVALID_ASSET
+		return respPacking(nil, INVALID_ASSET)
 	}
 
 	txn, err := MakeWithdrawTransaction(wallet, assetID, assetValue)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INVALID_TRANSACTION
+		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
 	txHash := txn.Hash()
-	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
-	return resp, SUCCESS
+	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
 }
 
 // commitPor send por transaction
-// params: [<sigchain>]
-func commitPor(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["sigchain":<sigchain>]
+// return: {"result":<result>, "error":<errcode>}
+func commitPor(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	var sigChain []byte
-	var err error
-	switch params[0].(type) {
-	case string:
-		str := params[0].(string)
+	if str, ok := params["sigchain"].(string); ok {
+		var err error
 		sigChain, err = common.HexStringToBytes(str)
 		if err != nil {
-			return nil, INVALID_PARAMS
+			return respPacking(nil, INVALID_PARAMS)
 		}
-	default:
-		return nil, INVALID_PARAMS
+	} else {
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	wallet, err := s.GetWallet()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	txn, err := MakeCommitTransaction(wallet, sigChain)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INVALID_TRANSACTION
+		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
 	txHash := txn.Hash()
-	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
-	return resp, SUCCESS
+	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
 }
 
 // sigchaintest send por transaction
 // params: []
-func sigchaintest(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// return: {"result":<result>, "error":<errcode>}
+func sigchaintest(s Serverer, params map[string]interface{}) map[string]interface{} {
 	wallet, err := s.GetWallet()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 	dataHash := common.Uint256{}
 	currentHeight := ledger.DefaultLedger.Store.GetHeight()
 	blockHash, err := ledger.DefaultLedger.Store.GetBlockHash(currentHeight - 1)
 	if err != nil {
-		return nil, UNKNOWN_HASH
+		return respPacking(nil, UNKNOWN_HASH)
 	}
 
 	node, err := s.GetNetNode()
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 	srcID := node.GetChordAddr()
 	encodedPublickKey, err := account.PubKey().EncodePoint(true)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], srcID, encodedPublickKey, encodedPublickKey)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 	buf, err := proto.Marshal(sigChain)
 	txn, err := MakeCommitTransaction(wallet, buf)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	if errCode := s.VerifyAndSendTx(txn); errCode != errors.ErrNoError {
-		return nil, INVALID_TRANSACTION
+		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
 	txHash := txn.Hash()
-	resp["result"] = common.BytesToHexString(txHash.ToArrayReverse())
-	return resp, SUCCESS
+	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
 }
 
 // getWsAddr get a websocket address
-// params: [<address>]
-func getWsAddr(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["address":<address>]
+// return: {"result":<result>, "error":<errcode>}
+func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
-	switch params[0].(type) {
-	case string:
-		clientID, _, err := address.ParseClientAddress(params[0].(string))
+
+	if str, ok := params["address"].(string); ok {
+		clientID, _, err := address.ParseClientAddress(str)
 		ring := chord.GetRing()
 		if ring == nil {
 			log.Error("Empty ring")
-			return nil, INVALID_PARAMS
+			return respPacking(nil, INVALID_PARAMS)
 		}
 		vnode, err := ring.GetPredecessor(clientID)
 		if err != nil {
 			log.Error("Cannot get predecessor")
-			return nil, INTERNAL_ERROR
+			return respPacking(nil, INTERNAL_ERROR)
 		}
 		addr, err := vnode.HttpWsAddr()
 		if err != nil {
 			log.Error("Cannot get websocket address")
-			return nil, INTERNAL_ERROR
+			return respPacking(nil, INTERNAL_ERROR)
 		}
-		resp["result"] = addr
-		return resp, SUCCESS
-	default:
-		return nil, INTERNAL_ERROR
+		return respPacking(addr, SUCCESS)
+	} else {
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 }
 
 // getTotalIssued gets total issued asset
-// params: [<asset>]
-func getTotalIssued(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["assetid":<assetid>]
+// return: {"result":<result>, "error":<errcode>}
+func getTotalIssued(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	assetid, ok := params[0].(string)
+	assetid, ok := params["assetid"].(string)
 	if !ok {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	bys, err := common.HexStringToBytesReverse(assetid)
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	var assetHash common.Uint256
-	bys, err := common.HexStringToBytesReverse(assetid)
-	if err != nil {
-		return nil, INTERNAL_ERROR
-	}
-
 	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
-		return nil, INVALID_ASSET
+		return respPacking(nil, INVALID_ASSET)
 	}
 
 	amount, err := ledger.DefaultLedger.Store.GetQuantityIssued(assetHash)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	val := float64(amount) / math.Pow(10, 8)
-	resp["result"] = val
-	return resp, SUCCESS
+	return respPacking(val, SUCCESS)
 }
 
 // getAssetByHash gets asset by hash
-// params: [<hash>]
-func getAssetByHash(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["hash":<hash>]
+// return: {"result":<result>, "error":<errcode>}
+func getAssetByHash(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	str, ok := params[0].(string)
+	str, ok := params["hash"].(string)
 	if !ok {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	hex, err := common.HexStringToBytesReverse(str)
 	if err != nil {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	var hash common.Uint256
 	err = hash.Deserialize(bytes.NewReader(hex))
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	asset, err := ledger.DefaultLedger.Store.GetAsset(hash)
 	if err != nil {
-		return nil, INVALID_ASSET
+		return respPacking(nil, INVALID_ASSET)
 	}
 
-	resp["result"] = asset
-	return resp, SUCCESS
+	return respPacking(asset, SUCCESS)
 }
 
 // getBalanceByAddr gets balance by address
-// params: [<address>]
-func getBalanceByAddr(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["address":<address>]
+// return: {"result":<result>, "error":<errcode>}
+func getBalanceByAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	addr, ok := params[0].(string)
+	addr, ok := params["address"].(string)
 	if !ok {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	var programHash common.Uint160
 	programHash, err := common.ToScriptHash(addr)
 	if err != nil {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
@@ -940,34 +823,32 @@ func getBalanceByAddr(s Serverer, params []interface{}) (map[string]interface{},
 	}
 
 	val := float64(balance) / math.Pow(10, 8)
-	resp["result"] = val
-	return resp, SUCCESS
+	return respPacking(val, SUCCESS)
 }
 
 // getBalanceByAsset gets balance by asset
-// params: [<address>,<asset>]
-func getBalanceByAsset(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["address":<address>,"assetid":<assetid>]
+// return: {"result":<result>, "error":<errcode>}
+func getBalanceByAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 2 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	addr, ok := params[0].(string)
-	assetid, k := params[1].(string)
+	addr, ok := params["address"].(string)
+	assetid, k := params["assetid"].(string)
 	if !ok || !k {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	var programHash common.Uint160
 	programHash, err := common.ToScriptHash(addr)
 	if err != nil {
-		return nil, UNKNOWN_HASH
+		return respPacking(nil, UNKNOWN_HASH)
 	}
 
 	unspends, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(programHash)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	var balance common.Fixed64 = 0
@@ -981,39 +862,40 @@ func getBalanceByAsset(s Serverer, params []interface{}) (map[string]interface{}
 	}
 
 	val := float64(balance) / math.Pow(10, 8)
-	resp["result"] = val
-	return resp, SUCCESS
+	return respPacking(val, SUCCESS)
 }
 
 // getUnspendOutput gets unspents by address
-// params: [<address>, <assetid>]
-func getUnspendOutput(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["address":<address>, "assetid":<assetid>]
+// return: {"result":<result>, "error":<errcode>}
+func getUnspendOutput(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 2 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	addr, ok := params[0].(string)
-	assetid, k := params[1].(string)
+	addr, ok := params["address"].(string)
+	assetid, k := params["assetid"].(string)
 	if !ok || !k {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
+
 	}
 
 	var programHash common.Uint160
 	var assetHash common.Uint256
 	programHash, err := common.ToScriptHash(addr)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
+
 	}
 
 	bys, err := common.HexStringToBytesReverse(assetid)
 	if err != nil {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
+
 	}
 
 	if err := assetHash.Deserialize(bytes.NewReader(bys)); err != nil {
-		return nil, INVALID_ASSET
+		return respPacking(nil, INVALID_ASSET)
 	}
 
 	type UTXOUnspentInfo struct {
@@ -1024,7 +906,7 @@ func getUnspendOutput(s Serverer, params []interface{}) (map[string]interface{},
 
 	infos, err := ledger.DefaultLedger.Store.GetUnspentFromProgramHash(programHash, assetHash)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	var UTXOoutputs []UTXOUnspentInfo
@@ -1033,28 +915,28 @@ func getUnspendOutput(s Serverer, params []interface{}) (map[string]interface{},
 		UTXOoutputs = append(UTXOoutputs, UTXOUnspentInfo{Txid: common.BytesToHexString(v.Txid.ToArrayReverse()), Index: v.Index, Value: val})
 	}
 
-	resp["result"] = UTXOoutputs
-	return resp, SUCCESS
+	return respPacking(UTXOoutputs, SUCCESS)
 }
 
 // getUnspends gets all assets by address
-// params: [<address>]
-func getUnspends(s Serverer, params []interface{}) (map[string]interface{}, ErrCode) {
-	resp := make(map[string]interface{})
-
+// params: ["address":<address>]
+// return: {"result":<result>, "error":<errcode>}
+func getUnspends(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
+
 	}
 
-	addr, ok := params[0].(string)
+	addr, ok := params["address"].(string)
 	if !ok {
-		return nil, INVALID_PARAMS
+		return respPacking(nil, INVALID_PARAMS)
+
 	}
 	var programHash common.Uint160
 
 	programHash, err := common.ToScriptHash(addr)
 	if err != nil {
-		return nil, INTERNAL_ERROR
+		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	type UTXOUnspentInfo struct {
@@ -1075,7 +957,7 @@ func getUnspends(s Serverer, params []interface{}) (map[string]interface{}, ErrC
 		assetid := common.BytesToHexString(k.ToArrayReverse())
 		asset, err := ledger.DefaultLedger.Store.GetAsset(k)
 		if err != nil {
-			return nil, INVALID_ASSET
+			return respPacking(nil, INVALID_ASSET)
 		}
 
 		var unspendsInfo []UTXOUnspentInfo
@@ -1087,15 +969,13 @@ func getUnspends(s Serverer, params []interface{}) (map[string]interface{}, ErrC
 		results = append(results, Result{assetid, asset.Name, unspendsInfo})
 	}
 
-	resp["result"] = results
-	return resp, SUCCESS
+	return respPacking(results, SUCCESS)
 }
 
 var InitialAPIHandlers = map[string]APIHandler{
 	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getblockhash":         {Handler: getBlockHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
 	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},

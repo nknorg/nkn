@@ -19,7 +19,7 @@ func sigchainAction(c *cli.Context) error {
 	var resp []byte
 	switch {
 	case c.Bool("create"):
-		resp, err = httpjson.Call(Address(), "sigchaintest", 0, []interface{}{})
+		resp, err = httpjson.Call(Address(), "sigchaintest", 0, map[string]interface{}{})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
