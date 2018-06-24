@@ -1,7 +1,6 @@
 package session
 
 import (
-	"encoding/hex"
 	"errors"
 	"sync"
 	"time"
@@ -71,11 +70,14 @@ func (s *Session) SessionTimeoverCheck() bool {
 	return false
 }
 
+func (s *Session) SetSessionId(sessionId string) {
+	s.sSessionId = sessionId
+}
+
 func (s *Session) SetClient(chordID, pubKey []byte, addrStr *string) {
 	s.clientChordID = chordID
 	s.clientPubKey = pubKey
 	s.clientAddrStr = addrStr
-	s.sSessionId = hex.EncodeToString(chordID)
 }
 
 func (s *Session) IsClient() bool {

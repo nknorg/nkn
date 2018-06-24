@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"net"
 	"net/http"
 	"strconv"
@@ -152,14 +151,9 @@ func (ws *WsServer) registryMethod() {
 		}
 
 		newSessionId := hex.EncodeToString(clientID)
-		err = ws.SessionList.ChangeSessionId(cmd["Userid"].(string), newSessionId)
+		session, err := ws.SessionList.ChangeSessionToClient(cmd["Userid"].(string), newSessionId)
 		if err != nil {
 			log.Error("Change session id error: ", err)
-			return ResponsePack(Err.INTERNAL_ERROR)
-		}
-		session := ws.SessionList.GetSessionById(newSessionId)
-		if session == nil {
-			log.Error("Nil session with id: ", newSessionId)
 			return ResponsePack(Err.INTERNAL_ERROR)
 		}
 		session.SetClient(clientID, pubKey, &addrStr)
@@ -167,7 +161,12 @@ func (ws *WsServer) registryMethod() {
 		return resp
 	}
 	relayHandler := func(cmd map[string]interface{}) map[string]interface{} {
-		client := ws.SessionList.GetSessionById(cmd["Userid"].(string))
+		clients := ws.SessionList.GetSessionsById(cmd["Userid"].(string))
+		if clients == nil {
+			log.Error("Session not found")
+			return ResponsePack(Err.INTERNAL_ERROR)
+		}
+		client := clients[0]
 		if !client.IsClient() {
 			log.Error("Session is not client")
 			return ResponsePack(Err.INVALID_METHOD)
@@ -241,11 +240,11 @@ func (ws *WsServer) checkSessionsTimeout(done chan bool) {
 		select {
 		case <-ticker.C:
 			var closeList []*Session
-			ws.SessionList.ForEachSession(func(v *Session) {
-				if v.SessionTimeoverCheck() {
+			ws.SessionList.ForEachSession(func(s *Session) {
+				if s.SessionTimeoverCheck() {
 					resp := ResponsePack(Err.SESSION_EXPIRED)
-					ws.response(v.GetSessionId(), resp)
-					closeList = append(closeList, v)
+					ws.respondToSession(s, resp)
+					closeList = append(closeList, s)
 				}
 			})
 			for _, s := range closeList {
@@ -317,25 +316,25 @@ func (ws *WsServer) OnDataHandle(curSession *Session, bysMsg []byte, r *http.Req
 
 	if err := json.Unmarshal(bysMsg, &req); err != nil {
 		resp := ResponsePack(Err.ILLEGAL_DATAFORMAT)
-		ws.response(curSession.GetSessionId(), resp)
+		ws.respondToSession(curSession, resp)
 		log.Error("websocket OnDataHandle:", err)
 		return false
 	}
 	actionName, ok := req["Action"].(string)
 	if !ok {
 		resp := ResponsePack(Err.INVALID_METHOD)
-		ws.response(curSession.GetSessionId(), resp)
+		ws.respondToSession(curSession, resp)
 		return false
 	}
 	action, ok := ws.ActionMap[actionName]
 	if !ok {
 		resp := ResponsePack(Err.INVALID_METHOD)
-		ws.response(curSession.GetSessionId(), resp)
+		ws.respondToSession(curSession, resp)
 		return false
 	}
 	if !ws.IsValidMsg(req) {
 		resp := ResponsePack(Err.INVALID_PARAMS)
-		ws.response(curSession.GetSessionId(), resp)
+		ws.respondToSession(curSession, resp)
 		return true
 	}
 	if height, ok := req["Height"].(float64); ok {
@@ -352,7 +351,7 @@ func (ws *WsServer) OnDataHandle(curSession *Session, bysMsg []byte, r *http.Req
 		defer ws.Unlock()
 		ws.TxHashMap[txHash] = curSession.GetSessionId()
 	}
-	ws.response(curSession.GetSessionId(), resp)
+	ws.respondToSession(curSession, resp)
 
 	return true
 }
@@ -373,14 +372,25 @@ func (ws *WsServer) deleteTxHashs(sSessionId string) {
 	}
 }
 
-func (ws *WsServer) response(sSessionId string, resp map[string]interface{}) {
+func (ws *WsServer) respondToSession(session *Session, resp map[string]interface{}) {
 	resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Error("Websocket response:", err)
 		return
 	}
-	ws.send(sSessionId, data)
+	session.Send(data)
+}
+
+func (ws *WsServer) respondToId(sSessionId string, resp map[string]interface{}) {
+	sessions := ws.SessionList.GetSessionsById(sSessionId)
+	if sessions == nil {
+		log.Error("websocket sessionId Not Exist: " + sSessionId)
+		return
+	}
+	for _, session := range sessions {
+		ws.respondToSession(session, resp)
+	}
 }
 
 func (ws *WsServer) PushTxResult(txHashStr string, resp map[string]interface{}) {
@@ -389,7 +399,7 @@ func (ws *WsServer) PushTxResult(txHashStr string, resp map[string]interface{}) 
 	sSessionId := ws.TxHashMap[txHashStr]
 	delete(ws.TxHashMap, txHashStr)
 	if len(sSessionId) > 0 {
-		ws.response(sSessionId, resp)
+		ws.respondToId(sSessionId, resp)
 	}
 	ws.PushResult(resp)
 }
@@ -404,18 +414,9 @@ func (ws *WsServer) PushResult(resp map[string]interface{}) {
 	ws.Broadcast(data)
 }
 
-func (ws *WsServer) send(sSessionId string, data []byte) error {
-	session := ws.SessionList.GetSessionById(sSessionId)
-	if session == nil {
-		return errors.New("websocket sessionId Not Exist: " + sSessionId)
-	}
-	return session.Send(data)
-}
-
 func (ws *WsServer) Broadcast(data []byte) error {
-	// TODO: only send to subscribed sessions
-	ws.SessionList.ForEachSession(func(v *Session) {
-		v.Send(data)
+	ws.SessionList.ForEachSession(func(s *Session) {
+		s.Send(data)
 	})
 	return nil
 }
@@ -445,13 +446,7 @@ func (ws *WsServer) initTlsListen() (net.Listener, error) {
 	return listener, nil
 }
 
-func (ws *WsServer) GetClientById(cliendID []byte) *Session {
-	session := ws.SessionList.GetSessionById(hex.EncodeToString(cliendID))
-	if session == nil {
-		return nil
-	}
-	if !session.IsClient() {
-		return nil
-	}
-	return session
+func (ws *WsServer) GetClientsById(cliendID []byte) []*Session {
+	sessions := ws.SessionList.GetSessionsById(hex.EncodeToString(cliendID))
+	return sessions
 }

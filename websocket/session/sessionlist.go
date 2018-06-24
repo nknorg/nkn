@@ -9,90 +9,120 @@ import (
 
 type SessionList struct {
 	sync.RWMutex
-	mapOnlineList map[string]*Session //key is SessionId
+	mapOnlineList map[string][]*Session //key is SessionId
 }
 
 func NewSessionList() *SessionList {
 	return &SessionList{
-		mapOnlineList: make(map[string]*Session),
+		mapOnlineList: make(map[string][]*Session),
 	}
 }
 
-func (sl *SessionList) NewSession(wsConn *websocket.Conn) (session *Session, err error) {
-	session, err = newSession(wsConn)
-	if err == nil {
-		sl.addOnlineSession(session)
+func (sl *SessionList) NewSession(wsConn *websocket.Conn) (*Session, error) {
+	session, err := newSession(wsConn)
+	if err != nil {
+		return nil, err
 	}
-	return session, err
+	err = sl.addOnlineSession(session)
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
 }
 
-func (sl *SessionList) CloseSession(session *Session) {
+func (sl *SessionList) CloseSession(session *Session) error {
 	if session == nil {
-		return
+		return errors.New("Session is nil")
 	}
-	sl.removeSession(session)
-	session.close()
-}
-
-func (sl *SessionList) addOnlineSession(session *Session) {
-	if session.GetSessionId() == "" {
-		return
-	}
-	sl.Lock()
-	defer sl.Unlock()
-	sl.mapOnlineList[session.GetSessionId()] = session
-}
-
-func (sl *SessionList) removeSession(iSession *Session) (err error) {
-	return sl.removeSessionById(iSession.GetSessionId())
-}
-
-func (sl *SessionList) removeSessionById(sSessionId string) (err error) {
-	if sSessionId == "" {
+	err := sl.removeSession(session)
+	if err != nil {
 		return err
 	}
-	sl.Lock()
-	defer sl.Unlock()
-	delete(sl.mapOnlineList, sSessionId)
+	session.close()
 	return nil
 }
 
-func (sl *SessionList) GetSessionById(sSessionId string) *Session {
+func (sl *SessionList) addOnlineSession(session *Session) error {
+	sessionId := session.GetSessionId()
+	if sessionId == "" {
+		return errors.New("Session id is empty")
+	}
+	sl.Lock()
+	defer sl.Unlock()
+	sl.mapOnlineList[sessionId] = append(sl.mapOnlineList[sessionId], session)
+	return nil
+}
+
+func (sl *SessionList) removeSession(session *Session) error {
+	sessionId := session.GetSessionId()
+	sessions := sl.mapOnlineList[sessionId]
+	for i, s := range sessions {
+		if s == session {
+			sl.Lock()
+			defer sl.Unlock()
+			sessions[i] = sessions[len(sessions)-1]
+			sessions[len(sessions)-1] = nil
+			sl.mapOnlineList[sessionId] = sessions[:len(sessions)-1]
+			if len(sl.mapOnlineList[sessionId]) == 0 {
+				delete(sl.mapOnlineList, sessionId)
+			}
+			return nil
+		}
+	}
+	return errors.New("Session not found")
+}
+
+func (sl *SessionList) GetSessionsById(sSessionId string) []*Session {
 	sl.RLock()
 	defer sl.RUnlock()
-	if session, ok := sl.mapOnlineList[sSessionId]; ok {
-		return session
+	sessions := sl.mapOnlineList[sSessionId]
+	if len(sessions) > 0 {
+		return sessions
 	}
 	return nil
 }
 
 func (sl *SessionList) GetSessionCount() int {
+	var count int
 	sl.RLock()
 	defer sl.RUnlock()
-	return len(sl.mapOnlineList)
+	for _, sessions := range sl.mapOnlineList {
+		count += len(sessions)
+	}
+	return count
 }
 
 func (sl *SessionList) ForEachSession(visit func(*Session)) {
 	sl.RLock()
 	defer sl.RUnlock()
-	for _, v := range sl.mapOnlineList {
-		visit(v)
+	for _, sessions := range sl.mapOnlineList {
+		for _, session := range sessions {
+			visit(session)
+		}
 	}
 }
 
-func (sl *SessionList) ChangeSessionId(oldId, newId string) error {
-	sl.RLock()
-	defer sl.RUnlock()
-	if oldId == newId {
-		return nil
+func (sl *SessionList) ChangeSessionToClient(sessionId, clientId string) (*Session, error) {
+	sessions := sl.GetSessionsById(sessionId)
+	if len(sessions) == 0 {
+		return nil, errors.New("Session not exists")
 	}
-	if _, ok := sl.mapOnlineList[oldId]; !ok {
-		return errors.New("Old session ID not exists")
+	if len(sessions) > 1 {
+		return nil, errors.New("More than one session exists")
 	}
-	if _, ok := sl.mapOnlineList[newId]; ok {
-		return errors.New("New session ID already exists")
+	session := sessions[0]
+
+	err := sl.removeSession(session)
+	if err != nil {
+		return nil, err
 	}
-	sl.mapOnlineList[newId] = sl.mapOnlineList[oldId]
-	delete(sl.mapOnlineList, oldId)
-	return nil
+
+	session.SetSessionId(clientId)
+
+	err = sl.addOnlineSession(session)
+	if err != nil {
+		return nil, err
+	}
+
+	return session, nil
 }
