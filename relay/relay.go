@@ -16,6 +16,7 @@ import (
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nkn/websocket"
+	"github.com/nknorg/nkn/websocket/session"
 )
 
 type RelayService struct {
@@ -39,11 +40,18 @@ func (rs *RelayService) Start() error {
 	return nil
 }
 
-func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayPacket) error {
-	destPubKey := packet.SigChain.GetDestPubkey()
-	if !bytes.Equal(client.GetPubKey(), destPubKey) {
-		return errors.New("Client pubkey is different from destination pubkey")
+func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *message.RelayPacket) error {
+	if len(clients) == 0 {
+		return nil
 	}
+
+	destPubKey := packet.SigChain.GetDestPubkey()
+	for _, client := range clients {
+		if !bytes.Equal(client.GetPubKey(), destPubKey) {
+			return errors.New("Client pubkey is different from destination pubkey")
+		}
+	}
+
 	err := rs.porServer.Sign(packet.SigChain, destPubKey)
 	if err != nil {
 		log.Error("Signing signature chain error: ", err)
@@ -66,10 +74,19 @@ func (rs *RelayService) SendPacketToClient(client Client, packet *message.RelayP
 	if err != nil {
 		return err
 	}
-	err = client.Send(responseJSON)
-	if err != nil {
-		log.Error("Send to client error: ", err)
-		return err
+
+	ok := false
+	for _, client := range clients {
+		err = client.Send(responseJSON)
+		if err != nil {
+			log.Error("Send to client error: ", err)
+		} else {
+			ok = true
+		}
+	}
+
+	if !ok {
+		return errors.New("Send packet to clients all failed")
 	}
 
 	// TODO: create and send tx only after client sign
@@ -144,15 +161,12 @@ func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 		return err
 	}
 	if nextHop == nil {
-		client := websocket.GetServer().GetClientById(destID)
-		if client == nil {
+		clients := websocket.GetServer().GetClientsById(destID)
+		if clients == nil {
 			// TODO: handle client not exists
 			return errors.New("Client Not Exists: " + hex.EncodeToString(destID))
 		}
-		err = rs.SendPacketToClient(client, packet)
-		if err != nil {
-			return err
-		}
+		rs.SendPacketToClients(clients, packet)
 		return nil
 	}
 	err = rs.SendPacketToNode(nextHop, packet)
