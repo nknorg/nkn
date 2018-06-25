@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 	nknErrors "github.com/nknorg/nkn/errors"
@@ -20,17 +21,20 @@ import (
 )
 
 type RelayService struct {
-	wallet           vault.Wallet      // wallet
-	localNode        protocol.Noder    // local node
-	porServer        *por.PorServer    // por server to handle signature chain
-	relayMsgReceived events.Subscriber // consensus events listening
+	sync.Mutex
+	wallet            vault.Wallet                      // wallet
+	localNode         protocol.Noder                    // local node
+	porServer         *por.PorServer                    // por server to handle signature chain
+	relayMsgReceived  events.Subscriber                 // consensus events listening
+	relayPacketBuffer map[string][]*message.RelayPacket // for offline clients
 }
 
 func NewRelayService(wallet vault.Wallet, node protocol.Noder) *RelayService {
 	service := &RelayService{
-		wallet:    wallet,
-		localNode: node,
-		porServer: por.GetPorServer(),
+		wallet:            wallet,
+		localNode:         node,
+		porServer:         por.GetPorServer(),
+		relayPacketBuffer: make(map[string][]*message.RelayPacket),
 	}
 	return service
 }
@@ -163,8 +167,9 @@ func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 	if nextHop == nil {
 		clients := websocket.GetServer().GetClientsById(destID)
 		if clients == nil {
-			// TODO: handle client not exists
-			return errors.New("Client Not Exists: " + hex.EncodeToString(destID))
+			log.Info("Client Not Online:", hex.EncodeToString(destID))
+			rs.addRelayPacketToBuffer(destID, packet)
+			return nil
 		}
 		rs.SendPacketToClients(clients, packet)
 		return nil
@@ -189,4 +194,32 @@ func (rs *RelayService) ReceiveRelayMsgNoError(v interface{}) {
 	if err != nil {
 		log.Error(err.Error())
 	}
+}
+
+func (rs *RelayService) addRelayPacketToBuffer(clientID []byte, packet *message.RelayPacket) {
+	clientIDStr := hex.EncodeToString(clientID)
+	rs.Lock()
+	defer rs.Unlock()
+	rs.relayPacketBuffer[clientIDStr] = append(rs.relayPacketBuffer[clientIDStr], packet)
+}
+
+func (rs *RelayService) SendRelayPacketsInBuffer(clientID []byte) error {
+	clientIDStr := hex.EncodeToString(clientID)
+	clients := websocket.GetServer().GetClientsById(clientID)
+	if clients == nil {
+		return nil
+	}
+
+	rs.Lock()
+	defer rs.Unlock()
+	packets := rs.relayPacketBuffer[clientIDStr]
+	if len(packets) == 0 {
+		return nil
+	}
+
+	for _, packet := range packets {
+		rs.SendPacketToClients(clients, packet)
+	}
+	rs.relayPacketBuffer[clientIDStr] = nil
+	return nil
 }

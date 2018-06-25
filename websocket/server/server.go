@@ -157,6 +157,7 @@ func (ws *WsServer) registryMethod() {
 			return ResponsePack(Err.INTERNAL_ERROR)
 		}
 		session.SetClient(clientID, pubKey, &addrStr)
+		go ws.node.SendRelayPacketsInBuffer(clientID)
 		resp := ResponsePack(Err.SUCCESS)
 		return resp
 	}

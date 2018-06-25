@@ -97,6 +97,7 @@ type Noder interface {
 	StartRelayer(wallet vault.Wallet)
 	NextHop(key []byte) (Noder, error)
 	SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload, signature []byte) error
+	SendRelayPacketsInBuffer(clientId []byte) error
 }
 
 type NodeAddr struct {
