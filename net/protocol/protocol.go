@@ -30,7 +30,7 @@ type Noder interface {
 	Services() uint64
 	GetAddr() string
 	GetPort() uint16
-	GetHttpInfoPort() int
+	GetHttpInfoPort() uint16
 	SetHttpInfoPort(uint16)
 	GetHttpInfoState() bool
 	SetHttpInfoState(bool)

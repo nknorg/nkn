@@ -168,7 +168,9 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	} else {
 		n.SyncReqSem = MakeSemaphore(Parameters.MaxHdrSyncReqs)
 	}
-	n.link.port = uint16(Parameters.NodePort)
+	n.link.port = Parameters.NodePort
+	n.link.webSockPort = Parameters.HttpWsPort
+	n.link.httpJSONPort = Parameters.HttpJsonPort
 	n.relay = true
 
 	key, err := pubKey.EncodePoint(true)
@@ -220,8 +222,8 @@ func (node *node) GetPort() uint16 {
 	return node.port
 }
 
-func (node *node) GetHttpInfoPort() int {
-	return int(node.httpInfoPort)
+func (node *node) GetHttpInfoPort() uint16 {
+	return node.httpInfoPort
 }
 
 func (node *node) SetHttpInfoPort(nodeInfoPort uint16) {

@@ -31,6 +31,8 @@ type link struct {
 	conn         net.Conn  // Connect socket with the peer node
 	port         uint16    // The server port of the node
 	httpInfoPort uint16    // The node information server port of the node
+	httpJSONPort uint16    // The node httpjson server port of the node
+	webSockPort  uint16    // The node webSocket server port of the node
 	time         time.Time // The latest time the node activity
 	rxBuf        struct {  // The RX buffer of this node to solve mutliple packets problem
 		p   []byte
