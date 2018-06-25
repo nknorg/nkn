@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/ising/voting"
 	"github.com/nknorg/nkn/core/contract/program"
@@ -22,6 +21,8 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
+
+	"github.com/golang/protobuf/proto"
 )
 
 const (
@@ -43,6 +44,7 @@ type ProposerService struct {
 	txnCollector         *transaction.TxnCollector // collect transaction from where
 	msgChan              chan interface{}          // get notice from probe thread
 	consensusMsgReceived events.Subscriber         // consensus events listening
+	blockPersisted       events.Subscriber         // block saved events
 	porServer            *por.PorServer            // signature chain source
 	voting               []voting.Voting           // array for sigchain and block voting
 }
@@ -91,56 +93,62 @@ func (ps *ProposerService) ConsensusRoutine(vType voting.VotingContentType) {
 	current := ps.CurrentVoting(vType)
 	votingHeight := current.GetVotingHeight()
 	votingPool := current.GetVotingPool()
-	// waiting for flooding finished
-	time.Sleep(WaitingForFloodingFinished)
-	// send new proposal
-	content, err := ps.SendNewProposal(votingHeight, vType)
-	if err != nil {
-		log.Info("waiting for receiving proposed entity...")
-		return
-	}
-	// waiting for voting finished
-	time.Sleep(WaitingForVotingFinished)
-	finalHash, _ := votingPool.GetMind(votingHeight)
-	// if proposed hash is not original entity, then get it from local cache
-	if finalHash.CompareTo(content.Hash()) != 0 {
-		content, err = current.GetVotingContentFromPool(finalHash, votingHeight)
+
+	go func() {
+		// waiting for flooding finished
+		time.Sleep(WaitingForFloodingFinished)
+		// send new proposal
+		err := ps.SendNewProposal(votingHeight, vType)
 		if err != nil {
-			log.Warnf("get final entity error, hash: %s, type: %d, votingHeight: %d",
+			log.Info("waiting for receiving proposed entity...")
+			return
+		}
+	}()
+
+	go func() {
+		// waiting for voting finished
+		time.Sleep(WaitingForVotingFinished)
+		finalHash, ok := votingPool.GetMind(votingHeight)
+		if !ok {
+			return
+		}
+		// get the final entity from local cache or database
+		content, err := current.GetVotingContent(finalHash, votingHeight)
+		if err != nil {
+			log.Errorf("get final entity error, hash: %s, type: %d, votingHeight: %d",
 				BytesToHexString(finalHash.ToArrayReverse()), vType, votingHeight)
+			log.Warn(err)
 			return
 		}
-		log.Info("mind changing success")
-	}
-	// process final block and signature chain
-	switch vType {
-	case voting.SigChainTxnVote:
-		txn := content.(*transaction.Transaction)
-		payload := txn.Payload.(*payload.Commit)
-		sigchain := &por.SigChain{}
-		proto.Unmarshal(payload.SigChain, sigchain)
-		// TODO: get a determinate public key on signature chain
-		pbk, err := sigchain.GetLedgerNodePubkey()
-		if err != nil {
-			log.Warn("Get last public key error", err)
-			return
-		}
-		ps.Lock()
-		ps.blockProposer[votingHeight] = pbk
-		ps.Unlock()
-		sigChainTxnHash := content.Hash()
-		log.Infof("sigchain transaction consensus: %s, %s will be block proposer for height %d",
-			BytesToHexString(sigChainTxnHash.ToArrayReverse()), BytesToHexString(pbk), votingHeight)
-	case voting.BlockVote:
-		if block, ok := content.(*ledger.Block); ok {
-			err = ledger.DefaultLedger.Blockchain.AddBlock(block)
+		// process final block and signature chain
+		switch vType {
+		case voting.SigChainTxnVote:
+			txn := content.(*transaction.Transaction)
+			payload := txn.Payload.(*payload.Commit)
+			sigchain := &por.SigChain{}
+			proto.Unmarshal(payload.SigChain, sigchain)
+			// TODO: get a determinate public key on signature chain
+			pbk, err := sigchain.GetLedgerNodePubkey()
 			if err != nil {
-				log.Error("saving block error: ", err)
+				log.Warn("Get last public key error", err)
 				return
 			}
-			ps.txnCollector.Cleanup(block.Transactions)
+			ps.Lock()
+			ps.blockProposer[votingHeight] = pbk
+			ps.Unlock()
+			sigChainTxnHash := content.Hash()
+			log.Infof("sigchain transaction consensus: %s, %s will be block proposer for height %d",
+				BytesToHexString(sigChainTxnHash.ToArrayReverse()), BytesToHexString(pbk), votingHeight)
+		case voting.BlockVote:
+			if block, ok := content.(*ledger.Block); ok {
+				err = ledger.DefaultLedger.Blockchain.AddBlock(block)
+				if err != nil {
+					log.Error("saving block error: ", err)
+					return
+				}
+			}
 		}
-	}
+	}()
 }
 
 // GetReceiverNode returns neighbors nodes according to neighbor node ID passed in.
@@ -161,11 +169,11 @@ func (ps *ProposerService) GetReceiverNode(nids []uint64) []protocol.Noder {
 	return nodes
 }
 
-func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.VotingContentType) (voting.VotingContent, error) {
+func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.VotingContentType) error {
 	current := ps.CurrentVoting(vType)
 	content, err := current.GetBestVotingContent(votingHeight)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	hash := content.Hash()
 	votingPool := current.GetVotingPool()
@@ -195,7 +203,7 @@ func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.Vot
 		current.SetConfirmingHash(hash)
 	}
 
-	return content, nil
+	return nil
 }
 
 func (ps *ProposerService) ProduceNewBlock() {
@@ -303,9 +311,17 @@ func (ps *ProposerService) ProbeRoutine() {
 	}
 }
 
+func (ps *ProposerService) BlockPersistCompleted(v interface{}) {
+	if block, ok := v.(*ledger.Block); ok {
+		ps.txnCollector.Cleanup(block.Transactions)
+	}
+}
+
 func (ps *ProposerService) Start() error {
 	// register consensus message
 	ps.consensusMsgReceived = ps.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, ps.ReceiveConsensusMsg)
+	// register block saving event
+	ps.blockPersisted = ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, ps.BlockPersistCompleted)
 	// start block proposer routine
 	go ps.ProposerRoutine()
 	// start timeout routine
@@ -377,8 +393,10 @@ func (ps *ProposerService) BuildBlock() (*ledger.Block, error) {
 	txnHashList = append(txnHashList, coinbase.Hash())
 	txns := ps.txnCollector.Collect()
 	for txnHash, txn := range txns {
-		txnList = append(txnList, txn)
-		txnHashList = append(txnHashList, txnHash)
+		if !ledger.DefaultLedger.Store.IsTxHashDuplicate(txnHash) {
+			txnList = append(txnList, txn)
+			txnHashList = append(txnHashList, txnHash)
+		}
 	}
 	txnRoot, err := crypto.ComputeRoot(txnHashList)
 	if err != nil {
@@ -538,7 +556,8 @@ func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.P
 }
 
 func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubKey) {
-	current := ps.CurrentVoting(resp.contentType)
+	votingType := resp.contentType
+	current := ps.CurrentVoting(votingType)
 	votingHeight := current.GetVotingHeight()
 	hash := resp.hash
 	height := resp.height
@@ -566,6 +585,43 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubK
 	currentVotingPool := current.GetVotingPool()
 	currentVotingPool.AddToReceivePool(height, nodeID, *hash)
 	current.SetNeighborState(nodeID, *hash, voting.ProposalReceived)
+
+	// Get voting result from voting pool. If votes is not enough then return.
+	maybeFinalHash, err := currentVotingPool.VoteCounting(votingHeight)
+	if err != nil {
+		return
+	}
+	ps.SetOrChangeMind(votingType, votingHeight, maybeFinalHash)
+}
+
+func (ps *ProposerService) SetOrChangeMind(votingType voting.VotingContentType,
+	votingHeight uint32, maybeFinalHash *Uint256) {
+	current := ps.CurrentVoting(votingType)
+	currentVotingPool := current.GetVotingPool()
+	if mind, ok := currentVotingPool.GetMind(votingHeight); ok {
+		// When current mind has been set, if voting result is different with
+		// current mind then do mind changing.
+		if mind.CompareTo(*maybeFinalHash) != 0 {
+			log.Info("when receive proposal mind changed to neighbor mind: ",
+				BytesToHexString(maybeFinalHash.ToArrayReverse()))
+			history := currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
+			// generate mind changing message
+			mindChangingMsg := NewMindChanging(maybeFinalHash, votingHeight, votingType)
+			// get node which should receive request message
+			var nids []uint64
+			for n := range history {
+				nids = append(nids, n)
+			}
+			nodes := ps.GetReceiverNode(nids)
+			// send mind changing message
+			ps.SendConsensusMsg(mindChangingMsg, nodes)
+		}
+	} else {
+		// Set mind if current mind has not been set.
+		currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
+		log.Info("when receive proposal mind set to neighbor mind: ",
+			BytesToHexString(maybeFinalHash.ToArrayReverse()))
+	}
 }
 
 func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.PubKey) {
@@ -608,30 +664,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 	if err != nil {
 		return
 	}
-	if mind, ok := currentVotingPool.GetMind(votingHeight); ok {
-		// When current mind has been set, if voting result is different with
-		// current mind then do mind changing.
-		if mind.CompareTo(*maybeFinalHash) != 0 {
-			log.Info("when receive proposal mind changed to neighbor mind: ",
-				BytesToHexString(maybeFinalHash.ToArrayReverse()))
-			history := currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
-			// generate mind changing message
-			mindChangingMsg := NewMindChanging(maybeFinalHash, votingHeight, votingType)
-			// get node which should receive request message
-			var nids []uint64
-			for n := range history {
-				nids = append(nids, n)
-			}
-			nodes := ps.GetReceiverNode(nids)
-			// send mind changing message
-			ps.SendConsensusMsg(mindChangingMsg, nodes)
-		}
-	} else {
-		// Set mind if current mind has not been set.
-		currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
-		log.Info("when receive proposal mind set to neighbor mind: ",
-			BytesToHexString(maybeFinalHash.ToArrayReverse()))
-	}
+	ps.SetOrChangeMind(votingType, votingHeight, maybeFinalHash)
 }
 
 func (ps *ProposerService) HandleMindChangingMsg(mindChanging *MindChanging, sender *crypto.PubKey) {
