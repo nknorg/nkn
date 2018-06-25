@@ -127,7 +127,6 @@ func (scv *SigChainVoting) GetBestVotingContent(height uint32) (VotingContent, e
 	}
 
 	return nil, errors.New("invalid commit transaction")
-
 }
 
 func (scv *SigChainVoting) GetWorseVotingContent(height uint32) (VotingContent, error) {
@@ -144,27 +143,13 @@ func (scv *SigChainVoting) GetVotingContentFromPool(hash Uint256, height uint32)
 }
 
 func (scv *SigChainVoting) GetVotingContent(hash Uint256, height uint32) (VotingContent, error) {
-	// get signature chain by height and hash
-	sigChain, err := scv.porServer.GetSigChain(height, hash)
-	if err != nil {
-		return nil, err
-	}
-	sigHash, err := sigChain.SignatureHash()
-	if err != nil {
-		return nil, err
-	}
-	// get transaction hash by signature chain
-	txnHash, exist := scv.porServer.IsSigChainExist(sigHash, height)
-	if !exist {
-		return nil, errors.New("signature chain doesn't exist")
-	}
 	// get transaction from transaction pool
-	txnInPool := scv.txnCollector.GetTransaction(*txnHash)
+	txnInPool := scv.txnCollector.GetTransaction(hash)
 	if txnInPool != nil {
 		return txnInPool, nil
 	}
 	// get transaction from ledger
-	txnInLedger, err := ledger.DefaultLedger.Store.GetTransaction(*txnHash)
+	txnInLedger, err := ledger.DefaultLedger.Store.GetTransaction(hash)
 	if err == nil {
 		return txnInLedger, nil
 	}
