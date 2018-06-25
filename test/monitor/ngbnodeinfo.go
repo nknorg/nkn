@@ -7,7 +7,7 @@ type NgbNodeInfo struct {
 	NgbType       string
 	NgbAddr       string
 	HttpInfoAddr  string
-	HttpInfoPort  int
+	HttpInfoPort  uint16
 	HttpInfoStart bool
 }
 
