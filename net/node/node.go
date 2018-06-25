@@ -720,3 +720,7 @@ func (node *node) updateConnection() {
 		}
 	}
 }
+
+func (node *node) SendRelayPacketsInBuffer(clientId []byte) error {
+	return node.relayer.SendRelayPacketsInBuffer(clientId)
+}
