@@ -114,7 +114,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		errcode := response["error"].(common.ErrCode)
 		if errcode != common.SUCCESS {
 			data, err = json.Marshal(map[string]interface{}{
-				"jsonpc": "2.0",
+				"jsonrpc": "2.0",
 				"error": map[string]interface{}{
 					"code":    -errcode,
 					"message": common.ErrMessage[errcode],
@@ -123,9 +123,9 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			})
 		} else {
 			data, err = json.Marshal(map[string]interface{}{
-				"jsonpc": "2.0",
-				"result": response["result"],
-				"id":     request["id"],
+				"jsonrpc": "2.0",
+				"result":  response["result"],
+				"id":      request["id"],
 			})
 		}
 		if err != nil {
@@ -137,7 +137,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		//if the function does not exist
 		log.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
 		data, err := json.Marshal(map[string]interface{}{
-			"jsonpc": "2.0",
+			"jsonrpc": "2.0",
 			"error": map[string]interface{}{
 				"code":    -32601,
 				"message": "Method not found",
