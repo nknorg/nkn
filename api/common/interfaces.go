@@ -155,6 +155,26 @@ func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]
 //	}
 //}
 
+func GetBlockTransactions(block *ledger.Block) interface{} {
+	trans := make([]string, len(block.Transactions))
+	for i := 0; i < len(block.Transactions); i++ {
+		h := block.Transactions[i].Hash()
+		trans[i] = common.BytesToHexString(h.ToArrayReverse())
+	}
+	hash := block.Hash()
+	type BlockTransactions struct {
+		Hash         string
+		Height       uint32
+		Transactions []string
+	}
+	b := BlockTransactions{
+		Hash:         common.BytesToHexString(hash.ToArrayReverse()),
+		Height:       block.Header.Height,
+		Transactions: trans,
+	}
+	return b
+}
+
 // getBlockTxsByHeight gets the transactions of block referenced by height
 // params: ["height":<height>]
 // return: {"result":<result>, "error":<errcode>}
@@ -178,25 +198,7 @@ func getBlockTxsByHeight(s Serverer, params map[string]interface{}) map[string]i
 		return respPacking(nil, UNKNOWN_BLOCK)
 	}
 
-	txs := func(block *ledger.Block) interface{} {
-		trans := make([]string, len(block.Transactions))
-		for i := 0; i < len(block.Transactions); i++ {
-			h := block.Transactions[i].Hash()
-			trans[i] = common.BytesToHexString(h.ToArrayReverse())
-		}
-		hash := block.Hash()
-		type BlockTransactions struct {
-			Hash         string
-			Height       uint32
-			Transactions []string
-		}
-		b := BlockTransactions{
-			Hash:         common.BytesToHexString(hash.ToArrayReverse()),
-			Height:       block.Header.Height,
-			Transactions: trans,
-		}
-		return b
-	}(block)
+	txs := GetBlockTransactions(block)
 
 	return respPacking(txs, SUCCESS)
 }

@@ -21,3 +21,14 @@ func respPacking(result interface{}, errcode ErrCode) map[string]interface{} {
 func RespPacking(result interface{}, errcode ErrCode) map[string]interface{} {
 	return respPacking(result, errcode)
 }
+
+func ResponsePack(errCode ErrCode) map[string]interface{} {
+	resp := map[string]interface{}{
+		"Action":  "",
+		"Result":  "",
+		"Error":   errCode,
+		"Desc":    "",
+		"Version": "1.0.0",
+	}
+	return resp
+}

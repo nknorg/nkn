@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/api/common"
-	. "github.com/nknorg/nkn/api/httprestful/common"
-	Err "github.com/nknorg/nkn/api/httprestful/error"
 	. "github.com/nknorg/nkn/api/websocket/session"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/net/protocol"
@@ -23,6 +21,10 @@ import (
 	"github.com/nknorg/nkn/vault"
 
 	"github.com/gorilla/websocket"
+)
+
+const (
+	TlsPort uint16 = 443
 )
 
 type Handler struct {
@@ -234,7 +236,7 @@ func (ws *WsServer) checkSessionsTimeout(done chan bool) {
 			var closeList []*Session
 			ws.SessionList.ForEachSession(func(s *Session) {
 				if s.SessionTimeoverCheck() {
-					resp := ResponsePack(Err.SESSION_EXPIRED)
+					resp := common.ResponsePack(common.SESSION_EXPIRED)
 					ws.respondToSession(s, resp)
 					closeList = append(closeList, s)
 				}
@@ -307,25 +309,25 @@ func (ws *WsServer) OnDataHandle(curSession *Session, bysMsg []byte, r *http.Req
 	var req = make(map[string]interface{})
 
 	if err := json.Unmarshal(bysMsg, &req); err != nil {
-		resp := ResponsePack(Err.ILLEGAL_DATAFORMAT)
+		resp := common.ResponsePack(common.ILLEGAL_DATAFORMAT)
 		ws.respondToSession(curSession, resp)
 		log.Error("websocket OnDataHandle:", err)
 		return false
 	}
 	actionName, ok := req["Action"].(string)
 	if !ok {
-		resp := ResponsePack(Err.INVALID_METHOD)
+		resp := common.ResponsePack(common.INVALID_METHOD)
 		ws.respondToSession(curSession, resp)
 		return false
 	}
 	action, ok := ws.ActionMap[actionName]
 	if !ok {
-		resp := ResponsePack(Err.INVALID_METHOD)
+		resp := common.ResponsePack(common.INVALID_METHOD)
 		ws.respondToSession(curSession, resp)
 		return false
 	}
 	if !ws.IsValidMsg(req) {
-		resp := ResponsePack(Err.INVALID_PARAMS)
+		resp := common.ResponsePack(common.INVALID_PARAMS)
 		ws.respondToSession(curSession, resp)
 		return true
 	}
@@ -337,7 +339,7 @@ func (ws *WsServer) OnDataHandle(curSession *Session, bysMsg []byte, r *http.Req
 	}
 	req["Userid"] = curSession.GetSessionId()
 	ret := action.handler(ws, req)
-	resp := ResponsePack(int64(ret["error"].(common.ErrCode)))
+	resp := common.ResponsePack(ret["error"].(common.ErrCode))
 	resp["Action"] = actionName
 	resp["Result"] = ret["result"]
 	if txHash, ok := resp["Result"].(string); ok && action.pushFlag {
@@ -367,7 +369,7 @@ func (ws *WsServer) deleteTxHashs(sSessionId string) {
 }
 
 func (ws *WsServer) respondToSession(session *Session, resp map[string]interface{}) {
-	resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]
+	resp["Desc"] = common.ErrMessage[resp["Error"].(common.ErrCode)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Error("Websocket response:", err)
@@ -399,7 +401,7 @@ func (ws *WsServer) PushTxResult(txHashStr string, resp map[string]interface{}) 
 }
 
 func (ws *WsServer) PushResult(resp map[string]interface{}) {
-	resp["Desc"] = Err.ErrMap[resp["Error"].(int64)]
+	resp["Desc"] = common.ErrMessage[resp["Error"].(common.ErrCode)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Error("Websocket PushResult:", err)
