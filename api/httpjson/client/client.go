@@ -1,4 +1,4 @@
-package httpjson
+package client
 
 import (
 	"encoding/json"
@@ -8,13 +8,6 @@ import (
 	"os"
 	"strings"
 )
-
-func responsePacking(result interface{}) map[string]interface{} {
-	resp := map[string]interface{}{
-		"result": result,
-	}
-	return resp
-}
 
 // Call sends RPC request to server
 func Call(address string, method string, id interface{}, params map[string]interface{}) ([]byte, error) {

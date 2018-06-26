@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/nknorg/nkn/api/httpjson"
+	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/signature"
@@ -106,7 +106,7 @@ func assetAction(c *cli.Context) error {
 		return err
 	}
 
-	resp, err := httpjson.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": txHex})
+	resp, err := client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": txHex})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

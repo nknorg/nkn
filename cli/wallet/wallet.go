@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nknorg/nkn/api/httpjson"
+	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/password"
@@ -96,7 +96,7 @@ func walletAction(c *cli.Context) error {
 			case "account":
 				showAccountInfo(wallet)
 			case "balance":
-				resp, err := httpjson.Call(Address(), "getbalance", 0, map[string]interface{}{})
+				resp, err := client.Call(Address(), "getbalance", 0, map[string]interface{}{})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					return err

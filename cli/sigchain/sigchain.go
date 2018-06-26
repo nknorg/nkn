@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nknorg/nkn/api/httpjson"
+	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 
 	"github.com/urfave/cli"
@@ -19,7 +19,7 @@ func sigchainAction(c *cli.Context) error {
 	var resp []byte
 	switch {
 	case c.Bool("create"):
-		resp, err = httpjson.Call(Address(), "sigchaintest", 0, map[string]interface{}{})
+		resp, err = client.Call(Address(), "sigchaintest", 0, map[string]interface{}{})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
