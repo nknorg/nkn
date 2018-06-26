@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nknorg/nkn/api/httpjson"
+	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 
 	"github.com/urfave/cli"
@@ -17,7 +17,7 @@ func debugAction(c *cli.Context) (err error) {
 	}
 	level := c.Int("level")
 	if level != -1 {
-		resp, err := httpjson.Call(Address(), "setdebuginfo", 0, map[string]interface{}{"level": level})
+		resp, err := client.Call(Address(), "setdebuginfo", 0, map[string]interface{}{"level": level})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err

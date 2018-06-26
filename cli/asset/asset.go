@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nknorg/nkn/api/httpjson"
+	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto/util"
@@ -67,20 +67,20 @@ func assetAction(c *cli.Context) error {
 	var resp []byte
 	switch {
 	case c.Bool("reg"):
-		resp, err = httpjson.Call(Address(), "registasset", 0, map[string]interface{}{"name": parseAssetName(c), "value": value})
+		resp, err = client.Call(Address(), "registasset", 0, map[string]interface{}{"name": parseAssetName(c), "value": value})
 	case c.Bool("issue"):
-		resp, err = httpjson.Call(Address(), "issueasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "address": parseAddress(c), "value": value})
+		resp, err = client.Call(Address(), "issueasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "address": parseAddress(c), "value": value})
 	case c.Bool("transfer"):
-		resp, err = httpjson.Call(Address(), "sendtoaddress", 0, map[string]interface{}{"assetid": parseAssetID(c), "address": parseAddress(c), "value": value})
+		resp, err = client.Call(Address(), "sendtoaddress", 0, map[string]interface{}{"assetid": parseAssetID(c), "address": parseAddress(c), "value": value})
 	case c.Bool("prepaid"):
 		rates := c.String("rates")
 		if rates == "" {
 			fmt.Println("rates is required with [--rates]")
 			return nil
 		}
-		resp, err = httpjson.Call(Address(), "prepaidasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "value": value, "rates": rates})
+		resp, err = client.Call(Address(), "prepaidasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "value": value, "rates": rates})
 	case c.Bool("withdraw"):
-		resp, err = httpjson.Call(Address(), "withdrawasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "value": value})
+		resp, err = client.Call(Address(), "withdrawasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "value": value})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil

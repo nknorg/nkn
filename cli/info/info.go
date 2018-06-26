@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nknorg/nkn/api/httpjson"
+	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 
 	"github.com/urfave/cli"
@@ -28,7 +28,7 @@ func infoAction(c *cli.Context) (err error) {
 	var resp []byte
 	var output [][]byte
 	if height != -1 {
-		resp, err = httpjson.Call(Address(), "getblock", 0, map[string]interface{}{"height": height})
+		resp, err = client.Call(Address(), "getblock", 0, map[string]interface{}{"height": height})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -37,7 +37,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if c.String("blockhash") != "" {
-		resp, err = httpjson.Call(Address(), "getblock", 0, map[string]interface{}{"hash": blockhash})
+		resp, err = client.Call(Address(), "getblock", 0, map[string]interface{}{"hash": blockhash})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -46,7 +46,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if latestblockhash {
-		resp, err = httpjson.Call(Address(), "getlatestblockhash", 0, map[string]interface{}{})
+		resp, err = client.Call(Address(), "getlatestblockhash", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -55,7 +55,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if blockcount {
-		resp, err = httpjson.Call(Address(), "getblockcount", 0, map[string]interface{}{})
+		resp, err = client.Call(Address(), "getblockcount", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -64,7 +64,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if connections {
-		resp, err = httpjson.Call(Address(), "getconnectioncount", 0, map[string]interface{}{})
+		resp, err = client.Call(Address(), "getconnectioncount", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -73,7 +73,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if neighbor {
-		resp, err := httpjson.Call(Address(), "getneighbor", 0, map[string]interface{}{})
+		resp, err := client.Call(Address(), "getneighbor", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -82,7 +82,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if state {
-		resp, err := httpjson.Call(Address(), "getnodestate", 0, map[string]interface{}{})
+		resp, err := client.Call(Address(), "getnodestate", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -91,7 +91,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if txhash != "" {
-		resp, err = httpjson.Call(Address(), "gettransaction", 0, map[string]interface{}{"hash": txhash})
+		resp, err = client.Call(Address(), "gettransaction", 0, map[string]interface{}{"hash": txhash})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -100,7 +100,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if version {
-		resp, err = httpjson.Call(Address(), "getversion", 0, map[string]interface{}{})
+		resp, err = client.Call(Address(), "getversion", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
