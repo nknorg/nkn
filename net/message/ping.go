@@ -14,16 +14,16 @@ import (
 
 type ping struct {
 	msgHdr
-	height uint64
+	height uint32
 }
 
 func NewPingMsg() ([]byte, error) {
 	var msg ping
 	msg.msgHdr.Magic = NetID
 	copy(msg.msgHdr.CMD[0:7], "ping")
-	msg.height = uint64(ledger.DefaultLedger.Store.GetHeaderHeight())
+	msg.height = ledger.DefaultLedger.Store.GetHeaderHeight()
 	tmpBuffer := bytes.NewBuffer([]byte{})
-	serialization.WriteUint64(tmpBuffer, msg.height)
+	serialization.WriteUint32(tmpBuffer, msg.height)
 	b := new(bytes.Buffer)
 	err := binary.Write(b, binary.LittleEndian, tmpBuffer.Bytes())
 	if err != nil {
@@ -67,7 +67,7 @@ func (msg ping) Serialize(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	err = serialization.WriteUint64(w, msg.height)
+	err = serialization.WriteUint32(w, msg.height)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (msg *ping) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	msg.height, err = serialization.ReadUint64(r)
+	msg.height, err = serialization.ReadUint32(r)
 	if err != nil {
 		return err
 	}

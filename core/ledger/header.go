@@ -98,11 +98,11 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 
 	//Timestamp
 	temp, _ = serialization.ReadUint32(r)
-	h.Timestamp = uint32(temp)
+	h.Timestamp = temp
 
 	//Height
 	temp, _ = serialization.ReadUint32(r)
-	h.Height = uint32(temp)
+	h.Height = temp
 
 	//consensusData
 	h.ConsensusData, _ = serialization.ReadUint64(r)

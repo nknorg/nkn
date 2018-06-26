@@ -54,7 +54,7 @@ type node struct {
 	version                  uint32              // network protocol version
 	services                 uint64              // supplied services
 	relay                    bool                // relay capability (merge into capbility flag)
-	height                   uint64              // node latest block height
+	height                   uint32              // node latest block height
 	local                    *node               // local node
 	txnCnt                   uint64              // transmitted transaction count
 	rxTxnCnt                 uint64              // received transaction count
@@ -138,7 +138,7 @@ func (node *node) RemoveAddrInConnectingList(addr string) {
 }
 
 func (node *node) UpdateInfo(t time.Time, version uint32, services uint64,
-	port uint16, nonce uint64, relay uint8, height uint64) {
+	port uint16, nonce uint64, relay uint8, height uint32) {
 
 	node.UpdateRXTime(t)
 	node.id = nonce
@@ -150,7 +150,7 @@ func (node *node) UpdateInfo(t time.Time, version uint32, services uint64,
 	} else {
 		node.relay = true
 	}
-	node.height = uint64(height)
+	node.height = height
 }
 
 func NewNode() *node {
@@ -290,11 +290,11 @@ func (node *node) GetTxnPool() *pool.TxnPool {
 	return node.TxnPool
 }
 
-func (node *node) GetHeight() uint64 {
+func (node *node) GetHeight() uint32 {
 	return node.height
 }
 
-func (node *node) SetHeight(height uint64) {
+func (node *node) SetHeight(height uint32) {
 	//TODO read/write lock
 	node.height = height
 }
@@ -405,7 +405,7 @@ func (node *node) SetBookKeeperAddr(pk *crypto.PubKey) {
 func (node *node) SyncNodeHeight() {
 	for {
 		heights, _ := node.GetNeighborHeights()
-		if CompareHeight(uint64(ledger.DefaultLedger.Blockchain.BlockHeight), heights) {
+		if CompareHeight(ledger.DefaultLedger.Blockchain.BlockHeight, heights) {
 			break
 		}
 		<-time.After(time.Second)
@@ -519,7 +519,7 @@ func (node *node) GetBlkHdrs() {
 	}
 	nodelist := []Noder{}
 	for _, v := range noders {
-		if uint64(ledger.DefaultLedger.Store.GetHeaderHeight()) < v.GetHeight() {
+		if ledger.DefaultLedger.Store.GetHeaderHeight() < v.GetHeight() {
 			nodelist = append(nodelist, v)
 		}
 	}

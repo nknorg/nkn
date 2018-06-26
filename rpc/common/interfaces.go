@@ -335,7 +335,7 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 		Version  uint32 // The network protocol the node used
 		Services uint64 // The services the node supplied
 		Relay    bool   // The relay capability of the node (merge into capbility flag)
-		Height   uint64 // The node latest block height
+		Height   uint32 // The node latest block height
 		TxnCnt   uint64 // The transactions be transmit by this node
 		RxTxnCnt uint64 // The transaction received by this node
 		ChordID  string // Chord ID
