@@ -47,25 +47,6 @@ func SendBlock2WSclient(v interface{}) {
 	}
 }
 
-func Stop() {
-	// TODO delete
-	//if ws == nil {
-	//	return
-	//}
-	//ws.Stop()
-}
-
-func ReStartServer() {
-	// TODO delete
-	//	if ws == nil {
-	//		n := common.GetNode()
-	//		ws = server.InitWsServer(n)
-	//		ws.Start()
-	//		return
-	//	}
-	//	ws.Restart()
-}
-
 func GetWsPushBlockFlag() bool {
 	return pushBlockFlag
 }
