@@ -32,7 +32,7 @@ type version struct {
 		Nonce        uint64
 		// TODO remove tempory to get serilization function passed
 		UserAgent   uint8
-		StartHeight uint64
+		StartHeight uint32
 		// FIXME check with the specify relay type length
 		Relay uint8
 	}
@@ -59,7 +59,7 @@ func NewVersion(n Noder) ([]byte, error) {
 	msg.P.Port = n.GetPort()
 	msg.P.Nonce = n.GetID()
 	msg.P.UserAgent = 0x00
-	msg.P.StartHeight = uint64(ledger.DefaultLedger.GetLocalBlockChainHeight())
+	msg.P.StartHeight = ledger.DefaultLedger.GetLocalBlockChainHeight()
 	if n.GetRelay() {
 		msg.P.Relay = 1
 	} else {

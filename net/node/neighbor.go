@@ -113,12 +113,12 @@ func (node *node) GetNeighborAddrs() ([]NodeAddr, uint64) {
 	return addrs, i
 }
 
-func (node *node) GetNeighborHeights() ([]uint64, uint64) {
+func (node *node) GetNeighborHeights() ([]uint32, uint64) {
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
 
 	var i uint64
-	heights := []uint64{}
+	heights := []uint32{}
 	for _, n := range node.nbrNodes.List {
 		if n.GetState() == ESTABLISH {
 			height := n.GetHeight()

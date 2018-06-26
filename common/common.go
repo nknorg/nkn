@@ -110,7 +110,7 @@ func ClearBytes(arr []byte, len int) {
 	}
 }
 
-func CompareHeight(blockHeight uint64, heights []uint64) bool {
+func CompareHeight(blockHeight uint32, heights []uint32) bool {
 	for _, height := range heights {
 		if blockHeight < height {
 			return false

@@ -44,7 +44,7 @@ type Noder interface {
 	DelNbrNode(id uint64) (Noder, bool)
 	AddNbrNode(Noder)
 	CloseConn()
-	GetHeight() uint64
+	GetHeight() uint32
 	GetConnectionCnt() uint
 	GetTxnByCount(int) map[common.Uint256]*transaction.Transaction
 	GetTxnPool() *pool.TxnPool
@@ -52,7 +52,7 @@ type Noder interface {
 	ExistedID(id common.Uint256) bool
 	ReqNeighborList()
 	DumpInfo()
-	UpdateInfo(t time.Time, version uint32, services uint64, port uint16, nonce uint64, relay uint8, height uint64)
+	UpdateInfo(t time.Time, version uint32, services uint64, port uint16, nonce uint64, relay uint8, height uint32)
 	ConnectNeighbors()
 	Connect(nodeAddr string) error
 	Tx(buf []byte)
@@ -69,7 +69,7 @@ type Noder interface {
 	GetBookKeeperAddr() *crypto.PubKey
 	GetBookKeepersAddrs() ([]*crypto.PubKey, uint64)
 	SetBookKeeperAddr(pk *crypto.PubKey)
-	GetNeighborHeights() ([]uint64, uint64)
+	GetNeighborHeights() ([]uint32, uint64)
 	SyncNodeHeight()
 	CleanSubmittedTransactions(txns []*transaction.Transaction) error
 
@@ -80,7 +80,7 @@ type Noder interface {
 	RemoveFlightHeightLessThan(height uint32)
 	RemoveFlightHeight(height uint32)
 	GetLastRXTime() time.Time
-	SetHeight(height uint64)
+	SetHeight(height uint32)
 	WaitForSyncBlkFinish()
 	GetFlightHeights() []uint32
 	IsAddrInNbrList(addr string) bool
