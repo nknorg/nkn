@@ -29,12 +29,13 @@ type blkHeader struct {
 	blkHdr []ledger.Header
 }
 
-func NewHeadersReq() ([]byte, error) {
+func NewHeadersReq(stopHash common.Uint256) ([]byte, error) {
 	var h headersReq
 
 	h.p.len = 1
 	buf := ledger.DefaultLedger.Store.GetCurrentHeaderHash()
-	copy(h.p.hashEnd[:], buf[:])
+	copy(h.p.hashStart[:], buf[:])
+	copy(h.p.hashEnd[:], stopHash[:])
 
 	p := new(bytes.Buffer)
 	err := binary.Write(p, binary.LittleEndian, &(h.p))
@@ -165,8 +166,8 @@ func (msg headersReq) Handle(node Noder) error {
 	return nil
 }
 
-func SendMsgSyncHeaders(node Noder) {
-	buf, err := NewHeadersReq()
+func SendMsgSyncHeaders(node Noder, stopHash common.Uint256) {
+	buf, err := NewHeadersReq(stopHash)
 	if err != nil {
 		log.Error("failed build a new headersReq")
 	} else {
@@ -189,61 +190,41 @@ func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]le
 	headers := []ledger.Header{}
 	var startHeight uint32
 	var stopHeight uint32
-	curHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
 	if startHash == empty {
-		if stopHash == empty {
-			if curHeight > MaxHdrCnt {
-				count = MaxHdrCnt
-			} else {
-				count = curHeight
-			}
-		} else {
-			bkstop, err := ledger.DefaultLedger.Store.GetHeader(stopHash)
-			if err != nil {
-				return nil, 0, err
-			}
-			stopHeight = bkstop.Height
-			count = curHeight - stopHeight
-			if count > MaxHdrCnt {
-				count = MaxHdrCnt
-			}
-		}
+		return nil, 0, errors.New("invalid start hash for getting headers")
+	}
+	// get start height
+	bkstart, err := ledger.DefaultLedger.Store.GetHeader(startHash)
+	if err != nil {
+		return nil, 0, err
+	}
+	startHeight = bkstart.Height
+
+	// get stop height
+	if stopHash == empty {
+		stopHeight = ledger.DefaultLedger.Store.GetHeaderHeight()
 	} else {
-		bkstart, err := ledger.DefaultLedger.Store.GetHeader(startHash)
+		bkstop, err := ledger.DefaultLedger.Store.GetHeader(stopHash)
 		if err != nil {
 			return nil, 0, err
 		}
-		startHeight = bkstart.Height
-		if stopHash != empty {
-			bkstop, err := ledger.DefaultLedger.Store.GetHeader(stopHash)
-			if err != nil {
-				return nil, 0, err
-			}
-			stopHeight = bkstop.Height
+		stopHeight = bkstop.Height
+	}
 
-			// avoid unsigned integer underflow
-			if startHeight < stopHeight {
-				return nil, 0, errors.New("do not have header to send")
-			}
-			count = startHeight - stopHeight
+	if startHeight > stopHeight {
+		return nil, 0, errors.New("do not have header to send")
+	}
 
-			if count >= MaxHdrCnt {
-				count = MaxHdrCnt
-				stopHeight = startHeight - MaxHdrCnt
-			}
-		} else {
-
-			if startHeight > MaxHdrCnt {
-				count = MaxHdrCnt
-			} else {
-				count = startHeight
-			}
-		}
+	// get header counts to be sent
+	count = stopHeight - startHeight
+	if count >= MaxHdrCnt {
+		count = MaxHdrCnt
+		stopHeight = startHeight - MaxHdrCnt
 	}
 
 	var i uint32
 	for i = 1; i <= count; i++ {
-		hash, err := ledger.DefaultLedger.Store.GetBlockHash(stopHeight + i)
+		hash, err := ledger.DefaultLedger.Store.GetBlockHash(startHeight + i)
 		hd, err := ledger.DefaultLedger.Store.GetHeader(hash)
 		if err != nil {
 			log.Error("GetBlockWithHeight failed ", err.Error())
