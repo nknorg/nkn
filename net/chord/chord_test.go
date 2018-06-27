@@ -4,7 +4,13 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/nknorg/nkn/util/log"
 )
+
+func init() {
+	log.Init(log.Stdout)
+}
 
 type MultiLocalTrans struct {
 	remote Transport
