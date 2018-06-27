@@ -12,6 +12,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/chord"
+	netcomm "github.com/nknorg/nkn/net/common"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/address"
@@ -335,32 +336,23 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	type NodeInfo struct {
-		State    uint   // node status
-		Port     uint16 // The nodes's port
-		ID       uint64 // The nodes's id
-		Time     int64
-		Version  uint32 // The network protocol the node used
-		Services uint64 // The services the node supplied
-		Relay    bool   // The relay capability of the node (merge into capbility flag)
-		Height   uint32 // The node latest block height
-		TxnCnt   uint64 // The transactions be transmit by this node
-		RxTxnCnt uint64 // The transaction received by this node
-		ChordID  string // Chord ID
-	}
 
-	n := NodeInfo{
-		State:    uint(node.GetState()),
-		Time:     node.GetTime(),
-		Port:     node.GetPort(),
-		ID:       node.GetID(),
-		Version:  node.Version(),
-		Services: node.Services(),
-		Relay:    node.GetRelay(),
-		Height:   node.GetHeight(),
-		TxnCnt:   node.GetTxnCnt(),
-		RxTxnCnt: node.GetRxTxnCnt(),
-		ChordID:  hex.EncodeToString(node.GetChordAddr()),
+	n := netcomm.NodeInfo{
+		State:     node.GetState(),
+		Time:      node.GetTime(),
+		Addr:      node.GetAddr(),
+		NodePort:  node.GetPort(),
+		ChordPort: node.GetChordPort(),
+		JsonPort:  node.GetHttpJsonPort(),
+		WsPort:    node.GetWebSockPort(),
+		ID:        node.GetID(),
+		Version:   node.Version(),
+		Services:  node.Services(),
+		Relay:     node.GetRelay(),
+		Height:    node.GetHeight(),
+		TxnCnt:    node.GetTxnCnt(),
+		RxTxnCnt:  node.GetRxTxnCnt(),
+		ChordID:   hex.EncodeToString(node.GetChordAddr()),
 	}
 
 	return respPacking(n, SUCCESS)

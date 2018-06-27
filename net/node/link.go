@@ -30,6 +30,7 @@ type link struct {
 	addr         string    // The address of the node
 	conn         net.Conn  // Connect socket with the peer node
 	port         uint16    // The server port of the node
+	chordPort    uint16    // The node chord port of the node
 	httpInfoPort uint16    // The node information server port of the node
 	httpJSONPort uint16    // The node httpjson server port of the node
 	webSockPort  uint16    // The node webSocket server port of the node
