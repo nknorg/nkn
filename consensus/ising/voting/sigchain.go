@@ -161,7 +161,7 @@ func (scv *SigChainVoting) VotingType() VotingContentType {
 	return SigChainTxnVote
 }
 
-func (scv *SigChainVoting) Preparing(content VotingContent) error {
+func (scv *SigChainVoting) AddToCache(content VotingContent) error {
 	errCode := scv.txnCollector.Append(content.(*transaction.Transaction))
 	if errCode != 0 {
 		return errors.New("append transaction error")

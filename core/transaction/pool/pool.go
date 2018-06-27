@@ -228,9 +228,6 @@ func (tp *TxnPool) cleanTransactionList(txns []*Transaction) error {
 			cleaned++
 		}
 	}
-	if txnsNum != cleaned {
-		log.Warn(fmt.Sprintf("cleaned transactions number unmatched, expected: %d, got %d", txnsNum, cleaned))
-	}
 	log.Debug(fmt.Sprintf("transaction pool cleaning, requested: %d, cleaned: %d, remains %d", txnsNum, cleaned, tp.GetTransactionCount()))
 	return nil
 }

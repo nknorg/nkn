@@ -45,7 +45,8 @@ type ProposerService struct {
 	msgChan              chan interface{}          // get notice from probe thread
 	consensusMsgReceived events.Subscriber         // consensus events listening
 	blockPersisted       events.Subscriber         // block saved events
-	porServer            *por.PorServer            // signature chain source
+	syncFinished         events.Subscriber         // block syncing finished event
+	syncCache            *SyncCache                // cache for block syncing
 	voting               []voting.Voting           // array for sigchain and block voting
 }
 
@@ -62,6 +63,7 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 		blockProposer: make(map[uint32][]byte),
 		txnCollector:  txnCollector,
 		msgChan:       make(chan interface{}, MsgChanCap),
+		syncCache:     NewSyncBlockCache(),
 		voting: []voting.Voting{
 			voting.NewBlockVoting(totalWeight),
 			voting.NewSigChainVoting(totalWeight, txnCollector),
@@ -215,7 +217,7 @@ func (ps *ProposerService) ProduceNewBlock() {
 	if err != nil {
 		log.Error("building block error: ", err)
 	}
-	err = current.Preparing(block)
+	err = current.AddToCache(block)
 	if err != nil {
 		log.Error("adding block to cache error: ", err)
 		return
@@ -317,11 +319,42 @@ func (ps *ProposerService) BlockPersistCompleted(v interface{}) {
 	}
 }
 
+func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
+	var err error
+	block := ps.syncCache.GetBlockFromSyncCache()
+	for block != nil {
+		err = ledger.BlockFullyCheck(block, ledger.DefaultLedger)
+		if err != nil {
+			log.Error("verifying cached block error: ", err)
+		}
+		err = ledger.DefaultLedger.Blockchain.AddBlock(block)
+		if err != nil {
+			log.Error("saving cached block error: ", err)
+		}
+		ps.syncCache.RemoveBlockFromCache()
+		block = ps.syncCache.GetBlockFromSyncCache()
+		// Fixme: wait for block persisted
+		time.Sleep(time.Millisecond * 300)
+	}
+	log.Info("cached block saving finished")
+	// switch syncing state
+	ps.localNode.SetSyncState(protocol.PersistFinished)
+}
+
 func (ps *ProposerService) Start() error {
 	// register consensus message
-	ps.consensusMsgReceived = ps.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived, ps.ReceiveConsensusMsg)
+	ps.consensusMsgReceived = ps.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived,
+		ps.ReceiveConsensusMsg)
 	// register block saving event
-	ps.blockPersisted = ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, ps.BlockPersistCompleted)
+	ps.blockPersisted = ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted,
+		ps.BlockPersistCompleted)
+	// register block syncing event
+	ps.syncFinished = ps.localNode.GetEvent("sync").Subscribe(events.EventBlockSyncingFinished,
+		ps.BlockSyncingFinished)
+	// start block syncing
+	go ps.localNode.SyncBlock()
+	// start monitor routine for block syncing
+	go ps.localNode.SyncBlockMonitor()
 	// start block proposer routine
 	go ps.ProposerRoutine()
 	// start timeout routine
@@ -464,11 +497,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 	votingHeight := current.GetVotingHeight()
 	blockHash := bfMsg.block.Hash()
 	height := bfMsg.block.Header.Height
-	if height < votingHeight {
-		log.Warnf("receive out of date block, consensus height: %d, received block height: %d,"+
-			" hash: %s\n", votingHeight, height, BytesToHexString(blockHash.ToArrayReverse()))
-		return
-	}
+
 	// returns if receive duplicate block
 	if current.HasSelfState(blockHash, voting.FloodingFinished) {
 		log.Warn("Duplicate block received for hash: ", BytesToHexString(blockHash.ToArrayReverse()))
@@ -477,14 +506,33 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 	// set state for flooding block
 	current.SetSelfState(blockHash, voting.FloodingFinished)
 
+	// if block syncing is not finished, cache received blocks in order
+	if ps.localNode.GetSyncState() != protocol.PersistFinished {
+		// set syncing stop block hash
+		ps.localNode.SetSyncStopHash(bfMsg.block.Header.PrevBlockHash, height-1)
+		err := ps.syncCache.AddBlockToSyncCache(bfMsg.block)
+		if err != nil {
+			log.Error("add received block to sync cache error: ", err)
+		}
+		log.Tracef("cached block: %s, block height: %d,  totally cached: %d",
+			BytesToHexString(blockHash.ToArrayReverse()), height, ps.syncCache.CachedBlockHeight())
+		return
+	}
+
+	// expect the height of received block is equal to voting height when block syncing finished
+	if height != votingHeight {
+		log.Warnf("receive block which height is invalid, consensus height: %d, received block height: %d,"+
+			" hash: %s\n", votingHeight, height, BytesToHexString(blockHash.ToArrayReverse()))
+		return
+	}
 	// TODO check if the sender is PoR node
-	err := current.Preparing(bfMsg.block)
+	err := current.AddToCache(bfMsg.block)
 	if err != nil {
 		log.Error("add received block to local cache error")
 		return
 	}
 	// trigger consensus when receive appropriate block
-	if height == votingHeight && !ps.IsBlockProposer() {
+	if !ps.IsBlockProposer() {
 		for _, v := range ps.voting {
 			go ps.ConsensusRoutine(v.VotingType())
 		}
@@ -494,6 +542,9 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 }
 
 func (ps *ProposerService) HandleRequestMsg(req *Request, sender *crypto.PubKey) {
+	if ps.localNode.GetSyncState() != protocol.PersistFinished {
+		return
+	}
 	current := ps.CurrentVoting(req.contentType)
 	votingHeight := current.GetVotingHeight()
 	hash := *req.hash
@@ -556,6 +607,9 @@ func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.P
 }
 
 func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubKey) {
+	if ps.localNode.GetSyncState() != protocol.PersistFinished {
+		return
+	}
 	votingType := resp.contentType
 	current := ps.CurrentVoting(votingType)
 	votingHeight := current.GetVotingHeight()
@@ -578,7 +632,7 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubK
 		return
 	}
 	// TODO check if the sender is requested neighbor node
-	err := current.Preparing(resp.content)
+	err := current.AddToCache(resp.content)
 	if err != nil {
 		return
 	}
@@ -625,6 +679,10 @@ func (ps *ProposerService) SetOrChangeMind(votingType voting.VotingContentType,
 }
 
 func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.PubKey) {
+	// TODO: vote counting for cached blocks
+	if ps.localNode.GetSyncState() != protocol.PersistFinished {
+		return
+	}
 	current := ps.CurrentVoting(proposal.contentType)
 	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()
@@ -668,6 +726,10 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 }
 
 func (ps *ProposerService) HandleMindChangingMsg(mindChanging *MindChanging, sender *crypto.PubKey) {
+	// TODO: vote counting for cached blocks
+	if ps.localNode.GetSyncState() != protocol.PersistFinished {
+		return
+	}
 	current := ps.CurrentVoting(mindChanging.contentType)
 	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()

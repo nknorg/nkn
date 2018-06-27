@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/pool"
 	"github.com/nknorg/nkn/crypto"
@@ -22,6 +22,14 @@ const (
 	HANDSHAKED = 3
 	ESTABLISH  = 4
 	INACTIVITY = 5
+)
+
+type SyncState byte
+
+const (
+	SyncStarted     SyncState = 0
+	SyncFinished    SyncState = 1
+	PersistFinished SyncState = 2
 )
 
 type Noder interface {
@@ -42,6 +50,11 @@ type Noder interface {
 	SetHttpInfoState(bool)
 	GetState() uint32
 	SetState(state uint32)
+	GetSyncState() SyncState
+	SetSyncState(s SyncState)
+	SetSyncStopHash(hash Uint256, height uint32)
+	SyncBlock()
+	SyncBlockMonitor()
 	GetRelay() bool
 	GetPubKey() *crypto.PubKey
 	CompareAndSetState(old, new uint32) bool
@@ -52,10 +65,10 @@ type Noder interface {
 	CloseConn()
 	GetHeight() uint32
 	GetConnectionCnt() uint
-	GetTxnByCount(int) map[common.Uint256]*transaction.Transaction
+	GetTxnByCount(int) map[Uint256]*transaction.Transaction
 	GetTxnPool() *pool.TxnPool
 	AppendTxnPool(*transaction.Transaction) ErrCode
-	ExistedID(id common.Uint256) bool
+	ExistedID(id Uint256) bool
 	ReqNeighborList()
 	DumpInfo()
 	UpdateInfo(t time.Time, version uint32, services uint64, port uint16, nonce uint64, relay uint8, height uint32)
@@ -66,7 +79,7 @@ type Noder interface {
 	NodeEstablished(uid uint64) bool
 	GetEvent(eventName string) *events.Event
 	GetNeighborAddrs() ([]NodeAddr, uint64)
-	GetTransaction(hash common.Uint256) *transaction.Transaction
+	GetTransaction(hash Uint256) *transaction.Transaction
 	IncRxTxnCnt()
 	GetTxnCnt() uint64
 	GetRxTxnCnt() uint64
@@ -76,7 +89,6 @@ type Noder interface {
 	GetBookKeepersAddrs() ([]*crypto.PubKey, uint64)
 	SetBookKeeperAddr(pk *crypto.PubKey)
 	GetNeighborHeights() ([]uint32, uint64)
-	SyncNodeHeight()
 	CleanSubmittedTransactions(txns []*transaction.Transaction) error
 
 	GetNeighborNoder() []Noder
@@ -94,8 +106,6 @@ type Noder interface {
 	RemoveAddrInConnectingList(addr string)
 	AddInRetryList(addr string)
 	RemoveFromRetryList(addr string)
-	GetBlkHdrs()
-	SyncBlk()
 	AcqSyncReqSem()
 	RelSyncReqSem()
 

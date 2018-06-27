@@ -11,6 +11,7 @@ type eventQueue struct {
 	Block      *events.Event
 	Disconnect *events.Event
 	Relay      *events.Event
+	Syncing    *events.Event
 }
 
 func (eq *eventQueue) init() {
@@ -18,6 +19,7 @@ func (eq *eventQueue) init() {
 	eq.Block = events.NewEvent()
 	eq.Disconnect = events.NewEvent()
 	eq.Relay = events.NewEvent()
+	eq.Syncing = events.NewEvent()
 }
 
 func (eq *eventQueue) GetEvent(eventName string) *events.Event {
@@ -30,6 +32,8 @@ func (eq *eventQueue) GetEvent(eventName string) *events.Event {
 		return eq.Disconnect
 	case "relay":
 		return eq.Relay
+	case "sync":
+		return eq.Syncing
 	default:
 		fmt.Printf("Unknow event")
 		return nil

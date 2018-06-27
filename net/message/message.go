@@ -201,8 +201,6 @@ func NewMsg(t string, n Noder) ([]byte, error) {
 		return NewVersion(n)
 	case "verack":
 		return NewVerack()
-	case "getheaders":
-		return NewHeadersReq()
 	case "getaddr":
 		return newGetAddr()
 
