@@ -8,8 +8,10 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"hash"
+	"strconv"
 	"time"
 
+	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -69,6 +71,8 @@ type Config struct {
 	NumSuccessors int              // Number of successors to maintain
 	Delegate      Delegate         // Invoked to handle ring events
 	hashBits      int              // Bit size of the hash function
+	ExistedNode   string           // Join a ring via an existed node
+	JoinBlkHeight uint32           // Current BlockHeight when join ring
 }
 
 // Represents an Vnode, local or remote
@@ -104,6 +108,19 @@ var ring *Ring
 
 // Returns the default Ring configuration
 func DefaultConfig(hostname string) *Config {
+	remote := ""
+
+	info, err := client.GetNodeState("http://" + config.Parameters.SeedList[0])
+	if err != nil { // Maybe createNode mode
+		log.Warnf("Can't get remote node info from [%s]", config.Parameters.SeedList[0])
+	} else {
+		remote = info.Addr + ":" + strconv.FormatUint(uint64(info.ChordPort), 10)
+	}
+
+	// Don't use BlockHeight from NodeState. Used it from Ledger.
+	// Default 0 in createNode mode
+	bh, _ := client.GetRemoteBlkHeight("http://" + config.Parameters.SeedList[0])
+
 	return &Config{
 		hostname,
 		1,          // 1 vnodes
@@ -113,6 +130,8 @@ func DefaultConfig(hostname string) *Config {
 		8,   // 8 successors
 		nil, // No delegate
 		256, // 256bit hash function
+		remote,
+		bh,
 	}
 }
 
@@ -300,9 +319,10 @@ func JoinNet() (*Ring, *TCPTransport, error) {
 	}
 
 	// Join ring
-	r, err := Join(c, t, config.Parameters.SeedList[0])
+	// TODO: Check the c.ExistedNode validity
+	r, err := Join(c, t, c.ExistedNode)
 	if err != nil {
-		log.Fatal("failed to join local node! Got %s", err)
+		log.Fatalf("failed to join [%s] local node! Got %s", c.ExistedNode, err)
 		return nil, nil, err
 	}
 	ring = r

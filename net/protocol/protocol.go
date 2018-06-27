@@ -32,6 +32,12 @@ type Noder interface {
 	GetPort() uint16
 	GetHttpInfoPort() uint16
 	SetHttpInfoPort(uint16)
+	GetHttpJsonPort() uint16
+	//TODO SetHttpJsonPort(uint16)
+	GetWebSockPort() uint16
+	//TODO SetWebSockPort(uint16)
+	GetChordPort() uint16
+	//TODO SetChordPort(uint16)
 	GetHttpInfoState() bool
 	SetHttpInfoState(bool)
 	GetState() uint32
