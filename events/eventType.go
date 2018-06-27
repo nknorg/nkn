@@ -8,4 +8,5 @@ const (
 	EventNodeDisconnect        EventType = 2
 	EventConsensusMsgReceived  EventType = 3
 	EventRelayMsgReceived      EventType = 4
+	EventBlockSyncingFinished  EventType = 5
 )

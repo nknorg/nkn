@@ -55,10 +55,7 @@ func InitLedger(account *vault.Account) error {
 }
 
 func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
-	node := net.StartProtocol(pubKey, ring)
-	node.SyncNodeHeight()
-	node.WaitForSyncBlkFinish()
-	return node
+	return net.StartProtocol(pubKey, ring)
 }
 
 func StartConsensus(wallet vault.Wallet, node protocol.Noder) {

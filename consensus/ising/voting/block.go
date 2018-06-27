@@ -11,23 +11,21 @@ import (
 
 type BlockVoting struct {
 	sync.RWMutex
-	pstate           map[Uint256]*State            // consensus state for proposer
-	vstate           map[uint64]map[Uint256]*State // consensus state for voter
-	height           uint32                        // voting height
-	blockCache       *BlockCache                   // received blocks
-	orphanBlockCache *OrphanBlockCache             // received orphan blocks
-	pool             *BlockVotingPool              // block voting pool
-	confirmingHash   Uint256                       // block hash in process
+	pstate         map[Uint256]*State            // consensus state for proposer
+	vstate         map[uint64]map[Uint256]*State // consensus state for voter
+	height         uint32                        // voting height
+	blockCache     *BlockCache                   // received blocks
+	pool           *BlockVotingPool              // block voting pool
+	confirmingHash Uint256                       // block hash in process
 }
 
 func NewBlockVoting(totalWeight int) *BlockVoting {
 	blockVoting := &BlockVoting{
-		pstate:           make(map[Uint256]*State),
-		vstate:           make(map[uint64]map[Uint256]*State),
-		height:           ledger.DefaultLedger.Store.GetHeight() + 1,
-		blockCache:       NewBlockCache(),
-		orphanBlockCache: NewOrphanBlockCache(),
-		pool:             NewBlockVotingPool(totalWeight),
+		pstate:     make(map[Uint256]*State),
+		vstate:     make(map[uint64]map[Uint256]*State),
+		height:     ledger.DefaultLedger.Store.GetHeight() + 1,
+		blockCache: NewBlockCache(),
+		pool:       NewBlockVotingPool(totalWeight),
 	}
 
 	return blockVoting
@@ -105,21 +103,6 @@ func (bv *BlockVoting) GetConfirmingHash() Uint256 {
 }
 
 func (bv *BlockVoting) GetBestVotingContent(height uint32) (VotingContent, error) {
-	var err error
-	orphanBlocks := bv.orphanBlockCache.GetOrphanBlocks(height)
-	// Get orphan blocks from orphan block cache, if verification passed put it into block cache.
-	if orphanBlocks != nil {
-		for _, orphan := range orphanBlocks {
-			err = ledger.BlockFullyCheck(orphan, ledger.DefaultLedger)
-			if err != nil {
-				continue
-			}
-			err = bv.blockCache.AddBlockToCache(orphan)
-			if err != nil {
-				continue
-			}
-		}
-	}
 	block := bv.blockCache.GetBestBlockFromCache(height)
 	if block == nil {
 		return nil, errors.New("no block available")
@@ -165,34 +148,23 @@ func (bv *BlockVoting) VotingType() VotingContentType {
 	return BlockVote
 }
 
-func (bv *BlockVoting) Preparing(content VotingContent) error {
+func (bv *BlockVoting) AddToCache(content VotingContent) error {
 	var err error
 	if block, ok := content.(*ledger.Block); !ok {
 		return errors.New("invalid voting content type")
 	} else {
 		blockHeight := block.Header.Height
 		localHeight := ledger.DefaultLedger.Store.GetHeight()
-		switch {
-		case blockHeight >= localHeight+3 || blockHeight <= localHeight:
+		if blockHeight != localHeight+1 {
 			return errors.New("invalid block height")
-		case blockHeight == localHeight+1:
-			err = ledger.BlockFullyCheck(block, ledger.DefaultLedger)
-			if err != nil {
-				return err
-			}
-			err = bv.blockCache.AddBlockToCache(block)
-			if err != nil {
-				return err
-			}
-		case blockHeight == localHeight+2:
-			err = ledger.BlockSanityCheck(block, ledger.DefaultLedger)
-			if err != nil {
-				return err
-			}
-			err = bv.orphanBlockCache.AddBlockToOrphanPool(block)
-			if err != nil {
-				return err
-			}
+		}
+		err = ledger.BlockFullyCheck(block, ledger.DefaultLedger)
+		if err != nil {
+			return err
+		}
+		err = bv.blockCache.AddBlockToCache(block)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -200,13 +172,7 @@ func (bv *BlockVoting) Preparing(content VotingContent) error {
 }
 
 func (bv *BlockVoting) Exist(hash Uint256, height uint32) bool {
-	blockInCache := bv.blockCache.BlockInCache(hash, height)
-	blockInOrphanCache := bv.orphanBlockCache.BlockInOrphanPool(hash, height)
-	if blockInCache || blockInOrphanCache {
-		return true
-	}
-
-	return false
+	return bv.blockCache.BlockInCache(hash, height)
 }
 
 func (bv *BlockVoting) GetVotingPool() VotingPool {

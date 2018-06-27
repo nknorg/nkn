@@ -16,8 +16,8 @@ type VotingContent interface {
 }
 
 type Voting interface {
-	// prepare to do voting
-	Preparing(content VotingContent) error
+	// add voting entity to cache
+	AddToCache(content VotingContent) error
 	// get voting content type
 	VotingType() VotingContentType
 	// set hash in process
