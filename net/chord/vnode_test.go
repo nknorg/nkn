@@ -2,7 +2,7 @@ package chord
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"sort"
 	"testing"
 	"time"
@@ -15,7 +15,10 @@ func makeVnode() *localVnode {
 		NumSuccessors: 8,
 		StabilizeMin:  min,
 		StabilizeMax:  max,
-		HashFunc:      sha1.New}
+		HashFunc:      sha256.New,
+		Hostname:      "127.0.0.1:30000",
+		JoinBlkHeight: 0,
+	}
 	trans := InitLocalTransport(nil)
 	ring := &Ring{config: conf, transport: trans}
 	return &localVnode{ring: ring}
@@ -50,7 +53,7 @@ func TestGenId(t *testing.T) {
 	vn := makeVnode()
 	var ids [][]byte
 	for i := 0; i < 16; i++ {
-		vn.genId(uint16(i))
+		vn.genId(vn.ring.config.Hostname, uint32(i))
 		ids = append(ids, vn.Id)
 	}
 

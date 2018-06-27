@@ -39,19 +39,21 @@ func (vn *Vnode) HttpWsAddr() (string, error) {
 
 // Initializes a local vnode
 func (vn *localVnode) init(idx int) {
+	ringCfg := vn.ring.config
+
 	// Generate an ID
-	vn.genId(uint16(idx))
+	vn.genId(ringCfg.Hostname, ringCfg.JoinBlkHeight+uint32(idx))
 
 	// Set our host
-	vn.Host = vn.ring.config.Hostname
+	vn.Host = ringCfg.Hostname
 
 	// Set node ports
 	vn.NodePort = config.Parameters.NodePort
 	vn.HttpWsPort = config.Parameters.HttpWsPort
 
 	// Initialize all state
-	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)
-	vn.finger = make([]*Vnode, vn.ring.config.hashBits)
+	vn.successors = make([]*Vnode, ringCfg.NumSuccessors)
+	vn.finger = make([]*Vnode, ringCfg.hashBits)
 
 	// Register with the RPC mechanism
 	vn.ring.transport.Register(&vn.Vnode, vn)
@@ -64,15 +66,16 @@ func (vn *localVnode) schedule() {
 }
 
 // Generates an ID for the node
-func (vn *localVnode) genId(idx uint16) {
+func (vn *localVnode) genId(host string, height uint32) {
 	// Use the hash funciton
 	conf := vn.ring.config
 	hash := conf.HashFunc()
-	hash.Write([]byte(config.Parameters.Hostname + conf.Hostname))
-	binary.Write(hash, binary.BigEndian, idx)
+	hash.Write([]byte(host))
+	binary.Write(hash, binary.BigEndian, height)
 
 	// Use the hash as the ID
 	vn.Id = hash.Sum(nil)
+	log.Printf("genId(%s) = %s", (host + "@" + strconv.FormatUint(uint64(height), 10)), hex.EncodeToString(vn.Id))
 }
 
 // Called to periodically stabilize the vnode
