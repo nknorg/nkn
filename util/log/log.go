@@ -116,6 +116,10 @@ func (l *Logger) SetDebugLevel(level int) error {
 }
 
 func (l *Logger) Output(level int, a ...interface{}) error {
+	if l == nil {
+		l = New(Stdout, "", log.Ldate|log.Lmicroseconds, 0, nil)
+	}
+
 	if level >= l.level {
 		gid := GetGID()
 		gidStr := strconv.FormatUint(gid, 10)
@@ -129,6 +133,10 @@ func (l *Logger) Output(level int, a ...interface{}) error {
 }
 
 func (l *Logger) Outputf(level int, format string, v ...interface{}) error {
+	if l == nil {
+		l = New(Stdout, "", log.Ldate|log.Lmicroseconds, 0, nil)
+	}
+
 	if level >= l.level {
 		gid := GetGID()
 		v = append([]interface{}{LevelName(level), "GID",
