@@ -77,7 +77,7 @@ func (ws *WsServer) Start() error {
 		var err error
 		ws.listener, err = net.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWsPort)))
 		if err != nil {
-			log.Fatal("net.Listen: ", err.Error())
+			log.Error("net.Listen: ", err.Error())
 			return err
 		}
 	}
@@ -89,7 +89,7 @@ func (ws *WsServer) Start() error {
 
 	done <- true
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err.Error())
+		log.Error("ListenAndServe: ", err.Error())
 		return err
 	}
 	return nil
@@ -271,7 +271,7 @@ func (ws *WsServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
 		ws.deleteTxHashs(nsSession.GetSessionId())
 		ws.SessionList.CloseSession(nsSession)
 		if err := recover(); err != nil {
-			log.Fatal("websocket recover:", err)
+			log.Error("websocket recover:", err)
 		}
 	}()
 

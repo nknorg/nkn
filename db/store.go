@@ -1137,7 +1137,7 @@ func (cs *ChainStore) persistBlocks(ledger *Ledger) {
 		}
 		err := cs.persist(block)
 		if err != nil {
-			log.Fatal("[persistBlocks]: error to persist block:", err.Error())
+			log.Error("[persistBlocks]: error to persist block:", err.Error())
 			return
 		}
 
@@ -1148,7 +1148,7 @@ func (cs *ChainStore) persistBlocks(ledger *Ledger) {
 		cs.mu.Unlock()
 
 		ledger.Blockchain.BCEvents.Notify(events.EventBlockPersistCompleted, block)
-		log.Tracef("current block height: %d, block hash: %x", block.Header.Height, hash.ToArrayReverse())
+		log.Debugf("current block height: %d, block hash: %x", block.Header.Height, hash.ToArrayReverse())
 	}
 
 }
@@ -1382,7 +1382,7 @@ func (cs *ChainStore) GetAssets() map[Uint256]*Asset {
 		_, _ = serialization.ReadBytes(rk, 1)
 		var assetid Uint256
 		assetid.Deserialize(rk)
-		log.Tracef("[GetAssets] assetid: %x\n", assetid.ToArray())
+		log.Debugf("[GetAssets] assetid: %x\n", assetid.ToArray())
 
 		asset := new(Asset)
 		r := bytes.NewReader(iter.Value())

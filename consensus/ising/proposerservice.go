@@ -514,7 +514,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 		if err != nil {
 			log.Error("add received block to sync cache error: ", err)
 		}
-		log.Tracef("cached block: %s, block height: %d,  totally cached: %d",
+		log.Debugf("cached block: %s, block height: %d,  totally cached: %d",
 			BytesToHexString(blockHash.ToArrayReverse()), height, ps.syncCache.CachedBlockHeight())
 		return
 	}

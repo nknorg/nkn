@@ -304,12 +304,12 @@ func (w *WalletImpl) GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error
 
 func GetWallet() Wallet {
 	if !FileExisted(WalletFileName) {
-		log.Fatal(fmt.Sprintf("No %s detected, please create a wallet by using command line.", WalletFileName))
+		log.Errorf(fmt.Sprintf("No %s detected, please create a wallet by using command line.", WalletFileName))
 		os.Exit(1)
 	}
 	passwd, err := password.GetAccountPassword()
 	if err != nil {
-		log.Fatal("Get password error.")
+		log.Error("Get password error.")
 		os.Exit(1)
 	}
 	c, err := OpenWallet(WalletFileName, passwd)

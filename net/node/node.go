@@ -679,9 +679,9 @@ func (node *node) reconnect() {
 	for addr := range node.RetryAddrs {
 		node.RetryAddrs[addr] = node.RetryAddrs[addr] + 1
 		rand.Seed(time.Now().UnixNano())
-		log.Trace("Try to reconnect peer, peer addr is ", addr)
+		log.Info("Try to reconnect peer, peer addr is ", addr)
 		<-time.After(time.Duration(rand.Intn(ConnectionMaxBackoff)) * time.Millisecond)
-		log.Trace("Back off time`s up, start connect node")
+		log.Info("Back off time`s up, start connect node")
 		node.Connect(addr)
 		if node.RetryAddrs[addr] < MaxRetryCount {
 			lst[addr] = node.RetryAddrs[addr]
@@ -777,7 +777,7 @@ func (node *node) SyncBlockMonitor() {
 func (node *node) SendRelayPacketsInBuffer(clientId []byte) error {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Fatal("SendRelayPacketsInBuffer recover:", err)
+			log.Error("SendRelayPacketsInBuffer recover:", err)
 		}
 	}()
 	return node.relayer.SendRelayPacketsInBuffer(clientId)
