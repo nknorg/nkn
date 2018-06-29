@@ -18,11 +18,9 @@ import (
 )
 
 const (
-	Blue   = "0;34"
 	Red    = "0;31"
 	Green  = "0;32"
 	Yellow = "0;33"
-	Cyan   = "0;36"
 	Pink   = "1;35"
 )
 
@@ -35,19 +33,15 @@ const (
 	infoLog
 	warnLog
 	errorLog
-	fatalLog
-	traceLog
 	maxLevelLog
 )
 
 var (
 	levels = map[int]string{
-		debugLog: Color(Green, "[DEBUG]"),
+		debugLog: Color(Pink, "[DEBUG]"),
 		infoLog:  Color(Green, "[INFO ]"),
 		warnLog:  Color(Yellow, "[WARN ]"),
 		errorLog: Color(Red, "[ERROR]"),
-		fatalLog: Color(Red, "[FATAL]"),
-		traceLog: Color(Pink, "[TRACE]"),
 	}
 	Stdout = os.Stdout
 )
@@ -147,14 +141,6 @@ func (l *Logger) Outputf(level int, format string, v ...interface{}) error {
 	return nil
 }
 
-func (l *Logger) Trace(a ...interface{}) {
-	l.Output(traceLog, a...)
-}
-
-func (l *Logger) Tracef(format string, a ...interface{}) {
-	l.Outputf(traceLog, format, a...)
-}
-
 func (l *Logger) Debug(a ...interface{}) {
 	l.Output(debugLog, a...)
 }
@@ -187,16 +173,8 @@ func (l *Logger) Errorf(format string, a ...interface{}) {
 	l.Outputf(errorLog, format, a...)
 }
 
-func (l *Logger) Fatal(a ...interface{}) {
-	l.Output(fatalLog, a...)
-}
-
-func (l *Logger) Fatalf(format string, a ...interface{}) {
-	l.Outputf(fatalLog, format, a...)
-}
-
-func Trace(a ...interface{}) {
-	if traceLog < Log.level {
+func Debug(a ...interface{}) {
+	if debugLog < Log.level {
 		return
 	}
 
@@ -212,42 +190,6 @@ func Trace(a ...interface{}) {
 
 	a = append([]interface{}{funcName + "()", fileName + ":" + strconv.Itoa(line)}, a...)
 
-	Log.Trace(a...)
-}
-
-func Tracef(format string, a ...interface{}) {
-	if traceLog < Log.level {
-		return
-	}
-
-	pc := make([]uintptr, 10)
-	runtime.Callers(2, pc)
-	f := runtime.FuncForPC(pc[0])
-	file, line := f.FileLine(pc[0])
-	fileName := filepath.Base(file)
-
-	nameFull := f.Name()
-	nameEnd := filepath.Ext(nameFull)
-	funcName := strings.TrimPrefix(nameEnd, ".")
-
-	a = append([]interface{}{funcName, fileName, line}, a...)
-
-	Log.Tracef("%s() %s:%d "+format, a...)
-}
-
-func Debug(a ...interface{}) {
-	if debugLog < Log.level {
-		return
-	}
-
-	pc := make([]uintptr, 10)
-	runtime.Callers(2, pc)
-	f := runtime.FuncForPC(pc[0])
-	file, line := f.FileLine(pc[0])
-	fileName := filepath.Base(file)
-
-	a = append([]interface{}{f.Name(), fileName + ":" + strconv.Itoa(line)}, a...)
-
 	Log.Debug(a...)
 }
 
@@ -262,7 +204,11 @@ func Debugf(format string, a ...interface{}) {
 	file, line := f.FileLine(pc[0])
 	fileName := filepath.Base(file)
 
-	a = append([]interface{}{f.Name(), fileName, line}, a...)
+	nameFull := f.Name()
+	nameEnd := filepath.Ext(nameFull)
+	funcName := strings.TrimPrefix(nameEnd, ".")
+
+	a = append([]interface{}{funcName + "()", fileName, line}, a...)
 
 	Log.Debugf("%s %s:%d "+format, a...)
 }
@@ -279,10 +225,6 @@ func Error(a ...interface{}) {
 	Log.Error(a...)
 }
 
-func Fatal(a ...interface{}) {
-	Log.Fatal(a...)
-}
-
 func Infof(format string, a ...interface{}) {
 	Log.Infof(format, a...)
 }
@@ -293,10 +235,6 @@ func Warnf(format string, a ...interface{}) {
 
 func Errorf(format string, a ...interface{}) {
 	Log.Errorf(format, a...)
-}
-
-func Fatalf(format string, a ...interface{}) {
-	Log.Fatalf(format, a...)
 }
 
 func FileOpen(path string) (*os.File, error) {

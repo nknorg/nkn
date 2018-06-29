@@ -72,7 +72,7 @@ func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
 }
 
 func nknMain() error {
-	log.Trace("Node version: ", config.Version)
+	log.Info("Node version: ", config.Version)
 	var name = flag.String("test", "", "usage")
 	flag.Parse()
 

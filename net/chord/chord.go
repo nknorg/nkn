@@ -268,17 +268,17 @@ func prepRing(port uint16) (*Config, *TCPTransport, error) {
 
 // Creat the ring
 func CreateNet() (*Ring, *TCPTransport, error) {
-	log.Trace()
+	log.Debug()
 	c, t, err := prepRing(config.Parameters.ChordPort)
 	if err != nil {
-		log.Fatal("unexpected err. %s", err)
+		log.Errorf("unexpected err. %s", err)
 		return nil, nil, err
 	}
 
 	// Create initial ring
 	r, err := Create(c, t)
 	if err != nil {
-		log.Fatal("unexpected err. %s", err)
+		log.Errorf("unexpected err. %s", err)
 		return nil, nil, err
 	}
 	ring = r
@@ -310,11 +310,11 @@ func prepJoinRing(port uint16) (*Config, *TCPTransport, error) {
 
 // Join the ring
 func JoinNet() (*Ring, *TCPTransport, error) {
-	log.Trace()
+	log.Debug()
 	port := config.Parameters.ChordPort
 	c, t, err := prepJoinRing(port)
 	if err != nil {
-		log.Fatal("unexpected err. %s", err)
+		log.Errorf("unexpected err. %s", err)
 		return nil, nil, err
 	}
 
@@ -322,7 +322,7 @@ func JoinNet() (*Ring, *TCPTransport, error) {
 	// TODO: Check the c.ExistedNode validity
 	r, err := Join(c, t, c.ExistedNode)
 	if err != nil {
-		log.Fatalf("failed to join [%s] local node! Got %s", c.ExistedNode, err)
+		log.Errorf("failed to join [%s] local node! Got %s", c.ExistedNode, err)
 		return nil, nil, err
 	}
 	ring = r

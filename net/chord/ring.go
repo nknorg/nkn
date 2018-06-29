@@ -162,7 +162,7 @@ func (r *Ring) delegateHandler() {
 func (r *Ring) safeInvoke(f func()) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Fatal("Caught a panic invoking a delegate function! Got: %s", r)
+			log.Errorf("Caught a panic invoking a delegate function! Got: %s", r)
 		}
 	}()
 	f()
