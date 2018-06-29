@@ -36,6 +36,8 @@ func newSession(wsConn *websocket.Conn) (session *Session, err error) {
 }
 
 func (s *Session) close() {
+	s.Lock()
+	defer s.Unlock()
 	if s.mConnection != nil {
 		s.mConnection.Close()
 		s.mConnection = nil
@@ -50,12 +52,11 @@ func (s *Session) UpdateActiveTime() {
 }
 
 func (s *Session) Send(data []byte) error {
+	s.Lock()
+	defer s.Unlock()
 	if s.mConnection == nil {
 		return errors.New("WebSocket is null")
 	}
-	//https://godoc.org/github.com/gorilla/websocket
-	s.Lock()
-	defer s.Unlock()
 	return s.mConnection.WriteMessage(websocket.TextMessage, data)
 }
 
@@ -71,10 +72,14 @@ func (s *Session) SessionTimeoverCheck() bool {
 }
 
 func (s *Session) SetSessionId(sessionId string) {
+	s.Lock()
+	defer s.Unlock()
 	s.sSessionId = sessionId
 }
 
 func (s *Session) SetClient(chordID, pubKey []byte, addrStr *string) {
+	s.Lock()
+	defer s.Unlock()
 	s.clientChordID = chordID
 	s.clientPubKey = pubKey
 	s.clientAddrStr = addrStr

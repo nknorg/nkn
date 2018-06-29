@@ -736,5 +736,10 @@ func (node *node) updateConnection() {
 }
 
 func (node *node) SendRelayPacketsInBuffer(clientId []byte) error {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Fatal("SendRelayPacketsInBuffer recover:", err)
+		}
+	}()
 	return node.relayer.SendRelayPacketsInBuffer(clientId)
 }
