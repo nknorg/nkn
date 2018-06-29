@@ -25,10 +25,14 @@ testbed
 EOF
 }
 
+ulimit -c unlimited
+export GOTRACEBACK=crash
+
 [ -n "$1" ] || ! Usage $0 || exit $EINVAL
 EXEC_DIR=$1
 [ -n "$2" ] && MODE=$2 || MODE="join"
 
 cd ${EXEC_DIR}
+mkdir -p ./Log
 [ -e "wallet.dat" ] || initWallet || ! echo "Init Wallet fail" || exit 1
-start ${MODE}
+start ${MODE} 1> ./Log/nohup.out.$(date +%F_%T) 2>&1
