@@ -1,7 +1,6 @@
 package password
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -47,16 +46,11 @@ func GetConfirmedPassword() ([]byte, error) {
 func GetAccountPassword() ([]byte, error) {
 	var passwd []byte
 	var err error
-	var pstr string
-	flag.StringVar(&pstr, "p", "", "wallet password")
-	flag.Parse()
-	if pstr == "" {
-		passwd, err = GetPassword()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		passwd = []byte(pstr)
+
+	// Don't support input passwd in os.Args as plain text
+	passwd, err = GetPassword()
+	if err != nil {
+		return nil, err
 	}
 	return passwd, nil
 }
