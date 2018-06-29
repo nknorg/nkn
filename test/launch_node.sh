@@ -6,8 +6,8 @@ function Usage () {
     local YELLOW="\E[1;33m"
     local BLUE="\E[1;34m"
     local END="\E[0m"
-    printf "${RED}Usage${END}: ${BLUE}%s${END} ${GREEN}<EXEC_DIR>${END} ${YELLOW}[join|create]${END}\n" $1
-    printf "${RED}Example${END}: ${BLUE}%s${END} ${GREEN}./testbed/node0001${END} ${YELLOW}join${END}\n" $1
+    printf "${RED}Usage${END}: ${BLUE}%s${END} ${GREEN}<EXEC_DIR>${END} ${YELLOW}[args...]${END}\n" $1
+    printf "${RED}Example${END}: ${BLUE}%s${END} ${GREEN}./testbed/node0001${END} ${YELLOW}-seed 127.0.0.1:30003${END}\n" $1
 }
 
 function initWallet () {
@@ -20,7 +20,7 @@ EOF
 }
 
 function start () {
-    ./nknd -test $1 <<EOF
+    ./nknd "$@" <<EOF
 testbed
 EOF
 }
@@ -30,9 +30,9 @@ export GOTRACEBACK=crash
 
 [ -n "$1" ] || ! Usage $0 || exit $EINVAL
 EXEC_DIR=$1
-[ -n "$2" ] && MODE=$2 || MODE="join"
+shift 1     ### Skip $1 pass to start()
 
 cd ${EXEC_DIR}
 mkdir -p ./Log
 [ -e "wallet.dat" ] || initWallet || ! echo "Init Wallet fail" || exit 1
-start ${MODE} 1> ./Log/nohup.out.$(date +%F_%T) 2>&1
+start "$@" 1> ./Log/nohup.out.$(date +%F_%T) 2>&1

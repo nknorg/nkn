@@ -127,13 +127,13 @@ conflict in ports will be resolved automatically.
 Start bootstrap node by creating a network
 
 ```shell
-$ ./nknd -test create
+$ ./nknd -c
 ```
 
 Start other nodes by joining the network
 
 ```shell
-$ ./nknd -test join
+$ ./nknd -seed $RemoteNodeIP:$HttpJsonPort
 ```
 
 When the network contains enough nodes (usually 8+), stop the node that created
@@ -161,13 +161,13 @@ $ docker run -v $PWD:/nkn -it nkn nknc wallet -c
 Start bootstrap node by creating a network
 
 ```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -test create
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -c
 ```
 
 Start other nodes by joining the network
 
 ```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -test join
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -seed $RemoteNodeIP:$HttpJsonPort
 ```
 
 ## Contributing
