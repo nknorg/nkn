@@ -54,15 +54,13 @@ func (sl *SessionList) addOnlineSession(session *Session) error {
 }
 
 func (sl *SessionList) removeSession(session *Session) error {
+	sl.Lock()
+	defer sl.Unlock()
 	sessionId := session.GetSessionId()
 	sessions := sl.mapOnlineList[sessionId]
 	for i, s := range sessions {
 		if s == session {
-			sl.Lock()
-			defer sl.Unlock()
-			sessions[i] = sessions[len(sessions)-1]
-			sessions[len(sessions)-1] = nil
-			sl.mapOnlineList[sessionId] = sessions[:len(sessions)-1]
+			sl.mapOnlineList[sessionId] = append(sessions[:i], sessions[i+1:]...)
 			if len(sl.mapOnlineList[sessionId]) == 0 {
 				delete(sl.mapOnlineList, sessionId)
 			}
