@@ -24,6 +24,7 @@ import (
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
 	"github.com/urfave/cli"
 )
@@ -184,7 +185,8 @@ func main() {
 			Name:        "passwd, p",
 			Usage:       "Password of Your wallet private Key",
 			Value:       "",
-			Destination: &seedStr,
+			Hidden:      true,
+			Destination: &password.Passwd,
 		},
 	}
 	app.Action = nknMain
