@@ -351,16 +351,29 @@ func (ps *ProposerService) Start() error {
 	// register block syncing event
 	ps.syncFinished = ps.localNode.GetEvent("sync").Subscribe(events.EventBlockSyncingFinished,
 		ps.BlockSyncingFinished)
+
+	isProposer := ps.IsBlockProposer()
+	var wg sync.WaitGroup
+	wg.Add(1)
 	// start block syncing
-	go ps.localNode.SyncBlock()
+	go func() {
+		defer wg.Done()
+		ps.localNode.SyncBlock(isProposer)
+	}()
+	wg.Add(1)
 	// start monitor routine for block syncing
-	go ps.localNode.SyncBlockMonitor()
+	go func() {
+		defer wg.Done()
+		ps.localNode.SyncBlockMonitor(isProposer)
+	}()
+	wg.Wait()
+
 	// start block proposer routine
 	go ps.ProposerRoutine()
 	// start timeout routine
 	go ps.TimeoutRoutine()
 	// trigger block proposer routine
-	if ps.IsBlockProposer() {
+	if isProposer {
 		ps.timer.Reset(0)
 	}
 	// start probe routine
@@ -514,7 +527,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 		if err != nil {
 			log.Error("add received block to sync cache error: ", err)
 		}
-		log.Debugf("cached block: %s, block height: %d,  totally cached: %d",
+		log.Infof("cached block: %s, block height: %d,  totally cached: %d",
 			BytesToHexString(blockHash.ToArrayReverse()), height, ps.syncCache.CachedBlockHeight())
 		return
 	}

@@ -10,16 +10,16 @@ import (
 
 func (r *Ring) DumpInfo(finger bool) {
 	for idx, vnode := range r.Vnodes {
-		log.Infof("ring.Vnodes[%d]: {", idx)
-		log.Infof("\tId: %x", string(vnode.Id))
-		log.Infof("\tHost: %s", vnode.Host)
+		log.Debugf("ring.Vnodes[%d]: {", idx)
+		log.Debugf("\tId: %x", string(vnode.Id))
+		log.Debugf("\tHost: %s", vnode.Host)
 
 		for sidx, succ := range vnode.successors {
 			if succ != nil {
-				log.Infof("\tsucc[%d].Id: %x", sidx, string(succ.Id))
-				log.Infof("\tsucc[%d].Host: %s", sidx, succ.Host)
+				log.Debugf("\tsucc[%d].Id: %x", sidx, string(succ.Id))
+				log.Debugf("\tsucc[%d].Host: %s", sidx, succ.Host)
 			} else {
-				log.Infof("\tsucc[%d]: nil", sidx)
+				log.Debugf("\tsucc[%d]: nil", sidx)
 			}
 		}
 
@@ -27,21 +27,21 @@ func (r *Ring) DumpInfo(finger bool) {
 		if finger {
 			for fidx, fing := range vnode.finger {
 				if fing != nil {
-					log.Infof("\tfinger[%d].Id: %x", fidx, string(fing.Id))
-					log.Infof("\tfinger[%d].Host: %s", fidx, fing.Host)
+					log.Debugf("\tfinger[%d].Id: %x", fidx, string(fing.Id))
+					log.Debugf("\tfinger[%d].Host: %s", fidx, fing.Host)
 				} else {
-					log.Infof("\tfinger[%d]: nil", fidx)
+					log.Debugf("\tfinger[%d]: nil", fidx)
 				}
 			}
 		}
 
-		log.Infof("\tlast_finger: %d", vnode.last_finger)
+		log.Debugf("\tlast_finger: %d", vnode.last_finger)
 		if vnode.predecessor != nil {
-			log.Infof("\tpredecessor.Id: %x", string((*vnode.predecessor).Id))
-			log.Infof("\tpredecessor.Host: %s", (*vnode.predecessor).Host)
+			log.Debugf("\tpredecessor.Id: %x", string((*vnode.predecessor).Id))
+			log.Debugf("\tpredecessor.Host: %s", (*vnode.predecessor).Host)
 		}
-		log.Infof("\tstabilized: %s", vnode.stabilized.String())
-		log.Infof("}\n")
+		log.Debugf("\tstabilized: %s", vnode.stabilized.String())
+		log.Debugf("}\n")
 	}
 }
 

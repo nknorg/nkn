@@ -12,6 +12,8 @@ import (
 
 const UINT256SIZE = 32
 
+var EmptyUint256 Uint256
+
 type Uint256 [UINT256SIZE]uint8
 
 func (u *Uint256) CompareTo(o Uint256) int {

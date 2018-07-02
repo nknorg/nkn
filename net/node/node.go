@@ -67,7 +67,6 @@ type node struct {
 	syncStopHash             Uint256             // block syncing stop hash
 	syncState                SyncState           // block syncing state
 	quit                     chan struct{}       // block syncing channel
-	stopHashChan             chan struct{}       // wait for block stop hash set
 	nodeDisconnectSubscriber events.Subscriber   // disconnect event
 	link                                         // link status and information
 	nbrNodes                                     // neighbor nodes
@@ -196,7 +195,6 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n.syncState = SyncStarted
 	n.syncStopHash = Uint256{}
 	n.quit = make(chan struct{}, 1)
-	n.stopHashChan = make(chan struct{})
 	n.eventQueue.init()
 	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnect)
 	n.ring = ring
@@ -423,19 +421,27 @@ func (node *node) SetBookKeeperAddr(pk *crypto.PubKey) {
 	node.publicKey = pk
 }
 
-func (node *node) WaitForSyncHeaderFinish() {
-	for {
-		// return if local height is same with the highest neighbor
-		heights, _ := node.GetNeighborHeights()
-		if CompareHeight(ledger.DefaultLedger.Blockchain.BlockHeight, heights) {
-			break
+func (node *node) WaitForSyncHeaderFinish(isProposer bool) {
+	if isProposer {
+		for {
+			//TODO: proposer node syncs block from 50% neighbors
+			heights, _ := node.GetNeighborHeights()
+			if CompareHeight(ledger.DefaultLedger.Blockchain.BlockHeight, heights) {
+				break
+			}
+			<-time.After(time.Second)
 		}
-		// return if the stop hash has been saved
-		header, err := ledger.DefaultLedger.Blockchain.GetHeader(node.syncStopHash)
-		if err == nil && header != nil {
-			break
+	} else {
+		for {
+			if node.syncStopHash != EmptyUint256 {
+				// return if the stop hash has been saved
+				header, err := ledger.DefaultLedger.Blockchain.GetHeader(node.syncStopHash)
+				if err == nil && header != nil {
+					break
+				}
+			}
+			<-time.After(time.Second)
 		}
-		<-time.After(time.Second)
 	}
 }
 
@@ -443,7 +449,7 @@ func (node *node) WaitForSyncBlkFinish() {
 	for {
 		headerHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
 		currentBlkHeight := ledger.DefaultLedger.Blockchain.BlockHeight
-		log.Info("WaitForSyncBlkFinish... current block height is ", currentBlkHeight, " ,current header height is ", headerHeight)
+		log.Debug("WaitForSyncBlkFinish... current block height is ", currentBlkHeight, " ,current header height is ", headerHeight)
 		if currentBlkHeight >= headerHeight {
 			break
 		}
@@ -479,14 +485,7 @@ func (node *node) RemoveFlightHeightLessThan(h uint32) {
 }
 
 func (node *node) RemoveFlightHeight(height uint32) {
-	log.Debug("height is ", height)
-	for _, h := range node.flightHeights {
-		log.Debug("flight height ", h)
-	}
 	node.flightHeights = SliceRemove(node.flightHeights, height)
-	for _, h := range node.flightHeights {
-		log.Debug("after flight height ", h)
-	}
 }
 
 func (node *node) GetLastRXTime() time.Time {
@@ -538,7 +537,7 @@ func (node *node) GetChordAddr() []byte {
 	return chordVnode.Id
 }
 
-func (node *node) blockHeaderSyncing() {
+func (node *node) blockHeaderSyncing(stopHash Uint256) {
 	noders := node.local.GetNeighborNoder()
 	if len(noders) == 0 {
 		return
@@ -555,7 +554,7 @@ func (node *node) blockHeaderSyncing() {
 	}
 	index := rand.Intn(ncout)
 	n := nodelist[index]
-	SendMsgSyncHeaders(n, node.syncStopHash)
+	SendMsgSyncHeaders(n, stopHash)
 }
 
 func (node *node) blockSyncing() {
@@ -745,25 +744,28 @@ func (node *node) updateConnection() {
 	}
 }
 
-func (node *node) SyncBlock() {
-	// wait for stop block hash set in consensus
-	<-node.stopHashChan
+func (node *node) SyncBlock(isProposer bool) {
 	ticker := time.NewTicker(BlockSyncingTicker)
 	for {
 		select {
 		case <-ticker.C:
-			node.blockHeaderSyncing()
+			if isProposer {
+				node.blockHeaderSyncing(EmptyUint256)
+			} else if node.syncStopHash != EmptyUint256 {
+				node.blockHeaderSyncing(node.syncStopHash)
+			}
 			node.blockSyncing()
 		case <-node.quit:
 			log.Info("block syncing finished")
 			ticker.Stop()
+			return
 		}
 	}
 }
 
-func (node *node) SyncBlockMonitor() {
+func (node *node) SyncBlockMonitor(isProposer bool) {
 	// wait for header syncing finished
-	node.WaitForSyncHeaderFinish()
+	node.WaitForSyncHeaderFinish(isProposer)
 	// wait for block syncing finished
 	node.WaitForSyncBlkFinish()
 	// switch syncing state
@@ -792,11 +794,9 @@ func (node *node) SetSyncState(s SyncState) {
 }
 
 func (node *node) SetSyncStopHash(hash Uint256, height uint32) {
-	var emptyHash Uint256
-	if node.syncStopHash == emptyHash {
+	if node.syncStopHash == EmptyUint256 {
 		log.Infof("block syncing will stop when receive block: %s, height: %d",
 			BytesToHexString(hash.ToArrayReverse()), height)
 		node.syncStopHash = hash
-		node.stopHashChan <- struct{}{}
 	}
 }
