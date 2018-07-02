@@ -284,12 +284,9 @@ func CreateNet() (*Ring, *TCPTransport, error) {
 	ring = r
 
 	go func() {
-		i := 0
 		for {
 			time.Sleep(20 * time.Second)
-			log.Infof("Create Height = %d\n", i)
 			r.DumpInfo(false)
-			i++
 		}
 	}()
 
@@ -328,12 +325,9 @@ func JoinNet() (*Ring, *TCPTransport, error) {
 	ring = r
 
 	go func() {
-		i := 0
 		for {
 			time.Sleep(20 * time.Second)
-			log.Infof("Join Height = %d\n", i)
 			r.DumpInfo(false)
-			i++
 		}
 	}()
 

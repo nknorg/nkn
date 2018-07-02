@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
 	. "github.com/nknorg/nkn/net/protocol"
@@ -29,7 +29,7 @@ type blkHeader struct {
 	blkHdr []ledger.Header
 }
 
-func NewHeadersReq(stopHash common.Uint256) ([]byte, error) {
+func NewHeadersReq(stopHash Uint256) ([]byte, error) {
 	var h headersReq
 
 	h.p.len = 1
@@ -166,7 +166,7 @@ func (msg headersReq) Handle(node Noder) error {
 	return nil
 }
 
-func SendMsgSyncHeaders(node Noder, stopHash common.Uint256) {
+func SendMsgSyncHeaders(node Noder, stopHash Uint256) {
 	buf, err := NewHeadersReq(stopHash)
 	if err != nil {
 		log.Error("failed build a new headersReq")
@@ -184,13 +184,12 @@ func (msg blkHeader) Handle(node Noder) error {
 	return nil
 }
 
-func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]ledger.Header, uint32, error) {
+func GetHeadersFromHash(startHash Uint256, stopHash Uint256) ([]ledger.Header, uint32, error) {
 	var count uint32 = 0
-	var empty [HashLen]byte
 	headers := []ledger.Header{}
 	var startHeight uint32
 	var stopHeight uint32
-	if startHash == empty {
+	if startHash == EmptyUint256 {
 		return nil, 0, errors.New("invalid start hash for getting headers")
 	}
 	// get start height
@@ -201,7 +200,7 @@ func GetHeadersFromHash(startHash common.Uint256, stopHash common.Uint256) ([]le
 	startHeight = bkstart.Height
 
 	// get stop height
-	if stopHash == empty {
+	if stopHash == EmptyUint256 {
 		stopHeight = ledger.DefaultLedger.Store.GetHeaderHeight()
 	} else {
 		bkstop, err := ledger.DefaultLedger.Store.GetHeader(stopHash)

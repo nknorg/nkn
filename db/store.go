@@ -1148,7 +1148,7 @@ func (cs *ChainStore) persistBlocks(ledger *Ledger) {
 		cs.mu.Unlock()
 
 		ledger.Blockchain.BCEvents.Notify(events.EventBlockPersistCompleted, block)
-		log.Debugf("current block height: %d, block hash: %x", block.Header.Height, hash.ToArrayReverse())
+		log.Infof("# current block height: %d, block hash: %x", block.Header.Height, hash.ToArrayReverse())
 	}
 
 }
