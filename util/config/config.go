@@ -33,7 +33,7 @@ var (
 		LogLevel:      1,
 		ConsensusType: "ising",
 		SeedList: []string{
-			"127.0.0.1:30000",
+			"127.0.0.1:30003",
 		},
 	}
 )
