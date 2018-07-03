@@ -10,7 +10,7 @@
   "IsTLS": false,
   "ConsensusType": "ising",
   "SeedList": [
-    "127.0.0.1:30000"
+    "127.0.0.1:30003"
   ],
   "GenesisBlockProposer": [
   ]

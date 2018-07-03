@@ -113,7 +113,7 @@ Config the same bootstrap node address and public key to each
   "IsTLS": false,
   "ConsensusType": "ising",
   "SeedList": [
-    "127.0.0.1:30000"
+    "127.0.0.1:30003"
   ],
   "GenesisBlockProposer": [
     "03d45f701e7e330e1fd1c7cce09ffb95f7b1870e5c429ad8e8c950ddb879093f52"
@@ -133,12 +133,19 @@ $ ./nknd -c
 Start other nodes by joining the network
 
 ```shell
+$ ./nknd
+```
+
+Or provide a seed node to override the one in `config.json`
+
+```shell
 $ ./nknd -seed $RemoteNodeIP:$HttpJsonPort
 ```
 
-When the network contains enough nodes (usually 8+), stop the node that created
-the network in order for the relay service to work properly. Nodes joining the
-network later should use a live node as seed.
+When the network contains enough nodes (more than the length of successor list
+plus one, by default 9+), stop the node that created the network in order for
+the relay service to work properly. Nodes joining the network later should use a
+live node as seed.
 
 ## Docker
 
@@ -167,7 +174,7 @@ $ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -c
 Start other nodes by joining the network
 
 ```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -seed $RemoteNodeIP:$HttpJsonPort
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
 ```
 
 ## Contributing
