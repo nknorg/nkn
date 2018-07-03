@@ -1,6 +1,7 @@
 package chord
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -182,13 +183,13 @@ func (vn *localVnode) notifySuccessor() error {
 
 	// Update local successors list
 	for idx, s := range succ_list {
-		if s == nil {
-			break
-		}
-		// Ensure we don't set ourselves as a successor!
-		if s == nil || s.String() == vn.String() {
-			break
-		}
+		// if s == nil {
+		// 	break
+		// }
+		// // Ensure we don't set ourselves as a successor!
+		// if s == nil || s.String() == vn.String() {
+		// 	break
+		// }
 		vn.successors[idx+1] = s
 	}
 	return nil
@@ -196,8 +197,18 @@ func (vn *localVnode) notifySuccessor() error {
 
 // RPC: Notify is invoked when a Vnode gets notified
 func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
+	shouldUpdate := false
 	// Check if we should update our predecessor
 	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe_pred.Id) {
+		shouldUpdate = true
+	} else if bytes.Compare(vn.predecessor.Id, maybe_pred.Id) != 0 {
+		alive, err := vn.ring.transport.Ping(vn.predecessor)
+		if err == nil && !alive {
+			shouldUpdate = true
+		}
+	}
+
+	if shouldUpdate {
 		// Inform the delegate
 		conf := vn.ring.config
 		old := vn.predecessor

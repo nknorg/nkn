@@ -71,7 +71,7 @@ type Config struct {
 	NumSuccessors int              // Number of successors to maintain
 	Delegate      Delegate         // Invoked to handle ring events
 	hashBits      int              // Bit size of the hash function
-	ExistedNode   string           // Join a ring via an existed node
+	SeedNodeAddr  string           // Join a ring via a seed node
 	JoinBlkHeight uint32           // Current BlockHeight when join ring
 }
 
@@ -122,16 +122,16 @@ func DefaultConfig(hostname string) *Config {
 	bh, _ := client.GetRemoteBlkHeight("http://" + config.Parameters.SeedList[0])
 
 	return &Config{
-		hostname,
-		1,          // 1 vnodes
-		sha256.New, // SHA256
-		time.Duration(150 * time.Millisecond),
-		time.Duration(450 * time.Millisecond),
-		8,   // 8 successors
-		nil, // No delegate
-		256, // 256bit hash function
-		remote,
-		bh,
+		Hostname:      hostname,
+		NumVnodes:     1,          // 1 vnodes
+		HashFunc:      sha256.New, // SHA256
+		StabilizeMin:  time.Duration(250 * time.Millisecond),
+		StabilizeMax:  time.Duration(750 * time.Millisecond),
+		NumSuccessors: 8,   // 8 successors
+		Delegate:      nil, // No delegate
+		hashBits:      256, // 256bit hash function
+		SeedNodeAddr:  remote,
+		JoinBlkHeight: bh,
 	}
 }
 
@@ -140,8 +140,8 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 	// Initialize the hash bits
 	conf.hashBits = conf.HashFunc().Size() * 8
 
-	if conf.NumVnodes < conf.NumSuccessors {
-		conf.NumVnodes = conf.NumSuccessors
+	if conf.NumVnodes < conf.NumSuccessors+1 {
+		conf.NumVnodes = conf.NumSuccessors + 1
 	}
 
 	// Create and initialize a ring
@@ -316,10 +316,10 @@ func JoinNet() (*Ring, *TCPTransport, error) {
 	}
 
 	// Join ring
-	// TODO: Check the c.ExistedNode validity
-	r, err := Join(c, t, c.ExistedNode)
+	// TODO: Check the c.SeedNodeAddr validity
+	r, err := Join(c, t, c.SeedNodeAddr)
 	if err != nil {
-		log.Errorf("failed to join [%s] local node! Got %s", c.ExistedNode, err)
+		log.Errorf("failed to join [%s] local node! Got %s", c.SeedNodeAddr, err)
 		return nil, nil, err
 	}
 	ring = r
