@@ -178,7 +178,7 @@ func main() {
 		cli.StringFlag{
 			Name:        "seed",
 			Usage:       "Seed List to join",
-			Value:       "localhost:30003",
+			Value:       "",
 			Destination: &seedStr,
 		},
 		cli.StringFlag{
