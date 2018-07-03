@@ -209,14 +209,17 @@ func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 	}
 
 	if shouldUpdate {
-		// Inform the delegate
-		conf := vn.ring.config
-		old := vn.predecessor
-		vn.ring.invokeDelegate(func() {
-			conf.Delegate.NewPredecessor(&vn.Vnode, maybe_pred, old)
-		})
+		alive, err := vn.ring.transport.Ping(maybe_pred)
+		if err == nil && alive {
+			// Inform the delegate
+			conf := vn.ring.config
+			old := vn.predecessor
+			vn.ring.invokeDelegate(func() {
+				conf.Delegate.NewPredecessor(&vn.Vnode, maybe_pred, old)
+			})
 
-		vn.predecessor = maybe_pred
+			vn.predecessor = maybe_pred
+		}
 	}
 
 	// Return our successors list
