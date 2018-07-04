@@ -86,13 +86,14 @@ type Vnode struct {
 // Represents a local Vnode
 type localVnode struct {
 	Vnode
-	ring        *Ring
-	successors  []*Vnode
-	finger      []*Vnode
-	last_finger int
-	predecessor *Vnode
-	stabilized  time.Time
-	timer       *time.Timer
+	ring           *Ring
+	successors     []*Vnode
+	finger         []*Vnode
+	last_finger    int
+	predecessor    *Vnode
+	stabilized     time.Time
+	timer          *time.Timer
+	OnNewSuccessor func()
 }
 
 // Stores the state required for a Chord ring

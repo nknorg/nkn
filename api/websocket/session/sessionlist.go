@@ -100,6 +100,14 @@ func (sl *SessionList) ForEachSession(visit func(*Session)) {
 	}
 }
 
+func (sl *SessionList) ForEachClient(visit func(*Session)) {
+	sl.ForEachSession(func(session *Session) {
+		if session.IsClient() {
+			visit(session)
+		}
+	})
+}
+
 func (sl *SessionList) ChangeSessionToClient(sessionId, clientId string) (*Session, error) {
 	sessions := sl.GetSessionsById(sessionId)
 	if len(sessions) == 0 {

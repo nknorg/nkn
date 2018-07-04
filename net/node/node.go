@@ -537,6 +537,10 @@ func (node *node) GetChordAddr() []byte {
 	return chordVnode.Id
 }
 
+func (node *node) GetChordRing() *chord.Ring {
+	return node.ring
+}
+
 func (node *node) blockHeaderSyncing(stopHash Uint256) {
 	noders := node.local.GetNeighborNoder()
 	if len(noders) == 0 {

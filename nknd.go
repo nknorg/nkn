@@ -121,7 +121,7 @@ func nknMain(c *cli.Context) error {
 	// if InitLedger return err, ledger.DefaultLedger is uninitialized.
 	defer ledger.DefaultLedger.Store.Close()
 
-	err = por.InitPorServer(account, ring)
+	err = por.InitPorServer(account)
 	if err != nil {
 		return errors.New("PorServer initialization error")
 	}
@@ -137,7 +137,15 @@ func nknMain(c *cli.Context) error {
 	go rpcServer.Start()
 
 	// start websocket server
-	websocket.StartServer(node, wallet)
+	ws := websocket.StartServer(node, wallet)
+
+	vnode, err := ring.GetFirstVnode()
+	if err != nil {
+		return errors.New("Get first vnode in ring error")
+	}
+	vnode.OnNewSuccessor = func() {
+		ws.CloseWrongClients()
+	}
 
 	// start consensus
 	StartConsensus(wallet, node)

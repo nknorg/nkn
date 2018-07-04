@@ -11,7 +11,6 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/net/chord"
 	netcomm "github.com/nknorg/nkn/net/common"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
@@ -122,7 +121,11 @@ func getBlockCount(s Serverer, params map[string]interface{}) map[string]interfa
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]interface{} {
-	return respPacking(chord.GetRing(), SUCCESS)
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+	return respPacking(node.GetChordRing(), SUCCESS)
 }
 
 // getLatestBlockHeight gets the latest block height
@@ -738,7 +741,11 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 
 	if str, ok := params["address"].(string); ok {
 		clientID, _, err := address.ParseClientAddress(str)
-		ring := chord.GetRing()
+		node, err := s.GetNetNode()
+		if err != nil {
+			return respPacking(nil, INTERNAL_ERROR)
+		}
+		ring := node.GetChordRing()
 		if ring == nil {
 			log.Error("Empty ring")
 			return respPacking(nil, INVALID_PARAMS)

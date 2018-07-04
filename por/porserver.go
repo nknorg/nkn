@@ -8,7 +8,6 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -16,26 +15,24 @@ import (
 type PorServer struct {
 	sync.RWMutex
 	account *vault.Account
-	ring    *chord.Ring
 	pors    map[uint32][]*PorPackage
 }
 
 var porServer *PorServer
 
-func NewPorServer(account *vault.Account, ring *chord.Ring) *PorServer {
+func NewPorServer(account *vault.Account) *PorServer {
 	ps := &PorServer{
 		account: account,
-		ring:    ring,
 		pors:    make(map[uint32][]*PorPackage),
 	}
 	return ps
 }
 
-func InitPorServer(account *vault.Account, ring *chord.Ring) error {
+func InitPorServer(account *vault.Account) error {
 	if porServer != nil {
 		return errors.New("PorServer already initialized")
 	}
-	porServer = NewPorServer(account, ring)
+	porServer = NewPorServer(account)
 	return nil
 }
 
@@ -80,12 +77,8 @@ func (ps *PorServer) Verify(sc *SigChain) error {
 	return nil
 }
 
-func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common.Uint256, destPubkey, nextPubkey []byte) (*SigChain, error) {
-	vnode, err := ps.ring.GetFirstVnode()
-	if err != nil {
-		return nil, err
-	}
-	return NewSigChain(ps.account, dataSize, dataHash[:], blockHash[:], vnode.Id, destPubkey, nextPubkey)
+func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common.Uint256, srcID, destPubkey, nextPubkey []byte) (*SigChain, error) {
+	return NewSigChain(ps.account, dataSize, dataHash[:], blockHash[:], srcID, destPubkey, nextPubkey)
 }
 
 func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcID, srcPubkey, destPubkey, signature []byte, sigAlgo SigAlgo) (*SigChain, error) {

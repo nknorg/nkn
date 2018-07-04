@@ -12,16 +12,17 @@ import (
 func TestPorServer(t *testing.T) {
 	crypto.SetAlg("P256R1")
 	ring, _, err := chord.CreateNet()
+	vnode, _ := ring.GetFirstVnode()
 	from, _ := vault.NewAccount()
 	rel, _ := vault.NewAccount()
 	to, _ := vault.NewAccount()
-	pmFrom := NewPorServer(from, ring)
-	pmRel := NewPorServer(rel, ring)
-	pmTo := NewPorServer(to, ring)
+	pmFrom := NewPorServer(from)
+	pmRel := NewPorServer(rel)
+	pmTo := NewPorServer(to)
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 
-	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, &common.Uint256{}, toPk, relPk)
+	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, &common.Uint256{}, vnode.Id, toPk, relPk)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
