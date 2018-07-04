@@ -11,6 +11,7 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/vault"
 )
 
@@ -110,6 +111,7 @@ type Noder interface {
 	RelSyncReqSem()
 
 	GetChordAddr() []byte
+	GetChordRing() *chord.Ring
 	StartRelayer(wallet vault.Wallet)
 	NextHop(key []byte) (Noder, error)
 	SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload, signature []byte) error

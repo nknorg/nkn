@@ -158,6 +158,9 @@ func (vn *localVnode) checkNewSuccessor() error {
 			if err != nil {
 				return err
 			}
+			if vn.OnNewSuccessor != nil {
+				vn.OnNewSuccessor()
+			}
 		} else {
 			// TODO: notify successor to update its predecessor
 		}

@@ -454,3 +454,23 @@ func (ws *WsServer) GetNetNode() (protocol.Noder, error) {
 func (ws *WsServer) GetWallet() (vault.Wallet, error) {
 	return ws.wallet, nil
 }
+
+func (ws *WsServer) CloseWrongClients() {
+	var clientsToClose []*Session
+	ws.SessionList.ForEachClient(func(client *Session) {
+		clientID := client.GetID()
+		if clientID == nil {
+			return
+		}
+		nextHop, err := ws.node.NextHop(clientID)
+		if err != nil {
+			return
+		}
+		if nextHop != nil {
+			clientsToClose = append(clientsToClose, client)
+		}
+	})
+	for _, client := range clientsToClose {
+		ws.SessionList.CloseSession(client)
+	}
+}
