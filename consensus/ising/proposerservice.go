@@ -3,6 +3,7 @@ package ising
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"sync"
 	"time"
 
@@ -600,6 +601,7 @@ func (ps *ProposerService) Initialize(vType voting.VotingContentType, totalWeigh
 	// initial total voting weight
 	for _, v := range ps.voting {
 		v.GetVotingPool().Reset(totalWeight)
+		v.Reset()
 	}
 	// initial neighbor nodes
 	ps.neighbors = ps.localNode.GetNeighborNoder()
@@ -701,9 +703,19 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 	votingHeight := current.GetVotingHeight()
 	hash := *proposal.hash
 	height := proposal.height
-	if height < votingHeight-1 {
+	if height < votingHeight {
 		log.Warnf("receive invalid proposal, consensus height: %d, proposal height: %d,"+
 			" hash: %s\n", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
+		return
+	}
+	if height > votingHeight {
+		neighborHeight, count := current.CacheProposal(height)
+		if 2*count > len(ps.neighbors) {
+			log.Errorf("state is different with neighbors, "+
+				"current voting height: %d, neighbor height: %d (%d/%d), exits.",
+				votingHeight, neighborHeight, count, len(ps.neighbors))
+			os.Exit(1)
+		}
 		return
 	}
 	// TODO check if the sender is neighbor

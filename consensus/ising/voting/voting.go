@@ -44,8 +44,12 @@ type Voting interface {
 	GetVotingContent(hash Uint256, height uint32) (VotingContent, error)
 	// get voting pool
 	GetVotingPool() VotingPool
+	// consensus state detection through proposal received from neighbors
+	CacheProposal(height uint32) (uint32, int)
 	// check if exist in local memory
 	Exist(hash Uint256, height uint32) bool
+	// voting pool cleanup
+	Reset()
 	// dump consensus state for testing
 	DumpState(hash Uint256, desc string, verbose bool)
 }
