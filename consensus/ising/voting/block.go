@@ -15,17 +15,19 @@ type BlockVoting struct {
 	vstate         map[uint64]map[Uint256]*State // consensus state for voter
 	height         uint32                        // voting height
 	blockCache     *BlockCache                   // received blocks
+	proposalCache  map[uint32]int                // proposal message height cache
 	pool           *BlockVotingPool              // block voting pool
 	confirmingHash Uint256                       // block hash in process
 }
 
 func NewBlockVoting(totalWeight int) *BlockVoting {
 	blockVoting := &BlockVoting{
-		pstate:     make(map[Uint256]*State),
-		vstate:     make(map[uint64]map[Uint256]*State),
-		height:     ledger.DefaultLedger.Store.GetHeight() + 1,
-		blockCache: NewBlockCache(),
-		pool:       NewBlockVotingPool(totalWeight),
+		pstate:        make(map[Uint256]*State),
+		vstate:        make(map[uint64]map[Uint256]*State),
+		height:        ledger.DefaultLedger.Store.GetHeight() + 1,
+		blockCache:    NewBlockCache(),
+		proposalCache: make(map[uint32]int),
+		pool:          NewBlockVotingPool(totalWeight),
 	}
 
 	return blockVoting
@@ -171,8 +173,30 @@ func (bv *BlockVoting) AddToCache(content VotingContent) error {
 	return nil
 }
 
+func (bv *BlockVoting) CacheProposal(height uint32) (uint32, int) {
+	bv.Lock()
+	defer bv.Unlock()
+
+	// increase height received from neighbors
+	bv.proposalCache[height] += 1
+	maxCount := 0
+	var neighborHeight uint32
+	for h, c := range bv.proposalCache {
+		if c > maxCount {
+			maxCount = c
+			neighborHeight = h
+		}
+	}
+	return neighborHeight, maxCount
+}
+
 func (bv *BlockVoting) Exist(hash Uint256, height uint32) bool {
 	return bv.blockCache.BlockInCache(hash, height)
+}
+
+func (bv *BlockVoting) Reset() {
+	bv.proposalCache = nil
+	bv.proposalCache = make(map[uint32]int)
 }
 
 func (bv *BlockVoting) GetVotingPool() VotingPool {
