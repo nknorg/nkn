@@ -13,6 +13,7 @@ type HeaderInfo struct {
 	Height           uint32              `json:"height"`
 	ConsensusData    uint64              `json:"consensusData"`
 	NextBookKeeper   string              `json:"nextBookKeeper"`
+	Signer           string              `json:"signer"`
 	Program          program.ProgramInfo `json:"program"`
 
 	Hash string `json:"hash"`

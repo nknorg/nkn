@@ -32,6 +32,7 @@ const (
 	WaitingForFloodingFinished = time.Second * 1
 	WaitingForVotingFinished   = time.Second * 5
 	TimeoutTolerance           = time.Second * 2
+	ProposerChangeTime         = time.Minute
 )
 
 type ProposerService struct {
@@ -39,6 +40,8 @@ type ProposerService struct {
 	account              *vault.Account            // local account
 	timer                *time.Timer               // timer for proposer node
 	timeout              *time.Timer               // timeout for next round consensus
+	proposerChangeTimer  *time.Timer               // timer for proposer change
+	proposerChangeIndex  uint32                    // block index for proposer change
 	blockProposer        map[uint32][]byte         // height and public key mapping for block proposer
 	localNode            protocol.Noder            // local node
 	neighbors            []protocol.Noder          // neighbor nodes
@@ -56,15 +59,17 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 	txnCollector := transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged)
 
 	service := &ProposerService{
-		timer:         time.NewTimer(ConsensusTime),
-		timeout:       time.NewTimer(ConsensusTime + TimeoutTolerance),
-		account:       account,
-		localNode:     node,
-		neighbors:     node.GetNeighborNoder(),
-		blockProposer: make(map[uint32][]byte),
-		txnCollector:  txnCollector,
-		msgChan:       make(chan interface{}, MsgChanCap),
-		syncCache:     NewSyncBlockCache(),
+		timer:               time.NewTimer(ConsensusTime),
+		timeout:             time.NewTimer(ConsensusTime + TimeoutTolerance),
+		proposerChangeTimer: time.NewTimer(ProposerChangeTime),
+		proposerChangeIndex: 0,
+		account:             account,
+		localNode:           node,
+		neighbors:           node.GetNeighborNoder(),
+		blockProposer:       make(map[uint32][]byte),
+		txnCollector:        txnCollector,
+		msgChan:             make(chan interface{}, MsgChanCap),
+		syncCache:           NewSyncBlockCache(),
 		voting: []voting.Voting{
 			voting.NewBlockVoting(totalWeight),
 			voting.NewSigChainVoting(totalWeight, txnCollector),
@@ -317,6 +322,47 @@ func (ps *ProposerService) ProbeRoutine() {
 func (ps *ProposerService) BlockPersistCompleted(v interface{}) {
 	if block, ok := v.(*ledger.Block); ok {
 		ps.txnCollector.Cleanup(block.Transactions)
+		// reset index when block persisted
+		ps.proposerChangeIndex = 0
+		// reset timer when block persisted
+		ps.proposerChangeTimer.Stop()
+		duration := time.Duration(block.Header.Timestamp) + ProposerChangeTime - time.Duration(time.Now().Unix())
+		ps.proposerChangeTimer.Reset(duration)
+	}
+}
+
+func (ps *ProposerService) ChangeProposer() {
+	for {
+		select {
+		case <-ps.proposerChangeTimer.C:
+			height := ledger.DefaultLedger.Store.GetHeight() - ps.proposerChangeIndex
+			hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
+			if err != nil {
+				log.Error("get block hash error when change proposer: ", err)
+			}
+			block, err := ledger.DefaultLedger.Store.GetBlock(hash)
+			if err != nil {
+				log.Error("get block error when change proposer: ", err)
+			}
+			signer, err := block.GetSigner()
+			if err != nil {
+				log.Error("get block signer error when change proposer: ", err)
+			}
+
+			nextBlockHeight := ledger.DefaultLedger.Store.GetHeight() + 1
+			ps.Lock()
+			ps.blockProposer[nextBlockHeight] = signer
+			ps.Unlock()
+
+			log.Warnf("use proposer of block height %d which public key is %s to propose block %d",
+				height, BytesToHexString(signer), nextBlockHeight)
+			ps.timer.Stop()
+			ps.timer.Reset(0)
+			ps.proposerChangeTimer.Reset(ProposerChangeTime)
+			if height > 1 {
+				ps.proposerChangeIndex++
+			}
+		}
 	}
 }
 
@@ -341,19 +387,7 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 	// switch syncing state
 	ps.localNode.SetSyncState(protocol.PersistFinished)
 }
-
-func (ps *ProposerService) Start() error {
-	// register consensus message
-	ps.consensusMsgReceived = ps.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived,
-		ps.ReceiveConsensusMsg)
-	// register block saving event
-	ps.blockPersisted = ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted,
-		ps.BlockPersistCompleted)
-	// register block syncing event
-	ps.syncFinished = ps.localNode.GetEvent("sync").Subscribe(events.EventBlockSyncingFinished,
-		ps.BlockSyncingFinished)
-
-	isProposer := ps.IsBlockProposer()
+func (ps *ProposerService) SyncBlock(isProposer bool) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	// start block syncing
@@ -368,17 +402,39 @@ func (ps *ProposerService) Start() error {
 		ps.localNode.SyncBlockMonitor(isProposer)
 	}()
 	wg.Wait()
+}
 
+func (ps *ProposerService) StartConsensus(isProposer bool) {
 	// start block proposer routine
 	go ps.ProposerRoutine()
 	// start timeout routine
 	go ps.TimeoutRoutine()
+	// change proposer
+	go ps.ChangeProposer()
 	// trigger block proposer routine
 	if isProposer {
 		ps.timer.Reset(0)
 	}
 	// start probe routine
 	go ps.ProbeRoutine()
+}
+
+func (ps *ProposerService) Start() error {
+	// register consensus message
+	ps.consensusMsgReceived = ps.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived,
+		ps.ReceiveConsensusMsg)
+	// register block saving event
+	ps.blockPersisted = ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted,
+		ps.BlockPersistCompleted)
+	// register block syncing event
+	ps.syncFinished = ps.localNode.GetEvent("sync").Subscribe(events.EventBlockSyncingFinished,
+		ps.BlockSyncingFinished)
+
+	isProposer := ps.IsBlockProposer()
+	// start block syncing
+	ps.SyncBlock(isProposer)
+	// start consensus
+	ps.StartConsensus(isProposer)
 
 	return nil
 }
@@ -449,6 +505,10 @@ func (ps *ProposerService) BuildBlock() (*ledger.Block, error) {
 	if err != nil {
 		return nil, err
 	}
+	pubkey, err := ps.account.PublicKey.EncodePoint(true)
+	if err != nil {
+		return nil, err
+	}
 	header := &ledger.Header{
 		Version:          0,
 		PrevBlockHash:    ledger.DefaultLedger.Store.GetCurrentBlockHash(),
@@ -457,6 +517,7 @@ func (ps *ProposerService) BuildBlock() (*ledger.Block, error) {
 		ConsensusData:    rand.Uint64(),
 		TransactionsRoot: txnRoot,
 		NextBookKeeper:   Uint160{},
+		Signer:           pubkey,
 		Program: &program.Program{
 			Code:      []byte{0x00},
 			Parameter: []byte{0x00},

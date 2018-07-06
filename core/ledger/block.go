@@ -72,6 +72,10 @@ func (b *Block) Deserialize(r io.Reader) error {
 	return nil
 }
 
+func (b *Block) GetSigner() ([]byte, error) {
+	return b.Header.Signer, nil
+}
+
 func (b *Block) Trim(w io.Writer) error {
 	b.Header.Serialize(w)
 	err := serialization.WriteUint32(w, uint32(len(b.Transactions)))

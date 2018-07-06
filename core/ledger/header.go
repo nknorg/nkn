@@ -22,6 +22,7 @@ type Header struct {
 	Height           uint32
 	ConsensusData    uint64
 	NextBookKeeper   Uint160
+	Signer           []byte
 	Program          *program.Program
 
 	hash Uint256
@@ -46,6 +47,7 @@ func (h *Header) SerializeUnsigned(w io.Writer) error {
 	serialization.WriteUint32(w, h.Height)
 	serialization.WriteUint64(w, h.ConsensusData)
 	h.NextBookKeeper.Serialize(w)
+	serialization.WriteVarBytes(w, h.Signer)
 	return nil
 }
 
@@ -109,6 +111,8 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 
 	//NextBookKeeper
 	h.NextBookKeeper.Deserialize(r)
+
+	h.Signer, _ = serialization.ReadVarBytes(r)
 
 	return nil
 }
@@ -175,6 +179,7 @@ func (h *Header) MarshalJson() ([]byte, error) {
 		Height:           h.Height,
 		ConsensusData:    h.ConsensusData,
 		NextBookKeeper:   BytesToHexString(h.NextBookKeeper.ToArrayReverse()),
+		Signer:           BytesToHexString(h.Signer),
 		Hash:             BytesToHexString(h.hash.ToArrayReverse()),
 	}
 
