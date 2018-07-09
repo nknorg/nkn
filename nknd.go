@@ -192,5 +192,8 @@ func main() {
 	app.Action = nknMain
 
 	// app.Run will shutdown graceful.
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		log.Errorf("%v", err)
+		os.Exit(1)
+	}
 }

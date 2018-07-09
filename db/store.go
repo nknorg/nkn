@@ -154,7 +154,9 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block, defau
 		// GenesisBlock should exist in chain
 		// Or the bookkeepers are not consistent with the chain
 		if !cs.IsBlockInStore(hash) {
-			return 0, errors.New("bookkeepers are not consistent with the chain")
+			estr := fmt.Sprintf("Hash %s is NOT in BlockStore.", hash.ToHexString())
+			log.Error(estr)
+			return 0, errors.New(estr)
 		}
 		// Get Current Block
 		currentBlockPrefix := []byte{byte(SYS_CurrentBlock)}
