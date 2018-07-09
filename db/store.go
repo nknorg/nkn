@@ -481,6 +481,27 @@ func (cs *ChainStore) GetTransaction(hash Uint256) (*tx.Transaction, error) {
 	return t, nil
 }
 
+func (cs *ChainStore) getTxWithHeight(hash Uint256) (*tx.Transaction, uint32, error) {
+	key := append([]byte{byte(DATA_Transaction)}, hash.ToArray()...)
+	value, err := cs.st.Get(key)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	r := bytes.NewReader(value)
+	height, err := serialization.ReadUint32(r)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var txn tx.Transaction
+	if err := txn.Deserialize(r); err != nil {
+		return nil, height, err
+	}
+
+	return &txn, height, nil
+}
+
 func (cs *ChainStore) getTx(tx *tx.Transaction, hash Uint256) error {
 	prefix := []byte{byte(DATA_Transaction)}
 	tHash, err := cs.st.Get(append(prefix, hash.ToArray()...))
@@ -648,7 +669,8 @@ func (cs *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, e
 }
 
 func (cs *ChainStore) persist(b *Block) error {
-	utxoUnspents := make(map[Uint160]map[Uint256][]*tx.UTXOUnspent)
+	utxoUnspents := make(map[Uint160]map[Uint256]map[uint32][]*tx.UTXOUnspent)
+	curHeight := b.Header.Height
 	unspents := make(map[Uint256][]uint16)
 	quantities := make(map[Uint256]Fixed64)
 
@@ -779,13 +801,17 @@ func (cs *ChainStore) persist(b *Block) error {
 
 			// add utxoUnspent
 			if _, ok := utxoUnspents[programHash]; !ok {
-				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+				utxoUnspents[programHash] = make(map[Uint256]map[uint32][]*tx.UTXOUnspent)
 			}
 
 			if _, ok := utxoUnspents[programHash][assetId]; !ok {
-				utxoUnspents[programHash][assetId], err = cs.GetUnspentFromProgramHash(programHash, assetId)
+				utxoUnspents[programHash][assetId] = make(map[uint32][]*tx.UTXOUnspent, 0)
+			}
+
+			if _, ok := utxoUnspents[programHash][assetId][curHeight]; !ok {
+				utxoUnspents[programHash][assetId][curHeight], err = cs.GetUnspentElementFromProgramHash(programHash, assetId, curHeight)
 				if err != nil {
-					utxoUnspents[programHash][assetId] = make([]*tx.UTXOUnspent, 0)
+					utxoUnspents[programHash][assetId][curHeight] = make([]*tx.UTXOUnspent, 0)
 				}
 			}
 
@@ -794,12 +820,11 @@ func (cs *ChainStore) persist(b *Block) error {
 			unspent.Index = uint32(index)
 			unspent.Value = output.Value
 
-			utxoUnspents[programHash][assetId] = append(utxoUnspents[programHash][assetId], unspent)
+			utxoUnspents[programHash][assetId][curHeight] = append(utxoUnspents[programHash][assetId][curHeight], unspent)
 		}
 
-		for index := 0; index < len(b.Transactions[i].Inputs); index++ {
-			input := b.Transactions[i].Inputs[index]
-			transaction, err := cs.GetTransaction(input.ReferTxID)
+		for _, input := range b.Transactions[i].Inputs {
+			transaction, height, err := cs.getTxWithHeight(input.ReferTxID)
 			if err != nil {
 				return err
 			}
@@ -823,23 +848,25 @@ func (cs *ChainStore) persist(b *Block) error {
 
 			// delete utxoUnspent
 			if _, ok := utxoUnspents[programHash]; !ok {
-				utxoUnspents[programHash] = make(map[Uint256][]*tx.UTXOUnspent)
+				utxoUnspents[programHash] = make(map[Uint256]map[uint32][]*tx.UTXOUnspent)
 			}
 
 			if _, ok := utxoUnspents[programHash][assetId]; !ok {
-				utxoUnspents[programHash][assetId], err = cs.GetUnspentFromProgramHash(programHash, assetId)
+				utxoUnspents[programHash][assetId] = make(map[uint32][]*tx.UTXOUnspent)
+			}
+			if _, ok := utxoUnspents[programHash][assetId][height]; !ok {
+				utxoUnspents[programHash][assetId][height], err = cs.GetUnspentElementFromProgramHash(programHash, assetId, height)
 				if err != nil {
-					return errors.New(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v has no unspent UTXO.", programHash, assetId))
+					return errors.New(fmt.Sprintf("[persist] utxoUnspents programHash:%v, assetId:%v height: %v has no unspent UTXO.", programHash, assetId, height))
 				}
 			}
 
 			flag := false
-			listnum := len(utxoUnspents[programHash][assetId])
+			listnum := len(utxoUnspents[programHash][assetId][height])
 			for i := 0; i < listnum; i++ {
-				if utxoUnspents[programHash][assetId][i].Txid.CompareTo(transaction.Hash()) == 0 && utxoUnspents[programHash][assetId][i].Index == uint32(index) {
-					utxoUnspents[programHash][assetId][i] = utxoUnspents[programHash][assetId][listnum-1]
-					utxoUnspents[programHash][assetId] = utxoUnspents[programHash][assetId][:listnum-1]
-
+				if utxoUnspents[programHash][assetId][height][i].Txid.CompareTo(transaction.Hash()) == 0 && utxoUnspents[programHash][assetId][height][i].Index == uint32(index) {
+					utxoUnspents[programHash][assetId][height][i] = utxoUnspents[programHash][assetId][height][listnum-1]
+					utxoUnspents[programHash][assetId][height] = utxoUnspents[programHash][assetId][height][:listnum-1]
 					flag = true
 					break
 				}
@@ -954,9 +981,11 @@ func (cs *ChainStore) persist(b *Block) error {
 	// batch put the utxoUnspents
 	for programHash, programHash_value := range utxoUnspents {
 		for assetId, unspents := range programHash_value {
-			err := cs.saveUnspentWithProgramHash(programHash, assetId, unspents)
-			if err != nil {
-				return err
+			for height, unspent := range unspents {
+				err := cs.saveUnspentWithProgramHash(programHash, assetId, height, unspent)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -1282,12 +1311,16 @@ func (cs *ChainStore) IsBlockInStore(hash Uint256) bool {
 	return true
 }
 
-func (cs *ChainStore) GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*tx.UTXOUnspent, error) {
+func (cs *ChainStore) GetUnspentElementFromProgramHash(programHash Uint160, assetid Uint256, height uint32) ([]*tx.UTXOUnspent, error) {
 	prefix := []byte{byte(IX_Unspent_UTXO)}
+	prefix = append(prefix, programHash.ToArray()...)
+	prefix = append(prefix, assetid.ToArray()...)
 
-	key := append(prefix, programHash.ToArray()...)
-	key = append(key, assetid.ToArray()...)
-	unspentsData, err := cs.st.Get(key)
+	key := bytes.NewBuffer(prefix)
+	if err := serialization.WriteUint32(key, height); err != nil {
+		return nil, err
+	}
+	unspentsData, err := cs.st.Get(key.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -1313,11 +1346,48 @@ func (cs *ChainStore) GetUnspentFromProgramHash(programHash Uint160, assetid Uin
 	return unspents, nil
 }
 
-func (cs *ChainStore) saveUnspentWithProgramHash(programHash Uint160, assetid Uint256, unspents []*tx.UTXOUnspent) error {
-	prefix := []byte{byte(IX_Unspent_UTXO)}
+func (cs *ChainStore) GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*tx.UTXOUnspent, error) {
+	unspents := make([]*tx.UTXOUnspent, 0)
 
-	key := append(prefix, programHash.ToArray()...)
+	key := []byte{byte(IX_Unspent_UTXO)}
+	key = append(key, programHash.ToArray()...)
 	key = append(key, assetid.ToArray()...)
+	iter := cs.st.NewIterator(key)
+	for iter.Next() {
+		r := bytes.NewReader(iter.Value())
+		listNum, err := serialization.ReadVarUint(r, 0)
+		if err != nil {
+			return nil, err
+		}
+
+		for i := 0; i < int(listNum); i++ {
+			uu := new(tx.UTXOUnspent)
+			err := uu.Deserialize(r)
+			if err != nil {
+				return nil, err
+			}
+
+			unspents = append(unspents, uu)
+		}
+
+	}
+
+	return unspents, nil
+}
+
+func (cs *ChainStore) saveUnspentWithProgramHash(programHash Uint160, assetid Uint256, height uint32, unspents []*tx.UTXOUnspent) error {
+	prefix := []byte{byte(IX_Unspent_UTXO)}
+	prefix = append(prefix, programHash.ToArray()...)
+	prefix = append(prefix, assetid.ToArray()...)
+	key := bytes.NewBuffer(prefix)
+	if err := serialization.WriteUint32(key, height); err != nil {
+		return err
+	}
+
+	if len(unspents) == 0 {
+		cs.st.BatchDelete(key.Bytes())
+		return nil
+	}
 
 	listnum := len(unspents)
 	w := bytes.NewBuffer(nil)
@@ -1326,7 +1396,7 @@ func (cs *ChainStore) saveUnspentWithProgramHash(programHash Uint160, assetid Ui
 		unspents[i].Serialize(w)
 	}
 
-	err := cs.st.BatchPut(key, w.Bytes())
+	err := cs.st.BatchPut(key.Bytes(), w.Bytes())
 	if err != nil {
 		return err
 	}
@@ -1367,7 +1437,7 @@ func (cs *ChainStore) GetUnspentsFromProgramHash(programHash Uint160) (map[Uint2
 
 			unspents[i] = uu
 		}
-		uxtoUnspents[assetid] = unspents
+		uxtoUnspents[assetid] = append(uxtoUnspents[assetid], unspents[:]...)
 	}
 
 	return uxtoUnspents, nil
