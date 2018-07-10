@@ -49,6 +49,7 @@ func (s Semaphore) acquire() { s <- struct{}{} }
 func (s Semaphore) release() { <-s }
 
 type node struct {
+	sync.Mutex
 	state                    uint32              // node connection state
 	id                       uint64              // node ID
 	cap                      [32]byte            // node capability
@@ -795,6 +796,8 @@ func (node *node) SetSyncState(s SyncState) {
 }
 
 func (node *node) SetSyncStopHash(hash Uint256, height uint32) {
+	node.Lock()
+	defer node.Unlock()
 	if node.syncStopHash == EmptyUint256 {
 		log.Infof("block syncing will stop when receive block: %s, height: %d",
 			BytesToHexString(hash.ToArrayReverse()), height)
