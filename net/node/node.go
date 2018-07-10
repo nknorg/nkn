@@ -106,9 +106,7 @@ func (node *node) IsAddrInNbrList(addr string) bool {
 	defer node.nbrNodes.RUnlock()
 	for _, n := range node.nbrNodes.List {
 		if n.GetState() == HAND || n.GetState() == HANDSHAKE || n.GetState() == ESTABLISH {
-			addr := n.GetAddr()
-			port := n.GetPort()
-			na := addr + ":" + strconv.Itoa(int(port))
+			na := net.JoinHostPort(n.GetAddr(), fmt.Sprintf("%d", n.GetPort()))
 			if strings.Compare(na, addr) == 0 {
 				return true
 			}
