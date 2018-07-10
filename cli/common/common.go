@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"strconv"
 
@@ -44,8 +45,7 @@ func NewPortFlag() cli.Flag {
 }
 
 func Address() string {
-	address := "http://" + Ip + ":" + Port
-	return address
+	return "http://" + net.JoinHostPort(Ip, Port)
 }
 
 func PrintError(c *cli.Context, err error, cmd string) {

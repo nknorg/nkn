@@ -3,6 +3,7 @@ package monitor
 import (
 	"fmt"
 	"html/template"
+	"net"
 	"net/http"
 	"sort"
 	"strconv"
@@ -83,7 +84,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 		ngbAddr = ngbrNoders[i].GetAddr()
 		ngbInfoPort = ngbrNoders[i].GetHttpInfoPort()
 		ngbInfoState = ngbrNoders[i].GetHttpInfoState()
-		ngbHttpInfoAddr = ngbAddr + ":" + strconv.FormatUint(uint64(ngbInfoPort), 10)
+		ngbHttpInfoAddr = net.JoinHostPort(ngbAddr, strconv.Itoa(int(ngbInfoPort)))
 		ngbId = fmt.Sprintf("0x%x", ngbrNoders[i].GetID())
 
 		ngbrInfo := newNgbNodeInfo(ngbId, ngbType, ngbAddr, ngbHttpInfoAddr, ngbInfoPort, ngbInfoState)

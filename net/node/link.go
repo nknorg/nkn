@@ -10,7 +10,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/nknorg/nkn/events"
@@ -214,12 +213,11 @@ func initTlsListen() (net.Listener, error) {
 }
 
 func parseIPaddr(s string) (string, error) {
-	i := strings.Index(s, ":")
-	if i < 0 {
-		log.Warn("Split IP address&port error")
-		return s, errors.New("Split IP address&port error")
+	host, _, err := net.SplitHostPort(s)
+	if err != nil {
+		log.Error(err)
 	}
-	return s[:i], nil
+	return host, err
 }
 
 func (node *node) Connect(nodeAddr string) error {

@@ -144,7 +144,7 @@ func (msg addr) Handle(node Noder) error {
 	for _, v := range msg.nodeAddrs {
 		var ip net.IP
 		ip = v.IpAddr[:]
-		address := ip.To16().String() + ":" + strconv.Itoa(int(v.Port))
+		address := net.JoinHostPort(ip.To16().String(), strconv.Itoa(int(v.Port)))
 		log.Info(fmt.Sprintf("The ip address is %s id is 0x%x", address, v.ID))
 
 		if v.ID == node.LocalNode().GetID() {

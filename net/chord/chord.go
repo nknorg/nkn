@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"hash"
+	"net"
 	"strconv"
 	"time"
 
@@ -115,7 +116,7 @@ func DefaultConfig(hostname string) *Config {
 	if err != nil { // Maybe createNode mode
 		log.Warnf("Can't get remote node info from [%s]", config.Parameters.SeedList[0])
 	} else {
-		remote = info.Addr + ":" + strconv.FormatUint(uint64(info.ChordPort), 10)
+		remote = net.JoinHostPort(info.Addr, strconv.Itoa(int(info.ChordPort)))
 	}
 
 	// Don't use BlockHeight from NodeState. Used it from Ledger.
