@@ -15,15 +15,18 @@ import (
 type pong struct {
 	msgHdr
 	height uint32
+	state  SyncState
 }
 
-func NewPongMsg() ([]byte, error) {
+func NewPongMsg(state SyncState) ([]byte, error) {
 	var msg pong
 	msg.msgHdr.Magic = NetID
 	copy(msg.msgHdr.CMD[0:7], "pong")
 	msg.height = ledger.DefaultLedger.Store.GetHeaderHeight()
+	msg.state = state
 	tmpBuffer := bytes.NewBuffer([]byte{})
 	serialization.WriteUint32(tmpBuffer, msg.height)
+	serialization.WriteByte(tmpBuffer, byte(msg.state))
 	b := new(bytes.Buffer)
 	err := binary.Write(b, binary.LittleEndian, tmpBuffer.Bytes())
 	if err != nil {
@@ -53,6 +56,7 @@ func (msg pong) Verify(buf []byte) error {
 
 func (msg pong) Handle(node Noder) error {
 	node.SetHeight(msg.height)
+	node.SetSyncState(msg.state)
 	return nil
 }
 
@@ -62,6 +66,10 @@ func (msg pong) Serialize(w io.Writer) error {
 		return err
 	}
 	err = serialization.WriteUint32(w, msg.height)
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteByte(w, byte(msg.state))
 	if err != nil {
 		return err
 	}
@@ -78,6 +86,11 @@ func (msg *pong) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	state, err := serialization.ReadByte(r)
+	if err != nil {
+		return err
+	}
+	msg.state = SyncState(state)
 
 	return nil
 }

@@ -540,7 +540,7 @@ func (node *node) GetChordRing() *chord.Ring {
 }
 
 func (node *node) blockHeaderSyncing(stopHash Uint256) {
-	noders := node.local.GetNeighborNoder()
+	noders := node.local.GetSyncFinishedNeighbors()
 	if len(noders) == 0 {
 		return
 	}
@@ -568,7 +568,7 @@ func (node *node) blockSyncing() {
 	var dValue int32
 	var reqCnt uint32
 	var i uint32
-	noders := node.local.GetNeighborNoder()
+	noders := node.local.GetSyncFinishedNeighbors()
 
 	for _, n := range noders {
 		if uint32(n.GetHeight()) <= currentBlkHeight {
@@ -604,7 +604,7 @@ func (node *node) SendPingToNbr() {
 	noders := node.local.GetNeighborNoder()
 	for _, n := range noders {
 		if n.GetState() == ESTABLISH {
-			buf, err := NewPingMsg()
+			buf, err := NewPingMsg(node.syncState)
 			if err != nil {
 				log.Error("failed build a new ping message")
 			} else {
@@ -760,6 +760,7 @@ func (node *node) SyncBlock(isProposer bool) {
 		case <-node.quit:
 			log.Info("block syncing finished")
 			ticker.Stop()
+			node.LocalNode().GetEvent("sync").Notify(events.EventBlockSyncingFinished, nil)
 			return
 		}
 	}
@@ -774,8 +775,6 @@ func (node *node) SyncBlockMonitor(isProposer bool) {
 	node.SetSyncState(SyncFinished)
 	// stop block syncing
 	node.quit <- struct{}{}
-	// notify block syncing finished event
-	node.LocalNode().GetEvent("sync").Notify(events.EventBlockSyncingFinished, nil)
 }
 
 func (node *node) SendRelayPacketsInBuffer(clientId []byte) error {
