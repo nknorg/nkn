@@ -15,15 +15,18 @@ import (
 type ping struct {
 	msgHdr
 	height uint32
+	state  SyncState
 }
 
-func NewPingMsg() ([]byte, error) {
+func NewPingMsg(state SyncState) ([]byte, error) {
 	var msg ping
 	msg.msgHdr.Magic = NetID
 	copy(msg.msgHdr.CMD[0:7], "ping")
 	msg.height = ledger.DefaultLedger.Store.GetHeaderHeight()
+	msg.state = state
 	tmpBuffer := bytes.NewBuffer([]byte{})
 	serialization.WriteUint32(tmpBuffer, msg.height)
+	serialization.WriteByte(tmpBuffer, byte(msg.state))
 	b := new(bytes.Buffer)
 	err := binary.Write(b, binary.LittleEndian, tmpBuffer.Bytes())
 	if err != nil {
@@ -53,7 +56,8 @@ func (msg ping) Verify(buf []byte) error {
 
 func (msg ping) Handle(node Noder) error {
 	node.SetHeight(msg.height)
-	buf, err := NewPongMsg()
+	node.SetSyncState(msg.state)
+	buf, err := NewPongMsg(node.LocalNode().GetSyncState())
 	if err != nil {
 		log.Error("failed build a new ping message")
 	} else {
@@ -71,6 +75,10 @@ func (msg ping) Serialize(w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	err = serialization.WriteByte(w, byte(msg.state))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -84,6 +92,11 @@ func (msg *ping) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	state, err := serialization.ReadByte(r)
+	if err != nil {
+		return err
+	}
+	msg.state = SyncState(state)
 
 	return nil
 }
