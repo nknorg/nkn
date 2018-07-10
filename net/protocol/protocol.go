@@ -93,6 +93,7 @@ type Noder interface {
 	CleanSubmittedTransactions(txns []*transaction.Transaction) error
 
 	GetNeighborNoder() []Noder
+	GetSyncFinishedNeighbors() []Noder
 	GetNbrNodeCnt() uint32
 	StoreFlightHeight(height uint32)
 	GetFlightHeightCnt() int
