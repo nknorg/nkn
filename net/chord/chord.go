@@ -109,19 +109,20 @@ type Ring struct {
 var ring *Ring
 
 // Returns the default Ring configuration
-func DefaultConfig(hostname string) *Config {
+func DefaultConfig(hostname string, create bool) *Config {
+	var bh uint32
 	remote := ""
+	if create == false {
+		info, err := client.GetNodeState("http://" + config.Parameters.SeedList[0])
+		if err != nil { // Maybe createNode mode
+			log.Warnf("Can't get remote node info from [%s]", config.Parameters.SeedList[0])
+		} else {
+			remote = net.JoinHostPort(info.Addr, strconv.Itoa(int(info.ChordPort)))
+		}
 
-	info, err := client.GetNodeState("http://" + config.Parameters.SeedList[0])
-	if err != nil { // Maybe createNode mode
-		log.Warnf("Can't get remote node info from [%s]", config.Parameters.SeedList[0])
-	} else {
-		remote = net.JoinHostPort(info.Addr, strconv.Itoa(int(info.ChordPort)))
+		// Don't use BlockHeight from NodeState. Used it from Ledger.
+		bh, _ = client.GetRemoteBlkHeight("http://" + config.Parameters.SeedList[0])
 	}
-
-	// Don't use BlockHeight from NodeState. Used it from Ledger.
-	// Default 0 in createNode mode
-	bh, _ := client.GetRemoteBlkHeight("http://" + config.Parameters.SeedList[0])
 
 	return &Config{
 		Hostname:      hostname,
@@ -256,10 +257,10 @@ func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 }
 
 // Ring create and join functions
-func prepRing(port uint16) (*Config, *TCPTransport, error) {
+func prepRing(port uint16, create bool) (*Config, *TCPTransport, error) {
 	hostname := fmt.Sprintf("%s:%d", config.Parameters.Hostname, port)
 	listen := fmt.Sprintf(":%d", port)
-	conf := DefaultConfig(hostname)
+	conf := DefaultConfig(hostname, create)
 	timeout := time.Duration(2 * time.Second)
 	trans, err := InitTCPTransport(listen, timeout)
 	if err != nil {
@@ -271,7 +272,7 @@ func prepRing(port uint16) (*Config, *TCPTransport, error) {
 // Creat the ring
 func CreateNet() (*Ring, *TCPTransport, error) {
 	log.Debug()
-	c, t, err := prepRing(config.Parameters.ChordPort)
+	c, t, err := prepRing(config.Parameters.ChordPort, true)
 	if err != nil {
 		log.Errorf("unexpected err. %s", err)
 		return nil, nil, err
@@ -283,7 +284,6 @@ func CreateNet() (*Ring, *TCPTransport, error) {
 		log.Errorf("unexpected err. %s", err)
 		return nil, nil, err
 	}
-	ring = r
 
 	go func() {
 		for {
@@ -295,23 +295,10 @@ func CreateNet() (*Ring, *TCPTransport, error) {
 	return r, t, nil
 }
 
-func prepJoinRing(port uint16) (*Config, *TCPTransport, error) {
-	hostname := fmt.Sprintf("%s:%d", config.Parameters.Hostname, port)
-	listen := fmt.Sprintf(":%d", port)
-	conf := DefaultConfig(hostname)
-	timeout := time.Duration(2 * time.Second)
-	trans, err := InitTCPTransport(listen, timeout)
-	if err != nil {
-		return nil, nil, err
-	}
-	return conf, trans, nil
-}
-
 // Join the ring
 func JoinNet() (*Ring, *TCPTransport, error) {
 	log.Debug()
-	port := config.Parameters.ChordPort
-	c, t, err := prepJoinRing(port)
+	c, t, err := prepRing(config.Parameters.ChordPort, false)
 	if err != nil {
 		log.Errorf("unexpected err. %s", err)
 		return nil, nil, err
@@ -324,7 +311,6 @@ func JoinNet() (*Ring, *TCPTransport, error) {
 		log.Errorf("failed to join [%s] local node! Got %s", c.SeedNodeAddr, err)
 		return nil, nil, err
 	}
-	ring = r
 
 	go func() {
 		for {
