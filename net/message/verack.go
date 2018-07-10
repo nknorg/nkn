@@ -3,6 +3,7 @@ package message
 import (
 	"bytes"
 	"errors"
+	"net"
 	"strconv"
 
 	. "github.com/nknorg/nkn/net/protocol"
@@ -69,7 +70,7 @@ func (msg verACK) Handle(node Noder) error {
 	node.ReqNeighborList()
 	addr := node.GetAddr()
 	port := node.GetPort()
-	nodeAddr := addr + ":" + strconv.Itoa(int(port))
+	nodeAddr := net.JoinHostPort(addr, strconv.Itoa(int(port)))
 	node.LocalNode().RemoveAddrInConnectingList(nodeAddr)
 	return nil
 }

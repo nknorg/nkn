@@ -45,7 +45,7 @@ func (node *node) NextHop(key []byte) (protocol.Noder, error) {
 		for _, tn := range node.nbrNodes.List {
 			addr := getNodeAddr(tn)
 			ip = addr.IpAddr[:]
-			addrstring := ip.To16().String() + ":" + strconv.Itoa(int(addr.Port))
+			addrstring := net.JoinHostPort(ip.To16().String(), strconv.Itoa(int(addr.Port)))
 			if nbrAddr == addrstring {
 				n = tn
 				found = true

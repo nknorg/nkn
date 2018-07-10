@@ -650,7 +650,7 @@ func (node *node) ConnectNeighbors() {
 		for _, tn := range node.nbrNodes.List {
 			addr := getNodeAddr(tn)
 			ip = addr.IpAddr[:]
-			addrstring := ip.To16().String() + ":" + strconv.Itoa(int(addr.Port))
+			addrstring := net.JoinHostPort(ip.To16().String(), strconv.Itoa(int(addr.Port)))
 			if nodeAddr == addrstring {
 				found = true
 				break
@@ -706,7 +706,7 @@ func (n *node) fetchRetryNodeFromNeighborList() int {
 	for _, tn := range n.nbrNodes.List {
 		addr := getNodeAddr(tn)
 		ip = addr.IpAddr[:]
-		nodeAddr := ip.To16().String() + ":" + strconv.Itoa(int(addr.Port))
+		nodeAddr := net.JoinHostPort(ip.To16().String(), strconv.Itoa(int(addr.Port)))
 		if tn.GetState() == INACTIVITY {
 			//add addr to retry list
 			n.AddInRetryList(nodeAddr)
