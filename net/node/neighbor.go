@@ -136,10 +136,23 @@ func (node *node) GetNeighborNoder() []Noder {
 	nodes := []Noder{}
 	for _, n := range node.nbrNodes.List {
 		if n.GetState() == ESTABLISH {
-			node := n
-			nodes = append(nodes, node)
+			nodes = append(nodes, n)
 		}
 	}
+	return nodes
+}
+
+func (node *node) GetSyncFinishedNeighbors() []Noder {
+	node.nbrNodes.RLock()
+	defer node.nbrNodes.RUnlock()
+
+	var nodes []Noder
+	for _, n := range node.nbrNodes.List {
+		if n.GetState() == ESTABLISH && n.GetSyncState() == PersistFinished {
+			nodes = append(nodes, n)
+		}
+	}
+
 	return nodes
 }
 

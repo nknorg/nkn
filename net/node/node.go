@@ -604,7 +604,7 @@ func (node *node) SendPingToNbr() {
 	noders := node.local.GetNeighborNoder()
 	for _, n := range noders {
 		if n.GetState() == ESTABLISH {
-			buf, err := NewPingMsg()
+			buf, err := NewPingMsg(node.syncState)
 			if err != nil {
 				log.Error("failed build a new ping message")
 			} else {

@@ -368,20 +368,22 @@ func (ps *ProposerService) ChangeProposer() {
 
 func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 	var err error
-	block := ps.syncCache.GetBlockFromSyncCache()
-	for block != nil {
-		err = ledger.BlockFullyCheck(block, ledger.DefaultLedger)
-		if err != nil {
-			log.Error("verifying cached block error: ", err)
+	for ps.syncCache.CachedBlockHeight() != 0 {
+		block := ps.syncCache.GetBlockFromSyncCache()
+		if block != nil {
+			err = ledger.BlockFullyCheck(block, ledger.DefaultLedger)
+			if err != nil {
+				log.Error("verifying cached block error: ", err)
+			}
+			err = ledger.DefaultLedger.Blockchain.AddBlock(block)
+			if err != nil {
+				log.Error("saving cached block error: ", err)
+			}
+			ps.syncCache.RemoveBlockFromCache()
+			block = ps.syncCache.GetBlockFromSyncCache()
+			// Fixme: wait for block persisted
+			time.Sleep(time.Millisecond * 300)
 		}
-		err = ledger.DefaultLedger.Blockchain.AddBlock(block)
-		if err != nil {
-			log.Error("saving cached block error: ", err)
-		}
-		ps.syncCache.RemoveBlockFromCache()
-		block = ps.syncCache.GetBlockFromSyncCache()
-		// Fixme: wait for block persisted
-		time.Sleep(time.Millisecond * 300)
 	}
 	log.Info("cached block saving finished")
 	// switch syncing state
@@ -583,9 +585,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 
 	// if block syncing is not finished, cache received blocks in order
 	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		// set syncing stop block hash
-		ps.localNode.SetSyncStopHash(bfMsg.block.Header.PrevBlockHash, height-1)
-		err := ps.syncCache.AddBlockToSyncCache(bfMsg.block)
+		err := ps.syncCache.AddBlockToSyncCache(bfMsg.block, len(ps.localNode.GetSyncFinishedNeighbors()))
 		if err != nil {
 			log.Error("add received block to sync cache error: ", err)
 		}
@@ -755,15 +755,30 @@ func (ps *ProposerService) SetOrChangeMind(votingType voting.VotingContentType,
 }
 
 func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.PubKey) {
-	// TODO: vote counting for cached blocks
+	hash := *proposal.hash
+	height := proposal.height
+	nodeID := publickKeyToNodeID(sender)
+
+	// handle syncing state
 	if ps.localNode.GetSyncState() != protocol.PersistFinished {
+		// listen to block voting when in syncing state
+		err := ps.syncCache.AddVoteForBlock(hash, height, nodeID)
+		if err != nil {
+			return
+		}
+		// get first flight block
+		block := ps.syncCache.GetBlockFromSyncCache()
+		if block == nil {
+			return
+		}
+		// set syncing stop block hash
+		ps.localNode.SetSyncStopHash(block.Header.PrevBlockHash, block.Header.Height-1)
 		return
 	}
+
 	current := ps.CurrentVoting(proposal.contentType)
 	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()
-	hash := *proposal.hash
-	height := proposal.height
 	if height < votingHeight {
 		log.Warnf("receive invalid proposal, consensus height: %d, proposal height: %d,"+
 			" hash: %s\n", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
@@ -780,7 +795,6 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 		return
 	}
 	// TODO check if the sender is neighbor
-	nodeID := publickKeyToNodeID(sender)
 	if !current.Exist(hash, height) {
 		// generate request message
 		requestMsg := NewRequest(&hash, height, votingType)
@@ -812,22 +826,27 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 }
 
 func (ps *ProposerService) HandleMindChangingMsg(mindChanging *MindChanging, sender *crypto.PubKey) {
-	// TODO: vote counting for cached blocks
+	hash := *mindChanging.hash
+	height := mindChanging.height
+	nodeID := publickKeyToNodeID(sender)
+
+	// handle syncing state
 	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		return
+		// listen to ming changing when in syncing state
+		err := ps.syncCache.ChangeVoteForBlock(hash, height, nodeID)
+		if err != nil {
+			return
+		}
 	}
+
 	current := ps.CurrentVoting(mindChanging.contentType)
 	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()
-	hash := *mindChanging.hash
-	height := mindChanging.height
 	if height < votingHeight {
 		log.Warnf("receive invalid mind changing, consensus height: %d, mind changing height: %d,"+
 			" hash: %s\n", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
-	// TODO check if the sender is neighbor
-	nodeID := publickKeyToNodeID(sender)
 	currentVotingPool := current.GetVotingPool()
 	receivePool := currentVotingPool.GetReceivePool(votingHeight)
 	if _, ok := receivePool[nodeID]; !ok {
