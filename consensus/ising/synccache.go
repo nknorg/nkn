@@ -1,13 +1,13 @@
 package ising
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
+	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 type BlockInfo struct {
@@ -25,17 +25,16 @@ type BlockWithVotes struct {
 // SyncCache cached blocks sent by block proposer when wait for block syncing finished.
 type SyncCache struct {
 	sync.RWMutex
-	minHeight  uint32
-	maxHeight  uint32
-	blockCache map[uint32]*BlockWithVotes
-	voteCache  map[uint32]map[uint64]Uint256
-	timeLock   *TimeLock
+	currHeight  uint32
+	startHeight uint32
+	nextHeight  uint32
+	blockCache  map[uint32]*BlockWithVotes
+	voteCache   map[uint32]map[uint64]Uint256
+	timeLock    *TimeLock
 }
 
 func NewSyncBlockCache() *SyncCache {
 	return &SyncCache{
-		minHeight:  0,
-		maxHeight:  0,
 		blockCache: make(map[uint32]*BlockWithVotes),
 		voteCache:  make(map[uint32]map[uint64]Uint256),
 		timeLock:   NewTimeLock(),
@@ -81,7 +80,7 @@ func (sc *SyncCache) GetBlockFromSyncCache(height uint32) (*ledger.Block, error)
 		return nil, fmt.Errorf("ambiguous block for height: %d", height)
 	}
 
-	return sc.blockCache[sc.minHeight].bestBlock.block, nil
+	return sc.blockCache[sc.startHeight].bestBlock.block, nil
 }
 
 // AddBlockToSyncCache caches received block and the voter count when receive block.
@@ -97,14 +96,18 @@ func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block, totalVoterCount in
 	}
 
 	if len(sc.blockCache) == 0 {
-		// cached block height [min height, max height)
-		sc.minHeight = blockHeight
-		sc.maxHeight = blockHeight + 1
+		// cached block height [min height, curr height]
+		sc.startHeight = blockHeight
+		sc.nextHeight = blockHeight + 1
+		sc.currHeight = blockHeight
 	} else {
-		if blockHeight != sc.maxHeight {
-			return errors.New("adding block which height is invalid")
+		if blockHeight == sc.nextHeight {
+			sc.currHeight++
+			sc.nextHeight++
+		} else if blockHeight != sc.currHeight {
+			return fmt.Errorf("adding block which height is invalid, expected: %d or %d, received: %d",
+				sc.currHeight, sc.nextHeight, blockHeight)
 		}
-		sc.maxHeight++
 	}
 
 	blockInfo := &BlockInfo{
@@ -143,10 +146,20 @@ func (sc *SyncCache) RemoveBlockFromCache(height uint32) error {
 	sc.Lock()
 	defer sc.Unlock()
 
+	if height != sc.startHeight {
+		return errors.New("the height to be removed is not the start height")
+	}
+
 	// remove block from block cache
 	if _, ok := sc.blockCache[height]; ok {
 		delete(sc.blockCache, height)
-		sc.minHeight++
+		if len(sc.blockCache) == 0 {
+			sc.startHeight = 0
+			sc.currHeight = 0
+			sc.nextHeight = 0
+		} else {
+			sc.startHeight++
+		}
 	}
 	// remove votes from vote cache
 	if _, ok := sc.voteCache[height]; ok {
