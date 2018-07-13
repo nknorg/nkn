@@ -370,7 +370,7 @@ func (ps *ProposerService) ChangeProposer() {
 }
 
 func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
-	for i := ps.syncCache.minHeight; i < ps.syncCache.maxHeight; i++ {
+	for i := ps.syncCache.startHeight; i < ps.syncCache.nextHeight; i++ {
 		block, err := ps.syncCache.GetBlockFromSyncCache(i)
 		if err != nil {
 			//TODO: if found ambiguous block then re-sync block
