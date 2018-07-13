@@ -25,7 +25,7 @@ type version struct {
 	P   struct {
 		Version      uint32
 		Services     uint64
-		TimeStamp    uint32
+		TimeStamp    int64
 		Port         uint16
 		HttpInfoPort uint16
 		Cap          [32]byte
@@ -55,7 +55,7 @@ func NewVersion(n Noder) ([]byte, error) {
 	}
 
 	// FIXME Time overflow
-	msg.P.TimeStamp = uint32(time.Now().UTC().UnixNano())
+	msg.P.TimeStamp = time.Now().UTC().UnixNano()
 	msg.P.Port = n.GetPort()
 	msg.P.Nonce = n.GetID()
 	msg.P.UserAgent = 0x00

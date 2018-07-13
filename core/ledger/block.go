@@ -167,7 +167,7 @@ func GenesisBlockInit() (*Block, error) {
 		Version:          BlockVersion,
 		PrevBlockHash:    Uint256{},
 		TransactionsRoot: Uint256{},
-		Timestamp:        uint32(uint32(time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix())),
+		Timestamp:        time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix(),
 		Height:           uint32(0),
 		ConsensusData:    GenesisNonce,
 		NextBookKeeper:   Uint160{},

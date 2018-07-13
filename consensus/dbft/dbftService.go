@@ -361,7 +361,7 @@ func (ds *DbftService) PrepareRequestReceived(payload *msg.ConsensusPayload, mes
 
 	//TODO Add Error Catch
 	prevBlockTimestamp := header.Timestamp
-	if payload.Timestamp <= prevBlockTimestamp || payload.Timestamp > uint32(time.Now().Add(time.Minute*10).Unix()) {
+	if payload.Timestamp <= prevBlockTimestamp || payload.Timestamp > time.Now().Add(time.Minute*10).Unix() {
 		log.Info(fmt.Sprintf("Prepare Reques tReceived: Timestamp incorrect: %d", payload.Timestamp))
 		return
 	}
@@ -519,7 +519,7 @@ func (ds *DbftService) Timeout() {
 		log.Info("Send prepare request: height: ", ds.timerHeight, " View: ", ds.timeView, " State: ", ds.context.GetStateDetail())
 		ds.context.State |= RequestSent
 		if !ds.context.State.HasFlag(SignatureSent) {
-			now := uint32(time.Now().Unix())
+			now := time.Now().Unix()
 			header, _ := ledger.DefaultLedger.Blockchain.GetHeader(ds.context.PrevHash)
 
 			//set context Timestamp

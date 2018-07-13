@@ -9,7 +9,7 @@ type HeaderInfo struct {
 	Version          uint32              `json:"version"`
 	PrevBlockHash    string              `json:"prevBlockHash"`
 	TransactionsRoot string              `json:"transactionsRoot"`
-	Timestamp        uint32              `json:"timestamp"`
+	Timestamp        int64               `json:"timestamp"`
 	Height           uint32              `json:"height"`
 	ConsensusData    uint64              `json:"consensusData"`
 	NextBookKeeper   string              `json:"nextBookKeeper"`

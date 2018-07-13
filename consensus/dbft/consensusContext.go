@@ -27,7 +27,7 @@ type ConsensusContext struct {
 	Owner           *crypto.PubKey
 	BookKeeperIndex int
 	PrimaryIndex    uint32
-	Timestamp       uint32
+	Timestamp       int64
 	Nonce           uint64
 	NextBookKeeper  Uint160
 	Transactions    []*tx.Transaction

@@ -25,7 +25,7 @@ type ConsensusPayload struct {
 	PrevHash        common.Uint256
 	Height          uint32
 	BookKeeperIndex uint16
-	Timestamp       uint32
+	Timestamp       int64
 	Data            []byte
 	Owner           *crypto.PubKey
 	Program         *program.Program
@@ -98,7 +98,7 @@ func (cp *ConsensusPayload) SerializeUnsigned(w io.Writer) error {
 	cp.PrevHash.Serialize(w)
 	serialization.WriteUint32(w, cp.Height)
 	serialization.WriteUint16(w, cp.BookKeeperIndex)
-	serialization.WriteUint32(w, cp.Timestamp)
+	serialization.WriteUint64(w, uint64(cp.Timestamp))
 	serialization.WriteVarBytes(w, cp.Data)
 	err := cp.Owner.Serialize(w)
 	if err != nil {
@@ -163,11 +163,12 @@ func (cp *ConsensusPayload) DeserializeUnsigned(r io.Reader) error {
 		return errors.New("consensus item BookKeeperIndex Deserialize failed.")
 	}
 
-	cp.Timestamp, err = serialization.ReadUint32(r)
+	time, err := serialization.ReadUint64(r)
 	if err != nil {
 		log.Warn("consensus item Timestamp Deserialize failed.")
 		return errors.New("consensus item Timestamp Deserialize failed.")
 	}
+	cp.Timestamp = int64(time)
 
 	cp.Data, err = serialization.ReadVarBytes(r)
 	if err != nil {

@@ -326,8 +326,8 @@ func (ps *ProposerService) BlockPersistCompleted(v interface{}) {
 		ps.proposerChangeIndex = 0
 		// reset timer when block persisted
 		ps.proposerChangeTimer.Stop()
-		duration := time.Duration(block.Header.Timestamp) + ProposerChangeTime - time.Duration(time.Now().Unix())
-		ps.proposerChangeTimer.Reset(duration)
+		t := block.Header.Timestamp + int64(ProposerChangeTime) - time.Now().Unix()
+		ps.proposerChangeTimer.Reset(time.Duration(t))
 	}
 }
 
@@ -512,7 +512,7 @@ func (ps *ProposerService) BuildBlock() (*ledger.Block, error) {
 	header := &ledger.Header{
 		Version:          0,
 		PrevBlockHash:    ledger.DefaultLedger.Store.GetCurrentBlockHash(),
-		Timestamp:        uint32(time.Now().Unix()),
+		Timestamp:        time.Now().Unix(),
 		Height:           ledger.DefaultLedger.Store.GetHeight() + 1,
 		ConsensusData:    rand.Uint64(),
 		TransactionsRoot: txnRoot,
