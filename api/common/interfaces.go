@@ -707,14 +707,20 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], srcID, encodedPublickKey, encodedPublickKey)
+
+	mining := false
+	if node.GetSyncState() == protocol.PersistFinished {
+		mining = true
+	}
+	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], srcID,
+		encodedPublickKey, encodedPublickKey, mining)
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
+	if err := sigChain.Sign(encodedPublickKey, mining, account); err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	if err := sigChain.Sign(encodedPublickKey, account); err != nil {
+	if err := sigChain.Sign(encodedPublickKey, mining, account); err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 	buf, err := proto.Marshal(sigChain)

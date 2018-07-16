@@ -27,22 +27,22 @@ func TestSigChain(t *testing.T) {
 	var srcID []byte
 	dataHash := common.Uint256{1, 2, 3}
 	blockHash := common.Uint256{4, 5, 6}
-	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], srcID, toPk, relay1Pk)
+	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], srcID, toPk, relay1Pk, true)
 	if err != nil || sc.Verify() != nil {
 		t.Error("[TestSigChain] 'from' create new SigChain in error")
 	}
 
-	err = sc.Sign(relay2Pk, relay1)
+	err = sc.Sign(relay2Pk, true, relay1)
 	if err != nil || sc.Verify() != nil {
 		t.Error("[TestSigChain] 'relay1' sign in error")
 	}
 
-	err = sc.Sign(toPk, relay2)
+	err = sc.Sign(toPk, true, relay2)
 	if err != nil || sc.Verify() != nil {
 		t.Error("[TestSigChain] 'relay2' sign in error")
 	}
 
-	err = sc.Sign(toPk, to)
+	err = sc.Sign(toPk, true, to)
 	if err != nil || sc.Verify() != nil {
 		t.Error("[TestSigChain] 'to' sign in error")
 	}

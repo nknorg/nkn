@@ -22,11 +22,11 @@ func TestPorServer(t *testing.T) {
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 
-	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, &common.Uint256{}, vnode.Id, toPk, relPk)
+	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, &common.Uint256{}, vnode.Id, toPk, relPk, true)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
-	pmRel.Sign(scFrom, toPk)
+	pmRel.Sign(scFrom, toPk, true)
 	if pmRel.Verify(scFrom) == nil {
 		t.Log("[pormanager] verify successfully")
 	} else {
@@ -39,7 +39,7 @@ func TestPorServer(t *testing.T) {
 		t.Error("[pormanager] IsFinal test failed")
 	}
 
-	pmTo.Sign(scFrom, toPk)
+	pmTo.Sign(scFrom, toPk, true)
 	if pmTo.Verify(scFrom) == nil {
 		t.Log("[pormanager] verify successfully 2")
 	} else {

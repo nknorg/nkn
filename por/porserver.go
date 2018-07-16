@@ -43,7 +43,7 @@ func GetPorServer() *PorServer {
 	return porServer
 }
 
-func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte) error {
+func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte, mining bool) error {
 	dcPk, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
 		log.Error("Get account public key error:", err)
@@ -60,7 +60,7 @@ func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte) error {
 		return errors.New("it's not the right signer")
 	}
 
-	err = sc.Sign(nextPubkey, ps.account)
+	err = sc.Sign(nextPubkey, mining, ps.account)
 	if err != nil {
 		log.Error("Signature chain signing error:", err)
 		return err
@@ -77,17 +77,20 @@ func (ps *PorServer) Verify(sc *SigChain) error {
 	return nil
 }
 
-func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common.Uint256, srcID, destPubkey, nextPubkey []byte) (*SigChain, error) {
-	return NewSigChain(ps.account, dataSize, dataHash[:], blockHash[:], srcID, destPubkey, nextPubkey)
+func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common.Uint256, srcID,
+	destPubkey, nextPubkey []byte, mining bool) (*SigChain, error) {
+	return NewSigChain(ps.account, dataSize, dataHash[:], blockHash[:], srcID, destPubkey, nextPubkey, mining)
 }
 
-func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcID, srcPubkey, destPubkey, signature []byte, sigAlgo SigAlgo) (*SigChain, error) {
+func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcID,
+	srcPubkey, destPubkey, signature []byte, sigAlgo SigAlgo) (*SigChain, error) {
 	pubKey, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
 		log.Error("Get account public key error:", err)
 		return nil, err
 	}
-	sigChain, err := NewSigChainWithSignature(dataSize, dataHash[:], blockHash[:], srcID, srcPubkey, destPubkey, pubKey, signature, sigAlgo)
+	sigChain, err := NewSigChainWithSignature(dataSize, dataHash[:], blockHash[:],
+		srcID, srcPubkey, destPubkey, pubKey, signature, sigAlgo, false)
 	if err != nil {
 		log.Error("New signature chain with signature error:", err)
 		return nil, err

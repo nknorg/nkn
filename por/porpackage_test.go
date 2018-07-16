@@ -24,17 +24,17 @@ func TestPorPackage(t *testing.T) {
 	var srcID []byte
 	dataHash := common.Uint256{}
 	blockHash := common.Uint256{}
-	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], srcID, toPk, relPk)
+	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], srcID, toPk, relPk, true)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
 
-	err = sc.Sign(toPk, rel)
+	err = sc.Sign(toPk, true, rel)
 	if err != nil || sc.Verify() != nil {
 		t.Error("'rel' sign in error")
 	}
 
-	err = sc.Sign(toPk, to)
+	err = sc.Sign(toPk, true, to)
 	if err != nil || sc.Verify() != nil {
 		t.Error("'to' sign in error")
 	}
