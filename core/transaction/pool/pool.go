@@ -5,11 +5,16 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
 	. "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/log"
+)
+
+const (
+	ExclusivedSigchainHeight = 3
 )
 
 type TxnPool struct {
@@ -65,14 +70,22 @@ func (tp *TxnPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
 		n = num
 	}
 
+	exclusivedHashes, err := por.GetPorServer().GetTxnHashBySigChainHeight(ledger.DefaultLedger.Store.GetHeight() +
+		ExclusivedSigchainHeight)
+	if err != nil {
+		log.Error("collect transaction error: ", err)
+		return nil
+	}
 	i := 0
 	txns := make(map[common.Uint256]*Transaction, n)
 	//TODO sort transaction list
 	for hash, txn := range tp.txnList {
-		txns[hash] = txn
-		i++
-		if i >= n {
-			break
+		if !isHashExist(hash, exclusivedHashes) {
+			txns[hash] = txn
+			i++
+			if i >= n {
+				break
+			}
 		}
 	}
 
@@ -336,4 +349,14 @@ func (tp *TxnPool) getAssetIssueAmount(assetId common.Uint256) common.Fixed64 {
 	tp.RLock()
 	defer tp.RUnlock()
 	return tp.issueSummary[assetId]
+}
+
+func isHashExist(hash common.Uint256, hashSet []common.Uint256) bool {
+	for _, h := range hashSet {
+		if h.CompareTo(hash) == 0 {
+			return true
+		}
+	}
+
+	return false
 }
