@@ -8,8 +8,9 @@ enum SigAlgo {
 message SigChainElem {
   bytes Addr = 1;
   bytes NextPubkey = 2;
-  SigAlgo SigAlgo = 3;
-  bytes Signature = 4;
+  bool Mining = 3;
+  SigAlgo SigAlgo = 4;
+  bytes Signature = 5;
 }
 
 message SigChain {

@@ -56,7 +56,11 @@ func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *
 		}
 	}
 
-	err := rs.porServer.Sign(packet.SigChain, destPubKey)
+	mining := false
+	if rs.localNode.GetSyncState() == protocol.PersistFinished {
+		mining = true
+	}
+	err := rs.porServer.Sign(packet.SigChain, destPubKey, mining)
 	if err != nil {
 		log.Error("Signing signature chain error: ", err)
 		return err
@@ -64,7 +68,7 @@ func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *
 
 	// TODO: only pick sigchain to sign when threshold is smaller than
 
-	digest, err := packet.SigChain.ExtendElement(destPubKey)
+	digest, err := packet.SigChain.ExtendElement(destPubKey, false)
 	if err != nil {
 		return err
 	}
@@ -120,7 +124,11 @@ func (rs *RelayService) SendPacketToNode(nextHop protocol.Noder, packet *message
 		log.Error("Get next hop public key error: ", err)
 		return err
 	}
-	err = rs.porServer.Sign(packet.SigChain, nextPubkey)
+	mining := false
+	if rs.localNode.GetSyncState() == protocol.PersistFinished {
+		mining = true
+	}
+	err = rs.porServer.Sign(packet.SigChain, nextPubkey, mining)
 	if err != nil {
 		log.Error("Signing signature chain error: ", err)
 		return err
