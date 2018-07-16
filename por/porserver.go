@@ -159,6 +159,24 @@ func (ps *PorServer) GetSigChain(height uint32, hash common.Uint256) (*SigChain,
 	return nil, errors.New("can't find the signature chain")
 }
 
+func (ps *PorServer) GetTxnHashBySigChainHeight(height uint32) ([]common.Uint256, error) {
+	ps.RLock()
+	defer ps.RUnlock()
+
+	var txnHashes []common.Uint256
+	if porPackages, ok := ps.pors[height]; ok {
+		for _, p := range porPackages {
+			hash, err := common.Uint256ParseFromBytes(p.TxHash)
+			if err != nil {
+				return nil, errors.New("invalid transaction hash for por package")
+			}
+			txnHashes = append(txnHashes, hash)
+		}
+	}
+
+	return txnHashes, nil
+}
+
 func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) error {
 	porpkg, err := NewPorPackage(txn)
 	if err != nil {
