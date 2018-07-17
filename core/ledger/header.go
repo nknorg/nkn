@@ -23,6 +23,7 @@ type Header struct {
 	ConsensusData    uint64
 	NextBookKeeper   Uint160
 	Signer           []byte
+	Signature        []byte
 	Program          *program.Program
 
 	hash Uint256
@@ -31,6 +32,7 @@ type Header struct {
 //Serialize the blockheader
 func (h *Header) Serialize(w io.Writer) error {
 	h.SerializeUnsigned(w)
+	serialization.WriteVarBytes(w, h.Signature)
 	w.Write([]byte{byte(1)})
 	if h.Program != nil {
 		h.Program.Serialize(w)
@@ -53,6 +55,7 @@ func (h *Header) SerializeUnsigned(w io.Writer) error {
 
 func (h *Header) Deserialize(r io.Reader) error {
 	h.DeserializeUnsigned(r)
+	h.Signature, _ = serialization.ReadVarBytes(r)
 	p := make([]byte, 1)
 	n, err := r.Read(p)
 	if n > 0 {
@@ -180,6 +183,7 @@ func (h *Header) MarshalJson() ([]byte, error) {
 		ConsensusData:    h.ConsensusData,
 		NextBookKeeper:   BytesToHexString(h.NextBookKeeper.ToArrayReverse()),
 		Signer:           BytesToHexString(h.Signer),
+		Signature:        BytesToHexString(h.Signature),
 		Hash:             BytesToHexString(h.hash.ToArrayReverse()),
 	}
 
@@ -234,6 +238,18 @@ func (h *Header) UnmarshalJson(data []byte) error {
 	if err != nil {
 		return err
 	}
+
+	singer, err := HexStringToBytes(headerInfo.Signer)
+	if err != nil {
+		return err
+	}
+	h.Signer = singer
+
+	signature, err := HexStringToBytes(headerInfo.Signature)
+	if err != nil {
+		return err
+	}
+	h.Signature = signature
 
 	info, err := json.Marshal(headerInfo.Program)
 	if err != nil {

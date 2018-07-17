@@ -2,19 +2,16 @@ package ising
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"sync"
 	"time"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/ising/voting"
-	"github.com/nknorg/nkn/core/contract/program"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
@@ -46,6 +43,7 @@ type ProposerService struct {
 	localNode            protocol.Noder            // local node
 	neighbors            []protocol.Noder          // neighbor nodes
 	txnCollector         *transaction.TxnCollector // collect transaction from where
+	mining               Mining                    // built-in mining
 	msgChan              chan interface{}          // get notice from probe thread
 	consensusMsgReceived events.Subscriber         // consensus events listening
 	blockPersisted       events.Subscriber         // block saved events
@@ -68,6 +66,7 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 		neighbors:           node.GetNeighborNoder(),
 		blockProposer:       make(map[uint32][]byte),
 		txnCollector:        txnCollector,
+		mining:              NewBuiltinMining(account, txnCollector),
 		msgChan:             make(chan interface{}, MsgChanCap),
 		syncCache:           NewSyncBlockCache(),
 		voting: []voting.Voting{
@@ -222,7 +221,7 @@ func (ps *ProposerService) ProduceNewBlock() {
 	votingPool := current.GetVotingPool()
 	votingHeight := current.GetVotingHeight()
 	// build new block to be proposed
-	block, err := ps.BuildBlock()
+	block, err := ps.mining.BuildBlock()
 	if err != nil {
 		log.Error("building block error: ", err)
 	}
@@ -472,72 +471,6 @@ func (ps *ProposerService) SendConsensusMsg(msg IsingMessage, to []protocol.Node
 	}
 
 	return nil
-}
-
-func (ps *ProposerService) CreateCoinbaseTransaction() *transaction.Transaction {
-	return &transaction.Transaction{
-		TxType:         transaction.Coinbase,
-		PayloadVersion: 0,
-		Payload:        &payload.Coinbase{},
-		Attributes: []*transaction.TxnAttribute{
-			{
-				Usage: transaction.Nonce,
-				Data:  util.RandomBytes(transaction.TransactionNonceLength),
-			},
-		},
-		Inputs: []*transaction.TxnInput{},
-		Outputs: []*transaction.TxnOutput{
-			{
-				AssetID:     ledger.DefaultLedger.Blockchain.AssetID,
-				Value:       10 * StorageFactor,
-				ProgramHash: ps.account.ProgramHash,
-			},
-		},
-		Programs: []*program.Program{},
-	}
-}
-
-func (ps *ProposerService) BuildBlock() (*ledger.Block, error) {
-	var txnList []*transaction.Transaction
-	var txnHashList []Uint256
-	coinbase := ps.CreateCoinbaseTransaction()
-	txnList = append(txnList, coinbase)
-	txnHashList = append(txnHashList, coinbase.Hash())
-	txns := ps.txnCollector.Collect()
-	for txnHash, txn := range txns {
-		if !ledger.DefaultLedger.Store.IsTxHashDuplicate(txnHash) {
-			txnList = append(txnList, txn)
-			txnHashList = append(txnHashList, txnHash)
-		}
-	}
-	txnRoot, err := crypto.ComputeRoot(txnHashList)
-	if err != nil {
-		return nil, err
-	}
-	pubkey, err := ps.account.PublicKey.EncodePoint(true)
-	if err != nil {
-		return nil, err
-	}
-	header := &ledger.Header{
-		Version:          0,
-		PrevBlockHash:    ledger.DefaultLedger.Store.GetCurrentBlockHash(),
-		Timestamp:        time.Now().Unix(),
-		Height:           ledger.DefaultLedger.Store.GetHeight() + 1,
-		ConsensusData:    rand.Uint64(),
-		TransactionsRoot: txnRoot,
-		NextBookKeeper:   Uint160{},
-		Signer:           pubkey,
-		Program: &program.Program{
-			Code:      []byte{0x00},
-			Parameter: []byte{0x00},
-		},
-	}
-	block := &ledger.Block{
-		Header:       header,
-		Transactions: txnList,
-	}
-
-	return block, nil
 }
 
 func (ps *ProposerService) ReceiveConsensusMsg(v interface{}) {
