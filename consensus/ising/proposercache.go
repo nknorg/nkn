@@ -1,20 +1,20 @@
 package ising
 
 import (
+	"errors"
 	"fmt"
 	"sync"
-	"errors"
 
+	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/ising/voting"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/core/transaction/payload"
-	"github.com/nknorg/nkn/por"
-	"github.com/golang/protobuf/proto"
 )
 
 const (
@@ -58,17 +58,17 @@ func (pc *ProposerCache) Add(height uint32, votingContent voting.VotingContent) 
 		sigchain := &por.SigChain{}
 		proto.Unmarshal(payload.SigChain, sigchain)
 		// TODO: get a determinate public key on signature chain
-		pbk, err := sigchain.GetLedgerNodePubkey()
+		pbk, err := sigchain.GetMiner()
 		if err != nil {
 			log.Warn("Get last public key error", err)
 			return
 		}
 		proposerInfo = &ProposerInfo{
-			publicKey: pbk,
-			winningHash:t.Hash(),
-			winningHashType:ledger.WinningTxnHash,
+			publicKey:       pbk,
+			winningHash:     t.Hash(),
+			winningHashType: ledger.WinningTxnHash,
 		}
-		sigChainTxnHash:=t.Hash()
+		sigChainTxnHash := t.Hash()
 		log.Infof("sigchain transaction consensus: %s, %s will be block proposer for height %d",
 			BytesToHexString(sigChainTxnHash.ToArrayReverse()), BytesToHexString(pbk), height)
 	}

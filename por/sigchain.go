@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"math/big"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
@@ -371,7 +372,7 @@ func (sc *SigChain) GetLastPubkey() ([]byte, error) {
 	return e.NextPubkey, nil
 }
 
-func (sc *SigChain) GetLedgerNodePubkey() ([]byte, error) {
+func (sc *SigChain) GetMiner() ([]byte, error) {
 	if !sc.IsFinal() {
 		return nil, errors.New("not final")
 	}
@@ -381,7 +382,38 @@ func (sc *SigChain) GetLedgerNodePubkey() ([]byte, error) {
 		return nil, errors.New("not enough elements")
 	}
 
-	return sc.Elems[n-3].NextPubkey, nil
+	type SigChainElemInfo struct {
+		index int
+		elem  *SigChainElem
+	}
+	var minerElems []*SigChainElemInfo
+	for i, e := range sc.Elems {
+		if e.Mining == true {
+			t := &SigChainElemInfo{
+				index: i,
+				elem:  e,
+			}
+			minerElems = append(minerElems, t)
+		}
+	}
+	elemLen := int64(len(minerElems))
+	if elemLen == 0 {
+		err := errors.New("invalid signature chain for block proposer selection")
+		log.Error(err)
+		return nil, err
+	}
+	newIndex := big.NewInt(0)
+	x := big.NewInt(0)
+	x.SetBytes(sc.BlockHash)
+	y := big.NewInt(elemLen)
+	newIndex.Mod(x, y)
+
+	originalIndex := minerElems[newIndex.Int64()].index
+	if originalIndex == 0 {
+		return sc.GetSrcPubkey(), nil
+	}
+
+	return sc.Elems[originalIndex-1].NextPubkey, nil
 }
 
 func (sc *SigChain) nextSigner() ([]byte, error) {
