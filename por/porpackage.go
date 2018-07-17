@@ -55,6 +55,18 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	}
 
 	//TODO threshold
+	found := false
+	for _, elem := range sigChain.Elems {
+		if elem.Mining == true {
+			found = true
+			break
+		}
+	}
+	if !found {
+		err := errors.New("no miner node in signature chain")
+		log.Error(err)
+		return nil, err
+	}
 
 	blockHash, err := common.Uint256ParseFromBytes(sigChain.BlockHash)
 	if err != nil {
