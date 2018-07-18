@@ -14,6 +14,14 @@ import (
 	. "github.com/nknorg/nkn/errors"
 )
 
+type WinningHashType byte
+
+const (
+	GenesisHash      WinningHashType = 0
+	WinningTxnHash   WinningHashType = 1
+	WinningBlockHash WinningHashType = 2
+)
+
 type Header struct {
 	Version          uint32
 	PrevBlockHash    Uint256
