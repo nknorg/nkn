@@ -203,8 +203,13 @@ func (ps *ProposerService) ProduceNewBlock() {
 	current := ps.CurrentVoting(voting.BlockVote)
 	votingPool := current.GetVotingPool()
 	votingHeight := current.GetVotingHeight()
+	proposerInfo, err := ps.proposerCache.Get(votingHeight)
+	if err != nil {
+		log.Error("get proposer info for producing new block error: ", err)
+		return
+	}
 	// build new block to be proposed
-	block, err := ps.mining.BuildBlock()
+	block, err := ps.mining.BuildBlock(votingHeight, proposerInfo.winningHash, proposerInfo.winningHashType)
 	if err != nil {
 		log.Error("building block error: ", err)
 	}

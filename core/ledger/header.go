@@ -30,6 +30,8 @@ type Header struct {
 	Height           uint32
 	ConsensusData    uint64
 	NextBookKeeper   Uint160
+	WinningHash      Uint256
+	WinningHashType  WinningHashType
 	Signer           []byte
 	Signature        []byte
 	Program          *program.Program
@@ -57,6 +59,8 @@ func (h *Header) SerializeUnsigned(w io.Writer) error {
 	serialization.WriteUint32(w, h.Height)
 	serialization.WriteUint64(w, h.ConsensusData)
 	h.NextBookKeeper.Serialize(w)
+	h.WinningHash.Serialize(w)
+	serialization.WriteByte(w, byte(h.WinningHashType))
 	serialization.WriteVarBytes(w, h.Signer)
 	return nil
 }
@@ -123,6 +127,11 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 	//NextBookKeeper
 	h.NextBookKeeper.Deserialize(r)
 
+	h.WinningHash.Deserialize(r)
+
+	t, _ := serialization.ReadByte(r)
+	h.WinningHashType = WinningHashType(t)
+
 	h.Signer, _ = serialization.ReadVarBytes(r)
 
 	return nil
@@ -182,6 +191,7 @@ func (h *Header) ToArray() []byte {
 }
 
 func (h *Header) MarshalJson() ([]byte, error) {
+
 	headerInfo := &HeaderInfo{
 		Version:          h.Version,
 		PrevBlockHash:    BytesToHexString(h.PrevBlockHash.ToArrayReverse()),
@@ -190,6 +200,8 @@ func (h *Header) MarshalJson() ([]byte, error) {
 		Height:           h.Height,
 		ConsensusData:    h.ConsensusData,
 		NextBookKeeper:   BytesToHexString(h.NextBookKeeper.ToArrayReverse()),
+		WinningHash:      BytesToHexString(h.WinningHash.ToArrayReverse()),
+		WinningHashType:  byte(h.WinningHashType),
 		Signer:           BytesToHexString(h.Signer),
 		Signature:        BytesToHexString(h.Signature),
 		Hash:             BytesToHexString(h.hash.ToArrayReverse()),
@@ -219,6 +231,7 @@ func (h *Header) UnmarshalJson(data []byte) error {
 	h.Timestamp = headerInfo.Timestamp
 	h.Height = headerInfo.Height
 	h.ConsensusData = headerInfo.ConsensusData
+	h.WinningHashType = WinningHashType(headerInfo.WinningHashType)
 
 	prevHash, err := HexStringToBytesReverse(headerInfo.PrevBlockHash)
 	if err != nil {
@@ -243,6 +256,15 @@ func (h *Header) UnmarshalJson(data []byte) error {
 		return err
 	}
 	h.NextBookKeeper, err = Uint160ParseFromBytes(nextBookKeeper)
+	if err != nil {
+		return err
+	}
+
+	winHash, err := HexStringToBytesReverse(headerInfo.WinningHash)
+	if err != nil {
+		return err
+	}
+	h.WinningHash, err = Uint256ParseFromBytes(winHash)
 	if err != nil {
 		return err
 	}

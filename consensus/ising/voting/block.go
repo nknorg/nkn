@@ -9,6 +9,11 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
+const (
+	// When current block height is n, the block for height n+VotedBlockHeightIncrement is being voted.
+	VotedBlockHeightIncrement = 1
+)
+
 type BlockVoting struct {
 	sync.RWMutex
 	pstate         map[Uint256]*State            // consensus state for proposer
@@ -93,7 +98,7 @@ func (bv *BlockVoting) SetVotingHeight(height uint32) {
 }
 
 func (bv *BlockVoting) GetVotingHeight() uint32 {
-	return ledger.DefaultLedger.Store.GetHeight() + 1
+	return ledger.DefaultLedger.Store.GetHeight() + VotedBlockHeightIncrement
 }
 
 func (bv *BlockVoting) SetConfirmingHash(hash Uint256) {
