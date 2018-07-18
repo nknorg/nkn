@@ -3,6 +3,7 @@ package ledger
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"math/big"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -162,6 +164,14 @@ func (b *Block) Type() InventoryType {
 }
 
 func GenesisBlockInit() (*Block, error) {
+	if config.Parameters.GenesisBlockProposer == "" {
+		return nil, errors.New("GenesisBlockProposer is required in config.json")
+	}
+	proposer, err := HexStringToBytes(config.Parameters.GenesisBlockProposer)
+	if err != nil || len(proposer) != crypto.COMPRESSEDLEN {
+		return nil, errors.New("invalid GenesisBlockProposer configured")
+	}
+	genesisBlockProposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)
 	// block header
 	genesisBlockHeader := &Header{
 		Version:          BlockVersion,
@@ -171,6 +181,7 @@ func GenesisBlockInit() (*Block, error) {
 		Height:           uint32(0),
 		ConsensusData:    GenesisNonce,
 		NextBookKeeper:   Uint160{},
+		Signer:           genesisBlockProposer,
 		Program: &program.Program{
 			Code:      []byte{0x00},
 			Parameter: []byte{0x00},

@@ -3,6 +3,7 @@ package voting
 import (
 	"errors"
 	"sync"
+	"time"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
@@ -165,7 +166,8 @@ func (bv *BlockVoting) AddToCache(content VotingContent) error {
 		if blockHeight != localHeight+1 {
 			return errors.New("invalid block height")
 		}
-		err = ledger.BlockFullyCheck(block, ledger.DefaultLedger)
+		vBlock := ledger.NewVBlock(block, time.Now().Unix())
+		err = ledger.BlockCheck(vBlock, ledger.DefaultLedger)
 		if err != nil {
 			return err
 		}

@@ -17,9 +17,15 @@ import (
 type WinningHashType byte
 
 const (
-	GenesisHash      WinningHashType = 0
-	WinningTxnHash   WinningHashType = 1
-	WinningBlockHash WinningHashType = 2
+	// The proof of Block proposer validity should exists in previous Block header.
+	// GenesisHash means next Block proposer is GenesisBlockProposer.
+	GenesisHash WinningHashType = 0
+	// WinningTxnHash means next Block proposer is a node on signature chain.
+	WinningTxnHash WinningHashType = 1
+	// WinningNilHash means next Block proposer is the signer of last Block.
+	WinningNilHash WinningHashType = 2
+	// WinningBlockHash means next Block proposer is signer of historical Block.
+	WinningBlockHash WinningHashType = 3
 )
 
 type Header struct {
