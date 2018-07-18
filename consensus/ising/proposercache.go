@@ -1,8 +1,6 @@
 package ising
 
 import (
-	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -11,7 +9,6 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -81,17 +78,7 @@ func (pc *ProposerCache) Get(height uint32) (*ProposerInfo, error) {
 	defer pc.RUnlock()
 	// initial blocks are produced byte GenesisBlockProposer
 	if height < InitialBlockHeight {
-		if len(config.Parameters.GenesisBlockProposer) < 1 {
-			err := errors.New("no GenesisBlockProposer configured")
-			log.Warn(err)
-			return nil, err
-		}
-		proposer, err := HexStringToBytes(config.Parameters.GenesisBlockProposer[0])
-		if err != nil || len(proposer) != crypto.COMPRESSEDLEN {
-			err := errors.New("invalid GenesisBlockProposer configured")
-			return nil, err
-		}
-
+		proposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)
 		return &ProposerInfo{
 			publicKey:       proposer,
 			winningHash:     EmptyUint256,
@@ -100,7 +87,11 @@ func (pc *ProposerCache) Get(height uint32) (*ProposerInfo, error) {
 	}
 
 	if _, ok := pc.cache[height]; !ok {
-		return nil, fmt.Errorf("no proposer info for height: ", height)
+		return &ProposerInfo{
+			publicKey:       nil,
+			winningHash:     EmptyUint256,
+			winningHashType: ledger.NilHash,
+		}, nil
 	}
 
 	return pc.cache[height], nil

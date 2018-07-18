@@ -9,8 +9,9 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"time"
 
-	ipify "github.com/rdegges/go-ipify"
+	"github.com/rdegges/go-ipify"
 )
 
 const (
@@ -18,6 +19,11 @@ const (
 	DEFAULTGENBLOCKTIME    = 6
 	DefaultConfigFilename  = "./config.json"
 	DefaultBookKeeperCount = 4
+)
+
+const (
+	ConsensusTime      = 10 * time.Second
+	ProposerChangeTime = time.Minute
 )
 
 var (
@@ -64,7 +70,7 @@ type Configuration struct {
 	MaxHdrSyncReqs       int      `json:"MaxConcurrentSyncHeaderReqs"`
 	ConsensusType        string   `json:"ConsensusType"`
 	ChordPort            uint16   `json:"ChordPort"`
-	GenesisBlockProposer []string `json:"GenesisBlockProposer"`
+	GenesisBlockProposer string   `json:"GenesisBlockProposer"`
 	Hostname             string   `json:"Hostname"`
 }
 

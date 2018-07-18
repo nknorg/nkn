@@ -10,14 +10,15 @@ import (
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 )
 
 const (
 	ProbeFactor        = 1
 	ResultFactor       = 3
-	ProbeDuration      = ConsensusTime / ProbeFactor
-	WaitForProbeResult = ConsensusTime / ResultFactor
+	ProbeDuration      = config.ConsensusTime / ProbeFactor
+	WaitForProbeResult = config.ConsensusTime / ResultFactor
 	MsgChanCap         = 1
 
 	// probe service will detect BlockNumDetected blocks of neighbor per time
