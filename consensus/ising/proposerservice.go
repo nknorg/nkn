@@ -10,17 +10,13 @@ import (
 	"github.com/nknorg/nkn/consensus/ising/voting"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 
-	"github.com/golang/protobuf/proto"
 )
 
 const (
@@ -39,7 +35,6 @@ type ProposerService struct {
 	timeout              *time.Timer               // timeout for next round consensus
 	proposerChangeTimer  *time.Timer               // timer for proposer change
 	proposerChangeIndex  uint32                    // block index for proposer change
-	blockProposer        map[uint32][]byte         // height and public key mapping for block proposer
 	localNode            protocol.Noder            // local node
 	neighbors            []protocol.Noder          // neighbor nodes
 	txnCollector         *transaction.TxnCollector // collect transaction from where
@@ -48,6 +43,7 @@ type ProposerService struct {
 	consensusMsgReceived events.Subscriber         // consensus events listening
 	blockPersisted       events.Subscriber         // block saved events
 	syncFinished         events.Subscriber         // block syncing finished event
+	proposerCache        *ProposerCache            // cache for block proposer
 	syncCache            *SyncCache                // cache for block syncing
 	voting               []voting.Voting           // array for sigchain and block voting
 }
@@ -64,11 +60,11 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 		account:             account,
 		localNode:           node,
 		neighbors:           node.GetNeighborNoder(),
-		blockProposer:       make(map[uint32][]byte),
 		txnCollector:        txnCollector,
 		mining:              NewBuiltinMining(account, txnCollector),
 		msgChan:             make(chan interface{}, MsgChanCap),
 		syncCache:           NewSyncBlockCache(),
+		proposerCache:       NewProposerCache(),
 		voting: []voting.Voting{
 			voting.NewBlockVoting(totalWeight),
 			voting.NewSigChainVoting(totalWeight, txnCollector),
@@ -133,22 +129,9 @@ func (ps *ProposerService) ConsensusRoutine(vType voting.VotingContentType) {
 		// process final block and signature chain
 		switch vType {
 		case voting.SigChainTxnVote:
-			txn := content.(*transaction.Transaction)
-			payload := txn.Payload.(*payload.Commit)
-			sigchain := &por.SigChain{}
-			proto.Unmarshal(payload.SigChain, sigchain)
-			// TODO: get a determinate public key on signature chain
-			pbk, err := sigchain.GetLedgerNodePubkey()
-			if err != nil {
-				log.Warn("Get last public key error", err)
-				return
+			if txn, ok := content.(*transaction.Transaction); ok {
+				ps.proposerCache.Add(votingHeight, txn)
 			}
-			ps.Lock()
-			ps.blockProposer[votingHeight] = pbk
-			ps.Unlock()
-			sigChainTxnHash := content.Hash()
-			log.Infof("sigchain transaction consensus: %s, %s will be block proposer for height %d",
-				BytesToHexString(sigChainTxnHash.ToArrayReverse()), BytesToHexString(pbk), votingHeight)
 		case voting.BlockVote:
 			if block, ok := content.(*ledger.Block); ok {
 				err = ledger.DefaultLedger.Blockchain.AddBlock(block)
@@ -246,28 +229,17 @@ func (ps *ProposerService) ProduceNewBlock() {
 }
 
 func (ps *ProposerService) IsBlockProposer() bool {
-	var err error
-	var proposer []byte
 	localPublicKey, err := ps.account.PublicKey.EncodePoint(true)
 	if err != nil {
 		return false
 	}
 	current := ps.CurrentVoting(voting.BlockVote)
 	votingHeight := current.GetVotingHeight()
-	if v, ok := ps.blockProposer[votingHeight]; ok {
-		proposer = v
-	} else {
-		if len(config.Parameters.GenesisBlockProposer) < 1 {
-			log.Warn("no GenesisBlockProposer configured")
-			return false
-		}
-		proposer, err = HexStringToBytes(config.Parameters.GenesisBlockProposer[0])
-		if err != nil || len(proposer) != crypto.COMPRESSEDLEN {
-			log.Error("invalid GenesisBlockProposer configured")
-			return false
-		}
+	proposerInfo, err := ps.proposerCache.Get(votingHeight)
+	if err != nil {
+		return false
 	}
-	if !IsEqualBytes(localPublicKey, proposer) {
+	if !IsEqualBytes(localPublicKey, proposerInfo.publicKey) {
 		return false
 	}
 
@@ -346,18 +318,8 @@ func (ps *ProposerService) ChangeProposer() {
 			if err != nil {
 				log.Error("get block error when change proposer: ", err)
 			}
-			signer, err := block.GetSigner()
-			if err != nil {
-				log.Error("get block signer error when change proposer: ", err)
-			}
-
 			nextBlockHeight := ledger.DefaultLedger.Store.GetHeight() + 1
-			ps.Lock()
-			ps.blockProposer[nextBlockHeight] = signer
-			ps.Unlock()
-
-			log.Warnf("use proposer of block height %d which public key is %s to propose block %d",
-				height, BytesToHexString(signer), nextBlockHeight)
+			ps.proposerCache.Add(nextBlockHeight, block)
 			ps.timer.Stop()
 			ps.timer.Reset(0)
 			ps.proposerChangeTimer.Reset(ProposerChangeTime)
