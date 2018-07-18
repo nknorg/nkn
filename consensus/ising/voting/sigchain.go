@@ -10,6 +10,11 @@ import (
 	"github.com/nknorg/nkn/por"
 )
 
+const (
+	// When current block height is n, the signature chain for height n+VotedSigChainHeightIncrement is being voted.
+	VotedSigChainHeightIncrement = 3
+)
+
 type SigChainVoting struct {
 	sync.RWMutex
 	pstate         map[Uint256]*State            // consensus state for proposer
@@ -95,7 +100,7 @@ func (scv *SigChainVoting) SetVotingHeight(height uint32) {
 }
 
 func (scv *SigChainVoting) GetVotingHeight() uint32 {
-	return ledger.DefaultLedger.Store.GetHeight() + 3
+	return ledger.DefaultLedger.Store.GetHeight() + VotedSigChainHeightIncrement
 }
 
 func (scv *SigChainVoting) SetConfirmingHash(hash Uint256) {
