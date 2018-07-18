@@ -173,9 +173,7 @@ Config the same bootstrap node address and public key to each
   "SeedList": [
     "127.0.0.1:30003"
   ],
-  "GenesisBlockProposer": [
-    "03d45f701e7e330e1fd1c7cce09ffb95f7b1870e5c429ad8e8c950ddb879093f52"
-  ]
+  "GenesisBlockProposer": "03d45f701e7e330e1fd1c7cce09ffb95f7b1870e5c429ad8e8c950ddb879093f52"
 }
 ```
 

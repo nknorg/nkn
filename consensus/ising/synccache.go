@@ -11,9 +11,10 @@ import (
 )
 
 type BlockInfo struct {
-	block      *ledger.Block // cached block
-	voterCount int           // voter count when receive block
-	votes      int           // votes count
+	block       *ledger.Block // cached block
+	receiveTime int64         // time when receive block
+	voterCount  int           // voter count when receive block
+	votes       int           // votes count
 }
 
 // BlockWithVotes describes cached block with votes got from neighbors.
@@ -63,7 +64,7 @@ func (sc *SyncCache) CachedBlockHeight() int {
 }
 
 // GetBlockFromSyncCache returns cached block by height.
-func (sc *SyncCache) GetBlockFromSyncCache(height uint32) (*ledger.Block, error) {
+func (sc *SyncCache) GetBlockFromSyncCache(height uint32) (*ledger.VBlock, error) {
 	err := sc.timeLock.WaitForTimeout(height)
 	if err != nil {
 		return nil, err
@@ -80,7 +81,12 @@ func (sc *SyncCache) GetBlockFromSyncCache(height uint32) (*ledger.Block, error)
 		return nil, fmt.Errorf("ambiguous block for height: %d", height)
 	}
 
-	return sc.blockCache[sc.startHeight].bestBlock.block, nil
+	vBlock := &ledger.VBlock{
+		Block:       sc.blockCache[sc.startHeight].bestBlock.block,
+		ReceiveTime: sc.blockCache[sc.startHeight].bestBlock.receiveTime,
+	}
+
+	return vBlock, nil
 }
 
 // AddBlockToSyncCache caches received block and the voter count when receive block.
@@ -111,8 +117,9 @@ func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block, totalVoterCount in
 	}
 
 	blockInfo := &BlockInfo{
-		block:      block,
-		voterCount: totalVoterCount,
+		block:       block,
+		receiveTime: time.Now().Unix(),
+		voterCount:  totalVoterCount,
 	}
 	// analyse cached votes when add new block
 	if voteInfo, ok := sc.voteCache[blockHeight]; ok {

@@ -118,7 +118,7 @@ func nknMain(c *cli.Context) error {
 	// initialize ledger
 	err = InitLedger(account)
 	if err != nil {
-		return errors.New("ledger initialization error")
+		return fmt.Errorf("ledger initialization error: %v", err)
 	}
 	// if InitLedger return err, ledger.DefaultLedger is uninitialized.
 	defer ledger.DefaultLedger.Store.Close()
@@ -154,7 +154,7 @@ func nknMain(c *cli.Context) error {
 
 	go func() {
 		for {
-			time.Sleep(ising.ConsensusTime)
+			time.Sleep(config.ConsensusTime)
 			if log.CheckIfNeedNewFile() {
 				log.ClosePrintLog()
 				log.Init(log.Path, os.Stdout)

@@ -14,17 +14,16 @@ import (
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
 
 const (
 	TxnAmountToBePackaged      = 1024
-	ConsensusTime              = 10 * time.Second
 	WaitingForFloodingFinished = time.Second * 1
 	WaitingForVotingFinished   = time.Second * 5
 	TimeoutTolerance           = time.Second * 2
-	ProposerChangeTime         = time.Minute
 )
 
 type ProposerService struct {
@@ -52,9 +51,9 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 	txnCollector := transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged)
 
 	service := &ProposerService{
-		timer:               time.NewTimer(ConsensusTime),
-		timeout:             time.NewTimer(ConsensusTime + TimeoutTolerance),
-		proposerChangeTimer: time.NewTimer(ProposerChangeTime),
+		timer:               time.NewTimer(config.ConsensusTime),
+		timeout:             time.NewTimer(config.ConsensusTime + TimeoutTolerance),
+		proposerChangeTimer: time.NewTimer(config.ProposerChangeTime),
 		proposerChangeIndex: 0,
 		account:             account,
 		localNode:           node,
@@ -202,7 +201,7 @@ func (ps *ProposerService) ProduceNewBlock() {
 	current := ps.CurrentVoting(voting.BlockVote)
 	votingPool := current.GetVotingPool()
 	votingHeight := current.GetVotingHeight()
-	proposerInfo, err := ps.proposerCache.Get(votingHeight)
+	proposerInfo, err := ps.proposerCache.Get(votingHeight + 1)
 	if err != nil {
 		log.Error("get proposer info for producing new block error: ", err)
 		return
@@ -260,7 +259,7 @@ func (ps *ProposerService) ProposerRoutine() {
 				for _, v := range ps.voting {
 					go ps.ConsensusRoutine(v.VotingType())
 				}
-				ps.timer.Reset(ConsensusTime)
+				ps.timer.Reset(config.ConsensusTime)
 			}
 		}
 	}
@@ -299,13 +298,14 @@ func (ps *ProposerService) ProbeRoutine() {
 
 func (ps *ProposerService) BlockPersistCompleted(v interface{}) {
 	if block, ok := v.(*ledger.Block); ok {
+		// record time when persist block
+		ledger.DefaultLedger.Blockchain.AddBlockTime(block.Hash(), time.Now().Unix())
 		ps.txnCollector.Cleanup(block.Transactions)
 		// reset index when block persisted
 		ps.proposerChangeIndex = 0
 		// reset timer when block persisted
 		ps.proposerChangeTimer.Stop()
-		t := block.Header.Timestamp + int64(ProposerChangeTime) - time.Now().Unix()
-		ps.proposerChangeTimer.Reset(time.Duration(t))
+		ps.proposerChangeTimer.Reset(config.ProposerChangeTime)
 	}
 }
 
@@ -326,7 +326,7 @@ func (ps *ProposerService) ChangeProposer() {
 			ps.proposerCache.Add(nextBlockHeight, block)
 			ps.timer.Stop()
 			ps.timer.Reset(0)
-			ps.proposerChangeTimer.Reset(ProposerChangeTime)
+			ps.proposerChangeTimer.Reset(config.ProposerChangeTime)
 			if height > 1 {
 				ps.proposerChangeIndex++
 			}
@@ -336,18 +336,18 @@ func (ps *ProposerService) ChangeProposer() {
 
 func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 	for i := ps.syncCache.startHeight; i < ps.syncCache.nextHeight; i++ {
-		block, err := ps.syncCache.GetBlockFromSyncCache(i)
+		vBlock, err := ps.syncCache.GetBlockFromSyncCache(i)
 		if err != nil {
 			//TODO: if found ambiguous block then re-sync block
 			log.Error("persist cached block error: ", err)
 			return
 		}
-		err = ledger.BlockFullyCheck(block, ledger.DefaultLedger)
+		err = ledger.BlockCheck(vBlock, ledger.DefaultLedger)
 		if err != nil {
 			log.Error("verifying cached block error: ", err)
 			return
 		}
-		err = ledger.DefaultLedger.Blockchain.AddBlock(block)
+		err = ledger.DefaultLedger.Blockchain.AddBlock(vBlock.Block)
 		if err != nil {
 			log.Error("saving cached block error: ", err)
 			return
@@ -506,7 +506,6 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 			" hash: %s\n", votingHeight, height, BytesToHexString(blockHash.ToArrayReverse()))
 		return
 	}
-	// TODO check if the sender is PoR node
 	err := current.AddToCache(bfMsg.block)
 	if err != nil {
 		log.Error("add received block to local cache error")
@@ -518,7 +517,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 			go ps.ConsensusRoutine(v.VotingType())
 		}
 		// trigger block proposer changed when tolerance time not receive block
-		ps.timeout.Reset(ConsensusTime + TimeoutTolerance)
+		ps.timeout.Reset(config.ConsensusTime + TimeoutTolerance)
 	}
 }
 
@@ -671,11 +670,11 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 		if err != nil {
 			return
 		}
-		block, err := ps.syncCache.GetBlockFromSyncCache(height)
+		vBlock, err := ps.syncCache.GetBlockFromSyncCache(height)
 		if err != nil {
 			return
 		}
-		ps.localNode.SetSyncStopHash(block.Header.PrevBlockHash, block.Header.Height-1)
+		ps.localNode.SetSyncStopHash(vBlock.Block.Header.PrevBlockHash, vBlock.Block.Header.Height-1)
 		return
 	}
 
