@@ -203,7 +203,8 @@ git commit -s
 
 ## Community
 
+* [Discord](https://discord.gg/c7mTynX)
 * [Telegram](https://t.me/nknorg)
 * [Reddit](https://www.reddit.com/r/nknblockchain/)
 * [Twitter](https://twitter.com/NKN_ORG)
-* [Facebook](https://www.facebook.com/nkn.org)
+
