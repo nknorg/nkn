@@ -5,8 +5,7 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/ledger"
+	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/util/log"
@@ -22,6 +21,12 @@ const (
 	//  1 (for fully propagate)
 	HeightThreshold = 5
 )
+
+type PorStore interface {
+	GetHeightByBlockHash(hash Uint256) (uint32, error)
+}
+
+var Store PorStore
 
 type PorPackages []*PorPackage
 
@@ -68,12 +73,12 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 		return nil, err
 	}
 
-	blockHash, err := common.Uint256ParseFromBytes(sigChain.BlockHash)
+	blockHash, err := Uint256ParseFromBytes(sigChain.BlockHash)
 	if err != nil {
 		log.Error("Parse block hash uint256 from bytes error:", err)
 		return nil, err
 	}
-	blockHeader, err := ledger.DefaultLedger.Store.GetHeader(blockHash)
+	height, err := Store.GetHeightByBlockHash(blockHash)
 	if err != nil {
 		log.Error("Get block header error:", err)
 		return nil, err
@@ -91,7 +96,7 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 		return nil, err
 	}
 	pp := &PorPackage{
-		VoteForHeight: blockHeader.Height + HeightThreshold,
+		VoteForHeight: height + HeightThreshold,
 		Owner:         owner,
 		BlockHash:     sigChain.BlockHash,
 		TxHash:        txHash[:],
@@ -106,7 +111,7 @@ func (pp *PorPackage) CompareTo(o *PorPackage) int {
 }
 
 func (pp *PorPackage) DumpInfo() {
-	log.Info("owner: ", common.BytesToHexString(pp.Owner))
+	log.Info("owner: ", BytesToHexString(pp.Owner))
 	log.Info("txHash: ", pp.TxHash)
 	log.Info("sigHash: ", pp.SigHash)
 	sc := pp.SigChain

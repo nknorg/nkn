@@ -1202,6 +1202,15 @@ func (cs *ChainStore) GetHeight() uint32 {
 	return cs.currentBlockHeight
 }
 
+func (cs *ChainStore) GetHeightByBlockHash(hash Uint256) (uint32, error) {
+	block, err := cs.GetBlock(hash)
+	if err != nil {
+		return 0, err
+	}
+
+	return block.Header.Height, nil
+}
+
 func (cs *ChainStore) GetAccount(programHash Uint160) (*account.AccountState, error) {
 	accountPrefix := []byte{byte(ST_Account)}
 	state, err := cs.st.Get(append(accountPrefix, programHash.ToArray()...))

@@ -14,7 +14,7 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
-type TxnHistory interface {
+type TxnStore interface {
 	GetTransaction(hash Uint256) (*Transaction, error)
 	GetQuantityIssued(AssetId Uint256) (Fixed64, error)
 	IsDoubleSpend(tx *Transaction) bool
@@ -90,7 +90,7 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) error {
 			results := txn.GetMergedAssetIDValueFromOutputs()
 			for k, _ := range results {
 				//Get the Asset amount when RegisterAsseted.
-				trx, err := TxStore.GetTransaction(k)
+				trx, err := Store.GetTransaction(k)
 				if trx.TxType != RegisterAsset {
 					return errors.New("[VerifyTransaction], TxType is illegal.")
 				}
@@ -101,7 +101,7 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) error {
 				if AssetReg.Amount < Fixed64(0) {
 					continue
 				} else {
-					quantity_issued, err = TxStore.GetQuantityIssued(k)
+					quantity_issued, err = Store.GetQuantityIssued(k)
 					if err != nil {
 						return errors.New("[VerifyTransaction], GetQuantityIssued failed.")
 					}
@@ -141,7 +141,7 @@ func VerifyTransactionWithLedger(Tx *Transaction) ErrCode {
 		log.Info("[VerifyTransactionWithLedger] IsDoubleSpend check faild.")
 		return ErrDoubleSpend
 	}
-	if exist := TxStore.IsTxHashDuplicate(Tx.Hash()); exist {
+	if exist := Store.IsTxHashDuplicate(Tx.Hash()); exist {
 		log.Info("[VerifyTransactionWithLedger] duplicate transaction check faild.")
 		return ErrTxHashDuplicate
 	}
@@ -179,7 +179,7 @@ func CheckDuplicateUtxoInBlock(tx *Transaction, txPoolInputs []string) error {
 }
 
 func IsDoubleSpend(tx *Transaction) bool {
-	return TxStore.IsDoubleSpend(tx)
+	return Store.IsDoubleSpend(tx)
 }
 
 func CheckAssetPrecision(Tx *Transaction) error {
@@ -192,7 +192,7 @@ func CheckAssetPrecision(Tx *Transaction) error {
 		assetOutputs[v.AssetID] = append(assetOutputs[v.AssetID], v)
 	}
 	for k, outputs := range assetOutputs {
-		asset, err := TxStore.GetAsset(k)
+		asset, err := Store.GetAsset(k)
 		if err != nil {
 			return errors.New("The asset not exist in local blockchain.")
 		}
@@ -270,7 +270,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 	case *payload.BookKeeper:
 		//Todo: validate bookKeeper Cert
 		_ = pld.Cert
-		bookKeepers, _, _ := TxStore.GetBookKeeperList()
+		bookKeepers, _, _ := Store.GetBookKeeperList()
 		r := checkIssuerInBookkeeperList(pld.Issuer, bookKeepers)
 		if r == false {
 			return errors.New("The issuer isn't bookekeeper, can't add other in bookkeepers list.")
@@ -290,7 +290,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 	case *payload.Prepaid:
 		var inputAmount, outputAmount Fixed64
 		for _, input := range txn.Inputs {
-			reftxn, err := TxStore.GetTransaction(input.ReferTxID)
+			reftxn, err := Store.GetTransaction(input.ReferTxID)
 			if err != nil {
 				return err
 			}
@@ -308,7 +308,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 		for _, output := range txn.Outputs {
 			outputAmount += output.Value
 		}
-		prepaidAmount, _, err := TxStore.GetPrepaidInfo(pld.ProgramHash)
+		prepaidAmount, _, err := Store.GetPrepaidInfo(pld.ProgramHash)
 		if err != nil {
 			return err
 		}

@@ -11,7 +11,6 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -440,20 +439,6 @@ func (sc *SigChain) SignatureHash() ([]byte, error) {
 	}
 	sigHash := sha256.Sum256(signature)
 	return sigHash[:], nil
-}
-
-func (sc *SigChain) GetBlockHeight() (*uint32, error) {
-	blockHash, err := common.Uint256ParseFromBytes(sc.BlockHash)
-	if err != nil {
-		log.Error("Parse block hash uint256 from bytes error:", err)
-		return nil, err
-	}
-	blockHeader, err := ledger.DefaultLedger.Store.GetHeader(blockHash)
-	if err != nil {
-		log.Error("Get block header error:", err)
-		return nil, err
-	}
-	return &blockHeader.Height, nil
 }
 
 func (sc *SigChain) GetOwner() ([]byte, error) {

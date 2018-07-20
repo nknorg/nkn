@@ -197,7 +197,7 @@ func (tp *TxnPool) summaryAssetIssueAmount(txn *Transaction) bool {
 
 		//Check weather occur exceed the amount when RegisterAsseted
 		//1. Get the Asset amount when RegisterAsseted.
-		txn, err := TxStore.GetTransaction(k)
+		txn, err := Store.GetTransaction(k)
 		if err != nil {
 			return false
 		}
@@ -211,7 +211,7 @@ func (tp *TxnPool) summaryAssetIssueAmount(txn *Transaction) bool {
 		if AssetReg.Amount < common.Fixed64(0) {
 			continue
 		} else {
-			quantity_issued, err = TxStore.GetQuantityIssued(k)
+			quantity_issued, err = Store.GetQuantityIssued(k)
 			if err != nil {
 				return false
 			}
