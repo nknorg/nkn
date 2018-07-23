@@ -55,7 +55,7 @@ type Payload interface {
 //Transaction is used for carry information or action to Ledger
 //validated transaction will be added to block and updates state correspondingly
 
-var TxStore TxnHistory
+var Store TxnStore
 
 type Transaction struct {
 	TxType         TransactionType
@@ -306,7 +306,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetTransactionResults failed.")
 		}
 		for k := range result {
-			tx, err := TxStore.GetTransaction(k)
+			tx, err := Store.GetTransaction(k)
 			if err != nil {
 				return nil, NewDetailErr(err, ErrNoCode, fmt.Sprintf("[Transaction], GetTransaction failed With AssetID:=%x", k))
 			}
@@ -412,7 +412,7 @@ func (tx *Transaction) GetReference() (map[*TxnInput]*TxnOutput, error) {
 	reference := make(map[*TxnInput]*TxnOutput)
 	// Key index，v UTXOInput
 	for _, utxo := range tx.Inputs {
-		transaction, err := TxStore.GetTransaction(utxo.ReferTxID)
+		transaction, err := Store.GetTransaction(utxo.ReferTxID)
 		if err != nil {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetReference failed.")
 		}

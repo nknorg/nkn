@@ -6,7 +6,6 @@ import (
 	. "github.com/nknorg/nkn/common"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -29,7 +28,7 @@ func NewBlockchain(height uint32, asset Uint256) *Blockchain {
 func NewBlockchainWithGenesisBlock(store ILedgerStore, defaultBookKeeper []*crypto.PubKey) (*Blockchain, error) {
 	genesisBlock, err := GenesisBlockInit()
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], NewBlockchainWithGenesisBlock failed.")
+		return nil, err
 	}
 	genesisBlock.RebuildMerkleRoot()
 	hashx := genesisBlock.Hash()
@@ -37,7 +36,7 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore, defaultBookKeeper []*cryp
 
 	height, err := store.InitLedgerStoreWithGenesisBlock(genesisBlock, defaultBookKeeper)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], InitLevelDBStoreWithGenesisBlock failed.")
+		return nil, err
 	}
 	blockchain := NewBlockchain(height, genesisBlock.Transactions[0].Hash())
 
@@ -59,7 +58,7 @@ func (bc *Blockchain) AddBlock(block *Block) error {
 func (bc *Blockchain) GetHeader(hash Uint256) (*Header, error) {
 	header, err := DefaultLedger.Store.GetHeader(hash)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], GetHeader failed.")
+		return nil, err
 	}
 	return header, nil
 }
