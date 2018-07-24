@@ -42,7 +42,25 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 * Verifiable topology and routes. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Relay-Path-Validation)
 * Next generation address scheme with public key embedded. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-NKN-Address-Scheme)
 
-## Building
+## Deployment
+
+**Note: this repository is in the early development stage and may not
+have all functions working properly. It should be used only for testing
+now.**
+
+**Q:** I want to run this node, but have no idea about programming or temrinal.
+What should I do?
+
+**A:** Easiest for you will be to follow [docker instructions](#building-using-docker) below. Docker will take care of quite a lot of things for you.
+If you are asked to run or issue command (usually formatted like this:)
+```shell
+cd change/active/directory/to/this/one
+```
+open a terminal (or cmd on windows - start -> run/search -> cmd.exe) and write the command there.
+
+
+### Building from source
+
 
 To build from source, you need a properly configured Go environment (Go 1.8+,
 $GOROOT and $GOPATH set up, see [Go Official Installation
@@ -79,13 +97,53 @@ After building is successful, you should see two executables:
 * `nknd`: the nkn node program
 * `nknc`: command line tool for nkn node control
 
-## Deployment
 
-**Note: this repository is in the early development stage and may not
-have all functions working properly. It should be used only for testing
-now.**
+### Building using docker
 
-Create several directories to save exectuable files `nknd` `nknc` and
+*Prerequirement: Have working docker software installed. For help with that
+visit [official docker docs](https://docs.docker.com/install/#supported-platforms)*
+
+
+Build and tag Docker image
+
+```shell
+$ docker build -t nkn .
+```
+
+When starting the container, a directory with configuration files containing `config.json` and
+`wallet.dat` (if exists) should be mapped to `/nkn` directory in the container.
+This directory will also be used for wallet, block data and logs storage.
+
+Before you have a look at [configuration](#configuration), keep in mind that instead of running `./nknc` and `./nknd`
+(as shown in examples) you want to run in docker.
+Assuming the configuration directory is the current directory:
+
+Create a wallet:
+
+```shell
+$ docker run -v $PWD:/nkn -it nkn nknc wallet -c
+```
+
+Start bootstrap node by creating a network
+
+```shell
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -c
+```
+
+Start other nodes by joining the network
+
+```shell
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
+```
+
+*NOTE:* The `-it` argument mean `Run interactively` and `Create a pseudo-tty`. Basically it means, 
+that it really wants to take the input from you. For using in scripts and running in the background
+(for example a startup job) you should omit the `-it` argument
+
+
+### Configuration
+
+Create several directories (one per node you want to run) to save exectuable files `nknd` `nknc` (executables only applies for non-docker build) and
 config file `config.json`. Create new wallet in each directory
 
 ``` shell
@@ -146,36 +204,6 @@ When the network contains enough nodes (more than the length of successor list
 plus one, by default 9+), stop the node that created the network in order for
 the relay service to work properly. Nodes joining the network later should use a
 live node as seed.
-
-## Docker
-
-Build and tag Docker image
-
-```shell
-$ docker build -t nkn .
-```
-
-When starting the container, a local directory containing `config.json` and
-`wallet.dat` (if exists) should be mapped to `/nkn` directory in the container.
-This local directory will also be used for wallet, block data and logs storage.
-Assuming the local directory is the current directory, creating a wallet can be
-done by
-
-```shell
-$ docker run -v $PWD:/nkn -it nkn nknc wallet -c
-```
-
-Start bootstrap node by creating a network
-
-```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -c
-```
-
-Start other nodes by joining the network
-
-```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
-```
 
 ## Contributing
 
