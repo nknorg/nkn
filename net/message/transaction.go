@@ -29,11 +29,13 @@ type trn struct {
 
 func (msg trn) Handle(node Noder) error {
 	tx := &msg.txn
-	if !node.LocalNode().ExistedID(tx.Hash()) && node.LocalNode().GetSyncState() == PersistFinished {
+	if !node.LocalNode().ExistHash(tx.Hash()) && node.LocalNode().GetSyncState() == PersistFinished {
 		if errCode := node.LocalNode().AppendTxnPool(&(msg.txn)); errCode != ErrNoError {
 			return errors.New("[message] VerifyTransaction failed when AppendTxnPool.")
 		}
 		node.LocalNode().IncRxTxnCnt()
+		node.LocalNode().AddHash(tx.Hash())
+		node.LocalNode().BroadcastTransaction(node, tx)
 	}
 
 	return nil

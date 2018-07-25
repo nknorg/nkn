@@ -69,7 +69,8 @@ type Noder interface {
 	GetTxnByCount(int) map[Uint256]*transaction.Transaction
 	GetTxnPool() *pool.TxnPool
 	AppendTxnPool(*transaction.Transaction) ErrCode
-	ExistedID(id Uint256) bool
+	AddHash(hash Uint256)
+	ExistHash(hash Uint256) bool
 	ReqNeighborList()
 	DumpInfo()
 	UpdateInfo(t time.Time, version uint32, services uint64, port uint16, nonce uint64, relay uint8, height uint32)
@@ -86,6 +87,7 @@ type Noder interface {
 	GetRxTxnCnt() uint64
 
 	Xmit(interface{}) error
+	BroadcastTransaction(from Noder, txn *transaction.Transaction) error
 	GetBookKeeperAddr() *crypto.PubKey
 	GetBookKeepersAddrs() ([]*crypto.PubKey, uint64)
 	SetBookKeeperAddr(pk *crypto.PubKey)

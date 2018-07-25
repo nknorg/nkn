@@ -73,7 +73,7 @@ type node struct {
 	nbrNodes                                     // neighbor nodes
 	eventQueue                                   // event queue
 	*pool.TxnPool                                // transaction pool of local node
-	idCache                                      // entity ID cache
+	*hashCache                                   // entity hash cache
 	ConnectingNodes                              // connecting nodes cache
 	RetryConnAddrs                               // retry connection cache
 }
@@ -195,6 +195,7 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n.syncStopHash = Uint256{}
 	n.quit = make(chan struct{}, 1)
 	n.eventQueue.init()
+	n.hashCache = NewHashCache(HashCacheCap)
 	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnect)
 	n.ring = ring
 	go n.initConnection()
@@ -333,6 +334,7 @@ func (node *node) Xmit(message interface{}) error {
 			return err
 		}
 		node.txnCnt++
+		node.AddHash(txn.Hash())
 	case *ledger.Block:
 		block := message.(*ledger.Block)
 		buffer, err = NewBlock(block)
@@ -371,6 +373,22 @@ func (node *node) Xmit(message interface{}) error {
 	}
 
 	node.nbrNodes.Broadcast(buffer)
+
+	return nil
+}
+
+func (node *node) BroadcastTransaction(from Noder, txn *transaction.Transaction) error {
+	buffer, err := NewTxn(txn)
+	if err != nil {
+		log.Error("Error New Tx message: ", err)
+		return err
+	}
+	node.txnCnt++
+	for _, n := range node.GetSyncFinishedNeighbors() {
+		if n.GetRelay() && n.GetID() != from.GetID() {
+			n.Tx(buffer)
+		}
+	}
 
 	return nil
 }
