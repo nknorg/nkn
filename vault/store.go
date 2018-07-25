@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"sync"
 
 	. "github.com/nknorg/nkn/common"
@@ -110,7 +111,11 @@ func (s *Store) write(data []byte) error {
 		err = permErr
 	}
 	if err == nil {
-		err = exec.Command("mv", "-f", f.Name(), name).Run()
+		if runtime.GOOS == "windows" {
+			err = exec.Command("cmd", "/c", "move", "/Y", f.Name(), name).Run()
+		} else {
+			err = exec.Command("mv", "-f", f.Name(), name).Run()
+		}
 	}
 	if err != nil {
 		os.Remove(f.Name())
