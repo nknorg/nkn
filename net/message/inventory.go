@@ -104,7 +104,7 @@ func (msg Inv) Handle(node Noder) error {
 	case TRANSACTION:
 		// TODO check the ID queue
 		id.Deserialize(bytes.NewReader(msg.P.Blk[:32]))
-		if !node.ExistedID(id) {
+		if !node.ExistHash(id) {
 			reqTxnData(node, id)
 		}
 	case BLOCK:
