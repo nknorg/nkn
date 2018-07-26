@@ -9,8 +9,8 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/nknorg/nkn/crypto/util"
 	"encoding/hex"
+	"github.com/nknorg/nkn/crypto/util"
 )
 
 var initonce sync.Once
@@ -20,7 +20,7 @@ type curve25519Curve struct {
 }
 
 var (
-	curve25519            curve25519Curve
+	curve25519 curve25519Curve
 )
 
 func initCurve25519() {
@@ -93,4 +93,3 @@ func Verify(algSet *util.CryptoAlgSet, X *big.Int, Y *big.Int, data []byte, r, s
 		return errors.New("[Validation], Verify failed.")
 	}
 }
-

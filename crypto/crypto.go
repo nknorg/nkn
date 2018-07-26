@@ -9,12 +9,12 @@ import (
 
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto/curve25519"
-	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/crypto/p256r1"
+	"github.com/nknorg/nkn/crypto/util"
 )
 
 const (
-	P256R1 = 0
+	P256R1     = 0
 	CURVE25519 = 1
 )
 
