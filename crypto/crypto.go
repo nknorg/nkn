@@ -8,15 +8,17 @@ import (
 	"math/big"
 
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/crypto/p256r1"
+	"github.com/nknorg/nkn/crypto/curve25519"
 	"github.com/nknorg/nkn/crypto/util"
+	"github.com/nknorg/nkn/crypto/p256r1"
 )
 
 const (
 	P256R1 = 0
+	CURVE25519 = 1
 )
 
-//It can be P256R1
+//It can be P256R1 or CURVE25519
 var AlgChoice int
 
 var algSet util.CryptoAlgSet
@@ -25,15 +27,16 @@ type PubKey struct {
 	X, Y *big.Int
 }
 
-func init() {
-	AlgChoice = 0
-}
-
 func SetAlg(algChoice string) {
-	// TODO add switch statements
-	AlgChoice = P256R1
-	p256r1.Init(&algSet)
-	return
+	switch algChoice {
+	case "P256R1":
+		AlgChoice = P256R1
+		p256r1.Init(&algSet)
+	case "CURVE25519":
+	default:
+		AlgChoice = CURVE25519
+		curve25519.Init(&algSet)
+	}
 }
 
 func GenKeyPair() ([]byte, PubKey, error) {
@@ -43,7 +46,12 @@ func GenKeyPair() ([]byte, PubKey, error) {
 	var Y *big.Int
 	var err error
 
-	privateD, X, Y, err = p256r1.GenKeyPair(&algSet)
+	switch AlgChoice {
+	case P256R1:
+		privateD, X, Y, err = p256r1.GenKeyPair(&algSet)
+	case CURVE25519:
+		privateD, X, Y, err = curve25519.GenKeyPair(&algSet)
+	}
 
 	if nil != err {
 		return nil, *mPubKey, err
@@ -59,7 +67,12 @@ func Sign(privateKey []byte, data []byte) ([]byte, error) {
 	var s *big.Int
 	var err error
 
-	r, s, err = p256r1.Sign(&algSet, privateKey, data)
+	switch AlgChoice {
+	case P256R1:
+		r, s, err = p256r1.Sign(&algSet, privateKey, data)
+	case CURVE25519:
+		r, s, err = curve25519.Sign(&algSet, privateKey, data)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +96,15 @@ func Verify(publicKey PubKey, data []byte, signature []byte) error {
 	r := new(big.Int).SetBytes(signature[:len/2])
 	s := new(big.Int).SetBytes(signature[len/2:])
 
-	return p256r1.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
+	var err error
+	switch AlgChoice {
+	case P256R1:
+		err = p256r1.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
+	case CURVE25519:
+	default:
+		err = curve25519.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
+	}
+	return err
 }
 
 func (e *PubKey) Serialize(w io.Writer) error {
