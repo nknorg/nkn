@@ -1,35 +1,37 @@
 package ledger
 
 import (
+	"errors"
 	"sync"
 
 	. "github.com/nknorg/nkn/common"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/util/log"
 )
 
 type Blockchain struct {
-	BlockHeight uint32
-	AssetID     Uint256
-	BCEvents    *events.Event
-	mutex       sync.Mutex
+	BlockHeight      uint32
+	AssetID          Uint256
+	BlockPersistTime map[Uint256]int64
+	BCEvents         *events.Event
+	mutex            sync.Mutex
 }
 
 func NewBlockchain(height uint32, asset Uint256) *Blockchain {
 	return &Blockchain{
-		BlockHeight: height,
-		AssetID:     asset,
-		BCEvents:    events.NewEvent(),
+		BlockHeight:      height,
+		AssetID:          asset,
+		BlockPersistTime: make(map[Uint256]int64),
+		BCEvents:         events.NewEvent(),
 	}
 }
 
 func NewBlockchainWithGenesisBlock(store ILedgerStore, defaultBookKeeper []*crypto.PubKey) (*Blockchain, error) {
 	genesisBlock, err := GenesisBlockInit()
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], NewBlockchainWithGenesisBlock failed.")
+		return nil, err
 	}
 	genesisBlock.RebuildMerkleRoot()
 	hashx := genesisBlock.Hash()
@@ -37,7 +39,7 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore, defaultBookKeeper []*cryp
 
 	height, err := store.InitLedgerStoreWithGenesisBlock(genesisBlock, defaultBookKeeper)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], InitLevelDBStoreWithGenesisBlock failed.")
+		return nil, err
 	}
 	blockchain := NewBlockchain(height, genesisBlock.Transactions[0].Hash())
 
@@ -59,7 +61,7 @@ func (bc *Blockchain) AddBlock(block *Block) error {
 func (bc *Blockchain) GetHeader(hash Uint256) (*Header, error) {
 	header, err := DefaultLedger.Store.GetHeader(hash)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Blockchain], GetHeader failed.")
+		return nil, err
 	}
 	return header, nil
 }
@@ -67,7 +69,7 @@ func (bc *Blockchain) GetHeader(hash Uint256) (*Header, error) {
 func (bc *Blockchain) SaveBlock(block *Block) error {
 	err := DefaultLedger.Store.SaveBlock(block, DefaultLedger)
 	if err != nil {
-		log.Warn("Save block failure , ", err)
+		log.Warn("Save Block failure , ", err)
 		return err
 	}
 
@@ -99,4 +101,31 @@ func (bc *Blockchain) GetBookKeepers() []*crypto.PubKey {
 
 func (bc *Blockchain) CurrentBlockHash() Uint256 {
 	return DefaultLedger.Store.GetCurrentBlockHash()
+}
+
+func (bc *Blockchain) AddBlockTime(hash Uint256, time int64) {
+	bc.mutex.Lock()
+	defer bc.mutex.Unlock()
+
+	bc.BlockPersistTime[hash] = time
+}
+
+func (bc *Blockchain) GetBlockTime(hash Uint256) (int64, error) {
+	bc.mutex.Lock()
+	defer bc.mutex.Unlock()
+
+	// use previous timestamp as block persisted time when cache is empty
+	if len(bc.BlockPersistTime) == 0 {
+		block, err := DefaultLedger.Store.GetBlock(hash)
+		if err != nil {
+			return 0, err
+		}
+		return block.Header.Timestamp, nil
+	}
+
+	if time, ok := bc.BlockPersistTime[hash]; ok {
+		return time, nil
+	}
+
+	return 0, errors.New("no receive time for block")
 }

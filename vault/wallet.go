@@ -14,7 +14,6 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/contract"
 	ct "github.com/nknorg/nkn/core/contract"
-	"github.com/nknorg/nkn/core/ledger"
 	sig "github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
@@ -29,6 +28,12 @@ const (
 	WalletFileName        = "wallet.dat"
 )
 
+type VaultStore interface {
+	GetUnspentsFromProgramHash(programHash Uint160) (map[Uint256][]*transaction.UTXOUnspent, error)
+}
+
+var Store VaultStore
+
 type Wallet interface {
 	Sign(context *ct.ContractContext) error
 	GetAccount(pubKey *crypto.PubKey) (*Account, error)
@@ -42,7 +47,7 @@ type WalletImpl struct {
 	masterKey []byte
 	account   *Account
 	contract  *ct.Contract
-	*Store
+	*WalletStore
 }
 
 func NewWallet(path string, password []byte, needAccount bool) (*WalletImpl, error) {
@@ -78,10 +83,10 @@ func NewWallet(path string, password []byte, needAccount bool) (*WalletImpl, err
 	}
 
 	w := &WalletImpl{
-		path:      path,
-		iv:        iv,
-		masterKey: masterKey,
-		Store:     store,
+		path:        path,
+		iv:          iv,
+		masterKey:   masterKey,
+		WalletStore: store,
 	}
 	// generate default account
 	if needAccount {
@@ -141,12 +146,12 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 	ct.Deserialize(r)
 
 	return &WalletImpl{
-		path:      path,
-		iv:        iv,
-		masterKey: masterKey,
-		account:   account,
-		contract:  ct,
-		Store:     store,
+		path:        path,
+		iv:          iv,
+		masterKey:   masterKey,
+		account:     account,
+		contract:    ct,
+		WalletStore: store,
 	}, nil
 }
 
@@ -294,7 +299,7 @@ func (w *WalletImpl) GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error
 	if err != nil {
 		return nil, err
 	}
-	ret, err := ledger.DefaultLedger.Store.GetUnspentsFromProgramHash(account.ProgramHash)
+	ret, err := Store.GetUnspentsFromProgramHash(account.ProgramHash)
 	if err != nil {
 		return nil, err
 	}

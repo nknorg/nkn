@@ -36,14 +36,14 @@ type WalletData struct {
 	AccountData
 }
 
-type Store struct {
+type WalletStore struct {
 	sync.RWMutex
 
 	Path string
 	Data WalletData
 }
 
-func NewStore(fullPath string) (*Store, error) {
+func NewStore(fullPath string) (*WalletStore, error) {
 	if FileExisted(fullPath) {
 		return nil, errors.New("wallet store exists")
 	}
@@ -59,13 +59,13 @@ func NewStore(fullPath string) (*Store, error) {
 		return nil, err
 	}
 
-	return &Store{
+	return &WalletStore{
 		Path: fullPath,
 		Data: walletData,
 	}, nil
 }
 
-func LoadStore(fullPath string) (*Store, error) {
+func LoadStore(fullPath string) (*WalletStore, error) {
 	if !FileExisted(fullPath) {
 		return nil, errors.New("wallet store doesn't exists")
 	}
@@ -78,20 +78,20 @@ func LoadStore(fullPath string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{
+	return &WalletStore{
 		Path: fullPath,
 		Data: walletData,
 	}, nil
 }
 
-func (s *Store) read() ([]byte, error) {
+func (s *WalletStore) read() ([]byte, error) {
 	s.RLock()
 	defer s.RUnlock()
 
 	return ioutil.ReadFile(s.Path)
 }
 
-func (s *Store) write(data []byte) error {
+func (s *WalletStore) write(data []byte) error {
 	s.Lock()
 	defer s.Unlock()
 
@@ -124,7 +124,7 @@ func (s *Store) write(data []byte) error {
 	return err
 }
 
-func (s *Store) SaveAccountData(programHash []byte, encryptedPrivateKey []byte, contract []byte) error {
+func (s *WalletStore) SaveAccountData(programHash []byte, encryptedPrivateKey []byte, contract []byte) error {
 	oldBlob, err := s.read()
 	if err != nil {
 		return err
@@ -158,7 +158,7 @@ func (s *Store) SaveAccountData(programHash []byte, encryptedPrivateKey []byte, 
 	return nil
 }
 
-func (s *Store) SaveBasicData(version, iv, masterKey, passwordHash []byte) error {
+func (s *WalletStore) SaveBasicData(version, iv, masterKey, passwordHash []byte) error {
 	oldBlob, err := s.read()
 	if err != nil {
 		return err

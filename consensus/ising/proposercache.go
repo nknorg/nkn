@@ -1,8 +1,6 @@
 package ising
 
 import (
-	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -11,7 +9,6 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -79,19 +76,10 @@ func (pc *ProposerCache) Add(height uint32, votingContent voting.VotingContent) 
 func (pc *ProposerCache) Get(height uint32) (*ProposerInfo, error) {
 	pc.RLock()
 	defer pc.RUnlock()
-	// initial blocks are produced byte GenesisBlockProposer
-	if height < InitialBlockHeight {
-		if len(config.Parameters.GenesisBlockProposer) < 1 {
-			err := errors.New("no GenesisBlockProposer configured")
-			log.Warn(err)
-			return nil, err
-		}
-		proposer, err := HexStringToBytes(config.Parameters.GenesisBlockProposer[0])
-		if err != nil || len(proposer) != crypto.COMPRESSEDLEN {
-			err := errors.New("invalid GenesisBlockProposer configured")
-			return nil, err
-		}
 
+	// initial blocks are produced by GenesisBlockProposer
+	if height < InitialBlockHeight {
+		proposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)
 		return &ProposerInfo{
 			publicKey:       proposer,
 			winningHash:     EmptyUint256,
@@ -99,9 +87,39 @@ func (pc *ProposerCache) Get(height uint32) (*ProposerInfo, error) {
 		}, nil
 	}
 
-	if _, ok := pc.cache[height]; !ok {
-		return nil, fmt.Errorf("no proposer info for height: ", height)
+	if _, ok := pc.cache[height]; ok {
+		return pc.cache[height], nil
 	}
 
-	return pc.cache[height], nil
+	var proposer []byte
+	previousBlockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
+	previousBlock, err := ledger.DefaultLedger.Store.GetBlock(previousBlockHash)
+	if err != nil {
+		return nil, err
+	}
+	switch previousBlock.Header.WinningHashType {
+	case ledger.WinningTxnHash:
+		txn, err := ledger.DefaultLedger.GetTransactionWithHash(previousBlock.Header.WinningHash)
+		if err != nil {
+			return nil, err
+		}
+		payload := txn.Payload.(*payload.Commit)
+		sigchain := &por.SigChain{}
+		proto.Unmarshal(payload.SigChain, sigchain)
+		proposer, err = sigchain.GetMiner()
+		if err != nil {
+			return nil, err
+		}
+	case ledger.WinningNilHash:
+		proposer, err = previousBlock.GetSigner()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &ProposerInfo{
+		publicKey:       proposer,
+		winningHash:     EmptyUint256,
+		winningHashType: ledger.WinningNilHash,
+	}, nil
 }
