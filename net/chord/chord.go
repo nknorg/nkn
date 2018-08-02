@@ -113,15 +113,18 @@ func DefaultConfig(hostname string, create bool) *Config {
 	var bh uint32
 	remote := ""
 	if create == false {
-		info, err := client.GetNodeState("http://" + config.Parameters.SeedList[0])
-		if err != nil { // Maybe createNode mode
-			log.Warnf("Can't get remote node info from [%s]", config.Parameters.SeedList[0])
-		} else {
-			remote = net.JoinHostPort(info.Addr, strconv.Itoa(int(info.ChordPort)))
-		}
+		for _, seed := range config.Parameters.SeedList {
+			info, err := client.GetNodeState("http://" + seed)
+			if err != nil { // Maybe createNode mode
+				log.Warnf("Can't get remote node info from [%s]", seed)
+				continue
+			}
 
-		// Don't use BlockHeight from NodeState. Used it from Ledger.
-		bh, _ = client.GetRemoteBlkHeight("http://" + config.Parameters.SeedList[0])
+			bh = info.Height
+			remote = net.JoinHostPort(info.Addr, strconv.Itoa(int(info.ChordPort)))
+			log.Infof("Connect to Seed [%s] successful", seed)
+			break
+		}
 	}
 
 	return &Config{
