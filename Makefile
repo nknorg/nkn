@@ -12,8 +12,8 @@ nknd: vendor
 
 .PHONY: build
 build:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd-$(GOOS)-$(GOARCH) nknd.go
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc-$(GOOS)-$(GOARCH) nknc.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd nknd.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc nknc.go
 
 .PHONY: crossbuild
 crossbuild:

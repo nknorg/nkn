@@ -92,7 +92,37 @@ Build the source code with make
 $ make all
 ```
 
-After building is successful, you should see two executables:
+After building is successful, you should see a directory named `build` with multiple executables.
+Select the one appropriate to your operating system:
+
+```
+$  tree build/
+build/
+├── darwin-386
+│   ├── nknc
+│   └── nknd
+├── darwin-amd64
+│   ├── nknc
+│   └── nknd
+├── linux-386
+│   ├── nknc
+│   └── nknd
+├── linux-amd64
+│   ├── nknc
+│   └── nknd
+├── linux-arm
+│   ├── nknc
+│   └── nknd
+├── linux-arm64
+│   ├── nknc
+│   └── nknd
+├── windows-386
+│   ├── nknc
+│   └── nknd
+└── windows-amd64
+   ├── nknc
+   └── nknd
+```
 
 * `nknd`: the nkn node program
 * `nknc`: command line tool for nkn node control
@@ -136,7 +166,7 @@ Start other nodes by joining the network
 $ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
 ```
 
-*NOTE:* The `-it` argument mean `Run interactively` and `Create a pseudo-tty`. Basically it means, 
+*NOTE:* The `-it` argument mean `Run interactively` and `Create a pseudo-tty`. Basically it means,
 that it really wants to take the input from you. For using in scripts and running in the background
 (for example a startup job) you should omit the `-it` argument
 
@@ -233,4 +263,3 @@ git commit -s
 * [Telegram](https://t.me/nknorg)
 * [Reddit](https://www.reddit.com/r/nknblockchain/)
 * [Twitter](https://twitter.com/NKN_ORG)
-
