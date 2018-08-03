@@ -2,17 +2,34 @@ GOFMT=gofmt
 GC=go build
 VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 Minversion := $(shell date)
-BUILD_NKND_PARAM = -ldflags "-X github.com/nknorg/nkn/util/config.Version=$(VERSION)" #-race
-BUILD_NKNC_PARAM = -ldflags "-X github.com/nknorg/nkn/cli/common.Version=$(VERSION)"
+BUILD_NKND_PARAM = -ldflags "-s -w -X github.com/nknorg/nkn/util/config.Version=$(VERSION)" #-race
+BUILD_NKNC_PARAM = -ldflags "-s -w -X github.com/nknorg/nkn/cli/common.Version=$(VERSION)"
+IDENTIFIER= $(GOOS)-$(GOARCH)
 
 .PHONY: nknd
 nknd: vendor
 	$(GC)  $(BUILD_NKND_PARAM) nknd.go
 
+.PHONY: build
+build:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd nknd.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc nknc.go
+
+.PHONY: crossbuild
+crossbuild:
+	mkdir -p build/$(IDENTIFIER)
+	make build FLAGS="build/$(IDENTIFIER)"
+
 .PHONY: all
 all: vendor
-	$(GC)  $(BUILD_NKND_PARAM) nknd.go
-	$(GC)  $(BUILD_NKNC_PARAM) nknc.go
+	make crossbuild GOOS=linux GOARCH=arm
+	make crossbuild GOOS=linux GOARCH=386
+	make crossbuild GOOS=linux GOARCH=arm64
+	make crossbuild GOOS=linux GOARCH=amd64
+	make crossbuild GOOS=darwin GOARCH=amd64
+	make crossbuild GOOS=darwin GOARCH=386
+	make crossbuild GOOS=windows GOARCH=amd64
+	make crossbuild GOOS=windows GOARCH=386
 
 .PHONY: format
 format:
