@@ -89,7 +89,7 @@ $ make vendor
 Build the source code with make
 
 ```shell
-$ make all
+$ make build_local
 ```
 
 After building is successful, you should see two executables:
@@ -97,6 +97,7 @@ After building is successful, you should see two executables:
 * `nknd`: the nkn node program
 * `nknc`: command line tool for nkn node control
 
+NOTE: To build binaries for other architectures execute `make all`. The resulting binaries are stored in `build` directory.
 
 ### Building using docker
 
@@ -136,7 +137,7 @@ Start other nodes by joining the network
 $ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
 ```
 
-*NOTE:* The `-it` argument mean `Run interactively` and `Create a pseudo-tty`. Basically it means, 
+*NOTE:* The `-it` argument mean `Run interactively` and `Create a pseudo-tty`. Basically it means,
 that it really wants to take the input from you. For using in scripts and running in the background
 (for example a startup job) you should omit the `-it` argument
 
@@ -233,4 +234,3 @@ git commit -s
 * [Telegram](https://t.me/nknorg)
 * [Reddit](https://www.reddit.com/r/nknblockchain/)
 * [Twitter](https://twitter.com/NKN_ORG)
-
