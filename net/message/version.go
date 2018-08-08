@@ -9,6 +9,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/net/protocol"
@@ -36,7 +37,8 @@ type version struct {
 		// FIXME check with the specify relay type length
 		Relay uint8
 	}
-	pk *crypto.PubKey
+	pk        *crypto.PubKey
+	chordAddr []byte
 }
 
 func (msg *version) init(n Noder) {
@@ -67,6 +69,7 @@ func NewVersion(n Noder) ([]byte, error) {
 	}
 
 	msg.pk = n.GetBookKeeperAddr()
+	msg.chordAddr = n.GetChordAddr()
 	// TODO the function to wrap below process
 	// msg.HDR.init("version", n.GetID(), uint32(len(p.Bytes())))
 
@@ -74,11 +77,21 @@ func NewVersion(n Noder) ([]byte, error) {
 	copy(msg.Hdr.CMD[0:7], "version")
 	p := bytes.NewBuffer([]byte{})
 	err := binary.Write(p, binary.LittleEndian, &(msg.P))
-	msg.pk.Serialize(p)
 	if err != nil {
 		log.Error("Binary Write failed at new Msg")
 		return nil, err
 	}
+	err = msg.pk.Serialize(p)
+	if err != nil {
+		log.Error("PK Write failed at new Msg")
+		return nil, err
+	}
+	err = serialization.WriteVarBytes(p, msg.chordAddr)
+	if err != nil {
+		log.Error("Chord Addr Write failed at new Msg")
+		return nil, err
+	}
+
 	s := sha256.Sum256(p.Bytes())
 	s2 := s[:]
 	s = sha256.Sum256(s2)
@@ -113,6 +126,10 @@ func (msg version) Serialize(w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	err = serialization.WriteVarBytes(w, msg.chordAddr)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -136,6 +153,12 @@ func (msg *version) Deserialize(r io.Reader) error {
 		return errors.New("Parse pubkey Deserialize failed.")
 	}
 	msg.pk = pk
+
+	chordAddr, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	msg.chordAddr = chordAddr
 
 	return nil
 }
@@ -188,8 +211,22 @@ func (msg version) Handle(node Noder) error {
 	}
 	node.SetHttpInfoPort(msg.P.HttpInfoPort)
 	node.SetBookKeeperAddr(msg.pk)
+	node.SetChordAddr(msg.chordAddr)
 	node.UpdateInfo(time.Now(), msg.P.Version, msg.P.Services,
 		msg.P.Port, msg.P.Nonce, msg.P.Relay, msg.P.StartHeight)
+
+	// Should not be neighbors
+	shouldInNbr, err := localNode.ShouldChordAddrInNeighbors(msg.chordAddr)
+	if err != nil {
+		node.CloseConn()
+		return err
+	}
+	if !shouldInNbr {
+		node.CloseConn()
+		log.Warn("Reject connection from non chord neighbor:", node.GetAddrStr())
+		return errors.New("Reject connection from non chord neighbor: " + node.GetAddrStr())
+	}
+
 	localNode.AddNbrNode(node)
 
 	var buf []byte

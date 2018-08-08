@@ -221,7 +221,7 @@ func parseIPaddr(s string) (string, error) {
 }
 
 func (node *node) Connect(nodeAddr string) error {
-	if node.IsAddrInNbrList(nodeAddr) {
+	if node.IsAddrInNeighbors(nodeAddr) {
 		return nil
 	}
 	if !node.SetAddrInConnectingList(nodeAddr) {
