@@ -34,7 +34,6 @@ func (msg trn) Handle(node Noder) error {
 			return errors.New("[message] VerifyTransaction failed when AppendTxnPool.")
 		}
 		node.LocalNode().IncRxTxnCnt()
-		node.LocalNode().AddHash(tx.Hash())
 		node.LocalNode().BroadcastTransaction(node, tx)
 	}
 

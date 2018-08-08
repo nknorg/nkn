@@ -24,10 +24,7 @@ func NewHashCache(cap int) *hashCache {
 	}
 }
 
-func (hc *hashCache) AddHash(hash Uint256) {
-	hc.Lock()
-	defer hc.Unlock()
-
+func (hc *hashCache) addHash(hash Uint256) {
 	if len(hc.hashes) <= HashCacheCap {
 		hc.hashes = append(hc.hashes, hash)
 	} else {
@@ -38,12 +35,13 @@ func (hc *hashCache) AddHash(hash Uint256) {
 }
 
 func (hc *hashCache) ExistHash(hash Uint256) bool {
-	hc.RLock()
-	defer hc.RUnlock()
+	hc.Lock()
+	defer hc.Unlock()
 
 	if _, ok := hc.list[hash]; ok {
 		return true
 	}
+	hc.addHash(hash)
 
 	return false
 }

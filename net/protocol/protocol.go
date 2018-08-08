@@ -69,7 +69,6 @@ type Noder interface {
 	GetTxnByCount(int) map[Uint256]*transaction.Transaction
 	GetTxnPool() *pool.TxnPool
 	AppendTxnPool(*transaction.Transaction) ErrCode
-	AddHash(hash Uint256)
 	ExistHash(hash Uint256) bool
 	ReqNeighborList()
 	DumpInfo()
