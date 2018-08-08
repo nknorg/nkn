@@ -34,7 +34,6 @@ type ProposerService struct {
 	proposerChangeTimer  *time.Timer               // timer for proposer change
 	proposerChangeIndex  uint32                    // block index for proposer change
 	localNode            protocol.Noder            // local node
-	neighbors            []protocol.Noder          // neighbor nodes
 	txnCollector         *transaction.TxnCollector // collect transaction from where
 	mining               Mining                    // built-in mining
 	msgChan              chan interface{}          // get notice from probe thread
@@ -57,7 +56,6 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 		proposerChangeIndex: 0,
 		account:             account,
 		localNode:           node,
-		neighbors:           node.GetNeighborNoder(),
 		txnCollector:        txnCollector,
 		mining:              NewBuiltinMining(account, txnCollector),
 		msgChan:             make(chan interface{}, MsgChanCap),
@@ -146,11 +144,12 @@ func (ps *ProposerService) ConsensusRoutine(vType voting.VotingContentType) {
 // If 'nids' passed in is nil then returns all neighbor nodes.
 func (ps *ProposerService) GetReceiverNode(nids []uint64) []protocol.Noder {
 	if nids == nil {
-		return ps.neighbors
+		return ps.localNode.GetNeighborNoder()
 	}
 	var nodes []protocol.Noder
+	neighbors := ps.localNode.GetNeighborNoder()
 	for _, id := range nids {
-		for _, node := range ps.neighbors {
+		for _, node := range neighbors {
 			if id == node.GetID() {
 				nodes = append(nodes, node)
 			}
@@ -569,8 +568,6 @@ func (ps *ProposerService) Initialize(vType voting.VotingContentType, totalWeigh
 		v.GetVotingPool().Reset(totalWeight)
 		v.Reset()
 	}
-	// initial neighbor nodes
-	ps.neighbors = ps.localNode.GetNeighborNoder()
 }
 
 func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender *crypto.PubKey) {
@@ -681,6 +678,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 	current := ps.CurrentVoting(proposal.contentType)
 	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()
+	neighbors := ps.localNode.GetNeighborNoder()
 	if height < votingHeight {
 		log.Warnf("receive invalid proposal, consensus height: %d, proposal height: %d,"+
 			" hash: %s\n", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
@@ -688,10 +686,10 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 	}
 	if height > votingHeight {
 		neighborHeight, count := current.CacheProposal(height)
-		if 2*count > len(ps.neighbors) {
+		if 2*count > len(neighbors) {
 			log.Errorf("state is different with neighbors, "+
 				"current voting height: %d, neighbor height: %d (%d/%d), exits.",
-				votingHeight, neighborHeight, count, len(ps.neighbors))
+				votingHeight, neighborHeight, count, len(neighbors))
 			os.Exit(1)
 		}
 		return
