@@ -543,9 +543,8 @@ func (tx *Transaction) MarshalJson() ([]byte, error) {
 		txInfo.Programs = append(txInfo.Programs, t)
 	}
 
-	if tx.hash != nil {
-		txInfo.Hash = BytesToHexString(tx.hash.ToArrayReverse())
-	}
+	hash := tx.Hash()
+	txInfo.Hash = BytesToHexString(hash.ToArrayReverse())
 
 	data, err := json.Marshal(txInfo)
 	if err != nil {
