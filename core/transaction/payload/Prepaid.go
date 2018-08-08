@@ -11,7 +11,7 @@ import (
 type Prepaid struct {
 	Asset  Uint256
 	Amount Fixed64
-	Rates  Fixed64 // per byte
+	Rates  Fixed64
 }
 
 func (p *Prepaid) Data(version byte) []byte {
@@ -19,15 +19,34 @@ func (p *Prepaid) Data(version byte) []byte {
 }
 
 func (p *Prepaid) Serialize(w io.Writer, version byte) error {
-	p.Amount.Serialize(w)
-	p.Rates.Serialize(w)
+	var err error
+	_, err = p.Asset.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = p.Amount.Serialize(w)
+	if err != nil {
+		return err
+	}
+	err = p.Rates.Serialize(w)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func (p *Prepaid) Deserialize(r io.Reader, version byte) error {
+	var err error
+	assetID := new(Uint256)
+	err = assetID.Deserialize(r)
+	if err != nil {
+		return err
+	}
+	p.Asset = *assetID
+
 	p.Amount = *new(Fixed64)
-	err := p.Amount.Deserialize(r)
+	err = p.Amount.Deserialize(r)
 	if err != nil {
 		return errors.New("amount deserialization error")
 	}
