@@ -28,15 +28,15 @@ import (
 )
 
 const (
-	MaxSyncHeaderReq     = 2               // max concurrent sync header request count
-	ConnectionMaxBackoff = 4000            // back off for retry
-	MaxRetryCount        = 3               // max retry count
-	KeepAliveTicker      = 3 * time.Second // ticker for ping/pong and keepalive message
-	KeepaliveTimeout     = 9 * time.Second // timeout for keeping alive
-	BlockSyncingTicker   = 3 * time.Second // ticker for syncing block
-	ProtocolVersion      = 0               // protocol version
-	ConnectionTicker     = 6 * time.Second // ticker for connection
-	MaxReqBlkOnce        = 16              // max block count requested
+	MaxSyncHeaderReq     = 2                // max concurrent sync header request count
+	ConnectionMaxBackoff = 4000             // back off for retry
+	MaxRetryCount        = 3                // max retry count
+	KeepAliveTicker      = 3 * time.Second  // ticker for ping/pong and keepalive message
+	KeepaliveTimeout     = 9 * time.Second  // timeout for keeping alive
+	BlockSyncingTicker   = 3 * time.Second  // ticker for syncing block
+	ProtocolVersion      = 0                // protocol version
+	ConnectionTicker     = 10 * time.Second // ticker for connection
+	MaxReqBlkOnce        = 16               // max block count requested
 )
 
 type Semaphore chan struct{}
@@ -63,6 +63,7 @@ type node struct {
 	publicKey                *crypto.PubKey      // node public key
 	flightHeights            []uint32            // flight height
 	SyncReqSem               Semaphore           // semaphore for connection counts
+	chordAddr                []byte              // chord address (chord ID)
 	ring                     *chord.Ring         // chord ring
 	relayer                  *relay.RelayService // relay service
 	syncStopHash             Uint256             // block syncing stop hash
@@ -102,18 +103,28 @@ func (node *node) DumpInfo() {
 	log.Info("\t conn cnt = ", node.link.connCnt)
 }
 
-func (node *node) IsAddrInNbrList(addr string) bool {
+func (node *node) IsAddrInNeighbors(addr string) bool {
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
 	for _, n := range node.nbrNodes.List {
 		if n.GetState() == HAND || n.GetState() == HANDSHAKE || n.GetState() == ESTABLISH {
-			na := net.JoinHostPort(n.GetAddr(), fmt.Sprintf("%d", n.GetPort()))
-			if strings.Compare(na, addr) == 0 {
+			if strings.Compare(n.GetAddrStr(), addr) == 0 {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+func (node *node) ShouldChordAddrInNeighbors(addr []byte) (bool, error) {
+	chordNode, err := node.ring.GetFirstVnode()
+	if err != nil {
+		return false, err
+	}
+	if chordNode == nil {
+		return false, errors.New("No chord node binded")
+	}
+	return chordNode.ShouldAddrInNeighbors(addr), nil
 }
 
 func (node *node) SetAddrInConnectingList(addr string) (added bool) {
@@ -196,8 +207,15 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n.quit = make(chan struct{}, 1)
 	n.eventQueue.init()
 	n.hashCache = NewHashCache(HashCacheCap)
-	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnect)
+	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnected)
 	n.ring = ring
+
+	chordVnode, err := ring.GetFirstVnode()
+	if err != nil {
+		log.Error(err)
+	}
+	n.chordAddr = chordVnode.Id
+
 	go n.initConnection()
 	go n.updateConnection()
 	go n.keepalive()
@@ -205,11 +223,10 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	return n
 }
 
-func (n *node) NodeDisconnect(v interface{}) {
+func (n *node) NodeDisconnected(v interface{}) {
 	if node, ok := v.(*node); ok {
 		node.SetState(INACTIVITY)
-		conn := node.getConn()
-		conn.Close()
+		node.CloseConn()
 	}
 }
 
@@ -409,6 +426,10 @@ func (node *node) GetAddr16() ([16]byte, error) {
 	return result, nil
 }
 
+func (node *node) GetAddrStr() string {
+	return net.JoinHostPort(node.GetAddr(), strconv.Itoa(int(node.GetPort())))
+}
+
 func (node *node) GetTime() int64 {
 	t := time.Now()
 	return t.UnixNano()
@@ -544,14 +565,11 @@ func (node *node) RelSyncReqSem() {
 }
 
 func (node *node) GetChordAddr() []byte {
-	if node.ring == nil {
-		return nil
-	}
-	chordVnode, err := node.ring.GetFirstVnode()
-	if err != nil || chordVnode == nil {
-		return nil
-	}
-	return chordVnode.Id
+	return node.chordAddr
+}
+
+func (node *node) SetChordAddr(addr []byte) {
+	node.chordAddr = addr
 }
 
 func (node *node) GetChordRing() *chord.Ring {
@@ -658,26 +676,46 @@ func (node *node) ConnectNeighbors() {
 		return
 	}
 	neighbors := chordNode.Neighbors()
-	for _, nbr := range neighbors {
-		nodeAddr, err := nbr.NodeAddr()
+	node.nbrNodes.RLock()
+	defer node.nbrNodes.RUnlock()
+	for _, chordNbr := range neighbors {
+		chordNbrAddr, err := chordNbr.NodeAddr()
 		if err != nil {
 			continue
 		}
 		found := false
-		var ip net.IP
-		node.nbrNodes.Lock()
-		for _, tn := range node.nbrNodes.List {
-			addr := getNodeAddr(tn)
-			ip = addr.IpAddr[:]
-			addrstring := net.JoinHostPort(ip.To16().String(), strconv.Itoa(int(addr.Port)))
-			if nodeAddr == addrstring {
+		for _, nodeNbr := range node.nbrNodes.List {
+			if chordNbrAddr == nodeNbr.GetAddrStr() {
 				found = true
 				break
 			}
 		}
-		node.nbrNodes.Unlock()
 		if !found {
-			go node.Connect(nodeAddr)
+			go node.Connect(chordNbrAddr)
+		}
+	}
+}
+
+func (node *node) DisconnectNeighbor(nbr *node) {
+	_, success := node.nbrNodes.DelNbrNode(nbr.GetID())
+	if success {
+		nbr.SetState(INACTIVITY)
+		nbr.CloseConn()
+	}
+}
+
+func (node *node) DisconnectNonNeighbors() {
+	node.nbrNodes.RLock()
+	defer node.nbrNodes.RUnlock()
+	for _, nodeNbr := range node.nbrNodes.List {
+		shouldInNbr, err := node.ShouldChordAddrInNeighbors(nodeNbr.GetChordAddr())
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		if !shouldInNbr {
+			log.Info("Disconnect non chord neighbor:", nodeNbr.GetAddrStr())
+			go node.DisconnectNeighbor(nodeNbr)
 		}
 	}
 }
@@ -720,12 +758,9 @@ func (n *node) TryConnect() {
 func (n *node) fetchRetryNodeFromNeighborList() int {
 	n.nbrNodes.Lock()
 	defer n.nbrNodes.Unlock()
-	var ip net.IP
 	neighbornodes := make(map[uint64]*node)
 	for _, tn := range n.nbrNodes.List {
-		addr := getNodeAddr(tn)
-		ip = addr.IpAddr[:]
-		nodeAddr := net.JoinHostPort(ip.To16().String(), strconv.Itoa(int(addr.Port)))
+		nodeAddr := tn.GetAddrStr()
 		if tn.GetState() == INACTIVITY {
 			//add addr to retry list
 			n.AddInRetryList(nodeAddr)
@@ -760,7 +795,8 @@ func (node *node) updateConnection() {
 		select {
 		case <-t.C:
 			node.ConnectNeighbors()
-			node.TryConnect()
+			node.DisconnectNonNeighbors()
+			// node.TryConnect()
 		}
 	}
 }

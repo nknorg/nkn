@@ -232,10 +232,12 @@ func HandleNodeMsg(node Noder, buf []byte, len int) error {
 	r := bytes.NewReader(buf[:len])
 	err = msg.Deserialize(r)
 	if err != nil {
+		log.Error("Deserialize error:", err)
 		return err
 	}
 	err = msg.Verify(buf[MsgHdrLen:len])
 	if err != nil {
+		log.Error("Verify msg error:", err)
 		return err
 	}
 
