@@ -334,7 +334,7 @@ func (node *node) Xmit(message interface{}) error {
 			return err
 		}
 		node.txnCnt++
-		node.AddHash(txn.Hash())
+		node.ExistHash(txn.Hash())
 	case *ledger.Block:
 		block := message.(*ledger.Block)
 		buffer, err = NewBlock(block)
