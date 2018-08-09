@@ -39,6 +39,7 @@ type Noder interface {
 	Services() uint64
 	GetAddr() string
 	GetPort() uint16
+	GetAddrStr() string
 	GetHttpInfoPort() uint16
 	SetHttpInfoPort(uint16)
 	GetHttpJsonPort() uint16
@@ -104,7 +105,8 @@ type Noder interface {
 	SetHeight(height uint32)
 	WaitForSyncBlkFinish()
 	GetFlightHeights() []uint32
-	IsAddrInNbrList(addr string) bool
+	IsAddrInNeighbors(addr string) bool
+	ShouldChordAddrInNeighbors(addr []byte) (bool, error)
 	SetAddrInConnectingList(addr string) bool
 	RemoveAddrInConnectingList(addr string)
 	AddInRetryList(addr string)
@@ -113,6 +115,7 @@ type Noder interface {
 	RelSyncReqSem()
 
 	GetChordAddr() []byte
+	SetChordAddr([]byte)
 	GetChordRing() *chord.Ring
 	StartRelayer(wallet vault.Wallet)
 	NextHop(key []byte) (Noder, error)

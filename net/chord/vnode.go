@@ -454,6 +454,29 @@ func (vn *localVnode) Neighbors() []*Vnode {
 	return neighbors
 }
 
+func (vn *localVnode) ShouldAddrInNeighbors(addr []byte) bool {
+	for _, n := range vn.finger {
+		if n == nil {
+			continue
+		}
+		if n.Host == vn.Host {
+			continue
+		}
+		if bytes.Compare(n.Id, addr) == 0 {
+			return true
+		}
+	}
+
+	hb := vn.ring.config.hashBits
+	dist := distance(addr, vn.Id, hb)
+	offset := powerOffset(addr, dist.BitLen()-1, hb)
+	if vn.predecessor != nil && betweenRightIncl(vn.predecessor.Id, vn.Id, offset) {
+		return true
+	}
+
+	return false
+}
+
 func (vn *localVnode) ClosestNeighborIterator(key []byte) (closestPreceedingVnodeIterator, error) {
 	cp := closestPreceedingVnodeIterator{}
 	cp.init(vn, key, true, true)
