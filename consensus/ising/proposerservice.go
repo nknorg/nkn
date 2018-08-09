@@ -483,7 +483,6 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 
 	// returns if receive duplicate block
 	if current.HasSelfState(blockHash, voting.FloodingFinished) {
-		log.Warn("Duplicate block received for hash: ", BytesToHexString(blockHash.ToArrayReverse()))
 		return
 	}
 	// set state for flooding block
@@ -511,6 +510,20 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 		log.Error("add received block to local cache error")
 		return
 	}
+
+	// relay block to neighbors after verification
+	var nodes []protocol.Noder
+	senderID := publickKeyToNodeID(sender)
+	for _, node := range ps.neighbors {
+		if node.GetID() != senderID {
+			nodes = append(nodes, node)
+		}
+	}
+	err = ps.SendConsensusMsg(bfMsg, nodes)
+	if err != nil {
+		log.Error("broadcast block message error: ", err)
+	}
+
 	// trigger consensus when receive appropriate block
 	if !ps.IsBlockProposer() {
 		for _, v := range ps.voting {
