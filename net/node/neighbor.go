@@ -1,7 +1,9 @@
 package node
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	. "github.com/nknorg/nkn/net/protocol"
@@ -166,4 +168,28 @@ func (node *node) GetNbrNodeCnt() uint32 {
 		}
 	}
 	return count
+}
+
+func (node *node) IsAddrInNeighbors(addr string) bool {
+	node.nbrNodes.RLock()
+	defer node.nbrNodes.RUnlock()
+	for _, n := range node.nbrNodes.List {
+		if n.GetState() == HAND || n.GetState() == HANDSHAKE || n.GetState() == ESTABLISH {
+			if strings.Compare(n.GetAddrStr(), addr) == 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (node *node) ShouldChordAddrInNeighbors(addr []byte) (bool, error) {
+	chordNode, err := node.ring.GetFirstVnode()
+	if err != nil {
+		return false, err
+	}
+	if chordNode == nil {
+		return false, errors.New("No chord node binded")
+	}
+	return chordNode.ShouldAddrInNeighbors(addr), nil
 }
