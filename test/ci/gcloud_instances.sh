@@ -133,7 +133,7 @@ shift 1
 case "${OP}" in
     start  ) Start $@;;
     stop   ) Stop  $@;;
-    *      ) echo "$0: unknown operation.: $OP $@";;
+    *      ) ! echo "$0: unknown operation.: $OP $@";;
 esac
 
 [ $? -ne 0 ] && Usage $0
