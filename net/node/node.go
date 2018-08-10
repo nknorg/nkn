@@ -103,30 +103,6 @@ func (node *node) DumpInfo() {
 	log.Info("\t conn cnt = ", node.link.connCnt)
 }
 
-func (node *node) IsAddrInNeighbors(addr string) bool {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() == HAND || n.GetState() == HANDSHAKE || n.GetState() == ESTABLISH {
-			if strings.Compare(n.GetAddrStr(), addr) == 0 {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func (node *node) ShouldChordAddrInNeighbors(addr []byte) (bool, error) {
-	chordNode, err := node.ring.GetFirstVnode()
-	if err != nil {
-		return false, err
-	}
-	if chordNode == nil {
-		return false, errors.New("No chord node binded")
-	}
-	return chordNode.ShouldAddrInNeighbors(addr), nil
-}
-
 func (node *node) SetAddrInConnectingList(addr string) (added bool) {
 	node.ConnectingNodes.Lock()
 	defer node.ConnectingNodes.Unlock()
@@ -683,14 +659,7 @@ func (node *node) ConnectNeighbors() {
 		if err != nil {
 			continue
 		}
-		found := false
-		for _, nodeNbr := range node.nbrNodes.List {
-			if chordNbrAddr == nodeNbr.GetAddrStr() {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !node.IsAddrInNeighbors(chordNbrAddr) {
 			go node.Connect(chordNbrAddr)
 		}
 	}
