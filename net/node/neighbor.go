@@ -170,15 +170,23 @@ func (node *node) GetNbrNodeCnt() uint32 {
 	return count
 }
 
-func (node *node) IsAddrInNeighbors(addr string) bool {
+func (node *node) GetNeighborByAddr(addr string) Noder {
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
 	for _, n := range node.nbrNodes.List {
 		if n.GetState() == HAND || n.GetState() == HANDSHAKE || n.GetState() == ESTABLISH {
 			if strings.Compare(n.GetAddrStr(), addr) == 0 {
-				return true
+				return n
 			}
 		}
+	}
+	return nil
+}
+
+func (node *node) IsAddrInNeighbors(addr string) bool {
+	neighbor := node.GetNeighborByAddr(addr)
+	if neighbor != nil {
+		return true
 	}
 	return false
 }
