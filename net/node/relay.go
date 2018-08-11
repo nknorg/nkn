@@ -3,8 +3,6 @@ package node
 import (
 	"crypto/sha256"
 	"errors"
-	"net"
-	"strconv"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
@@ -31,31 +29,17 @@ func (node *node) NextHop(key []byte) (protocol.Noder, error) {
 		return nil, err
 	}
 	for {
-		nbr := iter.Next()
-		if nbr == nil {
+		chordNbr := iter.Next()
+		if chordNbr == nil {
 			break
 		}
-		nbrAddr, err := nbr.NodeAddr()
+		nbrAddr, err := chordNbr.NodeAddr()
 		if err != nil {
 			continue
 		}
-		found := false
-		var n protocol.Noder
-		var ip net.IP
-		for _, tn := range node.nbrNodes.List {
-			addr := getNodeAddr(tn)
-			ip = addr.IpAddr[:]
-			addrstring := net.JoinHostPort(ip.To16().String(), strconv.Itoa(int(addr.Port)))
-			if nbrAddr == addrstring {
-				n = tn
-				found = true
-				break
-			}
-		}
-		if found {
-			if n.GetState() == protocol.ESTABLISH {
-				return n, nil
-			}
+		nodeNbr := node.GetNeighborByAddr(nbrAddr)
+		if nodeNbr != nil {
+			return nodeNbr, nil
 		}
 	}
 	return nil, nil
