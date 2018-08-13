@@ -165,19 +165,13 @@ func (ws *WsServer) registryMethod() {
 			log.Error("Session is not client")
 			return common.RespPacking(nil, common.INVALID_METHOD)
 		}
-		srcAddrStr := client.GetAddrStr()
-		srcPubkey := client.GetPubKey()
-		if srcPubkey == nil {
-			log.Error("Session does not have a public key")
-			return common.RespPacking(nil, common.INVALID_METHOD)
+		srcAddrStrPtr := client.GetAddrStr()
+		if srcAddrStrPtr == nil {
+			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
-		addrStr, ok := cmd["Dest"].(string)
+		srcAddrStr := *srcAddrStrPtr
+		destAddrStr, ok := cmd["Dest"].(string)
 		if !ok {
-			return common.RespPacking(nil, common.INVALID_PARAMS)
-		}
-		destID, destPubkey, err := address.ParseClientAddress(addrStr)
-		if err != nil {
-			log.Error("Parse client address error:", err)
 			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 		payload := []byte(cmd["Payload"].(string))
@@ -186,7 +180,7 @@ func (ws *WsServer) registryMethod() {
 			log.Error("Decode signature error:", err)
 			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
-		err = ws.node.SendRelayPacket([]byte(*srcAddrStr), srcPubkey, destID[:], destPubkey, payload, signature)
+		err = ws.node.SendRelayPacket(srcAddrStr, destAddrStr, payload, signature)
 		if err != nil {
 			log.Error("Send relay packet error:", err)
 			return common.RespPacking(nil, common.INTERNAL_ERROR)

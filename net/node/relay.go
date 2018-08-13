@@ -10,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/relay"
+	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -45,7 +46,19 @@ func (node *node) NextHop(key []byte) (protocol.Noder, error) {
 	return nil, nil
 }
 
-func (node *node) SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload, signature []byte) error {
+func (node *node) SendRelayPacket(srcAddr, destAddr string, payload, signature []byte) error {
+	srcID, srcPubkey, err := address.ParseClientAddress(srcAddr)
+	if err != nil {
+		log.Error("Parse src client address error:", err)
+		return err
+	}
+
+	destID, destPubkey, err := address.ParseClientAddress(destAddr)
+	if err != nil {
+		log.Error("Parse dest client address error:", err)
+		return err
+	}
+
 	payloadHash := sha256.Sum256(payload)
 	payloadHash256, err := common.Uint256ParseFromBytes(payloadHash[:])
 	if err != nil {
@@ -66,7 +79,7 @@ func (node *node) SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload,
 		por.SigAlgo_ECDSA,
 	)
 
-	relayPacket, err := message.NewRelayPacket(srcID, destID, payload, sigChain)
+	relayPacket, err := message.NewRelayPacket(srcAddr, destID, payload, sigChain)
 	if err != nil {
 		log.Error("Create relay packet error: ", err)
 		return err

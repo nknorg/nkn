@@ -74,7 +74,7 @@ func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *
 	}
 	response := map[string]interface{}{
 		"Action":  "receivePacket",
-		"Src":     string(packet.SrcID),
+		"Src":     packet.SrcAddr,
 		"Payload": string(packet.Payload),
 		"Digest":  digest,
 	}
@@ -144,8 +144,8 @@ func (rs *RelayService) SendPacketToNode(nextHop protocol.Noder, packet *message
 		return err
 	}
 	log.Infof(
-		"Relay packet:\nSrcID: %x\nDestID: %x\nNext Hop: %s:%d\nPayload Size: %d",
-		packet.SrcID,
+		"Relay packet:\nSrcID: %s\nDestID: %x\nNext Hop: %s:%d\nPayload Size: %d",
+		packet.SrcAddr,
 		packet.DestID,
 		nextHop.GetAddr(),
 		nextHop.GetPort(),
@@ -159,8 +159,8 @@ func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 	destID := packet.DestID
 	if bytes.Equal(rs.localNode.GetChordAddr(), destID) {
 		log.Infof(
-			"Receive packet:\nSrcID: %x\nDestID: %x\nPayload Size: %d",
-			packet.SrcID,
+			"Receive packet:\nSrcID: %s\nDestID: %x\nPayload Size: %d",
+			packet.SrcAddr,
 			destID,
 			len(packet.Payload),
 		)
