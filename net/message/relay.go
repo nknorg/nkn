@@ -15,7 +15,7 @@ import (
 )
 
 type RelayPacket struct {
-	SrcID    []byte
+	SrcAddr  string
 	DestID   []byte
 	Payload  []byte
 	SigChain *por.SigChain
@@ -26,9 +26,9 @@ type RelayMessage struct {
 	packet RelayPacket
 }
 
-func NewRelayPacket(srcID, destID, payload []byte, sigChain *por.SigChain) (*RelayPacket, error) {
+func NewRelayPacket(srcAddr string, destID, payload []byte, sigChain *por.SigChain) (*RelayPacket, error) {
 	relayPakcet := &RelayPacket{
-		SrcID:    srcID,
+		SrcAddr:  srcAddr,
 		DestID:   destID,
 		Payload:  payload,
 		SigChain: sigChain,
@@ -105,7 +105,7 @@ func (msg *RelayMessage) ToBytes() ([]byte, error) {
 
 func (packet *RelayPacket) Serialize(w io.Writer) error {
 	var err error
-	err = serialization.WriteVarBytes(w, packet.SrcID)
+	err = serialization.WriteVarString(w, packet.SrcAddr)
 	if err != nil {
 		return err
 	}
@@ -133,11 +133,11 @@ func (packet *RelayPacket) Serialize(w io.Writer) error {
 }
 
 func (packet *RelayPacket) Deserialize(r io.Reader) error {
-	srcID, err := serialization.ReadVarBytes(r)
+	srcAddr, err := serialization.ReadVarString(r)
 	if err != nil {
 		return err
 	}
-	packet.SrcID = srcID
+	packet.SrcAddr = srcAddr
 
 	destID, err := serialization.ReadVarBytes(r)
 	if err != nil {

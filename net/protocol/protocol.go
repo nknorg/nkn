@@ -119,7 +119,7 @@ type Noder interface {
 	GetChordRing() *chord.Ring
 	StartRelayer(wallet vault.Wallet)
 	NextHop(key []byte) (Noder, error)
-	SendRelayPacket(srcID, srcPubkey, destID, destPubkey, payload, signature []byte) error
+	SendRelayPacket(srcAddr, destAddr string, payload, signature []byte) error
 	SendRelayPacketsInBuffer(clientId []byte) error
 }
 
