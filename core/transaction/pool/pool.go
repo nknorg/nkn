@@ -121,11 +121,9 @@ func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
 
 //verify transaction with txnpool
 func (tp *TxnPool) verifyTransactionWithTxnPool(txn *Transaction) bool {
-	//check weather have duplicate UTXO input,if occurs duplicate, just keep the latest txn.
-	ok, duplicateTxn := tp.apendToUTXOPool(txn)
-	if !ok && duplicateTxn != nil {
-		log.Info(fmt.Sprintf("txn=%x duplicateTxn UTXO occurs with txn in pool=%x,keep the latest one.", txn.Hash(), duplicateTxn.Hash()))
-		tp.removeTransaction(duplicateTxn)
+	if err := tp.checkAndAddReferencedUTXO(txn); err != nil {
+		log.Warn("referenced UTXO already existed in transaction pool")
+		return false
 	}
 	//check issue transaction weather occur exceed issue range.
 	if ok := tp.summaryAssetIssueAmount(txn); !ok {
@@ -160,19 +158,25 @@ func (tp *TxnPool) removeTransaction(txn *Transaction) {
 }
 
 //check and add to utxo list pool
-func (tp *TxnPool) apendToUTXOPool(txn *Transaction) (bool, *Transaction) {
+func (tp *TxnPool) checkAndAddReferencedUTXO(txn *Transaction) error {
 	reference, err := txn.GetReference()
 	if err != nil {
-		return false, nil
+		return err
 	}
-	for k, _ := range reference {
-		t := tp.getInputUTXOList(k)
-		if t != nil {
-			return false, t
+	txnHash := txn.Hash()
+	txnInputs := []*TxnInput{}
+	for k := range reference {
+		if tp.getInputUTXOList(k) != nil {
+			return fmt.Errorf("transaction: %s referenced a spent UTXO in transaction pool",
+				common.BytesToHexString(txnHash.ToArrayReverse()))
 		}
-		tp.addInputUTXOList(txn, k)
+		txnInputs = append(txnInputs, k)
 	}
-	return true, nil
+	for _, v := range txnInputs {
+		tp.addInputUTXOList(txn, v)
+	}
+
+	return nil
 }
 
 //clean txnpool utxo map
