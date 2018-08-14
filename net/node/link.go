@@ -250,6 +250,9 @@ func (node *node) Connect(nodeAddr string) error {
 	n := NewNode()
 	n.conn = conn
 	n.addr, err = parseIPaddr(conn.RemoteAddr().String())
+	if err != nil {
+		log.Error("Parse remote address error:", err)
+	}
 	n.local = node
 
 	log.Info(fmt.Sprintf("Connect node %s connect with %s with %s",

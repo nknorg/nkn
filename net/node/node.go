@@ -392,7 +392,7 @@ func (node *node) GetAddr() string {
 
 func (node *node) GetAddr16() ([16]byte, error) {
 	var result [16]byte
-	ip := net.ParseIP(node.addr).To16()
+	ip := net.ParseIP(node.GetAddr()).To16()
 	if ip == nil {
 		log.Error("Parse IP address error\n")
 		return result, errors.New("Parse IP address error")
@@ -655,11 +655,11 @@ func (node *node) ConnectNeighbors() {
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
 	for _, chordNbr := range neighbors {
-		chordNbrAddr, err := chordNbr.NodeAddr()
-		if err != nil {
-			continue
-		}
-		if !node.IsAddrInNeighbors(chordNbrAddr) {
+		if !node.IsChordAddrInNeighbors(chordNbr.Id) {
+			chordNbrAddr, err := chordNbr.NodeAddr()
+			if err != nil {
+				continue
+			}
 			go node.Connect(chordNbrAddr)
 		}
 	}

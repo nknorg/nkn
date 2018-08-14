@@ -3,8 +3,6 @@ package message
 import (
 	"bytes"
 	"errors"
-	"net"
-	"strconv"
 
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
@@ -68,9 +66,6 @@ func (msg verACK) Handle(node Noder) error {
 	// but it doesn't matter to access the invalid
 	// node which will trigger a warning
 	node.ReqNeighborList()
-	addr := node.GetAddr()
-	port := node.GetPort()
-	nodeAddr := net.JoinHostPort(addr, strconv.Itoa(int(port)))
-	node.LocalNode().RemoveAddrInConnectingList(nodeAddr)
+	node.LocalNode().RemoveAddrInConnectingList(node.GetAddrStr())
 	return nil
 }
