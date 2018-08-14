@@ -106,6 +106,7 @@ type Noder interface {
 	WaitForSyncBlkFinish()
 	GetFlightHeights() []uint32
 	IsAddrInNeighbors(addr string) bool
+	IsChordAddrInNeighbors(chordAddr []byte) bool
 	ShouldChordAddrInNeighbors(addr []byte) (bool, error)
 	SetAddrInConnectingList(addr string) bool
 	RemoveAddrInConnectingList(addr string)

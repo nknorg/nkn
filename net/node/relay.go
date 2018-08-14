@@ -34,11 +34,7 @@ func (node *node) NextHop(key []byte) (protocol.Noder, error) {
 		if chordNbr == nil {
 			break
 		}
-		nbrAddr, err := chordNbr.NodeAddr()
-		if err != nil {
-			continue
-		}
-		nodeNbr := node.GetNeighborByAddr(nbrAddr)
+		nodeNbr := node.GetNeighborByChordAddr(chordNbr.Id)
 		if nodeNbr != nil {
 			return nodeNbr, nil
 		}

@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strings"
@@ -183,8 +184,29 @@ func (node *node) GetNeighborByAddr(addr string) Noder {
 	return nil
 }
 
+func (node *node) GetNeighborByChordAddr(chordAddr []byte) Noder {
+	node.nbrNodes.RLock()
+	defer node.nbrNodes.RUnlock()
+	for _, n := range node.nbrNodes.List {
+		if n.GetState() == HAND || n.GetState() == HANDSHAKE || n.GetState() == ESTABLISH {
+			if bytes.Compare(n.GetChordAddr(), chordAddr) == 0 {
+				return n
+			}
+		}
+	}
+	return nil
+}
+
 func (node *node) IsAddrInNeighbors(addr string) bool {
 	neighbor := node.GetNeighborByAddr(addr)
+	if neighbor != nil {
+		return true
+	}
+	return false
+}
+
+func (node *node) IsChordAddrInNeighbors(chordAddr []byte) bool {
+	neighbor := node.GetNeighborByChordAddr(chordAddr)
 	if neighbor != nil {
 		return true
 	}
