@@ -5,10 +5,7 @@ import (
 	"encoding/binary"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/contract"
-	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -44,28 +41,4 @@ func StringToHeightHash(str string) (uint32, Uint256) {
 	hash.Deserialize(buff)
 
 	return height, hash
-}
-
-// GetNeighborsVotingWeight returns total weight of all voters, including self and neighbors
-func GetTotalVotingWeight(node protocol.Noder) int {
-	total := 0
-	neighbors := node.GetNeighborNoder()
-	voters := append(neighbors, node)
-	for _, n := range voters {
-		script, err := contract.CreateSignatureRedeemScript(n.GetPubKey())
-		if err != nil {
-			continue
-		}
-		programHash, err := ToCodeHash(script)
-		if err != nil {
-			continue
-		}
-		weight, err := ledger.DefaultLedger.Store.GetVotingWeight(programHash)
-		if err != nil {
-			continue
-		}
-		total += weight
-	}
-
-	return total
 }

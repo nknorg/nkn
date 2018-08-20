@@ -288,12 +288,12 @@ func CreateNet() (*Ring, *TCPTransport, error) {
 		return nil, nil, err
 	}
 
-	go func() {
-		for {
-			time.Sleep(20 * time.Second)
-			r.DumpInfo(false)
-		}
-	}()
+	//go func() {
+	//	for {
+	//		time.Sleep(20 * time.Second)
+	//		r.DumpInfo(false)
+	//	}
+	//}()
 
 	return r, t, nil
 }
@@ -315,12 +315,12 @@ func JoinNet() (*Ring, *TCPTransport, error) {
 		return nil, nil, err
 	}
 
-	go func() {
-		for {
-			time.Sleep(20 * time.Second)
-			r.DumpInfo(false)
-		}
-	}()
+	//go func() {
+	//	for {
+	//		time.Sleep(20 * time.Second)
+	//		r.DumpInfo(false)
+	//	}
+	//}()
 
 	return r, t, nil
 }

@@ -5,24 +5,23 @@ import (
 	"sync"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/util/log"
 )
 
 type SigChainVotingPool struct {
 	sync.RWMutex
-	sendPool    map[uint32]map[uint64]Uint256 // record voting history
-	receivePool map[uint32]map[uint64]Uint256 // received votes from neighbor
-	mind        map[uint32]Uint256            // current idea
-	totalWeight int                           // total voting weight
+	sendPool    map[uint32]map[uint64]Uint256   // record voting history
+	receivePool map[uint32]map[uint64]*VoteInfo // received votes from neighbor
+	mind        map[uint32]Uint256              // current idea
+	totalWeight int                             // total voting weight
 }
 
-func NewSigChainVotingPool(totalWeight int) *SigChainVotingPool {
+func NewSigChainVotingPool() *SigChainVotingPool {
 	return &SigChainVotingPool{
 		sendPool:    make(map[uint32]map[uint64]Uint256),
-		receivePool: make(map[uint32]map[uint64]Uint256),
+		receivePool: make(map[uint32]map[uint64]*VoteInfo),
 		mind:        make(map[uint32]Uint256),
-		totalWeight: totalWeight,
+		totalWeight: 0,
 	}
 }
 
@@ -37,35 +36,27 @@ func (scvp *SigChainVotingPool) GetMind(height uint32) (Uint256, bool) {
 	}
 }
 
-func (scvp *SigChainVotingPool) ChangeMind(height uint32, mind Uint256) map[uint64]Uint256 {
+func (scvp *SigChainVotingPool) SetMind(height uint32, mind Uint256) map[uint64]Uint256 {
 	scvp.Lock()
+	defer scvp.Unlock()
+
 	scvp.mind[height] = mind
-	scvp.Unlock()
-
-	// add self vote to pool
-	scvp.AddToReceivePool(height, 0, mind)
-
-	scvp.RLock()
-	defer scvp.RUnlock()
 
 	return scvp.sendPool[height]
 }
 
-func (scvp *SigChainVotingPool) AddToReceivePool(height uint32, nid uint64, hash Uint256) {
-	scvp.Lock()
-	defer scvp.Unlock()
+func (scvp *SigChainVotingPool) HasReceivedVoteFrom(height uint32, nodeID uint64) bool {
+	scvp.RLock()
+	defer scvp.RUnlock()
 
 	if _, ok := scvp.receivePool[height]; !ok {
-		scvp.receivePool[height] = make(map[uint64]Uint256)
+		return false
 	}
-	scvp.receivePool[height][nid] = hash
-}
+	if _, ok := scvp.receivePool[height][nodeID]; !ok {
+		return false
+	}
 
-func (bvp *SigChainVotingPool) GetReceivePool(height uint32) map[uint64]Uint256 {
-	bvp.RLock()
-	defer bvp.RUnlock()
-
-	return bvp.receivePool[height]
+	return true
 }
 
 func (scvp *SigChainVotingPool) AddToSendPool(height uint32, nid uint64, hash Uint256) {
@@ -80,27 +71,42 @@ func (scvp *SigChainVotingPool) AddToSendPool(height uint32, nid uint64, hash Ui
 	}
 }
 
-func (scvp *SigChainVotingPool) VoteCounting(height uint32) (*Uint256, error) {
-	scvp.RLock()
-	defer scvp.RUnlock()
+func (scvp *SigChainVotingPool) AddToReceivePool(height uint32, nodeID uint64, weight int, hash Uint256) {
+	scvp.Lock()
+	defer scvp.Unlock()
 
-	m := make(map[Uint256]int)
+	scvp.addToReceivePool(height, nodeID, weight, hash)
+}
+
+func (scvp *SigChainVotingPool) AddVoteThenCounting(height uint32, nodeID uint64, weight int, hash Uint256) (*Uint256, error) {
+	scvp.Lock()
+	defer scvp.Unlock()
+
+	// add the vote to pool
+	scvp.addToReceivePool(height, nodeID, weight, hash)
+
+	// return when voter is not enough
+	if len(scvp.receivePool[height]) < MinVoterNum {
+		return nil, errors.New("voter is not enough")
+	}
+
 	// vote counting
-	for _, hash := range scvp.receivePool[height] {
-		weight, err := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
-		if err != nil {
-			log.Warn("get voter weight error")
-			return nil, errors.New("get voter weight error")
-		}
-		if _, ok := m[hash]; ok {
-			m[hash] += weight
+	m := make(map[Uint256]int)
+	for _, voteInfo := range scvp.receivePool[height] {
+		vHash := voteInfo.votedHash
+		vWeight := voteInfo.voterWeight
+		if _, ok := m[vHash]; ok {
+			m[vHash] += vWeight
 		} else {
-			m[hash] = weight
+			m[vHash] = vWeight
 		}
 	}
+
 	// returns hash which got >=50% votes
 	for hash, count := range m {
 		if 2*count >= scvp.totalWeight {
+			log.Debugf("transaction voting result: %s, (%d votes / %d current total votes)",
+				BytesToHexString(hash.ToArrayReverse()), count, scvp.totalWeight)
 			return &hash, nil
 		}
 	}
@@ -108,6 +114,22 @@ func (scvp *SigChainVotingPool) VoteCounting(height uint32) (*Uint256, error) {
 	return nil, errors.New("invalid votes")
 }
 
-func (scvp *SigChainVotingPool) Reset(totalWeight int) {
-	scvp.totalWeight = totalWeight
+func (scvp *SigChainVotingPool) Reset() {
+	scvp.totalWeight = 0
+}
+
+func (scvp *SigChainVotingPool) addToReceivePool(height uint32, nodeID uint64, weight int, hash Uint256) {
+	if _, ok := scvp.receivePool[height]; !ok {
+		scvp.receivePool[height] = make(map[uint64]*VoteInfo)
+	}
+	// if it's first time to receive vote from neighbor then increase the total voting weight
+	if _, ok := scvp.receivePool[height][nodeID]; !ok {
+		scvp.totalWeight += weight
+	}
+	voteInfo := &VoteInfo{
+		votedHash:   hash,
+		voterWeight: weight,
+	}
+	// update receive pool
+	scvp.receivePool[height][nodeID] = voteInfo
 }

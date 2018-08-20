@@ -26,14 +26,14 @@ type BlockVoting struct {
 	confirmingHash Uint256                       // block hash in process
 }
 
-func NewBlockVoting(totalWeight int) *BlockVoting {
+func NewBlockVoting() *BlockVoting {
 	blockVoting := &BlockVoting{
 		pstate:        make(map[Uint256]*State),
 		vstate:        make(map[uint64]map[Uint256]*State),
 		height:        ledger.DefaultLedger.Store.GetHeight() + 1,
 		blockCache:    NewBlockCache(),
 		proposalCache: make(map[uint32]int),
-		pool:          NewBlockVotingPool(totalWeight),
+		pool:          NewBlockVotingPool(),
 	}
 
 	return blockVoting
