@@ -102,9 +102,9 @@ func (bvp *BlockVotingPool) AddVoteThenCounting(height uint32, nodeID uint64, we
 		}
 	}
 
-	// returns hash which got >=50% votes
+	// returns hash which got >50% votes
 	for hash, count := range m {
-		if 2*count >= bvp.totalWeight {
+		if 2*count > bvp.totalWeight {
 			log.Debugf("block voting result: %s, (%d votes / %d current total votes)",
 				BytesToHexString(hash.ToArrayReverse()), count, bvp.totalWeight)
 			return &hash, nil

@@ -514,7 +514,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 
 	// if block syncing is not finished, cache received blocks in order
 	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		err = ps.syncCache.AddBlockToSyncCache(bfMsg.block, len(ps.localNode.GetSyncFinishedNeighbors()))
+		err = ps.syncCache.AddBlockToSyncCache(bfMsg.block)
 		if err != nil {
 			log.Error("add received block to sync cache error: ", err)
 		}
