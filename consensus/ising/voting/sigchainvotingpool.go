@@ -102,9 +102,9 @@ func (scvp *SigChainVotingPool) AddVoteThenCounting(height uint32, nodeID uint64
 		}
 	}
 
-	// returns hash which got >=50% votes
+	// returns hash which got >50% votes
 	for hash, count := range m {
-		if 2*count >= scvp.totalWeight {
+		if 2*count > scvp.totalWeight {
 			log.Debugf("transaction voting result: %s, (%d votes / %d current total votes)",
 				BytesToHexString(hash.ToArrayReverse()), count, scvp.totalWeight)
 			return &hash, nil
