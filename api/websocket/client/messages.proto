@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package client;
+
+message OutboundMessage {
+  string dest = 1;
+  bytes payload = 2;
+}
+
+message InboundMessage {
+  string src = 1;
+  bytes payload = 2;
+}

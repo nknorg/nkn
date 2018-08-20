@@ -3,13 +3,13 @@ package relay
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket"
+	"github.com/nknorg/nkn/api/websocket/client"
 	"github.com/nknorg/nkn/api/websocket/session"
 	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
@@ -68,24 +68,22 @@ func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *
 
 	// TODO: only pick sigchain to sign when threshold is smaller than
 
-	digest, err := packet.SigChain.ExtendElement(destPubKey, false)
+	_, err = packet.SigChain.ExtendElement(destPubKey, false)
 	if err != nil {
 		return err
 	}
-	response := map[string]interface{}{
-		"Action":  "receivePacket",
-		"Src":     packet.SrcAddr,
-		"Payload": string(packet.Payload),
-		"Digest":  digest,
+	msg := &client.InboundMessage{
+		Src:     packet.SrcAddr,
+		Payload: packet.Payload,
 	}
-	responseJSON, err := json.Marshal(response)
+	buf, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
 	ok := false
 	for _, client := range clients {
-		err = client.Send(responseJSON)
+		err = client.SendBinary(buf)
 		if err != nil {
 			log.Error("Send to client error: ", err)
 		} else {
@@ -98,7 +96,7 @@ func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *
 	}
 
 	// TODO: create and send tx only after client sign
-	buf, err := proto.Marshal(packet.SigChain)
+	buf, err = proto.Marshal(packet.SigChain)
 	if err != nil {
 		return err
 	}

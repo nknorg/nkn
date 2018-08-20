@@ -11,7 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/api/common"
+	"github.com/nknorg/nkn/api/websocket/client"
 	. "github.com/nknorg/nkn/api/websocket/session"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/net/protocol"
@@ -154,46 +156,11 @@ func (ws *WsServer) registryMethod() {
 		return common.RespPacking(nil, common.SUCCESS)
 	}
 
-	relayHandler := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
-		clients := ws.SessionList.GetSessionsById(cmd["Userid"].(string))
-		if clients == nil {
-			log.Error("Session not found")
-			return common.RespPacking(nil, common.INTERNAL_ERROR)
-		}
-		client := clients[0]
-		if !client.IsClient() {
-			log.Error("Session is not client")
-			return common.RespPacking(nil, common.INVALID_METHOD)
-		}
-		srcAddrStrPtr := client.GetAddrStr()
-		if srcAddrStrPtr == nil {
-			return common.RespPacking(nil, common.INTERNAL_ERROR)
-		}
-		srcAddrStr := *srcAddrStrPtr
-		destAddrStr, ok := cmd["Dest"].(string)
-		if !ok {
-			return common.RespPacking(nil, common.INVALID_PARAMS)
-		}
-		payload := []byte(cmd["Payload"].(string))
-		signature, err := hex.DecodeString(cmd["Signature"].(string))
-		if err != nil {
-			log.Error("Decode signature error:", err)
-			return common.RespPacking(nil, common.INVALID_PARAMS)
-		}
-		err = ws.node.SendRelayPacket(srcAddrStr, destAddrStr, payload, signature)
-		if err != nil {
-			log.Error("Send relay packet error:", err)
-			return common.RespPacking(nil, common.INTERNAL_ERROR)
-		}
-		return common.RespPacking(nil, common.SUCCESS)
-	}
-
 	actionMap := map[string]Handler{
 		"heartbeat":       {handler: heartbeat},
 		"gettxhashmap":    {handler: gettxhashmap},
 		"getsessioncount": {handler: getsessioncount},
 		"setClient":       {handler: setClient},
-		"sendPacket":      {handler: relayHandler},
 	}
 
 	for name, handler := range common.InitialAPIHandlers {
@@ -270,9 +237,9 @@ func (ws *WsServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for {
-		_, bysMsg, err := wsConn.ReadMessage()
+		messageType, bysMsg, err := wsConn.ReadMessage()
 		if err == nil {
-			if ws.OnDataHandle(nsSession, bysMsg, r) {
+			if ws.OnDataHandle(nsSession, messageType, bysMsg, r) {
 				nsSession.UpdateActiveTime()
 			}
 			continue
@@ -298,7 +265,17 @@ func (ws *WsServer) IsValidMsg(reqMsg map[string]interface{}) bool {
 	return true
 }
 
-func (ws *WsServer) OnDataHandle(curSession *Session, bysMsg []byte, r *http.Request) bool {
+func (ws *WsServer) OnDataHandle(curSession *Session, messageType int, bysMsg []byte, r *http.Request) bool {
+	if messageType == websocket.BinaryMessage {
+		msg := &client.OutboundMessage{}
+		err := proto.Unmarshal(bysMsg, msg)
+		if err != nil {
+			log.Error("Parse client message error:", err)
+			return false
+		}
+		ws.SendRelayPacket(curSession.GetSessionId(), msg)
+		return true
+	}
 
 	var req = make(map[string]interface{})
 
@@ -369,7 +346,7 @@ func (ws *WsServer) respondToSession(session *Session, resp map[string]interface
 		log.Error("Websocket response:", err)
 		return
 	}
-	session.Send(data)
+	session.SendText(data)
 }
 
 func (ws *WsServer) respondToId(sSessionId string, resp map[string]interface{}) {
@@ -406,7 +383,7 @@ func (ws *WsServer) PushResult(resp map[string]interface{}) {
 
 func (ws *WsServer) Broadcast(data []byte) error {
 	ws.SessionList.ForEachSession(func(s *Session) {
-		s.Send(data)
+		s.SendText(data)
 	})
 	return nil
 }
