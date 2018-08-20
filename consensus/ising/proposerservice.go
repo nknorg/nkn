@@ -46,7 +46,6 @@ type ProposerService struct {
 }
 
 func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerService {
-	totalWeight := GetTotalVotingWeight(node)
 	txnCollector := transaction.NewTxnCollector(node.GetTxnPool(), TxnAmountToBePackaged)
 
 	service := &ProposerService{
@@ -62,8 +61,8 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 		syncCache:           NewSyncBlockCache(),
 		proposerCache:       NewProposerCache(),
 		voting: []voting.Voting{
-			voting.NewBlockVoting(totalWeight),
-			voting.NewSigChainVoting(totalWeight, txnCollector),
+			voting.NewBlockVoting(),
+			voting.NewSigChainVoting(txnCollector),
 		},
 	}
 	if !service.timer.Stop() {
@@ -91,7 +90,7 @@ func (ps *ProposerService) CurrentVoting(vType voting.VotingContentType) voting.
 
 func (ps *ProposerService) ConsensusRoutine(vType voting.VotingContentType) {
 	// initialization for height and voting weight
-	ps.Initialize(vType, GetTotalVotingWeight(ps.localNode))
+	ps.Initialize(vType)
 	current := ps.CurrentVoting(vType)
 	votingHeight := current.GetVotingHeight()
 	votingPool := current.GetVotingPool()
@@ -165,32 +164,45 @@ func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.Vot
 	if err != nil {
 		return err
 	}
-	hash := content.Hash()
 	votingPool := current.GetVotingPool()
-	log.Info("local mind: ", BytesToHexString(hash.ToArrayReverse()))
+	ownMindHash := content.Hash()
+	ownWeight, _ := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
+	ownNodeID := ps.localNode.GetID()
+	log.Infof("own mind: %s, type: %d", BytesToHexString(ownMindHash.ToArrayReverse()), vType)
 	if mind, ok := votingPool.GetMind(votingHeight); ok {
-		// if local mind doesn't better than neighbor mind then change.
-		if mind.CompareTo(hash) == -1 {
-			hash = mind
-			log.Info("mind set to neighbor mind: ", BytesToHexString(hash.ToArrayReverse()))
+		log.Infof("neighbor mind: %s, type: %d ", BytesToHexString(mind.ToArrayReverse()), vType)
+		// if own mind different with neighbors then change mind
+		if ownMindHash.CompareTo(mind) != 0 {
+			ownMindHash = mind
+			log.Infof("own mind is affected by neighbor mind: %s, type: %d",
+				BytesToHexString(ownMindHash.ToArrayReverse()), vType)
 		}
+		// add own vote to voting pool
+		votingPool.AddToReceivePool(votingHeight, ownNodeID, ownWeight, ownMindHash)
 	} else {
-		// set mind if it has not been set
-		votingPool.ChangeMind(votingHeight, hash)
-		log.Info("mind set to local mind: ", BytesToHexString(hash.ToArrayReverse()))
+		// set initial mind if it has not been set
+		votingPool.SetMind(votingHeight, ownMindHash)
+
+		// if voting result is different with initial mind then change mind
+		maybeFinalHash, _ := votingPool.AddVoteThenCounting(votingHeight, ownNodeID, ownWeight, ownMindHash)
+		if maybeFinalHash != nil && maybeFinalHash.CompareTo(ownMindHash) != 0 {
+			log.Infof("mind set when send proposal: %s, type: %d",
+				BytesToHexString(ownMindHash.ToArrayReverse()), vType)
+			votingPool.SetMind(votingHeight, ownMindHash)
+		}
 	}
-	if !current.HasSelfState(hash, voting.ProposalSent) {
-		log.Infof("proposing hash: %s, type: %d", BytesToHexString(hash.ToArrayReverse()), vType)
+	if !current.HasSelfState(ownMindHash, voting.ProposalSent) {
+		log.Infof("proposing hash: %s, type: %d", BytesToHexString(ownMindHash.ToArrayReverse()), vType)
 		// create new proposal
-		proposalMsg := NewProposal(&hash, votingHeight, vType)
+		proposalMsg := NewProposal(&ownMindHash, votingHeight, vType)
 		// get nodes which should receive proposal message
 		nodes := ps.GetReceiverNode(nil)
 		// send proposal to neighbors
 		ps.SendConsensusMsg(proposalMsg, nodes)
 		// state changed for current hash
-		current.SetSelfState(hash, voting.ProposalSent)
+		current.SetSelfState(ownMindHash, voting.ProposalSent)
 		// set confirming hash
-		current.SetConfirmingHash(hash)
+		current.SetConfirmingHash(ownMindHash)
 	}
 
 	return nil
@@ -224,9 +236,9 @@ func (ps *ProposerService) ProduceNewBlock() {
 	if err != nil {
 		log.Error("sending consensus message error: ", err)
 	}
-	// update mind of local node
 	blockHash := block.Hash()
-	votingPool.ChangeMind(votingHeight, blockHash)
+	// set initial mind for block proposer
+	votingPool.SetMind(votingHeight, blockHash)
 	log.Info("when produce new block mind set to: ", BytesToHexString(blockHash.ToArrayReverse()))
 }
 
@@ -575,10 +587,10 @@ func (ps *ProposerService) HandleRequestMsg(req *Request, sender *crypto.PubKey)
 	ps.SendConsensusMsg(responseMsg, nodes)
 }
 
-func (ps *ProposerService) Initialize(vType voting.VotingContentType, totalWeight int) {
+func (ps *ProposerService) Initialize(vType voting.VotingContentType) {
 	// initial total voting weight
 	for _, v := range ps.voting {
-		v.GetVotingPool().Reset(totalWeight)
+		v.GetVotingPool().Reset()
 		v.Reset()
 	}
 }
@@ -627,12 +639,12 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender *crypto.PubK
 	if err != nil {
 		return
 	}
-	currentVotingPool := current.GetVotingPool()
-	currentVotingPool.AddToReceivePool(height, nodeID, *hash)
 	current.SetNeighborState(nodeID, *hash, voting.ProposalReceived)
 
+	currentVotingPool := current.GetVotingPool()
+	neighborWeight, _ := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
 	// Get voting result from voting pool. If votes is not enough then return.
-	maybeFinalHash, err := currentVotingPool.VoteCounting(votingHeight)
+	maybeFinalHash, err := currentVotingPool.AddVoteThenCounting(votingHeight, nodeID, neighborWeight, *hash)
 	if err != nil {
 		return
 	}
@@ -649,7 +661,7 @@ func (ps *ProposerService) SetOrChangeMind(votingType voting.VotingContentType,
 		if mind.CompareTo(*maybeFinalHash) != 0 {
 			log.Info("when receive proposal mind changed to neighbor mind: ",
 				BytesToHexString(maybeFinalHash.ToArrayReverse()))
-			history := currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
+			history := currentVotingPool.SetMind(votingHeight, *maybeFinalHash)
 			// generate mind changing message
 			mindChangingMsg := NewMindChanging(maybeFinalHash, votingHeight, votingType)
 			// get node which should receive request message
@@ -663,7 +675,7 @@ func (ps *ProposerService) SetOrChangeMind(votingType voting.VotingContentType,
 		}
 	} else {
 		// Set mind if current mind has not been set.
-		currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
+		currentVotingPool.SetMind(votingHeight, *maybeFinalHash)
 		log.Info("when receive proposal mind set to neighbor mind: ",
 			BytesToHexString(maybeFinalHash.ToArrayReverse()))
 	}
@@ -728,10 +740,9 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 	// set state when receive a proposal from a neighbor
 	current.SetNeighborState(nodeID, hash, voting.ProposalReceived)
 	currentVotingPool := current.GetVotingPool()
-	currentVotingPool.AddToReceivePool(height, nodeID, hash)
-
+	neighborWeight, _ := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
 	// Get voting result from voting pool. If votes is not enough then return.
-	maybeFinalHash, err := currentVotingPool.VoteCounting(votingHeight)
+	maybeFinalHash, err := currentVotingPool.AddVoteThenCounting(votingHeight, nodeID, neighborWeight, hash)
 	if err != nil {
 		return
 	}
@@ -758,16 +769,13 @@ func (ps *ProposerService) HandleMindChangingMsg(mindChanging *MindChanging, sen
 		return
 	}
 	currentVotingPool := current.GetVotingPool()
-	receivePool := currentVotingPool.GetReceivePool(votingHeight)
-	if _, ok := receivePool[nodeID]; !ok {
+	if currentVotingPool.HasReceivedVoteFrom(votingHeight, nodeID) {
 		log.Warn("no proposal received before, so mind changing is invalid")
 		return
 	}
-	// update voting pool when receive valid mind changing message
-	currentVotingPool.AddToReceivePool(height, nodeID, hash)
-
+	neighborWeight, _ := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
 	// recalculate votes
-	maybeFinalHash, err := currentVotingPool.VoteCounting(votingHeight)
+	maybeFinalHash, err := currentVotingPool.AddVoteThenCounting(votingHeight, nodeID, neighborWeight, hash)
 	if err != nil {
 		return
 	}
@@ -777,7 +785,7 @@ func (ps *ProposerService) HandleMindChangingMsg(mindChanging *MindChanging, sen
 		if mind.CompareTo(*maybeFinalHash) != 0 {
 			log.Info("when receive mindchanging mind change to neighbor mind: ",
 				BytesToHexString(maybeFinalHash.ToArrayReverse()))
-			history := currentVotingPool.ChangeMind(votingHeight, *maybeFinalHash)
+			history := currentVotingPool.SetMind(votingHeight, *maybeFinalHash)
 			// generate mind changing message
 			mindChangingMsg := NewMindChanging(maybeFinalHash, votingHeight, votingType)
 			// get node which should receive request message
