@@ -51,13 +51,21 @@ func (s *Session) UpdateActiveTime() {
 	s.nLastActive = time.Now().Unix()
 }
 
-func (s *Session) Send(data []byte) error {
+func (s *Session) Send(msgType int, data []byte) error {
 	s.Lock()
 	defer s.Unlock()
 	if s.mConnection == nil {
 		return errors.New("WebSocket is null")
 	}
-	return s.mConnection.WriteMessage(websocket.TextMessage, data)
+	return s.mConnection.WriteMessage(msgType, data)
+}
+
+func (s *Session) SendText(data []byte) error {
+	return s.Send(websocket.TextMessage, data)
+}
+
+func (s *Session) SendBinary(data []byte) error {
+	return s.Send(websocket.BinaryMessage, data)
 }
 
 func (s *Session) SessionTimeoverCheck() bool {
