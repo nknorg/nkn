@@ -240,17 +240,14 @@ func DecodePoint(encodeData []byte) (*PubKey, error) {
 		return nil, NewDetailErr(errors.New("The encodeData cann't be nil"), ErrNoCode, "")
 	}
 
-	expectedLength := (algSet.EccParams.P.BitLen() + 7) / 8
-
 	switch encodeData[0] {
 	case 0x00:
 		return &PubKey{nil, nil}, nil
 
 	case 0x02, 0x03: //compressed
-		if len(encodeData) != expectedLength+1 {
-			return nil, NewDetailErr(errors.New("The encodeData format is error"), ErrNoCode, "")
+		if len(encodeData) != COMPRESSEDLEN {
+			return nil, errors.New("encoded compressed public key length error")
 		}
-
 		yTilde := int(encodeData[0] & 1)
 		pubKey, err := deCompress(yTilde, encodeData[FLAGLEN:FLAGLEN+XORYVALUELEN],
 			&algSet.EccParams)
@@ -260,6 +257,9 @@ func DecodePoint(encodeData []byte) (*PubKey, error) {
 		return pubKey, nil
 
 	case 0x04, 0x06, 0x07: //uncompressed
+		if len(encodeData) != NOCOMPRESSEDLEN {
+			return nil, errors.New("encoded uncompressed public key length error")
+		}
 		pubKeyX := new(big.Int).SetBytes(encodeData[FLAGLEN : FLAGLEN+XORYVALUELEN])
 		pubKeyY := new(big.Int).SetBytes(encodeData[FLAGLEN+XORYVALUELEN : NOCOMPRESSEDLEN])
 		return &PubKey{pubKeyX, pubKeyY}, nil
