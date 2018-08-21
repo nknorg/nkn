@@ -48,10 +48,10 @@ function CreateTemplate() {
 
     isExist "instance-templates" "${1}" "name:${1}" "${FORMAT}" || \
         gcloud compute instance-templates create "$1" \
-            --machine-type n1-standard-1 \
+            --machine-type g1-small \
             --image-family testnet-disk \
             --image-project nkn-testnet \
-            --boot-disk-size 20GB \
+            --boot-disk-size 10GB \
             --subnet default \
             --tags nkntestnet,http-server,https-server \
             --region "$2"
