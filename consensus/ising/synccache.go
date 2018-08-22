@@ -25,12 +25,13 @@ type BlockWithVotes struct {
 // SyncCache cached blocks sent by block proposer when wait for block syncing finished.
 type SyncCache struct {
 	sync.RWMutex
-	currHeight  uint32
-	startHeight uint32
-	nextHeight  uint32
-	blockCache  map[uint32]*BlockWithVotes
-	voteCache   map[uint32]map[uint64]Uint256
-	timeLock    *TimeLock
+	currHeight      uint32
+	startHeight     uint32
+	nextHeight      uint32
+	consensusHeight uint32
+	blockCache      map[uint32]*BlockWithVotes
+	voteCache       map[uint32]map[uint64]Uint256
+	timeLock        *TimeLock
 }
 
 func NewSyncBlockCache() *SyncCache {
@@ -227,4 +228,14 @@ func (sc *SyncCache) ChangeVoteForBlock(hash Uint256, height uint32, voter uint6
 	}
 
 	return nil
+}
+
+func (sc *SyncCache) SetConsensusHeight(height uint32) {
+	sc.Lock()
+	defer sc.Unlock()
+
+	// set consensus height if it has not been set
+	if sc.consensusHeight == 0 {
+		sc.consensusHeight = height
+	}
 }
