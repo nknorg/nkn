@@ -347,26 +347,31 @@ func (ps *ProposerService) ChangeProposer() {
 
 func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 	for i := ps.syncCache.startHeight; i < ps.syncCache.nextHeight; i++ {
-		vBlock, err := ps.syncCache.GetBlockFromSyncCache(i)
-		if err != nil {
-			//TODO: if found ambiguous block then re-sync block
-			log.Error("persist cached block error: ", err)
-			return
+		if i >= ps.syncCache.consensusHeight {
+			vBlock, err := ps.syncCache.GetBlockFromSyncCache(i)
+			if err != nil {
+				//TODO: if found ambiguous block then re-sync block
+				log.Error("persist cached block error: ", err)
+				return
+			}
+			err = ledger.BlockCheck(vBlock, ledger.DefaultLedger)
+			if err != nil {
+				log.Error("verifying cached block error: ", err)
+				return
+			}
+			err = ledger.DefaultLedger.Blockchain.AddBlock(vBlock.Block)
+			if err != nil {
+				log.Error("saving cached block error: ", err)
+				return
+			}
+			// Fixme: wait for block persisted
+			time.Sleep(time.Millisecond * 300)
 		}
-		err = ledger.BlockCheck(vBlock, ledger.DefaultLedger)
+		err := ps.syncCache.RemoveBlockFromCache(i)
 		if err != nil {
-			log.Error("verifying cached block error: ", err)
-			return
+			log.Warnf("sync cache cleanup failed for height %d, error: %v", i, err)
 		}
-		err = ledger.DefaultLedger.Blockchain.AddBlock(vBlock.Block)
-		if err != nil {
-			log.Error("saving cached block error: ", err)
-			return
-		}
-		ps.syncCache.RemoveBlockFromCache(i)
 		ps.syncCache.timeLock.RemoveForHeight(i)
-		// Fixme: wait for block persisted
-		time.Sleep(time.Millisecond * 300)
 	}
 	log.Info("cached block saving finished")
 	// switch syncing state
@@ -697,6 +702,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 			return
 		}
 		ps.localNode.SetSyncStopHash(vBlock.Block.Header.PrevBlockHash, vBlock.Block.Header.Height-1)
+		ps.syncCache.SetConsensusHeight(height)
 		return
 	}
 
