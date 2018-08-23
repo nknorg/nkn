@@ -505,3 +505,14 @@ func (vn *localVnode) ClosestNeighborIterator(key []byte) (closestPreceedingVnod
 	cp.init(vn, key, true, true)
 	return cp, nil
 }
+
+// Extract marshalable data from localVnode struct
+func (vn *localVnode) toData() *localVnodeData {
+	return &localVnodeData{
+		vn.Vnode,
+		vn.successors,
+		vn.finger,
+		vn.predecessor,
+		vn.last_finger,
+	}
+}

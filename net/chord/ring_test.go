@@ -3,6 +3,7 @@ package chord
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/json"
 	"sort"
 	"testing"
 	"time"
@@ -42,7 +43,7 @@ func makeRing() *Ring {
 func TestRingInit(t *testing.T) {
 	// Create a ring
 	ring := &Ring{}
-	conf := DefaultConfig("test")
+	conf := DefaultConfig("test", true)
 	ring.init(conf, nil)
 
 	// Test features
@@ -88,6 +89,17 @@ func TestRingSort(t *testing.T) {
 	}
 	if bytes.Compare(ring.Vnodes[3].Id, ring.Vnodes[4].Id) != -1 {
 		t.Fatalf("bad sort")
+	}
+}
+
+func TestRingToData(t *testing.T) {
+	ring := makeRing()
+	js, err := json.Marshal(ring.ToData())
+
+	if err != nil {
+		t.Fatal(err)
+	} else {
+		t.Logf("%s", js)
 	}
 }
 

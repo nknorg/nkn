@@ -22,6 +22,7 @@ func infoAction(c *cli.Context) (err error) {
 	blockcount := c.Bool("blockcount")
 	connections := c.Bool("connections")
 	neighbor := c.Bool("neighbor")
+	ring := c.Bool("ring")
 	state := c.Bool("state")
 	version := c.Bool("nodeversion")
 
@@ -74,6 +75,15 @@ func infoAction(c *cli.Context) (err error) {
 
 	if neighbor {
 		resp, err := client.Call(Address(), "getneighbor", 0, map[string]interface{}{})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
+		output = append(output, resp)
+	}
+
+	if ring {
+		resp, err := client.Call(Address(), "getchordringinfo", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -150,6 +160,10 @@ func NewCommand() *cli.Command {
 			cli.BoolFlag{
 				Name:  "neighbor",
 				Usage: "neighbor information of current node",
+			},
+			cli.BoolFlag{
+				Name:  "ring",
+				Usage: "chord ring information of current node",
 			},
 			cli.BoolFlag{
 				Name:  "state, s",
