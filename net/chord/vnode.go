@@ -436,7 +436,30 @@ func (vn *localVnode) knownSuccessors() (successors int) {
 	return
 }
 
-func (vn *localVnode) Neighbors() []*Vnode {
+func (vn *localVnode) shouldConnectToHost(host string) bool {
+	// successor list
+	for _, n := range vn.successors {
+		if n != nil && n.Host == host {
+			return true
+		}
+	}
+
+	// predecessor
+	if vn.predecessor != nil && vn.predecessor.Host == host {
+		return true
+	}
+
+	// finger table
+	for _, n := range vn.finger {
+		if n != nil && n.Host == host {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (vn *localVnode) GetNeighbors() []*Vnode {
 	seen := make(map[*Vnode]bool)
 	neighbors := []*Vnode{}
 	for _, n := range vn.finger {
