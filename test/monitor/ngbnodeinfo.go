@@ -1,7 +1,5 @@
 package monitor
 
-import "strings"
-
 type NgbNodeInfo struct {
 	NgbId         string
 	NgbType       string
@@ -22,9 +20,5 @@ func (n NgbNodeInfoSlice) Swap(i, j int) {
 }
 
 func (n NgbNodeInfoSlice) Less(i, j int) bool {
-	if 0 <= strings.Compare(n[i].HttpInfoAddr, n[j].HttpInfoAddr) {
-		return false
-	} else {
-		return true
-	}
+	return n[i].HttpInfoAddr < n[j].HttpInfoAddr
 }

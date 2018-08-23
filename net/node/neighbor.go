@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 
 	. "github.com/nknorg/nkn/net/protocol"
@@ -176,7 +175,7 @@ func (node *node) GetNeighborByAddr(addr string) Noder {
 	defer node.nbrNodes.RUnlock()
 	for _, n := range node.nbrNodes.List {
 		if n.GetState() == HAND || n.GetState() == HANDSHAKE || n.GetState() == ESTABLISH {
-			if strings.Compare(n.GetAddrStr(), addr) == 0 {
+			if n.GetAddrStr() == addr {
 				return n
 			}
 		}

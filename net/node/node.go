@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"net"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -107,7 +106,7 @@ func (node *node) SetAddrInConnectingList(addr string) (added bool) {
 	node.ConnectingNodes.Lock()
 	defer node.ConnectingNodes.Unlock()
 	for _, a := range node.ConnectingAddrs {
-		if strings.Compare(a, addr) == 0 {
+		if a == addr {
 			return false
 		}
 	}
@@ -120,7 +119,7 @@ func (node *node) RemoveAddrInConnectingList(addr string) {
 	defer node.ConnectingNodes.Unlock()
 	addrs := []string{}
 	for i, a := range node.ConnectingAddrs {
-		if strings.Compare(a, addr) == 0 {
+		if a == addr {
 			addrs = append(node.ConnectingAddrs[:i], node.ConnectingAddrs[i+1:]...)
 		}
 	}
