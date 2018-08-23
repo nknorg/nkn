@@ -7,11 +7,11 @@ import (
 
 func TestTCPJoin(t *testing.T) {
 	// Prepare to create 2 nodes
-	c1, t1, err := prepRing(10025)
+	c1, t1, err := prepRing(10025, true)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
-	c2, t2, err := prepRing(10026)
+	c2, t2, err := prepRing(10026, false)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
@@ -37,11 +37,11 @@ func TestTCPJoin(t *testing.T) {
 
 func TestTCPLeave(t *testing.T) {
 	// Prepare to create 2 nodes
-	c1, t1, err := prepRing(10027)
+	c1, t1, err := prepRing(10027, true)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
-	c2, t2, err := prepRing(10028)
+	c2, t2, err := prepRing(10028, false)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
@@ -62,15 +62,15 @@ func TestTCPLeave(t *testing.T) {
 	<-time.After(100 * time.Millisecond)
 
 	// Node 1 should leave
-	r1.Leave()
-	t1.Shutdown()
+	r2.Leave()
+	t2.Shutdown()
 
 	// Wait for stabilization
 	<-time.After(100 * time.Millisecond)
 
-	// Verify r2 ring is still in tact
-	for _, vn := range r2.Vnodes {
-		if vn.successors[0].Host != r2.config.Hostname {
+	// Verify r1 ring is still in tact
+	for _, vn := range r1.Vnodes {
+		if vn.successors[0].Host != r1.config.Hostname {
 			t.Fatalf("bad successor! Got:%s:%s", vn.successors[0].Host,
 				vn.successors[0])
 		}

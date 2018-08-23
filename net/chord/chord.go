@@ -76,6 +76,16 @@ type Config struct {
 	JoinBlkHeight uint32           // Current BlockHeight when join ring
 }
 
+// configData : Data of Config struct for json.Marshal in API
+type configData struct {
+	Hostname      string // Local host name
+	NumVnodes     int    // Number of vnodes per physical node
+	NumSuccessors int    // Number of successors to maintain
+	HashBits      int    // Bit size of the hash function
+	SeedNodeAddr  string // Join a ring via a seed node
+	JoinBlkHeight uint32 // Current BlockHeight when join ring
+}
+
 // Represents an Vnode, local or remote
 type Vnode struct {
 	Id         []byte // Virtual ID
@@ -97,6 +107,15 @@ type localVnode struct {
 	OnNewSuccessor func()
 }
 
+// localVnodeData : Data of localVnode for json.Marshal in API
+type localVnodeData struct {
+	Vnode
+	Successors  []*Vnode
+	Finger      []*Vnode
+	Predecessor *Vnode
+	Last_finger int
+}
+
 // Stores the state required for a Chord ring
 type Ring struct {
 	config     *Config
@@ -104,6 +123,12 @@ type Ring struct {
 	Vnodes     []*localVnode
 	delegateCh chan func()
 	shutdown   chan bool
+}
+
+// RingData : Data of Ring for json.Marshal in API
+type RingData struct {
+	Conf   *configData
+	Vnodes []*localVnodeData
 }
 
 var ring *Ring
@@ -138,6 +163,18 @@ func DefaultConfig(hostname string, create bool) *Config {
 		hashBits:      256, // 256bit hash function
 		SeedNodeAddr:  remote,
 		JoinBlkHeight: bh,
+	}
+}
+
+// Extract marshalable data from Config struct
+func (c *Config) toData() *configData {
+	return &configData{
+		c.Hostname,
+		c.NumVnodes,
+		c.NumSuccessors,
+		c.hashBits,
+		c.SeedNodeAddr,
+		c.JoinBlkHeight,
 	}
 }
 

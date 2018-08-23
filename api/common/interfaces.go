@@ -125,7 +125,7 @@ func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]inte
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	return respPacking(node.GetChordRing(), SUCCESS)
+	return respPacking(node.GetChordRing().ToData(), SUCCESS)
 }
 
 // getLatestBlockHeight gets the latest block height
