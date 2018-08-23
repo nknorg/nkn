@@ -151,7 +151,7 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 	}
 
 	// Create and initialize a ring
-	ring := &Ring{}
+	ring = &Ring{}
 	ring.init(conf, trans)
 	ring.setLocalSuccessors()
 	ring.schedule()
@@ -173,7 +173,7 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	}
 
 	// Create a ring
-	ring := &Ring{}
+	ring = &Ring{}
 	ring.init(conf, trans)
 
 	// Acquire a live successor for each Vnode

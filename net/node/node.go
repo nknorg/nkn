@@ -650,7 +650,7 @@ func (node *node) ConnectNeighbors() {
 	if err != nil || chordNode == nil {
 		return
 	}
-	neighbors := chordNode.Neighbors()
+	neighbors := chordNode.GetNeighbors()
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
 	for _, chordNbr := range neighbors {

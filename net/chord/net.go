@@ -103,7 +103,7 @@ func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, erro
 	pool := make(map[string][]*tcpOutConn)
 
 	// Maximum age of a connection
-	maxIdle := time.Duration(300 * time.Second)
+	maxIdle := time.Duration(60 * time.Second)
 
 	// Setup the transport
 	tcp := &TCPTransport{sock: sock.(*net.TCPListener),
@@ -138,27 +138,32 @@ func (t *TCPTransport) get(vn *Vnode) (VnodeRPC, bool) {
 
 // Gets an outbound connection to a host
 func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
-	// Check if we have a conn cached
-	var out *tcpOutConn
 	t.poolLock.Lock()
+
 	if atomic.LoadInt32(&t.shutdown) == 1 {
 		t.poolLock.Unlock()
 		return nil, fmt.Errorf("TCP transport is shutdown")
 	}
-	list, ok := t.pool[host]
-	if ok && len(list) > 0 {
+
+	// Check if we have a conn cached
+	var out *tcpOutConn
+	for list, ok := t.pool[host]; ok && len(list) > 0; {
 		out = list[len(list)-1]
 		list = list[:len(list)-1]
 		t.pool[host] = list
-	}
-	t.poolLock.Unlock()
-	if out != nil {
-		// Verify that the socket is valid. Might be closed.
-		if _, err := out.sock.Read(nil); err == nil {
-			return out, nil
+		if out == nil {
+			continue
 		}
-		out.sock.Close()
+		_, err := out.sock.Read(nil)
+		if err == nil {
+			t.poolLock.Unlock()
+			return out, nil
+		} else {
+			out.sock.Close()
+		}
 	}
+
+	t.poolLock.Unlock()
 
 	// Try to establish a connection
 	conn, err := net.DialTimeout("tcp", host, t.timeout)
@@ -588,7 +593,7 @@ func (t *TCPTransport) reapOld() {
 		if atomic.LoadInt32(&t.shutdown) == 1 {
 			return
 		}
-		time.Sleep(30 * time.Second)
+		time.Sleep(10 * time.Second)
 		t.reapOnce()
 	}
 }
@@ -597,6 +602,17 @@ func (t *TCPTransport) reapOnce() {
 	t.poolLock.Lock()
 	defer t.poolLock.Unlock()
 	for host, conns := range t.pool {
+		if len(conns) == 0 {
+			continue
+		}
+		if ring != nil && !ring.shouldConnectToHost(host) {
+			log.Printf("[INFO] Disconnect with %d chord nodes at %s.", len(conns), host)
+			for _, conn := range conns {
+				conn.sock.Close()
+			}
+			t.pool[host] = make([]*tcpOutConn, 0)
+			continue
+		}
 		max := len(conns)
 		for i := 0; i < max; i++ {
 			if time.Since(conns[i].used) > t.maxIdle {

@@ -188,3 +188,12 @@ func (r *Ring) GetPredecessor(key []byte) (*Vnode, error) {
 	}
 	return vnode.FindPredecessor(key)
 }
+
+func (r *Ring) shouldConnectToHost(host string) bool {
+	for _, vn := range r.Vnodes {
+		if vn != nil && vn.shouldConnectToHost(host) {
+			return true
+		}
+	}
+	return false
+}
