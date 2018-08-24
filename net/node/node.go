@@ -91,6 +91,7 @@ type ConnectingNodes struct {
 func (node *node) DumpInfo() {
 	log.Info("Node info:")
 	log.Info("\t state = ", node.state)
+	log.Info("\t syncState = ", node.syncState)
 	log.Info(fmt.Sprintf("\t id = 0x%x", node.id))
 	log.Info("\t addr = ", node.addr)
 	log.Info("\t cap = ", node.cap)
