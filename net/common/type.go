@@ -2,6 +2,7 @@ package common
 
 type NodeInfo struct {
 	State     uint32 `json:"State"`     // node status
+	SyncState string `json:"SyncState"` // node block sync status
 	Port      uint16 `json:"Port"`      // The nodes's port
 	NodePort  uint16 `json:"NodePort"`  // The nodes's port
 	ChordPort uint16 `json:"ChordPort"` // The nodes's port

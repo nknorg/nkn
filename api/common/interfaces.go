@@ -342,6 +342,7 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 
 	n := netcomm.NodeInfo{
 		State:     node.GetState(),
+		SyncState: protocol.SyncStateString[node.GetSyncState()],
 		Time:      node.GetTime(),
 		Addr:      node.GetAddr(),
 		NodePort:  node.GetPort(),
