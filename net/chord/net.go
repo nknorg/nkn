@@ -28,6 +28,7 @@ type TCPTransport struct {
 	local    map[string]*localRPC
 	inbound  map[*net.TCPConn]struct{}
 	poolLock sync.Mutex
+	sockQue  chan int
 	pool     map[string][]*tcpOutConn
 	shutdown int32
 }
@@ -97,21 +98,14 @@ func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, erro
 		return nil, err
 	}
 
-	// allocate maps
-	local := make(map[string]*localRPC)
-	inbound := make(map[*net.TCPConn]struct{})
-	pool := make(map[string][]*tcpOutConn)
-
-	// Maximum age of a connection
-	maxIdle := time.Duration(60 * time.Second)
-
 	// Setup the transport
 	tcp := &TCPTransport{sock: sock.(*net.TCPListener),
 		timeout: timeout,
-		maxIdle: maxIdle,
-		local:   local,
-		inbound: inbound,
-		pool:    pool}
+		maxIdle: time.Duration(60 * time.Second), // Maximum age of a connection
+		local:   make(map[string]*localRPC),      // allocate maps
+		inbound: make(map[*net.TCPConn]struct{}),
+		sockQue: make(chan int, 1000), // Quota of sock. TODO: get quota from config
+		pool:    make(map[string][]*tcpOutConn)}
 
 	// Listen for connections
 	go tcp.listen()
@@ -633,7 +627,8 @@ func (t *TCPTransport) listen() {
 		conn, err := t.sock.AcceptTCP()
 		if err != nil {
 			if atomic.LoadInt32(&t.shutdown) == 0 {
-				fmt.Printf("[ERR] Error accepting TCP connection! %s", err)
+				fmt.Printf("[ERR] Error accepting TCP connection! %s\n", err)
+				time.Sleep(time.Millisecond * 300) // Add delay before try again sock Accept
 				continue
 			} else {
 				return
@@ -648,8 +643,12 @@ func (t *TCPTransport) listen() {
 		t.inbound[conn] = struct{}{}
 		t.lock.Unlock()
 
-		// Start handler
-		go t.handleConn(conn)
+		if len(t.sockQue) >= 1000 {
+			log.Printf("[WARN] The quota reach the limitation %d\n", len(t.sockQue))
+		}
+
+		t.sockQue <- 1        // Push
+		go t.handleConn(conn) // Start handler
 	}
 }
 
@@ -661,6 +660,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		delete(t.inbound, conn)
 		t.lock.Unlock()
 		conn.Close()
+		<-t.sockQue // Pop
 	}()
 
 	dec := gob.NewDecoder(conn)
