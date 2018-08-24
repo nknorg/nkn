@@ -308,6 +308,9 @@ func (ps *ProposerService) ProbeRoutine() {
 }
 
 func (ps *ProposerService) BlockPersistCompleted(v interface{}) {
+	if ps.localNode.GetSyncState() != protocol.PersistFinished {
+		return
+	}
 	if block, ok := v.(*ledger.Block); ok {
 		// record time when persist block
 		ledger.DefaultLedger.Blockchain.AddBlockTime(block.Hash(), time.Now().Unix())
@@ -347,7 +350,7 @@ func (ps *ProposerService) ChangeProposer() {
 
 func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 	for i := ps.syncCache.startHeight; i < ps.syncCache.nextHeight; i++ {
-		if i >= ps.syncCache.consensusHeight {
+		if i > ps.syncCache.consensusHeight {
 			vBlock, err := ps.syncCache.GetBlockFromSyncCache(i)
 			if err != nil {
 				//TODO: if found ambiguous block then re-sync block
@@ -701,7 +704,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender *crypto.
 		if err != nil {
 			return
 		}
-		ps.localNode.SetSyncStopHash(vBlock.Block.Header.PrevBlockHash, vBlock.Block.Header.Height-1)
+		ps.localNode.SetSyncStopHash(vBlock.Block.Header.Hash(), vBlock.Block.Header.Height)
 		ps.syncCache.SetConsensusHeight(height)
 		return
 	}

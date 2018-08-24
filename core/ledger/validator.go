@@ -3,9 +3,11 @@ package ledger
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/signature"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
@@ -88,7 +90,7 @@ func HeaderCheck(header *Header, receiveTime int64, ledger *Ledger) error {
 	}
 	prevTimestamp, err := DefaultLedger.Blockchain.GetBlockTime(header.PrevBlockHash)
 	if err != nil {
-		return errors.New("no receive time for block")
+		return err
 	}
 	if prevTimestamp == genesisBlock.Header.Timestamp {
 		timeDiff = 0
@@ -101,8 +103,11 @@ func HeaderCheck(header *Header, receiveTime int64, ledger *Ledger) error {
 	timeSlot := int64(config.ProposerChangeTime / time.Second)
 	if timeDiff > timeSlot {
 		index := timeDiff / timeSlot
-		proposerBlockHeight := DefaultLedger.Store.GetHeight() - uint32(index)
-		proposerBlockHash, err := DefaultLedger.Store.GetBlockHash(proposerBlockHeight)
+		proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - index
+		if proposerBlockHeight < 0 {
+			proposerBlockHeight = 0
+		}
+		proposerBlockHash, err := DefaultLedger.Store.GetBlockHash(uint32(proposerBlockHeight))
 		if err != nil {
 			return err
 		}
@@ -111,6 +116,8 @@ func HeaderCheck(header *Header, receiveTime int64, ledger *Ledger) error {
 			return err
 		}
 		miner, err = proposerBlock.GetSigner()
+		log.Infof("timeouts, singer: %s is expected, which is signer of height %d",
+			common.BytesToHexString(miner), proposerBlockHeight)
 		if err != nil {
 			return err
 		}
@@ -138,14 +145,19 @@ func HeaderCheck(header *Header, receiveTime int64, ledger *Ledger) error {
 			if err != nil {
 				return err
 			}
+			txnHash := txn.Hash()
+			log.Infof("WinningTxnHash, singer: %s is expected, txn hash: %s",
+				common.BytesToHexString(miner), common.BytesToHexString(txnHash.ToArrayReverse()))
 		case WinningNilHash:
 			miner = prevHeader.Signer
+			log.Infof("WinningNilHash, singer: %s is expected, which is signer of prev height %d",
+				common.BytesToHexString(miner), prevHeader.Height)
 		}
 	}
 
 	// verify header signature
 	if bytes.Compare(miner, header.Signer) != 0 {
-		return errors.New("invalid Block signer")
+		return fmt.Errorf("invalid Block signer, expected: %s", common.BytesToHexString(miner))
 	}
 	rawPubKey, err := crypto.DecodePoint(miner)
 	if err != nil {

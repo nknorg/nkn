@@ -126,6 +126,9 @@ func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block) error {
 			if hash.CompareTo(h) == 0 {
 				blockInfo.votes++
 				if 2*blockInfo.votes > len(sc.voteCache[blockHeight]) {
+					if _, ok := sc.blockCache[blockHeight]; !ok {
+						sc.blockCache[blockHeight] = &BlockWithVotes{}
+					}
 					sc.blockCache[blockHeight].bestBlock = blockInfo
 				}
 			}
