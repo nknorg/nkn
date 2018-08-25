@@ -222,6 +222,7 @@ func parseIPaddr(s string) (string, error) {
 
 func (node *node) Connect(nodeAddr string) error {
 	if node.IsAddrInNeighbors(nodeAddr) {
+		log.Info("Node addr", nodeAddr, "already in neighbors, cancel")
 		return nil
 	}
 	if !node.SetAddrInConnectingList(nodeAddr) {
