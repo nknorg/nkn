@@ -19,7 +19,7 @@ func (nm *nbrNodes) Broadcast(buf []byte) {
 	nm.RLock()
 	defer nm.RUnlock()
 	for _, node := range nm.List {
-		if node.state == ESTABLISH && node.relay == true {
+		if node.GetState() == ESTABLISH && node.relay == true {
 			node.Tx(buf)
 		}
 	}
@@ -64,7 +64,7 @@ func (nm *nbrNodes) GetConnectionCnt() uint {
 
 	var cnt uint
 	for _, node := range nm.List {
-		if node.state == ESTABLISH {
+		if node.GetState() == ESTABLISH {
 			cnt++
 		}
 	}
@@ -174,7 +174,7 @@ func (node *node) GetNeighborByAddr(addr string) Noder {
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
 	for _, n := range node.nbrNodes.List {
-		if n.GetState() == HAND || n.GetState() == HANDSHAKE || n.GetState() == ESTABLISH {
+		if n.GetState() == ESTABLISH {
 			if n.GetAddrStr() == addr {
 				return n
 			}
@@ -187,7 +187,7 @@ func (node *node) GetNeighborByChordAddr(chordAddr []byte) Noder {
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
 	for _, n := range node.nbrNodes.List {
-		if n.GetState() == HAND || n.GetState() == HANDSHAKE || n.GetState() == ESTABLISH {
+		if n.GetState() == ESTABLISH {
 			if bytes.Compare(n.GetChordAddr(), chordAddr) == 0 {
 				return n
 			}
