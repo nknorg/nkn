@@ -15,9 +15,16 @@ import (
 	nlog "github.com/nknorg/nkn/util/log"
 )
 
-// Converts the ID to string
+// Converts the ID to Hex string
 func (vn *Vnode) String() string {
 	return fmt.Sprintf("%x", vn.Id)
+}
+
+func (vn *Vnode) ToData() *VnodeData {
+	if vn == nil {
+		return nil
+	}
+	return &VnodeData{vn.String(), vn.Host, vn.NodePort, vn.HttpWsPort}
 }
 
 func (vn *Vnode) NodeAddr() (string, error) {
@@ -508,11 +515,31 @@ func (vn *localVnode) ClosestNeighborIterator(key []byte) (closestPreceedingVnod
 
 // Extract marshalable data from localVnode struct
 func (vn *localVnode) toData() *localVnodeData {
+	if vn == nil {
+		return nil
+	}
+
+	succ := make([]*VnodeData, len(vn.successors))
+	finger := make([]*VnodeData, len(vn.finger))
+
+	for i, n := range vn.successors {
+		succ[i] = n.ToData()
+	}
+
+	last := vn.finger[0]
+	for i, n := range vn.finger {
+		if n != last { // Skip same item, Only save the last until met new
+			finger[i-1] = last.ToData() // n != last is impossible when i==0
+		}
+		last = n // Update last
+	}
+	finger[len(vn.finger)-1] = last.ToData() // save last to end of lst
+
 	return &localVnodeData{
-		vn.Vnode,
-		vn.successors,
-		vn.finger,
-		vn.predecessor,
+		*vn.Vnode.ToData(),
+		succ,
+		finger,
+		vn.predecessor.ToData(),
 		vn.last_finger,
 	}
 }

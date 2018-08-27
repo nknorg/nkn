@@ -94,6 +94,13 @@ type Vnode struct {
 	HttpWsPort uint16 // Websocket port
 }
 
+type VnodeData struct {
+	Id         string // Virtual ID of Hex String
+	Host       string // Chord Host identifier
+	NodePort   uint16 // Node port
+	HttpWsPort uint16 // Websocket port
+}
+
 // Represents a local Vnode
 type localVnode struct {
 	Vnode
@@ -109,10 +116,10 @@ type localVnode struct {
 
 // localVnodeData : Data of localVnode for json.Marshal in API
 type localVnodeData struct {
-	Vnode
-	Successors  []*Vnode
-	Finger      []*Vnode
-	Predecessor *Vnode
+	VnodeData
+	Successors  []*VnodeData
+	Finger      []*VnodeData
+	Predecessor *VnodeData
 	Last_finger int
 }
 
