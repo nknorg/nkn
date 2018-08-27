@@ -197,33 +197,17 @@ func (r *Ring) shouldConnectToHost(host string) bool {
 	return false
 }
 
-func reduceSameNode(lst []*Vnode) (ret []*Vnode) {
-	ret = make([]*Vnode, len(lst))
-
-	if lst == nil || len(lst) <= 0 {
-		return ret
-	}
-
-	last := lst[0]
-	for i, n := range lst {
-		if n != last { // Skip same item, Only save the last when new item
-			ret[i-1] = last // n != last is impossible when i==0
-			last = n        // Update last
-		}
-	}
-	ret[len(lst)-1] = last // save last at end of lst
-
-	return ret
-}
-
 // ToData: Extract marshalable data from Ring struct
 func (r *Ring) ToData() *RingData {
+	if r == nil {
+		return nil
+	}
+
 	c := r.config.toData()
 	nodes := make([]*localVnodeData, len(r.Vnodes))
 
 	for i, n := range r.Vnodes {
 		nodes[i] = n.toData()
-		nodes[i].Finger = reduceSameNode(n.finger)
 	}
 
 	return &RingData{Conf: c, Vnodes: nodes}
