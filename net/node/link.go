@@ -226,7 +226,8 @@ func (node *node) Connect(nodeAddr string) error {
 		return nil
 	}
 	if !node.SetAddrInConnectingList(nodeAddr) {
-		return errors.New("node exist in connecting list, cancel")
+		log.Error("node", nodeAddr, "exists in connecting list, cancel")
+		return errors.New("node exists in connecting list, cancel")
 	}
 
 	isTls := Parameters.IsTLS
