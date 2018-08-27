@@ -66,6 +66,5 @@ func (msg verACK) Handle(node Noder) error {
 	// but it doesn't matter to access the invalid
 	// node which will trigger a warning
 	node.ReqNeighborList()
-	node.LocalNode().RemoveAddrInConnectingList(node.GetAddrStr())
 	return nil
 }

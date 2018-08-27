@@ -118,13 +118,12 @@ func (node *node) SetAddrInConnectingList(addr string) (added bool) {
 func (node *node) RemoveAddrInConnectingList(addr string) {
 	node.ConnectingNodes.Lock()
 	defer node.ConnectingNodes.Unlock()
-	addrs := []string{}
 	for i, a := range node.ConnectingAddrs {
 		if a == addr {
-			addrs = append(node.ConnectingAddrs[:i], node.ConnectingAddrs[i+1:]...)
+			node.ConnectingAddrs = append(node.ConnectingAddrs[:i], node.ConnectingAddrs[i+1:]...)
+			return
 		}
 	}
-	node.ConnectingAddrs = addrs
 }
 
 func (node *node) UpdateInfo(t time.Time, version uint32, services uint64,
@@ -147,6 +146,7 @@ func NewNode() *node {
 	n := node{
 		state: INIT,
 	}
+	n.time = time.Now()
 	return &n
 }
 
@@ -284,6 +284,9 @@ func (node *node) GetRxTxnCnt() uint64 {
 
 func (node *node) SetState(state uint32) {
 	atomic.StoreUint32(&(node.state), state)
+	if state == ESTABLISH || state == INACTIVITY {
+		node.LocalNode().RemoveAddrInConnectingList(node.GetAddrStr())
+	}
 }
 
 func (node *node) GetPubKey() *crypto.PubKey {
@@ -628,15 +631,13 @@ func (node *node) SendPingToNbr() {
 }
 
 func (node *node) HeartBeatMonitor() {
-	noders := node.local.GetNeighborNoder()
-	for _, n := range noders {
-		if n.GetState() == ESTABLISH {
-			t := n.GetLastRXTime()
-			if time.Now().Sub(t) > KeepaliveTimeout {
-				log.Warn("keepalive timeout")
-				n.SetState(INACTIVITY)
-				n.CloseConn()
-			}
+	neighbors := node.local.GetActiveNeighbors()
+	for _, n := range neighbors {
+		t := n.GetLastRXTime()
+		if time.Now().Sub(t) > KeepaliveTimeout {
+			log.Warn("Keepalive timeout:", n.GetAddrStr())
+			n.SetState(INACTIVITY)
+			n.CloseConn()
 		}
 	}
 }
@@ -658,8 +659,10 @@ func (node *node) ConnectNeighbors() {
 		if !node.IsChordAddrInNeighbors(chordNbr.Id) {
 			chordNbrAddr, err := chordNbr.NodeAddr()
 			if err != nil {
+				log.Error("Get chord neighbor node addr error:", err)
 				continue
 			}
+			log.Infof("Trying to connect to chord node %x at %s", chordNbr.Id, chordNbrAddr)
 			go node.Connect(chordNbrAddr)
 		}
 	}

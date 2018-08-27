@@ -131,6 +131,19 @@ func (node *node) GetNeighborHeights() ([]uint32, uint64) {
 	return heights, i
 }
 
+func (node *node) GetActiveNeighbors() []Noder {
+	node.nbrNodes.RLock()
+	defer node.nbrNodes.RUnlock()
+
+	nodes := []Noder{}
+	for _, n := range node.nbrNodes.List {
+		if n.GetState() != INACTIVITY {
+			nodes = append(nodes, n)
+		}
+	}
+	return nodes
+}
+
 func (node *node) GetNeighborNoder() []Noder {
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
