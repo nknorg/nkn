@@ -27,13 +27,6 @@ type VBlock struct {
 	ReceiveTime int64
 }
 
-func NewVBlock(b *Block, t int64) *VBlock {
-	return &VBlock{
-		Block:       b,
-		ReceiveTime: t,
-	}
-}
-
 func TransactionCheck(block *Block) error {
 	if block.Transactions == nil {
 		return errors.New("empty block")
@@ -56,12 +49,12 @@ func TransactionCheck(block *Block) error {
 	return nil
 }
 
-func HeaderCheck(header *Header, receiveTime int64, ledger *Ledger) error {
+func HeaderCheck(header *Header, receiveTime int64) error {
 	height := header.Height
 	if height == 0 {
 		return nil
 	}
-	prevHeader, err := ledger.Blockchain.GetHeader(header.PrevBlockHash)
+	prevHeader, err := DefaultLedger.Blockchain.GetHeader(header.PrevBlockHash)
 	if err != nil {
 		return errors.New("prev header doesn't exist")
 	}
@@ -169,18 +162,6 @@ func HeaderCheck(header *Header, receiveTime int64, ledger *Ledger) error {
 	if err != nil {
 		log.Error("block header verification error: ", err)
 		return err
-	}
-
-	return nil
-}
-
-func BlockCheck(v *VBlock, ledger *Ledger) error {
-	err := HeaderCheck(v.Block.Header, v.ReceiveTime, ledger)
-	if err != nil {
-		return err
-	}
-	if err := TransactionCheck(v.Block); err != nil {
-		return errors.New("transaction check error when verify block")
 	}
 
 	return nil

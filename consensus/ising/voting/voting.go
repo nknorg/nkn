@@ -42,6 +42,8 @@ type Voting interface {
 	GetVotingContentFromPool(hash Uint256, height uint32) (VotingContent, error)
 	// get voting content from memory pool and ledger
 	GetVotingContent(hash Uint256, height uint32) (VotingContent, error)
+	// verify voting content
+	VerifyVotingContent(content VotingContent) bool
 	// get voting pool
 	GetVotingPool() VotingPool
 	// consensus state detection through proposal received from neighbors

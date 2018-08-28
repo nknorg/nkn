@@ -152,6 +152,20 @@ func (bv *BlockVoting) GetVotingContent(hash Uint256, height uint32) (VotingCont
 	return nil, errors.New("invalid hash for block")
 }
 
+func (bv *BlockVoting) VerifyVotingContent(content VotingContent) bool {
+	if block, ok := content.(*ledger.Block); !ok {
+		return false
+	} else {
+		err := ledger.TransactionCheck(block)
+		if err != nil {
+			log.Error("block verification error")
+			return false
+		}
+	}
+
+	return true
+}
+
 func (bv *BlockVoting) VotingType() VotingContentType {
 	return BlockVote
 }
@@ -166,8 +180,7 @@ func (bv *BlockVoting) AddToCache(content VotingContent) error {
 		if blockHeight != localHeight+1 {
 			return errors.New("invalid block height")
 		}
-		vBlock := ledger.NewVBlock(block, time.Now().Unix())
-		err = ledger.BlockCheck(vBlock, ledger.DefaultLedger)
+		err = ledger.HeaderCheck(block.Header, time.Now().Unix())
 		if err != nil {
 			return err
 		}
