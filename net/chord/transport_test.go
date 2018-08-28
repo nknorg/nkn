@@ -1,7 +1,6 @@
 package chord
 
 import (
-	"bytes"
 	"testing"
 )
 
@@ -170,7 +169,7 @@ func TestLocalFindSucc(t *testing.T) {
 	if res[0] != suc[0] {
 		t.Fatalf("got wrong successor")
 	}
-	if bytes.Compare(mockVN.key, key) != 0 {
+	if CompareId(mockVN.key, key) != 0 {
 		t.Fatalf("didn't get key correctly!")
 	}
 

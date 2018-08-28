@@ -1,7 +1,6 @@
 package chord
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -210,7 +209,7 @@ func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 	// Check if we should update our predecessor
 	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe_pred.Id) {
 		shouldUpdate = true
-	} else if bytes.Compare(vn.predecessor.Id, maybe_pred.Id) != 0 {
+	} else if CompareId(vn.predecessor.Id, maybe_pred.Id) != 0 {
 		alive, err := vn.ring.transport.Ping(vn.predecessor)
 		if err == nil && !alive {
 			shouldUpdate = true
@@ -485,7 +484,7 @@ func (vn *localVnode) ShouldAddrInNeighbors(addr []byte) bool {
 		if n.Host == vn.Host {
 			continue
 		}
-		if bytes.Compare(n.Id, addr) == 0 {
+		if CompareId(n.Id, addr) == 0 {
 			return true
 		}
 	}

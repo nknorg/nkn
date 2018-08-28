@@ -1,7 +1,6 @@
 package chord
 
 import (
-	"bytes"
 	"errors"
 	"sort"
 
@@ -72,7 +71,7 @@ func (r *Ring) Len() int {
 // Less returns whether the vnode with index i should sort
 // before the vnode with index j.
 func (r *Ring) Less(i, j int) bool {
-	return bytes.Compare(r.Vnodes[i].Id, r.Vnodes[j].Id) == -1
+	return CompareId(r.Vnodes[i].Id, r.Vnodes[j].Id) == -1
 }
 
 // Swap swaps the vnodes with indexes i and j.
@@ -83,7 +82,7 @@ func (r *Ring) Swap(i, j int) {
 // Returns the nearest local vnode to the key
 func (r *Ring) nearestVnode(key []byte) *localVnode {
 	for i := len(r.Vnodes) - 1; i >= 0; i-- {
-		if bytes.Compare(r.Vnodes[i].Id, key) == -1 {
+		if CompareId(r.Vnodes[i].Id, key) == -1 {
 			return r.Vnodes[i]
 		}
 	}
