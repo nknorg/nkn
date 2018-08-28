@@ -1,7 +1,6 @@
 package chord
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"sort"
 	"testing"
@@ -59,7 +58,7 @@ func TestGenId(t *testing.T) {
 
 	for idx, val := range ids {
 		for i := 0; i < len(ids); i++ {
-			if idx != i && bytes.Compare(ids[i], val) == 0 {
+			if idx != i && CompareId(ids[i], val) == 0 {
 				t.Fatalf("unexpected id collision!")
 			}
 		}

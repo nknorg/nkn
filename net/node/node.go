@@ -659,7 +659,6 @@ func (node *node) ConnectNeighbors() {
 		if !node.IsChordAddrInNeighbors(chordNbr.Id) {
 			chordNbrAddr, err := chordNbr.NodeAddr()
 			if err != nil {
-				log.Error("Get chord neighbor node addr error:", err)
 				continue
 			}
 			log.Infof("Trying to connect to chord node %x at %s", chordNbr.Id, chordNbrAddr)

@@ -226,7 +226,7 @@ func (node *node) Connect(nodeAddr string) error {
 		return nil
 	}
 	if !node.SetAddrInConnectingList(nodeAddr) {
-		log.Error("node", nodeAddr, "exists in connecting list, cancel")
+		log.Info("Node addr", nodeAddr, "exists in connecting list, cancel")
 		return errors.New("node exists in connecting list, cancel")
 	}
 

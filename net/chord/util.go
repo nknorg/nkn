@@ -8,6 +8,17 @@ import (
 	"time"
 )
 
+func CompareId(id1, id2 []byte) int {
+	l1, l2 := len(id1), len(id2)
+	if l1 < l2 {
+		return -1
+	}
+	if l1 > l2 {
+		return 1
+	}
+	return bytes.Compare(id1, id2)
+}
+
 // Generates a random stabilization time
 func randStabilize(conf *Config) time.Duration {
 	min := conf.StabilizeMin
@@ -19,26 +30,26 @@ func randStabilize(conf *Config) time.Duration {
 // Checks if a key is STRICTLY between two ID's exclusively
 func between(id1, id2, key []byte) bool {
 	// Check for ring wrap around
-	if bytes.Compare(id1, id2) == 1 {
-		return bytes.Compare(id1, key) == -1 ||
-			bytes.Compare(id2, key) == 1
+	if CompareId(id1, id2) == 1 {
+		return CompareId(id1, key) == -1 ||
+			CompareId(id2, key) == 1
 	}
 
 	// Handle the normal case
-	return bytes.Compare(id1, key) == -1 &&
-		bytes.Compare(id2, key) == 1
+	return CompareId(id1, key) == -1 &&
+		CompareId(id2, key) == 1
 }
 
 // Checks if a key is between two ID's, right inclusive
 func betweenRightIncl(id1, id2, key []byte) bool {
 	// Check for ring wrap around
-	if bytes.Compare(id1, id2) == 1 {
-		return bytes.Compare(id1, key) == -1 ||
-			bytes.Compare(id2, key) >= 0
+	if CompareId(id1, id2) == 1 {
+		return CompareId(id1, key) == -1 ||
+			CompareId(id2, key) >= 0
 	}
 
-	return bytes.Compare(id1, key) == -1 &&
-		bytes.Compare(id2, key) >= 0
+	return CompareId(id1, key) == -1 &&
+		CompareId(id2, key) >= 0
 }
 
 // Computes the offset by (n + 2^exp) % (2^mod)
@@ -92,7 +103,7 @@ func min(a, b int) int {
 // Returns the vnode nearest a key
 func nearestVnodeToKey(vnodes []*Vnode, key []byte) *Vnode {
 	for i := len(vnodes) - 1; i >= 0; i-- {
-		if bytes.Compare(vnodes[i].Id, key) == -1 {
+		if CompareId(vnodes[i].Id, key) == -1 {
 			return vnodes[i]
 		}
 	}
