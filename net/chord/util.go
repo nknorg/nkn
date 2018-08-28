@@ -3,6 +3,7 @@ package chord
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"math/big"
 	"math/rand"
 	"time"
@@ -10,13 +11,28 @@ import (
 
 func CompareId(id1, id2 []byte) int {
 	l1, l2 := len(id1), len(id2)
-	if l1 < l2 {
-		return -1
-	}
 	if l1 > l2 {
-		return 1
+		return -CompareId(id2, id1)
+	}
+	if l1 < l2 {
+		tmp := make([]byte, l2)
+		copy(tmp[l2-l1:], id1)
+		id1 = tmp
 	}
 	return bytes.Compare(id1, id2)
+}
+
+func bigIntToId(i big.Int, m int) []byte {
+	b := i.Bytes()
+	lb := len(b)
+	lId := m / 8
+	if lb >= lId {
+		log.Println("[WARNING] Big integer has more bytes than ID.")
+		return b
+	}
+	id := make([]byte, lId)
+	copy(id[lId-lb:], b)
+	return id
 }
 
 // Generates a random stabilization time
@@ -78,8 +94,7 @@ func powerOffset(id []byte, exp int, mod int) []byte {
 	// Apply the mod
 	idInt.Mod(&sum, &ceil)
 
-	// Add together
-	return idInt.Bytes()
+	return bigIntToId(idInt, mod)
 }
 
 // max returns the max of two ints
