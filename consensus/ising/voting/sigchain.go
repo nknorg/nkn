@@ -136,6 +136,10 @@ func (scv *SigChainVoting) GetBestVotingContent(height uint32) (VotingContent, e
 	return nil, errors.New("invalid commit transaction")
 }
 
+func (scv *SigChainVoting) VerifyVotingContent(content VotingContent) bool {
+	return true
+}
+
 func (scv *SigChainVoting) GetWorseVotingContent(height uint32) (VotingContent, error) {
 	return nil, nil
 }

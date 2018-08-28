@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	MaxCollectableEntityNum = 1024
+	MaxCollectableEntityNum = 20480
 )
 
 // Transaction pool should be a concrete entity of this interface

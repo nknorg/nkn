@@ -1,6 +1,7 @@
 package ising
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -164,6 +165,9 @@ func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.Vot
 	if err != nil {
 		return err
 	}
+	if !current.VerifyVotingContent(content) {
+		return errors.New("verify voting content error when send new proposal")
+	}
 	votingPool := current.GetVotingPool()
 	ownMindHash := content.Hash()
 	ownWeight, _ := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
@@ -267,6 +271,7 @@ func (ps *ProposerService) ProposerRoutine() {
 			if ps.IsBlockProposer() {
 				log.Info("-> I am Block Proposer")
 				ps.ProduceNewBlock()
+				time.Sleep(time.Second)
 				for _, v := range ps.voting {
 					go ps.ConsensusRoutine(v.VotingType())
 				}
@@ -357,9 +362,14 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 				log.Error("persist cached block error: ", err)
 				return
 			}
-			err = ledger.BlockCheck(vBlock, ledger.DefaultLedger)
+			err = ledger.HeaderCheck(vBlock.Block.Header, vBlock.ReceiveTime)
 			if err != nil {
-				log.Error("verifying cached block error: ", err)
+				log.Error("verifying header of cached block error: ", err)
+				return
+			}
+			err = ledger.TransactionCheck(vBlock.Block)
+			if err != nil {
+				log.Error("verifying transaction in cached block error: ", err)
 				return
 			}
 			err = ledger.DefaultLedger.Blockchain.AddBlock(vBlock.Block)
