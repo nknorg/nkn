@@ -167,14 +167,18 @@ func (ps *PorServer) GetTxnHashBySigChainHeight(height uint32) ([]common.Uint256
 	defer ps.RUnlock()
 
 	var txnHashes []common.Uint256
-	if porPackages, ok := ps.pors[height]; ok {
-		for _, p := range porPackages {
-			hash, err := common.Uint256ParseFromBytes(p.TxHash)
-			if err != nil {
-				return nil, errors.New("invalid transaction hash for por package")
-			}
-			txnHashes = append(txnHashes, hash)
+	var porPackages []*PorPackage
+	for h, p := range ps.pors {
+		if h >= height {
+			porPackages = append(porPackages, p...)
 		}
+	}
+	for _, p := range porPackages {
+		hash, err := common.Uint256ParseFromBytes(p.TxHash)
+		if err != nil {
+			return nil, errors.New("invalid transaction hash for por package")
+		}
+		txnHashes = append(txnHashes, hash)
 	}
 
 	return txnHashes, nil

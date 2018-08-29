@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -61,7 +62,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	return ErrNoError
 }
 
-func (tp *TxnPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
+func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[common.Uint256]*Transaction, error) {
 	tp.RLock()
 	defer tp.RUnlock()
 
@@ -70,14 +71,29 @@ func (tp *TxnPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
 		n = num
 	}
 
+	// get transactions which should not be packaged
 	exclusivedHashes, err := por.GetPorServer().GetTxnHashBySigChainHeight(ledger.DefaultLedger.Store.GetHeight() +
 		ExclusivedSigchainHeight)
 	if err != nil {
 		log.Error("collect transaction error: ", err)
-		return nil
+		return nil, err
 	}
+
 	i := 0
 	txns := make(map[common.Uint256]*Transaction, n)
+
+	// get transactions which should be packaged
+	if winningHash.CompareTo(common.EmptyUint256) != 0 {
+		if winningTxn, ok := tp.txnList[winningHash]; !ok {
+			log.Error("can't find necessary transaction: ", common.BytesToHexString(winningHash.ToArrayReverse()))
+			return nil, errors.New("need necessary transaction")
+		} else {
+			log.Warn("collecting wining hash: ", common.BytesToHexString(winningHash.ToArrayReverse()))
+			txns[winningHash] = winningTxn
+			i++
+		}
+	}
+
 	//TODO sort transaction list
 	for hash, txn := range tp.txnList {
 		if !isHashExist(hash, exclusivedHashes) {
@@ -89,7 +105,7 @@ func (tp *TxnPool) GetTxnByCount(num int) map[common.Uint256]*Transaction {
 		}
 	}
 
-	return txns
+	return txns, nil
 }
 
 //clean the trasaction Pool with committed block.

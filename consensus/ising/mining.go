@@ -12,6 +12,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/crypto/util"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
 
@@ -39,7 +40,11 @@ func (bm *BuiltinMining) BuildBlock(height uint32, winningHash Uint256,
 	coinbase := bm.CreateCoinbaseTransaction()
 	txnList = append(txnList, coinbase)
 	txnHashList = append(txnHashList, coinbase.Hash())
-	txns := bm.txnCollector.Collect()
+	txns, err := bm.txnCollector.Collect(winningHash)
+	if err != nil {
+		log.Error("collect transaction error: ", err)
+		return nil, err
+	}
 	for txnHash, txn := range txns {
 		if !ledger.DefaultLedger.Store.IsTxHashDuplicate(txnHash) {
 			txnList = append(txnList, txn)
