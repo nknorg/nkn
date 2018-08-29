@@ -70,7 +70,7 @@ type Noder interface {
 	CloseConn()
 	GetHeight() uint32
 	GetConnectionCnt() uint
-	GetTxnByCount(int) map[Uint256]*transaction.Transaction
+	GetTxnByCount(int, Uint256) (map[Uint256]*transaction.Transaction, error)
 	GetTxnPool() *pool.TxnPool
 	AppendTxnPool(*transaction.Transaction) ErrCode
 	ExistHash(hash Uint256) bool
