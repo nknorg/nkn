@@ -26,13 +26,15 @@ func bigIntToId(i big.Int, m int) []byte {
 	b := i.Bytes()
 	lb := len(b)
 	lId := m / 8
-	if lb >= lId {
-		log.Println("[WARNING] Big integer has more bytes than ID.")
-		return b
+	if lb < lId {
+		id := make([]byte, lId)
+		copy(id[lId-lb:], b)
+		return id
 	}
-	id := make([]byte, lId)
-	copy(id[lId-lb:], b)
-	return id
+	if lb > lId {
+		log.Println("[WARNING] Big integer has more bytes than ID.")
+	}
+	return b
 }
 
 // Generates a random stabilization time
