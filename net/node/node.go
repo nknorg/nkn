@@ -36,6 +36,7 @@ const (
 	ProtocolVersion      = 0                // protocol version
 	ConnectionTicker     = 10 * time.Second // ticker for connection
 	MaxReqBlkOnce        = 16               // max block count requested
+	ConnectingTimeout    = 10 * time.Second // timeout for waiting for connection
 )
 
 type Semaphore chan struct{}
@@ -112,6 +113,10 @@ func (node *node) SetAddrInConnectingList(addr string) (added bool) {
 		}
 	}
 	node.ConnectingAddrs = append(node.ConnectingAddrs, addr)
+	go func() {
+		time.Sleep(ConnectingTimeout)
+		node.RemoveAddrInConnectingList(addr)
+	}()
 	return true
 }
 
