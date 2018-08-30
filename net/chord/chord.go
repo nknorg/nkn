@@ -146,7 +146,7 @@ func DefaultConfig(hostname string, create bool) *Config {
 	remote := ""
 	if create == false {
 		for _, seed := range config.Parameters.SeedList {
-			info, err := client.GetNodeState("http://" + seed)
+			info, err := client.GetNodeState(seed)
 			if err != nil { // Maybe createNode mode
 				log.Warnf("Can't get remote node info from [%s]", seed)
 				continue

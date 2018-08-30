@@ -20,7 +20,7 @@ ADD . /go/src/github.com/nknorg/nkn
 WORKDIR /go/src/github.com/nknorg/nkn
 RUN make glide
 RUN make vendor
-RUN make build_local
+RUN make
 RUN cp nknd nknc /usr/local/go/bin/
 
 WORKDIR /nkn

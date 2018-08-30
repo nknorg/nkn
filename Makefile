@@ -1,4 +1,4 @@
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := build_local
 
 GOFMT=gofmt
 GC=go build
@@ -10,10 +10,6 @@ IDENTIFIER= $(GOOS)-$(GOARCH)
 
 help:          ## Show available options with this Makefile
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -v grep | awk 'BEGIN { FS = ":.*?##" }; { printf "%-15s  %s\n", $$1,$$2 }'
-
-.PHONY: nknd
-nknd: vendor ## Build nknd binary only
-	$(GC)  $(BUILD_NKND_PARAM) nknd.go
 
 .PHONY: build
 build:

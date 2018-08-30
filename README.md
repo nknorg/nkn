@@ -38,9 +38,9 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 * Proof-of-Relay, a useful proof of work: mining is relaying data. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Proof-of-Relay-%28PoR%29)
 * Extremely scalable consensus algorithm (millions or even billions of nodes). [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Consensus-and-Blockchain)
 * Strong consistency rather than eventual consistency. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Consensus-and-Blockchain)
-* Dynamic, large-scale network.
+* Dynamic, large-scale network. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Distributed-Data-Transmission-Network-%28DDTN%29)
 * Verifiable topology and routes. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Relay-Path-Validation)
-* Next generation address scheme with public key embedded. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-NKN-Address-Scheme)
+* Secure address scheme with public key embedded. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-NKN-Address-Scheme)
 
 ## Deployment
 
@@ -89,7 +89,7 @@ $ make vendor
 Build the source code with make
 
 ```shell
-$ make build_local
+$ make
 ```
 
 After building is successful, you should see two executables:
@@ -97,13 +97,17 @@ After building is successful, you should see two executables:
 * `nknd`: the nkn node program
 * `nknc`: command line tool for nkn node control
 
-NOTE: To build binaries for other architectures execute `make all`. The resulting binaries are stored in `build` directory.
+Now you can see [configuration](#configuration) for how to configure and run a
+node.
+
+You can also build binaries for other architectures by executing `make all`. The
+resulting binaries are stored in `build` directory.
 
 ### Building using docker
 
-*Prerequirement: Have working docker software installed. For help with that
-visit [official docker docs](https://docs.docker.com/install/#supported-platforms)*
-
+*Prerequirement*: Have working docker software installed. For help with that
+visit [official docker
+docs](https://docs.docker.com/install/#supported-platforms)
 
 Build and tag Docker image
 
@@ -111,13 +115,14 @@ Build and tag Docker image
 $ docker build -t nkn .
 ```
 
-When starting the container, a directory with configuration files containing `config.json` and
-`wallet.dat` (if exists) should be mapped to `/nkn` directory in the container.
-This directory will also be used for wallet, block data and logs storage.
+When starting the container, a directory with configuration files containing
+`config.json` (see [configuration](#configuration)) and `wallet.dat` (if exists)
+should be mapped to `/nkn` directory in the container. This directory will also
+be used for wallet, block data and logs storage.
 
-Before you have a look at [configuration](#configuration), keep in mind that instead of running `./nknc` and `./nknd`
-(as shown in examples) you want to run in docker.
-Assuming the configuration directory is the current directory:
+Before you have a look at [configuration](#configuration), keep in mind that
+instead of running `./nknc` and `./nknd` (as shown in examples) you want to run
+in docker. Assuming the configuration directory is the current directory:
 
 Create a wallet:
 
@@ -137,15 +142,23 @@ Start other nodes by joining the network
 $ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
 ```
 
-*NOTE:* The `-it` argument mean `Run interactively` and `Create a pseudo-tty`. Basically it means,
-that it really wants to take the input from you. For using in scripts and running in the background
-(for example a startup job) you should omit the `-it` argument
+*NOTE:* The `-it` argument mean `Run interactively` and `Create a pseudo-tty`.
+Basically it means, that it really wants to take the input from you. For using
+in scripts and running in the background (for example a startup job) you should
+omit the `-it` argument
 
 
 ### Configuration
 
-Create several directories (one per node you want to run) to save exectuable files `nknd` `nknc` (executables only applies for non-docker build) and
-config file `config.json`. Create new wallet in each directory
+When starting a node, it will read the configurations from `config.json`. We
+provide two sample `config.json`:
+
+* `config.testnet.json`: join the testnet
+* `config.local.json`: create and join a cluster on hour localhost
+
+You can copy the one you want to `config.json` or write your own.
+
+Before starting the node, you need to create a new wallet first:
 
 ``` shell
 $ ./nknc wallet -c
@@ -156,32 +169,58 @@ Address                            Public Key
 NjCWGM1EfJeopJopSQGC6aLEkuug5GiwLM 03d45f701e7e330e1fd1c7cce09ffb95f7b1870e5c429ad8e8c950ddb879093f52
 ```
 
-Config the same bootstrap node address and public key to each
-`config.json` file, for example:
+The last line of the output is the public key of this wallet, and the second
+last line is the wallet address. A wallet address always starts with `N`.
+
+Wallet information will be saved at `wallet.dat` and it's encrypted with the
+password you provided when creating the wallet. So please make sure you pick a
+strong password and remember it!
+
+Now you can [join the testnet](#join-the-testnet) or [create a local
+cluster](#create-a-local-cluster).
+
+### Join the TestNet
+
+**[IMPORTANT] At the current stage, in order to join the testnet, you need to
+have a public IP address, or set up port forwarding on your router properly so
+that other people can establish connection to you.**
+
+If you have done the previous steps correctly (`config.json`, create wallet,
+public IP or port forwarding), joining the testnet is as simple as running:
 
 ```shell
-{
-  "Magic": 99281,
-  "Version": 1,
-  "ChordPort": 30000,
-  "NodePort": 30001,
-  "HttpWsPort": 30002,
-  "HttpJsonPort": 30003,
-  "Hostname": "127.0.0.1",
-  "LogLevel": 1,
-  "IsTLS": false,
-  "ConsensusType": "ising",
-  "SeedList": [
-    "127.0.0.1:30003"
-  ],
-  "GenesisBlockProposer": "03d45f701e7e330e1fd1c7cce09ffb95f7b1870e5c429ad8e8c950ddb879093f52"
-}
+$ ./nknd
 ```
 
-Note that ports in different `config.json` does not need to be different,
-conflict in ports will be resolved automatically.
+If you are using Docker then you should run the following command instead:
 
-Start bootstrap node by creating a network
+```shell
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
+```
+
+If everything goes well, you should be part of our TestNet now!
+
+If not, you may want to check if some of the previous steps went wrong. If the
+problem still persists, [create an
+issue](https://github.com/nknorg/nkn/issues/new) or ask us in our [Discord
+group](#community).
+
+### Create a local cluster
+
+You can create a local cluster by running multiple nodes on your local machine.
+
+1. Create several directories (one per node you want to run).
+
+2. Copy (or create symbolic link) `nknd`, `nknc` to each directory. Skip this
+step if you are using docker.
+
+3. Create a new wallet in each directory.
+
+4. Create a `config.json` in each directory. All of them should put the same
+public key as the GenesisBlockProposer. Note that ports in different
+`config.json` can be the same, conflict in ports will be resolved automatically.
+
+Start a bootstrap node by creating a network
 
 ```shell
 $ ./nknd -c
@@ -196,7 +235,7 @@ $ ./nknd
 Or provide a seed node to override the one in `config.json`
 
 ```shell
-$ ./nknd -seed $RemoteNodeIP:$HttpJsonPort
+$ ./nknd -seed http://$RemoteNodeIP:$HttpJsonPort
 ```
 
 When the network contains enough nodes (more than the length of successor list
@@ -208,7 +247,7 @@ live node as seed.
 
 **Can I submit a bug, suggestion or feature request?**
 
-Yes. Please open an issue for that.
+Yes. Please [open an issue](https://github.com/nknorg/nkn/issues/new) for that.
 
 **Can I contribute patches to NKN project?**
 

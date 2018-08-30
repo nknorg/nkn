@@ -39,7 +39,7 @@ var (
 		LogLevel:      1,
 		ConsensusType: "ising",
 		SeedList: []string{
-			"127.0.0.1:30003",
+			"http://127.0.0.1:30003",
 		},
 	}
 )
@@ -84,8 +84,8 @@ func init() {
 	// Remove the UTF-8 Byte Order Mark
 	file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
 
-	config := Configuration{}
-	err = json.Unmarshal(file, &config)
+	config := defaultParameters
+	err = json.Unmarshal(file, config)
 	if err != nil {
 		log.Printf("Unmarshal config file error: %v, use default parameters.", err)
 		Parameters = defaultParameters
@@ -103,14 +103,14 @@ func init() {
 
 	config.IncrementPort()
 
-	err = check(&config)
+	err = check(config)
 	if err != nil {
 		log.Printf("invalid config file: %v, use default parameters.", err)
 		Parameters = defaultParameters
 		return
 	}
 
-	Parameters = &config
+	Parameters = config
 }
 
 func check(config *Configuration) error {
