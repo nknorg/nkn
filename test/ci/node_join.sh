@@ -28,7 +28,7 @@ cd $NKN_HOME
 
 ### Obtain latest src code and build binary
 git pull
-make build_local
+make
 cp -a nkn[cd] ./${BIN_DIR}/
 
 ./test/launch_node.sh ./${BIN_DIR}/

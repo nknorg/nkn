@@ -10,9 +10,10 @@ idea/
 Log
 vendor/*
 Chain/*
-/config/*
 nknd
 nknc
 cscope*
 *~
 build/
+wallet.dat
+config.json

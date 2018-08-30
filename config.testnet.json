@@ -1,0 +1,10 @@
+﻿{
+  "ChordPort": 30000,
+  "NodePort": 30001,
+  "HttpWsPort": 30002,
+  "HttpJsonPort": 30003,
+  "SeedList": [
+    "http://testnet-node-0001.nkn.org:30003"
+  ],
+  "GenesisBlockProposer": "022d52b07dff29ae6ee22295da2dc315fef1e2337de7ab6e51539d379aa35b9503"
+}

@@ -1,16 +1,11 @@
 ﻿{
-  "Magic": 99281,
-  "Version": 1,
   "ChordPort": 30000,
   "NodePort": 30001,
   "HttpWsPort": 30002,
   "HttpJsonPort": 30003,
   "Hostname": "127.0.0.1",
-  "LogLevel": 1,
-  "IsTLS": false,
-  "ConsensusType": "ising",
   "SeedList": [
-    "127.0.0.1:30003"
+    "http://127.0.0.1:30003"
   ],
   "GenesisBlockProposer": ""
 }
