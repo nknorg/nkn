@@ -21,8 +21,7 @@ import (
 
 const (
 	BIT_JSONRPC   byte = 1
-	BIT_RESTFUL   byte = 2
-	BIT_WEBSOCKET byte = 4
+	BIT_WEBSOCKET byte = 2
 )
 
 type Handler func(Serverer, map[string]interface{}) map[string]interface{}
@@ -36,16 +35,6 @@ type APIHandler struct {
 // able to be invoked by jsonrpc
 func (ah *APIHandler) IsAccessableByJsonrpc() bool {
 	if ah.AccessCtrl&BIT_JSONRPC != BIT_JSONRPC {
-		return false
-	}
-
-	return true
-}
-
-// IsAccessableByRestful return true if the handler is
-// able to be invoked by restful
-func (ah *APIHandler) IsAccessableByRestful() bool {
-	if ah.AccessCtrl&BIT_RESTFUL != BIT_RESTFUL {
 		return false
 	}
 
@@ -1027,33 +1016,33 @@ func VerifyAndSendTx(n protocol.Noder, txn *transaction.Transaction) errors.ErrC
 }
 
 var InitialAPIHandlers = map[string]APIHandler{
-	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
-	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
-	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
-	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getrawmempool":        {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
-	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL | BIT_WEBSOCKET},
-	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
-	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
-	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
-	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
-	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC | BIT_RESTFUL},
-	"setdebuginfo":         {Handler: setDebugInfo, AccessCtrl: BIT_RESTFUL},
-	"getbalance":           {Handler: getBalance, AccessCtrl: BIT_RESTFUL},
-	"registasset":          {Handler: registAsset, AccessCtrl: BIT_RESTFUL},
-	"issueasset":           {Handler: issueAsset, AccessCtrl: BIT_RESTFUL},
-	"sendtoaddress":        {Handler: sendToAddress, AccessCtrl: BIT_RESTFUL},
-	"prepaidasset":         {Handler: prepaidAsset, AccessCtrl: BIT_RESTFUL},
-	"withdrawasset":        {Handler: withdrawAsset, AccessCtrl: BIT_RESTFUL},
-	"commitpor":            {Handler: commitPor, AccessCtrl: BIT_RESTFUL},
-	"sigchaintest":         {Handler: sigchaintest, AccessCtrl: BIT_RESTFUL},
-	"gettotalissued":       {Handler: getTotalIssued, AccessCtrl: BIT_RESTFUL},
-	"getassetbyhash":       {Handler: getAssetByHash, AccessCtrl: BIT_RESTFUL},
-	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_RESTFUL},
-	"getbalancebyasset":    {Handler: getBalanceByAsset, AccessCtrl: BIT_RESTFUL},
-	"getunspendoutput":     {Handler: getUnspendOutput, AccessCtrl: BIT_RESTFUL},
-	"getunspends":          {Handler: getUnspends, AccessCtrl: BIT_RESTFUL},
+	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
+	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
+	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
+	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getrawmempool":        {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC},
+	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
+	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC},
+	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
+	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
+	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
+	"getunspendoutput":     {Handler: getUnspendOutput, AccessCtrl: BIT_JSONRPC},
+	"setdebuginfo":         {Handler: setDebugInfo},
+	"getbalance":           {Handler: getBalance},
+	"registasset":          {Handler: registAsset},
+	"issueasset":           {Handler: issueAsset},
+	"sendtoaddress":        {Handler: sendToAddress},
+	"prepaidasset":         {Handler: prepaidAsset},
+	"withdrawasset":        {Handler: withdrawAsset},
+	"commitpor":            {Handler: commitPor},
+	"sigchaintest":         {Handler: sigchaintest},
+	"gettotalissued":       {Handler: getTotalIssued},
+	"getassetbyhash":       {Handler: getAssetByHash},
+	"getbalancebyaddr":     {Handler: getBalanceByAddr},
+	"getbalancebyasset":    {Handler: getBalanceByAsset},
+	"getunspends":          {Handler: getUnspends},
 }
