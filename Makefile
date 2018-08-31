@@ -1,4 +1,4 @@
-.DEFAULT_GOAL := build_local
+.DEFAULT_GOAL := build
 
 GOFMT=gofmt
 GC=go build
@@ -12,9 +12,9 @@ help:          ## Show available options with this Makefile
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -v grep | awk 'BEGIN { FS = ":.*?##" }; { printf "%-15s  %s\n", $$1,$$2 }'
 
 .PHONY: build
-build:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd nknd.go
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc nknc.go
+build: vendor 
+	$(GC)  $(BUILD_NKND_PARAM) nknd.go
+	$(GC)  $(BUILD_NKNC_PARAM) nknc.go
 
 .PHONY: crossbuild
 crossbuild:
@@ -31,11 +31,6 @@ all: vendor ## Build binaries for all available architectures
 	make crossbuild GOOS=darwin GOARCH=386
 	make crossbuild GOOS=windows GOARCH=amd64
 	make crossbuild GOOS=windows GOARCH=386
-
-.PHONY: build_local
-build_local: vendor ## Build local binaries without providing specific GOOS/GOARCH
-	$(GC)  $(BUILD_NKND_PARAM) nknd.go
-	$(GC)  $(BUILD_NKNC_PARAM) nknc.go
 
 .PHONY: format
 format:   ## Run go format on nknd.go
