@@ -23,7 +23,7 @@ import (
 const (
 	TxnAmountToBePackaged      = 1024
 	WaitingForFloodingFinished = time.Second * 1
-	WaitingForVotingFinished   = time.Second * 5
+	WaitingForVotingFinished   = time.Second * 8
 	TimeoutTolerance           = time.Second * 2
 )
 
