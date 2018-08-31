@@ -28,3 +28,4 @@ import:
 - package: github.com/rdegges/go-ipify
 - package: github.com/jpillora/backoff
   version: 1.0.0
+- package: github.com/nknorg/go-portscanner

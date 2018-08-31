@@ -182,8 +182,8 @@ cluster](#create-a-local-cluster).
 ### Join the TestNet
 
 **[IMPORTANT] At the current stage, in order to join the testnet, you need to
-have a public IP address, or set up port forwarding on your router properly so
-that other people can establish connection to you.**
+*have a public IP address, or set up [port forwarding](#port-forwarding) on your
+*router properly so that other people can establish connection to you.**
 
 If you have done the previous steps correctly (`config.json`, create wallet,
 public IP or port forwarding), joining the testnet is as simple as running:
@@ -242,6 +242,24 @@ When the network contains enough nodes (more than the length of successor list
 plus one, by default 9+), stop the node that created the network in order for
 the relay service to work properly. Nodes joining the network later should use a
 live node as seed.
+
+## Port forwarding
+
+Most likely your node is behind a router and does not have a public IP address.
+In such case, you **have to** setup port forwarding on your router for **all**
+ports specified in `config.json`, otherwise other nodes cannot establish
+connections to you.
+
+When setting up port forwarding, public port needs to be the same as private
+port mapped to your node. For example, you should map port 30001 on your
+router's public IP address to port 30001 on your node's internal IP address.
+
+The specific steps to setup port forwarding depends on your router. But in
+general, you need to log in to the admin interface of your router (typically in
+a web browser), then navigate to the port forwarding section, and create several
+mappings, one for each port. One of the easiest way to find out how to setup
+port forwarding on your router is to search something like "how to setup port
+forwarding" + your router model or name.
 
 ## Contributing
 
