@@ -195,13 +195,27 @@ $ ./nknd
 If you are using Docker then you should run the following command instead:
 
 ```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn --name nkn -it nkn nknd
 ```
 
-If everything goes well, you should be part of our TestNet now!
+If everything goes well, you should be part of our TestNet now! You can query
+your wallet balance (which includes the Testnet token you've mined) by:
 
-If not, you may want to check if some of the previous steps went wrong. If the
-problem still persists, [create an
+```shell
+$ ./nknc wallet -l balance
+```
+
+or if you are using Docker:
+
+```shell
+$ docker exec -it nkn nknc wallet -l balance
+```
+
+**Note that Testnet token is for testing purpose only, and may be cleared at any
+time when Testnet resets.**
+
+If anything goes wrong, you may want to check if any of the previous steps went
+wrong. If the problem still persists, [create an
 issue](https://github.com/nknorg/nkn/issues/new) or ask us in our [Discord
 group](#community).
 
