@@ -115,11 +115,6 @@ func init() {
 
 func check(config *Configuration) error {
 	switch config.ConsensusType {
-	case "dbft":
-		if len(config.BookKeepers) < DefaultBookKeeperCount {
-			return errors.New("error config for dbft consensus, needs 4 BookKeepers at least")
-		}
-		fallthrough
 	case "ising":
 		if len(config.SeedList) == 0 {
 			return errors.New("seed list in config file should not be blank")
