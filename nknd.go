@@ -12,7 +12,6 @@ import (
 
 	"github.com/nknorg/nkn/api/httpjson"
 	"github.com/nknorg/nkn/api/websocket"
-	"github.com/nknorg/nkn/consensus/dbft"
 	"github.com/nknorg/nkn/consensus/ising"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
@@ -73,10 +72,6 @@ func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
 		log.Info("ising consensus starting ...")
 		account, _ := wallet.GetDefaultAccount()
 		go ising.StartIsingConsensus(account, node)
-	case "dbft":
-		log.Info("dbft consensus starting ...")
-		dbftServices := dbft.NewDbftService(wallet, "logdbft", node)
-		go dbftServices.Start()
 	}
 }
 
