@@ -177,8 +177,7 @@ func (config *Configuration) IncrementPort() {
 func checkPort(host string, port uint16) (bool, error) {
 	conn, err := net.Listen("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
-		log.Printf("[ERROR] Port %d is in use", port)
-		return false, nil
+		return false, fmt.Errorf("Port %d is in use", port)
 	}
 	defer conn.Close()
 
@@ -195,9 +194,12 @@ func (config *Configuration) CheckPorts(myIP string) (bool, error) {
 	}
 	for _, port := range allPorts {
 		log.Printf("[INFO] Checking TCP port %d", port)
-		ok, err := checkPort(myIP, port)
-		if err != nil || !ok {
+		isOpen, err := checkPort(myIP, port)
+		if err != nil {
 			return false, err
+		}
+		if !isOpen {
+			return false, fmt.Errorf("Port %d is not open", port)
 		}
 		log.Printf("[INFO] Port %d is open", port)
 	}
