@@ -31,4 +31,4 @@ git pull
 make
 cp -a nkn[cd] ./${BIN_DIR}/
 
-./test/launch_node.sh ./${BIN_DIR}/
+./test/launch_node.sh ./${BIN_DIR}/ --no-check-port
