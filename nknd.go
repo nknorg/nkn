@@ -77,14 +77,30 @@ func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
 
 func nknMain(c *cli.Context) error {
 	log.Info("Node version: ", config.Version)
+
+	err := config.Init()
+	if err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
+
 	if len(seedStr) > 0 {
 		// Support input mutil seeds which split by ","
 		config.Parameters.SeedList = strings.Split(seedStr, ",")
 	}
 
+	// Get local account
+	wallet := vault.GetWallet()
+	if wallet == nil {
+		return errors.New("open local wallet error")
+	}
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return errors.New("load local account error")
+	}
+
 	var ring *chord.Ring
 	var transport *chord.TCPTransport
-	var err error
 
 	// Start the Chord ring testing process
 	if createMode {
@@ -99,16 +115,6 @@ func nknMain(c *cli.Context) error {
 
 	defer transport.Shutdown()
 	defer ring.Leave()
-
-	// Get local account
-	wallet := vault.GetWallet()
-	if wallet == nil {
-		return errors.New("open local wallet error")
-	}
-	account, err := wallet.GetDefaultAccount()
-	if err != nil {
-		return errors.New("load local account error")
-	}
 
 	// initialize ledger
 	err = InitLedger(account)
@@ -192,6 +198,12 @@ func main() {
 			Value:       "",
 			Hidden:      true,
 			Destination: &password.Passwd,
+		},
+		cli.BoolFlag{
+			Name:        "no-check-port",
+			Usage:       "Skip checking port opening",
+			Hidden:      true,
+			Destination: &config.SkipCheckPort,
 		},
 	}
 	app.Action = nknMain

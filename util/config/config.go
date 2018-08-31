@@ -8,17 +8,16 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"time"
 
+	"github.com/nknorg/go-portscanner"
 	"github.com/rdegges/go-ipify"
 )
 
 const (
-	MINGENBLOCKTIME        = 2
-	DEFAULTGENBLOCKTIME    = 6
-	DefaultConfigFilename  = "./config.json"
-	DefaultBookKeeperCount = 4
+	DefaultConfigFilename = "./config.json"
 )
 
 const (
@@ -27,9 +26,9 @@ const (
 )
 
 var (
-	Version           string
-	Parameters        *Configuration
-	defaultParameters = &Configuration{
+	Version       string
+	SkipCheckPort bool
+	Parameters    = &Configuration{
 		Magic:         99281,
 		Version:       1,
 		ChordPort:     30000,
@@ -74,43 +73,51 @@ type Configuration struct {
 	Hostname             string   `json:"Hostname"`
 }
 
-func init() {
-	file, err := ioutil.ReadFile(DefaultConfigFilename)
-	if err != nil {
-		log.Printf("Config file error: %v, use default parameters.", err)
-		Parameters = defaultParameters
-		return
-	}
-	// Remove the UTF-8 Byte Order Mark
-	file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
+func Init() error {
+	if _, err := os.Stat(DefaultConfigFilename); err == nil {
+		file, err := ioutil.ReadFile(DefaultConfigFilename)
+		if err != nil {
+			return err
+		}
 
-	config := defaultParameters
-	err = json.Unmarshal(file, config)
-	if err != nil {
-		log.Printf("Unmarshal config file error: %v, use default parameters.", err)
-		Parameters = defaultParameters
-		return
+		// Remove the UTF-8 Byte Order Mark
+		file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
+
+		err = json.Unmarshal(file, Parameters)
+		if err != nil {
+			return err
+		}
+	} else {
+		log.Println("Config file not exists, use default parameters.")
 	}
 
-	if config.Hostname == "" {
+	Parameters.IncrementPort()
+
+	if Parameters.Hostname == "" {
 		ip, err := ipify.GetIp()
 		if err != nil {
-			log.Printf("Couldn't get my IP address: %v", err)
-			ip = "127.0.0.1"
+			return err
 		}
-		config.Hostname = ip
+
+		Parameters.Hostname = ip
+
+		if !SkipCheckPort {
+			ok, err := Parameters.CheckPorts(ip)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return errors.New("Some ports are not open. Please make sure you set up port forwarding or firewall correctly")
+			}
+		}
 	}
 
-	config.IncrementPort()
-
-	err = check(config)
+	err := check(Parameters)
 	if err != nil {
-		log.Printf("invalid config file: %v, use default parameters.", err)
-		Parameters = defaultParameters
-		return
+		return err
 	}
 
-	Parameters = config
+	return nil
 }
 
 func check(config *Configuration) error {
@@ -120,7 +127,7 @@ func check(config *Configuration) error {
 			return errors.New("seed list in config file should not be blank")
 		}
 	default:
-		return fmt.Errorf("invalid consensus type %s in config file\n", config.ConsensusType)
+		return fmt.Errorf("invalid consensus type %s in config file", config.ConsensusType)
 	}
 
 	return nil
@@ -165,4 +172,34 @@ func (config *Configuration) IncrementPort() {
 	if delta > 0 {
 		log.Println("[WARNING] Port in use! All ports are automatically increased by", delta)
 	}
+}
+
+func checkPort(host string, port uint16) (bool, error) {
+	conn, err := net.Listen("tcp", ":"+strconv.Itoa(int(port)))
+	if err != nil {
+		log.Printf("[ERROR] Port %d is in use", port)
+		return false, nil
+	}
+	defer conn.Close()
+
+	isOpen, err := portscanner.CheckTCP(host, port)
+	return isOpen, err
+}
+
+func (config *Configuration) CheckPorts(myIP string) (bool, error) {
+	allPorts := []uint16{
+		config.ChordPort,
+		config.NodePort,
+		config.HttpWsPort,
+		config.HttpJsonPort,
+	}
+	for _, port := range allPorts {
+		log.Printf("[INFO] Checking TCP port %d", port)
+		ok, err := checkPort(myIP, port)
+		if err != nil || !ok {
+			return false, err
+		}
+		log.Printf("[INFO] Port %d is open", port)
+	}
+	return true, nil
 }
