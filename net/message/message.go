@@ -211,6 +211,8 @@ func NewMsg(t string, n Noder) ([]byte, error) {
 
 // FIXME the length exceed int32 case?
 func HandleNodeMsg(node Noder, buf []byte, len int) error {
+	defer node.LocalNode().ReleaseMsgHandlerChan()
+
 	if len < MsgHdrLen {
 		log.Warn("Unexpected size of received message")
 		return errors.New("Unexpected size of received message")

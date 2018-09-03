@@ -28,6 +28,7 @@ import (
 
 const (
 	MaxSyncHeaderReq     = 2                // max concurrent sync header request count
+	MaxMsgChanNum        = 2048             // max goroutine num for message handler
 	ConnectionMaxBackoff = 4000             // back off for retry
 	MaxRetryCount        = 3                // max retry count
 	KeepAliveTicker      = 3 * time.Second  // ticker for ping/pong and keepalive message
@@ -38,15 +39,6 @@ const (
 	MaxReqBlkOnce        = 16               // max block count requested
 	ConnectingTimeout    = 10 * time.Second // timeout for waiting for connection
 )
-
-type Semaphore chan struct{}
-
-func MakeSemaphore(n int) Semaphore {
-	return make(chan struct{}, n)
-}
-
-func (s Semaphore) acquire() { s <- struct{}{} }
-func (s Semaphore) release() { <-s }
 
 type node struct {
 	sync.Mutex
@@ -62,7 +54,8 @@ type node struct {
 	rxTxnCnt                 uint64              // received transaction count
 	publicKey                *crypto.PubKey      // node public key
 	flightHeights            []uint32            // flight height
-	SyncReqSem               Semaphore           // semaphore for connection counts
+	headerReqChan            ChanQueue           // semaphore for connection counts
+	msgHandlerChan           ChanQueue           // chan for message handler
 	chordAddr                []byte              // chord address (chord ID)
 	ring                     *chord.Ring         // chord ring
 	relayer                  *relay.RelayService // relay service
@@ -159,9 +152,9 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n := NewNode()
 	n.version = ProtocolVersion
 	if Parameters.MaxHdrSyncReqs <= 0 {
-		n.SyncReqSem = MakeSemaphore(MaxSyncHeaderReq)
+		n.headerReqChan = MakeChanQueue(MaxSyncHeaderReq)
 	} else {
-		n.SyncReqSem = MakeSemaphore(Parameters.MaxHdrSyncReqs)
+		n.headerReqChan = MakeChanQueue(Parameters.MaxHdrSyncReqs)
 	}
 	n.link.addr = Parameters.Hostname
 	n.link.port = Parameters.NodePort
@@ -185,6 +178,7 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n.TxnPool = pool.NewTxnPool()
 	n.syncState = SyncStarted
 	n.syncStopHash = Uint256{}
+	n.msgHandlerChan = MakeChanQueue(MaxMsgChanNum)
 	n.quit = make(chan struct{}, 1)
 	n.eventQueue.init()
 	n.hashCache = NewHashCache(HashCacheCap)
@@ -540,12 +534,20 @@ func (node *node) RemoveFromRetryList(addr string) {
 	}
 
 }
-func (node *node) AcqSyncReqSem() {
-	node.SyncReqSem.acquire()
+func (node *node) AcquireMsgHandlerChan() {
+	node.msgHandlerChan.acquire()
 }
 
-func (node *node) RelSyncReqSem() {
-	node.SyncReqSem.release()
+func (node *node) ReleaseMsgHandlerChan() {
+	node.msgHandlerChan.release()
+}
+
+func (node *node) AcquireHeaderReqChan() {
+	node.headerReqChan.acquire()
+}
+
+func (node *node) ReleaseHeaderReqChan() {
+	node.headerReqChan.release()
 }
 
 func (node *node) GetChordAddr() []byte {
