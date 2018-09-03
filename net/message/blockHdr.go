@@ -147,8 +147,8 @@ func (msg *blkHeader) Deserialize(r io.Reader) error {
 }
 
 func (msg headersReq) Handle(node Noder) error {
-	node.LocalNode().AcqSyncReqSem()
-	defer node.LocalNode().RelSyncReqSem()
+	node.LocalNode().AcquireHeaderReqChan()
+	defer node.LocalNode().ReleaseHeaderReqChan()
 	var startHash [HashLen]byte
 	var stopHash [HashLen]byte
 	startHash = msg.p.hashStart

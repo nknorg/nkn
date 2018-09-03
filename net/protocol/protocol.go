@@ -115,8 +115,10 @@ type Noder interface {
 	RemoveAddrInConnectingList(addr string)
 	AddInRetryList(addr string)
 	RemoveFromRetryList(addr string)
-	AcqSyncReqSem()
-	RelSyncReqSem()
+	AcquireMsgHandlerChan()
+	ReleaseMsgHandlerChan()
+	AcquireHeaderReqChan()
+	ReleaseHeaderReqChan()
 
 	GetChordAddr() []byte
 	SetChordAddr([]byte)
