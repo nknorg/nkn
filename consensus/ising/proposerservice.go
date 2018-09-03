@@ -89,7 +89,7 @@ func (ps *ProposerService) CurrentVoting(vType voting.VotingContentType) voting.
 	return nil
 }
 
-func (ps *ProposerService) ConsensusRoutine(vType voting.VotingContentType) {
+func (ps *ProposerService) ConsensusRoutine(vType voting.VotingContentType, isProposer bool) {
 	// initialization for height and voting weight
 	ps.Initialize(vType)
 	current := ps.CurrentVoting(vType)
@@ -100,7 +100,7 @@ func (ps *ProposerService) ConsensusRoutine(vType voting.VotingContentType) {
 		// waiting for flooding finished
 		time.Sleep(WaitingForFloodingFinished)
 		// send new proposal
-		err := ps.SendNewProposal(votingHeight, vType)
+		err := ps.SendNewProposal(votingHeight, vType, isProposer)
 		if err != nil {
 			log.Info("waiting for receiving proposed entity...")
 			return
@@ -159,13 +159,13 @@ func (ps *ProposerService) GetReceiverNode(nids []uint64) []protocol.Noder {
 	return nodes
 }
 
-func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.VotingContentType) error {
+func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.VotingContentType, isProposer bool) error {
 	current := ps.CurrentVoting(vType)
 	content, err := current.GetBestVotingContent(votingHeight)
 	if err != nil {
 		return err
 	}
-	if !current.VerifyVotingContent(content) {
+	if !isProposer && !current.VerifyVotingContent(content) {
 		return errors.New("verify voting content error when send new proposal")
 	}
 	votingPool := current.GetVotingPool()
@@ -231,6 +231,11 @@ func (ps *ProposerService) ProduceNewBlock() {
 		log.Error("adding block to cache error: ", err)
 		return
 	}
+	err = ledger.TransactionCheck(block)
+	if err != nil {
+		log.Error("found invalide transaction when produce new block")
+		return
+	}
 	// generate BlockFlooding message
 	blockFlooding := NewBlockFlooding(block)
 	// get nodes which should receive this message
@@ -273,7 +278,7 @@ func (ps *ProposerService) ProposerRoutine() {
 				ps.ProduceNewBlock()
 				time.Sleep(time.Second)
 				for _, v := range ps.voting {
-					go ps.ConsensusRoutine(v.VotingType())
+					go ps.ConsensusRoutine(v.VotingType(), true)
 				}
 				ps.timer.Reset(config.ConsensusTime)
 			}
@@ -556,7 +561,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender *
 	// trigger consensus when receive appropriate block
 	if !ps.IsBlockProposer() {
 		for _, v := range ps.voting {
-			go ps.ConsensusRoutine(v.VotingType())
+			go ps.ConsensusRoutine(v.VotingType(), false)
 		}
 		// trigger block proposer changed when tolerance time not receive block
 		ps.timeout.Reset(config.ConsensusTime + TimeoutTolerance)
