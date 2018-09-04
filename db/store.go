@@ -1581,3 +1581,17 @@ func (u *UTXOs) persistUTXOs() error {
 
 	return nil
 }
+
+func (cs *ChainStore) getUnspentIndex(txid Uint256) ([]uint16, error) {
+	unspentValue, err := cs.st.Get(unspentIndexKey(txid))
+	if err != nil {
+		return []uint16{}, err
+	}
+
+	unspentArray, err := GetUint16Array(unspentValue)
+	if err != nil {
+		return []uint16{}, err
+	}
+
+	return unspentArray, nil
+}
