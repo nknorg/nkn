@@ -130,13 +130,7 @@ Create a wallet:
 $ docker run -v $PWD:/nkn -it nkn nknc wallet -c
 ```
 
-Start bootstrap node by creating a network
-
-```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd -c
-```
-
-Start other nodes by joining the network
+Start a node:
 
 ```shell
 $ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
@@ -154,7 +148,7 @@ When starting a node, it will read the configurations from `config.json`. We
 provide two sample `config.json`:
 
 * `config.testnet.json`: join the testnet
-* `config.local.json`: create and join a cluster on hour localhost
+* `config.local.json`: create and join a private chain on your localhost
 
 You can copy the one you want to `config.json` or write your own.
 
@@ -176,8 +170,8 @@ Wallet information will be saved at `wallet.dat` and it's encrypted with the
 password you provided when creating the wallet. So please make sure you pick a
 strong password and remember it!
 
-Now you can [join the testnet](#join-the-testnet) or [create a local
-cluster](#create-a-local-cluster).
+Now you can [join the testnet](#join-the-testnet) or [create a private
+chain](https://github.com/nknorg/nkn/wiki/Create-a-Private-Chain).
 
 ### Join the TestNet
 
@@ -218,44 +212,6 @@ If anything goes wrong, you may want to check if any of the previous steps went
 wrong. If the problem still persists, [create an
 issue](https://github.com/nknorg/nkn/issues/new) or ask us in our [Discord
 group](#community).
-
-### Create a local cluster
-
-You can create a local cluster by running multiple nodes on your local machine.
-
-1. Create several directories (one per node you want to run).
-
-2. Copy (or create symbolic link) `nknd`, `nknc` to each directory. Skip this
-step if you are using docker.
-
-3. Create a new wallet in each directory.
-
-4. Create a `config.json` in each directory. All of them should put the same
-public key as the GenesisBlockProposer. Note that ports in different
-`config.json` can be the same, conflict in ports will be resolved automatically.
-
-Start a bootstrap node by creating a network
-
-```shell
-$ ./nknd -c
-```
-
-Start other nodes by joining the network
-
-```shell
-$ ./nknd
-```
-
-Or provide a seed node to override the one in `config.json`
-
-```shell
-$ ./nknd -seed http://$RemoteNodeIP:$HttpJsonPort
-```
-
-When the network contains enough nodes (more than the length of successor list
-plus one, by default 9+), stop the node that created the network in order for
-the relay service to work properly. Nodes joining the network later should use a
-live node as seed.
 
 ### Port forwarding
 
