@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 	"sort"
 	"sync"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/nknorg/nkn/core/contract/program"
 	. "github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/util/log"
@@ -647,346 +645,33 @@ func (cs *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, e
 }
 
 func (cs *ChainStore) persist(b *Block) error {
-	utxoUnspents := newUTXOs(cs)
-	unspents := make(map[Uint256][]uint16)
-	quantities := make(map[Uint256]Fixed64)
+	batch := NewBatchStore(cs)
+	errChan := make(chan error, 8)
 
-	// Get Unspents for every tx
-	unspentPrefix := []byte{byte(IX_Unspent)}
-	accounts := make(map[Uint160]*account.AccountState, 0)
+	go func(b *Block, ch chan error) { ch <- batch.storeBlock(b) }(b, errChan)
+	go func(txs []*tx.Transaction, ch chan error) { ch <- batch.storeAssets(txs) }(b.Transactions, errChan)
+	go func(txs []*tx.Transaction, ch chan error) { ch <- batch.storeQuantityIssued(txs) }(b.Transactions, errChan)
+	go func(txs []*tx.Transaction, ch chan error) { ch <- batch.storePrepaid(txs) }(b.Transactions, errChan)
+	go func(txs []*tx.Transaction, ch chan error) { ch <- batch.storeWithdraw(txs) }(b.Transactions, errChan)
+	go func(txs []*tx.Transaction, ch chan error) { ch <- batch.storeBookkeepers(txs) }(b.Transactions, errChan)
+	go func(txs []*tx.Transaction, ch chan error) { ch <- batch.storeUnspentIndexs(txs) }(b.Transactions, errChan)
+	go func(height uint32, txs []*tx.Transaction, ch chan error) {
+		ch <- batch.storeUTXOs(height, txs)
+	}(b.Header.Height, b.Transactions, errChan)
 
-	// batch write begin
-	cs.st.NewBatch()
-	// generate key with DATA_Header prefix
-	bhhash := bytes.NewBuffer(nil)
-	// add block header prefix.
-	bhhash.WriteByte(byte(DATA_Header))
-	// calc block hash
-	blockHash := b.Hash()
-	blockHash.Serialize(bhhash)
+	var err error
+	for i := 0; i < 8; i++ {
+		if chanErr := <-errChan; chanErr != nil && err == nil {
+			err = chanErr
+		}
+	}
 
-	// generate value
-	w := bytes.NewBuffer(nil)
-	var sysfee uint64 = 0xFFFFFFFFFFFFFFFF
-	serialization.WriteUint64(w, sysfee)
-	b.Trim(w)
-
-	// BATCH PUT VALUE
-	cs.st.BatchPut(bhhash.Bytes(), w.Bytes())
-
-	// generate key with DATA_BlockHash prefix
-	bhash := bytes.NewBuffer(nil)
-	bhash.WriteByte(byte(DATA_BlockHash))
-	err := serialization.WriteUint32(bhash, b.Header.Height)
+	close(errChan)
 	if err != nil {
 		return err
 	}
 
-	// generate value
-	hashWriter := bytes.NewBuffer(nil)
-	hashValue := b.Header.Hash()
-	hashValue.Serialize(hashWriter)
-
-	needUpdateBookKeeper := false
-	currBookKeeper, nextBookKeeper, err := cs.GetBookKeeperList()
-	// update current BookKeeperList
-	if len(currBookKeeper) != len(nextBookKeeper) {
-		needUpdateBookKeeper = true
-	} else {
-		for i := range currBookKeeper {
-			if currBookKeeper[i].X.Cmp(nextBookKeeper[i].X) != 0 ||
-				currBookKeeper[i].Y.Cmp(nextBookKeeper[i].Y) != 0 {
-				needUpdateBookKeeper = true
-				break
-			}
-		}
-	}
-	if needUpdateBookKeeper {
-		currBookKeeper = make([]*crypto.PubKey, len(nextBookKeeper))
-		for i := 0; i < len(nextBookKeeper); i++ {
-			currBookKeeper[i] = new(crypto.PubKey)
-			currBookKeeper[i].X = new(big.Int).Set(nextBookKeeper[i].X)
-			currBookKeeper[i].Y = new(big.Int).Set(nextBookKeeper[i].Y)
-		}
-	}
-	// BATCH PUT VALUE
-	cs.st.BatchPut(bhash.Bytes(), hashWriter.Bytes())
-
-	nLen := len(b.Transactions)
-	for i := 0; i < nLen; i++ {
-		err = cs.SaveTransaction(b.Transactions[i], b.Header.Height)
-		if err != nil {
-			return err
-		}
-
-		switch b.Transactions[i].TxType {
-		case tx.RegisterAsset:
-			ar := b.Transactions[i].Payload.(*payload.RegisterAsset)
-			err = cs.SaveAsset(b.Transactions[i].Hash(), ar.Asset)
-			if err != nil {
-				return err
-			}
-		case tx.Prepaid:
-			prepaidPld := b.Transactions[i].Payload.(*payload.Prepaid)
-			pHash, err := b.Transactions[i].GetProgramHashes()
-			if err != nil || len(pHash) == 0 {
-				return err
-			}
-			err = cs.UpdatePrepaidInfo(pHash[0], prepaidPld.Amount, prepaidPld.Rates)
-			if err != nil {
-				return err
-			}
-		case tx.Withdraw:
-			withdrawPld := b.Transactions[i].Payload.(*payload.Withdraw)
-			// TODO for range output list
-			err = cs.UpdateWithdrawInfo(withdrawPld.ProgramHash, b.Transactions[i].Outputs[0].Value)
-			if err != nil {
-				return err
-			}
-		case tx.Commit:
-			//TODO save POR data
-		case tx.IssueAsset:
-			results := b.Transactions[i].GetMergedAssetIDValueFromOutputs()
-			for assetId, value := range results {
-				if _, ok := quantities[assetId]; !ok {
-					quantities[assetId] += value
-				} else {
-					quantities[assetId] = value
-				}
-			}
-		}
-		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
-			output := b.Transactions[i].Outputs[index]
-			programHash := output.ProgramHash
-			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] += output.Value
-			} else {
-				accountState, err := cs.GetAccount(programHash)
-				if err != nil && err.Error() != ErrDBNotFound.Error() {
-					return err
-				}
-				if accountState != nil {
-					accountState.Balances[assetId] += output.Value
-				} else {
-					balances := make(map[Uint256]Fixed64, 0)
-					balances[assetId] = output.Value
-					accountState = account.NewAccountState(programHash, balances)
-				}
-				accounts[programHash] = accountState
-			}
-
-			unspent := &tx.UTXOUnspent{
-				Txid:  b.Transactions[i].Hash(),
-				Index: uint32(index),
-				Value: output.Value,
-			}
-
-			utxoUnspents.addUTXO(programHash, assetId, b.Header.Height, unspent)
-		}
-
-		for index := 0; index < len(b.Transactions[i].Inputs); index++ {
-			input := b.Transactions[i].Inputs[index]
-			transaction, height, err := cs.getTx(input.ReferTxID)
-			if err != nil {
-				return err
-			}
-			index := input.ReferTxOutputIndex
-			output := transaction.Outputs[index]
-			programHash := output.ProgramHash
-			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] -= output.Value
-			} else {
-				accountState, err := cs.GetAccount(programHash)
-				if err != nil {
-					return err
-				}
-				accountState.Balances[assetId] -= output.Value
-				accounts[programHash] = accountState
-			}
-			if accounts[programHash].Balances[assetId] < 0 {
-				return errors.New(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
-			}
-
-			unspent := &tx.UTXOUnspent{
-				Txid:  transaction.Hash(),
-				Index: uint32(index),
-				Value: output.Value,
-			}
-
-			if err := utxoUnspents.removeUTXO(programHash, assetId, height, unspent); err != nil {
-				return err
-			}
-
-		}
-
-		// init unspent in tx
-		txhash := b.Transactions[i].Hash()
-		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
-			unspents[txhash] = append(unspents[txhash], uint16(index))
-		}
-
-		// delete unspent when spent in input
-		for index := 0; index < len(b.Transactions[i].Inputs); index++ {
-			txhash := b.Transactions[i].Inputs[index].ReferTxID
-
-			// if get unspent by utxo
-			if _, ok := unspents[txhash]; !ok {
-				unspentValue, err_get := cs.st.Get(append(unspentPrefix, txhash.ToArray()...))
-
-				if err_get != nil {
-					return err_get
-				}
-
-				unspents[txhash], err_get = GetUint16Array(unspentValue)
-				if err_get != nil {
-					return err_get
-				}
-			}
-
-			// find Transactions[i].Inputs[index].ReferTxOutputIndex and delete it
-			unspentLen := len(unspents[txhash])
-			for k, outputIndex := range unspents[txhash] {
-				if outputIndex == uint16(b.Transactions[i].Inputs[index].ReferTxOutputIndex) {
-					unspents[txhash][k] = unspents[txhash][unspentLen-1]
-					unspents[txhash] = unspents[txhash][:unspentLen-1]
-					break
-				}
-			}
-		}
-
-		// bookkeeper
-		if b.Transactions[i].TxType == tx.BookKeeper {
-			bk := b.Transactions[i].Payload.(*payload.BookKeeper)
-
-			switch bk.Action {
-			case payload.BookKeeperAction_ADD:
-				findflag := false
-				for k := 0; k < len(nextBookKeeper); k++ {
-					if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
-						findflag = true
-						break
-					}
-				}
-
-				if !findflag {
-					needUpdateBookKeeper = true
-					nextBookKeeper = append(nextBookKeeper, bk.PubKey)
-					sort.Sort(crypto.PubKeySlice(nextBookKeeper))
-				}
-			case payload.BookKeeperAction_SUB:
-				ind := -1
-				for k := 0; k < len(nextBookKeeper); k++ {
-					if bk.PubKey.X.Cmp(nextBookKeeper[k].X) == 0 && bk.PubKey.Y.Cmp(nextBookKeeper[k].Y) == 0 {
-						ind = k
-						break
-					}
-				}
-
-				if ind != -1 {
-					needUpdateBookKeeper = true
-					// already sorted
-					nextBookKeeper = append(nextBookKeeper[:ind], nextBookKeeper[ind+1:]...)
-				}
-			}
-
-		}
-
-	}
-
-	if needUpdateBookKeeper {
-		//bookKeeper key
-		bkListKey := bytes.NewBuffer(nil)
-		bkListKey.WriteByte(byte(SYS_CurrentBookKeeper))
-
-		//bookKeeper value
-		bkListValue := bytes.NewBuffer(nil)
-
-		serialization.WriteUint8(bkListValue, uint8(len(currBookKeeper)))
-		for k := 0; k < len(currBookKeeper); k++ {
-			currBookKeeper[k].Serialize(bkListValue)
-		}
-
-		serialization.WriteUint8(bkListValue, uint8(len(nextBookKeeper)))
-		for k := 0; k < len(nextBookKeeper); k++ {
-			nextBookKeeper[k].Serialize(bkListValue)
-		}
-
-		// BookKeeper put value
-		cs.st.BatchPut(bkListKey.Bytes(), bkListValue.Bytes())
-
-		///////////////////////////////////////////////////////
-	}
-	///////////////////////////////////////////////////////
-	//*/
-
-	// batch put the utxoUnspents
-	if err := utxoUnspents.persistUTXOs(); err != nil {
-		return err
-	}
-
-	// batch put the unspents
-	for txhash, value := range unspents {
-		unspentKey := bytes.NewBuffer(nil)
-		unspentKey.WriteByte(byte(IX_Unspent))
-		txhash.Serialize(unspentKey)
-
-		if len(value) == 0 {
-			cs.st.BatchDelete(unspentKey.Bytes())
-		} else {
-			unspentArray := ToByteArray(value)
-			cs.st.BatchPut(unspentKey.Bytes(), unspentArray)
-		}
-	}
-
-	// batch put quantities
-	for assetId, value := range quantities {
-		quantityKey := bytes.NewBuffer(nil)
-		quantityKey.WriteByte(byte(ST_QuantityIssued))
-		assetId.Serialize(quantityKey)
-
-		qt, err := cs.GetQuantityIssued(assetId)
-		if err != nil {
-			return err
-		}
-
-		qt = qt + value
-
-		quantityArray := bytes.NewBuffer(nil)
-		qt.Serialize(quantityArray)
-
-		cs.st.BatchPut(quantityKey.Bytes(), quantityArray.Bytes())
-	}
-
-	for programHash, value := range accounts {
-		accountKey := new(bytes.Buffer)
-		accountKey.WriteByte(byte(ST_Account))
-		programHash.Serialize(accountKey)
-
-		accountValue := new(bytes.Buffer)
-		value.Serialize(accountValue)
-
-		cs.st.BatchPut(accountKey.Bytes(), accountValue.Bytes())
-	}
-
-	currentBlockKey := bytes.NewBuffer(nil)
-	currentBlockKey.WriteByte(byte(SYS_CurrentBlock))
-
-	currentBlock := bytes.NewBuffer(nil)
-	blockHash.Serialize(currentBlock)
-	serialization.WriteUint32(currentBlock, b.Header.Height)
-
-	// BATCH PUT VALUE
-	cs.st.BatchPut(currentBlockKey.Bytes(), currentBlock.Bytes())
-
-	err = cs.st.BatchCommit()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return batch.Commit()
 }
 
 // can only be invoked by backend write goroutine
@@ -1499,87 +1184,6 @@ func (cs *ChainStore) GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, e
 	}
 
 	return &amount, &rates, nil
-}
-
-type UTXOs struct {
-	cs       *ChainStore
-	unspents map[Uint160]map[Uint256]map[uint32][]*tx.UTXOUnspent
-}
-
-func newUTXOs(store *ChainStore) *UTXOs {
-	return &UTXOs{
-		cs:       store,
-		unspents: make(map[Uint160]map[Uint256]map[uint32][]*tx.UTXOUnspent),
-	}
-}
-
-func (u *UTXOs) addUTXO(programHash Uint160, assetId Uint256, height uint32, unspent *tx.UTXOUnspent) error {
-	if _, ok := u.unspents[programHash]; !ok {
-		u.unspents[programHash] = make(map[Uint256]map[uint32][]*tx.UTXOUnspent)
-	}
-
-	if _, ok := u.unspents[programHash][assetId]; !ok {
-		u.unspents[programHash][assetId] = make(map[uint32][]*tx.UTXOUnspent, 0)
-	}
-
-	var err error
-	if _, ok := u.unspents[programHash][assetId][height]; !ok {
-		u.unspents[programHash][assetId][height], err = u.cs.GetUnspentByHeight(programHash, assetId, height)
-		if err != nil {
-			u.unspents[programHash][assetId][height] = make([]*tx.UTXOUnspent, 0)
-		}
-	}
-
-	u.unspents[programHash][assetId][height] = append(u.unspents[programHash][assetId][height], unspent)
-
-	return nil
-}
-
-func (u *UTXOs) removeUTXO(programHash Uint160, assetId Uint256, height uint32, unspent *tx.UTXOUnspent) error {
-	if _, ok := u.unspents[programHash]; !ok {
-		u.unspents[programHash] = make(map[Uint256]map[uint32][]*tx.UTXOUnspent)
-	}
-
-	if _, ok := u.unspents[programHash][assetId]; !ok {
-		u.unspents[programHash][assetId] = make(map[uint32][]*tx.UTXOUnspent)
-	}
-
-	var err error
-	if _, ok := u.unspents[programHash][assetId][height]; !ok {
-		u.unspents[programHash][assetId][height], err = u.cs.GetUnspentByHeight(programHash, assetId, height)
-		if err != nil {
-			return errors.New(fmt.Sprintf("[programHash:%v, assetId:%v height: %v] has no unspent UTXO.",
-				programHash, assetId, height))
-		}
-	}
-	listnum := len(u.unspents[programHash][assetId][height])
-	for i := 0; i < listnum; i++ {
-		if u.unspents[programHash][assetId][height][i].Txid.CompareTo(unspent.Txid) == 0 &&
-			u.unspents[programHash][assetId][height][i].Index == uint32(unspent.Index) {
-			u.unspents[programHash][assetId][height][i] = u.unspents[programHash][assetId][height][listnum-1]
-			u.unspents[programHash][assetId][height] = u.unspents[programHash][assetId][height][:listnum-1]
-			return nil
-		}
-	}
-
-	return errors.New(fmt.Sprintf("[persist] utxoUnspents NOT find UTXO by txid: %x, index: %d.",
-		unspent.Txid, unspent.Index))
-
-}
-
-func (u *UTXOs) persistUTXOs() error {
-	for programHash, programHash_value := range u.unspents {
-		for assetId, unspents := range programHash_value {
-			for height, unspent := range unspents {
-				err := u.cs.saveUnspentWithProgramHash(programHash, assetId, height, unspent)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	return nil
 }
 
 func (cs *ChainStore) getUnspentIndex(txid Uint256) ([]uint16, error) {
