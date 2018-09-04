@@ -1,6 +1,8 @@
 package db
 
 import (
+	"sync"
+
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -13,6 +15,7 @@ type IStore interface {
 	Get(key []byte) ([]byte, error)
 	Delete(key []byte) error
 	NewBatch() error
+	NewSepBatch() IBatch
 	BatchPut(key []byte, value []byte) error
 	BatchDelete(key []byte) error
 	BatchCommit() error
@@ -20,9 +23,16 @@ type IStore interface {
 	NewIterator(prefix []byte) IIterator
 }
 
+type IBatch interface {
+	BatchPut(key []byte, value []byte) error
+	BatchDelete(key []byte) error
+	BatchCommit() error
+}
+
 type LevelDBStore struct {
 	db    *leveldb.DB // LevelDB instance
 	batch *leveldb.Batch
+	mu    sync.RWMutex
 }
 
 // used to compute the size of bloom filter bits array .
@@ -71,22 +81,33 @@ func (self *LevelDBStore) NewBatch() error {
 	return nil
 }
 
+func (self *LevelDBStore) NewSepBatch() IBatch {
+	return &LevelDBStore{
+		db:    self.db,
+		batch: new(leveldb.Batch),
+	}
+}
+
 func (self *LevelDBStore) BatchPut(key []byte, value []byte) error {
+	self.mu.Lock()
 	self.batch.Put(key, value)
+	self.mu.Unlock()
 	return nil
 }
 
 func (self *LevelDBStore) BatchDelete(key []byte) error {
+	self.mu.Lock()
 	self.batch.Delete(key)
+	self.mu.Unlock()
 	return nil
 }
 
 func (self *LevelDBStore) BatchCommit() error {
+	self.mu.Lock()
 	err := self.db.Write(self.batch, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	self.mu.Unlock()
+
+	return err
 }
 
 func (self *LevelDBStore) Close() error {
