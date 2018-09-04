@@ -28,20 +28,8 @@ var (
 	ErrDBNotFound = errors.New("leveldb: not found")
 )
 
-type persistTask interface{}
-type persistHeaderTask struct {
-	header *Header
-}
-type persistBlockTask struct {
-	block  *Block
-	ledger *Ledger
-}
-
 type ChainStore struct {
 	st IStore
-
-	taskCh chan persistTask
-	quit   chan chan bool
 
 	mu          sync.RWMutex // guard the following var
 	headerIndex map[uint32]Uint256
@@ -52,25 +40,8 @@ type ChainStore struct {
 	storedHeaderCount  uint32
 }
 
-func NewStore(file string) (IStore, error) {
-	ldbs, err := NewLevelDBStore(file)
-
-	return ldbs, err
-}
-
 func NewLedgerStore() (ILedgerStore, error) {
-	// TODO: read config file decide which db to use.
-	cs, err := NewChainStore("Chain")
-	if err != nil {
-		return nil, err
-	}
-
-	return cs, nil
-}
-
-func NewChainStore(file string) (*ChainStore, error) {
-
-	st, err := NewStore(file)
+	st, err := NewLevelDBStore("Chain")
 	if err != nil {
 		return nil, err
 	}
@@ -82,39 +53,13 @@ func NewChainStore(file string) (*ChainStore, error) {
 		headerCache:        map[Uint256]*Header{},
 		currentBlockHeight: 0,
 		storedHeaderCount:  0,
-		taskCh:             make(chan persistTask, TaskChanCap),
-		quit:               make(chan chan bool, 1),
 	}
-
-	go chain.loop()
 
 	return chain, nil
 }
 
 func (cs *ChainStore) Close() {
-	closed := make(chan bool)
-	cs.quit <- closed
-	<-closed
-
 	cs.st.Close()
-}
-
-func (cs *ChainStore) loop() {
-	for {
-		select {
-		case t := <-cs.taskCh:
-			switch task := t.(type) {
-			case *persistHeaderTask:
-				cs.handlePersistHeaderTask(task.header)
-			case *persistBlockTask:
-				cs.handlePersistBlockTask(task.block, task.ledger)
-			}
-
-		case closed := <-cs.quit:
-			closed <- true
-			return
-		}
-	}
 }
 
 // can only be invoked by backend write goroutine
@@ -382,7 +327,8 @@ func (cs *ChainStore) AddHeaders(headers []Header, ledger *Ledger) error {
 	})
 
 	for i := 0; i < len(headers); i++ {
-		cs.taskCh <- &persistHeaderTask{header: &headers[i]}
+		cs.handlePersistHeaderTask(&headers[i])
+
 	}
 
 	return nil
@@ -708,7 +654,7 @@ func (cs *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 		//	return err
 		//}
 
-		cs.taskCh <- &persistHeaderTask{header: b.Header}
+		cs.handlePersistHeaderTask(b.Header)
 	} else {
 		//flag, err := validation.VerifySignableData(b)
 		//if flag == false || err != nil {
@@ -717,7 +663,8 @@ func (cs *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 		//}
 	}
 
-	cs.taskCh <- &persistBlockTask{block: b, ledger: ledger}
+	cs.handlePersistBlockTask(b, ledger)
+
 	return nil
 }
 
