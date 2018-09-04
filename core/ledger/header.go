@@ -275,11 +275,11 @@ func (h *Header) UnmarshalJson(data []byte) error {
 		return err
 	}
 
-	singer, err := HexStringToBytes(headerInfo.Signer)
+	signer, err := HexStringToBytes(headerInfo.Signer)
 	if err != nil {
 		return err
 	}
-	h.Signer = singer
+	h.Signer = signer
 
 	signature, err := HexStringToBytes(headerInfo.Signature)
 	if err != nil {
