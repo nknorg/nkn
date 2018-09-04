@@ -109,7 +109,7 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 			return err
 		}
 		miner, err = proposerBlock.GetSigner()
-		log.Infof("verification: block singer should be: %s which is the signer of block %d",
+		log.Infof("verification: block signer should be: %s which is the signer of block %d",
 			common.BytesToHexString(miner), proposerBlockHeight)
 		if err != nil {
 			return err
@@ -123,7 +123,7 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 			if err != nil {
 				return err
 			}
-			log.Infof("verification: block singer should be %s which is genesis block proposer",
+			log.Infof("verification: block signer should be %s which is genesis block proposer",
 				common.BytesToHexString(miner))
 		case WinningTxnHash:
 			txn, err := DefaultLedger.Store.GetTransaction(winningHash)
@@ -141,11 +141,11 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 				return err
 			}
 			txnHash := txn.Hash()
-			log.Infof("verification: block singer should be %s which is got in sigchain transaction %s",
+			log.Infof("verification: block signer should be %s which is got in sigchain transaction %s",
 				common.BytesToHexString(miner), common.BytesToHexString(txnHash.ToArrayReverse()))
 		case WinningNilHash:
 			miner = prevHeader.Signer
-			log.Infof("verification: block singer should be: %s which is the signer of previous block %d",
+			log.Infof("verification: block signer should be: %s which is the signer of previous block %d",
 				common.BytesToHexString(miner), prevHeader.Height)
 		}
 	}
