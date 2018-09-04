@@ -9,7 +9,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core/account"
 	. "github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/core/contract/program"
 	. "github.com/nknorg/nkn/core/ledger"
@@ -336,16 +335,6 @@ func (cs *ChainStore) GetCurrentBlockHash() Uint256 {
 	defer cs.mu.RUnlock()
 
 	return cs.headerIndex[cs.currentBlockHeight]
-}
-
-func (cs *ChainStore) GetContract(codeHash Uint160) ([]byte, error) {
-	prefix := []byte{byte(ST_Contract)}
-	bData, err := cs.st.Get(append(prefix, codeHash.ToArray()...))
-	if err != nil {
-		return nil, err
-	}
-
-	return bData, nil
 }
 
 func (cs *ChainStore) getHeaderWithCache(hash Uint256) *Header {
@@ -896,19 +885,6 @@ func (cs *ChainStore) GetHeightByBlockHash(hash Uint256) (uint32, error) {
 	return block.Header.Height, nil
 }
 
-func (cs *ChainStore) GetAccount(programHash Uint160) (*account.AccountState, error) {
-	accountPrefix := []byte{byte(ST_Account)}
-	state, err := cs.st.Get(append(accountPrefix, programHash.ToArray()...))
-	if err != nil {
-		return nil, err
-	}
-
-	accountState := new(account.AccountState)
-	accountState.Deserialize(bytes.NewBuffer(state))
-
-	return accountState, nil
-}
-
 func (cs *ChainStore) IsBlockInStore(hash Uint256) bool {
 	var b = new(Block)
 	b.Header = new(Header)
@@ -1094,74 +1070,6 @@ func (cs *ChainStore) GetAssets() map[Uint256]*Asset {
 	}
 
 	return assets
-}
-
-func (cs *ChainStore) GetStorage(key []byte) ([]byte, error) {
-	prefix := []byte{byte(ST_Storage)}
-	bData, err_get := cs.st.Get(append(prefix, key...))
-
-	if err_get != nil {
-		return nil, err_get
-	}
-	return bData, nil
-}
-
-func (cs *ChainStore) UpdatePrepaidInfo(programHash Uint160, amount, rates Fixed64) error {
-	var err error
-	newAmount := amount
-	// key: prefix + programHash
-	key := append([]byte{byte(ST_Prepaid)}, programHash.ToArray()...)
-
-	// value: increase existed prepaid amount
-	value := bytes.NewBuffer(nil)
-	oldAmount, _, _ := cs.GetPrepaidInfo(programHash)
-	if oldAmount != nil {
-		newAmount = *oldAmount + amount
-	}
-	err = newAmount.Serialize(value)
-	if err != nil {
-		return err
-	}
-	err = rates.Serialize(value)
-	if err != nil {
-		return err
-	}
-
-	err = cs.st.Put(key, value.Bytes())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (cs *ChainStore) UpdateWithdrawInfo(programHash Uint160, amount Fixed64) error {
-	var err error
-	newAmount := amount
-	// key: prefix + programHash
-	key := append([]byte{byte(ST_Prepaid)}, programHash.ToArray()...)
-
-	// value: increase existed prepaid amount
-	value := bytes.NewBuffer(nil)
-	oldAmount, rates, _ := cs.GetPrepaidInfo(programHash)
-	if oldAmount != nil {
-		newAmount = *oldAmount - amount
-	}
-	err = newAmount.Serialize(value)
-	if err != nil {
-		return err
-	}
-	err = rates.Serialize(value)
-	if err != nil {
-		return err
-	}
-
-	err = cs.st.Put(key, value.Bytes())
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (cs *ChainStore) GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error) {
