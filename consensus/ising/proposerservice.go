@@ -33,7 +33,6 @@ type ProposerService struct {
 	timer                *time.Timer               // timer for proposer node
 	timeout              *time.Timer               // timeout for next round consensus
 	proposerChangeTimer  *time.Timer               // timer for proposer change
-	proposerChangeIndex  uint32                    // block index for proposer change
 	localNode            protocol.Noder            // local node
 	txnCollector         *transaction.TxnCollector // collect transaction from where
 	mining               Mining                    // built-in mining
@@ -53,7 +52,6 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 		timer:               time.NewTimer(config.ConsensusTime),
 		timeout:             time.NewTimer(config.ConsensusTime + TimeoutTolerance),
 		proposerChangeTimer: time.NewTimer(config.ProposerChangeTime),
-		proposerChangeIndex: 0,
 		account:             account,
 		localNode:           node,
 		txnCollector:        txnCollector,
@@ -71,9 +69,6 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 	}
 	if !service.timeout.Stop() {
 		<-service.timeout.C
-	}
-	if !service.proposerChangeTimer.Stop() {
-		<-service.proposerChangeTimer.C
 	}
 
 	return service
@@ -216,10 +211,12 @@ func (ps *ProposerService) ProduceNewBlock() {
 	current := ps.CurrentVoting(voting.BlockVote)
 	votingPool := current.GetVotingPool()
 	votingHeight := current.GetVotingHeight()
-	proposerInfo, err := ps.proposerCache.Get(votingHeight + 1)
-	if err != nil {
-		log.Error("get proposer info for producing new block error: ", err)
-		return
+	proposerInfo := ps.proposerCache.Get(votingHeight + 1)
+	if proposerInfo == nil {
+		proposerInfo = &ProposerInfo{
+			winningHash:     EmptyUint256,
+			winningHashType: ledger.WinningBlockHash,
+		}
 	}
 	// build new block to be proposed
 	block, err := ps.mining.BuildBlock(votingHeight, proposerInfo.winningHash, proposerInfo.winningHashType)
@@ -258,8 +255,8 @@ func (ps *ProposerService) IsBlockProposer() bool {
 	}
 	current := ps.CurrentVoting(voting.BlockVote)
 	votingHeight := current.GetVotingHeight()
-	proposerInfo, err := ps.proposerCache.Get(votingHeight)
-	if err != nil {
+	proposerInfo := ps.proposerCache.Get(votingHeight)
+	if proposerInfo == nil {
 		return false
 	}
 	if !IsEqualBytes(localPublicKey, proposerInfo.publicKey) {
@@ -275,8 +272,10 @@ func (ps *ProposerService) ProposerRoutine() {
 		case <-ps.timer.C:
 			if ps.IsBlockProposer() {
 				log.Info("-> I am Block Proposer")
+				if ps.localNode.GetSyncState() != protocol.PersistFinished {
+					ps.localNode.StopSyncBlock()
+				}
 				ps.ProduceNewBlock()
-				time.Sleep(time.Second)
 				for _, v := range ps.voting {
 					go ps.ConsensusRoutine(v.VotingType(), true)
 				}
@@ -318,42 +317,52 @@ func (ps *ProposerService) ProbeRoutine() {
 }
 
 func (ps *ProposerService) BlockPersistCompleted(v interface{}) {
-	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		return
-	}
-	if block, ok := v.(*ledger.Block); ok {
-		// record time when persist block
-		ledger.DefaultLedger.Blockchain.AddBlockTime(block.Hash(), time.Now().Unix())
-		ps.txnCollector.Cleanup(block.Transactions)
-		// reset index when block persisted
-		ps.proposerChangeIndex = 0
-		// reset timer when block persisted
-		ps.proposerChangeTimer.Stop()
-		ps.proposerChangeTimer.Reset(config.ProposerChangeTime)
+	// reset timer when block persisted
+	ps.proposerChangeTimer.Stop()
+	ps.proposerChangeTimer.Reset(config.ProposerChangeTime)
+
+	if ps.localNode.GetSyncState() == protocol.PersistFinished {
+		if block, ok := v.(*ledger.Block); ok {
+			// record time when persist block
+			ledger.DefaultLedger.Blockchain.AddBlockTime(block.Hash(), time.Now().Unix())
+			ps.txnCollector.Cleanup(block.Transactions)
+		}
 	}
 }
 
-func (ps *ProposerService) ChangeProposer() {
+func (ps *ProposerService) ChangeProposerRoutine() {
 	for {
 		select {
 		case <-ps.proposerChangeTimer.C:
-			height := ledger.DefaultLedger.Store.GetHeight() - ps.proposerChangeIndex
-			hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
-			if err != nil {
-				log.Error("get block hash error when change proposer: ", err)
+			now := time.Now().Unix()
+			currentHeight := ledger.DefaultLedger.Store.GetHeight()
+			var block *ledger.Block
+			var err error
+			if currentHeight < InitialBlockHeight {
+				block, err = ledger.DefaultLedger.Store.GetBlockByHeight(0)
+				if err != nil {
+					log.Error("get genesis block error when change proposer")
+				}
+			} else {
+				currentBlock, err := ledger.DefaultLedger.Store.GetBlockByHeight(currentHeight)
+				if err != nil {
+					log.Errorf("get latest block %d error when change proposer", currentHeight)
+				}
+				timestamp := currentBlock.Header.Timestamp
+				index := (now - timestamp) / 60
+				var height uint32 = 0
+				if int64(currentHeight) > index {
+					height = uint32(int64(currentHeight) - index)
+				}
+				block, err = ledger.DefaultLedger.Store.GetBlockByHeight(height)
+				if err != nil {
+					log.Errorf("get block %d error when change proposer", currentHeight)
+				}
 			}
-			block, err := ledger.DefaultLedger.Store.GetBlock(hash)
-			if err != nil {
-				log.Error("get block error when change proposer: ", err)
-			}
-			nextBlockHeight := ledger.DefaultLedger.Store.GetHeight() + 1
-			ps.proposerCache.Add(nextBlockHeight, block)
+			ps.proposerCache.Add(currentHeight+1, block)
 			ps.timer.Stop()
 			ps.timer.Reset(0)
 			ps.proposerChangeTimer.Reset(config.ProposerChangeTime)
-			if height > 1 {
-				ps.proposerChangeIndex++
-			}
 		}
 	}
 }
@@ -396,6 +405,10 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 	ps.localNode.SetSyncState(protocol.PersistFinished)
 }
 func (ps *ProposerService) SyncBlock(isProposer bool) {
+	if ps.localNode.GetSyncState() == protocol.PersistFinished ||
+		ps.localNode.GetSyncState() == protocol.SyncFinished {
+		return
+	}
 	var wg sync.WaitGroup
 	wg.Add(1)
 	// start block syncing
@@ -412,21 +425,6 @@ func (ps *ProposerService) SyncBlock(isProposer bool) {
 	wg.Wait()
 }
 
-func (ps *ProposerService) StartConsensus(isProposer bool) {
-	// start block proposer routine
-	go ps.ProposerRoutine()
-	// start timeout routine
-	go ps.TimeoutRoutine()
-	// change proposer
-	go ps.ChangeProposer()
-	// trigger block proposer routine
-	if isProposer {
-		ps.timer.Reset(0)
-	}
-	// start probe routine
-	go ps.ProbeRoutine()
-}
-
 func (ps *ProposerService) Start() error {
 	// register consensus message
 	ps.consensusMsgReceived = ps.localNode.GetEvent("consensus").Subscribe(events.EventConsensusMsgReceived,
@@ -438,11 +436,16 @@ func (ps *ProposerService) Start() error {
 	ps.syncFinished = ps.localNode.GetEvent("sync").Subscribe(events.EventBlockSyncingFinished,
 		ps.BlockSyncingFinished)
 
-	isProposer := ps.IsBlockProposer()
-	// start block syncing
-	ps.SyncBlock(isProposer)
-	// start consensus
-	ps.StartConsensus(isProposer)
+	// start block proposer routine
+	go ps.ProposerRoutine()
+	// start change proposer routine
+	go ps.ChangeProposerRoutine()
+	// start timeout routine
+	go ps.TimeoutRoutine()
+
+	ps.SyncBlock(false)
+	// start probe routine
+	go ps.ProbeRoutine()
 
 	return nil
 }

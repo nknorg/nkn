@@ -73,7 +73,7 @@ func (pc *ProposerCache) Add(height uint32, votingContent voting.VotingContent) 
 	pc.cache[height] = proposerInfo
 }
 
-func (pc *ProposerCache) Get(height uint32) (*ProposerInfo, error) {
+func (pc *ProposerCache) Get(height uint32) *ProposerInfo {
 	pc.RLock()
 	defer pc.RUnlock()
 
@@ -84,42 +84,12 @@ func (pc *ProposerCache) Get(height uint32) (*ProposerInfo, error) {
 			publicKey:       proposer,
 			winningHash:     EmptyUint256,
 			winningHashType: ledger.GenesisHash,
-		}, nil
+		}
 	}
 
 	if _, ok := pc.cache[height]; ok {
-		return pc.cache[height], nil
+		return pc.cache[height]
 	}
 
-	var proposer []byte
-	previousBlockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
-	previousBlock, err := ledger.DefaultLedger.Store.GetBlock(previousBlockHash)
-	if err != nil {
-		return nil, err
-	}
-	switch previousBlock.Header.WinningHashType {
-	case ledger.WinningTxnHash:
-		txn, err := ledger.DefaultLedger.GetTransactionWithHash(previousBlock.Header.WinningHash)
-		if err != nil {
-			return nil, err
-		}
-		payload := txn.Payload.(*payload.Commit)
-		sigchain := &por.SigChain{}
-		proto.Unmarshal(payload.SigChain, sigchain)
-		proposer, err = sigchain.GetMiner()
-		if err != nil {
-			return nil, err
-		}
-	case ledger.WinningNilHash:
-		proposer, err = previousBlock.GetSigner()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &ProposerInfo{
-		publicKey:       proposer,
-		winningHash:     EmptyUint256,
-		winningHashType: ledger.WinningNilHash,
-	}, nil
+	return nil
 }

@@ -22,10 +22,8 @@ const (
 	GenesisHash WinningHashType = 0
 	// WinningTxnHash means next Block proposer is a node on signature chain.
 	WinningTxnHash WinningHashType = 1
-	// WinningNilHash means next Block proposer is the signer of last Block.
-	WinningNilHash WinningHashType = 2
 	// WinningBlockHash means next Block proposer is signer of historical Block.
-	WinningBlockHash WinningHashType = 3
+	WinningBlockHash WinningHashType = 2
 )
 
 type Header struct {

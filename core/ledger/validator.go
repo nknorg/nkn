@@ -94,7 +94,7 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 	// get miner who will sign next block
 	var miner []byte
 	timeSlot := int64(config.ProposerChangeTime / time.Second)
-	if timeDiff > timeSlot {
+	if timeDiff >= timeSlot {
 		index := timeDiff / timeSlot
 		proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - index
 		if proposerBlockHeight < 0 {
@@ -143,10 +143,6 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 			txnHash := txn.Hash()
 			log.Infof("verification: block signer should be %s which is got in sigchain transaction %s",
 				common.BytesToHexString(miner), common.BytesToHexString(txnHash.ToArrayReverse()))
-		case WinningNilHash:
-			miner = prevHeader.Signer
-			log.Infof("verification: block signer should be: %s which is the signer of previous block %d",
-				common.BytesToHexString(miner), prevHeader.Height)
 		}
 	}
 
