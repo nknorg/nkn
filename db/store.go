@@ -19,9 +19,7 @@ import (
 )
 
 const (
-	HeaderHashListCount = 2000
 	CleanCacheThreshold = 2
-	TaskChanCap         = 4
 )
 
 var (
@@ -37,7 +35,6 @@ type ChainStore struct {
 	headerCache map[Uint256]*Header
 
 	currentBlockHeight uint32
-	storedHeaderCount  uint32
 }
 
 func NewLedgerStore() (ILedgerStore, error) {
@@ -52,7 +49,6 @@ func NewLedgerStore() (ILedgerStore, error) {
 		blockCache:         map[Uint256]*Block{},
 		headerCache:        map[Uint256]*Header{},
 		currentBlockHeight: 0,
-		storedHeaderCount:  0,
 	}
 
 	return chain, nil
@@ -111,58 +107,23 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block, defau
 		var blockHash Uint256
 		blockHash.Deserialize(r)
 		cs.currentBlockHeight, err = serialization.ReadUint32(r)
-		current_Header_Height := cs.currentBlockHeight
 
-		var listHash Uint256
-		iter := cs.st.NewIterator([]byte{byte(IX_HeaderHashList)})
+		iter := iteratorBlockHash(cs.st)
 		for iter.Next() {
-			rk := bytes.NewReader(iter.Key())
-			_, _ = serialization.ReadBytes(rk, 1)
-			startNum, err := serialization.ReadUint32(rk)
-			if err != nil {
-				return 0, err
-			}
-			r = bytes.NewReader(iter.Value())
-			listNum, err := serialization.ReadVarUint(r, 0)
+			rk := bytes.NewReader(iter.Key()[1:])
+			height, err := serialization.ReadUint32(rk)
 			if err != nil {
 				return 0, err
 			}
 
-			for i := 0; i < int(listNum); i++ {
-				listHash.Deserialize(r)
-				cs.headerIndex[startNum+uint32(i)] = listHash
-				cs.storedHeaderCount++
-			}
+			var headerHash Uint256
+			r := bytes.NewReader(iter.Value())
+			headerHash.Deserialize(r)
+			cs.headerIndex[height] = headerHash
 		}
 
-		if cs.storedHeaderCount == 0 {
-			iter = cs.st.NewIterator([]byte{byte(DATA_BlockHash)})
-			for iter.Next() {
-				rk := bytes.NewReader(iter.Key())
-				_, _ = serialization.ReadBytes(rk, 1)
-				listheight, err := serialization.ReadUint32(rk)
-				if err != nil {
-					return 0, err
-				}
-				r := bytes.NewReader(iter.Value())
-				listHash.Deserialize(r)
-				cs.headerIndex[listheight] = listHash
-			}
-		} else if current_Header_Height >= cs.storedHeaderCount {
-			hash = blockHash
-			for {
-				if hash == cs.headerIndex[cs.storedHeaderCount-1] {
-					break
-				}
-
-				header, err := cs.GetHeader(hash)
-				if err != nil {
-					return 0, err
-				}
-
-				cs.headerIndex[header.Height] = hash
-				hash = header.PrevBlockHash
-			}
+		if len(cs.headerIndex) != int(cs.currentBlockHeight+1) {
+			return 0, errors.New("no enough blockhash in DB.")
 		}
 
 		return cs.currentBlockHeight, nil
@@ -658,38 +619,6 @@ func (cs *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
 
 	if b.Header.Height < uint32(len(cs.headerIndex)) {
 		cs.persistBlocks(ledger)
-
-		cs.st.NewBatch()
-		storedHeaderCount := cs.storedHeaderCount
-		for cs.currentBlockHeight-storedHeaderCount >= HeaderHashListCount {
-			hashBuffer := new(bytes.Buffer)
-			serialization.WriteVarUint(hashBuffer, uint64(HeaderHashListCount))
-			var hashArray []byte
-			for i := 0; i < HeaderHashListCount; i++ {
-				index := storedHeaderCount + uint32(i)
-				thash := cs.headerIndex[index]
-				thehash := thash.ToArray()
-				hashArray = append(hashArray, thehash...)
-			}
-			hashBuffer.Write(hashArray)
-
-			hhlPrefix := bytes.NewBuffer(nil)
-			hhlPrefix.WriteByte(byte(IX_HeaderHashList))
-			serialization.WriteUint32(hhlPrefix, storedHeaderCount)
-
-			cs.st.BatchPut(hhlPrefix.Bytes(), hashBuffer.Bytes())
-			storedHeaderCount += HeaderHashListCount
-		}
-
-		err := cs.st.BatchCommit()
-		if err != nil {
-			log.Error("failed to persist header hash list:", err)
-			return
-		}
-		cs.mu.Lock()
-		cs.storedHeaderCount = storedHeaderCount
-		cs.mu.Unlock()
-
 		cs.clearCache()
 	}
 }
