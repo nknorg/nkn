@@ -24,7 +24,6 @@ type ILedgerStore interface {
 
 	GetTransaction(hash Uint256) (*tx.Transaction, error)
 
-	SaveAsset(assetid Uint256, asset *Asset) error
 	GetAsset(hash Uint256) (*Asset, error)
 
 	GetCurrentBlockHash() Uint256
@@ -39,8 +38,6 @@ type ILedgerStore interface {
 
 	GetQuantityIssued(assetid Uint256) (Fixed64, error)
 
-	GetUnspent(txid Uint256, index uint16) (*tx.TxnOutput, error)
-	ContainsUnspent(txid Uint256, index uint16) (bool, error)
 	GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*tx.UTXOUnspent, error)
 	GetUnspentsFromProgramHash(programHash Uint160) (map[Uint256][]*tx.UTXOUnspent, error)
 	GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error)

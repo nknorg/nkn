@@ -369,27 +369,6 @@ func (cs *ChainStore) GetHeader(hash Uint256) (*Header, error) {
 	return h, err
 }
 
-func (cs *ChainStore) SaveAsset(assetId Uint256, asset *Asset) error {
-	w := bytes.NewBuffer(nil)
-
-	asset.Serialize(w)
-
-	// generate key
-	assetKey := bytes.NewBuffer(nil)
-	// add asset prefix.
-	assetKey.WriteByte(byte(ST_Info))
-	// contact asset id
-	assetId.Serialize(assetKey)
-
-	// PUT VALUE
-	err := cs.st.BatchPut(assetKey.Bytes(), w.Bytes())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (cs *ChainStore) GetAsset(hash Uint256) (*Asset, error) {
 	asset := new(Asset)
 	prefix := []byte{byte(ST_Info)}
@@ -761,38 +740,6 @@ func (cs *ChainStore) GetQuantityIssued(assetId Uint256) (Fixed64, error) {
 	}
 
 	return quantity, nil
-}
-
-func (cs *ChainStore) GetUnspent(txid Uint256, index uint16) (*tx.TxnOutput, error) {
-	if ok, _ := cs.ContainsUnspent(txid, index); ok {
-		Tx, err := cs.GetTransaction(txid)
-		if err != nil {
-			return nil, err
-		}
-
-		return Tx.Outputs[index], nil
-	}
-
-	return nil, errors.New("[GetUnspent] NOT ContainsUnspent.")
-}
-
-func (cs *ChainStore) ContainsUnspent(txid Uint256, index uint16) (bool, error) {
-	unspentPrefix := []byte{byte(IX_Unspent)}
-	unspentValue, err := cs.st.Get(append(unspentPrefix, txid.ToArray()...))
-	if err != nil {
-		return false, err
-	}
-	unspentArray, err_get := GetUint16Array(unspentValue)
-	if err_get != nil {
-		return false, err_get
-	}
-	for i := 0; i < len(unspentArray); i++ {
-		if unspentArray[i] == index {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
 
 func (cs *ChainStore) GetCurrentHeaderHash() Uint256 {
