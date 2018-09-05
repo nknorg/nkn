@@ -571,7 +571,7 @@ func (node *node) GetChordRing() *chord.Ring {
 }
 
 func (node *node) blockHeaderSyncing(stopHash Uint256) {
-	noders := node.local.GetSyncFinishedNeighbors()
+	noders := node.local.GetNeighborNoder()
 	if len(noders) == 0 {
 		return
 	}
@@ -599,7 +599,7 @@ func (node *node) blockSyncing() {
 	var dValue int32
 	var reqCnt uint32
 	var i uint32
-	noders := node.local.GetSyncFinishedNeighbors()
+	noders := node.local.GetNeighborNoder()
 
 	for _, n := range noders {
 		if uint32(n.GetHeight()) <= currentBlkHeight {
@@ -807,15 +807,20 @@ func (node *node) SyncBlock(isProposer bool) {
 	}
 }
 
+func (node *node) StopSyncBlock() {
+	// switch syncing state
+	node.SetSyncState(SyncFinished)
+	// stop block syncing
+	node.quit <- struct{}{}
+}
+
 func (node *node) SyncBlockMonitor(isProposer bool) {
 	// wait for header syncing finished
 	node.WaitForSyncHeaderFinish(isProposer)
 	// wait for block syncing finished
 	node.WaitForSyncBlkFinish()
-	// switch syncing state
-	node.SetSyncState(SyncFinished)
 	// stop block syncing
-	node.quit <- struct{}{}
+	node.StopSyncBlock()
 }
 
 func (node *node) SendRelayPacketsInBuffer(clientId []byte) error {

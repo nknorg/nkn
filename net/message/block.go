@@ -67,7 +67,6 @@ func (msg dataReq) Handle(node Noder) error {
 func NewBlockFromHash(hash common.Uint256) (*ledger.Block, error) {
 	bk, err := ledger.DefaultLedger.Store.GetBlock(hash)
 	if err != nil {
-		log.Errorf("Get Block error: %s, block hash: %x", err.Error(), hash)
 		return nil, err
 	}
 	return bk, nil

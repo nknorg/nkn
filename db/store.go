@@ -333,6 +333,29 @@ func (cs *ChainStore) GetBlockHash(height uint32) (Uint256, error) {
 	return blockHash256, nil
 }
 
+func (cs *ChainStore) GetBlockByHeight(height uint32) (*Block, error) {
+	key := bytes.NewBuffer(nil)
+	key.WriteByte(byte(DATA_BlockHash))
+	err := serialization.WriteUint32(key, height)
+	if err != nil {
+		return nil, err
+	}
+	value, err := cs.st.Get(key.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	hash, err := Uint256ParseFromBytes(value)
+	if err != nil {
+		return nil, err
+	}
+	block, err := cs.GetBlock(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return block, nil
+}
+
 func (cs *ChainStore) GetCurrentBlockHash() Uint256 {
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()

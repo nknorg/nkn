@@ -12,6 +12,7 @@ import (
 type ILedgerStore interface {
 	SaveBlock(b *Block, ledger *Ledger) error
 	GetBlock(hash Uint256) (*Block, error)
+	GetBlockByHeight(height uint32) (*Block, error)
 	BlockInCache(hash Uint256) bool
 	GetBlockHash(height uint32) (Uint256, error)
 	GetBlockHistory(startHeight, blockNum uint32) map[uint32]Uint256
