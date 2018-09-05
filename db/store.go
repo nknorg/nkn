@@ -671,21 +671,21 @@ func (cs *ChainStore) GetQuantityIssued(assetId Uint256) (Fixed64, error) {
 	return quantity, nil
 }
 
-func (cs *ChainStore) GetCurrentHeaderHash() Uint256 {
+func (cs *ChainStore) GetCurrentCachedHeaderHash() Uint256 {
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()
 
 	return cs.headerIndex[uint32(len(cs.headerIndex)-1)]
 }
 
-func (cs *ChainStore) GetHeaderHashByHeight(height uint32) Uint256 {
+func (cs *ChainStore) GetCachedHeaderHash(height uint32) Uint256 {
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()
 
 	return cs.headerIndex[height]
 }
 
-func (cs *ChainStore) GetHeaderHeight() uint32 {
+func (cs *ChainStore) GetCurrentCachedHeaderHeight() uint32 {
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()
 

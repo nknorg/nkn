@@ -469,7 +469,7 @@ func (node *node) WaitForSyncHeaderFinish(isProposer bool) {
 
 func (node *node) WaitForSyncBlkFinish() {
 	for {
-		headerHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
+		headerHeight := ledger.DefaultLedger.Store.GetCurrentCachedHeaderHeight()
 		currentBlkHeight := ledger.DefaultLedger.Blockchain.BlockHeight
 		log.Debug("WaitForSyncBlkFinish... current block height is ", currentBlkHeight, " ,current header height is ", headerHeight)
 		if currentBlkHeight >= headerHeight {
@@ -567,7 +567,7 @@ func (node *node) blockHeaderSyncing(stopHash Uint256) {
 	}
 	nodelist := []Noder{}
 	for _, v := range noders {
-		if ledger.DefaultLedger.Store.GetHeaderHeight() < v.GetHeight() {
+		if ledger.DefaultLedger.Store.GetCurrentCachedHeaderHeight() < v.GetHeight() {
 			nodelist = append(nodelist, v)
 		}
 	}
@@ -581,7 +581,7 @@ func (node *node) blockHeaderSyncing(stopHash Uint256) {
 }
 
 func (node *node) blockSyncing() {
-	headerHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
+	headerHeight := ledger.DefaultLedger.Store.GetCurrentCachedHeaderHeight()
 	currentBlkHeight := ledger.DefaultLedger.Blockchain.BlockHeight
 	if currentBlkHeight >= headerHeight {
 		return
@@ -601,7 +601,7 @@ func (node *node) blockSyncing() {
 		flights := n.GetFlightHeights()
 		if count == 0 {
 			for _, f := range flights {
-				hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(f)
+				hash := ledger.DefaultLedger.Store.GetCachedHeaderHash(f)
 				if ledger.DefaultLedger.Store.BlockInCache(hash) == false {
 					ReqBlkData(n, hash)
 				}
@@ -609,7 +609,7 @@ func (node *node) blockSyncing() {
 
 		}
 		for i = 1; i <= count && dValue >= 0; i++ {
-			hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentBlkHeight + reqCnt)
+			hash := ledger.DefaultLedger.Store.GetCachedHeaderHash(currentBlkHeight + reqCnt)
 
 			if ledger.DefaultLedger.Store.BlockInCache(hash) == false {
 				ReqBlkData(n, hash)

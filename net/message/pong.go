@@ -22,7 +22,7 @@ func NewPongMsg(state SyncState) ([]byte, error) {
 	var msg pong
 	msg.msgHdr.Magic = NetID
 	copy(msg.msgHdr.CMD[0:7], "pong")
-	msg.height = ledger.DefaultLedger.Store.GetHeaderHeight()
+	msg.height = ledger.DefaultLedger.Store.GetHeight()
 	msg.state = state
 	tmpBuffer := bytes.NewBuffer([]byte{})
 	serialization.WriteUint32(tmpBuffer, msg.height)

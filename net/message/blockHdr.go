@@ -33,7 +33,7 @@ func NewHeadersReq(stopHash Uint256) ([]byte, error) {
 	var h headersReq
 
 	h.p.len = 1
-	buf := ledger.DefaultLedger.Store.GetCurrentHeaderHash()
+	buf := ledger.DefaultLedger.Store.GetCurrentCachedHeaderHash()
 	copy(h.p.hashStart[:], buf[:])
 	copy(h.p.hashEnd[:], stopHash[:])
 
@@ -201,7 +201,7 @@ func GetHeadersFromHash(startHash Uint256, stopHash Uint256) ([]ledger.Header, u
 
 	// get stop height
 	if stopHash == EmptyUint256 {
-		stopHeight = ledger.DefaultLedger.Store.GetHeaderHeight()
+		stopHeight = ledger.DefaultLedger.Store.GetHeight()
 	} else {
 		bkstop, err := ledger.DefaultLedger.Store.GetHeader(stopHash)
 		if err != nil {
