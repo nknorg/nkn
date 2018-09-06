@@ -120,28 +120,6 @@ When starting the container, a directory with configuration files containing
 should be mapped to `/nkn` directory in the container. This directory will also
 be used for wallet, block data and logs storage.
 
-Before you have a look at [configuration](#configuration), keep in mind that
-instead of running `./nknc` and `./nknd` (as shown in examples) you want to run
-in docker. Assuming the configuration directory is the current directory:
-
-Create a wallet:
-
-```shell
-$ docker run -v $PWD:/nkn -it nkn nknc wallet -c
-```
-
-Start a node:
-
-```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn -it nkn nknd
-```
-
-*NOTE:* The `-it` argument mean `Run interactively` and `Create a pseudo-tty`.
-Basically it means, that it really wants to take the input from you. For using
-in scripts and running in the background (for example a startup job) you should
-omit the `-it` argument
-
-
 ### Configuration
 
 When starting a node, it will read the configurations from `config.json`. We
