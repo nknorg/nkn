@@ -145,6 +145,14 @@ func NewNode() *node {
 		state: INIT,
 	}
 	n.time = time.Now()
+	go func() {
+		time.Sleep(ConnectingTimeout)
+		if n.local != &n && n.GetState() != ESTABLISH {
+			log.Warn("Connecting timeout:", n.GetAddrStr())
+			n.SetState(INACTIVITY)
+			n.CloseConn()
+		}
+	}()
 	return &n
 }
 
