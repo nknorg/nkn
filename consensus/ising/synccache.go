@@ -7,6 +7,7 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
@@ -122,9 +123,13 @@ func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block) error {
 	}
 	// analyse cached votes when add new block
 	if voteInfo, ok := sc.voteCache[blockHeight]; ok {
+		log.Infof("AddBlockToSyncCache: receive block: %s, %d has voted first",
+			BytesToHexString(hash.ToArrayReverse()), len(sc.voteCache[blockHeight]))
 		for _, h := range voteInfo {
 			if hash.CompareTo(h) == 0 {
 				blockInfo.votes++
+				log.Infof("append vote for block: %s, totally got %d votes: %d",
+					BytesToHexString(hash.ToArrayReverse()), blockInfo.votes)
 				if 2*blockInfo.votes > len(sc.voteCache[blockHeight]) {
 					if _, ok := sc.blockCache[blockHeight]; !ok {
 						sc.blockCache[blockHeight] = &BlockWithVotes{}
@@ -133,6 +138,9 @@ func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block) error {
 				}
 			}
 		}
+	} else {
+		log.Infof("AddBlockToSyncCache: receive block: %s, have not received vote for it",
+			BytesToHexString(hash.ToArrayReverse()))
 	}
 
 	// cache new block
@@ -187,14 +195,21 @@ func (sc *SyncCache) AddVoteForBlock(hash Uint256, height uint32, voter uint64) 
 	if _, ok := sc.voteCache[height]; !ok {
 		sc.voteCache[height] = make(map[uint64]Uint256)
 	}
+	log.Infof("AddVoteForBlock: receive vote for block: %s, height: %d, voter: %d",
+		BytesToHexString(hash.ToArrayReverse()), height, voter)
 	sc.voteCache[height][voter] = hash
 
 	if blockInfo, ok := sc.BlockInSyncCache(hash, height); ok {
 		// if voted block existed in cache then increase vote
 		blockInfo.votes++
+		log.Infof("AddVoteForBlock: block: %s already exist, block got %d votes, votes for height %d: %d",
+			BytesToHexString(hash.ToArrayReverse()), blockInfo.votes, height, len(sc.voteCache[height]))
 		if 2*blockInfo.votes > len(sc.voteCache[height]) {
 			sc.blockCache[height].bestBlock = blockInfo
 		}
+	} else {
+		log.Infof("AddVoteForBlock: block: %s doesn't exist, cache vote only",
+			BytesToHexString(hash.ToArrayReverse()))
 	}
 
 	return nil

@@ -368,6 +368,9 @@ func (ps *ProposerService) ChangeProposerRoutine() {
 }
 
 func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
+	log.Infof("process blocks, from height: %d, to height: %d, consensus height: %d, start height: %d",
+		ps.syncCache.startHeight, ps.syncCache.nextHeight-1,
+		ps.syncCache.consensusHeight, ps.syncCache.consensusHeight+1)
 	for i := ps.syncCache.startHeight; i < ps.syncCache.nextHeight; i++ {
 		if i > ps.syncCache.consensusHeight {
 			vBlock, err := ps.syncCache.GetBlockFromSyncCache(i)
