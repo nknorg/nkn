@@ -28,3 +28,12 @@ type CommitInfo struct {
 	SigChain  string `json:"sigChain"`
 	Submitter string `json:"submitter"`
 }
+
+type RegisterNameInfo struct {
+	Registrant string `json:"registrant"`
+	Name       string `json:"name"`
+}
+
+type DeleteNameInfo struct {
+	Registrant string `json:"registrant"`
+}

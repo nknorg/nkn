@@ -25,6 +25,10 @@ const (
 	SYS_CurrentBlock      DataEntryPrefix = 0x40
 	SYS_CurrentBookKeeper DataEntryPrefix = 0x42
 
+	// NAME
+	NS_Registrant DataEntryPrefix = 0x50
+	NS_Name       DataEntryPrefix = 0x51
+
 	//CONFIG
 	CFG_Version DataEntryPrefix = 0xf0
 )

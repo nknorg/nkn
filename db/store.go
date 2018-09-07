@@ -494,6 +494,106 @@ func (cs *ChainStore) GetAsset(hash Uint256) (*Asset, error) {
 	return asset, nil
 }
 
+func (cs *ChainStore) SaveName(registrant []byte, name string) error {
+	// generate registrant key
+	registrantKey := bytes.NewBuffer(nil)
+	registrantKey.WriteByte(byte(NS_Registrant))
+	serialization.WriteVarBytes(registrantKey, registrant)
+
+	// generate name key
+	nameKey := bytes.NewBuffer(nil)
+	nameKey.WriteByte(byte(NS_Name))
+	serialization.WriteVarString(nameKey, name)
+
+	// PUT VALUE
+	w := bytes.NewBuffer(nil)
+	serialization.WriteVarString(w, name)
+	err := cs.st.BatchPut(registrantKey.Bytes(), w.Bytes())
+	if err != nil {
+		return err
+	}
+
+	w = bytes.NewBuffer(nil)
+	serialization.WriteVarBytes(w, registrant)
+	err = cs.st.BatchPut(nameKey.Bytes(), w.Bytes())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) DeleteName(registrant []byte) error {
+	name, err := cs.GetName(registrant)
+	if err != nil {
+		return err
+	}
+
+	// generate registrant key
+	registrantKey := bytes.NewBuffer(nil)
+	registrantKey.WriteByte(byte(NS_Registrant))
+	serialization.WriteVarBytes(registrantKey, registrant)
+
+	// generate name key
+	nameKey := bytes.NewBuffer(nil)
+	nameKey.WriteByte(byte(NS_Name))
+	serialization.WriteVarString(nameKey, *name)
+
+	// DELETE VALUE
+	err = cs.st.BatchDelete(registrantKey.Bytes())
+	if err != nil {
+		return err
+	}
+	err = cs.st.BatchDelete(nameKey.Bytes())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) GetName(registrant []byte) (*string, error) {
+	// generate key
+	registrantKey := bytes.NewBuffer(nil)
+	registrantKey.WriteByte(byte(NS_Registrant))
+	serialization.WriteVarBytes(registrantKey, registrant)
+
+	data, err := cs.st.Get(registrantKey.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	r := bytes.NewReader(data)
+
+	name, err := serialization.ReadVarString(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &name, nil
+}
+
+func (cs *ChainStore) GetRegistrant(name string) ([]byte, error) {
+	// generate key
+	nameKey := bytes.NewBuffer(nil)
+	nameKey.WriteByte(byte(NS_Name))
+	serialization.WriteVarString(nameKey, name)
+
+	data, err := cs.st.Get(nameKey.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	r := bytes.NewReader(data)
+
+	registrant, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return registrant, nil
+}
+
 func (cs *ChainStore) GetTransaction(hash Uint256) (*tx.Transaction, error) {
 	t, _, err := cs.getTx(hash)
 	if err != nil {
@@ -735,6 +835,26 @@ func (cs *ChainStore) persist(b *Block) error {
 	// BATCH PUT VALUE
 	cs.st.BatchPut(bhash.Bytes(), hashWriter.Bytes())
 
+	getOrCreateAccount := func(programHash Uint160, create bool) (*account.AccountState, error) {
+		if value, ok := accounts[programHash]; ok {
+			return value, nil
+		} else {
+			accountState, err := cs.GetAccount(programHash)
+			if err != nil && err.Error() != ErrDBNotFound.Error() {
+				return nil, err
+			}
+			if accountState == nil {
+				if !create {
+					return nil, nil
+				}
+				balances := make(map[Uint256]Fixed64, 0)
+				accountState = account.NewAccountState(programHash, balances)
+			}
+			accounts[programHash] = accountState
+			return accountState, nil
+		}
+	}
+
 	nLen := len(b.Transactions)
 	for i := 0; i < nLen; i++ {
 		err = cs.SaveTransaction(b.Transactions[i], b.Header.Height)
@@ -777,27 +897,28 @@ func (cs *ChainStore) persist(b *Block) error {
 					quantities[assetId] = value
 				}
 			}
+		case tx.RegisterName:
+			registerNamePayload := b.Transactions[i].Payload.(*payload.RegisterName)
+			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
+			if err != nil {
+				return err
+			}
+		case tx.DeleteName:
+			deleteNamePayload := b.Transactions[i].Payload.(*payload.DeleteName)
+			err = cs.DeleteName(deleteNamePayload.Registrant)
+			if err != nil {
+				return err
+			}
 		}
 		for index := 0; index < len(b.Transactions[i].Outputs); index++ {
 			output := b.Transactions[i].Outputs[index]
 			programHash := output.ProgramHash
 			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] += output.Value
-			} else {
-				accountState, err := cs.GetAccount(programHash)
-				if err != nil && err.Error() != ErrDBNotFound.Error() {
-					return err
-				}
-				if accountState != nil {
-					accountState.Balances[assetId] += output.Value
-				} else {
-					balances := make(map[Uint256]Fixed64, 0)
-					balances[assetId] = output.Value
-					accountState = account.NewAccountState(programHash, balances)
-				}
-				accounts[programHash] = accountState
+			accountState, err := getOrCreateAccount(programHash, true)
+			if err != nil {
+				return err
 			}
+			accountState.Balances[assetId] += output.Value
 
 			unspent := &tx.UTXOUnspent{
 				Txid:  b.Transactions[i].Hash(),
@@ -818,17 +939,12 @@ func (cs *ChainStore) persist(b *Block) error {
 			output := transaction.Outputs[index]
 			programHash := output.ProgramHash
 			assetId := output.AssetID
-			if value, ok := accounts[programHash]; ok {
-				value.Balances[assetId] -= output.Value
-			} else {
-				accountState, err := cs.GetAccount(programHash)
-				if err != nil {
-					return err
-				}
-				accountState.Balances[assetId] -= output.Value
-				accounts[programHash] = accountState
+			accountState, err := getOrCreateAccount(programHash, false)
+			if err != nil {
+				return err
 			}
-			if accounts[programHash].Balances[assetId] < 0 {
+			accountState.Balances[assetId] -= output.Value
+			if accountState.Balances[assetId] < 0 {
 				return errors.New(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
 			}
 

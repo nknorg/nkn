@@ -580,6 +580,69 @@ func prepaidAsset(s Serverer, params map[string]interface{}) map[string]interfac
 	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
 }
 
+// registerName register name to address
+// params: ["name":<name>]
+// return: {"result":<result>, "error":<errcode>}
+func registerName(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	name, ok := params["name"].(string)
+	if !ok {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	wallet, err := s.GetWallet()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+	txn, err := MakeRegisterNameTransaction(wallet, name)
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+		return respPacking(nil, INVALID_TRANSACTION)
+	}
+
+	txHash := txn.Hash()
+	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
+}
+
+// deleteName register name to address
+// params: []
+// return: {"result":<result>, "error":<errcode>}
+func deleteName(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	wallet, err := s.GetWallet()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+	txn, err := MakeDeleteNameTransaction(wallet)
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+		return respPacking(nil, INVALID_TRANSACTION)
+	}
+
+	txHash := txn.Hash()
+	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
+}
+
 // withdraw withdraw asset from system
 // params: ["assetid":<assetid>, "value":<value>]
 // return: {"result":<result>, "error":<errcode>}
@@ -1037,6 +1100,8 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"issueasset":           {Handler: issueAsset},
 	"sendtoaddress":        {Handler: sendToAddress},
 	"prepaidasset":         {Handler: prepaidAsset},
+	"registername":         {Handler: registerName, AccessCtrl: BIT_JSONRPC},
+	"deletename":           {Handler: deleteName, AccessCtrl: BIT_JSONRPC},
 	"withdrawasset":        {Handler: withdrawAsset},
 	"commitpor":            {Handler: commitPor},
 	"sigchaintest":         {Handler: sigchaintest},

@@ -258,3 +258,47 @@ func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*transaction.T
 
 	return txn, nil
 }
+
+func MakeRegisterNameTransaction(wallet vault.Wallet, name string) (*transaction.Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+	registrant, err := account.PubKey().EncodePoint(true)
+	if err != nil {
+		return nil, err
+	}
+	txn, err := transaction.NewRegisterNameTransaction(registrant, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	ctx := contract.NewContractContext(txn)
+	wallet.Sign(ctx)
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
+}
+
+func MakeDeleteNameTransaction(wallet vault.Wallet) (*transaction.Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+	registrant, err := account.PubKey().EncodePoint(true)
+	if err != nil {
+		return nil, err
+	}
+	txn, err := transaction.NewDeleteNameTransaction(registrant)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	ctx := contract.NewContractContext(txn)
+	wallet.Sign(ctx)
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
+}
