@@ -42,8 +42,12 @@ func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Contract],CreateSignatureRedeemScript failed.")
 	}
+	return CreateSignatureRedeemScriptWithEncodedPublicKey(temp)
+}
+
+func CreateSignatureRedeemScriptWithEncodedPublicKey(encodedPublicKey []byte) ([]byte, error) {
 	sb := pg.NewProgramBuilder()
-	sb.PushData(temp)
+	sb.PushData(encodedPublicKey)
 	sb.AddOp(vm.CHECKSIG)
 	return sb.ToArray(), nil
 }

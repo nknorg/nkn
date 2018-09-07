@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"regexp"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/asset"
@@ -12,6 +13,8 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/util/log"
+
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type TxnStore interface {
@@ -22,6 +25,8 @@ type TxnStore interface {
 	GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error)
 	GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error)
 	IsTxHashDuplicate(txhash Uint256) bool
+	GetName(registrant []byte) (*string, error)
+	GetRegistrant(name string) ([]byte, error)
 }
 
 // VerifyTransaction verifys received single transaction
@@ -314,6 +319,38 @@ func CheckTransactionPayload(txn *Transaction) error {
 		}
 		if outputAmount > *prepaidAmount {
 			return errors.New("asset is not enough")
+		}
+	case *payload.RegisterName:
+		match, err := regexp.MatchString("([a-z]{8,12})", pld.Name)
+		if err != nil {
+			return err
+		}
+		if !match {
+			return errors.New(fmt.Sprintf("name %s should only contain a-z and have length 8-12", pld.Name))
+		}
+
+		name, err := Store.GetName(pld.Registrant)
+		if name != nil {
+			return errors.New(fmt.Sprintf("pubKey %+v already has registered name %s", pld.Registrant, *name))
+		}
+		if err != leveldb.ErrNotFound {
+			return err
+		}
+
+		registrant, err := Store.GetRegistrant(pld.Name)
+		if registrant != nil {
+			return errors.New(fmt.Sprintf("name %s is already registered for pubKey %+v", pld.Name, registrant))
+		}
+		if err != leveldb.ErrNotFound {
+			return err
+		}
+	case *payload.DeleteName:
+		name, err := Store.GetName(pld.Registrant)
+		if err != leveldb.ErrNotFound {
+			return err
+		}
+		if name == nil {
+			return errors.New(fmt.Sprintf("no name registered for pubKey %+v", pld.Registrant))
 		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")

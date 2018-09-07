@@ -32,6 +32,9 @@ const (
 	Prepaid       TransactionType = 0x40
 	Withdraw      TransactionType = 0x41
 	Commit        TransactionType = 0x42
+	RegisterName  TransactionType = 0x50
+	TransferName  TransactionType = 0x51
+	DeleteName    TransactionType = 0x52
 )
 
 type TransactionResult map[Uint256]Fixed64
@@ -205,6 +208,10 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		tx.Payload = new(payload.Withdraw)
 	case Commit:
 		tx.Payload = new(payload.Commit)
+	case RegisterName:
+		tx.Payload = new(payload.RegisterName)
+	case DeleteName:
+		tx.Payload = new(payload.DeleteName)
 	default:
 		return errors.New("[Transaction],invalide transaction type.")
 	}
@@ -337,6 +344,30 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		astHash, err := ToCodeHash(signatureRedeemScript)
 		if err != nil {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction - BookKeeper], GetProgramHashes ToCodeHash failed.")
+		}
+		hashs = append(hashs, astHash)
+	case RegisterName:
+		registrant := tx.Payload.(*payload.RegisterName).Registrant
+		signatureRedeemScript, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(registrant)
+		if err != nil {
+			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
+		}
+
+		astHash, err := ToCodeHash(signatureRedeemScript)
+		if err != nil {
+			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
+		}
+		hashs = append(hashs, astHash)
+	case DeleteName:
+		registrant := tx.Payload.(*payload.DeleteName).Registrant
+		signatureRedeemScript, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(registrant)
+		if err != nil {
+			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
+		}
+
+		astHash, err := ToCodeHash(signatureRedeemScript)
+		if err != nil {
+			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
 		}
 		hashs = append(hashs, astHash)
 	default:
@@ -585,6 +616,10 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 		tx.Payload = new(payload.Withdraw)
 	case Commit:
 		tx.Payload = new(payload.Commit)
+	case RegisterName:
+		tx.Payload = new(payload.RegisterName)
+	case DeleteName:
+		tx.Payload = new(payload.DeleteName)
 	default:
 		return errors.New("[Transaction],invalide transaction type.")
 	}

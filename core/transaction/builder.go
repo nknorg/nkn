@@ -169,3 +169,42 @@ func NewCommitTransaction(sigChain []byte, submitter Uint160) (*Transaction, err
 		Programs: []*program.Program{},
 	}, nil
 }
+
+func NewRegisterNameTransaction(registrant []byte, name string) (*Transaction, error) {
+	RegisterNamePayload := &payload.RegisterName{
+		Registrant: registrant,
+		Name:       name,
+	}
+
+	return &Transaction{
+		TxType:  RegisterName,
+		Payload: RegisterNamePayload,
+		Attributes: []*TxnAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		},
+		Inputs:   nil,
+		Programs: []*program.Program{},
+	}, nil
+}
+
+func NewDeleteNameTransaction(registrant []byte) (*Transaction, error) {
+	DeleteNamePayload := &payload.DeleteName{
+		Registrant: registrant,
+	}
+
+	return &Transaction{
+		TxType:  DeleteName,
+		Payload: DeleteNamePayload,
+		Attributes: []*TxnAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		},
+		Inputs:   nil,
+		Programs: []*program.Program{},
+	}, nil
+}

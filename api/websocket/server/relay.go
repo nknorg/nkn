@@ -1,9 +1,30 @@
 package server
 
 import (
+	"encoding/hex"
+	"strings"
+
 	"github.com/nknorg/nkn/api/websocket/client"
+	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/util/log"
 )
+
+func ResolveDest(Dest string) string {
+	substrings := strings.Split(Dest, ".")
+	pubKeyStr := substrings[len(substrings)-1]
+	registrant, err := ledger.DefaultLedger.Store.GetRegistrant(pubKeyStr)
+	if err != nil {
+		return Dest
+	}
+
+	pubKeyStr = hex.EncodeToString(registrant)
+	if len(substrings) > 1 {
+		identifier := substrings[0]
+		return strings.Join([]string{identifier, pubKeyStr}, ".")
+	} else {
+		return pubKeyStr
+	}
+}
 
 func (ws *WsServer) SendRelayPacket(clientId string, msg *client.OutboundMessage) {
 	clients := ws.SessionList.GetSessionsById(clientId)
@@ -22,6 +43,9 @@ func (ws *WsServer) SendRelayPacket(clientId string, msg *client.OutboundMessage
 		return
 	}
 	srcAddrStr := *srcAddrStrPtr
+
+	msg.Dest = ResolveDest(msg.Dest)
+
 	var signature []byte
 	err := ws.node.SendRelayPacket(srcAddrStr, msg.Dest, msg.Payload, signature)
 	if err != nil {
