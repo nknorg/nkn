@@ -314,8 +314,12 @@ func (vn *localVnode) checkPredecessor() error {
 
 // Finds next N successors. N must be <= NumSuccessors
 func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
+	if vn.successors == nil || len(vn.successors) == 0 {
+		return nil, errors.New("Successor list not initialized")
+	}
+
 	// Check if we are the immediate predecessor
-	if len(vn.successors) > 0 && vn.successors[0] != nil && betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
+	if vn.successors[0] != nil && betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
 		return vn.successors[:n], nil
 	}
 
@@ -331,11 +335,10 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 
 		// Try that node, break on success
 		res, err := vn.ring.transport.FindSuccessors(closest, n, key)
-		if err == nil {
-			return res, nil
-		} else {
-			nlog.Infof("[ERR] Failed to contact %s. Got %s", closest.String(), err)
+		if err != nil {
+			nlog.Infof("[WARNING] Failed to contact %s. Got %s", closest.String(), err)
 		}
+		return res, nil
 	}
 
 	// Determine how many successors we know of
@@ -353,7 +356,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	}
 
 	// Checked all closer nodes and our successors!
-	return nil, fmt.Errorf("Exhausted all preceeding nodes!")
+	return nil, fmt.Errorf("Exhausted all preceeding nodes")
 }
 
 func (vn *localVnode) FindPredecessor(key []byte) (*Vnode, error) {
