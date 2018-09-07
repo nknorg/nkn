@@ -119,14 +119,17 @@ func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, erro
 
 // Checks for a local vnode
 func (t *TCPTransport) get(vn *Vnode) (VnodeRPC, bool) {
+	if vn == nil {
+		return nil, false
+	}
 	key := vn.String()
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 	w, ok := t.local[key]
-	if ok {
+	if ok && w != nil && w.obj != nil {
 		return w.obj, ok
 	} else {
-		return nil, ok
+		return nil, false
 	}
 }
 
@@ -768,7 +771,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			obj, ok := t.get(body.Target)
 			resp := tcpBodyVnodeListError{}
 			sendResp = &resp
-			if ok {
+			if ok && obj != nil {
 				nodes, err := obj.FindSuccessors(body.Num, body.Key)
 				resp.Vnodes = trimSlice(nodes)
 				resp.Err = err

@@ -315,7 +315,7 @@ func (vn *localVnode) checkPredecessor() error {
 // Finds next N successors. N must be <= NumSuccessors
 func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	// Check if we are the immediate predecessor
-	if betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
+	if len(vn.successors) > 0 && vn.successors[0] != nil && betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
 		return vn.successors[:n], nil
 	}
 
@@ -343,7 +343,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 
 	// Check if the ID is between us and any non-immediate successors
 	for i := 1; i <= successors-n; i++ {
-		if betweenRightIncl(vn.Id, vn.successors[i].Id, key) {
+		if vn.successors[i] != nil && betweenRightIncl(vn.Id, vn.successors[i].Id, key) {
 			remain := vn.successors[i:]
 			if len(remain) > n {
 				remain = remain[:n]
