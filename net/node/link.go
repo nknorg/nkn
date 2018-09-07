@@ -105,10 +105,10 @@ func (node *node) rx() {
 			node.UpdateRXTime(t)
 			unpackNodeBuf(node, buf[0:len])
 		case io.EOF:
-			log.Error("Rx io.EOF: ", err, ", node id is ", node.GetID())
+			log.Warn("Rx io.EOF: ", err, ", node id is ", node.GetID())
 			goto DISCONNECT
 		default:
-			log.Error("Read connection error ", err)
+			log.Warn("Read connection error ", err)
 			goto DISCONNECT
 		}
 	}
