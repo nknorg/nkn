@@ -43,7 +43,7 @@ format:   ## Run go format on nknd.go
 
 .PHONY: glide
 glide:   ## Installs glide for go package management
-	@ mkdir -p $$GOPATH/bin
+	@ mkdir -p $$(go env GOPATH)/bin
 	@ curl https://glide.sh/get | sh;
 
 vendor: glide.yaml glide.lock
