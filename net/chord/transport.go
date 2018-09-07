@@ -34,14 +34,17 @@ func InitLocalTransport(remote Transport) Transport {
 
 // Checks for a local vnode
 func (lt *LocalTransport) get(vn *Vnode) (VnodeRPC, bool) {
+	if vn == nil {
+		return nil, false
+	}
 	key := vn.String()
 	lt.lock.RLock()
 	defer lt.lock.RUnlock()
 	w, ok := lt.local[key]
-	if ok {
+	if ok && w != nil && w.obj != nil {
 		return w.obj, ok
 	} else {
-		return nil, ok
+		return nil, false
 	}
 }
 
