@@ -626,7 +626,9 @@ func (t *TCPTransport) reapOnce() {
 	for conn, lastUsed := range t.inbound {
 		if time.Since(lastUsed) > t.maxIdle {
 			log.Printf("[INFO] Close timeout inbound connection with %s.", conn.RemoteAddr().String())
+			t.lock.Lock()
 			delete(t.inbound, conn)
+			t.lock.Unlock()
 			conn.Close()
 		}
 	}
@@ -835,7 +837,9 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			return
 		}
 
+		t.lock.Lock()
 		t.inbound[conn] = time.Now()
+		t.lock.Unlock()
 	}
 }
 
