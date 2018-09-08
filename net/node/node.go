@@ -387,7 +387,7 @@ func (node *node) BroadcastTransaction(from Noder, txn *transaction.Transaction)
 		return err
 	}
 	node.txnCnt++
-	for _, n := range node.GetSyncFinishedNeighbors() {
+	for _, n := range node.GetNeighborNoder() {
 		if n.GetRelay() && n.GetID() != from.GetID() {
 			n.Tx(buffer)
 		}
