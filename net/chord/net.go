@@ -26,7 +26,7 @@ type TCPTransport struct {
 	maxIdle  time.Duration
 	lock     sync.RWMutex
 	local    map[string]*localRPC
-	inbound  map[*net.TCPConn]struct{}
+	inbound  map[*net.TCPConn]time.Time
 	poolLock sync.Mutex
 	sockQue  chan int
 	pool     map[string][]*tcpOutConn
@@ -103,7 +103,7 @@ func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, erro
 		timeout: timeout,
 		maxIdle: time.Duration(60 * time.Second), // Maximum age of a connection
 		local:   make(map[string]*localRPC),      // allocate maps
-		inbound: make(map[*net.TCPConn]struct{}),
+		inbound: make(map[*net.TCPConn]time.Time),
 		sockQue: make(chan int, 1000), // Quota of sock. TODO: get quota from config
 		pool:    make(map[string][]*tcpOutConn)}
 
@@ -622,6 +622,14 @@ func (t *TCPTransport) reapOnce() {
 		// Trim any idle conns
 		t.pool[host] = conns[:max]
 	}
+
+	for conn, lastUsed := range t.inbound {
+		if time.Since(lastUsed) > t.maxIdle {
+			log.Printf("[INFO] Close timeout inbound connection with %s.", conn.RemoteAddr().String())
+			delete(t.inbound, conn)
+			conn.Close()
+		}
+	}
 }
 
 // Listens for inbound connections
@@ -643,7 +651,7 @@ func (t *TCPTransport) listen() {
 
 		// Register the inbound conn
 		t.lock.Lock()
-		t.inbound[conn] = struct{}{}
+		t.inbound[conn] = time.Now()
 		t.lock.Unlock()
 
 		if len(t.sockQue) >= 1000 {
@@ -826,6 +834,8 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			log.Printf("[ERR] Failed to send TCP body! Got %s", err)
 			return
 		}
+
+		t.inbound[conn] = time.Now()
 	}
 }
 
