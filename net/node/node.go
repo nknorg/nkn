@@ -171,11 +171,13 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n.link.httpJSONPort = Parameters.HttpJsonPort
 	n.relay = true
 
-	key, err := pubKey.EncodePoint(true)
+	chordVnode, err := ring.GetFirstVnode()
 	if err != nil {
 		log.Error(err)
 	}
-	err = binary.Read(bytes.NewBuffer(key[:8]), binary.LittleEndian, &(n.id))
+	n.chordAddr = chordVnode.Id
+
+	err = binary.Read(bytes.NewBuffer(n.chordAddr[:8]), binary.LittleEndian, &(n.id))
 	if err != nil {
 		log.Error(err)
 	}
@@ -192,12 +194,6 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n.hashCache = NewHashCache(HashCacheCap)
 	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnected)
 	n.ring = ring
-
-	chordVnode, err := ring.GetFirstVnode()
-	if err != nil {
-		log.Error(err)
-	}
-	n.chordAddr = chordVnode.Id
 
 	go n.initConnection()
 	go n.updateConnection()
