@@ -623,15 +623,15 @@ func (t *TCPTransport) reapOnce() {
 		t.pool[host] = conns[:max]
 	}
 
+	t.lock.Lock()
 	for conn, lastUsed := range t.inbound {
 		if time.Since(lastUsed) > t.maxIdle {
 			log.Printf("[INFO] Close timeout inbound connection with %s.", conn.RemoteAddr().String())
-			t.lock.Lock()
 			delete(t.inbound, conn)
-			t.lock.Unlock()
 			conn.Close()
 		}
 	}
+	t.lock.Unlock()
 }
 
 // Listens for inbound connections
