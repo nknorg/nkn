@@ -335,10 +335,11 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 
 		// Try that node, break on success
 		res, err := vn.ring.transport.FindSuccessors(closest, n, key)
-		if err != nil {
+		if err == nil {
+			return res, nil
+		} else {
 			nlog.Infof("[WARNING] Failed to contact %s. Got %s", closest.String(), err)
 		}
-		return res, nil
 	}
 
 	// Determine how many successors we know of
