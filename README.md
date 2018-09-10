@@ -141,6 +141,9 @@ Address                            Public Key
 NjCWGM1EfJeopJopSQGC6aLEkuug5GiwLM 03d45f701e7e330e1fd1c7cce09ffb95f7b1870e5c429ad8e8c950ddb879093f52
 ```
 
+If you are using Docker, it should be `docker run -v $PWD:/nkn nkn nknc wallet
+-c` instead.
+
 The last line of the output is the public key of this wallet, and the second
 last line is the wallet address. A wallet address always starts with `N`.
 

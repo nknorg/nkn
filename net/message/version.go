@@ -184,9 +184,9 @@ func (msg version) Handle(node Noder) error {
 
 	// Exclude the node itself
 	if msg.P.Nonce == localNode.GetID() {
-		log.Warn("The node handshark with itself")
+		log.Warn("The node handshake with itself")
 		node.CloseConn()
-		return errors.New("The node handshark with itself")
+		return errors.New("The node handshake with itself")
 	}
 
 	s := node.GetState()
