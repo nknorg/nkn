@@ -148,7 +148,7 @@ func NewNode() *node {
 	go func() {
 		time.Sleep(ConnectingTimeout)
 		if n.local != &n && n.GetState() != ESTABLISH {
-			log.Warn("Connecting timeout:", n.GetAddrStr())
+			log.Warn("Connecting timeout:", n.GetAddrStr(), "with state", n.GetState())
 			n.SetState(INACTIVITY)
 			n.CloseConn()
 		}
@@ -664,8 +664,6 @@ func (node *node) ConnectNeighbors() {
 		return
 	}
 	neighbors := chordNode.GetNeighbors()
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
 	for _, chordNbr := range neighbors {
 		if !node.IsChordAddrInNeighbors(chordNbr.Id) {
 			chordNbrAddr, err := chordNbr.NodeAddr()

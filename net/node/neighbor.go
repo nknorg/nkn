@@ -37,8 +37,8 @@ func (nm *nbrNodes) AddNbrNode(n Noder) {
 	if nm.NodeExisted(n.GetID()) {
 		fmt.Printf("Insert a existed node\n")
 	} else {
-		node, err := n.(*node)
-		if err == false {
+		node, ok := n.(*node)
+		if !ok {
 			fmt.Println("Convert the noder error when add node")
 			return
 		}
@@ -51,7 +51,7 @@ func (nm *nbrNodes) DelNbrNode(id uint64) (Noder, bool) {
 	defer nm.Unlock()
 
 	n, ok := nm.List[id]
-	if ok == false {
+	if !ok {
 		return nil, false
 	}
 	delete(nm.List, id)
@@ -80,11 +80,11 @@ func (nm *nbrNodes) NodeEstablished(id uint64) bool {
 	defer nm.RUnlock()
 
 	n, ok := nm.List[id]
-	if ok == false {
+	if !ok {
 		return false
 	}
 
-	if n.state != ESTABLISH {
+	if n.GetState() != ESTABLISH {
 		return false
 	}
 

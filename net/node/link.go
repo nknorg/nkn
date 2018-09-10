@@ -314,6 +314,7 @@ func TLSDial(nodeAddr string) (net.Conn, error) {
 
 func (node *node) Tx(buf []byte) {
 	if node.GetState() == INACTIVITY {
+		log.Infof("Try to send msg to closed connection to %s, cancel", node.GetAddrStr())
 		return
 	}
 	_, err := node.conn.Write(buf)
