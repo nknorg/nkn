@@ -28,13 +28,18 @@ type trn struct {
 }
 
 func (msg trn) Handle(node Noder) error {
-	tx := &msg.txn
-	if !node.LocalNode().ExistHash(tx.Hash()) && node.LocalNode().GetSyncState() == PersistFinished {
-		if errCode := node.LocalNode().AppendTxnPool(&(msg.txn)); errCode != ErrNoError {
-			return errors.New("[message] VerifyTransaction failed when AppendTxnPool.")
-		}
+	txn := &msg.txn
+	if !node.LocalNode().ExistHash(txn.Hash()) {
+		// broadcast transaction if never received
+		node.LocalNode().BroadcastTransaction(node, txn)
 		node.LocalNode().IncRxTxnCnt()
-		node.LocalNode().BroadcastTransaction(node, tx)
+
+		// add transaction to pool when in consensus state
+		if node.LocalNode().GetSyncState() == PersistFinished {
+			if errCode := node.LocalNode().AppendTxnPool(txn); errCode != ErrNoError {
+				return errors.New("[message] VerifyTransaction failed when AppendTxnPool.")
+			}
+		}
 	}
 
 	return nil
