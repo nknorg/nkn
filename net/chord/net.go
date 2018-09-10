@@ -89,6 +89,9 @@ type tcpBodyBoolError struct {
 	Err error
 }
 
+const maxOutConnPool = 1
+const maxInboundConns = 100
+
 // Creates a new TCP transport on the given listen address with the
 // configured timeout duration.
 func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, error) {
@@ -104,7 +107,7 @@ func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, erro
 		maxIdle: time.Duration(60 * time.Second), // Maximum age of a connection
 		local:   make(map[string]*localRPC),      // allocate maps
 		inbound: make(map[*net.TCPConn]time.Time),
-		sockQue: make(chan int, 1000), // Quota of sock. TODO: get quota from config
+		sockQue: make(chan int, maxInboundConns), // Quota of sock. TODO: get quota from config
 		pool:    make(map[string][]*tcpOutConn)}
 
 	// Listen for connections
@@ -193,7 +196,11 @@ func (t *TCPTransport) returnConn(o *tcpOutConn) {
 		return
 	}
 	list, _ := t.pool[o.host]
-	t.pool[o.host] = append(list, o)
+	if len(list) < maxOutConnPool {
+		t.pool[o.host] = append(list, o)
+	} else {
+		o.sock.Close()
+	}
 }
 
 // Setup a connection
@@ -656,7 +663,7 @@ func (t *TCPTransport) listen() {
 		t.inbound[conn] = time.Now()
 		t.lock.Unlock()
 
-		if len(t.sockQue) >= 1000 {
+		if len(t.sockQue) >= maxInboundConns {
 			log.Printf("[WARN] The quota reach the limitation %d\n", len(t.sockQue))
 		}
 
