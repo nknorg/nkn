@@ -82,10 +82,11 @@ func (ps *ProbeService) Start() error {
 }
 
 func (ps *ProbeService) ReceiveConsensusMsg(v interface{}) {
-	if payload, ok := v.(*message.IsingPayload); ok {
-		sender := payload.Sender
-		signature := payload.Signature
-		hash, err := payload.DataHash()
+	if info, ok := v.(*message.NotifyInfo); ok {
+		sender := info.Payload.Sender
+		senderID := info.SenderID
+		signature := info.Payload.Signature
+		hash, err := info.Payload.DataHash()
 		if err != nil {
 			fmt.Println("get consensus payload hash error")
 			return
@@ -95,14 +96,14 @@ func (ps *ProbeService) ReceiveConsensusMsg(v interface{}) {
 			fmt.Println("consensus message verification error")
 			return
 		}
-		isingMsg, err := RecoverFromIsingPayload(payload)
+		isingMsg, err := RecoverFromIsingPayload(info.Payload)
 		if err != nil {
 			fmt.Println("Deserialization of ising message error")
 			return
 		}
 		switch t := isingMsg.(type) {
 		case *StateResponse:
-			ps.HandleStateResponseMsg(t, sender)
+			ps.HandleStateResponseMsg(t, senderID)
 		}
 	}
 }
@@ -131,12 +132,11 @@ func (ps *ProbeService) SendConsensusMsg(msg IsingMessage) error {
 	return nil
 }
 
-func (ps *ProbeService) HandleStateResponseMsg(msg *StateResponse, sender *crypto.PubKey) {
+func (ps *ProbeService) HandleStateResponseMsg(msg *StateResponse, sender uint64) {
 	ps.Lock()
 	defer ps.Unlock()
 
-	id := publickKeyToNodeID(sender)
-	ps.neighborInfo[id] = *msg
+	ps.neighborInfo[sender] = *msg
 
 	return
 }

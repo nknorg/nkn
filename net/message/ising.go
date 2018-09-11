@@ -24,8 +24,17 @@ type IsingMessage struct {
 	pld IsingPayload
 }
 
+type NotifyInfo struct {
+	Payload  *IsingPayload
+	SenderID uint64
+}
+
 func (msg IsingMessage) Handle(node Noder) error {
-	node.LocalNode().GetEvent("consensus").Notify(events.EventConsensusMsgReceived, &msg.pld)
+	info := &NotifyInfo{
+		Payload:  &msg.pld,
+		SenderID: node.GetID(),
+	}
+	node.LocalNode().GetEvent("consensus").Notify(events.EventConsensusMsgReceived, info)
 	return nil
 }
 
