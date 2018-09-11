@@ -8,7 +8,6 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 type BlockInfo struct {
@@ -26,9 +25,8 @@ type BlockWithVotes struct {
 // SyncCache cached blocks sent by block proposer when wait for block syncing finished.
 type SyncCache struct {
 	sync.RWMutex
-	currHeight      uint32
-	startHeight     uint32
-	nextHeight      uint32
+	minHeight       uint32
+	maxHeight       uint32
 	consensusHeight uint32
 	blockCache      map[uint32]*BlockWithVotes
 	voteCache       map[uint32]map[uint64]Uint256
@@ -103,17 +101,15 @@ func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block) error {
 	}
 
 	if len(sc.blockCache) == 0 {
-		// cached block height [min height, curr height]
-		sc.startHeight = blockHeight
-		sc.nextHeight = blockHeight + 1
-		sc.currHeight = blockHeight
+		// cached block height [min height, max height]
+		sc.minHeight = blockHeight
+		sc.maxHeight = blockHeight
 	} else {
-		if blockHeight == sc.nextHeight {
-			sc.currHeight++
-			sc.nextHeight++
-		} else if blockHeight != sc.currHeight {
-			return fmt.Errorf("adding block which height is invalid, expected: %d or %d, received: %d",
-				sc.currHeight, sc.nextHeight, blockHeight)
+		if blockHeight > sc.maxHeight {
+			sc.maxHeight = blockHeight
+		}
+		if blockHeight < sc.minHeight {
+			sc.minHeight = blockHeight
 		}
 	}
 
@@ -163,20 +159,9 @@ func (sc *SyncCache) RemoveBlockFromCache(height uint32) error {
 	sc.Lock()
 	defer sc.Unlock()
 
-	if height != sc.startHeight {
-		return errors.New("the height to be removed is not the start height")
-	}
-
 	// remove block from block cache
 	if _, ok := sc.blockCache[height]; ok {
 		delete(sc.blockCache, height)
-		if len(sc.blockCache) == 0 {
-			sc.startHeight = 0
-			sc.currHeight = 0
-			sc.nextHeight = 0
-		} else {
-			sc.startHeight++
-		}
 	}
 	// remove votes from vote cache
 	if _, ok := sc.voteCache[height]; ok {
