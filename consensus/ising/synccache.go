@@ -90,7 +90,7 @@ func (sc *SyncCache) GetBlockFromSyncCache(height uint32) (*ledger.VBlock, error
 
 // AddBlockToSyncCache caches received block and the voter count when receive block.
 // Returns nil if block already existed.
-func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block) error {
+func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block, rtime int64) error {
 	sc.Lock()
 	defer sc.Unlock()
 
@@ -115,7 +115,7 @@ func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block) error {
 
 	blockInfo := &BlockInfo{
 		block:       block,
-		receiveTime: time.Now().Unix(),
+		receiveTime: rtime,
 	}
 	// analyse cached votes when add new block
 	if voteInfo, ok := sc.voteCache[blockHeight]; ok {

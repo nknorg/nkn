@@ -223,7 +223,7 @@ func (ps *ProposerService) ProduceNewBlock() {
 	if err != nil {
 		log.Error("building block error: ", err)
 	}
-	err = current.AddToCache(block)
+	err = current.AddToCache(block, time.Now().Unix())
 	if err != nil {
 		log.Error("adding block to cache error: ", err)
 		return
@@ -367,40 +367,70 @@ func (ps *ProposerService) ChangeProposerRoutine() {
 	}
 }
 
+func (ps *ProposerService) PersistCachedBlock(height uint32) error {
+	//TODO: re-sync block if the block can not be persisted
+	vBlock, err := ps.syncCache.GetBlockFromSyncCache(height)
+	if err != nil {
+		return err
+	}
+	err = ledger.HeaderCheck(vBlock.Block.Header, vBlock.ReceiveTime)
+	if err != nil {
+		return err
+	}
+	err = ledger.TransactionCheck(vBlock.Block)
+	if err != nil {
+		return err
+	}
+	err = ledger.DefaultLedger.Blockchain.AddBlock(vBlock.Block)
+	if err != nil {
+		return err
+	}
+	// Fixme: wait for block persisted
+	time.Sleep(time.Millisecond * 300)
+
+	return nil
+}
+
 func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
-	log.Infof("process blocks, from height: %d, to height: %d, consensus height: %d, start height: %d",
+	var err error
+	if ps.syncCache.consensusHeight == ledger.DefaultLedger.Store.GetHeight()+1 {
+		err = ps.PersistCachedBlock(ps.syncCache.consensusHeight)
+		if err != nil {
+			log.Errorf("persist cached block error: %v, height: %d", err, ps.syncCache.consensusHeight)
+			return
+		}
+		for i := ps.syncCache.minHeight; i <= ps.syncCache.maxHeight; i++ {
+			// cleanup cached block
+			err = ps.syncCache.RemoveBlockFromCache(i)
+			if err != nil {
+				log.Warnf("sync cache cleanup failed for height %d, error: %v", i, err)
+			}
+			// cleanup block time lock
+			ps.syncCache.timeLock.RemoveForHeight(i)
+		}
+		log.Info("cached block saving finished")
+		// switch syncing state
+		ps.localNode.SetSyncState(protocol.PersistFinished)
+		return
+	}
+
+	log.Infof("process cached blocks, from height: %d, to height: %d, consensus height: %d, start height: %d",
 		ps.syncCache.minHeight, ps.syncCache.maxHeight,
 		ps.syncCache.consensusHeight, ps.syncCache.consensusHeight+1)
 	for i := ps.syncCache.minHeight; i <= ps.syncCache.maxHeight; i++ {
 		if i > ps.syncCache.consensusHeight {
-			vBlock, err := ps.syncCache.GetBlockFromSyncCache(i)
+			err = ps.PersistCachedBlock(i)
 			if err != nil {
-				//TODO: if found ambiguous block then re-sync block
-				log.Error("persist cached block error: ", err)
+				log.Errorf("persist cached block error: %v, height: %d", err, i)
 				return
 			}
-			err = ledger.HeaderCheck(vBlock.Block.Header, vBlock.ReceiveTime)
-			if err != nil {
-				log.Error("verifying header of cached block error: ", err)
-				return
-			}
-			err = ledger.TransactionCheck(vBlock.Block)
-			if err != nil {
-				log.Error("verifying transaction in cached block error: ", err)
-				return
-			}
-			err = ledger.DefaultLedger.Blockchain.AddBlock(vBlock.Block)
-			if err != nil {
-				log.Error("saving cached block error: ", err)
-				return
-			}
-			// Fixme: wait for block persisted
-			time.Sleep(time.Millisecond * 300)
 		}
-		err := ps.syncCache.RemoveBlockFromCache(i)
+		// cleanup cached block
+		err = ps.syncCache.RemoveBlockFromCache(i)
 		if err != nil {
 			log.Warnf("sync cache cleanup failed for height %d, error: %v", i, err)
 		}
+		// cleanup block time lock
 		ps.syncCache.timeLock.RemoveForHeight(i)
 	}
 	log.Info("cached block saving finished")
@@ -520,8 +550,10 @@ func (ps *ProposerService) ReceiveConsensusMsg(v interface{}) {
 func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender uint64) {
 	current := ps.CurrentVoting(voting.BlockVote)
 	votingHeight := current.GetVotingHeight()
+	block := bfMsg.block
 	blockHash := bfMsg.block.Hash()
 	height := bfMsg.block.Header.Height
+	rtime := time.Now().Unix()
 
 	// returns if receive duplicate block
 	if current.HasSelfState(blockHash, voting.FloodingFinished) {
@@ -542,14 +574,35 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender u
 		log.Error("broadcast block message error: ", err)
 	}
 
-	// if block syncing is not finished, cache received blocks in order
+	// if block syncing is not finished, cache received blocks
 	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		err = ps.syncCache.AddBlockToSyncCache(bfMsg.block)
+		err = ps.syncCache.AddBlockToSyncCache(block, rtime)
 		if err != nil {
 			log.Error("add received block to sync cache error: ", err)
 		}
 		log.Infof("cached block: %s, block height: %d,  totally cached: %d",
 			BytesToHexString(blockHash.ToArrayReverse()), height, ps.syncCache.CachedBlockHeight())
+		if !HasAbilityToVerifyBlock(block) {
+			return
+		}
+		// send vote when the block is verified by local node
+		if !current.HasSelfState(blockHash, voting.ProposalSent) {
+			err = ledger.HeaderCheck(block.Header, rtime)
+			if err != nil {
+				log.Error("header verification error when voting in sync mode", err)
+				return
+			}
+			err = ledger.TransactionCheck(block)
+			if err != nil {
+				log.Error("transaction verification error when voting in sync mode", err)
+				return
+			}
+			log.Infof("send vote to block %s while syncing", BytesToHexString(blockHash.ToArrayReverse()))
+			proposalMsg := NewProposal(&blockHash, votingHeight, voting.BlockVote)
+			nodes := ps.GetReceiverNode(nil)
+			ps.SendConsensusMsg(proposalMsg, nodes)
+			current.SetSelfState(blockHash, voting.ProposalSent)
+		}
 		return
 	}
 
@@ -559,7 +612,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender u
 			" hash: %s", votingHeight, height, BytesToHexString(blockHash.ToArrayReverse()))
 		return
 	}
-	err = current.AddToCache(bfMsg.block)
+	err = current.AddToCache(block, rtime)
 	if err != nil {
 		log.Error("add received block to local cache error")
 		return
@@ -663,7 +716,7 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender uint64) {
 		return
 	}
 	// TODO check if the sender is requested neighbor node
-	err := current.AddToCache(resp.content)
+	err := current.AddToCache(resp.content, time.Now().Unix())
 	if err != nil {
 		return
 	}
@@ -722,7 +775,15 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 		if err != nil {
 			return
 		}
-		ps.localNode.SetSyncStopHash(vBlock.Block.Header.Hash(), vBlock.Block.Header.Height)
+		// if local node has ability to verify block then set stop hash to current block
+		// to trigger syncing finished right away.
+		if HasAbilityToVerifyBlock(vBlock.Block) {
+			currentBlockHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
+			currentBlockHeight := ledger.DefaultLedger.Store.GetHeight()
+			ps.localNode.SetSyncStopHash(currentBlockHash, currentBlockHeight)
+		} else {
+			ps.localNode.SetSyncStopHash(vBlock.Block.Header.Hash(), vBlock.Block.Header.Height)
+		}
 		ps.syncCache.SetConsensusHeight(height)
 		return
 	}
