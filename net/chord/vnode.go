@@ -228,13 +228,13 @@ func (vn *localVnode) notifySuccessor() error {
 
 	// Update local successors list
 	for idx, s := range succ_list {
-		// if s == nil {
-		// 	break
-		// }
-		// // Ensure we don't set ourselves as a successor!
-		// if s == nil || s.String() == vn.String() {
-		// 	break
-		// }
+		if s == nil {
+			break
+		}
+		// Ensure we don't set ourselves as a successor!
+		if s == nil || s.String() == vn.String() {
+			break
+		}
 		vn.successors[idx+1] = s
 	}
 	return nil
