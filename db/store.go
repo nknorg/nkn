@@ -7,144 +7,74 @@ import (
 	"sort"
 	"sync"
 
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	. "github.com/nknorg/nkn/core/asset"
-	"github.com/nknorg/nkn/core/contract/program"
-	. "github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core/asset"
+	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/util/log"
 )
 
-const (
-	CleanCacheThreshold = 2
-)
-
-var (
-	ErrDBNotFound = errors.New("leveldb: not found")
-)
-
 type ChainStore struct {
-	st IStore
-
-	mu          sync.RWMutex // guard the following var
-	headerIndex map[uint32]Uint256
-	blockCache  map[Uint256]*Block
-	headerCache map[Uint256]*Header
-
+	db                 IStore
+	headerCache        *HeaderCache
+	blockCache         map[common.Uint256]*ledger.Block
 	currentBlockHeight uint32
+	currentBlockHash   common.Uint256
+	mu                 sync.RWMutex
 }
 
-func NewLedgerStore() (ILedgerStore, error) {
+func NewLedgerStore() (ledger.ILedgerStore, error) {
 	st, err := NewLevelDBStore("Chain")
 	if err != nil {
 		return nil, err
 	}
 
 	chain := &ChainStore{
-		st:                 st,
-		headerIndex:        map[uint32]Uint256{},
-		blockCache:         map[Uint256]*Block{},
-		headerCache:        map[Uint256]*Header{},
+		db:                 st,
+		blockCache:         map[common.Uint256]*ledger.Block{},
+		headerCache:        NewHeaderCache(),
 		currentBlockHeight: 0,
+		currentBlockHash:   common.Uint256{},
 	}
 
 	return chain, nil
 }
 
-func (cs *ChainStore) Close() {
-	cs.st.Close()
-}
-
-// can only be invoked by backend write goroutine
-func (cs *ChainStore) clearCache() {
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
-
-	currBlockHeight := cs.currentBlockHeight
-	for hash, header := range cs.headerCache {
-		if header.Height+CleanCacheThreshold < currBlockHeight {
-			delete(cs.headerCache, hash)
-		}
-	}
-
-	for hash, block := range cs.blockCache {
-		if block.Header.Height+CleanCacheThreshold < currBlockHeight {
-			delete(cs.blockCache, hash)
-		}
-	}
-
-}
-
-func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block, defaultBookKeeper []*crypto.PubKey) (uint32, error) {
-	hash := genesisBlock.Hash()
-	cs.headerIndex[0] = hash
-
-	prefix := []byte{byte(CFG_Version)}
-	version, err := cs.st.Get(prefix)
+func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *ledger.Block, defaultBookKeeper []*crypto.PubKey) (uint32, error) {
+	version, err := cs.db.Get(versionKey())
 	if err != nil {
 		version = []byte{0x00}
 	}
 
 	if version[0] == 0x01 {
-		// GenesisBlock should exist in chain
-		// Or the bookkeepers are not consistent with the chain
-		if !cs.IsBlockInStore(hash) {
-			estr := fmt.Sprintf("Hash %s is NOT in BlockStore.", hash.ToHexString())
-			log.Error(estr)
-			return 0, errors.New(estr)
+		fmt.Println("<----------------exist db----------------------->")
+		if !cs.IsBlockInStore(genesisBlock.Hash()) {
+			return 0, errors.New("genesisBlock is NOT in BlockStore.")
 		}
-		// Get Current Block
-		currentBlockPrefix := []byte{byte(SYS_CurrentBlock)}
-		data, err := cs.st.Get(currentBlockPrefix)
-		if err != nil {
+
+		if cs.currentBlockHash, cs.currentBlockHeight, err = cs.getCurrentBlockHash(); err != nil {
 			return 0, err
 		}
 
-		r := bytes.NewReader(data)
-		var blockHash Uint256
-		blockHash.Deserialize(r)
-		cs.currentBlockHeight, err = serialization.ReadUint32(r)
-
-		iter := iteratorBlockHash(cs.st)
-		for iter.Next() {
-			rk := bytes.NewReader(iter.Key()[1:])
-			height, err := serialization.ReadUint32(rk)
-			if err != nil {
-				return 0, err
-			}
-
-			var headerHash Uint256
-			r := bytes.NewReader(iter.Value())
-			headerHash.Deserialize(r)
-			cs.headerIndex[height] = headerHash
-		}
-
-		if len(cs.headerIndex) != int(cs.currentBlockHeight+1) {
-			return 0, errors.New("no enough blockhash in DB.")
-		}
+		currentHeader, _ := cs.getHeader(cs.currentBlockHash)
+		cs.headerCache.AddHeaderToCache(currentHeader)
 
 		return cs.currentBlockHeight, nil
-
 	} else {
-		cs.st.NewBatch()
-		iter := cs.st.NewIterator(nil)
+		fmt.Println("<----------------no db----------------------->")
+		batch := cs.db.NewSepBatch()
+		iter := cs.db.NewIterator(nil)
 		for iter.Next() {
-			cs.st.BatchDelete(iter.Key())
+			batch.BatchDelete(iter.Key())
 		}
 		iter.Release()
-
-		err := cs.st.BatchCommit()
-		if err != nil {
+		if err := batch.BatchCommit(); err != nil {
 			return 0, err
 		}
-		sort.Sort(crypto.PubKeySlice(defaultBookKeeper))
 
-		// currBookKeeper key
-		bkListKey := bytes.NewBuffer(nil)
-		bkListKey.WriteByte(byte(SYS_CurrentBookKeeper))
+		sort.Sort(crypto.PubKeySlice(defaultBookKeeper))
 
 		// currBookKeeper value
 		bkListValue := bytes.NewBuffer(nil)
@@ -160,29 +90,272 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block, defau
 		}
 
 		// defaultBookKeeper put value
-		cs.st.Put(bkListKey.Bytes(), bkListValue.Bytes())
+		cs.db.Put(bookkeeperKey(), bkListValue.Bytes())
 
-		// persist genesis block
-		cs.persist(genesisBlock)
-
-		// put version to db
-		err = cs.st.Put(prefix, []byte{0x01})
-		if err != nil {
+		if err := cs.persist(genesisBlock); err != nil {
 			return 0, err
 		}
+
+		// put version to db
+		if err = cs.db.Put(versionKey(), []byte{0x01}); err != nil {
+			return 0, err
+		}
+
+		cs.headerCache.AddHeaderToCache(genesisBlock.Header)
+		cs.currentBlockHash = genesisBlock.Hash()
+		cs.currentBlockHeight = 0
 
 		return 0, nil
 	}
 }
 
-func (cs *ChainStore) IsTxHashDuplicate(txhash Uint256) bool {
-	prefix := []byte{byte(DATA_Transaction)}
-	_, err_get := cs.st.Get(append(prefix, txhash.ToArray()...))
-	if err_get != nil {
-		return false
-	} else {
-		return true
+func (cs *ChainStore) Close() {
+	cs.db.Close()
+}
+
+func (cs *ChainStore) getTransaction(hash common.Uint256) (*tx.Transaction, uint32, error) {
+	value, err := cs.db.Get(transactionKey(hash))
+	if err != nil {
+		return nil, 0, err
 	}
+
+	r := bytes.NewReader(value)
+	height, err := serialization.ReadUint32(r)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	txn := new(tx.Transaction)
+	if err := txn.Deserialize(r); err != nil {
+		return nil, height, err
+	}
+
+	return txn, height, nil
+}
+
+func (cs *ChainStore) getBlock(hash common.Uint256) (*ledger.Block, error) {
+	bHash, err := cs.db.Get(headerKey(hash))
+	if err != nil {
+		return nil, err
+	}
+
+	b := new(ledger.Block)
+	if err = b.FromTrimmedData(bytes.NewReader(bHash)); err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(b.Transactions); i++ {
+		if b.Transactions[i], _, err = cs.getTransaction(b.Transactions[i].Hash()); err != nil {
+			return nil, err
+		}
+	}
+
+	return b, nil
+}
+
+func (cs *ChainStore) getBlockHash(height uint32) (common.Uint256, error) {
+	if blockHash, err := cs.db.Get(blockhashKey(height)); err != nil {
+		return common.Uint256{}, err
+	} else {
+		return common.Uint256ParseFromBytes(blockHash)
+	}
+}
+
+func (cs *ChainStore) getHeader(hash common.Uint256) (*ledger.Header, error) {
+	if data, err := cs.db.Get(headerKey(hash)); err != nil {
+		return nil, err
+	} else {
+		h := new(ledger.Header)
+		err := h.Deserialize(bytes.NewReader(data))
+		return h, err
+	}
+}
+
+func (cs *ChainStore) getCurrentBlockHash() (common.Uint256, uint32, error) {
+	if data, err := cs.db.Get(currentBlockHashKey()); err != nil {
+		return common.Uint256{}, 0, err
+	} else {
+		var blockHash common.Uint256
+		r := bytes.NewReader(data)
+		blockHash.Deserialize(r)
+		currentHeight, err := serialization.ReadUint32(r)
+		return blockHash, currentHeight, err
+	}
+}
+
+func (cs *ChainStore) getAsset(hash common.Uint256) (*asset.Asset, error) {
+	if data, err := cs.db.Get(assetKey(hash)); err != nil {
+		return nil, err
+	} else {
+		asset := new(asset.Asset)
+		err := asset.Deserialize(bytes.NewReader(data))
+		return asset, err
+	}
+}
+
+func (cs *ChainStore) getAssets() map[common.Uint256]*asset.Asset {
+	assets := make(map[common.Uint256]*asset.Asset)
+	iter := iteratorAsset(cs.db)
+
+	for iter.Next() {
+		var assetid common.Uint256
+		var asset asset.Asset
+		assetid.Deserialize(bytes.NewReader(iter.Key()[1:]))
+		asset.Deserialize(bytes.NewReader(iter.Value()))
+		assets[assetid] = &asset
+	}
+
+	return assets
+}
+
+func (cs *ChainStore) getBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error) {
+	bkListValue, err := cs.db.Get(bookkeeperKey())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r := bytes.NewReader(bkListValue)
+	currCount, err := serialization.ReadUint8(r)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var currBookKeeper = make([]*crypto.PubKey, currCount)
+	for i := uint8(0); i < currCount; i++ {
+		bk := new(crypto.PubKey)
+		if err := bk.Deserialize(r); err != nil {
+			return nil, nil, err
+		}
+		currBookKeeper[i] = bk
+	}
+
+	nextCount, err := serialization.ReadUint8(r)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var nextBookKeeper = make([]*crypto.PubKey, nextCount)
+	for i := uint8(0); i < nextCount; i++ {
+		bk := new(crypto.PubKey)
+		if err := bk.Deserialize(r); err != nil {
+			return nil, nil, err
+		}
+		nextBookKeeper[i] = bk
+	}
+
+	return currBookKeeper, nextBookKeeper, nil
+}
+
+func (cs *ChainStore) getQuantityIssued(assetId common.Uint256) (common.Fixed64, error) {
+	if data, err := cs.db.Get(issuseQuantKey(assetId)); err != nil {
+		return common.Fixed64(0), nil
+	} else {
+		var quantity common.Fixed64
+		quantity.Deserialize(bytes.NewReader(data))
+		return quantity, nil
+	}
+}
+
+func (cs *ChainStore) getPrepaidInfo(programHash common.Uint160) (*common.Fixed64, *common.Fixed64, error) {
+	if value, err := cs.db.Get(prepaidKey(programHash)); err != nil {
+		return nil, nil, err
+	} else {
+		var amount, rates common.Fixed64
+		r := bytes.NewReader(value)
+		if err := amount.Deserialize(r); err != nil {
+			return nil, nil, err
+		}
+		if err := rates.Deserialize(r); err != nil {
+			return nil, nil, err
+		}
+
+		return &amount, &rates, nil
+	}
+}
+
+func (cs *ChainStore) getUnspentFromProgramHash(programHash common.Uint160, assetid common.Uint256) ([]*tx.UTXOUnspent, error) {
+	iter := iteratorUTXO(cs.db, append(programHash.ToArray(), assetid.ToArray()...))
+	unspents := make([]*tx.UTXOUnspent, 0)
+	for iter.Next() {
+		r := bytes.NewReader(iter.Value())
+		listNum, err := serialization.ReadVarUint(r, 0)
+		if err != nil {
+			return nil, err
+		}
+
+		for i := 0; i < int(listNum); i++ {
+			uu := new(tx.UTXOUnspent)
+			if err := uu.Deserialize(r); err != nil {
+				return nil, err
+			}
+
+			unspents = append(unspents, uu)
+		}
+	}
+
+	return unspents, nil
+}
+
+func (cs *ChainStore) getUnspentsFromProgramHash(programHash common.Uint160) (map[common.Uint256][]*tx.UTXOUnspent, error) {
+	uxtoUnspents := make(map[common.Uint256][]*tx.UTXOUnspent)
+	iter := iteratorUTXO(cs.db, programHash.ToArray())
+	for iter.Next() {
+		var assetid common.Uint256
+		assetid.Deserialize(bytes.NewReader(iter.Key()[1+common.UINT160SIZE:]))
+
+		r := bytes.NewReader(iter.Value())
+		listNum, err := serialization.ReadVarUint(r, 0)
+		if err != nil {
+			return nil, err
+		}
+
+		unspents := make([]*tx.UTXOUnspent, listNum)
+		for i := 0; i < int(listNum); i++ {
+			uu := new(tx.UTXOUnspent)
+			if err := uu.Deserialize(r); err != nil {
+				return nil, err
+			}
+
+			unspents[i] = uu
+		}
+		uxtoUnspents[assetid] = append(uxtoUnspents[assetid], unspents[:]...)
+	}
+
+	return uxtoUnspents, nil
+}
+
+func (cs *ChainStore) isTxHashDuplicate(txhash common.Uint256) bool {
+	if _, err := cs.db.Get(transactionKey(txhash)); err != nil {
+		return false
+	}
+
+	return true
+}
+
+func (cs *ChainStore) getUnspentIndex(txid common.Uint256) ([]uint16, error) {
+	unspentValue, err := cs.db.Get(unspentIndexKey(txid))
+	if err != nil {
+		return []uint16{}, err
+	}
+
+	unspentArray, err := common.GetUint16Array(unspentValue)
+	if err != nil {
+		return []uint16{}, err
+	}
+
+	return unspentArray, nil
+}
+
+func (cs *ChainStore) IsBlockInStore(hash common.Uint256) bool {
+	if header, err := cs.getHeader(hash); err != nil && header.Height > cs.currentBlockHeight {
+		return false
+	}
+
+	return true
+}
+
+func (cs *ChainStore) IsTxHashDuplicate(txhash common.Uint256) bool {
+	return cs.isTxHashDuplicate(txhash)
 }
 
 func (cs *ChainStore) IsDoubleSpend(tx *tx.Transaction) bool {
@@ -193,12 +366,12 @@ func (cs *ChainStore) IsDoubleSpend(tx *tx.Transaction) bool {
 	unspentPrefix := []byte{byte(IX_Unspent)}
 	for i := 0; i < len(tx.Inputs); i++ {
 		txhash := tx.Inputs[i].ReferTxID
-		unspentValue, err_get := cs.st.Get(append(unspentPrefix, txhash.ToArray()...))
+		unspentValue, err_get := cs.db.Get(append(unspentPrefix, txhash.ToArray()...))
 		if err_get != nil {
 			return true
 		}
 
-		unspents, _ := GetUint16Array(unspentValue)
+		unspents, _ := common.GetUint16Array(unspentValue)
 		findFlag := false
 		for k := 0; k < len(unspents); k++ {
 			if unspents[k] == tx.Inputs[i].ReferTxOutputIndex {
@@ -215,237 +388,56 @@ func (cs *ChainStore) IsDoubleSpend(tx *tx.Transaction) bool {
 	return false
 }
 
-func (cs *ChainStore) GetBlockHash(height uint32) (Uint256, error) {
-	queryKey := bytes.NewBuffer(nil)
-	queryKey.WriteByte(byte(DATA_BlockHash))
-	err := serialization.WriteUint32(queryKey, height)
-
-	if err != nil {
-		return Uint256{}, err
-	}
-	blockHash, err_get := cs.st.Get(queryKey.Bytes())
-	if err_get != nil {
-		//TODO: implement error process
-		return Uint256{}, err_get
-	}
-	blockHash256, err_parse := Uint256ParseFromBytes(blockHash)
-	if err_parse != nil {
-		return Uint256{}, err_parse
-	}
-
-	return blockHash256, nil
-}
-
-func (cs *ChainStore) GetCurrentBlockHash() Uint256 {
-	cs.mu.RLock()
-	defer cs.mu.RUnlock()
-
-	return cs.headerIndex[cs.currentBlockHeight]
-}
-
-func (cs *ChainStore) getHeaderWithCache(hash Uint256) *Header {
-	if _, ok := cs.headerCache[hash]; ok {
-		return cs.headerCache[hash]
-	}
-
-	header, _ := cs.GetHeader(hash)
-
-	return header
-}
-
-func (cs *ChainStore) verifyHeader(header *Header) bool {
-	prevHeader := cs.getHeaderWithCache(header.PrevBlockHash)
-
-	if prevHeader == nil {
-		log.Error("[verifyHeader] failed, not found prevHeader.")
-		return false
-	}
-
-	if prevHeader.Height+1 != header.Height {
-		log.Error("[verifyHeader] failed, prevHeader.Height + 1 != header.Height")
-		return false
-	}
-
-	if prevHeader.Timestamp >= header.Timestamp {
-		log.Error("[verifyHeader] failed, prevHeader.Timestamp >= header.Timestamp")
-		return false
-	}
-
-	//flag, err := validation.VerifySignableData(header)
-	//if flag == false || err != nil {
-	//	log.Error("[verifyHeader] failed, VerifySignableData failed.")
-	//	log.Error(err)
-	//	return false
-	//}
-
-	return true
-}
-
-func (cs *ChainStore) AddHeaders(headers []Header, ledger *Ledger) error {
-
-	sort.Slice(headers, func(i, j int) bool {
-		return headers[i].Height < headers[j].Height
-	})
-
-	for i := 0; i < len(headers); i++ {
-		cs.handlePersistHeaderTask(&headers[i])
-
-	}
-
-	return nil
-
-}
-
-func (cs *ChainStore) GetHeader(hash Uint256) (*Header, error) {
-	cs.mu.RLock()
-	if header, ok := cs.headerCache[hash]; ok {
-		cs.mu.RUnlock()
-		return header, nil
-	}
-	cs.mu.RUnlock()
-
-	var h = new(Header)
-	h.Program = new(program.Program)
-
-	prefix := []byte{byte(DATA_Header)}
-	data, err := cs.st.Get(append(prefix, hash.ToArray()...))
-	if err != nil {
-		return nil, err
-	}
-
-	r := bytes.NewReader(data)
-
-	// first 8 bytes is sys_fee
-	_, err = serialization.ReadUint64(r)
-	if err != nil {
-		return nil, err
-	}
-
-	// Deserialize block data
-	err = h.Deserialize(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return h, err
-}
-
-func (cs *ChainStore) GetAsset(hash Uint256) (*Asset, error) {
-	asset := new(Asset)
-	prefix := []byte{byte(ST_Info)}
-	data, err := cs.st.Get(append(prefix, hash.ToArray()...))
-	if err != nil {
-		return nil, err
-	}
-
-	r := bytes.NewReader(data)
-	asset.Deserialize(r)
-
-	return asset, nil
-}
-
-func (cs *ChainStore) GetTransaction(hash Uint256) (*tx.Transaction, error) {
-	t, _, err := cs.getTx(hash)
-	if err != nil {
-		return nil, err
-	}
-
-	return t, nil
-}
-
-func (cs *ChainStore) getTx(hash Uint256) (*tx.Transaction, uint32, error) {
-	key := append([]byte{byte(DATA_Transaction)}, hash.ToArray()...)
-	value, err := cs.st.Get(key)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	r := bytes.NewReader(value)
-	height, err := serialization.ReadUint32(r)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var txn tx.Transaction
-	if err := txn.Deserialize(r); err != nil {
-		return nil, height, err
-	}
-
-	return &txn, height, nil
-}
-
-func (cs *ChainStore) SaveTransaction(tx *tx.Transaction, height uint32) error {
-	txhash := bytes.NewBuffer(nil)
-	// add transaction header prefix.
-	txhash.WriteByte(byte(DATA_Transaction))
-	// get transaction hash
-	txHashValue := tx.Hash()
-	txHashValue.Serialize(txhash)
-
-	// generate value
-	w := bytes.NewBuffer(nil)
-	serialization.WriteUint32(w, height)
-	tx.Serialize(w)
-
-	// put value
-	err := cs.st.BatchPut(txhash.Bytes(), w.Bytes())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (cs *ChainStore) GetBlock(hash Uint256) (*Block, error) {
-	cs.mu.RLock()
-	if block, ok := cs.blockCache[hash]; ok {
-		cs.mu.RUnlock()
-		return block, nil
-	}
-	cs.mu.RUnlock()
-
-	var b = new(Block)
-	b.Header = new(Header)
-	b.Header.Program = new(program.Program)
-
-	prefix := []byte{byte(DATA_Header)}
-	bHash, err := cs.st.Get(append(prefix, hash.ToArray()...))
-	if err != nil {
-		return nil, err
-	}
-
-	r := bytes.NewReader(bHash)
-	// first 8 bytes is sys_fee
-	_, err = serialization.ReadUint64(r)
-	if err != nil {
-		return nil, err
-	}
-
-	// Deserialize block data
-	err = b.FromTrimmedData(r)
-	if err != nil {
-		return nil, err
-	}
-
-	// Deserialize transaction
-	for i := 0; i < len(b.Transactions); i++ {
-		b.Transactions[i], _, err = cs.getTx(b.Transactions[i].Hash())
-		if err != nil {
-			return nil, err
+func (cs *ChainStore) CheckBlockHistory(history map[uint32]common.Uint256) (uint32, bool) {
+	for height, blockHash := range history {
+		if h, err := cs.getBlockHash(height); err != nil && h.CompareTo(blockHash) != 0 {
+			return height, false
 		}
 	}
 
-	return b, nil
+	return 0, true
 }
 
-func (cs *ChainStore) GetBlockHistory(startHeight, blockNum uint32) map[uint32]Uint256 {
+func (cs *ChainStore) GetCurrentBlockHash() common.Uint256 {
+	return cs.currentBlockHash
+}
+
+func (cs *ChainStore) GetBlockHash(height uint32) (common.Uint256, error) {
+	return cs.getBlockHash(height)
+}
+
+func (cs *ChainStore) GetTransaction(hash common.Uint256) (*tx.Transaction, error) {
+	if t, _, err := cs.getTransaction(hash); err != nil {
+		return nil, err
+	} else {
+		return t, nil
+	}
+}
+
+func (cs *ChainStore) GetBlock(hash common.Uint256) (*ledger.Block, error) {
+	return cs.getBlock(hash)
+}
+
+func (cs *ChainStore) GetHeader(hash common.Uint256) (*ledger.Header, error) {
+	return cs.getHeader(hash)
+}
+
+func (cs *ChainStore) GetAsset(hash common.Uint256) (*asset.Asset, error) {
+	return cs.getAsset(hash)
+}
+
+func (cs *ChainStore) GetAssets() map[common.Uint256]*asset.Asset {
+	return cs.getAssets()
+}
+
+func (cs *ChainStore) GetBlockHistory(startHeight, blockNum uint32) map[uint32]common.Uint256 {
 	endHeight := startHeight + blockNum
 	if cs.GetHeight() < endHeight {
 		endHeight = cs.GetHeight()
 	}
-	history := make(map[uint32]Uint256)
+	history := make(map[uint32]common.Uint256)
 	for height := startHeight; height < endHeight; height++ {
-		blockHash, err := cs.GetBlockHash(height)
+		blockHash, err := cs.getBlockHash(height)
 		if err != nil {
 			return nil
 		}
@@ -455,75 +447,176 @@ func (cs *ChainStore) GetBlockHistory(startHeight, blockNum uint32) map[uint32]U
 	return history
 }
 
-func (cs *ChainStore) CheckBlockHistory(history map[uint32]Uint256) (uint32, bool) {
-	for height, blockHash := range history {
-		h, err := cs.GetBlockHash(height)
-		if err != nil {
-			return 0, false
-		}
-		if h.CompareTo(blockHash) != 0 {
-			return height, false
-		}
+func (cs *ChainStore) GetHeightByBlockHash(hash common.Uint256) (uint32, error) {
+	if block, err := cs.getBlock(hash); err != nil {
+		return 0, err
+	} else {
+		return block.Header.Height, nil
 	}
-
-	return 0, true
-}
-
-// TODO get node voting weight form DB
-func (cs *ChainStore) GetVotingWeight(hash Uint160) (int, error) {
-	return 1, nil
 }
 
 func (cs *ChainStore) GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error) {
-	prefix := []byte{byte(SYS_CurrentBookKeeper)}
-	bkListValue, err := cs.st.Get(prefix)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	r := bytes.NewReader(bkListValue)
-
-	// first 1 bytes is length of list
-	currCount, err := serialization.ReadUint8(r)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var currBookKeeper = make([]*crypto.PubKey, currCount)
-	for i := uint8(0); i < currCount; i++ {
-		bk := new(crypto.PubKey)
-		err := bk.Deserialize(r)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		currBookKeeper[i] = bk
-	}
-
-	nextCount, err := serialization.ReadUint8(r)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var nextBookKeeper = make([]*crypto.PubKey, nextCount)
-	for i := uint8(0); i < nextCount; i++ {
-		bk := new(crypto.PubKey)
-		err := bk.Deserialize(r)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		nextBookKeeper[i] = bk
-	}
-
-	return currBookKeeper, nextBookKeeper, nil
+	return cs.getBookKeeperList()
 }
 
-func (cs *ChainStore) persist(b *Block) error {
+func (cs *ChainStore) GetQuantityIssued(assetId common.Uint256) (common.Fixed64, error) {
+	return cs.getQuantityIssued(assetId)
+}
+
+func (cs *ChainStore) GetPrepaidInfo(programHash common.Uint160) (*common.Fixed64, *common.Fixed64, error) {
+	return cs.getPrepaidInfo(programHash)
+}
+
+func (cs *ChainStore) GetUnspentFromProgramHash(programHash common.Uint160, assetid common.Uint256) ([]*tx.UTXOUnspent, error) {
+	return cs.getUnspentFromProgramHash(programHash, assetid)
+}
+
+func (cs *ChainStore) GetUnspentsFromProgramHash(programHash common.Uint160) (map[common.Uint256][]*tx.UTXOUnspent, error) {
+	return cs.getUnspentsFromProgramHash(programHash)
+}
+
+func (cs *ChainStore) SaveBlock(b *ledger.Block) error {
+	if b.Header.Height != cs.currentBlockHeight+1 {
+		cs.mu.Lock()
+		for hash, block := range cs.blockCache {
+			if block.Header.Height <= cs.currentBlockHeight {
+				delete(cs.blockCache, hash)
+			}
+		}
+		cs.blockCache[b.Hash()] = b
+		cs.mu.Unlock()
+
+		return nil
+	}
+
+	if err := cs.persistBlock(b); err != nil {
+		return err
+	}
+
+	if err := cs.persistCachedBlocks(b); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) persistBlock(b *ledger.Block) error {
+	if header := cs.headerCache.GetCachedHeader(b.Header.PrevBlockHash); header == nil {
+		return errors.New("not found prevHeader.")
+	}
+
+	//if err := VerifyBlock(b, ledger, false); err != nil {
+	//	log.Error("VerifyBlock error!")
+	//	return err
+	//}
+
+	if err := cs.persist(b); err != nil {
+		log.Error("error to persist block:", err.Error())
+		return err
+	}
+
+	cs.mu.Lock()
+	cs.currentBlockHeight = b.Header.Height
+	cs.currentBlockHash = b.Hash()
+	cs.mu.Unlock()
+	cs.headerCache.AddHeaderToCache(b.Header)
+
+	return nil
+}
+
+func (cs *ChainStore) persistCachedBlocks(prevBlock *ledger.Block) error {
+	processBlocks := []*ledger.Block{prevBlock}
+	for len(processBlocks) > 0 {
+		processBlock := processBlocks[0]
+		processBlocks = processBlocks[1:]
+		for hash, block := range cs.blockCache {
+			if block.Header.PrevBlockHash.CompareTo(processBlock.Hash()) == 0 {
+				delete(cs.blockCache, hash)
+				if err := cs.persistBlock(block); err != nil {
+					return err
+				}
+				processBlocks = append(processBlocks, block)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) AddHeaders(headers []ledger.Header) error {
+	sort.Slice(headers, func(i, j int) bool {
+		return headers[i].Height < headers[j].Height
+	})
+
+	for _, header := range headers {
+		if header.Height != cs.headerCache.GetCurrentCachedHeight()+1 {
+			return errors.New("incorrect header height.")
+		}
+
+		prevHeader := cs.headerCache.GetCachedHeader(header.PrevBlockHash)
+		if prevHeader == nil {
+			return errors.New("[verifyHeader] failed, not found prevHeader.")
+		}
+
+		if prevHeader.Height+1 != header.Height {
+			return errors.New("[verifyHeader] failed, prevHeader.Height + 1 != header.Height")
+		}
+
+		if prevHeader.Timestamp >= header.Timestamp {
+			return errors.New("[verifyHeader] failed, prevHeader.Timestamp >= header.Timestamp")
+		}
+
+		//flag, err := validation.VerifySignableData(header)
+		//if flag == false || err != nil {
+		//	log.Error("[verifyHeader] failed, VerifySignableData failed.")
+		//	log.Error(err)
+		//	return false
+		//}
+
+		cs.headerCache.AddHeaderToCache(&header)
+	}
+
+	return nil
+
+}
+
+func (cs *ChainStore) BlockInCache(hash common.Uint256) bool {
+	cs.mu.RLock()
+	defer cs.mu.RUnlock()
+
+	_, ok := cs.blockCache[hash]
+	return ok
+}
+
+func (cs *ChainStore) GetHeight() uint32 {
+	cs.mu.RLock()
+	defer cs.mu.RUnlock()
+
+	return cs.currentBlockHeight
+}
+
+func (cs *ChainStore) GetVotingWeight(hash common.Uint160) (int, error) {
+	return 1, nil
+}
+
+func (cs *ChainStore) GetCurrentCachedHeaderHash() common.Uint256 {
+	return cs.headerCache.GetCurrentCacheHeaderHash()
+}
+
+func (cs *ChainStore) GetCachedHeaderHash(height uint32) common.Uint256 {
+	return cs.headerCache.GetCachedHeaderHashByHeight(height)
+}
+
+func (cs *ChainStore) GetCurrentCachedHeaderHeight() uint32 {
+	return cs.headerCache.GetCurrentCachedHeight()
+}
+
+func (cs *ChainStore) persist(b *ledger.Block) error {
 	batch := NewBatchStore(cs)
 	errChan := make(chan error, 8)
 
-	go func(b *Block, ch chan error) { ch <- batch.storeBlock(b) }(b, errChan)
+	go func(b *ledger.Block, ch chan error) { ch <- batch.storeBlock(b) }(b, errChan)
 	go func(txs []*tx.Transaction, ch chan error) { ch <- batch.storeAssets(txs) }(b.Transactions, errChan)
 	go func(txs []*tx.Transaction, ch chan error) { ch <- batch.storeQuantityIssued(txs) }(b.Transactions, errChan)
 	go func(txs []*tx.Transaction, ch chan error) { ch <- batch.storePrepaid(txs) }(b.Transactions, errChan)
@@ -549,304 +642,8 @@ func (cs *ChainStore) persist(b *Block) error {
 	return batch.Commit()
 }
 
-// can only be invoked by backend write goroutine
-func (cs *ChainStore) addHeader(header *Header) {
-	hash := header.Hash()
-
-	cs.mu.Lock()
-	cs.headerCache[header.Hash()] = header
-	cs.headerIndex[header.Height] = hash
-	cs.mu.Unlock()
-}
-
-func (cs *ChainStore) handlePersistHeaderTask(header *Header) {
-
-	if header.Height != uint32(len(cs.headerIndex)) {
-		return
-	}
-
-	if !cs.verifyHeader(header) {
-		return
-	}
-
-	cs.addHeader(header)
-}
-
-func (cs *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
-	cs.mu.RLock()
-	headerHeight := uint32(len(cs.headerIndex))
-	currBlockHeight := cs.currentBlockHeight
-	cs.mu.RUnlock()
-
-	if b.Header.Height <= currBlockHeight {
-		return nil
-	}
-
-	if b.Header.Height > headerHeight {
-		return errors.New(fmt.Sprintf("Info: [SaveBlock] block height - headerIndex.count >= 1, block height:%d, headerIndex.count:%d",
-			b.Header.Height, headerHeight))
-	}
-
-	if b.Header.Height == headerHeight {
-		//err := VerifyBlock(b, ledger, false)
-		//if err != nil {
-		//	log.Error("VerifyBlock error!")
-		//	return err
-		//}
-
-		cs.handlePersistHeaderTask(b.Header)
-	} else {
-		//flag, err := validation.VerifySignableData(b)
-		//if flag == false || err != nil {
-		//	log.Error("VerifyBlock error!")
-		//	return err
-		//}
-	}
-
-	cs.handlePersistBlockTask(b, ledger)
-
-	return nil
-}
-
-func (cs *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
-	if b.Header.Height <= cs.currentBlockHeight {
-		return
-	}
-
-	cs.mu.Lock()
-	cs.blockCache[b.Hash()] = b
-	cs.mu.Unlock()
-
-	if b.Header.Height < uint32(len(cs.headerIndex)) {
-		cs.persistBlocks(ledger)
-		cs.clearCache()
-	}
-}
-
-func (cs *ChainStore) persistBlocks(ledger *Ledger) {
-	stopHeight := uint32(len(cs.headerIndex))
-	for h := cs.currentBlockHeight + 1; h <= stopHeight; h++ {
-		hash := cs.headerIndex[h]
-		block, ok := cs.blockCache[hash]
-		if !ok {
-			break
-		}
-		err := cs.persist(block)
-		if err != nil {
-			log.Error("[persistBlocks]: error to persist block:", err.Error())
-			return
-		}
-
-		// PersistCompleted event
-		ledger.Blockchain.BlockHeight = block.Header.Height
-		cs.mu.Lock()
-		cs.currentBlockHeight = block.Header.Height
-		cs.mu.Unlock()
-
-		ledger.Blockchain.BCEvents.Notify(events.EventBlockPersistCompleted, block)
-		log.Infof("# current block height: %d, block hash: %x", block.Header.Height, hash.ToArrayReverse())
-	}
-
-}
-
-func (cs *ChainStore) BlockInCache(hash Uint256) bool {
-	cs.mu.RLock()
-	defer cs.mu.RUnlock()
-
-	_, ok := cs.blockCache[hash]
-	return ok
-}
-
-func (cs *ChainStore) GetQuantityIssued(assetId Uint256) (Fixed64, error) {
-	prefix := []byte{byte(ST_QuantityIssued)}
-	data, err := cs.st.Get(append(prefix, assetId.ToArray()...))
-	var quantity Fixed64
-	if err != nil {
-		quantity = Fixed64(0)
-	} else {
-		r := bytes.NewReader(data)
-		quantity.Deserialize(r)
-	}
-
-	return quantity, nil
-}
-
-func (cs *ChainStore) GetCurrentCachedHeaderHash() Uint256 {
-	cs.mu.RLock()
-	defer cs.mu.RUnlock()
-
-	return cs.headerIndex[uint32(len(cs.headerIndex)-1)]
-}
-
-func (cs *ChainStore) GetCachedHeaderHash(height uint32) Uint256 {
-	cs.mu.RLock()
-	defer cs.mu.RUnlock()
-
-	return cs.headerIndex[height]
-}
-
-func (cs *ChainStore) GetCurrentCachedHeaderHeight() uint32 {
-	cs.mu.RLock()
-	defer cs.mu.RUnlock()
-
-	return uint32(len(cs.headerIndex) - 1)
-}
-
-func (cs *ChainStore) GetHeight() uint32 {
-	cs.mu.RLock()
-	defer cs.mu.RUnlock()
-
-	return cs.currentBlockHeight
-}
-
-func (cs *ChainStore) GetHeightByBlockHash(hash Uint256) (uint32, error) {
-	block, err := cs.GetBlock(hash)
-	if err != nil {
-		return 0, err
-	}
-
-	return block.Header.Height, nil
-}
-
-func (cs *ChainStore) IsBlockInStore(hash Uint256) bool {
-	var b = new(Block)
-	b.Header = new(Header)
-	b.Header.Program = new(program.Program)
-
-	prefix := []byte{byte(DATA_Header)}
-	blockData, err := cs.st.Get(append(prefix, hash.ToArray()...))
-	if err != nil {
-		return false
-	}
-
-	r := bytes.NewReader(blockData)
-
-	// first 8 bytes is sys_fee
-	_, err = serialization.ReadUint64(r)
-	if err != nil {
-		return false
-	}
-
-	// Deserialize block data
-	err = b.FromTrimmedData(r)
-	if err != nil {
-		return false
-	}
-
-	if b.Header.Height > cs.currentBlockHeight {
-		return false
-	}
-
-	return true
-}
-
-func (cs *ChainStore) GetUnspentFromProgramHash(programHash Uint160, assetid Uint256) ([]*tx.UTXOUnspent, error) {
-	prefix := []byte{byte(IX_Unspent_UTXO)}
-	key := append(prefix, programHash.ToArray()...)
-	key = append(key, assetid.ToArray()...)
-	iter := cs.st.NewIterator(key)
-	unspents := make([]*tx.UTXOUnspent, 0)
-	for iter.Next() {
-		r := bytes.NewReader(iter.Value())
-		listNum, err := serialization.ReadVarUint(r, 0)
-		if err != nil {
-			return nil, err
-		}
-
-		for i := 0; i < int(listNum); i++ {
-			uu := new(tx.UTXOUnspent)
-			err := uu.Deserialize(r)
-			if err != nil {
-				return nil, err
-			}
-
-			unspents = append(unspents, uu)
-		}
-
-	}
-
-	return unspents, nil
-}
-
-func (cs *ChainStore) saveUnspentWithProgramHash(programHash Uint160, assetid Uint256, height uint32, unspents []*tx.UTXOUnspent) error {
-	prefix := []byte{byte(IX_Unspent_UTXO)}
-
-	key := append(prefix, programHash.ToArray()...)
-	key = append(key, assetid.ToArray()...)
-	keyBuffer := bytes.NewBuffer(key)
-	if err := serialization.WriteUint32(keyBuffer, height); err != nil {
-		return err
-	}
-
-	if len(unspents) == 0 {
-		cs.st.BatchDelete(keyBuffer.Bytes())
-		return nil
-	}
-
-	listnum := len(unspents)
-	w := bytes.NewBuffer(nil)
-	serialization.WriteVarUint(w, uint64(listnum))
-	for i := 0; i < listnum; i++ {
-		unspents[i].Serialize(w)
-	}
-
-	err := cs.st.BatchPut(keyBuffer.Bytes(), w.Bytes())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (cs *ChainStore) GetUnspentsFromProgramHash(programHash Uint160) (map[Uint256][]*tx.UTXOUnspent, error) {
-	uxtoUnspents := make(map[Uint256][]*tx.UTXOUnspent)
-
-	prefix := []byte{byte(IX_Unspent_UTXO)}
-	key := append(prefix, programHash.ToArray()...)
-	iter := cs.st.NewIterator(key)
-	for iter.Next() {
-		rk := bytes.NewReader(iter.Key())
-
-		// read prefix
-		_, _ = serialization.ReadBytes(rk, 1)
-		var ph Uint160
-		ph.Deserialize(rk)
-		var assetid Uint256
-		assetid.Deserialize(rk)
-
-		r := bytes.NewReader(iter.Value())
-		listNum, err := serialization.ReadVarUint(r, 0)
-		if err != nil {
-			return nil, err
-		}
-
-		// read unspent list in store
-		unspents := make([]*tx.UTXOUnspent, listNum)
-		for i := 0; i < int(listNum); i++ {
-			uu := new(tx.UTXOUnspent)
-			err := uu.Deserialize(r)
-			if err != nil {
-				return nil, err
-			}
-
-			unspents[i] = uu
-		}
-		uxtoUnspents[assetid] = append(uxtoUnspents[assetid], unspents[:]...)
-	}
-
-	return uxtoUnspents, nil
-}
-
-func (cs *ChainStore) GetUnspentByHeight(programHash Uint160, assetid Uint256, height uint32) ([]*tx.UTXOUnspent, error) {
-	prefix := []byte{byte(IX_Unspent_UTXO)}
-	prefix = append(prefix, programHash.ToArray()...)
-	prefix = append(prefix, assetid.ToArray()...)
-
-	key := bytes.NewBuffer(prefix)
-	if err := serialization.WriteUint32(key, height); err != nil {
-		return nil, err
-	}
-	unspentsData, err := cs.st.Get(key.Bytes())
+func (cs *ChainStore) getUnspentByHeight(programHash common.Uint160, assetid common.Uint256, height uint32) ([]*tx.UTXOUnspent, error) {
+	unspentsData, err := cs.db.Get(unspentUtxoKey(programHash, assetid, height))
 	if err != nil {
 		return nil, err
 	}
@@ -857,12 +654,10 @@ func (cs *ChainStore) GetUnspentByHeight(programHash Uint160, assetid Uint256, h
 		return nil, err
 	}
 
-	// read unspent list in store
 	unspents := make([]*tx.UTXOUnspent, listNum)
 	for i := 0; i < int(listNum); i++ {
 		uu := new(tx.UTXOUnspent)
-		err := uu.Deserialize(r)
-		if err != nil {
+		if err := uu.Deserialize(r); err != nil {
 			return nil, err
 		}
 
@@ -872,61 +667,19 @@ func (cs *ChainStore) GetUnspentByHeight(programHash Uint160, assetid Uint256, h
 	return unspents, nil
 }
 
-func (cs *ChainStore) GetAssets() map[Uint256]*Asset {
-	assets := make(map[Uint256]*Asset)
-
-	iter := cs.st.NewIterator([]byte{byte(ST_Info)})
-	for iter.Next() {
-		rk := bytes.NewReader(iter.Key())
-
-		// read prefix
-		_, _ = serialization.ReadBytes(rk, 1)
-		var assetid Uint256
-		assetid.Deserialize(rk)
-		log.Debugf("[GetAssets] assetid: %x\n", assetid.ToArray())
-
-		asset := new(Asset)
-		r := bytes.NewReader(iter.Value())
-		asset.Deserialize(r)
-
-		assets[assetid] = asset
-	}
-
-	return assets
+func (cs *ChainStore) RollbackBlock(bHash common.Uint256) *ledger.Block {
+	return nil
 }
 
-func (cs *ChainStore) GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error) {
-	var amount, rates Fixed64
-	var err error
-
-	key := append([]byte{byte(ST_Prepaid)}, programHash.ToArray()...)
-	value, err := cs.st.Get(key)
-	if err != nil {
-		return nil, nil, err
-	}
-	r := bytes.NewReader(value)
-	err = amount.Deserialize(r)
-	if err != nil {
-		return nil, nil, err
-	}
-	err = rates.Deserialize(r)
-	if err != nil {
-		return nil, nil, err
+func (cs *ChainStore) Dump() {
+	fmt.Println("=================chainstore dump==================")
+	cs.headerCache.Dump()
+	fmt.Println("blockcache:")
+	for hash, b := range cs.blockCache {
+		fmt.Println(hash.ToHexString(), b)
 	}
 
-	return &amount, &rates, nil
-}
-
-func (cs *ChainStore) getUnspentIndex(txid Uint256) ([]uint16, error) {
-	unspentValue, err := cs.st.Get(unspentIndexKey(txid))
-	if err != nil {
-		return []uint16{}, err
-	}
-
-	unspentArray, err := GetUint16Array(unspentValue)
-	if err != nil {
-		return []uint16{}, err
-	}
-
-	return unspentArray, nil
+	fmt.Println("CurrentBlockHash", cs.currentBlockHash.ToHexString())
+	fmt.Println("CurrentBlockHeight", cs.currentBlockHeight)
+	fmt.Println("==================================================")
 }

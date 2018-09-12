@@ -176,7 +176,7 @@ func SendMsgSyncHeaders(node Noder, stopHash Uint256) {
 }
 
 func (msg blkHeader) Handle(node Noder) error {
-	err := ledger.DefaultLedger.Store.AddHeaders(msg.blkHdr, ledger.DefaultLedger)
+	err := ledger.DefaultLedger.Store.AddHeaders(msg.blkHdr)
 	if err != nil {
 		log.Warn("Add block Header error")
 		return errors.New("Add block Header error, send new header request to another node\n")

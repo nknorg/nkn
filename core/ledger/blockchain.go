@@ -67,11 +67,13 @@ func (bc *Blockchain) GetHeader(hash Uint256) (*Header, error) {
 }
 
 func (bc *Blockchain) SaveBlock(block *Block) error {
-	err := DefaultLedger.Store.SaveBlock(block, DefaultLedger)
+	err := DefaultLedger.Store.SaveBlock(block)
 	if err != nil {
 		log.Warn("Save Block failure , ", err)
 		return err
 	}
+	bc.BlockHeight = block.Header.Height
+	bc.BCEvents.Notify(events.EventBlockPersistCompleted, block)
 
 	return nil
 }

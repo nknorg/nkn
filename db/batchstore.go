@@ -23,7 +23,7 @@ type BatchStore struct {
 func NewBatchStore(store *ChainStore) *BatchStore {
 	return &BatchStore{
 		store: store,
-		batch: store.st.NewSepBatch(),
+		batch: store.db.NewSepBatch(),
 	}
 
 }
@@ -353,7 +353,7 @@ func (bs *BatchStore) storeUTXOs(height uint32, txs []*transaction.Transaction) 
 
 	for _, tx := range txs {
 		for _, input := range tx.Inputs {
-			spentTx, height, err := bs.store.getTx(input.ReferTxID) //TODO delete getTx
+			spentTx, height, err := bs.store.getTransaction(input.ReferTxID) //TODO delete getTx
 			if err != nil {
 				return err
 			}
@@ -370,7 +370,7 @@ func (bs *BatchStore) storeUTXOs(height uint32, txs []*transaction.Transaction) 
 
 			if _, ok := unspents[programHash][assetId][height]; !ok {
 				var err error
-				unspents[programHash][assetId][height], err = bs.store.GetUnspentByHeight(programHash, assetId, height)
+				unspents[programHash][assetId][height], err = bs.store.getUnspentByHeight(programHash, assetId, height)
 				if err != nil {
 					return errors.New(fmt.Sprintf("[programHash:%v, assetId:%v height: %v] has no unspent UTXO.",
 						programHash, assetId, height))
@@ -415,7 +415,7 @@ func (bs *BatchStore) storeUTXOs(height uint32, txs []*transaction.Transaction) 
 
 			var err error
 			if _, ok := unspents[programHash][assetId][height]; !ok {
-				unspents[programHash][assetId][height], err = bs.store.GetUnspentByHeight(programHash, assetId, height)
+				unspents[programHash][assetId][height], err = bs.store.getUnspentByHeight(programHash, assetId, height)
 				if err != nil {
 					unspents[programHash][assetId][height] = make([]*transaction.UTXOUnspent, 0)
 				}

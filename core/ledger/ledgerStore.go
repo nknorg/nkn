@@ -9,7 +9,7 @@ import (
 
 // ILedgerStore provides func with store package.
 type ILedgerStore interface {
-	SaveBlock(b *Block, ledger *Ledger) error
+	SaveBlock(b *Block) error
 	GetBlock(hash Uint256) (*Block, error)
 	BlockInCache(hash Uint256) bool
 	GetBlockHash(height uint32) (Uint256, error)
@@ -19,7 +19,7 @@ type ILedgerStore interface {
 
 	IsDoubleSpend(tx *tx.Transaction) bool
 
-	AddHeaders(headers []Header, ledger *Ledger) error
+	AddHeaders(headers []Header) error
 	GetHeader(hash Uint256) (*Header, error)
 
 	GetTransaction(hash Uint256) (*tx.Transaction, error)
