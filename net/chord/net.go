@@ -657,7 +657,7 @@ func (t *TCPTransport) reapOnce() {
 			for conn := range conns {
 				t.closeOutConn(conn)
 			}
-			t.pool[host] = nil
+			t.pool[host] = make(chan *tcpOutConn, maxOutConnPool)
 			continue
 		}
 
