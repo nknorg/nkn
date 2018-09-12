@@ -64,6 +64,9 @@ func (s *RPCServer) write(w http.ResponseWriter, data []byte) {
 //this is the funciton that should be called in order to answer an rpc call
 //should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
 func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("content-type", "application/json;charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	s.mainMux.RLock()
 	defer s.mainMux.RUnlock()
 	//JSON RPC commands should be POSTs
