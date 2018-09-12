@@ -283,9 +283,11 @@ func (vn *localVnode) fixFingerTableAtIndex(idx int) (int, error) {
 	}
 	node := nodes[0]
 
-	alive, err := vn.ring.transport.Ping(node)
-	if err != nil || !alive {
-		node = vn.finger[idx]
+	if vn.finger[idx] != nil {
+		alive, err := vn.ring.transport.Ping(node)
+		if err != nil || !alive {
+			node = vn.finger[idx]
+		}
 	}
 
 	// Update the finger table
