@@ -28,8 +28,8 @@ type TCPTransport struct {
 	local          map[string]*localRPC
 	inbound        map[*net.TCPConn]time.Time
 	inConnQue      chan struct{}
-	pool           map[string][]*tcpOutConn
-	poolLock       sync.Mutex
+	pool           map[string]chan *tcpOutConn
+	poolLock       sync.RWMutex
 	outConnQue     map[string]chan struct{}
 	outConnQueLock sync.RWMutex
 	shutdown       int32
@@ -112,8 +112,8 @@ func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, erro
 		local:      make(map[string]*localRPC),      // allocate maps
 		inbound:    make(map[*net.TCPConn]time.Time),
 		inConnQue:  make(chan struct{}, maxInboundConns), // Quota of sock. TODO: get quota from config
+		pool:       make(map[string]chan *tcpOutConn),
 		outConnQue: make(map[string]chan struct{}),
-		pool:       make(map[string][]*tcpOutConn),
 	}
 
 	// Listen for connections
@@ -144,62 +144,64 @@ func (t *TCPTransport) get(vn *Vnode) (VnodeRPC, bool) {
 
 // Gets an outbound connection to a host
 func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
-	t.poolLock.Lock()
-
 	if atomic.LoadInt32(&t.shutdown) == 1 {
-		t.poolLock.Unlock()
 		return nil, fmt.Errorf("TCP transport is shutdown")
 	}
 
-	// Check if we have a conn cached
-	var out *tcpOutConn
-	for list, ok := t.pool[host]; ok && len(list) > 0; {
-		out = list[len(list)-1]
-		list = list[:len(list)-1]
-		t.pool[host] = list
-		if out == nil {
-			continue
-		}
-		_, err := out.sock.Read(nil)
-		if err == nil {
-			t.poolLock.Unlock()
-			return out, nil
-		} else {
-			t.closeOutConn(out)
-		}
+	t.poolLock.RLock()
+	outPool, ok := t.pool[host]
+	t.poolLock.RUnlock()
+
+	if !ok {
+		outPool = make(chan *tcpOutConn, maxOutConnPool)
+		t.poolLock.Lock()
+		t.pool[host] = outPool
+		t.poolLock.Unlock()
 	}
 
-	t.poolLock.Unlock()
-
 	t.outConnQueLock.RLock()
-	c := t.outConnQue[host]
+	outChan, ok := t.outConnQue[host]
 	t.outConnQueLock.RUnlock()
 
-	if c == nil {
-		c = make(chan struct{}, maxOutConnPerHost)
+	if !ok {
+		outChan = make(chan struct{}, maxOutConnPerHost)
 		t.outConnQueLock.Lock()
-		t.outConnQue[host] = c
+		t.outConnQue[host] = outChan
 		t.outConnQueLock.Unlock()
 	}
 
-	c <- struct{}{}
+	var out *tcpOutConn
+	select {
+	case out = <-outPool:
+		if out == nil {
+			return nil, fmt.Errorf("Out connection is nil")
+		}
+		_, err := out.sock.Read(nil)
+		if err != nil {
+			t.closeOutConn(out)
+			return t.getConn(host)
+		}
+	case outChan <- struct{}{}:
+		// Try to establish a connection
+		conn, err := net.DialTimeout("tcp", host, t.timeout)
+		if err != nil {
+			<-outChan
+			return nil, err
+		}
 
-	// Try to establish a connection
-	conn, err := net.DialTimeout("tcp", host, t.timeout)
-	if err != nil {
-		<-c
-		return nil, err
+		// Setup the socket
+		sock := conn.(*net.TCPConn)
+		t.setupConn(sock)
+		enc := gob.NewEncoder(sock)
+		dec := gob.NewDecoder(sock)
+		now := time.Now()
+
+		// Wrap the sock
+		out = &tcpOutConn{host: host, sock: sock, enc: enc, dec: dec, used: now}
+	case <-time.After(t.timeout):
+		return nil, fmt.Errorf("Get connection timeout")
 	}
 
-	// Setup the socket
-	sock := conn.(*net.TCPConn)
-	t.setupConn(sock)
-	enc := gob.NewEncoder(sock)
-	dec := gob.NewDecoder(sock)
-	now := time.Now()
-
-	// Wrap the sock
-	out = &tcpOutConn{host: host, sock: sock, enc: enc, dec: dec, used: now}
 	return out, nil
 }
 
@@ -211,16 +213,18 @@ func (t *TCPTransport) returnConn(o *tcpOutConn, success bool) {
 	}
 
 	// Push back into the pool
-	t.poolLock.Lock()
-	defer t.poolLock.Unlock()
 	if atomic.LoadInt32(&t.shutdown) == 1 {
 		t.closeOutConn(o)
 		return
 	}
-	list, _ := t.pool[o.host]
-	if len(list) < maxOutConnPool {
-		t.pool[o.host] = append(list, o)
-	} else {
+
+	t.poolLock.RLock()
+	outPool := t.pool[o.host]
+	t.poolLock.RUnlock()
+
+	select {
+	case outPool <- o:
+	default:
 		t.closeOutConn(o)
 	}
 }
@@ -619,7 +623,8 @@ func (t *TCPTransport) Shutdown() {
 	// Close all the outbound
 	t.poolLock.Lock()
 	for _, conns := range t.pool {
-		for _, out := range conns {
+		close(conns)
+		for out := range conns {
 			t.closeOutConn(out)
 		}
 	}
@@ -640,31 +645,39 @@ func (t *TCPTransport) reapOld() {
 
 func (t *TCPTransport) reapOnce() {
 	t.poolLock.Lock()
-	defer t.poolLock.Unlock()
 	for host, conns := range t.pool {
 		if len(conns) == 0 {
 			continue
 		}
+
+		// close non neighbors
 		if ring != nil && !ring.shouldConnectToHost(host) {
 			log.Printf("[INFO] Disconnect with %d chord nodes at %s.", len(conns), host)
-			for _, conn := range conns {
+			close(conns)
+			for conn := range conns {
 				t.closeOutConn(conn)
 			}
-			t.pool[host] = make([]*tcpOutConn, 0)
+			t.pool[host] = nil
 			continue
 		}
-		max := len(conns)
-		for i := 0; i < max; i++ {
-			if time.Since(conns[i].used) > t.maxIdle {
-				t.closeOutConn(conns[i])
-				conns[i], conns[max-1] = conns[max-1], nil
-				max--
-				i--
+
+		// check timeout
+		select {
+		case o := <-conns:
+			if time.Since(o.used) > t.maxIdle {
+				log.Printf("[INFO] Disconnect with idle chord node at %s.", host)
+				t.closeOutConn(o)
+			} else {
+				select {
+				case conns <- o:
+				default:
+					t.closeOutConn(o)
+				}
 			}
+		default:
 		}
-		// Trim any idle conns
-		t.pool[host] = conns[:max]
 	}
+	t.poolLock.Unlock()
 
 	t.lock.Lock()
 	for conn, lastUsed := range t.inbound {
@@ -683,7 +696,7 @@ func (t *TCPTransport) listen() {
 		conn, err := t.sock.AcceptTCP()
 		if err != nil {
 			if atomic.LoadInt32(&t.shutdown) == 0 {
-				fmt.Printf("[ERR] Error accepting TCP connection! %s\n", err)
+				log.Printf("[ERR] Error accepting TCP connection! %s\n", err)
 				time.Sleep(time.Millisecond * 300) // Add delay before try again sock Accept
 				continue
 			} else {
