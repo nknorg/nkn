@@ -334,14 +334,12 @@ func (vn *localVnode) fixFingerTable() error {
 func (vn *localVnode) checkPredecessor() error {
 	// Check predecessor
 	if vn.predecessor != nil {
-		res, err := vn.ring.transport.Ping(vn.predecessor)
+		alive, err := vn.ring.transport.Ping(vn.predecessor)
+		if err != nil || !alive {
+			vn.predecessor = nil
+		}
 		if err != nil {
 			return err
-		}
-
-		// Predecessor is dead
-		if !res {
-			vn.predecessor = nil
 		}
 	}
 	return nil
