@@ -273,7 +273,7 @@ func (ps *ProposerService) ProposerRoutine() {
 			if ps.IsBlockProposer() {
 				log.Info("-> I am Block Proposer")
 				if ps.localNode.GetSyncState() != protocol.PersistFinished {
-					ps.localNode.StopSyncBlock()
+					ps.localNode.StopSyncBlock(true)
 				}
 				ps.ProduceNewBlock()
 				for _, v := range ps.voting {
@@ -392,8 +392,21 @@ func (ps *ProposerService) PersistCachedBlock(height uint32) error {
 }
 
 func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
+	skip, ok := v.(bool)
+	if !ok {
+		log.Error("got invalid notice from stopping sync event")
+		return
+	}
+	if skip {
+		log.Info("skip saving cached blocks")
+		// skip persisting cached blocks when skip is true
+		ps.localNode.SetSyncState(protocol.PersistFinished)
+		return
+	}
+
 	var err error
 	if ps.syncCache.consensusHeight == ledger.DefaultLedger.Store.GetHeight()+1 {
+		log.Infof("start saving cached blocks right away, consensus height: %d", ps.syncCache.consensusHeight)
 		err = ps.PersistCachedBlock(ps.syncCache.consensusHeight)
 		if err != nil {
 			log.Errorf("persist cached block error: %v, height: %d", err, ps.syncCache.consensusHeight)

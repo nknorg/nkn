@@ -60,7 +60,7 @@ type Noder interface {
 	SetSyncStopHash(hash Uint256, height uint32)
 	SyncBlock(bool)
 	SyncBlockMonitor(bool)
-	StopSyncBlock()
+	StopSyncBlock(bool)
 	GetRelay() bool
 	GetPubKey() *crypto.PubKey
 	CompareAndSetState(old, new uint32) bool

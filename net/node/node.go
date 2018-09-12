@@ -61,7 +61,7 @@ type node struct {
 	relayer                  *relay.RelayService // relay service
 	syncStopHash             Uint256             // block syncing stop hash
 	syncState                SyncState           // block syncing state
-	quit                     chan struct{}       // block syncing channel
+	quit                     chan bool           // block syncing channel
 	nodeDisconnectSubscriber events.Subscriber   // disconnect event
 	link                                         // link status and information
 	nbrNodes                                     // neighbor nodes
@@ -189,7 +189,7 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n.syncState = SyncStarted
 	n.syncStopHash = Uint256{}
 	n.msgHandlerChan = MakeChanQueue(MaxMsgChanNum)
-	n.quit = make(chan struct{}, 1)
+	n.quit = make(chan bool, 1)
 	n.eventQueue.init()
 	n.hashCache = NewHashCache(HashCacheCap)
 	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnected)
@@ -792,20 +792,20 @@ func (node *node) SyncBlock(isProposer bool) {
 				node.blockHeaderSyncing(node.syncStopHash)
 			}
 			node.blockSyncing()
-		case <-node.quit:
+		case skip := <-node.quit:
 			log.Info("block syncing finished")
 			ticker.Stop()
-			node.LocalNode().GetEvent("sync").Notify(events.EventBlockSyncingFinished, nil)
+			node.LocalNode().GetEvent("sync").Notify(events.EventBlockSyncingFinished, skip)
 			return
 		}
 	}
 }
 
-func (node *node) StopSyncBlock() {
+func (node *node) StopSyncBlock(skip bool) {
 	// switch syncing state
 	node.SetSyncState(SyncFinished)
 	// stop block syncing
-	node.quit <- struct{}{}
+	node.quit <- skip
 }
 
 func (node *node) SyncBlockMonitor(isProposer bool) {
@@ -814,7 +814,7 @@ func (node *node) SyncBlockMonitor(isProposer bool) {
 	// wait for block syncing finished
 	node.WaitForSyncBlkFinish()
 	// stop block syncing
-	node.StopSyncBlock()
+	node.StopSyncBlock(false)
 }
 
 func (node *node) SendRelayPacketsInBuffer(clientId []byte) error {
