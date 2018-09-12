@@ -203,9 +203,11 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 }
 
 // Returns an outbound TCP connection to the pool
-func (t *TCPTransport) returnConn(o *tcpOutConn) {
+func (t *TCPTransport) returnConn(o *tcpOutConn, success bool) {
 	// Update the last used time
-	o.used = time.Now()
+	if success {
+		o.used = time.Now()
+	}
 
 	// Push back into the pool
 	t.poolLock.Lock()
@@ -248,7 +250,6 @@ func (t *TCPTransport) ListVnodes(host string) ([]*Vnode, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
-		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpListReq
 		body := tcpBodyString{S: host}
@@ -276,10 +277,13 @@ func (t *TCPTransport) ListVnodes(host string) ([]*Vnode, error) {
 
 	select {
 	case <-time.After(t.timeout):
+		t.returnConn(out, false)
 		return nil, fmt.Errorf("Command timed out!")
 	case err := <-errChan:
+		t.returnConn(out, false)
 		return nil, err
 	case res := <-respChan:
+		t.returnConn(out, true)
 		return res, nil
 	}
 }
@@ -297,7 +301,6 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
-		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpPing
 		body := tcpBodyVnode{Vn: vn}
@@ -326,10 +329,13 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 
 	select {
 	case <-time.After(t.timeout):
-		return false, nil
+		t.returnConn(out, false)
+		return false, fmt.Errorf("Command timed out!")
 	case err := <-errChan:
+		t.returnConn(out, false)
 		return false, err
 	case res := <-respChan:
+		t.returnConn(out, true)
 		return res, nil
 	}
 }
@@ -346,7 +352,6 @@ func (t *TCPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
-		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpGetPredReq
 		body := tcpBodyVnode{Vn: vn}
@@ -375,10 +380,13 @@ func (t *TCPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 
 	select {
 	case <-time.After(t.timeout):
+		t.returnConn(out, false)
 		return nil, fmt.Errorf("Command timed out!")
 	case err := <-errChan:
+		t.returnConn(out, false)
 		return nil, err
 	case res := <-respChan:
+		t.returnConn(out, true)
 		return res, nil
 	}
 }
@@ -395,7 +403,6 @@ func (t *TCPTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
-		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpNotifyReq
 		body := tcpBodyTwoVnode{Target: target, Vn: self}
@@ -424,10 +431,13 @@ func (t *TCPTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 
 	select {
 	case <-time.After(t.timeout):
+		t.returnConn(out, false)
 		return nil, fmt.Errorf("Command timed out!")
 	case err := <-errChan:
+		t.returnConn(out, false)
 		return nil, err
 	case res := <-respChan:
+		t.returnConn(out, true)
 		return res, nil
 	}
 }
@@ -444,7 +454,6 @@ func (t *TCPTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, err
 	errChan := make(chan error, 1)
 
 	go func() {
-		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpFindSucReq
 		body := tcpBodyFindSuc{Target: vn, Num: n, Key: k}
@@ -473,10 +482,13 @@ func (t *TCPTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, err
 
 	select {
 	case <-time.After(t.timeout):
+		t.returnConn(out, false)
 		return nil, fmt.Errorf("Command timed out!")
 	case err := <-errChan:
+		t.returnConn(out, false)
 		return nil, err
 	case res := <-respChan:
+		t.returnConn(out, true)
 		return res, nil
 	}
 }
@@ -493,7 +505,6 @@ func (t *TCPTransport) ClearPredecessor(target, self *Vnode) error {
 	errChan := make(chan error, 1)
 
 	go func() {
-		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpClearPredReq
 		body := tcpBodyTwoVnode{Target: target, Vn: self}
@@ -522,10 +533,13 @@ func (t *TCPTransport) ClearPredecessor(target, self *Vnode) error {
 
 	select {
 	case <-time.After(t.timeout):
+		t.returnConn(out, false)
 		return fmt.Errorf("Command timed out!")
 	case err := <-errChan:
+		t.returnConn(out, false)
 		return err
 	case <-respChan:
+		t.returnConn(out, true)
 		return nil
 	}
 }
@@ -542,7 +556,6 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 	errChan := make(chan error, 1)
 
 	go func() {
-		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpSkipSucReq
 		body := tcpBodyTwoVnode{Target: target, Vn: self}
@@ -571,10 +584,13 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 
 	select {
 	case <-time.After(t.timeout):
+		t.returnConn(out, false)
 		return fmt.Errorf("Command timed out!")
 	case err := <-errChan:
+		t.returnConn(out, false)
 		return err
 	case <-respChan:
+		t.returnConn(out, true)
 		return nil
 	}
 }
