@@ -115,14 +115,11 @@ func TestVnodeKnownSucc(t *testing.T) {
 
 // Checks panic if no successors
 func TestVnodeCheckNewSuccAlivePanic(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("expected panic!")
-		}
-	}()
 	vn1 := makeVnode()
 	vn1.init(1)
-	vn1.checkNewSuccessor()
+	if err := vn1.checkNewSuccessor(); err == nil {
+		t.Fatal("expect error when no successors")
+	}
 }
 
 // Checks pinging a live successor with no changes

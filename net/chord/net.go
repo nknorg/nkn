@@ -21,16 +21,18 @@ Internally, there is 1 Goroutine listening for inbound connections, 1 Goroutine 
 inbound connection.
 */
 type TCPTransport struct {
-	sock     *net.TCPListener
-	timeout  time.Duration
-	maxIdle  time.Duration
-	lock     sync.RWMutex
-	local    map[string]*localRPC
-	inbound  map[*net.TCPConn]time.Time
-	poolLock sync.Mutex
-	sockQue  chan int
-	pool     map[string][]*tcpOutConn
-	shutdown int32
+	sock           *net.TCPListener
+	timeout        time.Duration
+	maxIdle        time.Duration
+	lock           sync.RWMutex
+	local          map[string]*localRPC
+	inbound        map[*net.TCPConn]time.Time
+	inConnQue      chan struct{}
+	pool           map[string][]*tcpOutConn
+	poolLock       sync.Mutex
+	outConnQue     map[string]chan struct{}
+	outConnQueLock sync.RWMutex
+	shutdown       int32
 }
 
 type tcpOutConn struct {
@@ -90,7 +92,8 @@ type tcpBodyBoolError struct {
 }
 
 const maxOutConnPool = 1
-const maxInboundConns = 100
+const maxOutConnPerHost = 3
+const maxInboundConns = 500
 
 // Creates a new TCP transport on the given listen address with the
 // configured timeout duration.
@@ -102,13 +105,16 @@ func InitTCPTransport(listen string, timeout time.Duration) (*TCPTransport, erro
 	}
 
 	// Setup the transport
-	tcp := &TCPTransport{sock: sock.(*net.TCPListener),
-		timeout: timeout,
-		maxIdle: time.Duration(60 * time.Second), // Maximum age of a connection
-		local:   make(map[string]*localRPC),      // allocate maps
-		inbound: make(map[*net.TCPConn]time.Time),
-		sockQue: make(chan int, maxInboundConns), // Quota of sock. TODO: get quota from config
-		pool:    make(map[string][]*tcpOutConn)}
+	tcp := &TCPTransport{
+		sock:       sock.(*net.TCPListener),
+		timeout:    timeout,
+		maxIdle:    time.Duration(60 * time.Second), // Maximum age of a connection
+		local:      make(map[string]*localRPC),      // allocate maps
+		inbound:    make(map[*net.TCPConn]time.Time),
+		inConnQue:  make(chan struct{}, maxInboundConns), // Quota of sock. TODO: get quota from config
+		outConnQue: make(map[string]chan struct{}),
+		pool:       make(map[string][]*tcpOutConn),
+	}
 
 	// Listen for connections
 	go tcp.listen()
@@ -159,11 +165,24 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 			t.poolLock.Unlock()
 			return out, nil
 		} else {
-			out.sock.Close()
+			t.closeOutConn(out)
 		}
 	}
 
 	t.poolLock.Unlock()
+
+	t.outConnQueLock.RLock()
+	c := t.outConnQue[host]
+	t.outConnQueLock.RUnlock()
+
+	if c == nil {
+		c = make(chan struct{}, maxOutConnPerHost)
+		t.outConnQueLock.Lock()
+		t.outConnQue[host] = c
+		t.outConnQueLock.Unlock()
+	}
+
+	c <- struct{}{}
 
 	// Try to establish a connection
 	conn, err := net.DialTimeout("tcp", host, t.timeout)
@@ -192,21 +211,28 @@ func (t *TCPTransport) returnConn(o *tcpOutConn) {
 	t.poolLock.Lock()
 	defer t.poolLock.Unlock()
 	if atomic.LoadInt32(&t.shutdown) == 1 {
-		o.sock.Close()
+		t.closeOutConn(o)
 		return
 	}
 	list, _ := t.pool[o.host]
 	if len(list) < maxOutConnPool {
 		t.pool[o.host] = append(list, o)
 	} else {
-		o.sock.Close()
+		t.closeOutConn(o)
 	}
 }
 
 // Setup a connection
 func (t *TCPTransport) setupConn(c *net.TCPConn) {
-	c.SetNoDelay(true)
-	c.SetKeepAlive(true)
+	// c.SetNoDelay(true)
+	// c.SetKeepAlive(true)
+}
+
+func (t *TCPTransport) closeOutConn(o *tcpOutConn) {
+	o.sock.Close()
+	t.outConnQueLock.RLock()
+	<-t.outConnQue[o.host]
+	t.outConnQueLock.RUnlock()
 }
 
 // Gets a list of the vnodes on the box
@@ -222,6 +248,7 @@ func (t *TCPTransport) ListVnodes(host string) ([]*Vnode, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
+		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpListReq
 		body := tcpBodyString{S: host}
@@ -240,8 +267,6 @@ func (t *TCPTransport) ListVnodes(host string) ([]*Vnode, error) {
 			errChan <- err
 		}
 
-		// Return the connection
-		t.returnConn(out)
 		if resp.Err == nil {
 			respChan <- resp.Vnodes
 		} else {
@@ -272,6 +297,7 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
+		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpPing
 		body := tcpBodyVnode{Vn: vn}
@@ -291,8 +317,6 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 			return
 		}
 
-		// Return the connection
-		t.returnConn(out)
 		if resp.Err == nil {
 			respChan <- resp.B
 		} else {
@@ -322,6 +346,7 @@ func (t *TCPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
+		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpGetPredReq
 		body := tcpBodyVnode{Vn: vn}
@@ -341,8 +366,6 @@ func (t *TCPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 			return
 		}
 
-		// Return the connection
-		t.returnConn(out)
 		if resp.Err == nil {
 			respChan <- resp.Vnode
 		} else {
@@ -372,6 +395,7 @@ func (t *TCPTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 	errChan := make(chan error, 1)
 
 	go func() {
+		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpNotifyReq
 		body := tcpBodyTwoVnode{Target: target, Vn: self}
@@ -391,8 +415,6 @@ func (t *TCPTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 			return
 		}
 
-		// Return the connection
-		t.returnConn(out)
 		if resp.Err == nil {
 			respChan <- resp.Vnodes
 		} else {
@@ -422,6 +444,7 @@ func (t *TCPTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, err
 	errChan := make(chan error, 1)
 
 	go func() {
+		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpFindSucReq
 		body := tcpBodyFindSuc{Target: vn, Num: n, Key: k}
@@ -441,8 +464,6 @@ func (t *TCPTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, err
 			return
 		}
 
-		// Return the connection
-		t.returnConn(out)
 		if resp.Err == nil {
 			respChan <- resp.Vnodes
 		} else {
@@ -472,6 +493,7 @@ func (t *TCPTransport) ClearPredecessor(target, self *Vnode) error {
 	errChan := make(chan error, 1)
 
 	go func() {
+		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpClearPredReq
 		body := tcpBodyTwoVnode{Target: target, Vn: self}
@@ -491,8 +513,6 @@ func (t *TCPTransport) ClearPredecessor(target, self *Vnode) error {
 			return
 		}
 
-		// Return the connection
-		t.returnConn(out)
 		if resp.Err == nil {
 			respChan <- true
 		} else {
@@ -522,6 +542,7 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 	errChan := make(chan error, 1)
 
 	go func() {
+		defer t.returnConn(out)
 		// Send a list command
 		out.header.ReqType = tcpSkipSucReq
 		body := tcpBodyTwoVnode{Target: target, Vn: self}
@@ -541,8 +562,6 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 			return
 		}
 
-		// Return the connection
-		t.returnConn(out)
 		if resp.Err == nil {
 			respChan <- true
 		} else {
@@ -584,7 +603,7 @@ func (t *TCPTransport) Shutdown() {
 	t.poolLock.Lock()
 	for _, conns := range t.pool {
 		for _, out := range conns {
-			out.sock.Close()
+			t.closeOutConn(out)
 		}
 	}
 	t.pool = nil
@@ -612,7 +631,7 @@ func (t *TCPTransport) reapOnce() {
 		if ring != nil && !ring.shouldConnectToHost(host) {
 			log.Printf("[INFO] Disconnect with %d chord nodes at %s.", len(conns), host)
 			for _, conn := range conns {
-				conn.sock.Close()
+				t.closeOutConn(conn)
 			}
 			t.pool[host] = make([]*tcpOutConn, 0)
 			continue
@@ -620,7 +639,7 @@ func (t *TCPTransport) reapOnce() {
 		max := len(conns)
 		for i := 0; i < max; i++ {
 			if time.Since(conns[i].used) > t.maxIdle {
-				conns[i].sock.Close()
+				t.closeOutConn(conns[i])
 				conns[i], conns[max-1] = conns[max-1], nil
 				max--
 				i--
@@ -663,12 +682,12 @@ func (t *TCPTransport) listen() {
 		t.inbound[conn] = time.Now()
 		t.lock.Unlock()
 
-		if len(t.sockQue) >= maxInboundConns {
-			log.Printf("[WARN] The quota reach the limitation %d\n", len(t.sockQue))
+		if len(t.inConnQue) >= maxInboundConns {
+			log.Printf("[WARN] The quota reach the limitation %d\n", len(t.inConnQue))
 		}
 
-		t.sockQue <- 1        // Push
-		go t.handleConn(conn) // Start handler
+		t.inConnQue <- struct{}{} // Push
+		go t.handleConn(conn)     // Start handler
 	}
 }
 
@@ -680,7 +699,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 		delete(t.inbound, conn)
 		t.lock.Unlock()
 		conn.Close()
-		<-t.sockQue // Pop
+		<-t.inConnQue // Pop
 	}()
 
 	dec := gob.NewDecoder(conn)
@@ -712,6 +731,8 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			} else {
 				sendResp = tcpBodyBoolError{B: ok, Err: fmt.Errorf("Target VN not found! Target %s:%s",
 					body.Vn.Host, body.Vn.String())}
+				log.Printf("[ERR] Target VN not found! Target %s:%s",
+					body.Vn.Host, body.Vn.String())
 			}
 
 		case tcpListReq:
@@ -753,6 +774,9 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
 					body.Vn.Host, body.Vn.String())
 			}
+			if resp.Err != nil {
+				log.Println("[ERR]", resp.Err)
+			}
 
 		case tcpNotifyReq:
 			body := tcpBodyTwoVnode{}
@@ -776,6 +800,9 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
 					body.Target.Host, body.Target.String())
 			}
+			if resp.Err != nil {
+				log.Println("[ERR]", resp.Err)
+			}
 
 		case tcpFindSucReq:
 			body := tcpBodyFindSuc{}
@@ -796,6 +823,9 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
 					body.Target.Host, body.Target.String())
 			}
+			if resp.Err != nil {
+				log.Println("[ERR]", resp.Err)
+			}
 
 		case tcpClearPredReq:
 			body := tcpBodyTwoVnode{}
@@ -814,6 +844,9 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
 					body.Target.Host, body.Target.String())
 			}
+			if resp.Err != nil {
+				log.Println("[ERR]", resp.Err)
+			}
 
 		case tcpSkipSucReq:
 			body := tcpBodyTwoVnode{}
@@ -831,6 +864,9 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 			} else {
 				resp.Err = fmt.Errorf("Target VN not found! Target %s:%s",
 					body.Target.Host, body.Target.String())
+			}
+			if resp.Err != nil {
+				log.Println("[ERR]", resp.Err)
 			}
 
 		default:

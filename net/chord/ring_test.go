@@ -42,7 +42,7 @@ func makeRing() *Ring {
 func TestRingInit(t *testing.T) {
 	// Create a ring
 	ring := &Ring{}
-	conf := DefaultConfig("test", true)
+	conf := DefaultConfig("test")
 	ring.init(conf, nil)
 
 	// Test features

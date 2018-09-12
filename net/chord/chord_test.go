@@ -94,7 +94,7 @@ func (ml *MultiLocalTrans) Deregister(host string) {
 }
 
 func TestDefaultConfig(t *testing.T) {
-	conf := DefaultConfig("test", false)
+	conf := DefaultConfig("test")
 	if conf.Hostname != "test" {
 		t.Fatalf("bad hostname")
 	}
@@ -122,7 +122,7 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func fastConf() *Config {
-	conf := DefaultConfig("test", true)
+	conf := DefaultConfig("test")
 	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
 	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
 	conf.NumVnodes = 8

@@ -289,7 +289,7 @@ func prepRing(port uint16) (*Config, *TCPTransport, error) {
 	hostname := fmt.Sprintf("%s:%d", config.Parameters.Hostname, port)
 	listen := fmt.Sprintf(":%d", port)
 	conf := DefaultConfig(hostname)
-	timeout := time.Duration(2 * time.Second)
+	timeout := time.Duration(3 * time.Second)
 	trans, err := InitTCPTransport(listen, timeout)
 	if err != nil {
 		return nil, nil, err
