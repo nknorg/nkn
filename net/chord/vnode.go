@@ -66,6 +66,10 @@ func (vn *localVnode) init(idx int) {
 
 	// Register with the RPC mechanism
 	vn.ring.transport.Register(&vn.Vnode, vn)
+
+	if idx == 0 {
+		go vn.keepalive()
+	}
 }
 
 // Schedules the Vnode to do regular maintenence
@@ -125,6 +129,31 @@ func (vn *localVnode) stabilize() {
 	vn.stabilized = time.Now()
 }
 
+func (vn *localVnode) keepalive() {
+	for {
+		for _, n := range vn.successors {
+			if n != nil && n.Host != vn.Host {
+				vn.ring.transport.Ping(n)
+			}
+		}
+
+		if vn.predecessor != nil && vn.predecessor.Host != vn.Host {
+			vn.ring.transport.Ping(vn.predecessor)
+		}
+
+		for i, n := range vn.finger {
+			if i > 0 && vn.finger[i-1] == n {
+				continue
+			}
+			if n != nil && n.Host != vn.Host {
+				vn.ring.transport.Ping(n)
+			}
+		}
+
+		time.Sleep(3 * time.Second)
+	}
+}
+
 // Checks for a new successor
 func (vn *localVnode) checkNewSuccessor() error {
 	// Ask our successor for it's predecessor
@@ -132,7 +161,7 @@ func (vn *localVnode) checkNewSuccessor() error {
 
 	succ := vn.successors[0]
 	if succ == nil {
-		panic("Node has no successor!")
+		return errors.New("Node has no successor!")
 	}
 	maybe_suc, err := trans.GetPredecessor(succ)
 	known := vn.knownSuccessors()
@@ -141,9 +170,12 @@ func (vn *localVnode) checkNewSuccessor() error {
 		if err == nil {
 			break
 		}
+		alive, err := trans.Ping(succ)
+		if err == nil && alive {
+			return errors.New("Successor alive but caonnt return its predecessor")
+		}
 		if i == known-1 {
-			// TODO: re-join the network
-			panic("All known successors dead!")
+			return errors.New("All known successors dead!")
 		}
 		// TODO: add retry before removing successor from list
 		copy(vn.successors[0:], vn.successors[1:])
@@ -156,21 +188,19 @@ func (vn *localVnode) checkNewSuccessor() error {
 	if maybe_suc != nil && between(vn.Id, succ.Id, maybe_suc.Id) {
 		// Check if new successor is alive before switching
 		alive, err := trans.Ping(maybe_suc)
+		if err != nil || !alive {
+			nlog.Warnf("Failed to contact potential new successor %s at %s", maybe_suc.String(), maybe_suc.Host)
+			vn.ring.transport.Notify(succ, &vn.Vnode)
+			return err
+		}
+		copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
+		vn.successors[0] = maybe_suc
+		_, err = vn.fixFingerTableAtIndex(0)
 		if err != nil {
 			return err
 		}
-		if alive {
-			copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
-			vn.successors[0] = maybe_suc
-			_, err := vn.fixFingerTableAtIndex(0)
-			if err != nil {
-				return err
-			}
-			if vn.OnNewSuccessor != nil {
-				vn.OnNewSuccessor()
-			}
-		} else {
-			// TODO: notify successor to update its predecessor
+		if vn.OnNewSuccessor != nil {
+			vn.OnNewSuccessor()
 		}
 	}
 	return nil
@@ -218,7 +248,7 @@ func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 		shouldUpdate = true
 	} else if CompareId(vn.predecessor.Id, maybe_pred.Id) != 0 {
 		alive, err := vn.ring.transport.Ping(vn.predecessor)
-		if err == nil && !alive {
+		if err != nil || !alive {
 			shouldUpdate = true
 		}
 	}
@@ -252,6 +282,11 @@ func (vn *localVnode) fixFingerTableAtIndex(idx int) (int, error) {
 		return idx, err
 	}
 	node := nodes[0]
+
+	alive, err := vn.ring.transport.Ping(node)
+	if err != nil || !alive {
+		node = vn.finger[idx]
+	}
 
 	// Update the finger table
 	vn.finger[idx] = node
@@ -338,7 +373,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		if err == nil {
 			return res, nil
 		} else {
-			nlog.Infof("[WARNING] Failed to contact %s. Got %s", closest.String(), err)
+			nlog.Warnf("Failed to contact %s. Got %s", closest.String(), err)
 		}
 	}
 

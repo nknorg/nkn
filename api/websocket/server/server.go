@@ -246,7 +246,7 @@ func (ws *WsServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		e, ok := err.(net.Error)
 		if !ok || !e.Timeout() {
-			log.Error("websocket conn:", err)
+			log.Warn("websocket conn:", err)
 			return
 		}
 	}

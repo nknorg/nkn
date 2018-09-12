@@ -7,11 +7,11 @@ import (
 
 func TestTCPJoin(t *testing.T) {
 	// Prepare to create 2 nodes
-	c1, t1, err := prepRing(10025, true)
+	c1, t1, err := prepRing(10025)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
-	c2, t2, err := prepRing(10026, false)
+	c2, t2, err := prepRing(10026)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
@@ -37,11 +37,11 @@ func TestTCPJoin(t *testing.T) {
 
 func TestTCPLeave(t *testing.T) {
 	// Prepare to create 2 nodes
-	c1, t1, err := prepRing(10027, true)
+	c1, t1, err := prepRing(10027)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
-	c2, t2, err := prepRing(10028, false)
+	c2, t2, err := prepRing(10028)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
