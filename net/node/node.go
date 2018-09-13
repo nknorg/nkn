@@ -608,10 +608,11 @@ func (node *node) blockSyncing() {
 			}
 
 		}
+
 		for i = 1; i <= count && dValue >= 0; i++ {
 			hash := ledger.DefaultLedger.Store.GetCachedHeaderHash(currentBlkHeight + reqCnt)
 
-			if ledger.DefaultLedger.Store.BlockInCache(hash) == false {
+			if !ledger.DefaultLedger.Store.BlockInCache(hash) && !ledger.DefaultLedger.Store.IsBlockInStore(hash) {
 				ReqBlkData(n, hash)
 				n.StoreFlightHeight(currentBlkHeight + reqCnt)
 			}

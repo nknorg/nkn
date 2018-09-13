@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -11,23 +12,22 @@ import (
 type HeaderCache struct {
 	mu                 sync.RWMutex
 	headerIndex        map[uint32]common.Uint256
-	headerCache        map[common.Uint256]*ledger.Header
+	headerCache        map[common.Uint256]ledger.Header
 	currentCacheHeight uint32
 }
 
 func NewHeaderCache() *HeaderCache {
 	return &HeaderCache{
 		headerIndex:        map[uint32]common.Uint256{},
-		headerCache:        map[common.Uint256]*ledger.Header{},
+		headerCache:        map[common.Uint256]ledger.Header{},
 		currentCacheHeight: 0,
 	}
 }
 
 func (hc *HeaderCache) AddHeaderToCache(header *ledger.Header) {
-	hash := header.Hash()
-
 	hc.mu.Lock()
-	hc.headerCache[hash] = header
+	hash := header.Hash()
+	hc.headerCache[hash] = *header
 	hc.headerIndex[header.Height] = hash
 	if hc.currentCacheHeight < header.Height {
 		hc.currentCacheHeight = header.Height
@@ -50,14 +50,14 @@ func (hc *HeaderCache) RemoveCachedHeader(stopHeight uint32) {
 	}
 }
 
-func (hc *HeaderCache) GetCachedHeader(hash common.Uint256) *ledger.Header {
+func (hc *HeaderCache) GetCachedHeader(hash common.Uint256) (*ledger.Header, error) {
 	hc.mu.RLock()
 	defer hc.mu.RUnlock()
-	if _, ok := hc.headerCache[hash]; ok {
-		return hc.headerCache[hash]
+	if header, ok := hc.headerCache[hash]; !ok {
+		return nil, errors.New("no header in cache")
+	} else {
+		return &header, nil
 	}
-
-	return nil
 }
 
 func (hc *HeaderCache) GetCurrentCacheHeaderHash() common.Uint256 {

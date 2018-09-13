@@ -72,7 +72,7 @@ func (bc *Blockchain) SaveBlock(block *Block) error {
 		log.Warn("Save Block failure , ", err)
 		return err
 	}
-	bc.BlockHeight = block.Header.Height
+	bc.BlockHeight = DefaultLedger.Store.GetHeight()
 	bc.BCEvents.Notify(events.EventBlockPersistCompleted, block)
 
 	return nil

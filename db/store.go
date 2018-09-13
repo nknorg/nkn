@@ -19,7 +19,7 @@ import (
 type ChainStore struct {
 	db                 IStore
 	headerCache        *HeaderCache
-	blockCache         map[common.Uint256]*ledger.Block
+	blockCache         map[common.Uint256]ledger.Block
 	currentBlockHeight uint32
 	currentBlockHash   common.Uint256
 	mu                 sync.RWMutex
@@ -33,7 +33,7 @@ func NewLedgerStore() (ledger.ILedgerStore, error) {
 
 	chain := &ChainStore{
 		db:                 st,
-		blockCache:         map[common.Uint256]*ledger.Block{},
+		blockCache:         map[common.Uint256]ledger.Block{},
 		headerCache:        NewHeaderCache(),
 		currentBlockHeight: 0,
 		currentBlockHash:   common.Uint256{},
@@ -347,7 +347,7 @@ func (cs *ChainStore) getUnspentIndex(txid common.Uint256) ([]uint16, error) {
 }
 
 func (cs *ChainStore) IsBlockInStore(hash common.Uint256) bool {
-	if header, err := cs.getHeader(hash); err != nil && header.Height > cs.currentBlockHeight {
+	if header, err := cs.getHeader(hash); err != nil || header.Height > cs.currentBlockHeight {
 		return false
 	}
 
@@ -476,6 +476,7 @@ func (cs *ChainStore) GetUnspentsFromProgramHash(programHash common.Uint160) (ma
 }
 
 func (cs *ChainStore) SaveBlock(b *ledger.Block) error {
+	cs.Dump()
 	if b.Header.Height != cs.currentBlockHeight+1 {
 		cs.mu.Lock()
 		for hash, block := range cs.blockCache {
@@ -483,7 +484,7 @@ func (cs *ChainStore) SaveBlock(b *ledger.Block) error {
 				delete(cs.blockCache, hash)
 			}
 		}
-		cs.blockCache[b.Hash()] = b
+		cs.blockCache[b.Hash()] = *b
 		cs.mu.Unlock()
 
 		return nil
@@ -501,7 +502,7 @@ func (cs *ChainStore) SaveBlock(b *ledger.Block) error {
 }
 
 func (cs *ChainStore) persistBlock(b *ledger.Block) error {
-	if header := cs.headerCache.GetCachedHeader(b.Header.PrevBlockHash); header == nil {
+	if _, err := cs.headerCache.GetCachedHeader(b.Header.PrevBlockHash); err != nil {
 		return errors.New("not found prevHeader.")
 	}
 
@@ -515,12 +516,6 @@ func (cs *ChainStore) persistBlock(b *ledger.Block) error {
 		return err
 	}
 
-	cs.mu.Lock()
-	cs.currentBlockHeight = b.Header.Height
-	cs.currentBlockHash = b.Hash()
-	cs.mu.Unlock()
-	cs.headerCache.AddHeaderToCache(b.Header)
-
 	return nil
 }
 
@@ -532,10 +527,10 @@ func (cs *ChainStore) persistCachedBlocks(prevBlock *ledger.Block) error {
 		for hash, block := range cs.blockCache {
 			if block.Header.PrevBlockHash.CompareTo(processBlock.Hash()) == 0 {
 				delete(cs.blockCache, hash)
-				if err := cs.persistBlock(block); err != nil {
+				if err := cs.persistBlock(&block); err != nil {
 					return err
 				}
-				processBlocks = append(processBlocks, block)
+				processBlocks = append(processBlocks, &block)
 				break
 			}
 		}
@@ -550,12 +545,12 @@ func (cs *ChainStore) AddHeaders(headers []ledger.Header) error {
 	})
 
 	for _, header := range headers {
-		if header.Height != cs.headerCache.GetCurrentCachedHeight()+1 {
-			return errors.New("incorrect header height.")
+		if header.Height <= cs.headerCache.GetCurrentCachedHeight() {
+			continue
 		}
 
-		prevHeader := cs.headerCache.GetCachedHeader(header.PrevBlockHash)
-		if prevHeader == nil {
+		prevHeader, err := cs.headerCache.GetCachedHeader(header.PrevBlockHash)
+		if err != nil {
 			return errors.New("[verifyHeader] failed, not found prevHeader.")
 		}
 
@@ -639,7 +634,18 @@ func (cs *ChainStore) persist(b *ledger.Block) error {
 		return err
 	}
 
-	return batch.Commit()
+	if err := batch.Commit(); err != nil {
+		return err
+	}
+
+	cs.mu.Lock()
+	cs.currentBlockHeight = b.Header.Height
+	cs.currentBlockHash = b.Hash()
+	cs.mu.Unlock()
+
+	//cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - 1)
+	cs.headerCache.AddHeaderToCache(b.Header)
+	return nil
 }
 
 func (cs *ChainStore) getUnspentByHeight(programHash common.Uint160, assetid common.Uint256, height uint32) ([]*tx.UTXOUnspent, error) {
