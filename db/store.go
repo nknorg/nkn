@@ -569,6 +569,7 @@ func (cs *ChainStore) AddHeaders(headers []ledger.Header) error {
 		//	return false
 		//}
 
+		//	cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - 1)
 		cs.headerCache.AddHeaderToCache(&header)
 	}
 
@@ -643,7 +644,7 @@ func (cs *ChainStore) persist(b *ledger.Block) error {
 	cs.currentBlockHash = b.Hash()
 	cs.mu.Unlock()
 
-	//cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - 1)
+	cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - 3)
 	cs.headerCache.AddHeaderToCache(b.Header)
 	return nil
 }

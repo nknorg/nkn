@@ -39,14 +39,14 @@ func (hc *HeaderCache) RemoveCachedHeader(stopHeight uint32) {
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
 
-	for height, hash := range hc.headerIndex {
-		if height < stopHeight {
-			delete(hc.headerIndex, height)
+	if hc.currentCacheHeight <= stopHeight {
+		return
+	}
+	for hash, header := range hc.headerCache {
+		if header.Height < stopHeight {
+			delete(hc.headerIndex, header.Height)
 			delete(hc.headerCache, hash)
 		}
-	}
-	if hc.currentCacheHeight <= stopHeight {
-		hc.currentCacheHeight = 0
 	}
 }
 
