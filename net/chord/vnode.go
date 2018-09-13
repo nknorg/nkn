@@ -150,7 +150,7 @@ func (vn *localVnode) keepalive() {
 			}
 		}
 
-		time.Sleep(3 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 }
 
@@ -170,10 +170,10 @@ func (vn *localVnode) checkNewSuccessor() error {
 		if err == nil {
 			break
 		}
-		alive, err := trans.Ping(succ)
-		if err == nil && alive {
-			return errors.New("Successor alive but caonnt return its predecessor")
-		}
+		// alive, err := trans.Ping(succ)
+		// if err == nil && alive {
+		// return errors.New("Successor alive but cannot return its predecessor")
+		// }
 		if i == known-1 {
 			return errors.New("All known successors dead!")
 		}
@@ -233,10 +233,7 @@ func (vn *localVnode) notifySuccessor() error {
 			break
 		}
 		if vn.successors[idx+1].String() != s.String() {
-			alive, err := vn.ring.transport.Ping(s)
-			if err == nil && alive {
-				vn.successors[idx+1] = s
-			}
+			vn.successors[idx+1] = s
 		}
 	}
 	return nil
@@ -256,17 +253,14 @@ func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
 	}
 
 	if shouldUpdate {
-		alive, err := vn.ring.transport.Ping(maybe_pred)
-		if err == nil && alive {
-			// Inform the delegate
-			conf := vn.ring.config
-			old := vn.predecessor
-			vn.ring.invokeDelegate(func() {
-				conf.Delegate.NewPredecessor(&vn.Vnode, maybe_pred, old)
-			})
+		// Inform the delegate
+		conf := vn.ring.config
+		old := vn.predecessor
+		vn.ring.invokeDelegate(func() {
+			conf.Delegate.NewPredecessor(&vn.Vnode, maybe_pred, old)
+		})
 
-			vn.predecessor = maybe_pred
-		}
+		vn.predecessor = maybe_pred
 	}
 
 	// Return our successors list
