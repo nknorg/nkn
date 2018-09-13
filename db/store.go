@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
@@ -13,6 +14,7 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -49,7 +51,6 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *ledger.Block
 	}
 
 	if version[0] == 0x01 {
-		fmt.Println("<----------------exist db----------------------->")
 		if !cs.IsBlockInStore(genesisBlock.Hash()) {
 			return 0, errors.New("genesisBlock is NOT in BlockStore.")
 		}
@@ -63,7 +64,6 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *ledger.Block
 
 		return cs.currentBlockHeight, nil
 	} else {
-		fmt.Println("<----------------no db----------------------->")
 		batch := cs.db.NewSepBatch()
 		iter := cs.db.NewIterator(nil)
 		for iter.Next() {
@@ -475,8 +475,8 @@ func (cs *ChainStore) GetUnspentsFromProgramHash(programHash common.Uint160) (ma
 	return cs.getUnspentsFromProgramHash(programHash)
 }
 
-func (cs *ChainStore) SaveBlock(b *ledger.Block) error {
-	cs.Dump()
+func (cs *ChainStore) SaveBlock(b *ledger.Block, l *ledger.Ledger) error {
+	//cs.Dump()
 	if b.Header.Height != cs.currentBlockHeight+1 {
 		cs.mu.Lock()
 		for hash, block := range cs.blockCache {
@@ -490,18 +490,18 @@ func (cs *ChainStore) SaveBlock(b *ledger.Block) error {
 		return nil
 	}
 
-	if err := cs.persistBlock(b); err != nil {
+	if err := cs.persistBlock(b, l); err != nil {
 		return err
 	}
 
-	if err := cs.persistCachedBlocks(b); err != nil {
+	if err := cs.persistCachedBlocks(b, l); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (cs *ChainStore) persistBlock(b *ledger.Block) error {
+func (cs *ChainStore) persistBlock(b *ledger.Block, l *ledger.Ledger) error {
 	if _, err := cs.headerCache.GetCachedHeader(b.Header.PrevBlockHash); err != nil {
 		return errors.New("not found prevHeader.")
 	}
@@ -516,10 +516,25 @@ func (cs *ChainStore) persistBlock(b *ledger.Block) error {
 		return err
 	}
 
+	cs.mu.Lock()
+	cs.currentBlockHeight = b.Header.Height
+	cs.currentBlockHash = b.Hash()
+	cs.mu.Unlock()
+
+	if cs.currentBlockHeight > 3 {
+		cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - 3)
+	}
+	cs.headerCache.AddHeaderToCache(b.Header)
+
+	l.Blockchain.BlockHeight = cs.GetHeight()
+	l.Blockchain.BCEvents.Notify(events.EventBlockPersistCompleted, b)
+
+	log.Infof("# current block height: %d, block hash: %x", cs.currentBlockHeight, cs.currentBlockHash.ToArrayReverse())
+
 	return nil
 }
 
-func (cs *ChainStore) persistCachedBlocks(prevBlock *ledger.Block) error {
+func (cs *ChainStore) persistCachedBlocks(prevBlock *ledger.Block, l *ledger.Ledger) error {
 	processBlocks := []*ledger.Block{prevBlock}
 	for len(processBlocks) > 0 {
 		processBlock := processBlocks[0]
@@ -527,9 +542,10 @@ func (cs *ChainStore) persistCachedBlocks(prevBlock *ledger.Block) error {
 		for hash, block := range cs.blockCache {
 			if block.Header.PrevBlockHash.CompareTo(processBlock.Hash()) == 0 {
 				delete(cs.blockCache, hash)
-				if err := cs.persistBlock(&block); err != nil {
+				if err := cs.persistBlock(&block, l); err != nil {
 					return err
 				}
+
 				processBlocks = append(processBlocks, &block)
 				break
 			}
@@ -609,6 +625,7 @@ func (cs *ChainStore) GetCurrentCachedHeaderHeight() uint32 {
 }
 
 func (cs *ChainStore) persist(b *ledger.Block) error {
+	t := time.Now()
 	batch := NewBatchStore(cs)
 	errChan := make(chan error, 8)
 
@@ -639,13 +656,7 @@ func (cs *ChainStore) persist(b *ledger.Block) error {
 		return err
 	}
 
-	cs.mu.Lock()
-	cs.currentBlockHeight = b.Header.Height
-	cs.currentBlockHash = b.Hash()
-	cs.mu.Unlock()
-
-	cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - 3)
-	cs.headerCache.AddHeaderToCache(b.Header)
+	log.Error("<<-----------------", time.Since(t))
 	return nil
 }
 

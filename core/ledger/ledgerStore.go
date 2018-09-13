@@ -9,7 +9,7 @@ import (
 
 // ILedgerStore provides func with store package.
 type ILedgerStore interface {
-	SaveBlock(b *Block) error
+	SaveBlock(b *Block, ledger *Ledger) error
 	GetBlock(hash Uint256) (*Block, error)
 	BlockInCache(hash Uint256) bool
 	GetBlockHash(height uint32) (Uint256, error)

@@ -17,6 +17,7 @@ type Blockchain struct {
 	BlockPersistTime map[Uint256]int64
 	BCEvents         *events.Event
 	mutex            sync.Mutex
+	mutex2           sync.Mutex
 }
 
 func NewBlockchain(height uint32, asset Uint256) *Blockchain {
@@ -67,13 +68,13 @@ func (bc *Blockchain) GetHeader(hash Uint256) (*Header, error) {
 }
 
 func (bc *Blockchain) SaveBlock(block *Block) error {
-	err := DefaultLedger.Store.SaveBlock(block)
+	err := DefaultLedger.Store.SaveBlock(block, DefaultLedger)
 	if err != nil {
 		log.Warn("Save Block failure , ", err)
 		return err
 	}
-	bc.BlockHeight = DefaultLedger.Store.GetHeight()
-	bc.BCEvents.Notify(events.EventBlockPersistCompleted, block)
+	//	bc.BlockHeight = DefaultLedger.Store.GetHeight()
+	//	bc.BCEvents.Notify(events.EventBlockPersistCompleted, block)
 
 	return nil
 }
@@ -106,15 +107,15 @@ func (bc *Blockchain) CurrentBlockHash() Uint256 {
 }
 
 func (bc *Blockchain) AddBlockTime(hash Uint256, time int64) {
-	bc.mutex.Lock()
-	defer bc.mutex.Unlock()
+	bc.mutex2.Lock()
+	defer bc.mutex2.Unlock()
 
 	bc.BlockPersistTime[hash] = time
 }
 
 func (bc *Blockchain) GetBlockTime(hash Uint256) (int64, error) {
-	bc.mutex.Lock()
-	defer bc.mutex.Unlock()
+	bc.mutex2.Lock()
+	defer bc.mutex2.Unlock()
 
 	// use previous timestamp as block persisted time when cache is empty
 	if len(bc.BlockPersistTime) == 0 {
