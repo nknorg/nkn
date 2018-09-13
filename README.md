@@ -212,6 +212,14 @@ mappings, one for each port. One of the easiest way to find out how to setup
 port forwarding on your router is to search "how to setup port forwarding" +
 your router model or name online.
 
+### Advanced Usage
+
+There is a [tutorial from community member
+Chris](https://medium.com/@christianbusch_45820/make-your-own-nkm-new-kind-of-miner-out-of-a-raspberry-pi-dbeeed6d8130)
+about how to turn a fresh new Raspberry Pi into a node with auto-update and
+auto-restart. Although it's written for Raspbian OS, it should work for any
+linux system with little or no modifications.
+
 ## Contributing
 
 **Can I submit a bug, suggestion or feature request?**
