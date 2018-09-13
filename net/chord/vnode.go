@@ -228,14 +228,16 @@ func (vn *localVnode) notifySuccessor() error {
 
 	// Update local successors list
 	for idx, s := range succ_list {
-		if s == nil {
-			break
-		}
 		// Ensure we don't set ourselves as a successor!
 		if s == nil || s.String() == vn.String() {
 			break
 		}
-		vn.successors[idx+1] = s
+		if vn.successors[idx+1].String() != s.String() {
+			alive, err := vn.ring.transport.Ping(s)
+			if err == nil && alive {
+				vn.successors[idx+1] = s
+			}
+		}
 	}
 	return nil
 }
@@ -283,7 +285,7 @@ func (vn *localVnode) fixFingerTableAtIndex(idx int) (int, error) {
 	}
 	node := nodes[0]
 
-	if vn.finger[idx] != nil {
+	if vn.finger[idx] != nil && vn.finger[idx].String() != node.String() {
 		alive, err := vn.ring.transport.Ping(node)
 		if err != nil || !alive {
 			node = vn.finger[idx]
