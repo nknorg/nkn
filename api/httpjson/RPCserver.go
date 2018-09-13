@@ -55,9 +55,6 @@ func NewServer(node protocol.Noder, wallet vault.Wallet) *RPCServer {
 }
 
 func (s *RPCServer) write(w http.ResponseWriter, data []byte) {
-	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("content-type", "application/json;charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(data)
 }
 
