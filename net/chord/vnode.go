@@ -232,7 +232,7 @@ func (vn *localVnode) notifySuccessor() error {
 		if s == nil || s.String() == vn.String() {
 			break
 		}
-		if vn.successors[idx+1].String() != s.String() {
+		if vn.successors[idx+1] == nil || vn.successors[idx+1].String() != s.String() {
 			vn.successors[idx+1] = s
 		}
 	}
