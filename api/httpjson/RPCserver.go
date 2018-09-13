@@ -54,10 +54,6 @@ func NewServer(node protocol.Noder, wallet vault.Wallet) *RPCServer {
 	return server
 }
 
-func (s *RPCServer) write(w http.ResponseWriter, data []byte) {
-	w.Write(data)
-}
-
 //this is the funciton that should be called in order to answer an rpc call
 //should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
 func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +126,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
 			return
 		}
-		s.write(w, data)
+		w.Write(data)
 	} else {
 		//if the function does not exist
 		log.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
@@ -147,7 +143,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
 			return
 		}
-		s.write(w, data)
+		w.Write(data)
 	}
 }
 
