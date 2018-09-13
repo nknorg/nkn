@@ -57,11 +57,12 @@ func NewServer(node protocol.Noder, wallet vault.Wallet) *RPCServer {
 //this is the funciton that should be called in order to answer an rpc call
 //should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
 func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
+	s.mainMux.RLock()
+	defer s.mainMux.RUnlock()
+	//CORS headers
 	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
 	w.Header().Set("content-type", "application/json;charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	s.mainMux.RLock()
-	defer s.mainMux.RUnlock()
 	//JSON RPC commands should be POSTs
 	if r.Method != "POST" {
 		if s.mainMux.defaultFunction != nil {
