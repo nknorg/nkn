@@ -216,8 +216,13 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 		}
 
 		// Assign the successors
+		skip := 0
 		for idx, s := range succs {
-			vn.successors[idx] = s
+			if s != nil && s.String() != vn.String() {
+				vn.successors[idx-skip] = s
+			} else {
+				skip++
+			}
 		}
 	}
 
