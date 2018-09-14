@@ -16,9 +16,9 @@ func TestPorServer(t *testing.T) {
 	from, _ := vault.NewAccount()
 	rel, _ := vault.NewAccount()
 	to, _ := vault.NewAccount()
-	pmFrom := NewPorServer(from)
-	pmRel := NewPorServer(rel)
-	pmTo := NewPorServer(to)
+	pmFrom := NewPorServer(from, ring)
+	pmRel := NewPorServer(rel, ring)
+	pmTo := NewPorServer(to, ring)
 	toPk, _ := to.PubKey().EncodePoint(true)
 	relPk, _ := rel.PubKey().EncodePoint(true)
 

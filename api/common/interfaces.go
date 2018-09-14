@@ -707,10 +707,10 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	if err := sigChain.Sign(encodedPublickKey, mining, account); err != nil {
+	if err := sigChain.Sign(srcID, encodedPublickKey, mining, account); err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	if err := sigChain.Sign(encodedPublickKey, mining, account); err != nil {
+	if err := sigChain.Sign(srcID, encodedPublickKey, mining, account); err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 	buf, err := proto.Marshal(sigChain)
