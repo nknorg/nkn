@@ -64,7 +64,7 @@ func (pc *ProposerCache) Add(height uint32, votingContent voting.VotingContent) 
 			return
 		}
 		var id uint64
-		err = binary.Read(bytes.NewBuffer(chordID[:8]), binary.LittleEndian, &id)
+		err = binary.Read(bytes.NewBuffer(chordID), binary.LittleEndian, &id)
 		if err != nil {
 			log.Error(err)
 		}
