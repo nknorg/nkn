@@ -8,6 +8,7 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -15,24 +16,29 @@ import (
 type PorServer struct {
 	sync.RWMutex
 	account *vault.Account
+	ring    *chord.Ring
 	pors    map[uint32][]*PorPackage
 }
 
 var porServer *PorServer
 
-func NewPorServer(account *vault.Account) *PorServer {
+func NewPorServer(account *vault.Account, ring *chord.Ring) *PorServer {
 	ps := &PorServer{
 		account: account,
+		ring:    ring,
 		pors:    make(map[uint32][]*PorPackage),
 	}
 	return ps
 }
 
-func InitPorServer(account *vault.Account) error {
+func InitPorServer(account *vault.Account, ring *chord.Ring) error {
 	if porServer != nil {
 		return errors.New("PorServer already initialized")
 	}
-	porServer = NewPorServer(account)
+	if ring == nil {
+		return errors.New("Ring is not initialized")
+	}
+	porServer = NewPorServer(account, ring)
 	return nil
 }
 
@@ -60,7 +66,12 @@ func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte, mining bool) error {
 		return errors.New("it's not the right signer")
 	}
 
-	err = sc.Sign(nextPubkey, mining, ps.account)
+	vnode, err := ps.ring.GetFirstVnode()
+	if err != nil {
+		return err
+	}
+
+	err = sc.Sign(vnode.Id, nextPubkey, mining, ps.account)
 	if err != nil {
 		log.Error("Signature chain signing error:", err)
 		return err

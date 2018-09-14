@@ -124,7 +124,7 @@ func nknMain(c *cli.Context) error {
 	// if InitLedger return err, ledger.DefaultLedger is uninitialized.
 	defer ledger.DefaultLedger.Store.Close()
 
-	err = por.InitPorServer(account)
+	err = por.InitPorServer(account, ring)
 	if err != nil {
 		return errors.New("PorServer initialization error")
 	}

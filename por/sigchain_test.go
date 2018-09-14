@@ -32,17 +32,17 @@ func TestSigChain(t *testing.T) {
 		t.Error("[TestSigChain] 'from' create new SigChain in error")
 	}
 
-	err = sc.Sign(relay2Pk, true, relay1)
+	err = sc.Sign(srcID, relay2Pk, true, relay1)
 	if err != nil || sc.Verify() != nil {
 		t.Error("[TestSigChain] 'relay1' sign in error")
 	}
 
-	err = sc.Sign(toPk, true, relay2)
+	err = sc.Sign(srcID, toPk, true, relay2)
 	if err != nil || sc.Verify() != nil {
 		t.Error("[TestSigChain] 'relay2' sign in error")
 	}
 
-	err = sc.Sign(toPk, true, to)
+	err = sc.Sign(srcID, toPk, true, to)
 	if err != nil || sc.Verify() != nil {
 		t.Error("[TestSigChain] 'to' sign in error")
 	}
