@@ -68,7 +68,7 @@ func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *
 
 	// TODO: only pick sigchain to sign when threshold is smaller than
 
-	_, err = packet.SigChain.ExtendElement(destPubKey, false)
+	_, err = packet.SigChain.ExtendElement(packet.DestID, destPubKey, false)
 	if err != nil {
 		return err
 	}

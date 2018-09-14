@@ -29,12 +29,12 @@ func TestPorPackage(t *testing.T) {
 		t.Error("sigchain created failed")
 	}
 
-	err = sc.Sign(toPk, true, rel)
+	err = sc.Sign(srcID, toPk, true, rel)
 	if err != nil || sc.Verify() != nil {
 		t.Error("'rel' sign in error")
 	}
 
-	err = sc.Sign(toPk, true, to)
+	err = sc.Sign(srcID, toPk, true, to)
 	if err != nil || sc.Verify() != nil {
 		t.Error("'to' sign in error")
 	}

@@ -159,8 +159,9 @@ func NewSigChain(srcAccount *vault.Account, dataSize uint32, dataHash, blockHash
 	return sc, nil
 }
 
-func NewSigChainElem(nextPubkey []byte, mining bool) *SigChainElem {
+func NewSigChainElem(addr, nextPubkey []byte, mining bool) *SigChainElem {
 	return &SigChainElem{
+		Addr:       addr,
 		SigAlgo:    sigAlgo,
 		NextPubkey: nextPubkey,
 		Mining:     mining,
@@ -168,8 +169,8 @@ func NewSigChainElem(nextPubkey []byte, mining bool) *SigChainElem {
 	}
 }
 
-func (sc *SigChain) ExtendElement(nextPubkey []byte, mining bool) ([]byte, error) {
-	elem := NewSigChainElem(nextPubkey, mining)
+func (sc *SigChain) ExtendElement(addr, nextPubkey []byte, mining bool) ([]byte, error) {
+	elem := NewSigChainElem(addr, nextPubkey, mining)
 	lastElem, err := sc.lastSigElem()
 	if err != nil {
 		return nil, err
@@ -197,7 +198,7 @@ func (sc *SigChain) AddLastSignature(signature []byte) error {
 }
 
 // Sign new created signature chain with local wallet.
-func (sc *SigChain) Sign(nextPubkey []byte, mining bool, signer *vault.Account) error {
+func (sc *SigChain) Sign(addr, nextPubkey []byte, mining bool, signer *vault.Account) error {
 	sigNum := sc.Length()
 	if sigNum < 1 {
 		return errors.New("there are not enough signatures")
@@ -225,7 +226,7 @@ func (sc *SigChain) Sign(nextPubkey []byte, mining bool, signer *vault.Account) 
 		return errors.New("signer is not the right one")
 	}
 
-	digest, err := sc.ExtendElement(nextPubkey, mining)
+	digest, err := sc.ExtendElement(addr, nextPubkey, mining)
 	if err != nil {
 		log.Error("Signature chain extent element error:", err)
 		return err
