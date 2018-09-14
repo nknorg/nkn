@@ -17,6 +17,7 @@ type Blockchain struct {
 	BlockPersistTime map[Uint256]int64
 	BCEvents         *events.Event
 	mutex            sync.Mutex
+	muTime           sync.Mutex
 }
 
 func NewBlockchain(height uint32, asset Uint256) *Blockchain {
@@ -104,15 +105,15 @@ func (bc *Blockchain) CurrentBlockHash() Uint256 {
 }
 
 func (bc *Blockchain) AddBlockTime(hash Uint256, time int64) {
-	bc.mutex.Lock()
-	defer bc.mutex.Unlock()
+	bc.muTime.Lock()
+	defer bc.muTime.Unlock()
 
 	bc.BlockPersistTime[hash] = time
 }
 
 func (bc *Blockchain) GetBlockTime(hash Uint256) (int64, error) {
-	bc.mutex.Lock()
-	defer bc.mutex.Unlock()
+	bc.muTime.Lock()
+	defer bc.muTime.Unlock()
 
 	// use previous timestamp as block persisted time when cache is empty
 	if len(bc.BlockPersistTime) == 0 {
