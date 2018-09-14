@@ -371,14 +371,14 @@ func (sc *SigChain) GetLastPubkey() ([]byte, error) {
 	return e.NextPubkey, nil
 }
 
-func (sc *SigChain) GetMiner() ([]byte, error) {
+func (sc *SigChain) GetMiner() ([]byte, []byte, error) {
 	if !sc.IsFinal() {
-		return nil, errors.New("not final")
+		return nil, nil, errors.New("not final")
 	}
 
 	n := sc.Length()
 	if n < 3 {
-		return nil, errors.New("not enough elements")
+		return nil, nil, errors.New("not enough elements")
 	}
 
 	type SigChainElemInfo struct {
@@ -399,7 +399,7 @@ func (sc *SigChain) GetMiner() ([]byte, error) {
 	if elemLen == 0 {
 		err := errors.New("invalid signature chain for block proposer selection")
 		log.Error(err)
-		return nil, err
+		return nil, nil, err
 	}
 	newIndex := big.NewInt(0)
 	x := big.NewInt(0)
@@ -409,10 +409,10 @@ func (sc *SigChain) GetMiner() ([]byte, error) {
 
 	originalIndex := minerElems[newIndex.Int64()].index
 	if originalIndex == 0 {
-		return sc.GetSrcPubkey(), nil
+		return sc.GetSrcPubkey(), sc.Elems[0].Addr, nil
 	}
 
-	return sc.Elems[originalIndex-1].NextPubkey, nil
+	return sc.Elems[originalIndex-1].NextPubkey, sc.Elems[originalIndex].Addr, nil
 }
 
 func (sc *SigChain) nextSigner() ([]byte, error) {

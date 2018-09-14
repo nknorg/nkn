@@ -136,7 +136,7 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 			}
 			sigchain := &por.SigChain{}
 			proto.Unmarshal(payload.SigChain, sigchain)
-			miner, err = sigchain.GetMiner()
+			miner, _, err = sigchain.GetMiner()
 			if err != nil {
 				return err
 			}

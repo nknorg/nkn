@@ -24,14 +24,14 @@ type Voting interface {
 	SetConfirmingHash(hash Uint256)
 	// get hash in process
 	GetConfirmingHash() Uint256
-	// set self state
-	SetSelfState(hash Uint256, s State)
-	// check proposer state
-	HasSelfState(hash Uint256, s State) bool
-	// set voter state
-	SetNeighborState(nid uint64, hash Uint256, s State)
-	// check voter state
-	HasNeighborState(nid uint64, hash Uint256, s State) bool
+	// check own state
+	CheckOwnState(hash Uint256, s State) bool
+	// check and set own state
+	CheckAndSetOwnState(hash Uint256, s State) bool
+	// check neighbor state
+	CheckNeighborState(nid uint64, hash Uint256, s State) bool
+	// check and set neighbor state
+	CheckAndSetNeighborState(nid uint64, hash Uint256, s State) bool
 	// get current voting height
 	GetVotingHeight() uint32
 	// get best voting content

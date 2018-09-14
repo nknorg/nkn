@@ -41,16 +41,7 @@ func NewSigChainVoting(txnCollector *transaction.TxnCollector) *SigChainVoting {
 	return sigChainVoting
 }
 
-func (scv *SigChainVoting) SetSelfState(hash Uint256, s State) {
-	scv.Lock()
-	defer scv.Unlock()
-	if _, ok := scv.pstate[hash]; !ok {
-		scv.pstate[hash] = new(State)
-	}
-	scv.pstate[hash].SetBit(s)
-}
-
-func (scv *SigChainVoting) HasSelfState(hash Uint256, state State) bool {
+func (scv *SigChainVoting) CheckOwnState(hash Uint256, state State) bool {
 	scv.RLock()
 	defer scv.RUnlock()
 
@@ -64,20 +55,25 @@ func (scv *SigChainVoting) HasSelfState(hash Uint256, state State) bool {
 	}
 }
 
-func (scv *SigChainVoting) SetNeighborState(id uint64, hash Uint256, s State) {
+func (scv *SigChainVoting) CheckAndSetOwnState(hash Uint256, state State) bool {
 	scv.Lock()
 	defer scv.Unlock()
 
-	if _, ok := scv.vstate[id]; !ok {
-		scv.vstate[id] = make(map[Uint256]*State)
+	v, ok := scv.pstate[hash]
+	if !ok || v == nil {
+		scv.pstate[hash] = new(State)
+		scv.pstate[hash].SetBit(state)
+		return false
 	}
-	if _, ok := scv.vstate[id][hash]; !ok {
-		scv.vstate[id][hash] = new(State)
+	if !v.HasBit(state) {
+		scv.pstate[hash].SetBit(state)
+		return false
 	}
-	scv.vstate[id][hash].SetBit(s)
+
+	return true
 }
 
-func (scv *SigChainVoting) HasNeighborState(id uint64, hash Uint256, state State) bool {
+func (scv *SigChainVoting) CheckNeighborState(id uint64, hash Uint256, state State) bool {
 	scv.RLock()
 	defer scv.RUnlock()
 
@@ -93,6 +89,24 @@ func (scv *SigChainVoting) HasNeighborState(id uint64, hash Uint256, state State
 			return false
 		}
 	}
+}
+
+func (scv *SigChainVoting) CheckAndSetNeighborState(id uint64, hash Uint256, s State) bool {
+	scv.Lock()
+	defer scv.Unlock()
+
+	exist := true
+	if _, ok := scv.vstate[id]; !ok {
+		scv.vstate[id] = make(map[Uint256]*State)
+		exist = false
+	}
+	if _, ok := scv.vstate[id][hash]; !ok {
+		scv.vstate[id][hash] = new(State)
+		exist = false
+	}
+	scv.vstate[id][hash].SetBit(s)
+
+	return exist
 }
 
 func (scv *SigChainVoting) SetVotingHeight(height uint32) {
