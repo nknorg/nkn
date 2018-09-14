@@ -177,7 +177,7 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	}
 	n.chordAddr = chordVnode.Id
 
-	err = binary.Read(bytes.NewBuffer(n.chordAddr[:8]), binary.LittleEndian, &(n.id))
+	err = binary.Read(bytes.NewBuffer(n.chordAddr), binary.LittleEndian, &(n.id))
 	if err != nil {
 		log.Error(err)
 	}
