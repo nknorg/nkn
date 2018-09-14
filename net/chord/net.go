@@ -924,7 +924,7 @@ func trimSlice(vn []*Vnode) []*Vnode {
 
 	// Find a non-nil index
 	idx := len(vn) - 1
-	for vn[idx] == nil {
+	for idx >= 0 && vn[idx] == nil {
 		idx--
 	}
 	return vn[:idx+1]
