@@ -170,6 +170,7 @@ func (vn *localVnode) checkNewSuccessor() error {
 		if err == nil {
 			break
 		}
+		nlog.Warn("Get predecessor error:", err)
 		// alive, err := trans.Ping(succ)
 		// if err == nil && alive {
 		// return errors.New("Successor alive but cannot return its predecessor")
@@ -232,9 +233,7 @@ func (vn *localVnode) notifySuccessor() error {
 		if s == nil || s.String() == vn.String() {
 			break
 		}
-		if vn.successors[idx+1] == nil || vn.successors[idx+1].String() != s.String() {
-			vn.successors[idx+1] = s
-		}
+		vn.successors[idx+1] = s
 	}
 	return nil
 }
