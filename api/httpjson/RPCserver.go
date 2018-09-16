@@ -60,91 +60,69 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	s.mainMux.RLock()
 	defer s.mainMux.RUnlock()
 	//CORS headers
-	w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 	w.Header().Set("content-type", "application/json;charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	//JSON RPC commands should be POSTs
-	if r.Method != "POST" {
-		if s.mainMux.defaultFunction != nil {
-			log.Info("HTTP JSON RPC Handle - Method!=\"POST\"")
-			s.mainMux.defaultFunction(w, r)
-			return
-		} else {
-			log.Warn("HTTP JSON RPC Handle - Method!=\"POST\"")
+	if r.Method == "POST" {
+		//read the body of the request
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Error("HTTP JSON RPC Handle - ioutil.ReadAll: ", err)
 			return
 		}
-	}
-
-	//check if there is Request Body to read
-	if r.Body == nil {
-		if s.mainMux.defaultFunction != nil {
-			log.Info("HTTP JSON RPC Handle - Request body is nil")
-			s.mainMux.defaultFunction(w, r)
-			return
-		} else {
-			log.Warn("HTTP JSON RPC Handle - Request body is nil")
+		request := make(map[string]interface{})
+		err = json.Unmarshal(body, &request)
+		if err != nil {
+			log.Error("HTTP JSON RPC Handle - json.Unmarshal: ", err)
 			return
 		}
-	}
 
-	//read the body of the request
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Error("HTTP JSON RPC Handle - ioutil.ReadAll: ", err)
-		return
-	}
-	request := make(map[string]interface{})
-	err = json.Unmarshal(body, &request)
-	if err != nil {
-		log.Error("HTTP JSON RPC Handle - json.Unmarshal: ", err)
-		return
-	}
-
-	//get the corresponding function
-	function, ok := s.mainMux.m[request["method"].(string)]
-	if ok {
-		var data []byte
-		var err error
-		response := function(s, request["params"].(map[string]interface{}))
-		errcode := response["error"].(common.ErrCode)
-		if errcode != common.SUCCESS {
-			data, err = json.Marshal(map[string]interface{}{
+		//get the corresponding function
+		function, ok := s.mainMux.m[request["method"].(string)]
+		if ok {
+			var data []byte
+			var err error
+			response := function(s, request["params"].(map[string]interface{}))
+			errcode := response["error"].(common.ErrCode)
+			if errcode != common.SUCCESS {
+				data, err = json.Marshal(map[string]interface{}{
+					"jsonrpc": "2.0",
+					"error": map[string]interface{}{
+						"code":    -errcode,
+						"message": common.ErrMessage[errcode],
+					},
+					"id": request["id"],
+				})
+			} else {
+				data, err = json.Marshal(map[string]interface{}{
+					"jsonrpc": "2.0",
+					"result":  response["result"],
+					"id":      request["id"],
+				})
+			}
+			if err != nil {
+				log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
+				return
+			}
+			w.Write(data)
+		} else {
+			//if the function does not exist
+			log.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
+			data, err := json.Marshal(map[string]interface{}{
 				"jsonrpc": "2.0",
 				"error": map[string]interface{}{
-					"code":    -errcode,
-					"message": common.ErrMessage[errcode],
+					"code":    -32601,
+					"message": "Method not found",
+					"data":    "The called method was not found on the server",
 				},
 				"id": request["id"],
 			})
-		} else {
-			data, err = json.Marshal(map[string]interface{}{
-				"jsonrpc": "2.0",
-				"result":  response["result"],
-				"id":      request["id"],
-			})
+			if err != nil {
+				log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
+				return
+			}
+			w.Write(data)
 		}
-		if err != nil {
-			log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
-			return
-		}
-		w.Write(data)
-	} else {
-		//if the function does not exist
-		log.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
-		data, err := json.Marshal(map[string]interface{}{
-			"jsonrpc": "2.0",
-			"error": map[string]interface{}{
-				"code":    -32601,
-				"message": "Method not found",
-				"data":    "The called method was not found on the server",
-			},
-			"id": request["id"],
-		})
-		if err != nil {
-			log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
-			return
-		}
-		w.Write(data)
 	}
 }
 
