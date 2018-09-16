@@ -176,7 +176,22 @@ func (vn *localVnode) checkNewSuccessor() error {
 		// return errors.New("Successor alive but cannot return its predecessor")
 		// }
 		if i == known-1 {
-			return errors.New("All known successors dead!")
+			nlog.Error("All known successors dead, trying finger tables")
+			for i, n := range vn.finger {
+				if n == nil || n.String() == vn.String() {
+					continue
+				}
+				if i == 0 || n != vn.finger[i-1] {
+					if !betweenRightIncl(vn.Id, vn.successors[0].Id, n.Id) {
+						vn.successors[1] = n
+						known++
+						break
+					}
+				}
+			}
+			if i == known-1 {
+				panic("All known successors dead!")
+			}
 		}
 		// TODO: add retry before removing successor from list
 		copy(vn.successors[0:], vn.successors[1:])
@@ -350,7 +365,10 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 
 	// Check if we are the immediate predecessor
 	if vn.successors[0] != nil && betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
-		return vn.successors[:n], nil
+		if n <= len(vn.successors) {
+			return vn.successors[:n], nil
+		}
+		return vn.successors, nil
 	}
 
 	// Try the closest preceeding nodes
