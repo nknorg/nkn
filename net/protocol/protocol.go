@@ -75,6 +75,7 @@ type Noder interface {
 	GetTxnPool() *pool.TxnPool
 	AppendTxnPool(*transaction.Transaction) ErrCode
 	ExistHash(hash Uint256) bool
+	ReqNeighborList()
 	DumpInfo()
 	UpdateInfo(t time.Time, version uint32, services uint64, port uint16, nonce uint64, relay uint8, height uint32)
 	ConnectNeighbors()
