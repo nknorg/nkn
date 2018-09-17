@@ -653,6 +653,11 @@ func (node *node) HeartBeatMonitor() {
 	}
 }
 
+func (node *node) ReqNeighborList() {
+	buf, _ := NewMsg("getaddr", node.local)
+	go node.Tx(buf)
+}
+
 func (node *node) ConnectNeighbors() {
 	chordNode, err := node.ring.GetFirstVnode()
 	if err != nil || chordNode == nil {

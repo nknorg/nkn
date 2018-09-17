@@ -97,6 +97,14 @@ func AllocMsg(t string, length int) Messager {
 		var msg blkHeader
 		copy(msg.hdr.CMD[0:len(t)], t)
 		return &msg
+	case "getaddr":
+		var msg addrReq
+		copy(msg.Hdr.CMD[0:len(t)], t)
+		return &msg
+	case "addr":
+		var msg addr
+		copy(msg.hdr.CMD[0:len(t)], t)
+		return &msg
 	case "inv":
 		var msg Inv
 		copy(msg.Hdr.CMD[0:len(t)], t)
@@ -193,6 +201,8 @@ func NewMsg(t string, n Noder) ([]byte, error) {
 		return NewVersion(n)
 	case "verack":
 		return NewVerack()
+	case "getaddr":
+		return newGetAddr()
 
 	default:
 		return nil, errors.New("Unknown message type")
