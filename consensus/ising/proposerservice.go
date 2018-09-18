@@ -370,7 +370,7 @@ func (ps *ProposerService) ChangeProposerRoutine() {
 
 func (ps *ProposerService) PersistCachedBlock(height uint32) error {
 	//TODO: re-sync block if the block can not be persisted
-	vBlock, err := ps.syncCache.GetBlockFromSyncCache(height)
+	vBlock, err := ps.syncCache.WaitBlockVotingFinished(height)
 	if err != nil {
 		return err
 	}
@@ -639,23 +639,18 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender u
 }
 
 func (ps *ProposerService) HandleRequestMsg(req *Request, sender uint64) {
-	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		return
-	}
 	current := ps.CurrentVoting(req.contentType)
+	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()
 	hash := *req.hash
 	height := req.height
+
 	if height < votingHeight {
 		log.Warnf("receive invalid request, consensus height: %d, request height: %d,"+
 			" hash: %s", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
-	// TODO check if already sent Proposal to sender
-	if hash.CompareTo(current.GetConfirmingHash()) != 0 {
-		log.Warn("requested block doesn't match with local block in process")
-		return
-	}
+	// returns if never send vote
 	if !current.CheckOwnState(hash, voting.ProposalSent) {
 		log.Warn("receive invalid request for hash: ", BytesToHexString(hash.ToArrayReverse()))
 		return
@@ -666,12 +661,32 @@ func (ps *ProposerService) HandleRequestMsg(req *Request, sender uint64) {
 		return
 	}
 
-	content, err := current.GetVotingContent(hash, height)
-	if err != nil {
-		return
+	var content voting.VotingContent
+	var err error
+	// get block from sync cache when in sync state, get block and transaction
+	// from consensus cache when in consensus state.
+	if ps.localNode.GetSyncState() != protocol.PersistFinished {
+		if votingType != voting.BlockVote {
+			return
+		}
+		content, err = ps.syncCache.GetBlock(req.height, req.hash)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	} else {
+		if hash.CompareTo(current.GetConfirmingHash()) != 0 {
+			log.Warn("requested block doesn't match with local block in process")
+			return
+		}
+		content, err = current.GetVotingContent(hash, height)
+		if err != nil {
+			return
+		}
 	}
+
 	// generate response message
-	responseMsg := NewResponse(&hash, height, current.VotingType(), content)
+	responseMsg := NewResponse(&hash, height, votingType, content)
 	// get node which should receive response message
 	nodes := ps.GetReceiverNode([]uint64{sender})
 	// send response message
@@ -701,17 +716,16 @@ func (ps *ProposerService) HandleStateProbeMsg(msg *StateProbe, sender uint64) {
 }
 
 func (ps *ProposerService) HandleResponseMsg(resp *Response, sender uint64) {
-	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		return
-	}
 	votingType := resp.contentType
 	current := ps.CurrentVoting(votingType)
 	votingHeight := current.GetVotingHeight()
 	hash := resp.hash
 	height := resp.height
-	if height != votingHeight {
-		log.Warnf("receive invalid response, consensus height: %d, response height: %d,"+
-			" hash: %s", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
+
+	// returns if not received proposal
+	if !current.CheckNeighborState(sender, *hash, voting.ProposalReceived) {
+		log.Warn("not receive proposal but receive response for hash: ",
+			BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
 	// returns if no request sent before
@@ -719,24 +733,33 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender uint64) {
 		log.Warn("consensus state error in Response message handler")
 		return
 	}
-	// returns if receive duplicate response
-	if current.CheckAndSetNeighborState(sender, *hash, voting.ProposalReceived) {
-		log.Warn("duplicate response received for hash: ", BytesToHexString(hash.ToArrayReverse()))
+	if ps.localNode.GetSyncState() != protocol.PersistFinished {
+		if votingType != voting.BlockVote {
+			return
+		}
+		if b, ok := resp.content.(*ledger.Block); ok {
+			ps.syncCache.AddBlockToSyncCache(b, time.Now().Unix())
+		}
 		return
+	} else {
+		if height != votingHeight {
+			log.Warnf("receive invalid response, consensus height: %d, response height: %d,"+
+				" hash: %s", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
+			return
+		}
+		err := current.AddToCache(resp.content, time.Now().Unix())
+		if err != nil {
+			return
+		}
+		currentVotingPool := current.GetVotingPool()
+		neighborWeight, _ := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
+		// Get voting result from voting pool. If votes is not enough then return.
+		maybeFinalHash, err := currentVotingPool.AddVoteThenCounting(votingHeight, sender, neighborWeight, *hash)
+		if err != nil {
+			return
+		}
+		ps.SetOrChangeMind(votingType, votingHeight, maybeFinalHash)
 	}
-	// TODO check if the sender is requested neighbor node
-	err := current.AddToCache(resp.content, time.Now().Unix())
-	if err != nil {
-		return
-	}
-	currentVotingPool := current.GetVotingPool()
-	neighborWeight, _ := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
-	// Get voting result from voting pool. If votes is not enough then return.
-	maybeFinalHash, err := currentVotingPool.AddVoteThenCounting(votingHeight, sender, neighborWeight, *hash)
-	if err != nil {
-		return
-	}
-	ps.SetOrChangeMind(votingType, votingHeight, maybeFinalHash)
 }
 
 func (ps *ProposerService) SetOrChangeMind(votingType voting.VotingContentType,
@@ -772,14 +795,30 @@ func (ps *ProposerService) SetOrChangeMind(votingType voting.VotingContentType,
 func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) {
 	hash := *proposal.hash
 	height := proposal.height
+	current := ps.CurrentVoting(proposal.contentType)
+	votingType := current.VotingType()
 
-	// handle proposal when block syncing
+	if current.CheckAndSetNeighborState(sender, hash, voting.ProposalReceived) {
+		log.Warn("duplicate proposal received for hash: ", BytesToHexString(hash.ToArrayReverse()))
+		return
+	}
+	// handle block proposal when block syncing
 	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		err := ps.syncCache.AddVoteForBlock(hash, height, sender)
-		if err != nil {
+		if votingType != voting.BlockVote {
 			return
 		}
-		vBlock, err := ps.syncCache.GetBlockFromSyncCache(height)
+		// Cache vote when in sync mode. If voted block doesn't exist in sync cache then request it from neighbor
+		if exist := ps.syncCache.AddVoteForBlock(hash, height, sender); !exist {
+			requestMsg := NewRequest(&hash, height, votingType)
+			nodes := ps.GetReceiverNode([]uint64{sender})
+			ps.SendConsensusMsg(requestMsg, nodes)
+			current.CheckAndSetNeighborState(sender, hash, voting.RequestSent)
+			log.Warnf("doesn't contain block hash in sync cache, requesting it from neighbor %s",
+				BytesToHexString(hash.ToArrayReverse()))
+		}
+		// TODO: start timer when receive first
+		time.Sleep(2 * time.Second)
+		vBlock, err := ps.syncCache.WaitBlockVotingFinished(height)
 		if err != nil {
 			return
 		}
@@ -796,8 +835,6 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 		return
 	}
 
-	current := ps.CurrentVoting(proposal.contentType)
-	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()
 	neighbors := ps.localNode.GetNeighborNoder()
 	if height < votingHeight {
@@ -815,7 +852,6 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 		}
 		return
 	}
-	// TODO check if the sender is neighbor
 	if !current.Exist(hash, height) {
 		// generate request message
 		requestMsg := NewRequest(&hash, height, votingType)
@@ -828,11 +864,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 			BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
-	// returns if receive duplicated proposal
-	if current.CheckAndSetNeighborState(sender, hash, voting.ProposalReceived) {
-		log.Warn("duplicate proposal received for hash: ", BytesToHexString(hash.ToArrayReverse()))
-		return
-	}
+
 	currentVotingPool := current.GetVotingPool()
 	neighborWeight, _ := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})
 	// Get voting result from voting pool. If votes is not enough then return.
