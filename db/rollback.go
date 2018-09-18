@@ -161,7 +161,7 @@ func (cs *ChainStore) rollbackUnspentIndex(b *ledger.Block) error {
 			referTxnOutIndex := input.ReferTxOutputIndex
 			if _, ok := unspents[referTxnHash]; !ok {
 				if unspentValue, err := cs.st.Get(append([]byte{byte(IX_Unspent)}, referTxnHash.ToArray()...)); err != nil {
-					return err
+					unspents[referTxnHash] = []uint16{}
 				} else {
 					if unspents[referTxnHash], err = common.GetUint16Array(unspentValue); err != nil {
 						return err
@@ -305,10 +305,15 @@ func (cs *ChainStore) rollbackIssued(b *ledger.Block) error {
 			return err
 		}
 
-		if err := cs.st.BatchPut(append([]byte{byte(ST_QuantityIssued)}, assetId.ToArray()...), quantity.Bytes()); err != nil {
-			return err
+		if qt == common.Fixed64(0) {
+			if err := cs.st.BatchDelete(append([]byte{byte(ST_QuantityIssued)}, assetId.ToArray()...)); err != nil {
+				return err
+			}
+		} else {
+			if err := cs.st.BatchPut(append([]byte{byte(ST_QuantityIssued)}, assetId.ToArray()...), quantity.Bytes()); err != nil {
+				return err
+			}
 		}
-
 	}
 
 	return nil
