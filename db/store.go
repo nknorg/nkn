@@ -1465,7 +1465,7 @@ func (cs *ChainStore) UpdatePrepaidInfo(programHash Uint160, amount, rates Fixed
 		return err
 	}
 
-	err = cs.st.Put(key, value.Bytes())
+	err = cs.st.BatchPut(key, value.Bytes())
 	if err != nil {
 		return err
 	}
@@ -1494,7 +1494,7 @@ func (cs *ChainStore) UpdateWithdrawInfo(programHash Uint160, amount Fixed64) er
 		return err
 	}
 
-	err = cs.st.Put(key, value.Bytes())
+	err = cs.st.BatchPut(key, value.Bytes())
 	if err != nil {
 		return err
 	}
