@@ -16,26 +16,20 @@ type BlockInfo struct {
 	votes       int           // votes count
 }
 
-// BlockWithVotes describes cached block with votes got from neighbors.
-type BlockWithVotes struct {
-	blockInfo []*BlockInfo // cached block info
-	bestBlock *BlockInfo   // the block which got enough votes
-}
-
 // SyncCache cached blocks sent by block proposer when wait for block syncing finished.
 type SyncCache struct {
 	sync.RWMutex
 	minHeight       uint32
 	maxHeight       uint32
 	consensusHeight uint32
-	blockCache      map[uint32]*BlockWithVotes
+	blockCache      map[uint32][]*BlockInfo
 	voteCache       map[uint32]map[uint64]Uint256
 	timeLock        *TimeLock
 }
 
 func NewSyncBlockCache() *SyncCache {
 	return &SyncCache{
-		blockCache: make(map[uint32]*BlockWithVotes),
+		blockCache: make(map[uint32][]*BlockInfo),
 		voteCache:  make(map[uint32]map[uint64]Uint256),
 		timeLock:   NewTimeLock(),
 	}
@@ -43,8 +37,8 @@ func NewSyncBlockCache() *SyncCache {
 
 // BlockInSyncCache returns block info and true is the block exists in cache.
 func (sc *SyncCache) BlockInSyncCache(hash Uint256, height uint32) (*BlockInfo, bool) {
-	if blockWithVotes, ok := sc.blockCache[height]; ok {
-		for _, b := range blockWithVotes.blockInfo {
+	if blocks, ok := sc.blockCache[height]; ok {
+		for _, b := range blocks {
 			if hash.CompareTo(b.block.Hash()) == 0 {
 				return b, true
 			}
@@ -62,8 +56,25 @@ func (sc *SyncCache) CachedBlockHeight() int {
 	return len(sc.blockCache)
 }
 
-// GetBlockFromSyncCache returns cached block by height.
-func (sc *SyncCache) GetBlockFromSyncCache(height uint32) (*ledger.VBlock, error) {
+func (sc *SyncCache) GetBlock(height uint32, hash *Uint256) (*ledger.Block, error) {
+	sc.RLock()
+	defer sc.RUnlock()
+
+	if b, ok := sc.blockCache[height]; !ok || b == nil {
+		return nil, fmt.Errorf("no block in cache for height: %d when get block", height)
+	} else {
+		for _, v := range b {
+			if hash.CompareTo(v.block.Hash()) == 0 {
+				return v.block, nil
+			}
+		}
+		return nil, fmt.Errorf("no block in cache for hash: %s when get block",
+			BytesToHexString(hash.ToArrayReverse()))
+	}
+}
+
+// WaitBlockVotingFinished returns cached block by height.
+func (sc *SyncCache) WaitBlockVotingFinished(height uint32) (*ledger.VBlock, error) {
 	err := sc.timeLock.WaitForTimeout(height)
 	if err != nil {
 		return nil, err
@@ -76,13 +87,20 @@ func (sc *SyncCache) GetBlockFromSyncCache(height uint32) (*ledger.VBlock, error
 	}
 
 	// check if there's a block got enough votes
-	if sc.blockCache[height].bestBlock == nil {
+	if sc.blockCache[height] == nil {
 		return nil, fmt.Errorf("ambiguous block for height: %d", height)
 	}
 
+	var bestBlock *BlockInfo
+	for _, b := range sc.blockCache[height] {
+		if 2*b.votes > len(sc.voteCache[height]) {
+			bestBlock = b
+		}
+	}
+
 	vBlock := &ledger.VBlock{
-		Block:       sc.blockCache[height].bestBlock.block,
-		ReceiveTime: sc.blockCache[height].bestBlock.receiveTime,
+		Block:       bestBlock.block,
+		ReceiveTime: bestBlock.receiveTime,
 	}
 
 	return vBlock, nil
@@ -124,14 +142,8 @@ func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block, rtime int64) error
 		for _, h := range voteInfo {
 			if hash.CompareTo(h) == 0 {
 				blockInfo.votes++
-				log.Infof("append vote for block: %s, totally got %d votes: %d",
+				log.Infof("append vote for block: %s, totally got %d votes",
 					BytesToHexString(hash.ToArrayReverse()), blockInfo.votes)
-				if 2*blockInfo.votes > len(sc.voteCache[blockHeight]) {
-					if _, ok := sc.blockCache[blockHeight]; !ok {
-						sc.blockCache[blockHeight] = &BlockWithVotes{}
-					}
-					sc.blockCache[blockHeight].bestBlock = blockInfo
-				}
 			}
 		}
 	} else {
@@ -140,15 +152,12 @@ func (sc *SyncCache) AddBlockToSyncCache(block *ledger.Block, rtime int64) error
 	}
 
 	// cache new block
-	if b, ok := sc.blockCache[blockHeight]; !ok {
-		blockWithVotes := &BlockWithVotes{
-			blockInfo: []*BlockInfo{blockInfo},
-		}
-		sc.blockCache[blockHeight] = blockWithVotes
+	if _, ok := sc.blockCache[blockHeight]; !ok {
+		sc.blockCache[blockHeight] = []*BlockInfo{blockInfo}
 		// set time lock when receive block which has new height
 		sc.timeLock.LockForHeight(blockHeight, time.NewTimer(WaitingForVotingFinished))
 	} else {
-		b.blockInfo = append(b.blockInfo, blockInfo)
+		sc.blockCache[blockHeight] = append(sc.blockCache[blockHeight], blockInfo)
 	}
 
 	return nil
@@ -172,7 +181,7 @@ func (sc *SyncCache) RemoveBlockFromCache(height uint32) error {
 }
 
 // AddVoteForBlock adds vote for block when receive valid proposal.
-func (sc *SyncCache) AddVoteForBlock(hash Uint256, height uint32, voter uint64) error {
+func (sc *SyncCache) AddVoteForBlock(hash Uint256, height uint32, voter uint64) bool {
 	sc.Lock()
 	defer sc.Unlock()
 
@@ -184,20 +193,19 @@ func (sc *SyncCache) AddVoteForBlock(hash Uint256, height uint32, voter uint64) 
 		BytesToHexString(hash.ToArrayReverse()), height, voter)
 	sc.voteCache[height][voter] = hash
 
+	exist := false
 	if blockInfo, ok := sc.BlockInSyncCache(hash, height); ok {
 		// if voted block existed in cache then increase vote
 		blockInfo.votes++
 		log.Infof("AddVoteForBlock: block: %s already exist, block got %d votes, votes for height %d: %d",
 			BytesToHexString(hash.ToArrayReverse()), blockInfo.votes, height, len(sc.voteCache[height]))
-		if 2*blockInfo.votes > len(sc.voteCache[height]) {
-			sc.blockCache[height].bestBlock = blockInfo
-		}
+		exist = true
 	} else {
 		log.Infof("AddVoteForBlock: block: %s doesn't exist, cache vote only",
 			BytesToHexString(hash.ToArrayReverse()))
 	}
 
-	return nil
+	return exist
 }
 
 // ChangeVoteForBlock change vote for block when receive valid mind changing.
@@ -218,16 +226,10 @@ func (sc *SyncCache) ChangeVoteForBlock(hash Uint256, height uint32, voter uint6
 	// remove previous vote if previous exists
 	if blockInfo, ok := sc.BlockInSyncCache(previous, height); ok {
 		blockInfo.votes--
-		if 2*blockInfo.votes <= len(sc.voteCache[height]) {
-			sc.blockCache[height].bestBlock = nil
-		}
 	}
 	// add vote for new mind if block exists
 	if blockInfo, ok := sc.BlockInSyncCache(hash, height); ok {
 		blockInfo.votes++
-		if 2*blockInfo.votes > len(sc.voteCache[height]) {
-			sc.blockCache[height].bestBlock = blockInfo
-		}
 	}
 
 	return nil
