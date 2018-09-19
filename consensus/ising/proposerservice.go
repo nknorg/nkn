@@ -22,7 +22,7 @@ import (
 
 const (
 	TxnAmountToBePackaged      = 1024
-	WaitingForFloodingFinished = time.Second * 5
+	WaitingForFloodingFinished = time.Second * 3
 	WaitingForVotingFinished   = time.Second * 8
 	TimeoutTolerance           = time.Second * 2
 )
@@ -179,12 +179,9 @@ func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.Vot
 		// add own vote to voting pool
 		votingPool.AddToReceivePool(votingHeight, ownNodeID, ownWeight, ownMindHash)
 	} else {
-		// set initial mind if it has not been set
-		votingPool.SetMind(votingHeight, ownMindHash)
-
-		// if voting result is different with initial mind then change mind
+		// add self mind to voting pool, if votes is enough then set mind.
 		maybeFinalHash, _ := votingPool.AddVoteThenCounting(votingHeight, ownNodeID, ownWeight, ownMindHash)
-		if maybeFinalHash != nil && maybeFinalHash.CompareTo(ownMindHash) != 0 {
+		if maybeFinalHash != nil {
 			log.Infof("mind set when send proposal: %s, type: %d",
 				BytesToHexString(ownMindHash.ToArrayReverse()), vType)
 			votingPool.SetMind(votingHeight, ownMindHash)
@@ -207,7 +204,6 @@ func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.Vot
 
 func (ps *ProposerService) ProduceNewBlock() {
 	current := ps.CurrentVoting(voting.BlockVote)
-	votingPool := current.GetVotingPool()
 	votingHeight := current.GetVotingHeight()
 	proposerInfo := ps.proposerCache.Get(votingHeight + 1)
 	if proposerInfo == nil {
@@ -241,9 +237,7 @@ func (ps *ProposerService) ProduceNewBlock() {
 		log.Error("sending consensus message error: ", err)
 	}
 	blockHash := block.Hash()
-	// set initial mind for block proposer
-	votingPool.SetMind(votingHeight, blockHash)
-	log.Info("when produce new block mind set to: ", BytesToHexString(blockHash.ToArrayReverse()))
+	log.Info("produce new block: ", BytesToHexString(blockHash.ToArrayReverse()))
 }
 
 func (ps *ProposerService) IsBlockProposer() bool {
@@ -787,8 +781,7 @@ func (ps *ProposerService) SetOrChangeMind(votingType voting.VotingContentType,
 	} else {
 		// Set mind if current mind has not been set.
 		currentVotingPool.SetMind(votingHeight, *maybeFinalHash)
-		log.Info("when receive proposal mind set to neighbor mind: ",
-			BytesToHexString(maybeFinalHash.ToArrayReverse()))
+		log.Info("mind set when receive vote: ", BytesToHexString(maybeFinalHash.ToArrayReverse()))
 	}
 }
 
