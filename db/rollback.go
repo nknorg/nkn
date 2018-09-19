@@ -101,21 +101,14 @@ func (cs *ChainStore) rollbackCurrentBlockHash(b *ledger.Block) error {
 func (cs *ChainStore) rollbackHeaderHashlist(b *ledger.Block) error {
 	hash := b.Hash()
 	iter := cs.st.NewIterator([]byte{byte(IX_HeaderHashList)})
-	var storedHeaderCount uint64
-	var key []byte
-	var headerIndex []common.Uint256
-	var gotit bool
 	for iter.Next() {
-		key = iter.Key()
-		headerIndex = make([]common.Uint256, 0)
-
 		r := bytes.NewReader(iter.Value())
-		var err error
-		storedHeaderCount, err = serialization.ReadVarUint(r, 0)
+		storedHeaderCount, err := serialization.ReadVarUint(r, 0)
 		if err != nil {
 			return err
 		}
 
+		headerIndex := make([]common.Uint256, 0)
 		for i := 0; i < int(storedHeaderCount); i++ {
 			var listHash common.Uint256
 			listHash.Deserialize(r)
@@ -123,29 +116,14 @@ func (cs *ChainStore) rollbackHeaderHashlist(b *ledger.Block) error {
 		}
 
 		if hash.CompareTo(headerIndex[len(headerIndex)-1]) == 0 {
-			headerIndex = headerIndex[:len(headerIndex)-1]
-			storedHeaderCount--
-			gotit = true
+			if err := cs.st.BatchDelete(iter.Key()); err != nil {
+				return err
+			}
 			break
 		}
 	}
 	iter.Release()
 
-	if gotit {
-		if storedHeaderCount == 0 {
-			return cs.st.BatchDelete(key)
-		} else {
-			var hashArray []byte
-			for _, header := range headerIndex {
-				hashArray = append(hashArray, header.ToArray()...)
-			}
-			hashBuffer := new(bytes.Buffer)
-			serialization.WriteVarUint(hashBuffer, uint64(storedHeaderCount))
-			hashBuffer.Write(hashArray)
-
-			return cs.st.BatchPut(key, hashBuffer.Bytes())
-		}
-	}
 	return nil
 
 }
