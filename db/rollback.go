@@ -61,7 +61,11 @@ func (cs *ChainStore) Rollback(b *ledger.Block) error {
 		return err
 	}
 
-	return cs.st.BatchCommit()
+	if err := cs.st.BatchCommit(); err != nil {
+		return err
+	}
+
+	return cs.rollbackCached(b)
 }
 
 func (cs *ChainStore) rollbackHeader(b *ledger.Block) error {
@@ -371,6 +375,28 @@ func (cs *ChainStore) rollbackPrepaidAndWithdraw(b *ledger.Block) error {
 		if err := cs.st.BatchPut(append([]byte{byte(ST_Prepaid)}, programhash.ToArray()...), value.Bytes()); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) rollbackCached(b *ledger.Block) error {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
+	hash := b.Hash()
+	if h, ok := cs.headerIndex[b.Header.Height]; ok {
+		if h.CompareTo(hash) == 0 {
+			delete(cs.headerIndex, b.Header.Height)
+		}
+	}
+
+	if _, ok := cs.blockCache[hash]; ok {
+		delete(cs.blockCache, hash)
+	}
+
+	if _, ok := cs.headerCache[hash]; ok {
+		delete(cs.headerCache, hash)
 	}
 
 	return nil
