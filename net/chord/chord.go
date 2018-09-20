@@ -146,9 +146,9 @@ func DefaultConfig(hostname string) *Config {
 		Hostname:      hostname,
 		NumVnodes:     1,          // 1 vnodes
 		HashFunc:      sha256.New, // SHA256
-		StabilizeMin:  time.Duration(250 * time.Millisecond),
-		StabilizeMax:  time.Duration(750 * time.Millisecond),
-		NumSuccessors: 8,   // 8 successors
+		StabilizeMin:  time.Duration(500 * time.Millisecond),
+		StabilizeMax:  time.Duration(1500 * time.Millisecond),
+		NumSuccessors: 16,  // 8 successors
 		Delegate:      nil, // No delegate
 		hashBits:      256, // 256bit hash function
 	}
