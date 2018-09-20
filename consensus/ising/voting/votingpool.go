@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	MinVoterNum = 3
+	MinConsensusVotesNum = 3
 )
 
 type VoteInfo struct {

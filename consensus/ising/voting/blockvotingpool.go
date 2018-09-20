@@ -86,7 +86,7 @@ func (bvp *BlockVotingPool) AddVoteThenCounting(height uint32, nodeID uint64, we
 	bvp.addToReceivePool(height, nodeID, weight, hash)
 
 	// return when voter is not enough
-	if len(bvp.receivePool[height]) < MinVoterNum {
+	if len(bvp.receivePool[height]) < MinConsensusVotesNum {
 		return nil, errors.New("voter is not enough")
 	}
 

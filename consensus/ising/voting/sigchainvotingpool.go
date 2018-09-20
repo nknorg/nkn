@@ -86,7 +86,7 @@ func (scvp *SigChainVotingPool) AddVoteThenCounting(height uint32, nodeID uint64
 	scvp.addToReceivePool(height, nodeID, weight, hash)
 
 	// return when voter is not enough
-	if len(scvp.receivePool[height]) < MinVoterNum {
+	if len(scvp.receivePool[height]) < MinConsensusVotesNum {
 		return nil, errors.New("voter is not enough")
 	}
 
