@@ -199,7 +199,7 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 		// Wrap the sock
 		out = &tcpOutConn{host: host, sock: sock, enc: enc, dec: dec, used: now}
 	case <-time.After(t.timeout):
-		return nil, fmt.Errorf("Get connection timeout")
+		return nil, fmt.Errorf("Get connection timeout to %s", host)
 	}
 
 	return out, nil
@@ -283,7 +283,7 @@ func (t *TCPTransport) ListVnodes(host string) ([]*Vnode, error) {
 	select {
 	case <-time.After(t.timeout):
 		t.returnConn(out, false)
-		return nil, fmt.Errorf("Command timed out!")
+		return nil, fmt.Errorf("ListVnodes timed out while connecting %s!", host)
 	case err := <-errChan:
 		t.returnConn(out, false)
 		return nil, err
@@ -335,7 +335,7 @@ func (t *TCPTransport) Ping(vn *Vnode) (bool, error) {
 	select {
 	case <-time.After(t.timeout):
 		t.returnConn(out, false)
-		return false, fmt.Errorf("Command timed out!")
+		return false, fmt.Errorf("Ping timed out while connecting %s!", vn.Host)
 	case err := <-errChan:
 		t.returnConn(out, false)
 		return false, err
@@ -386,7 +386,7 @@ func (t *TCPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	select {
 	case <-time.After(t.timeout):
 		t.returnConn(out, false)
-		return nil, fmt.Errorf("Command timed out!")
+		return nil, fmt.Errorf("GetPredecessor timed out while connecting %s!", vn.Host)
 	case err := <-errChan:
 		t.returnConn(out, false)
 		return nil, err
@@ -437,7 +437,7 @@ func (t *TCPTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 	select {
 	case <-time.After(t.timeout):
 		t.returnConn(out, false)
-		return nil, fmt.Errorf("Command timed out!")
+		return nil, fmt.Errorf("Notify timed out while connecting %s!", target.Host)
 	case err := <-errChan:
 		t.returnConn(out, false)
 		return nil, err
@@ -488,7 +488,7 @@ func (t *TCPTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, err
 	select {
 	case <-time.After(t.timeout):
 		t.returnConn(out, false)
-		return nil, fmt.Errorf("Command timed out!")
+		return nil, fmt.Errorf("FindSuccessors timed out while connecting %s!", vn.Host)
 	case err := <-errChan:
 		t.returnConn(out, false)
 		return nil, err
@@ -539,7 +539,7 @@ func (t *TCPTransport) ClearPredecessor(target, self *Vnode) error {
 	select {
 	case <-time.After(t.timeout):
 		t.returnConn(out, false)
-		return fmt.Errorf("Command timed out!")
+		return fmt.Errorf("ClearPredecessor timed out while connecting %s!", target.Host)
 	case err := <-errChan:
 		t.returnConn(out, false)
 		return err
@@ -590,7 +590,7 @@ func (t *TCPTransport) SkipSuccessor(target, self *Vnode) error {
 	select {
 	case <-time.After(t.timeout):
 		t.returnConn(out, false)
-		return fmt.Errorf("Command timed out!")
+		return fmt.Errorf("SkipSuccessor timed out while connecting %s!", target.Host)
 	case err := <-errChan:
 		t.returnConn(out, false)
 		return err
