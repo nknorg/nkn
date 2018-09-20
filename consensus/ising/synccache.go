@@ -10,6 +10,10 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
+const (
+	MinSyncVotesNum = 3
+)
+
 type BlockInfo struct {
 	block       *ledger.Block // cached block
 	receiveTime int64         // time when receive block
@@ -82,22 +86,22 @@ func (sc *SyncCache) WaitBlockVotingFinished(height uint32) (*ledger.VBlock, err
 
 	sc.RLock()
 	defer sc.RUnlock()
-	if _, ok := sc.blockCache[height]; !ok {
+	if b, ok := sc.blockCache[height]; !ok || b == nil {
 		return nil, fmt.Errorf("no block in cache for height: %d", height)
 	}
-
-	// check if there's a block got enough votes
-	if sc.blockCache[height] == nil {
-		return nil, fmt.Errorf("ambiguous block for height: %d", height)
+	totalVotes := len(sc.voteCache[height])
+	if totalVotes < MinSyncVotesNum {
+		return nil, fmt.Errorf("total vote is not enough for height: %d, got %d votes", height, totalVotes)
 	}
-
 	var bestBlock *BlockInfo
 	for _, b := range sc.blockCache[height] {
-		if 2*b.votes > len(sc.voteCache[height]) {
+		if 2*b.votes > totalVotes {
 			bestBlock = b
 		}
 	}
-
+	if bestBlock == nil {
+		return nil, fmt.Errorf("no best block in cache for height: %d", height)
+	}
 	vBlock := &ledger.VBlock{
 		Block:       bestBlock.block,
 		ReceiveTime: bestBlock.receiveTime,
