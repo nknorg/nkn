@@ -17,7 +17,8 @@ import (
 )
 
 type Mining interface {
-	BuildBlock(height uint32, winningHash Uint256, winningHashType ledger.WinningHashType) (*ledger.Block, error)
+	BuildBlock(height uint32, chordID []byte, winningHash Uint256,
+		winningHashType ledger.WinningHashType) (*ledger.Block, error)
 }
 
 type BuiltinMining struct {
@@ -33,7 +34,7 @@ func NewBuiltinMining(account *vault.Account, txnCollector *transaction.TxnColle
 	}
 }
 
-func (bm *BuiltinMining) BuildBlock(height uint32, winningHash Uint256,
+func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash Uint256,
 	winningHashType ledger.WinningHashType) (*ledger.Block, error) {
 	var txnList []*transaction.Transaction
 	var txnHashList []Uint256
@@ -60,7 +61,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, winningHash Uint256,
 		return nil, err
 	}
 	header := &ledger.Header{
-		Version:          0,
+		Version:          ledger.HeaderVersion,
 		PrevBlockHash:    ledger.DefaultLedger.Store.GetCurrentBlockHash(),
 		Timestamp:        time.Now().Unix(),
 		Height:           height,
@@ -70,6 +71,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, winningHash Uint256,
 		WinningHash:      winningHash,
 		WinningHashType:  winningHashType,
 		Signer:           encodedPubKey,
+		ChordID:          chordID,
 		Signature:        nil,
 		Program: &program.Program{
 			Code:      []byte{0x00},

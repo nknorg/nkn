@@ -16,6 +16,7 @@ type HeaderInfo struct {
 	WinningHash      string              `json:"winningHash"`
 	WinningHashType  byte                `json:"winningHashType"`
 	Signer           string              `json:"signer"`
+	ChordID          string              `json:"chordID"`
 	Signature        string              `json:"signature"`
 	Program          program.ProgramInfo `json:"program"`
 

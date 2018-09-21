@@ -213,7 +213,8 @@ func (ps *ProposerService) ProduceNewBlock() {
 		}
 	}
 	// build new block to be proposed
-	block, err := ps.mining.BuildBlock(votingHeight, proposerInfo.winningHash, proposerInfo.winningHashType)
+	block, err := ps.mining.BuildBlock(votingHeight, ps.localNode.GetChordAddr(),
+		proposerInfo.winningHash, proposerInfo.winningHashType)
 	if err != nil {
 		log.Error("building block error: ", err)
 	}
@@ -254,7 +255,7 @@ func (ps *ProposerService) IsBlockProposer() bool {
 	if !IsEqualBytes(localPublicKey, proposerInfo.publicKey) {
 		return false
 	}
-	if proposerInfo.chordID != 0 && ps.localNode.GetID() != proposerInfo.chordID {
+	if len(proposerInfo.chordID) != 0 && !IsEqualBytes(ps.localNode.GetChordAddr(), proposerInfo.chordID) {
 		return false
 	}
 
