@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/signature"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
@@ -92,7 +92,8 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 	}
 
 	// get miner who will sign next block
-	var miner []byte
+	var publicKey []byte
+	var chordID []byte
 	timeSlot := int64(config.ProposerChangeTime / time.Second)
 	if timeDiff >= timeSlot {
 		index := timeDiff / timeSlot
@@ -108,9 +109,10 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 		if err != nil {
 			return err
 		}
-		miner, err = proposerBlock.GetSigner()
-		log.Infof("verification: block signer should be: %s which is the signer of block %d",
-			common.BytesToHexString(miner), proposerBlockHeight)
+		publicKey, chordID, err = proposerBlock.GetSigner()
+		log.Infof("block signer: public key should be %s, chord ID should be %s, "+
+			"which is the signer of block %d", BytesToHexString(publicKey),
+			BytesToHexString(chordID), proposerBlockHeight)
 		if err != nil {
 			return err
 		}
@@ -119,12 +121,12 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 		winningHashType := prevHeader.WinningHashType
 		switch winningHashType {
 		case GenesisHash:
-			miner, err = genesisBlock.GetSigner()
+			publicKey, chordID, err = genesisBlock.GetSigner()
 			if err != nil {
 				return err
 			}
-			log.Infof("verification: block signer should be %s which is genesis block proposer",
-				common.BytesToHexString(miner))
+			log.Infof("block signer: public key should be %s, which is genesis block proposer",
+				BytesToHexString(publicKey))
 		case WinningTxnHash:
 			txn, err := DefaultLedger.Store.GetTransaction(winningHash)
 			if err != nil {
@@ -136,21 +138,23 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 			}
 			sigchain := &por.SigChain{}
 			proto.Unmarshal(payload.SigChain, sigchain)
-			miner, _, err = sigchain.GetMiner()
+			publicKey, chordID, err = sigchain.GetMiner()
 			if err != nil {
 				return err
 			}
 			txnHash := txn.Hash()
-			log.Infof("verification: block signer should be %s which is got in sigchain transaction %s",
-				common.BytesToHexString(miner), common.BytesToHexString(txnHash.ToArrayReverse()))
+			log.Infof("block signer: public key should be %s, chord ID should be %s, "+
+				"which is got in sigchain transaction %s", BytesToHexString(publicKey), BytesToHexString(chordID),
+				BytesToHexString(txnHash.ToArrayReverse()))
 		}
 	}
-
-	// verify header signature
-	if bytes.Compare(miner, header.Signer) != 0 {
-		return fmt.Errorf("invalid block signer: %s", common.BytesToHexString(header.Signer))
+	// TODO check chord ID is valid
+	_ = chordID
+	// verify if public is expected
+	if bytes.Compare(publicKey, header.Signer) != 0 {
+		return fmt.Errorf("invalid block signer public key: %s", BytesToHexString(header.Signer))
 	}
-	rawPubKey, err := crypto.DecodePoint(miner)
+	rawPubKey, err := crypto.DecodePoint(publicKey)
 	if err != nil {
 		return err
 	}

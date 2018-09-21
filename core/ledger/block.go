@@ -74,8 +74,8 @@ func (b *Block) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (b *Block) GetSigner() ([]byte, error) {
-	return b.Header.Signer, nil
+func (b *Block) GetSigner() ([]byte, []byte, error) {
+	return b.Header.Signer, b.Header.ChordID, nil
 }
 
 func (b *Block) Trim(w io.Writer) error {

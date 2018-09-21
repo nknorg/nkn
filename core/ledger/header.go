@@ -26,6 +26,11 @@ const (
 	WinningBlockHash WinningHashType = 2
 )
 
+const (
+	// initial version is 0, current version is 1
+	HeaderVersion = 1
+)
+
 type Header struct {
 	Version          uint32
 	PrevBlockHash    Uint256
@@ -37,10 +42,10 @@ type Header struct {
 	WinningHash      Uint256
 	WinningHashType  WinningHashType
 	Signer           []byte
+	ChordID          []byte
 	Signature        []byte
 	Program          *program.Program
-
-	hash Uint256
+	hash             Uint256
 }
 
 //Serialize the blockheader
@@ -66,6 +71,9 @@ func (h *Header) SerializeUnsigned(w io.Writer) error {
 	h.WinningHash.Serialize(w)
 	serialization.WriteByte(w, byte(h.WinningHashType))
 	serialization.WriteVarBytes(w, h.Signer)
+	if h.Version == HeaderVersion {
+		serialization.WriteVarBytes(w, h.ChordID)
+	}
 	return nil
 }
 
@@ -133,10 +141,23 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 
 	h.WinningHash.Deserialize(r)
 
-	t, _ := serialization.ReadByte(r)
+	t, err := serialization.ReadByte(r)
+	if err != nil {
+		return err
+	}
 	h.WinningHashType = WinningHashType(t)
 
-	h.Signer, _ = serialization.ReadVarBytes(r)
+	h.Signer, err = serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+
+	if h.Version == HeaderVersion {
+		h.ChordID, err = serialization.ReadVarBytes(r)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -207,6 +228,7 @@ func (h *Header) MarshalJson() ([]byte, error) {
 		WinningHash:      BytesToHexString(h.WinningHash.ToArrayReverse()),
 		WinningHashType:  byte(h.WinningHashType),
 		Signer:           BytesToHexString(h.Signer),
+		ChordID:          BytesToHexString(h.ChordID),
 		Signature:        BytesToHexString(h.Signature),
 		Hash:             BytesToHexString(h.hash.ToArrayReverse()),
 	}
@@ -278,6 +300,12 @@ func (h *Header) UnmarshalJson(data []byte) error {
 		return err
 	}
 	h.Signer = signer
+
+	chordID, err := HexStringToBytes(headerInfo.ChordID)
+	if err != nil {
+		return err
+	}
+	h.ChordID = chordID
 
 	signature, err := HexStringToBytes(headerInfo.Signature)
 	if err != nil {
