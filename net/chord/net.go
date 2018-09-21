@@ -92,8 +92,8 @@ type tcpBodyBoolError struct {
 }
 
 const maxOutConnPool = 1
-const maxOutConnPerHost = 10
-const maxInboundConns = 500
+const maxOutConnPerHost = 5
+const maxInboundConns = 1000
 
 // Creates a new TCP transport on the given listen address with the
 // configured timeout duration.
