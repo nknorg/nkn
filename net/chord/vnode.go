@@ -520,7 +520,10 @@ func (vn *localVnode) shouldConnectToHost(host string) bool {
 func (vn *localVnode) GetNeighbors() []*Vnode {
 	seen := make(map[*Vnode]bool)
 	neighbors := []*Vnode{}
-	for _, n := range vn.finger {
+	allNeighbors := append(vn.finger, vn.successors...)
+	allNeighbors = append(allNeighbors, vn.predecessor)
+
+	for _, n := range allNeighbors {
 		if n == nil {
 			continue
 		}
@@ -532,11 +535,15 @@ func (vn *localVnode) GetNeighbors() []*Vnode {
 			neighbors = append(neighbors, n)
 		}
 	}
+
 	return neighbors
 }
 
 func (vn *localVnode) ShouldAddrInNeighbors(addr []byte) bool {
-	for _, n := range vn.finger {
+	allNeighbors := append(vn.finger, vn.successors...)
+	allNeighbors = append(allNeighbors, vn.predecessor)
+
+	for _, n := range allNeighbors {
 		if n == nil {
 			continue
 		}
@@ -548,19 +555,19 @@ func (vn *localVnode) ShouldAddrInNeighbors(addr []byte) bool {
 		}
 	}
 
-	hb := vn.ring.config.hashBits
-	dist := distance(addr, vn.Id, hb)
-	offset := powerOffset(addr, dist.BitLen()-1, hb)
-	if vn.predecessor != nil && betweenRightIncl(vn.predecessor.Id, vn.Id, offset) {
-		return true
-	}
+	// hb := vn.ring.config.hashBits
+	// dist := distance(addr, vn.Id, hb)
+	// offset := powerOffset(addr, dist.BitLen()-1, hb)
+	// if vn.predecessor != nil && betweenRightIncl(vn.predecessor.Id, vn.Id, offset) {
+	// 	return true
+	// }
 
 	return false
 }
 
 func (vn *localVnode) ClosestNeighborIterator(key []byte) (closestPreceedingVnodeIterator, error) {
 	cp := closestPreceedingVnodeIterator{}
-	cp.init(vn, key, true, true)
+	cp.init(vn, key, false, true)
 	return cp, nil
 }
 
