@@ -683,6 +683,15 @@ func (node *node) DisconnectNonNeighbors() {
 	node.nbrNodes.RLock()
 	defer node.nbrNodes.RUnlock()
 	for _, nodeNbr := range node.nbrNodes.List {
+		_, port, err := net.SplitHostPort(nodeNbr.conn.LocalAddr().String())
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		// Skip inbound connections
+		if port == strconv.Itoa(int(Parameters.NodePort)) {
+			continue
+		}
 		shouldInNbr, err := node.ShouldChordAddrInNeighbors(nodeNbr.GetChordAddr())
 		if err != nil {
 			log.Error(err)

@@ -101,7 +101,7 @@ func TestDefaultConfig(t *testing.T) {
 	if conf.NumVnodes != 1 {
 		t.Fatalf("bad num vnodes")
 	}
-	if conf.NumSuccessors != 8 {
+	if conf.NumSuccessors != 16 {
 		t.Fatalf("bad num succ")
 	}
 	if conf.HashFunc == nil {

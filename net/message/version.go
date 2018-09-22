@@ -216,16 +216,16 @@ func (msg version) Handle(node Noder) error {
 		msg.P.Port, msg.P.Nonce, msg.P.Relay, msg.P.StartHeight)
 
 	// Should not be neighbors
-	shouldInNbr, err := localNode.ShouldChordAddrInNeighbors(msg.chordAddr)
-	if err != nil {
-		node.CloseConn()
-		return err
-	}
-	if !shouldInNbr {
-		node.CloseConn()
-		log.Warn("Reject connection from non chord neighbor:", node.GetAddrStr())
-		return errors.New("Reject connection from non chord neighbor: " + node.GetAddrStr())
-	}
+	// shouldInNbr, err := localNode.ShouldChordAddrInNeighbors(msg.chordAddr)
+	// if err != nil {
+	// 	node.CloseConn()
+	// 	return err
+	// }
+	// if !shouldInNbr {
+	// 	node.CloseConn()
+	// 	log.Warn("Reject connection from non chord neighbor:", node.GetAddrStr())
+	// 	return errors.New("Reject connection from non chord neighbor: " + node.GetAddrStr())
+	// }
 
 	localNode.AddNbrNode(node)
 
