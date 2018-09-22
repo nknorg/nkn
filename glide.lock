@@ -1,10 +1,8 @@
-hash: 95676db156adbf9cdb15e9ac2ab6f4a424a6af7d6a950018537b4453efd50837
-updated: 2018-08-31T02:08:53.757014-07:00
+hash: 328f4aade5f3518e7d77e48ae5cddac8de014f8805cff81c1ac8a9ad4574acaa
+updated: 2018-09-22T18:49:09.278144899+08:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: da1a8928f709389522c8023062a3739f3b4af419
-- name: github.com/dnaproject/gopass
-  version: 3d5cac4c3c49028515a6f149131ef897100b71c2
 - name: github.com/golang/crypto
   version: 459e26527287adbc2adcc5d0d49abff9a5f315a7
   subpackages:
@@ -23,7 +21,9 @@ imports:
 - name: github.com/jpillora/backoff
   version: 8eab2debe79d12b7bd3d10653910df25fa9552ba
 - name: github.com/nknorg/go-portscanner
-  version: 8fd5f8df3e04fd79891ddfc89347ba540884239e
+  version: 577ad0ea8a14b52de7ae9da02c59e5557666248c
+- name: github.com/nknorg/gopass
+  version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/pborman/uuid
   version: 1b00554d822231195d1babd97ff4a781231955c9
   subpackages:
