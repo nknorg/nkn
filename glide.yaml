@@ -16,7 +16,7 @@ import:
 - package: github.com/urfave/cli
 - package: github.com/bitly/go-simplejson
 - package: github.com/whyrusleeping/tar-utils
-- package: github.com/dnaproject/gopass
+- package: github.com/nknorg/gopass
 - package: github.com/gorilla/websocket
 - package: github.com/pborman/uuid
   subpackages:

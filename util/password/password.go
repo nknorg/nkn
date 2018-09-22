@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dnaproject/gopass"
+	"github.com/nknorg/gopass"
 )
 
 var (
