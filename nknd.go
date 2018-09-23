@@ -147,7 +147,7 @@ func nknMain(c *cli.Context) error {
 		return errors.New("Get first vnode in ring error")
 	}
 	vnode.OnNewSuccessor = func() {
-		ws.CloseWrongClients()
+		ws.NotifyWrongClients()
 	}
 
 	// start consensus
