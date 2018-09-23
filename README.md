@@ -115,6 +115,8 @@ Build and tag Docker image
 $ docker build -t nkn .
 ```
 
+This command should be run once every time you update the code base.
+
 When starting the container, a directory with configuration files containing
 `config.json` (see [configuration](#configuration)) and `wallet.dat` (if exists)
 should be mapped to `/nkn` directory in the container. This directory will also
@@ -170,8 +172,12 @@ $ ./nknd
 If you are using Docker then you should run the following command instead:
 
 ```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn --name nkn -it nkn nknd
+$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn --name nkn --rm -it nkn nknd
 ```
+
+If you get an error saying `docker: Error response from daemon: Conflict. The
+container name "/nkn" is already in use by container ...`, you should run
+`docker rm nkn` first to remove the old container.
 
 If everything goes well, you should be part of our TestNet now! You can query
 your wallet balance (which includes the Testnet token you've mined) by:
