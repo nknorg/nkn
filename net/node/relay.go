@@ -25,21 +25,35 @@ func (node *node) NextHop(key []byte) (protocol.Noder, error) {
 	if err != nil || chordNode == nil {
 		return nil, errors.New("No chord node binded")
 	}
-	iter, err := chordNode.ClosestNeighborIterator(key)
-	if err != nil {
-		return nil, err
-	}
-	for {
-		chordNbr := iter.Next()
-		if chordNbr == nil {
-			break
-		}
-		nodeNbr := node.GetNeighborByChordAddr(chordNbr.Id)
-		if nodeNbr != nil {
-			return nodeNbr, nil
+
+	smallestDist := node.ring.Distance(chordNode.Id, key)
+	var nextHop protocol.Noder
+	neighbors := node.GetNeighborNoder()
+	for _, neighbor := range neighbors {
+		dist := node.ring.Distance(neighbor.GetChordAddr(), key)
+		if dist.Cmp(smallestDist) < 0 {
+			smallestDist = dist
+			nextHop = neighbor
 		}
 	}
-	return nil, nil
+
+	return nextHop, nil
+
+	// iter, err := chordNode.ClosestNeighborIterator(key)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// for {
+	// 	chordNbr := iter.Next()
+	// 	if chordNbr == nil {
+	// 		break
+	// 	}
+	// 	nodeNbr := node.GetNeighborByChordAddr(chordNbr.Id)
+	// 	if nodeNbr != nil {
+	// 		return nodeNbr, nil
+	// 	}
+	// }
+	// return nil, nil
 }
 
 func (node *node) SendRelayPacket(srcAddr, destAddr string, payload, signature []byte) error {

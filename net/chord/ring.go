@@ -2,6 +2,7 @@ package chord
 
 import (
 	"errors"
+	"math/big"
 	"sort"
 
 	"github.com/nknorg/nkn/util/log"
@@ -211,4 +212,8 @@ func (r *Ring) ToData() *RingData {
 	}
 
 	return &RingData{Conf: c, Vnodes: nodes}
+}
+
+func (r *Ring) Distance(fromId, toId []byte) *big.Int {
+	return distance(fromId, toId, r.config.hashBits)
 }
