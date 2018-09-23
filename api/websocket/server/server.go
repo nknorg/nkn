@@ -134,14 +134,46 @@ func (ws *WsServer) registryMethod() {
 
 		// TODO: use signature (or better, with one-time challange) to verify identity
 
-		nextHop, err := ws.node.NextHop(clientID)
+		node, err := s.GetNetNode()
+		if err != nil {
+			return common.RespPacking(nil, common.INTERNAL_ERROR)
+		}
+
+		nextHop, err := node.NextHop(clientID)
 		if err != nil {
 			log.Error("Get next hop error: ", err)
 			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 		if nextHop != nil {
-			log.Error("This is not the correct node to connect")
-			return common.RespPacking(nil, common.INVALID_PARAMS)
+			log.Warn("This is not the correct node to connect")
+			ring := node.GetChordRing()
+			if ring == nil {
+				log.Error("Empty ring")
+				return common.RespPacking(nil, common.INTERNAL_ERROR)
+			}
+			vnode, err := ring.GetPredecessor(clientID)
+			if err != nil {
+				log.Error("Cannot get predecessor")
+				return common.RespPacking(nil, common.INTERNAL_ERROR)
+			}
+			addr, err := vnode.HttpWsAddr()
+			if err != nil {
+				log.Error("Cannot get websocket address")
+				return common.RespPacking(nil, common.INTERNAL_ERROR)
+			}
+			localVnode, err := ring.GetFirstVnode()
+			if err != nil {
+				log.Error("Cannot get localvnode")
+				return common.RespPacking(nil, common.INTERNAL_ERROR)
+			}
+			localAddr, err := localVnode.HttpWsAddr()
+			if err != nil {
+				log.Error("Cannot get local websocket address")
+				return common.RespPacking(nil, common.INTERNAL_ERROR)
+			}
+			if addr != localAddr {
+				return common.RespPacking(addr, common.WRONG_NODE)
+			}
 		}
 
 		newSessionId := hex.EncodeToString(clientID)
@@ -151,7 +183,7 @@ func (ws *WsServer) registryMethod() {
 			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
 		session.SetClient(clientID, pubKey, &addrStr)
-		go ws.node.SendRelayPacketsInBuffer(clientID)
+		go node.SendRelayPacketsInBuffer(clientID)
 
 		return common.RespPacking(nil, common.SUCCESS)
 	}
@@ -426,22 +458,51 @@ func (ws *WsServer) GetWallet() (vault.Wallet, error) {
 	return ws.wallet, nil
 }
 
-func (ws *WsServer) CloseWrongClients() {
-	var clientsToClose []*Session
+func (ws *WsServer) NotifyWrongClients() {
 	ws.SessionList.ForEachClient(func(client *Session) {
 		clientID := client.GetID()
 		if clientID == nil {
 			return
 		}
-		nextHop, err := ws.node.NextHop(clientID)
+		node, err := ws.GetNetNode()
+		if err != nil {
+			return
+		}
+		nextHop, err := node.NextHop(clientID)
 		if err != nil {
 			return
 		}
 		if nextHop != nil {
-			clientsToClose = append(clientsToClose, client)
+			ring := node.GetChordRing()
+			if ring == nil {
+				log.Error("Empty ring")
+				return
+			}
+			vnode, err := ring.GetPredecessor(clientID)
+			if err != nil {
+				log.Error("Cannot get predecessor")
+				return
+			}
+			addr, err := vnode.HttpWsAddr()
+			if err != nil {
+				log.Error("Cannot get websocket address")
+				return
+			}
+			localVnode, err := ring.GetFirstVnode()
+			if err != nil {
+				log.Error("Cannot get localvnode")
+				return
+			}
+			localAddr, err := localVnode.HttpWsAddr()
+			if err != nil {
+				log.Error("Cannot get local websocket address")
+				return
+			}
+			if addr != localAddr {
+				resp := common.ResponsePack(common.WRONG_NODE)
+				resp["Result"] = addr
+				ws.respondToSession(client, resp)
+			}
 		}
 	})
-	for _, client := range clientsToClose {
-		ws.SessionList.CloseSession(client)
-	}
 }

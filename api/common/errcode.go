@@ -23,6 +23,7 @@ const (
 	UNKNOWN_HASH        ErrCode = 44004
 	INTERNAL_ERROR      ErrCode = 45001
 	SMARTCODE_ERROR     ErrCode = 47001
+	WRONG_NODE          ErrCode = 48001
 )
 
 var ErrMessage = map[ErrCode]string{
@@ -44,6 +45,7 @@ var ErrMessage = map[ErrCode]string{
 	UNKNOWN_HASH:                            "UNKNOWN HASH",
 	INTERNAL_ERROR:                          "INTERNAL ERROR",
 	SMARTCODE_ERROR:                         "SMARTCODE EXEC ERROR",
+	WRONG_NODE:                              "WRONG NODE TO CONNECT",
 	ErrCode(errors.ErrDuplicateInput):       "INTERNAL ERROR, ErrDuplicateInput",
 	ErrCode(errors.ErrAssetPrecision):       "INTERNAL ERROR, ErrAssetPrecision",
 	ErrCode(errors.ErrTransactionBalance):   "INTERNAL ERROR, ErrTransactionBalance",

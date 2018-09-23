@@ -148,7 +148,7 @@ func DefaultConfig(hostname string) *Config {
 		HashFunc:      sha256.New, // SHA256
 		StabilizeMin:  time.Duration(500 * time.Millisecond),
 		StabilizeMax:  time.Duration(1500 * time.Millisecond),
-		NumSuccessors: 16,  // 8 successors
+		NumSuccessors: 16,  // 16 successors
 		Delegate:      nil, // No delegate
 		hashBits:      256, // 256bit hash function
 	}
