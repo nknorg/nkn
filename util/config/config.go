@@ -29,14 +29,13 @@ var (
 	Version       string
 	SkipCheckPort bool
 	Parameters    = &Configuration{
-		Magic:         99281,
-		Version:       1,
-		ChordPort:     30000,
-		NodePort:      30001,
-		HttpWsPort:    30002,
-		HttpJsonPort:  30003,
-		LogLevel:      1,
-		ConsensusType: "ising",
+		Magic:        99281,
+		Version:      1,
+		ChordPort:    30000,
+		NodePort:     30001,
+		HttpWsPort:   30002,
+		HttpJsonPort: 30003,
+		LogLevel:     1,
 		SeedList: []string{
 			"http://127.0.0.1:30003",
 		},
@@ -67,7 +66,6 @@ type Configuration struct {
 	MaxLogSize           int64    `json:"MaxLogSize"`
 	MaxTxInBlock         int      `json:"MaxTransactionInBlock"`
 	MaxHdrSyncReqs       int      `json:"MaxConcurrentSyncHeaderReqs"`
-	ConsensusType        string   `json:"ConsensusType"`
 	ChordPort            uint16   `json:"-"`
 	GenesisBlockProposer string   `json:"GenesisBlockProposer"`
 	Hostname             string   `json:"Hostname"`
@@ -121,13 +119,8 @@ func Init() error {
 }
 
 func check(config *Configuration) error {
-	switch config.ConsensusType {
-	case "ising":
-		if len(config.SeedList) == 0 {
-			return errors.New("seed list in config file should not be blank")
-		}
-	default:
-		return fmt.Errorf("invalid consensus type %s in config file", config.ConsensusType)
+	if len(config.SeedList) == 0 {
+		return errors.New("seed list in config file should not be blank")
 	}
 
 	return nil
