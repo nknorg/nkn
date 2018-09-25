@@ -17,8 +17,8 @@ const (
 	BlockResponseMsg IsingMessageType = 0x02
 	BlockProposalMsg IsingMessageType = 0x03
 	MindChangingMsg  IsingMessageType = 0x04
-	StateProbeMsg    IsingMessageType = 0x05
-	StateResponseMsg IsingMessageType = 0x06
+	PingMsg          IsingMessageType = 0x05
+	PongMsg          IsingMessageType = 0x06
 )
 
 type IsingMessage interface {
@@ -39,10 +39,10 @@ func BuildIsingPayload(msg IsingMessage, sender *crypto.PubKey) (*message.IsingP
 		err = serialization.WriteByte(buf, byte(BlockProposalMsg))
 	case *MindChanging:
 		err = serialization.WriteByte(buf, byte(MindChangingMsg))
-	case *StateProbe:
-		err = serialization.WriteByte(buf, byte(StateProbeMsg))
-	case *StateResponse:
-		err = serialization.WriteByte(buf, byte(StateResponseMsg))
+	case *Ping:
+		err = serialization.WriteByte(buf, byte(PingMsg))
+	case *Pong:
+		err = serialization.WriteByte(buf, byte(PongMsg))
 	}
 	if err != nil {
 		return nil, err
@@ -103,20 +103,20 @@ func RecoverFromIsingPayload(payload *message.IsingPayload) (IsingMessage, error
 			return nil, err
 		}
 		return mcMsg, nil
-	case StateProbeMsg:
-		spmsg := &StateProbe{}
-		err := spmsg.Deserialize(r)
+	case PingMsg:
+		pingMsg := &Ping{}
+		err := pingMsg.Deserialize(r)
 		if err != nil {
 			return nil, err
 		}
-		return spmsg, nil
-	case StateResponseMsg:
-		srmsg := &StateResponse{}
-		err := srmsg.Deserialize(r)
+		return pingMsg, nil
+	case PongMsg:
+		pongMsg := &Pong{}
+		err := pongMsg.Deserialize(r)
 		if err != nil {
 			return nil, err
 		}
-		return srmsg, nil
+		return pongMsg, nil
 	}
 
 	return nil, errors.New("invalid ising consensus message.")

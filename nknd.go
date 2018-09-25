@@ -69,7 +69,7 @@ func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
 func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
 	log.Info("ising consensus starting ...")
 	account, _ := wallet.GetDefaultAccount()
-	go ising.StartIsingConsensus(account, node)
+	go ising.NewProposerService(account, node).Start()
 }
 
 func nknMain(c *cli.Context) error {
