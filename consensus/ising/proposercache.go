@@ -3,7 +3,7 @@ package ising
 import (
 	"sync"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/ising/voting"
 	"github.com/nknorg/nkn/core/ledger"

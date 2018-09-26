@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"io"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/protocol"

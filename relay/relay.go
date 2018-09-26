@@ -6,7 +6,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket"
 	"github.com/nknorg/nkn/api/websocket/client"

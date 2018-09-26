@@ -1,8 +1,17 @@
 hash: 328f4aade5f3518e7d77e48ae5cddac8de014f8805cff81c1ac8a9ad4574acaa
-updated: 2018-09-22T18:49:09.278144899+08:00
+updated: 2018-09-27T01:31:19.95747456+02:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: da1a8928f709389522c8023062a3739f3b4af419
+- name: github.com/gogo/protobuf
+  version: 636bf0302bc95575d69441b25a2603156ffdddf1
+  subpackages:
+  - gogoproto
+  - jsonpb
+  - proto
+  - protoc-gen-gogo/descriptor
+  - sortkeys
+  - types
 - name: github.com/golang/crypto
   version: 459e26527287adbc2adcc5d0d49abff9a5f315a7
   subpackages:
