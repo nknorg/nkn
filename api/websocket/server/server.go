@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket/client"
 	. "github.com/nknorg/nkn/api/websocket/session"
