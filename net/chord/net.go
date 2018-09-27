@@ -8,6 +8,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	nlog "github.com/nknorg/nkn/util/log"
 )
 
 /*
@@ -91,8 +93,8 @@ type tcpBodyBoolError struct {
 	Err error
 }
 
-const maxOutConnPool = 1
-const maxOutConnPerHost = 5
+const maxOutConnPool = 4
+const maxOutConnPerHost = 20
 const maxInboundConns = 1000
 
 // Creates a new TCP transport on the given listen address with the
@@ -171,38 +173,55 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 	}
 
 	var out *tcpOutConn
-	select {
-	case out = <-outPool:
-		if out == nil {
-			return nil, fmt.Errorf("Out connection is nil")
-		}
-		_, err := out.sock.Read(nil)
-		if err != nil {
-			t.closeOutConn(out)
-			return t.getConn(host)
-		}
-	case outChan <- struct{}{}:
-		// Try to establish a connection
-		conn, err := net.DialTimeout("tcp", host, t.timeout)
-		if err != nil {
-			<-outChan
-			return nil, err
+	timeoutChan := make(chan struct{}, 1)
+
+	time.AfterFunc(t.timeout, func() {
+		timeoutChan <- struct{}{}
+	})
+
+	for {
+		select {
+		case out = <-outPool:
+			if out == nil {
+				return nil, fmt.Errorf("Out connection is nil")
+			}
+			_, err := out.sock.Read(nil)
+			if err != nil {
+				t.closeOutConn(out)
+				return t.getConn(host)
+			}
+			return out, nil
+		default:
 		}
 
-		// Setup the socket
-		sock := conn.(*net.TCPConn)
-		t.setupConn(sock)
-		enc := gob.NewEncoder(sock)
-		dec := gob.NewDecoder(sock)
-		now := time.Now()
+		select {
+		case outChan <- struct{}{}:
+			// Try to establish a connection
+			conn, err := net.DialTimeout("tcp", host, t.timeout)
+			if err != nil {
+				<-outChan
+				return nil, err
+			}
 
-		// Wrap the sock
-		out = &tcpOutConn{host: host, sock: sock, enc: enc, dec: dec, used: now}
-	case <-time.After(t.timeout):
-		return nil, fmt.Errorf("Get connection timeout to %s", host)
+			// Setup the socket
+			sock := conn.(*net.TCPConn)
+			t.setupConn(sock)
+			enc := gob.NewEncoder(sock)
+			dec := gob.NewDecoder(sock)
+			now := time.Now()
+
+			// Wrap the sock
+			out = &tcpOutConn{host: host, sock: sock, enc: enc, dec: dec, used: now}
+			return out, nil
+		default:
+		}
+
+		select {
+		case <-timeoutChan:
+			return nil, fmt.Errorf("Get connection timeout to %s", host)
+		default:
+		}
 	}
-
-	return out, nil
 }
 
 // Returns an outbound TCP connection to the pool
@@ -225,6 +244,7 @@ func (t *TCPTransport) returnConn(o *tcpOutConn, success bool) {
 	select {
 	case outPool <- o:
 	default:
+		nlog.Infof("Connection pool to %s full, close conn.", o.host)
 		t.closeOutConn(o)
 	}
 }
