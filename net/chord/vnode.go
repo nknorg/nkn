@@ -125,6 +125,11 @@ func (vn *localVnode) stabilize() {
 		log.Printf("[ERR] Error checking predecessor: %s", err)
 	}
 
+	// Notify the predecessor
+	if err := vn.notifyPredecessor(); err != nil {
+		log.Printf("[ERR] Error notifying predecessor: %s", err)
+	}
+
 	// Set the last stabilized time
 	vn.stabilized = time.Now()
 }
@@ -253,28 +258,32 @@ func (vn *localVnode) notifySuccessor() error {
 	return nil
 }
 
-// RPC: Notify is invoked when a Vnode gets notified
-func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
-	shouldUpdate := false
-	// Check if we should update our predecessor
-	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe_pred.Id) {
-		shouldUpdate = true
-	} else if CompareId(vn.predecessor.Id, maybe_pred.Id) != 0 {
-		alive, err := vn.ring.transport.Ping(vn.predecessor)
-		if err != nil || !alive {
-			shouldUpdate = true
-		}
+// Notifies our predecessor of us
+func (vn *localVnode) notifyPredecessor() error {
+	if vn.predecessor == nil {
+		return errors.New("Predecessor is nil")
 	}
 
-	if shouldUpdate {
-		// Inform the delegate
-		conf := vn.ring.config
-		old := vn.predecessor
-		vn.ring.invokeDelegate(func() {
-			conf.Delegate.NewPredecessor(&vn.Vnode, maybe_pred, old)
-		})
+	_, err := vn.ring.transport.Notify(vn.predecessor, &vn.Vnode)
+	if err != nil {
+		return err
+	}
 
-		vn.predecessor = maybe_pred
+	return nil
+}
+
+// RPC: Notify is invoked when a Vnode gets notified
+func (vn *localVnode) Notify(maybe *Vnode) ([]*Vnode, error) {
+	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe.Id) {
+		vn.ring.invokeDelegate(func() {
+			vn.ring.config.Delegate.NewPredecessor(&vn.Vnode, maybe, vn.predecessor)
+		})
+		vn.predecessor = maybe
+	}
+
+	if vn.successors[0] == nil || between(vn.Id, vn.successors[0].Id, maybe.Id) {
+		copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
+		vn.successors[0] = maybe
 	}
 
 	// Return our successors list
