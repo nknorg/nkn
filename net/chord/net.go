@@ -186,11 +186,10 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 				return nil, fmt.Errorf("Out connection is nil")
 			}
 			_, err := out.sock.Read(nil)
-			if err != nil {
-				t.closeOutConn(out)
-				return t.getConn(host)
+			if err == nil {
+				return out, nil
 			}
-			return out, nil
+			t.closeOutConn(out)
 		default:
 		}
 
