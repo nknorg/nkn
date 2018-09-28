@@ -1,7 +1,5 @@
 **/.git
-.git
-!.git/HEAD
-!.git/refs/heads
+!.git
 
 **/*~
 **/*.DS_Store
