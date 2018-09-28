@@ -91,8 +91,6 @@ func Init() error {
 		log.Println("Config file not exists, use default parameters.")
 	}
 
-	Parameters.IncrementPort()
-
 	if Parameters.Hostname == "" {
 		ip, err := ipify.GetIp()
 		if err != nil {
@@ -110,6 +108,8 @@ func Init() error {
 				return errors.New("Some ports are not open. Please make sure you set up port forwarding or firewall correctly")
 			}
 		}
+	} else if Parameters.Hostname == "127.0.0.1" {
+		Parameters.IncrementPort()
 	}
 
 	err := check(Parameters)

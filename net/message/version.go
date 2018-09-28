@@ -13,6 +13,7 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -214,6 +215,12 @@ func (msg version) Handle(node Noder) error {
 	node.SetChordAddr(msg.chordAddr)
 	node.UpdateInfo(time.Now(), msg.P.Version, msg.P.Services,
 		msg.P.Port, msg.P.Nonce, msg.P.Relay, msg.P.StartHeight)
+
+	if address.ShouldRejectAddr(node.LocalNode().GetAddrStr(), node.GetAddrStr()) {
+		node.CloseConn()
+		log.Info("Reject remote node with different port")
+		return errors.New("Remote port is different from local port")
+	}
 
 	// Should not be neighbors
 	// shouldInNbr, err := localNode.ShouldChordAddrInNeighbors(msg.chordAddr)
