@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	nlog "github.com/nknorg/nkn/util/log"
 )
@@ -274,6 +275,11 @@ func (vn *localVnode) notifyPredecessor() error {
 
 // RPC: Notify is invoked when a Vnode gets notified
 func (vn *localVnode) Notify(maybe *Vnode) ([]*Vnode, error) {
+	if address.ShouldRejectAddr(vn.Host, maybe.Host) {
+		nlog.Info("Reject remote chord node with different port")
+		return nil, errors.New("Remote port is different from local port")
+	}
+
 	if vn.successors[0] == nil || between(vn.successors[0].Id, vn.Id, maybe.Id) {
 		if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe.Id) {
 			vn.ring.invokeDelegate(func() {

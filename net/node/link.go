@@ -15,6 +15,7 @@ import (
 	"github.com/nknorg/nkn/events"
 	msg "github.com/nknorg/nkn/net/message"
 	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/util/address"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -223,6 +224,11 @@ func parseIPaddr(s string) (string, error) {
 }
 
 func (node *node) Connect(nodeAddr string) error {
+	if address.ShouldRejectAddr(node.GetAddrStr(), nodeAddr) {
+		log.Info("Skip remote node with different port")
+		return errors.New("Remote port is different from local port")
+	}
+
 	if node.IsAddrInNeighbors(nodeAddr) {
 		log.Info("Node addr", nodeAddr, "already in neighbors, cancel")
 		return nil

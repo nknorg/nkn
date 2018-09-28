@@ -927,7 +927,7 @@ func (t *TCPTransport) handleConn(conn *net.TCPConn) {
 
 		// Send the response
 		if err := enc.Encode(sendResp); err != nil {
-			log.Printf("[ERR] Failed to send TCP body! Got %s", err)
+			log.Printf("[ERR] Failed to send TCP body! Got %s", err.Error())
 			return
 		}
 
