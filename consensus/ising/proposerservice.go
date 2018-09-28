@@ -875,20 +875,22 @@ func (ps *ProposerService) HandleMindChangingMsg(mindChanging *MindChanging, sen
 
 	// handle mind changing when block syncing
 	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		ps.syncCache.AddVoteForBlock(hash, height, sender)
+		if mindChanging.contentType == voting.BlockVote {
+			ps.syncCache.AddVoteForBlock(hash, height, sender)
+		}
 		return
 	}
 
 	current := ps.CurrentVoting(mindChanging.contentType)
 	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()
-	if height < votingHeight {
+	if height != votingHeight {
 		log.Warnf("receive invalid mind changing, consensus height: %d, mind changing height: %d,"+
 			" hash: %s", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
 	currentVotingPool := current.GetVotingPool()
-	if currentVotingPool.HasReceivedVoteFrom(votingHeight, sender) {
+	if !currentVotingPool.HasReceivedVoteFrom(votingHeight, sender) {
 		log.Warn("no proposal received before, so mind changing is invalid")
 		return
 	}
