@@ -56,7 +56,7 @@ type Configuration struct {
 	HttpInfoStart        bool     `json:"HttpInfoStart"`
 	HttpWsPort           uint16   `json:"HttpWsPort"`
 	HttpJsonPort         uint16   `json:"HttpJsonPort"`
-	NodePort             uint16   `json:"NodePort"`
+	NodePort             uint16   `json:"-"`
 	LogLevel             int      `json:"LogLevel"`
 	IsTLS                bool     `json:"IsTLS"`
 	CertPath             string   `json:"CertPath"`
@@ -68,7 +68,7 @@ type Configuration struct {
 	MaxTxInBlock         int      `json:"MaxTransactionInBlock"`
 	MaxHdrSyncReqs       int      `json:"MaxConcurrentSyncHeaderReqs"`
 	ConsensusType        string   `json:"ConsensusType"`
-	ChordPort            uint16   `json:"ChordPort"`
+	ChordPort            uint16   `json:"-"`
 	GenesisBlockProposer string   `json:"GenesisBlockProposer"`
 	Hostname             string   `json:"Hostname"`
 }
