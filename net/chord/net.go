@@ -220,6 +220,8 @@ func (t *TCPTransport) getConn(host string) (*tcpOutConn, error) {
 			return nil, fmt.Errorf("Get connection timeout to %s", host)
 		default:
 		}
+
+		<-time.After(100 * time.Millisecond)
 	}
 }
 

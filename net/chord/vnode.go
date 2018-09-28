@@ -274,11 +274,13 @@ func (vn *localVnode) notifyPredecessor() error {
 
 // RPC: Notify is invoked when a Vnode gets notified
 func (vn *localVnode) Notify(maybe *Vnode) ([]*Vnode, error) {
-	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe.Id) {
-		vn.ring.invokeDelegate(func() {
-			vn.ring.config.Delegate.NewPredecessor(&vn.Vnode, maybe, vn.predecessor)
-		})
-		vn.predecessor = maybe
+	if vn.successors[0] == nil || between(vn.successors[0].Id, vn.Id, maybe.Id) {
+		if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe.Id) {
+			vn.ring.invokeDelegate(func() {
+				vn.ring.config.Delegate.NewPredecessor(&vn.Vnode, maybe, vn.predecessor)
+			})
+			vn.predecessor = maybe
+		}
 	}
 
 	if vn.successors[0] == nil || between(vn.Id, vn.successors[0].Id, maybe.Id) {
@@ -357,6 +359,7 @@ func (vn *localVnode) checkPredecessor() error {
 	if vn.predecessor != nil {
 		alive, err := vn.ring.transport.Ping(vn.predecessor)
 		if err != nil || !alive {
+			nlog.Warnf("Removing unreachable predecessor %s", vn.predecessor.Host)
 			vn.predecessor = nil
 		}
 		if err != nil {
