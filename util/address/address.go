@@ -36,7 +36,7 @@ func ShouldRejectAddr(localAddr, remoteAddr string) bool {
 		return false
 	}
 
-	if localHost == remoteHost && localPort == remoteport {
+	if localHost != remoteHost && localPort != remoteport {
 		return true
 	}
 
