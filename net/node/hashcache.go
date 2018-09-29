@@ -1,47 +1,32 @@
 package node
 
 import (
-	"sync"
+	"time"
 
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 )
 
 const (
-	HashCacheCap = 1000
+	HashCacheExpiration      = 60 * time.Second
+	HashCacheCleanupInterval = 1 * time.Second
 )
 
 type hashCache struct {
-	sync.RWMutex
-	cap    int
-	list   map[Uint256]struct{}
-	hashes []Uint256
+	cache common.Cache
 }
 
-func NewHashCache(cap int) *hashCache {
+func NewHashCache() *hashCache {
 	return &hashCache{
-		cap:  cap,
-		list: make(map[Uint256]struct{}),
+		cache: common.NewGoCache(HashCacheExpiration, HashCacheCleanupInterval),
 	}
 }
 
-func (hc *hashCache) addHash(hash Uint256) {
-	if len(hc.hashes) <= HashCacheCap {
-		hc.hashes = append(hc.hashes, hash)
-	} else {
-		delete(hc.list, hc.hashes[0])
-		hc.hashes = append(hc.hashes[1:], hash)
-	}
-	hc.list[hash] = struct{}{}
+func (hc *hashCache) addHash(hash common.Uint256) {
+	hc.cache.Set(hash.ToArray(), true)
 }
 
-func (hc *hashCache) ExistHash(hash Uint256) bool {
-	hc.Lock()
-	defer hc.Unlock()
-
-	if _, ok := hc.list[hash]; ok {
-		return true
-	}
-	hc.addHash(hash)
-
-	return false
+func (hc *hashCache) ExistHash(hash common.Uint256) bool {
+	_, ok := hc.cache.Get(hash.ToArray())
+	hc.cache.Set(hash.ToArray(), true)
+	return ok
 }
