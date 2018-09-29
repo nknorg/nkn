@@ -115,28 +115,28 @@ func (bc *BlockCache) GetWorseBlockFromCache(height uint32) *ledger.Block {
 
 // RemoveBlockFromCache return true if the block doesn't exist in cache.
 func (bc *BlockCache) RemoveBlockFromCache(hash Uint256, height uint32) error {
+	if !bc.BlockInCache(hash, height) {
+		return nil
+	}
+
 	bc.Lock()
 	defer bc.Unlock()
 
-	if bc.BlockInCache(hash, height) {
-		height := bc.hashes[hash]
-		delete(bc.hashes, hash)
+	delete(bc.hashes, hash)
 
-		var blocks []*ledger.Block
-		for k, v := range bc.cache[height] {
-			if hash.CompareTo(v.Hash()) == 0 {
-				blocks = append(blocks, bc.cache[height][:k]...)
-				blocks = append(blocks, bc.cache[height][k+1:]...)
-				break
-			}
-		}
-		if blocks == nil {
-			delete(bc.cache, height)
-		} else {
-			bc.cache[height] = blocks
+	var blocks []*ledger.Block
+	for k, v := range bc.cache[height] {
+		if hash.CompareTo(v.Hash()) == 0 {
+			blocks = append(blocks, bc.cache[height][:k]...)
+			blocks = append(blocks, bc.cache[height][k+1:]...)
+			break
 		}
 	}
-
+	if blocks == nil {
+		delete(bc.cache, height)
+	} else {
+		bc.cache[height] = blocks
+	}
 	return nil
 }
 
