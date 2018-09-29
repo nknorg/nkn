@@ -217,6 +217,7 @@ func (msg version) Handle(node Noder) error {
 		msg.P.Port, msg.P.Nonce, msg.P.Relay, msg.P.StartHeight)
 
 	if address.ShouldRejectAddr(node.LocalNode().GetAddrStr(), node.GetAddrStr()) {
+		node.SetState(INACTIVITY)
 		node.CloseConn()
 		log.Info("Reject remote node with different port")
 		return errors.New("Remote port is different from local port")
@@ -225,10 +226,12 @@ func (msg version) Handle(node Noder) error {
 	// Should not be neighbors
 	// shouldInNbr, err := localNode.ShouldChordAddrInNeighbors(msg.chordAddr)
 	// if err != nil {
+	//  node.SetState(INACTIVITY)
 	// 	node.CloseConn()
 	// 	return err
 	// }
 	// if !shouldInNbr {
+	//  node.SetState(INACTIVITY)
 	// 	node.CloseConn()
 	// 	log.Warn("Reject connection from non chord neighbor:", node.GetAddrStr())
 	// 	return errors.New("Reject connection from non chord neighbor: " + node.GetAddrStr())

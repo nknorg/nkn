@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nknorg/nkn/events"
 	msg "github.com/nknorg/nkn/net/message"
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/address"
@@ -95,7 +94,7 @@ func unpackNodeBuf(node *node, buf []byte) {
 }
 
 func (node *node) rx() {
-	conn := node.getConn()
+	conn := node.GetConn()
 	buf := make([]byte, MaxBufLen)
 	for {
 		len, err := conn.Read(buf[0:(MaxBufLen - 1)])
@@ -115,7 +114,8 @@ func (node *node) rx() {
 	}
 
 DISCONNECT:
-	node.local.eventQueue.GetEvent("disconnect").Notify(events.EventNodeDisconnect, node)
+	node.SetState(INACTIVITY)
+	node.CloseConn()
 }
 
 func printIPAddr() {
@@ -326,6 +326,7 @@ func (node *node) Tx(buf []byte) {
 	_, err := node.conn.Write(buf)
 	if err != nil {
 		log.Error("Error sending messge to peer node ", err.Error())
-		node.local.eventQueue.GetEvent("disconnect").Notify(events.EventNodeDisconnect, node)
+		node.SetState(INACTIVITY)
+		node.CloseConn()
 	}
 }
