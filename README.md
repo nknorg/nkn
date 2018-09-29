@@ -62,7 +62,7 @@ open a terminal (or cmd on windows - start -> run/search -> cmd.exe) and write t
 ### Building from source
 
 
-To build from source, you need a properly configured Go environment (Go 1.8+,
+To build from source, you need a properly configured Go environment (Go 1.10+,
 $GOROOT and $GOPATH set up, see [Go Official Installation
 Documentation](https://golang.org/doc/install) for more details).
 
