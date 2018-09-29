@@ -191,7 +191,7 @@ func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
 	n.msgHandlerChan = MakeChanQueue(MaxMsgChanNum)
 	n.quit = make(chan bool, 1)
 	n.eventQueue.init()
-	n.hashCache = NewHashCache(HashCacheCap)
+	n.hashCache = NewHashCache()
 	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnected)
 	n.ring = ring
 

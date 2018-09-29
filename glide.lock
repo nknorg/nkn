@@ -1,5 +1,5 @@
-hash: 328f4aade5f3518e7d77e48ae5cddac8de014f8805cff81c1ac8a9ad4574acaa
-updated: 2018-09-27T01:31:19.95747456+02:00
+hash: 1f8b9353dfb0b18a20a1da19c19cd864593565d8573619f88f31405d0afb0460
+updated: 2018-09-28T23:15:10.260779-07:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: da1a8928f709389522c8023062a3739f3b4af419
@@ -33,6 +33,8 @@ imports:
   version: 577ad0ea8a14b52de7ae9da02c59e5557666248c
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
+- name: github.com/patrickmn/go-cache
+  version: 5633e0862627c011927fa39556acae8b1f1df58a
 - name: github.com/pborman/uuid
   version: 1b00554d822231195d1babd97ff4a781231955c9
   subpackages:
