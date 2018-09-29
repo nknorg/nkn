@@ -217,7 +217,7 @@ func (node *node) GetState() uint32 {
 	return atomic.LoadUint32(&(node.state))
 }
 
-func (node *node) getConn() net.Conn {
+func (node *node) GetConn() net.Conn {
 	return node.conn
 }
 
@@ -426,13 +426,10 @@ func (node *node) GetBookKeepersAddrs() ([]*crypto.PubKey, uint64) {
 	pks[0] = node.publicKey
 	var i uint64
 	i = 1
-	//TODO read lock
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() == ESTABLISH {
-			pktmp := n.GetBookKeeperAddr()
-			pks = append(pks, pktmp)
-			i++
-		}
+	for _, n := range node.GetNeighborNoder() {
+		pktmp := n.GetBookKeeperAddr()
+		pks = append(pks, pktmp)
+		i++
 	}
 	return pks, i
 }
@@ -679,11 +676,10 @@ func (node *node) DisconnectNeighbor(nbr *node) {
 	}
 }
 
-func (node *node) DisconnectNonNeighbors() {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-	for _, nodeNbr := range node.nbrNodes.List {
-		_, port, err := net.SplitHostPort(nodeNbr.conn.LocalAddr().String())
+func (n *node) DisconnectNonNeighbors() {
+	for _, nodeNbr := range n.GetNeighborNoder() {
+		nodeNbr.GetConnectionCnt()
+		_, port, err := net.SplitHostPort(nodeNbr.GetConn().LocalAddr().String())
 		if err != nil {
 			log.Error(err)
 			continue
@@ -692,14 +688,17 @@ func (node *node) DisconnectNonNeighbors() {
 		if port == strconv.Itoa(int(Parameters.NodePort)) {
 			continue
 		}
-		shouldInNbr, err := node.ShouldChordAddrInNeighbors(nodeNbr.GetChordAddr())
+		shouldInNbr, err := n.ShouldChordAddrInNeighbors(nodeNbr.GetChordAddr())
 		if err != nil {
 			log.Error(err)
 			continue
 		}
 		if !shouldInNbr {
 			log.Info("Disconnect non chord neighbor:", nodeNbr.GetAddrStr())
-			go node.DisconnectNeighbor(nodeNbr)
+			nbr, ok := nodeNbr.(*node)
+			if ok {
+				go n.DisconnectNeighbor(nbr)
+			}
 		}
 	}
 }
@@ -712,54 +711,6 @@ func getNodeAddr(n *node) NodeAddr {
 	addr.Port = n.GetPort()
 	addr.ID = n.GetID()
 	return addr
-}
-
-func (node *node) reconnect() {
-	node.RetryConnAddrs.Lock()
-	defer node.RetryConnAddrs.Unlock()
-	lst := make(map[string]int)
-	for addr := range node.RetryAddrs {
-		node.RetryAddrs[addr] = node.RetryAddrs[addr] + 1
-		rand.Seed(time.Now().UnixNano())
-		log.Info("Try to reconnect peer, peer addr is ", addr)
-		<-time.After(time.Duration(rand.Intn(ConnectionMaxBackoff)) * time.Millisecond)
-		log.Info("Back off time`s up, start connect node")
-		node.Connect(addr)
-		if node.RetryAddrs[addr] < MaxRetryCount {
-			lst[addr] = node.RetryAddrs[addr]
-		}
-	}
-	node.RetryAddrs = lst
-
-}
-
-func (n *node) TryConnect() {
-	if n.fetchRetryNodeFromNeighborList() > 0 {
-		n.reconnect()
-	}
-}
-
-func (n *node) fetchRetryNodeFromNeighborList() int {
-	n.nbrNodes.Lock()
-	defer n.nbrNodes.Unlock()
-	neighbornodes := make(map[uint64]*node)
-	for _, tn := range n.nbrNodes.List {
-		nodeAddr := tn.GetAddrStr()
-		if tn.GetState() == INACTIVITY {
-			//add addr to retry list
-			n.AddInRetryList(nodeAddr)
-			//close legacy node
-			if tn.conn != nil {
-				tn.CloseConn()
-			}
-		} else {
-			//add others to tmp node map
-			n.RemoveFromRetryList(nodeAddr)
-			neighbornodes[tn.GetID()] = tn
-		}
-	}
-	n.nbrNodes.List = neighbornodes
-	return len(n.RetryAddrs)
 }
 
 func (node *node) keepalive() {

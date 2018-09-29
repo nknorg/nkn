@@ -11,75 +11,57 @@ import (
 
 // The neighbor node list
 type nbrNodes struct {
-	sync.RWMutex
-	List map[uint64]*node
+	List sync.Map
 }
 
 func (nm *nbrNodes) Broadcast(buf []byte) {
-	nm.RLock()
-	defer nm.RUnlock()
-	for _, node := range nm.List {
-		if node.GetState() == ESTABLISH && node.relay == true {
-			node.Tx(buf)
+	nm.List.Range(func(key, value interface{}) bool {
+		n, ok := value.(*node)
+		if ok && n.GetState() == ESTABLISH && n.relay == true {
+			n.Tx(buf)
 		}
-	}
+		return true
+	})
 }
 
 func (nm *nbrNodes) NodeExisted(uid uint64) bool {
-	_, ok := nm.List[uid]
+	_, ok := nm.List.Load(uid)
 	return ok
 }
 
 func (nm *nbrNodes) AddNbrNode(n Noder) {
-	nm.Lock()
-	defer nm.Unlock()
-
-	if nm.NodeExisted(n.GetID()) {
-		fmt.Printf("Insert a existed node\n")
-	} else {
-		node, ok := n.(*node)
-		if !ok {
-			fmt.Println("Convert the noder error when add node")
-			return
-		}
-		nm.List[n.GetID()] = node
+	node, ok := n.(*node)
+	if !ok {
+		fmt.Println("Convert the noder error when add node")
+		return
 	}
+	nm.List.LoadOrStore(n.GetID(), node)
 }
 
 func (nm *nbrNodes) DelNbrNode(id uint64) (Noder, bool) {
-	nm.Lock()
-	defer nm.Unlock()
-
-	n, ok := nm.List[id]
+	v, ok := nm.List.Load(id)
 	if !ok {
 		return nil, false
 	}
-	delete(nm.List, id)
+	n, ok := v.(*node)
+	nm.List.Delete(id)
 	return n, true
 }
 
 func (nm *nbrNodes) GetConnectionCnt() uint {
-	nm.RLock()
-	defer nm.RUnlock()
-
-	var cnt uint
-	for _, node := range nm.List {
-		if node.GetState() == ESTABLISH {
-			cnt++
-		}
-	}
-	return cnt
+	return uint(len(nm.GetNeighborNoder()))
 }
 
 func (nm *nbrNodes) init() {
-	nm.List = make(map[uint64]*node)
 }
 
 func (nm *nbrNodes) NodeEstablished(id uint64) bool {
-	nm.RLock()
-	defer nm.RUnlock()
+	v, ok := nm.List.Load(id)
+	if !ok {
+		return false
+	}
 
-	n, ok := nm.List[id]
+	n, ok := v.(*node)
 	if !ok {
 		return false
 	}
@@ -91,122 +73,93 @@ func (nm *nbrNodes) NodeEstablished(id uint64) bool {
 	return true
 }
 
-func (node *node) GetNeighborAddrs() ([]NodeAddr, uint64) {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-
-	var i uint64
+func (nm *nbrNodes) GetNeighborAddrs() ([]NodeAddr, uint) {
 	var addrs []NodeAddr
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() != ESTABLISH {
-			continue
-		}
-		var addr NodeAddr
-		addr.IpAddr, _ = n.GetAddr16()
-		addr.Time = n.GetTime()
-		addr.Services = n.Services()
-		addr.Port = n.GetPort()
-		addr.ID = n.GetID()
-		addrs = append(addrs, addr)
-
-		i++
+	for _, n := range nm.GetNeighborNoder() {
+		ip, _ := n.GetAddr16()
+		addrs = append(addrs, NodeAddr{
+			IpAddr:   ip,
+			Time:     n.GetTime(),
+			Services: n.Services(),
+			Port:     n.GetPort(),
+			ID:       n.GetID(),
+		})
 	}
-
-	return addrs, i
+	return addrs, uint(len(addrs))
 }
 
-func (node *node) GetNeighborHeights() ([]uint32, uint64) {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-
-	var i uint64
+func (nm *nbrNodes) GetNeighborHeights() ([]uint32, uint) {
 	heights := []uint32{}
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() == ESTABLISH {
-			height := n.GetHeight()
-			heights = append(heights, height)
-			i++
-		}
+	for _, n := range nm.GetNeighborNoder() {
+		heights = append(heights, n.GetHeight())
 	}
-	return heights, i
+	return heights, uint(len(heights))
 }
 
-func (node *node) GetActiveNeighbors() []Noder {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-
+func (nm *nbrNodes) GetActiveNeighbors() []Noder {
 	nodes := []Noder{}
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() != INACTIVITY {
+	nm.List.Range(func(key, value interface{}) bool {
+		n, ok := value.(*node)
+		if ok && n.GetState() != INACTIVITY {
 			nodes = append(nodes, n)
 		}
-	}
+		return true
+	})
 	return nodes
 }
 
-func (node *node) GetNeighborNoder() []Noder {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-
+func (nm *nbrNodes) GetNeighborNoder() []Noder {
 	nodes := []Noder{}
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() == ESTABLISH {
+	nm.List.Range(func(key, value interface{}) bool {
+		n, ok := value.(*node)
+		if ok && n.GetState() == ESTABLISH {
 			nodes = append(nodes, n)
 		}
-	}
+		return true
+	})
 	return nodes
 }
 
-func (node *node) GetSyncFinishedNeighbors() []Noder {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-
+func (nm *nbrNodes) GetSyncFinishedNeighbors() []Noder {
 	var nodes []Noder
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() == ESTABLISH && n.GetSyncState() == PersistFinished {
+	nm.List.Range(func(key, value interface{}) bool {
+		n, ok := value.(*node)
+		if ok && n.GetState() == ESTABLISH && n.GetSyncState() == PersistFinished {
 			nodes = append(nodes, n)
 		}
-	}
-
+		return true
+	})
 	return nodes
 }
 
-func (node *node) GetNbrNodeCnt() uint32 {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-	var count uint32
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() == ESTABLISH {
-			count++
-		}
-	}
-	return count
+func (nm *nbrNodes) GetNbrNodeCnt() uint32 {
+	return uint32(len(nm.GetNeighborNoder()))
 }
 
-func (node *node) GetNeighborByAddr(addr string) Noder {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() == ESTABLISH {
-			if n.GetAddrStr() == addr {
-				return n
-			}
+func (nm *nbrNodes) GetNeighborByAddr(addr string) Noder {
+	var nbr Noder
+	nm.List.Range(func(key, value interface{}) bool {
+		n, ok := value.(*node)
+		if ok && n.GetState() == ESTABLISH && n.GetAddrStr() == addr {
+			nbr = n
+			return false
 		}
-	}
-	return nil
+		return true
+	})
+	return nbr
 }
 
-func (node *node) GetNeighborByChordAddr(chordAddr []byte) Noder {
-	node.nbrNodes.RLock()
-	defer node.nbrNodes.RUnlock()
-	for _, n := range node.nbrNodes.List {
-		if n.GetState() == ESTABLISH {
-			if bytes.Compare(n.GetChordAddr(), chordAddr) == 0 {
-				return n
-			}
+func (nm *nbrNodes) GetNeighborByChordAddr(chordAddr []byte) Noder {
+	var nbr Noder
+	nm.List.Range(func(key, value interface{}) bool {
+		n, ok := value.(*node)
+		if ok && n.GetState() == ESTABLISH && bytes.Compare(n.GetChordAddr(), chordAddr) == 0 {
+			nbr = n
+			return false
 		}
-	}
-	return nil
+		return true
+	})
+	return nbr
 }
 
 func (node *node) IsAddrInNeighbors(addr string) bool {

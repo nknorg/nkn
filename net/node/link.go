@@ -94,7 +94,7 @@ func unpackNodeBuf(node *node, buf []byte) {
 }
 
 func (node *node) rx() {
-	conn := node.getConn()
+	conn := node.GetConn()
 	buf := make([]byte, MaxBufLen)
 	for {
 		len, err := conn.Read(buf[0:(MaxBufLen - 1)])
