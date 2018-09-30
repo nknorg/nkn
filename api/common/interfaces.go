@@ -56,7 +56,11 @@ func (ah *APIHandler) IsAccessableByWebsocket() bool {
 // return: {"result":<result>, "error":<errcode>}
 func getLatestBlockHash(s Serverer, params map[string]interface{}) map[string]interface{} {
 	hash := ledger.DefaultLedger.Blockchain.CurrentBlockHash()
-	return respPacking(common.BytesToHexString(hash.ToArrayReverse()), SUCCESS)
+	ret := map[string]interface{}{
+		"height": ledger.DefaultLedger.Blockchain.BlockHeight,
+		"hash":   common.BytesToHexString(hash.ToArrayReverse()),
+	}
+	return respPacking(ret, SUCCESS)
 }
 
 // getBlock gets block by height or hash
