@@ -330,7 +330,7 @@ func (ps *ProposerService) ChangeProposerRoutine() {
 	for {
 		select {
 		case <-ps.proposerChangeTimer.C:
-			now := time.Now().Unix()
+			// now := time.Now().Unix()
 			currentHeight := ledger.DefaultLedger.Store.GetHeight()
 			var block *ledger.Block
 			var err error
@@ -340,16 +340,17 @@ func (ps *ProposerService) ChangeProposerRoutine() {
 					log.Error("get genesis block error when change proposer")
 				}
 			} else {
-				currentBlock, err := ledger.DefaultLedger.Store.GetBlockByHeight(currentHeight)
+				// currentBlock, err := ledger.DefaultLedger.Store.GetBlockByHeight(currentHeight)
 				if err != nil {
 					log.Errorf("get latest block %d error when change proposer", currentHeight)
 				}
-				timestamp := currentBlock.Header.Timestamp
-				index := (now - timestamp) / 60
+				// This is a temporary solution
 				var height uint32 = 0
-				if int64(currentHeight) > index {
-					height = uint32(int64(currentHeight) - index)
-				}
+				// timestamp := currentBlock.Header.Timestamp
+				// index := (now - timestamp) / int64(config.ProposerChangeTime/time.Second)
+				// if int64(currentHeight) > index {
+				// height = uint32(int64(currentHeight) - index)
+				// }
 				block, err = ledger.DefaultLedger.Store.GetBlockByHeight(height)
 				if err != nil {
 					log.Errorf("get block %d error when change proposer", currentHeight)
