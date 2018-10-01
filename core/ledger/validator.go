@@ -96,11 +96,13 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 	var chordID []byte
 	timeSlot := int64(config.ProposerChangeTime / time.Second)
 	if timeDiff >= timeSlot {
-		index := timeDiff / timeSlot
-		proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - index
-		if proposerBlockHeight < 0 {
-			proposerBlockHeight = 0
-		}
+		// This is a temporary solution
+		proposerBlockHeight := 0
+		// index := timeDiff / timeSlot
+		// proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - index
+		// if proposerBlockHeight < 0 {
+		// proposerBlockHeight = 0
+		// }
 		proposerBlockHash, err := DefaultLedger.Store.GetBlockHash(uint32(proposerBlockHeight))
 		if err != nil {
 			return err
