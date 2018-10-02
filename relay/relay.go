@@ -203,6 +203,9 @@ func (rs *RelayService) ReceiveRelayMsgNoError(v interface{}) {
 }
 
 func (rs *RelayService) addRelayPacketToBuffer(clientID []byte, packet *message.RelayPacket) {
+	if packet.MaxHoldingSeconds == 0 {
+		return
+	}
 	clientIDStr := hex.EncodeToString(clientID)
 	rs.Lock()
 	defer rs.Unlock()

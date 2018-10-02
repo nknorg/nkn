@@ -56,7 +56,7 @@ func (node *node) NextHop(key []byte) (protocol.Noder, error) {
 	// return nil, nil
 }
 
-func (node *node) SendRelayPacket(srcAddr, destAddr string, payload, signature []byte) error {
+func (node *node) SendRelayPacket(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error {
 	srcID, srcPubkey, err := address.ParseClientAddress(srcAddr)
 	if err != nil {
 		log.Error("Parse src client address error:", err)
@@ -89,7 +89,7 @@ func (node *node) SendRelayPacket(srcAddr, destAddr string, payload, signature [
 		por.ECDSA,
 	)
 
-	relayPacket, err := message.NewRelayPacket(srcAddr, destID, payload, sigChain)
+	relayPacket, err := message.NewRelayPacket(srcAddr, destID, payload, sigChain, maxHoldingSeconds)
 	if err != nil {
 		log.Error("Create relay packet error: ", err)
 		return err

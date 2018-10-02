@@ -24,7 +24,7 @@ func (ws *WsServer) SendRelayPacket(clientId string, msg *client.OutboundMessage
 	srcAddrStr := *srcAddrStrPtr
 	var signature []byte
 	for _, dest := range append(msg.Dests, msg.Dest) {
-		err := ws.node.SendRelayPacket(srcAddrStr, dest, msg.Payload, signature)
+		err := ws.node.SendRelayPacket(srcAddrStr, dest, msg.Payload, signature, msg.MaxHoldingSeconds)
 		if err != nil {
 			log.Error("Send relay packet error:", err)
 		}

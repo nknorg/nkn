@@ -15,10 +15,11 @@ import (
 )
 
 type RelayPacket struct {
-	SrcAddr  string
-	DestID   []byte
-	Payload  []byte
-	SigChain *por.SigChain
+	SrcAddr           string
+	DestID            []byte
+	Payload           []byte
+	SigChain          *por.SigChain
+	MaxHoldingSeconds uint32
 }
 
 type RelayMessage struct {
@@ -26,12 +27,13 @@ type RelayMessage struct {
 	packet RelayPacket
 }
 
-func NewRelayPacket(srcAddr string, destID, payload []byte, sigChain *por.SigChain) (*RelayPacket, error) {
+func NewRelayPacket(srcAddr string, destID, payload []byte, sigChain *por.SigChain, maxHoldingSeconds uint32) (*RelayPacket, error) {
 	relayPakcet := &RelayPacket{
-		SrcAddr:  srcAddr,
-		DestID:   destID,
-		Payload:  payload,
-		SigChain: sigChain,
+		SrcAddr:           srcAddr,
+		DestID:            destID,
+		Payload:           payload,
+		SigChain:          sigChain,
+		MaxHoldingSeconds: maxHoldingSeconds,
 	}
 	return relayPakcet, nil
 }
@@ -129,6 +131,11 @@ func (packet *RelayPacket) Serialize(w io.Writer) error {
 		return err
 	}
 
+	err = serialization.WriteUint32(w, packet.MaxHoldingSeconds)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -157,6 +164,11 @@ func (packet *RelayPacket) Deserialize(r io.Reader) error {
 	}
 	packet.SigChain = &por.SigChain{}
 	err = proto.Unmarshal(buf, packet.SigChain)
+	if err != nil {
+		return err
+	}
+
+	packet.MaxHoldingSeconds, err = serialization.ReadUint32(r)
 	if err != nil {
 		return err
 	}
