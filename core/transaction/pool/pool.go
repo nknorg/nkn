@@ -51,13 +51,20 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	if ok := tp.verifyTransactionWithTxnPool(txn); !ok {
 		return ErrSummaryAsset
 	}
-	//add the transaction to process scope
-	tp.addtxnList(txn)
 
 	// get signature chain from commit transaction then add it to POR server
 	if txn.TxType == Commit {
-		por.GetPorServer().AddSigChainFromTx(txn)
+		added, err := por.GetPorServer().AddSigChainFromTx(txn)
+		if err != nil {
+			return ErrerCode(err)
+		}
+		if !added {
+			return ErrNonOptimalSigChain
+		}
 	}
+
+	//add the transaction to process scope
+	tp.addtxnList(txn)
 
 	return ErrNoError
 }
