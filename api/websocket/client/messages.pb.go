@@ -27,14 +27,15 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type OutboundMessage struct {
-	Dest    string `protobuf:"bytes,1,opt,name=dest,proto3" json:"dest,omitempty"`
-	Payload []byte `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
+	Dest    string   `protobuf:"bytes,1,opt,name=dest,proto3" json:"dest,omitempty"`
+	Payload []byte   `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
+	Dests   []string `protobuf:"bytes,3,rep,name=dests" json:"dests,omitempty"`
 }
 
 func (m *OutboundMessage) Reset()      { *m = OutboundMessage{} }
 func (*OutboundMessage) ProtoMessage() {}
 func (*OutboundMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_messages_6675af4d046922a8, []int{0}
+	return fileDescriptor_messages_cd123d67398a7bd1, []int{0}
 }
 func (m *OutboundMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -77,6 +78,13 @@ func (m *OutboundMessage) GetPayload() []byte {
 	return nil
 }
 
+func (m *OutboundMessage) GetDests() []string {
+	if m != nil {
+		return m.Dests
+	}
+	return nil
+}
+
 type InboundMessage struct {
 	Src     string `protobuf:"bytes,1,opt,name=src,proto3" json:"src,omitempty"`
 	Payload []byte `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
@@ -85,7 +93,7 @@ type InboundMessage struct {
 func (m *InboundMessage) Reset()      { *m = InboundMessage{} }
 func (*InboundMessage) ProtoMessage() {}
 func (*InboundMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_messages_6675af4d046922a8, []int{1}
+	return fileDescriptor_messages_cd123d67398a7bd1, []int{1}
 }
 func (m *InboundMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -157,6 +165,14 @@ func (this *OutboundMessage) Equal(that interface{}) bool {
 	if !bytes.Equal(this.Payload, that1.Payload) {
 		return false
 	}
+	if len(this.Dests) != len(that1.Dests) {
+		return false
+	}
+	for i := range this.Dests {
+		if this.Dests[i] != that1.Dests[i] {
+			return false
+		}
+	}
 	return true
 }
 func (this *InboundMessage) Equal(that interface{}) bool {
@@ -190,10 +206,11 @@ func (this *OutboundMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&client.OutboundMessage{")
 	s = append(s, "Dest: "+fmt.Sprintf("%#v", this.Dest)+",\n")
 	s = append(s, "Payload: "+fmt.Sprintf("%#v", this.Payload)+",\n")
+	s = append(s, "Dests: "+fmt.Sprintf("%#v", this.Dests)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -242,6 +259,21 @@ func (m *OutboundMessage) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintMessages(dAtA, i, uint64(len(m.Payload)))
 		i += copy(dAtA[i:], m.Payload)
+	}
+	if len(m.Dests) > 0 {
+		for _, s := range m.Dests {
+			dAtA[i] = 0x1a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
 	}
 	return i, nil
 }
@@ -293,6 +325,11 @@ func NewPopulatedOutboundMessage(r randyMessages, easy bool) *OutboundMessage {
 	for i := 0; i < v1; i++ {
 		this.Payload[i] = byte(r.Intn(256))
 	}
+	v2 := r.Intn(10)
+	this.Dests = make([]string, v2)
+	for i := 0; i < v2; i++ {
+		this.Dests[i] = string(randStringMessages(r))
+	}
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this
@@ -301,9 +338,9 @@ func NewPopulatedOutboundMessage(r randyMessages, easy bool) *OutboundMessage {
 func NewPopulatedInboundMessage(r randyMessages, easy bool) *InboundMessage {
 	this := &InboundMessage{}
 	this.Src = string(randStringMessages(r))
-	v2 := r.Intn(100)
-	this.Payload = make([]byte, v2)
-	for i := 0; i < v2; i++ {
+	v3 := r.Intn(100)
+	this.Payload = make([]byte, v3)
+	for i := 0; i < v3; i++ {
 		this.Payload[i] = byte(r.Intn(256))
 	}
 	if !easy && r.Intn(10) != 0 {
@@ -330,9 +367,9 @@ func randUTF8RuneMessages(r randyMessages) rune {
 	return rune(ru + 61)
 }
 func randStringMessages(r randyMessages) string {
-	v3 := r.Intn(100)
-	tmps := make([]rune, v3)
-	for i := 0; i < v3; i++ {
+	v4 := r.Intn(100)
+	tmps := make([]rune, v4)
+	for i := 0; i < v4; i++ {
 		tmps[i] = randUTF8RuneMessages(r)
 	}
 	return string(tmps)
@@ -354,11 +391,11 @@ func randFieldMessages(dAtA []byte, r randyMessages, fieldNumber int, wire int) 
 	switch wire {
 	case 0:
 		dAtA = encodeVarintPopulateMessages(dAtA, uint64(key))
-		v4 := r.Int63()
+		v5 := r.Int63()
 		if r.Intn(2) == 0 {
-			v4 *= -1
+			v5 *= -1
 		}
-		dAtA = encodeVarintPopulateMessages(dAtA, uint64(v4))
+		dAtA = encodeVarintPopulateMessages(dAtA, uint64(v5))
 	case 1:
 		dAtA = encodeVarintPopulateMessages(dAtA, uint64(key))
 		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
@@ -396,6 +433,12 @@ func (m *OutboundMessage) Size() (n int) {
 	l = len(m.Payload)
 	if l > 0 {
 		n += 1 + l + sovMessages(uint64(l))
+	}
+	if len(m.Dests) > 0 {
+		for _, s := range m.Dests {
+			l = len(s)
+			n += 1 + l + sovMessages(uint64(l))
+		}
 	}
 	return n
 }
@@ -437,6 +480,7 @@ func (this *OutboundMessage) String() string {
 	s := strings.Join([]string{`&OutboundMessage{`,
 		`Dest:` + fmt.Sprintf("%v", this.Dest) + `,`,
 		`Payload:` + fmt.Sprintf("%v", this.Payload) + `,`,
+		`Dests:` + fmt.Sprintf("%v", this.Dests) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -548,6 +592,35 @@ func (m *OutboundMessage) Unmarshal(dAtA []byte) error {
 			if m.Payload == nil {
 				m.Payload = []byte{}
 			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Dests", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Dests = append(m.Dests, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -786,24 +859,25 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("api/websocket/client/messages.proto", fileDescriptor_messages_6675af4d046922a8)
+	proto.RegisterFile("api/websocket/client/messages.proto", fileDescriptor_messages_cd123d67398a7bd1)
 }
 
-var fileDescriptor_messages_6675af4d046922a8 = []byte{
-	// 238 bytes of a gzipped FileDescriptorProto
+var fileDescriptor_messages_cd123d67398a7bd1 = []byte{
+	// 254 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x4e, 0x2c, 0xc8, 0xd4,
 	0x2f, 0x4f, 0x4d, 0x2a, 0xce, 0x4f, 0xce, 0x4e, 0x2d, 0xd1, 0x4f, 0xce, 0xc9, 0x4c, 0xcd, 0x2b,
 	0xd1, 0xcf, 0x4d, 0x2d, 0x2e, 0x4e, 0x4c, 0x4f, 0x2d, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17,
 	0x62, 0x83, 0x08, 0x4b, 0xe9, 0xa6, 0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea,
 	0xa7, 0xe7, 0xa7, 0xe7, 0xeb, 0x83, 0xa5, 0x93, 0x4a, 0xd3, 0xc0, 0x3c, 0x30, 0x07, 0xcc, 0x82,
-	0x68, 0x53, 0xb2, 0xe7, 0xe2, 0xf7, 0x2f, 0x2d, 0x49, 0xca, 0x2f, 0xcd, 0x4b, 0xf1, 0x85, 0x18,
+	0x68, 0x53, 0x0a, 0xe5, 0xe2, 0xf7, 0x2f, 0x2d, 0x49, 0xca, 0x2f, 0xcd, 0x4b, 0xf1, 0x85, 0x18,
 	0x28, 0x24, 0xc4, 0xc5, 0x92, 0x92, 0x5a, 0x5c, 0x22, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0x19, 0x04,
 	0x66, 0x0b, 0x49, 0x70, 0xb1, 0x17, 0x24, 0x56, 0xe6, 0xe4, 0x27, 0xa6, 0x48, 0x30, 0x29, 0x30,
-	0x6a, 0xf0, 0x04, 0xc1, 0xb8, 0x4a, 0x36, 0x5c, 0x7c, 0x9e, 0x79, 0x28, 0xfa, 0x05, 0xb8, 0x98,
-	0x8b, 0x8b, 0x92, 0xa1, 0xda, 0x41, 0x4c, 0xdc, 0xba, 0x9d, 0x6c, 0x2e, 0x3c, 0x94, 0x63, 0xb8,
-	0xf1, 0x50, 0x8e, 0xe1, 0xc3, 0x43, 0x39, 0xc6, 0x1f, 0x0f, 0xe5, 0x18, 0x1b, 0x1e, 0xc9, 0x31,
-	0xae, 0x78, 0x24, 0xc7, 0xb8, 0xe3, 0x91, 0x1c, 0xe3, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9,
-	0x31, 0x3e, 0x78, 0x24, 0xc7, 0xf8, 0xe2, 0x91, 0x1c, 0xc3, 0x87, 0x47, 0x72, 0x8c, 0x13, 0x1e,
-	0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c, 0x43, 0x12, 0x1b, 0xd8, 0x0f, 0xc6,
-	0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x01, 0xa2, 0x7b, 0x8e, 0x21, 0x01, 0x00, 0x00,
+	0x6a, 0xf0, 0x04, 0xc1, 0xb8, 0x42, 0x22, 0x5c, 0xac, 0x20, 0x15, 0xc5, 0x12, 0xcc, 0x0a, 0xcc,
+	0x1a, 0x9c, 0x41, 0x10, 0x8e, 0x92, 0x0d, 0x17, 0x9f, 0x67, 0x1e, 0x8a, 0xa9, 0x02, 0x5c, 0xcc,
+	0xc5, 0x45, 0xc9, 0x50, 0x43, 0x41, 0x4c, 0xdc, 0x66, 0x3a, 0xd9, 0x5c, 0x78, 0x28, 0xc7, 0x70,
+	0xe3, 0xa1, 0x1c, 0xc3, 0x87, 0x87, 0x72, 0x8c, 0x3f, 0x1e, 0xca, 0x31, 0x36, 0x3c, 0x92, 0x63,
+	0x5c, 0xf1, 0x48, 0x8e, 0x71, 0xc7, 0x23, 0x39, 0xc6, 0x13, 0x8f, 0xe4, 0x18, 0x2f, 0x3c, 0x92,
+	0x63, 0x7c, 0xf0, 0x48, 0x8e, 0xf1, 0xc5, 0x23, 0x39, 0x86, 0x0f, 0x8f, 0xe4, 0x18, 0x27, 0x3c,
+	0x96, 0x63, 0xb8, 0xf0, 0x58, 0x8e, 0xe1, 0xc6, 0x63, 0x39, 0x86, 0x24, 0x36, 0xb0, 0xcf, 0x8c,
+	0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0xc6, 0x9e, 0x5a, 0x14, 0x37, 0x01, 0x00, 0x00,
 }

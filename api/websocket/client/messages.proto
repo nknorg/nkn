@@ -19,6 +19,7 @@ option (gogoproto.populate_all) = true;
 message OutboundMessage {
   string dest = 1;
   bytes payload = 2;
+  repeated string dests = 3;
 }
 
 message InboundMessage {
