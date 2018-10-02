@@ -15,18 +15,20 @@ import (
 
 type PorServer struct {
 	sync.RWMutex
-	account *vault.Account
-	ring    *chord.Ring
-	pors    map[uint32][]*PorPackage
+	account    *vault.Account
+	ring       *chord.Ring
+	pors       map[uint32][]*PorPackage
+	minSigHash map[uint32][]byte
 }
 
 var porServer *PorServer
 
 func NewPorServer(account *vault.Account, ring *chord.Ring) *PorServer {
 	ps := &PorServer{
-		account: account,
-		ring:    ring,
-		pors:    make(map[uint32][]*PorPackage),
+		account:    account,
+		ring:       ring,
+		pors:       make(map[uint32][]*PorPackage),
+		minSigHash: make(map[uint32][]byte),
 	}
 	return ps
 }
@@ -195,21 +197,28 @@ func (ps *PorServer) GetTxnHashBySigChainHeight(height uint32) ([]common.Uint256
 	return txnHashes, nil
 }
 
-func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) error {
+func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) (bool, error) {
 	porpkg, err := NewPorPackage(txn)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	height := porpkg.GetVoteForHeight()
 	ps.Lock()
+	ps.Unlock()
+
+	if ps.minSigHash[height] == nil || bytes.Compare(porpkg.SigHash, ps.minSigHash[height]) < 0 {
+		ps.minSigHash[height] = porpkg.SigHash
+	} else {
+		return false, nil
+	}
+
 	if _, ok := ps.pors[height]; !ok {
 		ps.pors[height] = make([]*PorPackage, 0)
 	}
 	ps.pors[height] = append(ps.pors[height], porpkg)
-	ps.Unlock()
 
-	return nil
+	return true, nil
 }
 
 func (ps *PorServer) IsSigChainExist(hash []byte, height uint32) (*common.Uint256, bool) {
