@@ -205,7 +205,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) (bool, erro
 
 	height := porpkg.GetVoteForHeight()
 	ps.Lock()
-	ps.Unlock()
+	defer ps.Unlock()
 
 	if ps.minSigHash[height] == nil || bytes.Compare(porpkg.SigHash, ps.minSigHash[height]) < 0 {
 		ps.minSigHash[height] = porpkg.SigHash
