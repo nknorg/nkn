@@ -149,12 +149,23 @@ func (n *node) initConnection() {
 			return
 		}
 	}
+
+	errCount := 0
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
+			if errCount < 10 {
+				errCount++
+			} else {
+				panic("Cannot accept new connections: " + err.Error())
+			}
+
 			log.Error("Error accepting ", err.Error())
-			return
+			time.Sleep(1 * time.Second)
+			continue
 		}
+
+		errCount = 0
 		log.Info("Remote node connect with ", conn.RemoteAddr(), conn.LocalAddr())
 
 		n.link.connCnt++
