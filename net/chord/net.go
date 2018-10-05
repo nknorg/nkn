@@ -713,17 +713,26 @@ func (t *TCPTransport) reapOnce() {
 
 // Listens for inbound connections
 func (t *TCPTransport) listen() {
+	errCount := 0
 	for {
 		conn, err := t.sock.AcceptTCP()
 		if err != nil {
+			if errCount < 10 {
+				errCount++
+			} else {
+				panic("Cannot accept new connections: " + err.Error())
+			}
+
 			if atomic.LoadInt32(&t.shutdown) == 0 {
 				log.Printf("[ERR] Error accepting TCP connection! %s\n", err)
-				time.Sleep(time.Millisecond * 300) // Add delay before try again sock Accept
+				time.Sleep(1 * time.Second)
 				continue
 			} else {
 				return
 			}
 		}
+
+		errCount = 0
 
 		// Setup the conn
 		t.setupConn(conn)
