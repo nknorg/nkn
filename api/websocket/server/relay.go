@@ -44,10 +44,10 @@ func (ws *WsServer) SendRelayPacket(clientId string, msg *client.OutboundMessage
 	}
 	srcAddrStr := *srcAddrStrPtr
 
-	msg.Dest = ResolveDest(msg.Dest)
-
 	var signature []byte
 	for _, dest := range append(msg.Dests, msg.Dest) {
+		dest = ResolveDest(dest)
+
 		err := ws.node.SendRelayPacket(srcAddrStr, dest, msg.Payload, signature, msg.MaxHoldingSeconds)
 		if err != nil {
 			log.Error("Send relay packet error:", err)
