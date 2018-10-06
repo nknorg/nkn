@@ -8,6 +8,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
@@ -1082,6 +1083,42 @@ func VerifyAndSendTx(n protocol.Noder, txn *transaction.Transaction) errors.ErrC
 	return errors.ErrNoError
 }
 
+// getAddressByName get address by name
+// params: ["name":<name>]
+// return: {"result":<result>, "error":<errcode>}
+func getAddressByName(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	name, ok := params["name"].(string)
+	if !ok {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	publicKey, err := ledger.DefaultLedger.Store.GetRegistrant(name)
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	script, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(publicKey)
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	scriptHash, err := common.ToCodeHash(script)
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	address, err := scriptHash.ToAddress()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
+	return respPacking(address, SUCCESS)
+}
+
 var InitialAPIHandlers = map[string]APIHandler{
 	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
 	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
@@ -1114,4 +1151,5 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getbalancebyaddr":     {Handler: getBalanceByAddr},
 	"getbalancebyasset":    {Handler: getBalanceByAsset},
 	"getunspends":          {Handler: getUnspends},
+	"getaddressbyname":     {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
 }
