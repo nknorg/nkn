@@ -66,7 +66,7 @@ func VerifyTransaction(Tx *Transaction) ErrCode {
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func VerifyTransactionWithBlock(TxPool []*Transaction) error {
+func VerifyTransactionWithBlock(TxPool []*Transaction) ErrCode {
 	//initial
 	txnlist := make(map[Uint256]*Transaction, 0)
 	var txPoolInputs []string
@@ -80,13 +80,14 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) error {
 	for _, txn := range TxPool {
 		//1.check weather have duplicate transaction.
 		if _, exist := txnlist[txn.Hash()]; exist {
-			return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
+			log.Warn("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
+			return ErrDuplicatedTx
 		} else {
 			txnlist[txn.Hash()] = txn
 		}
 		//2.check Duplicate Utxo input
 		if err := CheckDuplicateUtxoInBlock(txn, txPoolInputs); err != nil {
-			return err
+			return ErrDuplicateInput
 		}
 		//3.check issue amount
 		switch txn.TxType {
@@ -97,7 +98,8 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) error {
 				//Get the Asset amount when RegisterAsseted.
 				trx, err := Store.GetTransaction(k)
 				if trx.TxType != RegisterAsset {
-					return errors.New("[VerifyTransaction], TxType is illegal.")
+					log.Warn("[VerifyTransaction], TxType is illegal.")
+					return ErrSummaryAsset
 				}
 				AssetReg := trx.Payload.(*payload.RegisterAsset)
 
@@ -108,7 +110,8 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) error {
 				} else {
 					quantity_issued, err = Store.GetQuantityIssued(k)
 					if err != nil {
-						return errors.New("[VerifyTransaction], GetQuantityIssued failed.")
+						log.Warn("[VerifyTransaction], GetQuantityIssued failed.")
+						return ErrSummaryAsset
 					}
 				}
 
@@ -130,14 +133,15 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) error {
 				//quantity_issued : amount has been issued of this assedID
 				//txPoolAmounts   : amount in transactionPool of this assedID of issue transaction.
 				if AssetReg.Amount-quantity_issued < txPoolAmounts {
-					return errors.New("[VerifyTransaction], Amount check error.")
+					log.Warn("[VerifyTransaction], Amount check error.")
+					return ErrSummaryAsset
 				}
 			}
 		}
 
 	}
 
-	return nil
+	return ErrNoError
 }
 
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger

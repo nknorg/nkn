@@ -41,6 +41,9 @@ func TransactionCheck(block *Block) error {
 		if errCode := tx.VerifyTransaction(txn); errCode != ErrNoError {
 			return errors.New("transaction sanity check failed")
 		}
+		if errCode := tx.VerifyTransactionWithBlock(block.Transactions); errCode != ErrNoError {
+			return errors.New("transaction block check failed")
+		}
 		if errCode := tx.VerifyTransactionWithLedger(txn); errCode != ErrNoError {
 			return errors.New("transaction history check failed")
 		}
