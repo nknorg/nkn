@@ -9,6 +9,9 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"net/http"
+	"io/ioutil"
+	"encoding/json"
 
 	"github.com/nknorg/nkn/api/httpjson"
 	"github.com/nknorg/nkn/api/websocket"
@@ -26,6 +29,10 @@ import (
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
 	"github.com/urfave/cli"
+)
+
+const (
+	TestNetVersionNum      = 1
 )
 
 var (
@@ -173,7 +180,56 @@ func nknMain(c *cli.Context) error {
 	return nil
 }
 
+type testNetVer struct {
+	Ver   int      `json:"version"`
+}
+
+func GetRemoteVersionNum() (int, error) {
+	var myClient = &http.Client{Timeout: 10 * time.Second}
+	r, err := myClient.Get("http://testnet.nkn.org/nkn.runtime.version")
+	if err != nil {
+		return 0, err
+	}
+	defer r.Body.Close()
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return 0, err
+	}
+	res := testNetVer{}
+	json.Unmarshal(body, &res)
+
+	return res.Ver, err
+}
+
+
+func TestNetVersion(timer *time.Timer) {
+	for {
+		select {
+		case <-timer.C:
+			verNum, err := GetRemoteVersionNum()
+			if err != nil {
+				log.Warn("Get the remote version number error")
+				timer.Reset(30 * time.Minute)
+				break
+			}
+			if (verNum > TestNetVersionNum) {
+				log.Error("Your current nknd is deprecated")
+				log.Error("Please download the latest NKN software from",
+					"https://github.com/nknorg/nkn/releases")
+				os.Exit(1)
+			}
+
+			timer.Reset(30 * time.Minute)
+		}
+	}
+}
+
 func main() {
+	// Detect the remote nknd version, only used for testnet for debugging purposes
+	timer := time.NewTimer(1 * time.Second)
+	go TestNetVersion(timer)
+
 	app := cli.NewApp()
 	app.Name = "nknd"
 	app.Version = config.Version
