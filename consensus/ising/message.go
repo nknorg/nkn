@@ -17,8 +17,8 @@ const (
 	BlockResponseMsg IsingMessageType = 0x02
 	BlockProposalMsg IsingMessageType = 0x03
 	MindChangingMsg  IsingMessageType = 0x04
-	PingMsg          IsingMessageType = 0x05
-	PongMsg          IsingMessageType = 0x06
+	PingMsg          IsingMessageType = 0x07
+	PongMsg          IsingMessageType = 0x08
 )
 
 type IsingMessage interface {
