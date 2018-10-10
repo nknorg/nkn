@@ -29,6 +29,10 @@ type TxnStore interface {
 	GetRegistrant(name string) ([]byte, error)
 }
 
+type Iterator interface {
+	Iterate(handler func(item *Transaction) interface{}) interface{}
+}
+
 // VerifyTransaction verifys received single transaction
 func VerifyTransaction(Tx *Transaction) ErrCode {
 
@@ -66,18 +70,19 @@ func VerifyTransaction(Tx *Transaction) ErrCode {
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func VerifyTransactionWithBlock(TxPool []*Transaction) ErrCode {
+func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 	//initial
 	txnlist := make(map[Uint256]*Transaction, 0)
 	var txPoolInputs []string
 	//sum all inputs in TxPool
-	for _, Tx := range TxPool {
+	iterator.Iterate(func(Tx *Transaction) interface{} {
 		for _, UTXOinput := range Tx.Inputs {
 			txPoolInputs = append(txPoolInputs, UTXOinput.ToString())
 		}
-	}
+		return nil
+	})
 	//start check
-	for _, txn := range TxPool {
+	err := iterator.Iterate(func(txn *Transaction) interface{} {
 		//1.check weather have duplicate transaction.
 		if _, exist := txnlist[txn.Hash()]; exist {
 			log.Warn("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
@@ -117,7 +122,7 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) ErrCode {
 
 				//calc the amounts in txPool which are also IssueAsset
 				var txPoolAmounts Fixed64
-				for _, t := range TxPool {
+				iterator.Iterate(func(t *Transaction) interface{} {
 					if t.TxType == IssueAsset {
 						outputResult := t.GetMergedAssetIDValueFromOutputs()
 						for txidInPool, txValueInPool := range outputResult {
@@ -126,7 +131,9 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) ErrCode {
 							}
 						}
 					}
-				}
+
+					return nil
+				})
 
 				//calc weather out off the amount when Registed.
 				//AssetReg.Amount : amount when RegisterAsset of this assedID
@@ -139,6 +146,10 @@ func VerifyTransactionWithBlock(TxPool []*Transaction) ErrCode {
 			}
 		}
 
+		return nil
+	})
+	if err != nil {
+		return err.(ErrCode)
 	}
 
 	return ErrNoError

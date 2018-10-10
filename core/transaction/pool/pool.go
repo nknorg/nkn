@@ -17,6 +17,19 @@ const (
 	ExclusivedSigchainHeight = 3
 )
 
+type TransactionMap map[common.Uint256]*Transaction
+
+func (iterable TransactionMap) Iterate(handler func(item *Transaction) interface{}) interface{} {
+	for _, item := range iterable {
+		result := handler(item)
+		if result != nil {
+			return result
+		}
+	}
+
+	return nil
+}
+
 type TxnPool struct {
 	sync.RWMutex
 	txnCnt        uint64                            // transaction count
@@ -38,11 +51,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 		log.Info("Transaction verification failed", txn.Hash())
 		return errCode
 	}
-	var txnList []*Transaction
-	for _, tx := range tp.txnList {
-		txnList = append(txnList, tx)
-	}
-	if errCode := VerifyTransactionWithBlock(txnList); errCode != ErrNoError {
+	if errCode := VerifyTransactionWithBlock(TransactionMap(tp.txnList)); errCode != ErrNoError {
 		log.Info("Transaction verification with block failed", txn.Hash())
 		return errCode
 	}

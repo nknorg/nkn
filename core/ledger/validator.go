@@ -27,6 +27,19 @@ type VBlock struct {
 	ReceiveTime int64
 }
 
+type TransactionArray []*tx.Transaction
+
+func (iterable TransactionArray) Iterate(handler func(item *tx.Transaction) interface{}) interface{} {
+	for _, item := range iterable {
+		result := handler(item)
+		if result != nil {
+			return result
+		}
+	}
+
+	return nil
+}
+
 func TransactionCheck(block *Block) error {
 	if block.Transactions == nil {
 		return errors.New("empty block")
@@ -41,7 +54,7 @@ func TransactionCheck(block *Block) error {
 		if errCode := tx.VerifyTransaction(txn); errCode != ErrNoError {
 			return errors.New("transaction sanity check failed")
 		}
-		if errCode := tx.VerifyTransactionWithBlock(block.Transactions); errCode != ErrNoError {
+		if errCode := tx.VerifyTransactionWithBlock(TransactionArray(block.Transactions)); errCode != ErrNoError {
 			return errors.New("transaction block check failed")
 		}
 		if errCode := tx.VerifyTransactionWithLedger(txn); errCode != ErrNoError {
