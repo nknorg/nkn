@@ -30,7 +30,7 @@ type TxnStore interface {
 }
 
 type Iterator interface {
-	Iterate(handler func(item *Transaction) interface{}) interface{}
+	Iterate(handler func(item *Transaction) ErrCode) ErrCode
 }
 
 // VerifyTransaction verifys received single transaction
@@ -72,38 +72,38 @@ func VerifyTransaction(Tx *Transaction) ErrCode {
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
 func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 	//initial
-	txnlist := make(map[Uint256]*Transaction, 0)
-	var txPoolInputs []string
-	//sum all inputs in TxPool
-	iterator.Iterate(func(Tx *Transaction) interface{} {
-		for _, UTXOinput := range Tx.Inputs {
-			txPoolInputs = append(txPoolInputs, UTXOinput.ToString())
-		}
-		return nil
-	})
+	txnlist := make(map[Uint256]struct{}, 0)
+	txPoolInputs := make(map[string]struct{}, 0)
+	issueSummary := make(map[Uint256]Fixed64, 0)
 	//start check
-	err := iterator.Iterate(func(txn *Transaction) interface{} {
+	return iterator.Iterate(func(txn *Transaction) ErrCode {
 		//1.check weather have duplicate transaction.
 		if _, exist := txnlist[txn.Hash()]; exist {
 			log.Warn("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
 			return ErrDuplicatedTx
 		} else {
-			txnlist[txn.Hash()] = txn
+			txnlist[txn.Hash()] = struct{}{}
 		}
 		//2.check Duplicate Utxo input
-		if err := CheckDuplicateUtxoInBlock(txn, txPoolInputs); err != nil {
-			return ErrDuplicateInput
+		for _, UTXOinput := range txn.Inputs {
+			inputString := UTXOinput.ToString()
+			if _, ok := txPoolInputs[inputString]; ok {
+				log.Warn("[VerifyTransactionWithBlock], duplicate input exist in block.")
+				return ErrDuplicateInput
+			}
+			txPoolInputs[inputString] = struct{}{}
 		}
 		//3.check issue amount
 		switch txn.TxType {
 		case IssueAsset:
-			//TODO: use delta mode to improve performance
 			results := txn.GetMergedAssetIDValueFromOutputs()
-			for k, _ := range results {
+			for k, delta := range results {
+				issueSummary[k] = issueSummary[k] + delta
+
 				//Get the Asset amount when RegisterAsseted.
 				trx, err := Store.GetTransaction(k)
 				if trx.TxType != RegisterAsset {
-					log.Warn("[VerifyTransaction], TxType is illegal.")
+					log.Warn("[VerifyTransactionWithBlock], TxType is illegal.")
 					return ErrSummaryAsset
 				}
 				AssetReg := trx.Payload.(*payload.RegisterAsset)
@@ -115,44 +115,24 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 				} else {
 					quantity_issued, err = Store.GetQuantityIssued(k)
 					if err != nil {
-						log.Warn("[VerifyTransaction], GetQuantityIssued failed.")
+						log.Warn("[VerifyTransactionWithBlock], GetQuantityIssued failed.")
 						return ErrSummaryAsset
 					}
 				}
 
-				//calc the amounts in txPool which are also IssueAsset
-				var txPoolAmounts Fixed64
-				iterator.Iterate(func(t *Transaction) interface{} {
-					if t.TxType == IssueAsset {
-						outputResult := t.GetMergedAssetIDValueFromOutputs()
-						for txidInPool, txValueInPool := range outputResult {
-							if txidInPool == k {
-								txPoolAmounts = txPoolAmounts + txValueInPool
-							}
-						}
-					}
-
-					return nil
-				})
-
 				//calc weather out off the amount when Registed.
 				//AssetReg.Amount : amount when RegisterAsset of this assedID
 				//quantity_issued : amount has been issued of this assedID
-				//txPoolAmounts   : amount in transactionPool of this assedID of issue transaction.
-				if AssetReg.Amount-quantity_issued < txPoolAmounts {
-					log.Warn("[VerifyTransaction], Amount check error.")
+				//issueSummary[k] : amount in transactionPool of this assedID of issue transaction.
+				if AssetReg.Amount-quantity_issued < issueSummary[k] {
+					log.Warn("[VerifyTransactionWithBlock], Amount check error.")
 					return ErrSummaryAsset
 				}
 			}
 		}
 
-		return nil
+		return ErrNoError
 	})
-	if err != nil {
-		return err.(ErrCode)
-	}
-
-	return ErrNoError
 }
 
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
@@ -177,21 +157,6 @@ func CheckDuplicateInput(tx *Transaction) error {
 		for j := 0; j < i; j++ {
 			if utxoin.ReferTxID == tx.Inputs[j].ReferTxID && utxoin.ReferTxOutputIndex == tx.Inputs[j].ReferTxOutputIndex {
 				return errors.New("invalid transaction")
-			}
-		}
-	}
-	return nil
-}
-
-func CheckDuplicateUtxoInBlock(tx *Transaction, txPoolInputs []string) error {
-	var txInputs []string
-	for _, t := range tx.Inputs {
-		txInputs = append(txInputs, t.ToString())
-	}
-	for _, i := range txInputs {
-		for _, j := range txPoolInputs {
-			if i == j {
-				return errors.New("Duplicated UTXO inputs found in tx pool")
 			}
 		}
 	}

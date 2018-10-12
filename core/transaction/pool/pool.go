@@ -19,15 +19,15 @@ const (
 
 type TransactionMap map[common.Uint256]*Transaction
 
-func (iterable TransactionMap) Iterate(handler func(item *Transaction) interface{}) interface{} {
+func (iterable TransactionMap) Iterate(handler func(item *Transaction) ErrCode) ErrCode {
 	for _, item := range iterable {
 		result := handler(item)
-		if result != nil {
+		if result != ErrNoError {
 			return result
 		}
 	}
 
-	return nil
+	return ErrNoError
 }
 
 type TxnPool struct {

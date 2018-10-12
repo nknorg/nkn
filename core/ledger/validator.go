@@ -29,15 +29,15 @@ type VBlock struct {
 
 type TransactionArray []*tx.Transaction
 
-func (iterable TransactionArray) Iterate(handler func(item *tx.Transaction) interface{}) interface{} {
+func (iterable TransactionArray) Iterate(handler func(item *tx.Transaction) ErrCode) ErrCode {
 	for _, item := range iterable {
 		result := handler(item)
-		if result != nil {
+		if result != ErrNoError {
 			return result
 		}
 	}
 
-	return nil
+	return ErrNoError
 }
 
 func TransactionCheck(block *Block) error {
