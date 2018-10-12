@@ -5,6 +5,7 @@ import (
 	"time"
 
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/core/contract/program"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/signature"
@@ -108,7 +109,7 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
 		Outputs: []*transaction.TxnOutput{
 			{
 				AssetID:     ledger.DefaultLedger.Blockchain.AssetID,
-				Value:       10 * StorageFactor,
+				Value:       Fixed64 (config.DefaultMiningReward * StorageFactor),
 				ProgramHash: bm.account.ProgramHash,
 			},
 		},
