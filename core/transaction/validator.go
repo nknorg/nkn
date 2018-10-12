@@ -75,6 +75,8 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 	txnlist := make(map[Uint256]struct{}, 0)
 	txPoolInputs := make(map[string]struct{}, 0)
 	issueSummary := make(map[Uint256]Fixed64, 0)
+	registeredNames := make(map[string]struct{}, 0)
+	nameRegistrants := make(map[string]struct{}, 0)
 	//start check
 	return iterator.Iterate(func(txn *Transaction) ErrCode {
 		//1.check weather have duplicate transaction.
@@ -129,6 +131,31 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 					return ErrSummaryAsset
 				}
 			}
+		case RegisterName:
+			namePayload := txn.Payload.(*payload.RegisterName)
+
+			name := namePayload.Name
+			if _, ok := registeredNames[name]; ok {
+				log.Warn("[VerifyTransactionWithBlock], duplicate name exist in block.")
+				return ErrDuplicateName
+			}
+			registeredNames[name] = struct{}{}
+
+			registrant := BytesToHexString(namePayload.Registrant)
+			if _, ok := nameRegistrants[registrant]; ok {
+				log.Warn("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
+				return ErrDuplicateName
+			}
+			nameRegistrants[registrant] = struct{}{}
+		case DeleteName:
+			namePayload := txn.Payload.(*payload.DeleteName)
+
+			registrant := BytesToHexString(namePayload.Registrant)
+			if _, ok := nameRegistrants[registrant]; ok {
+				log.Warn("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
+				return ErrDuplicateName
+			}
+			nameRegistrants[registrant] = struct{}{}
 		}
 
 		return ErrNoError
