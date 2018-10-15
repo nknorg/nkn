@@ -27,6 +27,7 @@ const (
 	ErrSummaryAsset         ErrCode = 45012
 	ErrXmitFail             ErrCode = 45013
 	ErrNonOptimalSigChain   ErrCode = 45014
+	ErrMineReward		ErrCode = 45015
 )
 
 func (err ErrCode) Error() string {
