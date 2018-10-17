@@ -78,6 +78,21 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 	return service
 }
 
+// FilterNoderByIDs filter out a node slice who its ID was specified in 'nids'
+func FilterNoderByIDs(nodes []protocol.Noder, nids []uint64) (ret []protocol.Noder) {
+	if nids == nil {
+		return nodes
+	}
+	for _, id := range nids {
+		for _, n := range nodes {
+			if id == n.GetID() {
+				ret = append(ret, n)
+			}
+		}
+	}
+	return ret
+}
+
 func (ps *ProposerService) ProcessRollback() {
 	step := BlockRollbackStep
 	forkingPointSet := false
@@ -89,7 +104,7 @@ func (ps *ProposerService) ProcessRollback() {
 		}
 		ps.forkCache.probeHeight = uint32(probeHeight)
 		reqMsg := NewPing(ps.forkCache.probeHeight)
-		nodes := ps.GetReceiverNode(nil)
+		nodes := ps.GetPersistedNode(nil)
 		ps.SendConsensusMsg(reqMsg, nodes)
 		time.Sleep(WaitingForProbeFinished)
 		step += BlockRollbackStep
@@ -122,7 +137,7 @@ func (ps *ProposerService) HandleBlockForking() {
 		select {
 		case <-timer.C:
 			//send ping to all neighbors periodically
-			nodes := ps.GetReceiverNode(nil)
+			nodes := ps.GetPersistedNode(nil)
 			currentHeight := ledger.DefaultLedger.Store.GetHeight()
 			currentHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
 			ps.forkCache = NewForkCache(currentHeight, currentHash)
@@ -205,20 +220,13 @@ func (ps *ProposerService) ConsensusRoutine(vType voting.VotingContentType, isPr
 // GetReceiverNode returns neighbors nodes according to neighbor node ID passed in.
 // If 'nids' passed in is nil then returns all neighbor nodes.
 func (ps *ProposerService) GetReceiverNode(nids []uint64) []protocol.Noder {
-	if nids == nil {
-		return ps.localNode.GetNeighborNoder()
-	}
-	var nodes []protocol.Noder
-	neighbors := ps.localNode.GetNeighborNoder()
-	for _, id := range nids {
-		for _, node := range neighbors {
-			if id == node.GetID() {
-				nodes = append(nodes, node)
-			}
-		}
-	}
+	return FilterNoderByIDs(ps.localNode.GetNeighborNoder(), nids)
+}
 
-	return nodes
+// GetPersistedNode returns PersistFinished nodes from neighbors according to neighbor node ID passed in.
+// If 'nids' passed in is nil then returns all.
+func (ps *ProposerService) GetPersistedNode(nids []uint64) []protocol.Noder {
+	return FilterNoderByIDs(ps.localNode.GetSyncFinishedNeighbors(), nids)
 }
 
 func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.VotingContentType, isProposer bool) error {
