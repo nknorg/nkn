@@ -142,7 +142,7 @@ func (ps *ProposerService) HandleBlockForking() {
 			currentHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
 			ps.forkCache = NewForkCache(currentHeight, currentHash)
 			// ping neighbors with local current height
-			pingMsg := NewPing(currentHeight)
+			pingMsg := NewPing(MaxUint32) // ping remote with MaxUint32 for get latest hash
 			ps.SendConsensusMsg(pingMsg, nodes)
 
 			// wait response from neighbor and handle rollback if needed
@@ -984,11 +984,10 @@ func (ps *ProposerService) HandlePongMsg(msg *Pong, sender uint64) {
 		log.Error("no ping, receive pong.")
 		return
 	}
-	pingHeight := msg.pingHeight
 	hash := msg.blockHash
 	height := msg.blockHeight
-	switch pingHeight {
-	case ps.forkCache.currentHeight:
+	switch msg.pingHeight {
+	case MaxUint32:
 		// height delta 1 should seem as NOT forked.
 		if 1 == AbsUint(uint(height), uint(ps.forkCache.currentHeight)) {
 			// Use myCache hash & height instead of remote's, for ignore delta 1 difference

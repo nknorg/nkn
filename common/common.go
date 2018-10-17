@@ -15,6 +15,8 @@ import (
 	"github.com/golang/crypto/ripemd160"
 )
 
+const MaxUint32 = ^uint32(0)
+
 func ToCodeHash(code []byte) (Uint160, error) {
 	temp := sha256.Sum256(code)
 	md := ripemd160.New()
