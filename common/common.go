@@ -159,3 +159,10 @@ func FileExisted(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
 }
+
+func AbsUint(n1 uint, n2 uint) uint {
+	if n1 > n2 {
+		return n1 - n2
+	}
+	return n2 - n1
+}
