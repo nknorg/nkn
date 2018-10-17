@@ -116,9 +116,5 @@ func (fc *ForkCache) handleResponse(resp map[uint64]*Uint256) (*Uint256, bool) {
 			break
 		}
 	}
-	if bestHash == nil {
-		return nil, false
-	}
-
-	return bestHash, true
+	return bestHash, bestHash != nil
 }
