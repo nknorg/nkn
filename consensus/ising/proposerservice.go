@@ -981,9 +981,10 @@ func (ps *ProposerService) HandlePongMsg(msg *Pong, sender uint64) {
 	height := msg.blockHeight
 	switch pingHeight {
 	case ps.forkCache.currentHeight:
-		// ignore which height lower than 1 since local node may fast than neighbors
-		if height == ps.forkCache.currentHeight-1 {
-			return
+		// height delta 1 should seem as NOT forked.
+		if 1 == AbsUint(uint(height), uint(ps.forkCache.currentHeight)) {
+			// Use myCache hash & height instead of remote's, for ignore delta 1 difference
+			hash, height = ps.forkCache.currentHash, ps.forkCache.currentHeight
 		}
 		err := ps.forkCache.CachePingResp(hash, height, sender)
 		if err != nil {
