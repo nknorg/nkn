@@ -94,21 +94,29 @@ func FilterNoderByIDs(nodes []protocol.Noder, nids []uint64) (ret []protocol.Nod
 }
 
 func (ps *ProposerService) ProcessRollback() {
-	step := BlockRollbackStep
-	forkingPointSet := false
-	for !forkingPointSet {
-		probeHeight := int(ps.forkCache.currentHeight) - step
-		if probeHeight <= 0 {
+	forkedPointFound := false
+	genesisChecked := false
+	ps.forkCache.probeHeight = ledger.DefaultLedger.Store.GetHeight()
+
+	for !forkedPointFound {
+		if genesisChecked && 0 == ps.forkCache.probeHeight {
+			log.Error("genesis block different. local database error")
 			ps.forkCache.SetRollBackHeight(0)
 			break
 		}
-		ps.forkCache.probeHeight = uint32(probeHeight)
+
 		reqMsg := NewPing(ps.forkCache.probeHeight)
 		nodes := ps.GetPersistedNode(nil)
 		ps.SendConsensusMsg(reqMsg, nodes)
 		time.Sleep(WaitingForProbeFinished)
-		step += BlockRollbackStep
-		forkingPointSet = ps.forkCache.AnalyzeProbeResp()
+		forkedPointFound = ps.forkCache.AnalyzeProbeResp()
+
+		if ps.forkCache.probeHeight < BlockRollbackStep {
+			ps.forkCache.probeHeight = 0
+			genesisChecked = true
+		} else {
+			ps.forkCache.probeHeight -= BlockRollbackStep
+		}
 	}
 	if ps.forkCache.GetRollBackHeight() == 0 {
 		log.Error("local database error, need to check genesis block")
@@ -116,6 +124,7 @@ func (ps *ProposerService) ProcessRollback() {
 		cHeight := int(ps.forkCache.GetCurrentHeight())
 		rHeight := int(ps.forkCache.GetRollBackHeight())
 		log.Warnf("roll back blocks from height %d to %d", cHeight, rHeight)
+		// TODO: Lock db before Rollback for avoid corrupted ledger
 		for i := cHeight; i > rHeight; i-- {
 			b, err := ledger.DefaultLedger.Store.GetBlockByHeight(uint32(i))
 			if err != nil {
@@ -136,19 +145,22 @@ func (ps *ProposerService) HandleBlockForking() {
 	for {
 		select {
 		case <-timer.C:
-			//send ping to all neighbors periodically
-			nodes := ps.GetPersistedNode(nil)
-			currentHeight := ledger.DefaultLedger.Store.GetHeight()
-			currentHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
-			ps.forkCache = NewForkCache(currentHeight, currentHash)
-			// ping neighbors with local current height
-			pingMsg := NewPing(MaxUint32) // ping remote with MaxUint32 for get latest hash
-			ps.SendConsensusMsg(pingMsg, nodes)
+			// Don't check forked during block syncing
+			if protocol.PersistFinished == ps.localNode.GetSyncState() {
+				//send ping to all neighbors periodically
+				nodes := ps.GetPersistedNode(nil)
+				currentHeight := ledger.DefaultLedger.Store.GetHeight()
+				currentHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
+				ps.forkCache = NewForkCache(currentHeight, currentHash)
+				// ping neighbors with local current height
+				pingMsg := NewPing(MaxUint32) // ping remote with MaxUint32 for get latest hash
+				ps.SendConsensusMsg(pingMsg, nodes)
 
-			// wait response from neighbor and handle rollback if needed
-			time.Sleep(WaitingForProbeFinished)
-			if ps.forkCache.AnalyzePingResp() {
-				ps.ProcessRollback()
+				// wait response from neighbor and handle rollback if needed
+				time.Sleep(WaitingForProbeFinished)
+				if ps.forkCache.AnalyzePingResp() {
+					ps.ProcessRollback()
+				}
 			}
 			// reset timer right away if no forking
 			timer.Reset(0)
@@ -461,7 +473,8 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 		err = ps.PersistCachedBlock(ps.syncCache.consensusHeight)
 		if err != nil {
 			log.Errorf("persist cached block error: %v, height: %d", err, ps.syncCache.consensusHeight)
-			return
+			os.Exit(1) // Workaround. Don't hung at SyncFinished state
+			//return
 		}
 		for i := ps.syncCache.minHeight; i <= ps.syncCache.maxHeight; i++ {
 			// cleanup cached block
@@ -486,7 +499,8 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 			err = ps.PersistCachedBlock(i)
 			if err != nil {
 				log.Errorf("persist cached block error: %v, height: %d", err, i)
-				return
+				os.Exit(1) // Workaround. Don't hung at SyncFinished state
+				//return
 			}
 		}
 		// cleanup cached block
