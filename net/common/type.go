@@ -11,7 +11,7 @@ type NodeInfo struct {
 	Addr      string `json:"Addr"`      // The node's IP address
 	ID        uint64 `json:"ID"`        // The nodes's id
 	Time      int64  `json:"Time"`
-	Version   uint32 `json:"Version"`  // The network protocol the node used
+	Version   string `json:"Version"`  // The network protocol the node used
 	Services  uint64 `json:"Services"` // The services the node supplied
 	Relay     bool   `json:"Relay"`    // The relay capability of the node (merge into capbility flag)
 	Height    uint32 `json:"Height"`   // The node latest block height
