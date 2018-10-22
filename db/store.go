@@ -373,20 +373,20 @@ func (cs *ChainStore) GetContract(codeHash Uint160) ([]byte, error) {
 	return bData, nil
 }
 
-func (cs *ChainStore) getHeaderWithCache(hash Uint256) *Header {
+func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*Header, error) {
+	cs.mu.RLock()
 	if _, ok := cs.headerCache[hash]; ok {
-		return cs.headerCache[hash]
+		cs.mu.RUnlock()
+		return cs.headerCache[hash], nil
 	}
+	cs.mu.RUnlock()
 
-	header, _ := cs.GetHeader(hash)
-
-	return header
+	return cs.GetHeader(hash)
 }
 
 func (cs *ChainStore) verifyHeader(header *Header) bool {
-	prevHeader := cs.getHeaderWithCache(header.PrevBlockHash)
-
-	if prevHeader == nil {
+	prevHeader, err := cs.getHeaderWithCache(header.PrevBlockHash)
+	if err != nil || prevHeader == nil {
 		log.Error("[verifyHeader] failed, not found prevHeader.")
 		return false
 	}
@@ -1140,7 +1140,7 @@ func (cs *ChainStore) addHeader(header *Header) {
 
 func (cs *ChainStore) handlePersistHeaderTask(header *Header) {
 
-	if header.Height != uint32(len(cs.headerIndex)) {
+	if header.Height != cs.GetHeaderHeight()+1 {
 		return
 	}
 
@@ -1195,7 +1195,7 @@ func (cs *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
 	cs.blockCache[b.Hash()] = b
 	cs.mu.Unlock()
 
-	if b.Header.Height < uint32(len(cs.headerIndex)) {
+	if b.Header.Height < cs.GetHeaderHeight()+1 {
 		cs.persistBlocks(ledger)
 
 		cs.st.NewBatch()
@@ -1206,7 +1206,9 @@ func (cs *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
 			var hashArray []byte
 			for i := 0; i < HeaderHashListCount; i++ {
 				index := storedHeaderCount + uint32(i)
+				cs.mu.RLock()
 				thash := cs.headerIndex[index]
+				cs.mu.RUnlock()
 				thehash := thash.ToArray()
 				hashArray = append(hashArray, thehash...)
 			}
@@ -1234,10 +1236,16 @@ func (cs *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
 }
 
 func (cs *ChainStore) persistBlocks(ledger *Ledger) {
-	stopHeight := uint32(len(cs.headerIndex))
-	for h := cs.currentBlockHeight + 1; h <= stopHeight; h++ {
+	cs.mu.RLock()
+	initHeight := cs.currentBlockHeight + 1
+	cs.mu.RUnlock()
+
+	stopHeight := cs.GetHeaderHeight() + 1
+	for h := initHeight; h <= stopHeight; h++ {
+		cs.mu.RLock()
 		hash := cs.headerIndex[h]
 		block, ok := cs.blockCache[hash]
+		cs.mu.RUnlock()
 		if !ok {
 			break
 		}
@@ -1342,6 +1350,11 @@ func (cs *ChainStore) GetHeight() uint32 {
 }
 
 func (cs *ChainStore) GetHeightByBlockHash(hash Uint256) (uint32, error) {
+	header, err := cs.getHeaderWithCache(hash)
+	if err == nil {
+		return header.Height, nil
+	}
+
 	block, err := cs.GetBlock(hash)
 	if err != nil {
 		return 0, err
