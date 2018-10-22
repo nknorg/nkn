@@ -73,7 +73,7 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 		<-service.timeout.C
 	}
 
-	// go service.HandleBlockForking()
+	go service.HandleBlockForking()
 
 	return service
 }
@@ -163,7 +163,7 @@ func (ps *ProposerService) HandleBlockForking() {
 				}
 			}
 			// reset timer right away if no forking
-			timer.Reset(0)
+			timer.Reset(ForkingDetectTimer)
 		}
 	}
 }
