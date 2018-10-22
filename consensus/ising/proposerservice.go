@@ -318,7 +318,7 @@ func (ps *ProposerService) ProduceNewBlock() {
 	// generate BlockFlooding message
 	blockFlooding := NewBlockFlooding(block)
 	// send BlockFlooding message
-	err = ps.SendConsensusMsg(blockFlooding, nil)
+	err = ps.BroadcastConsensusMsg(blockFlooding)
 	if err != nil {
 		log.Error("sending consensus message error: ", err)
 	}
@@ -557,35 +557,53 @@ func (ps *ProposerService) Start() error {
 	return nil
 }
 
-func (ps *ProposerService) SendConsensusMsg(msg IsingMessage, to []protocol.Noder) error {
+func (ps *ProposerService) newConsensusMessage(msg IsingMessage) ([]byte, error) {
 	isingPld, err := BuildIsingPayload(msg, ps.account.PublicKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	hash, err := isingPld.DataHash()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	signature, err := crypto.Sign(ps.account.PrivateKey, hash)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	isingPld.Signature = signature
 
 	buf, err := message.NewIsingConsensus(isingPld)
 	if err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+func (ps *ProposerService) SendConsensusMsg(msg IsingMessage, to []protocol.Noder) error {
+	if len(to) == 0 {
+		return nil
+	}
+
+	buf, err := ps.newConsensusMessage(msg)
+	if err != nil {
 		return err
 	}
 
-	if to != nil {
-		for _, node := range to {
-			node.Tx(buf)
-		}
-	} else {
-		ps.localNode.Broadcast(buf)
+	for _, node := range to {
+		node.Tx(buf)
 	}
 
 	return nil
+}
+
+func (ps *ProposerService) BroadcastConsensusMsg(msg IsingMessage) error {
+	buf, err := ps.newConsensusMessage(msg)
+	if err != nil {
+		return err
+	}
+
+	return ps.localNode.Broadcast(buf)
 }
 
 func (ps *ProposerService) ReceiveConsensusMsg(v interface{}) {
