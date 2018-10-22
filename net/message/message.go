@@ -25,7 +25,7 @@ const (
 	HashLen        = 32
 )
 
-type Messager interface {
+type Messenger interface {
 	Verify([]byte) error
 	Handle(Noder) error
 	serialization.SerializableData
@@ -40,53 +40,18 @@ type msgHdr struct {
 	Checksum [MsgChecksumLen]byte
 }
 
-// The message body and header
-type msgCont struct {
-	hdr msgHdr
-	p   interface{}
-}
-
-type varStr struct {
-	len uint
-	buf []byte
-}
-
-type filteradd struct {
-	msgHdr
-	//TBD
-}
-
-type filterclear struct {
-	msgHdr
-	//TBD
-}
-
-type filterload struct {
-	msgHdr
-	//TBD
-}
-
 // Alloc different message stucture
 // @t the message name or type
 // @len the message length only valid for varible length structure
 //
 // Return:
-// @messager the messager interface
+// @Messenger the Messenger interface
 // @error  error code
 // FixMe fix the ugly multiple return.
-func AllocMsg(t string, length int) Messager {
+func AllocMsg(t string, length int) Messenger {
 	switch t {
 	case "msgheader":
 		var msg msgHdr
-		return &msg
-	case "version":
-		var msg version
-		// TODO fill the header and type
-		copy(msg.Hdr.CMD[0:len(t)], t)
-		return &msg
-	case "verack":
-		var msg verACK
-		copy(msg.msgHdr.CMD[0:len(t)], t)
 		return &msg
 	case "getheaders":
 		var msg headersReq
@@ -96,20 +61,6 @@ func AllocMsg(t string, length int) Messager {
 	case "headers":
 		var msg blkHeader
 		copy(msg.hdr.CMD[0:len(t)], t)
-		return &msg
-	case "getaddr":
-		var msg addrReq
-		copy(msg.Hdr.CMD[0:len(t)], t)
-		return &msg
-	case "addr":
-		var msg addr
-		copy(msg.hdr.CMD[0:len(t)], t)
-		return &msg
-	case "inv":
-		var msg Inv
-		copy(msg.Hdr.CMD[0:len(t)], t)
-		// the 1 is the inv type lenght
-		msg.P.Blk = make([]byte, length-MsgHdrLen-1)
 		return &msg
 	case "getdata":
 		var msg dataReq
@@ -125,40 +76,14 @@ func AllocMsg(t string, length int) Messager {
 		//if (message.Payload.Length <= 1024 * 1024)
 		//OnInventoryReceived(Transaction.DeserializeFrom(message.Payload));
 		return &msg
-	case "consensus":
-		var msg consensus
-		copy(msg.msgHdr.CMD[0:len(t)], t)
-		return &msg
 	case "ising":
 		var msg IsingMessage
-		copy(msg.msgHdr.CMD[0:len(t)], t)
-		return &msg
-	case "filteradd":
-		var msg filteradd
-		copy(msg.msgHdr.CMD[0:len(t)], t)
-		return &msg
-	case "filterclear":
-		var msg filterclear
-		copy(msg.msgHdr.CMD[0:len(t)], t)
-		return &msg
-	case "filterload":
-		var msg filterload
-		copy(msg.msgHdr.CMD[0:len(t)], t)
-		return &msg
-	case "getblocks":
-		var msg blocksReq
 		copy(msg.msgHdr.CMD[0:len(t)], t)
 		return &msg
 	case "txnpool":
 		var msg txnPool
 		copy(msg.msgHdr.CMD[0:len(t)], t)
 		return &msg
-	case "alert":
-		log.Warn("Not supported message type - alert")
-		return nil
-	case "merkleblock":
-		log.Warn("Not supported message type - merkleblock")
-		return nil
 	case "notfound":
 		var msg notFound
 		copy(msg.msgHdr.CMD[0:len(t)], t)
@@ -171,9 +96,6 @@ func AllocMsg(t string, length int) Messager {
 		var msg pong
 		copy(msg.msgHdr.CMD[0:len(t)], t)
 		return &msg
-	case "reject":
-		log.Warn("Not supported message type - reject")
-		return nil
 	case "relay":
 		var msg RelayMessage
 		copy(msg.msgHdr.CMD[0:len(t)], t)
@@ -194,52 +116,43 @@ func MsgType(buf []byte) (string, error) {
 	return s, nil
 }
 
-// TODO combine all of message alloc in one function via interface
-func NewMsg(t string, n Noder) ([]byte, error) {
-	switch t {
-	case "version":
-		return NewVersion(n)
-	case "verack":
-		return NewVerack()
-	case "getaddr":
-		return newGetAddr()
-
-	default:
-		return nil, errors.New("Unknown message type")
-	}
-}
-
-// FIXME the length exceed int32 case?
-func HandleNodeMsg(node Noder, buf []byte, len int) error {
-	defer node.LocalNode().ReleaseMsgHandlerChan()
-
-	if len < MsgHdrLen {
+func ParseMsg(buf []byte) (Messenger, error) {
+	if len(buf) < MsgHdrLen {
 		log.Warn("Unexpected size of received message")
-		return errors.New("Unexpected size of received message")
+		return nil, errors.New("Unexpected size of received message")
 	}
 
 	s, err := MsgType(buf)
 	if err != nil {
 		log.Error("Message type parsing error")
-		return err
+		return nil, err
 	}
 
-	msg := AllocMsg(s, len)
+	msg := AllocMsg(s, len(buf))
 	if msg == nil {
 		log.Error(fmt.Sprintf("Allocation message %s failed", s))
-		return errors.New("Allocation message failed")
+		return nil, errors.New("Allocation message failed")
 	}
 	// Todo attach a node pointer to each message
 	// Todo drop the message when verify/deseria packet error
-	r := bytes.NewReader(buf[:len])
+	r := bytes.NewReader(buf[:])
 	err = msg.Deserialize(r)
 	if err != nil {
 		log.Error("Deserialize error:", err)
-		return err
+		return nil, err
 	}
-	err = msg.Verify(buf[MsgHdrLen:len])
+	err = msg.Verify(buf[MsgHdrLen:])
 	if err != nil {
 		log.Error("Verify msg error:", err)
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func HandleNodeMsg(node Noder, buf []byte) error {
+	msg, err := ParseMsg(buf)
+	if err != nil {
 		return err
 	}
 
@@ -247,10 +160,7 @@ func HandleNodeMsg(node Noder, buf []byte, len int) error {
 }
 
 func magicVerify(magic uint32) bool {
-	if magic != NetID {
-		return false
-	}
-	return true
+	return magic == NetID
 }
 
 func ValidMsgHdr(buf []byte) bool {
@@ -276,13 +186,6 @@ func checkSum(p []byte) []byte {
 	return s[:MsgChecksumLen]
 }
 
-func reverse(input []byte) []byte {
-	if len(input) == 0 {
-		return input
-	}
-	return append(reverse(input[1:]), input[0])
-}
-
 func (hdr *msgHdr) init(cmd string, checksum []byte, length uint32) {
 	hdr.Magic = NetID
 	copy(hdr.CMD[0:uint32(len(cmd))], cmd)
@@ -294,12 +197,12 @@ func (hdr *msgHdr) init(cmd string, checksum []byte, length uint32) {
 // Verify the message header information
 // @p payload of the message
 func (hdr msgHdr) Verify(buf []byte) error {
-	if magicVerify(hdr.Magic) == false {
+	if !magicVerify(hdr.Magic) {
 		log.Warn(fmt.Sprintf("Unmatched magic number 0x%0x", hdr.Magic))
 		return errors.New("Unmatched magic number")
 	}
 	checkSum := checkSum(buf)
-	if bytes.Equal(hdr.Checksum[:], checkSum[:]) == false {
+	if !bytes.Equal(hdr.Checksum[:], checkSum[:]) {
 		str1 := hex.EncodeToString(hdr.Checksum[:])
 		str2 := hex.EncodeToString(checkSum[:])
 		log.Warn(fmt.Sprintf("Message Checksum error, Received checksum %s Wanted checksum: %s",

@@ -30,8 +30,6 @@ type trn struct {
 func (msg trn) Handle(node Noder) error {
 	txn := &msg.txn
 	if !node.LocalNode().ExistHash(txn.Hash()) {
-		// broadcast transaction if never received
-		node.LocalNode().BroadcastTransaction(node, txn)
 		node.LocalNode().IncRxTxnCnt()
 
 		// add transaction to pool when in consensus state
@@ -41,20 +39,6 @@ func (msg trn) Handle(node Noder) error {
 			}
 		}
 	}
-
-	return nil
-}
-
-func reqTxnData(node Noder, hash common.Uint256) error {
-	var msg dataReq
-	msg.dataType = common.TRANSACTION
-	// TODO handle the hash array case
-	buff := bytes.NewBuffer(nil)
-	err := msg.Serialize(buff)
-	if err != nil {
-		return err
-	}
-	go node.Tx(buff.Bytes())
 
 	return nil
 }
@@ -174,7 +158,7 @@ func ReqTxnPool(node Noder) error {
 	if err != nil {
 		return err
 	}
-	go node.Tx(buff.Bytes())
+	node.Tx(buff.Bytes())
 
 	return nil
 }

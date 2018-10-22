@@ -11,19 +11,16 @@ import (
 
 func ResolveDest(Dest string) string {
 	substrings := strings.Split(Dest, ".")
-	pubKeyStr := substrings[len(substrings)-1]
-	registrant, err := ledger.DefaultLedger.Store.GetRegistrant(pubKeyStr)
+	pubKeyOrName := substrings[len(substrings)-1]
+
+	registrant, err := ledger.DefaultLedger.Store.GetRegistrant(pubKeyOrName)
 	if err != nil {
 		return Dest
 	}
+	pubKeyStr := hex.EncodeToString(registrant)
 
-	pubKeyStr = hex.EncodeToString(registrant)
-	if len(substrings) > 1 {
-		identifier := substrings[0]
-		return strings.Join([]string{identifier, pubKeyStr}, ".")
-	} else {
-		return pubKeyStr
-	}
+	substrings[len(substrings)-1] = pubKeyStr
+	return strings.Join(substrings, ".")
 }
 
 func (ws *WsServer) SendRelayPacket(clientId string, msg *client.OutboundMessage) {

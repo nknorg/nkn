@@ -78,8 +78,7 @@ func (p *IsingPayload) SerializeUnsigned(w io.Writer) error {
 }
 
 func (p *IsingPayload) Serialize(w io.Writer) error {
-	var err error
-	err = p.SerializeUnsigned(w)
+	err := p.SerializeUnsigned(w)
 	if err != nil {
 		return err
 	}
@@ -92,8 +91,7 @@ func (p *IsingPayload) Serialize(w io.Writer) error {
 }
 
 func (p *IsingPayload) Deserialize(r io.Reader) error {
-	var err error
-	err = p.DeserializeUnsigned(r)
+	err := p.DeserializeUnsigned(r)
 	if err != nil {
 		return err
 	}

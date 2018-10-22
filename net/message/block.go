@@ -8,7 +8,6 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/events"
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -29,7 +28,6 @@ func (msg block) Handle(node Noder) error {
 		return err
 	}
 	node.RemoveFlightHeight(msg.blk.Header.Height)
-	node.LocalNode().GetEvent("block").Notify(events.EventNewInventory, &msg.blk)
 	return nil
 }
 
@@ -59,7 +57,7 @@ func (msg dataReq) Handle(node Noder) error {
 		if err != nil {
 			return err
 		}
-		go node.Tx(buf)
+		node.Tx(buf)
 	}
 	return nil
 }

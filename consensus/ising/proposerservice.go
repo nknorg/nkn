@@ -73,7 +73,7 @@ func NewProposerService(account *vault.Account, node protocol.Noder) *ProposerSe
 		<-service.timeout.C
 	}
 
-	go service.HandleBlockForking()
+	// go service.HandleBlockForking()
 
 	return service
 }
@@ -317,10 +317,8 @@ func (ps *ProposerService) ProduceNewBlock() {
 	}
 	// generate BlockFlooding message
 	blockFlooding := NewBlockFlooding(block)
-	// get nodes which should receive this message
-	nodes := ps.GetReceiverNode(nil)
 	// send BlockFlooding message
-	err = ps.SendConsensusMsg(blockFlooding, nodes)
+	err = ps.SendConsensusMsg(blockFlooding, nil)
 	if err != nil {
 		log.Error("sending consensus message error: ", err)
 	}
@@ -574,12 +572,17 @@ func (ps *ProposerService) SendConsensusMsg(msg IsingMessage, to []protocol.Node
 	}
 	isingPld.Signature = signature
 
-	for _, node := range to {
-		b, err := message.NewIsingConsensus(isingPld)
-		if err != nil {
-			return err
+	buf, err := message.NewIsingConsensus(isingPld)
+	if err != nil {
+		return err
+	}
+
+	if to != nil {
+		for _, node := range to {
+			node.Tx(buf)
 		}
-		node.Tx(b)
+	} else {
+		ps.localNode.Broadcast(buf)
 	}
 
 	return nil
@@ -620,6 +623,8 @@ func (ps *ProposerService) ReceiveConsensusMsg(v interface{}) {
 			ps.HandlePingMsg(t, sender)
 		case *Pong:
 			ps.HandlePongMsg(t, sender)
+		default:
+			log.Error("Unknown Ising message")
 		}
 
 	}
@@ -637,21 +642,10 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender u
 	if current.CheckAndSetOwnState(blockHash, voting.FloodingFinished) {
 		return
 	}
-	// relay block to neighbors
-	var nodes []protocol.Noder
-	for _, node := range ps.localNode.GetNeighborNoder() {
-		if node.GetID() != sender {
-			nodes = append(nodes, node)
-		}
-	}
-	err := ps.SendConsensusMsg(bfMsg, nodes)
-	if err != nil {
-		log.Error("broadcast block message error: ", err)
-	}
 
 	// if block syncing is not finished, cache received blocks
 	if ps.localNode.GetSyncState() != protocol.PersistFinished {
-		err = ps.syncCache.AddBlockToSyncCache(block, rtime)
+		err := ps.syncCache.AddBlockToSyncCache(block, rtime)
 		if err != nil {
 			log.Error("add received block to sync cache error: ", err)
 		}
@@ -686,7 +680,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender u
 			" hash: %s", votingHeight, height, BytesToHexString(blockHash.ToArrayReverse()))
 		return
 	}
-	err = current.AddToCache(block, rtime)
+	err := current.AddToCache(block, rtime)
 	if err != nil {
 		log.Error("add received block to local cache error: ", err)
 		return

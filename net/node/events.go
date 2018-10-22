@@ -7,17 +7,15 @@ import (
 )
 
 type eventQueue struct {
-	Consensus  *events.Event
-	Block      *events.Event
-	Disconnect *events.Event
-	Relay      *events.Event
-	Syncing    *events.Event
+	Consensus *events.Event
+	Block     *events.Event
+	Relay     *events.Event
+	Syncing   *events.Event
 }
 
 func (eq *eventQueue) init() {
 	eq.Consensus = events.NewEvent()
 	eq.Block = events.NewEvent()
-	eq.Disconnect = events.NewEvent()
 	eq.Relay = events.NewEvent()
 	eq.Syncing = events.NewEvent()
 }
@@ -28,8 +26,6 @@ func (eq *eventQueue) GetEvent(eventName string) *events.Event {
 		return eq.Consensus
 	case "block":
 		return eq.Block
-	case "disconnect":
-		return eq.Disconnect
 	case "relay":
 		return eq.Relay
 	case "sync":

@@ -147,8 +147,6 @@ func (msg *blkHeader) Deserialize(r io.Reader) error {
 }
 
 func (msg headersReq) Handle(node Noder) error {
-	node.LocalNode().AcquireHeaderReqChan()
-	defer node.LocalNode().ReleaseHeaderReqChan()
 	var startHash [HashLen]byte
 	var stopHash [HashLen]byte
 	startHash = msg.p.hashStart
@@ -162,7 +160,7 @@ func (msg headersReq) Handle(node Noder) error {
 	if err != nil {
 		return err
 	}
-	go node.Tx(buf)
+	node.Tx(buf)
 	return nil
 }
 
@@ -171,7 +169,7 @@ func SendMsgSyncHeaders(node Noder, stopHash Uint256) {
 	if err != nil {
 		log.Error("failed build a new headersReq")
 	} else {
-		go node.Tx(buf)
+		node.Tx(buf)
 	}
 }
 
@@ -218,12 +216,14 @@ func GetHeadersFromHash(startHash Uint256, stopHash Uint256) ([]ledger.Header, u
 	count = stopHeight - startHeight
 	if count >= MaxHdrCnt {
 		count = MaxHdrCnt
-		stopHeight = startHeight - MaxHdrCnt
 	}
 
 	var i uint32
 	for i = 1; i <= count; i++ {
 		hash, err := ledger.DefaultLedger.Store.GetBlockHash(startHeight + i)
+		if err != nil {
+			return nil, 0, err
+		}
 		hd, err := ledger.DefaultLedger.Store.GetHeader(hash)
 		if err != nil {
 			return nil, 0, err

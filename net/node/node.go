@@ -2,6 +2,7 @@ package node
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -9,21 +10,26 @@ import (
 	"net"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/pool"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/net/chord"
-	. "github.com/nknorg/nkn/net/message"
+	"github.com/nknorg/nkn/net/message"
 	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/protobuf"
 	"github.com/nknorg/nkn/relay"
-	. "github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nnet"
+	nnetnode "github.com/nknorg/nnet/node"
+	"github.com/nknorg/nnet/overlay/chord"
+	"github.com/nknorg/nnet/overlay/routing"
+	nnetprotobuf "github.com/nknorg/nnet/protobuf"
 )
 
 const (
@@ -42,169 +48,264 @@ const (
 
 type node struct {
 	sync.Mutex
-	state                    uint32              // node connection state
-	id                       uint64              // node ID
-	cap                      [32]byte            // node capability
-	version                  uint32              // network protocol version
-	services                 uint64              // supplied services
-	relay                    bool                // relay capability (merge into capbility flag)
-	height                   uint32              // node latest block height
-	local                    *node               // local node
-	txnCnt                   uint64              // transmitted transaction count
-	rxTxnCnt                 uint64              // received transaction count
-	publicKey                *crypto.PubKey      // node public key
-	flightHeights            []uint32            // flight height
-	headerReqChan            ChanQueue           // semaphore for connection counts
-	msgHandlerChan           ChanQueue           // chan for message handler
-	chordAddr                []byte              // chord address (chord ID)
-	ring                     *chord.Ring         // chord ring
-	relayer                  *relay.RelayService // relay service
-	syncStopHash             Uint256             // block syncing stop hash
-	syncState                SyncState           // block syncing state
-	quit                     chan bool           // block syncing channel
-	nodeDisconnectSubscriber events.Subscriber   // disconnect event
-	link                                         // link status and information
-	nbrNodes                                     // neighbor nodes
-	eventQueue                                   // event queue
-	*pool.TxnPool                                // transaction pool of local node
-	*hashCache                                   // entity hash cache
-	ConnectingNodes                              // connecting nodes cache
-	RetryConnAddrs                               // retry connection cache
+	protobuf.Node
+	id            uint64         // node ID
+	version       uint32         // network protocol version
+	height        uint32         // node latest block height
+	local         *node          // local node
+	txnCnt        uint64         // transmitted transaction count
+	rxTxnCnt      uint64         // received transaction count
+	publicKey     *crypto.PubKey // node public key
+	flightHeights []uint32       // flight height
+	nnet          *nnet.NNet
+	nnetNode      *nnetnode.RemoteNode
+	relayer       *relay.RelayService // relay service
+	syncStopHash  Uint256             // block syncing stop hash
+	syncState     SyncState           // block syncing state
+	quit          chan bool           // block syncing channel
+	nbrNodes                          // neighbor nodes
+	eventQueue                        // event queue
+	*pool.TxnPool                     // transaction pool of local node
+	*hashCache                        // entity hash cache
 }
 
-type RetryConnAddrs struct {
-	sync.RWMutex
-	RetryAddrs map[string]int
+// Generates an ID for the node
+func GenChordID(host string) []byte {
+	hash := sha256.New()
+	hash.Write([]byte(host))
+	return hash.Sum(nil)
 }
 
-type ConnectingNodes struct {
-	sync.RWMutex
-	ConnectingAddrs []string
+func chordIDToNodeID(chordID []byte) (uint64, error) {
+	var nodeID uint64
+	err := binary.Read(bytes.NewBuffer(chordID), binary.LittleEndian, &nodeID)
+	return nodeID, err
+}
+
+func (n *node) getNbrByNNetNode(remoteNode *nnetnode.RemoteNode) *node {
+	nodeID, err := chordIDToNodeID(remoteNode.Id)
+	if err != nil {
+		return nil
+	}
+
+	nbr := n.GetNbrNode(nodeID)
+	return nbr
 }
 
 func (node *node) DumpInfo() {
 	log.Info("Node info:")
-	log.Info("\t state = ", node.state)
 	log.Info("\t syncState = ", node.syncState)
 	log.Info(fmt.Sprintf("\t id = 0x%x", node.id))
-	log.Info("\t addr = ", node.addr)
-	log.Info("\t cap = ", node.cap)
+	log.Info("\t addr = ", node.GetAddr())
 	log.Info("\t version = ", node.version)
-	log.Info("\t services = ", node.services)
-	log.Info("\t port = ", node.port)
-	log.Info("\t relay = ", node.relay)
+	log.Info("\t port = ", node.GetPort())
 	log.Info("\t height = ", node.height)
-	log.Info("\t conn cnt = ", node.link.connCnt)
-}
-
-func (node *node) SetAddrInConnectingList(addr string) (added bool) {
-	node.ConnectingNodes.Lock()
-	defer node.ConnectingNodes.Unlock()
-	for _, a := range node.ConnectingAddrs {
-		if a == addr {
-			return false
-		}
-	}
-	node.ConnectingAddrs = append(node.ConnectingAddrs, addr)
-	go func() {
-		time.Sleep(ConnectingTimeout)
-		node.RemoveAddrInConnectingList(addr)
-	}()
-	return true
-}
-
-func (node *node) RemoveAddrInConnectingList(addr string) {
-	node.ConnectingNodes.Lock()
-	defer node.ConnectingNodes.Unlock()
-	for i, a := range node.ConnectingAddrs {
-		if a == addr {
-			node.ConnectingAddrs = append(node.ConnectingAddrs[:i], node.ConnectingAddrs[i+1:]...)
-			return
-		}
-	}
-}
-
-func (node *node) UpdateInfo(t time.Time, version uint32, services uint64,
-	port uint16, nonce uint64, relay uint8, height uint32) {
-
-	node.UpdateRXTime(t)
-	node.id = nonce
-	node.version = version
-	node.services = services
-	node.port = port
-	if relay == 0 {
-		node.relay = false
-	} else {
-		node.relay = true
-	}
-	node.height = height
 }
 
 func NewNode() *node {
-	n := node{
-		state: INIT,
-	}
-	n.time = time.Now()
-	go func() {
-		time.Sleep(ConnectingTimeout)
-		if n.local != &n && n.GetState() != ESTABLISH {
-			log.Warn("Connecting timeout:", n.GetAddrStr(), "with state", n.GetState())
-			n.SetState(INACTIVITY)
-			n.CloseConn()
-		}
-	}()
+	n := node{}
 	return &n
 }
 
-func InitNode(pubKey *crypto.PubKey, ring *chord.Ring) Noder {
+func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
+	var err error
+
 	n := NewNode()
 	n.version = ProtocolVersion
-	if Parameters.MaxHdrSyncReqs <= 0 {
-		n.headerReqChan = MakeChanQueue(MaxSyncHeaderReq)
-	} else {
-		n.headerReqChan = MakeChanQueue(Parameters.MaxHdrSyncReqs)
-	}
-	n.link.addr = Parameters.Hostname
-	n.link.port = Parameters.NodePort
-	n.link.chordPort = Parameters.ChordPort
-	n.link.webSockPort = Parameters.HttpWsPort
-	n.link.httpJSONPort = Parameters.HttpJsonPort
-	n.relay = true
+	Parameters := config.Parameters
 
-	chordVnode, err := ring.GetFirstVnode()
+	n.PublicKey, err = pubKey.EncodePoint(true)
 	if err != nil {
-		log.Error(err)
+		return nil, err
 	}
-	n.chordAddr = chordVnode.Id
 
-	err = binary.Read(bytes.NewBuffer(n.chordAddr), binary.LittleEndian, &(n.id))
+	n.WebsocketPort = uint32(Parameters.HttpWsPort)
+	n.JsonRpcPort = uint32(Parameters.HttpJsonPort)
+
+	n.id, err = chordIDToNodeID(nn.LocalNode.Id)
 	if err != nil {
-		log.Error(err)
+		return nil, err
 	}
-	log.Info(fmt.Sprintf("Init node ID to 0x%x", n.id))
+	log.Infof("Init node ID to %d", n.id)
 	n.nbrNodes.init()
 	n.local = n
 	n.publicKey = pubKey
 	n.TxnPool = pool.NewTxnPool()
 	n.syncState = SyncStarted
 	n.syncStopHash = Uint256{}
-	n.msgHandlerChan = MakeChanQueue(MaxMsgChanNum)
 	n.quit = make(chan bool, 1)
 	n.eventQueue.init()
 	n.hashCache = NewHashCache()
-	n.nodeDisconnectSubscriber = n.eventQueue.GetEvent("disconnect").Subscribe(events.EventNodeDisconnect, n.NodeDisconnected)
-	n.ring = ring
+	n.nnet = nn
 
-	go n.initConnection()
-	go n.updateConnection()
-	go n.keepalive()
+	err = nn.ApplyMiddleware(nnetnode.LocalNodeWillStart(func(localNode *nnetnode.LocalNode) bool {
+		var err error
 
-	return n
+		localNode.Node.Data, err = proto.Marshal(&n.Node)
+		if err != nil {
+			localNode.Stop(err)
+			return false
+		}
+
+		return true
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	err = nn.ApplyMiddleware(chord.NeighborAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
+		var err error
+		node := NewNode()
+		node.local = n
+		node.nnetNode = remoteNode
+		node.id, err = chordIDToNodeID(remoteNode.Id)
+		if err != nil {
+			remoteNode.Stop(err)
+			return false
+		}
+
+		err = proto.Unmarshal(remoteNode.Node.Data, &node.Node)
+		if err != nil {
+			remoteNode.Stop(err)
+			return false
+		}
+
+		node.publicKey, err = crypto.DecodePoint(node.PublicKey)
+		if err != nil {
+			remoteNode.Stop(err)
+			return false
+		}
+
+		n.AddNbrNode(node)
+
+		return true
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	err = nn.ApplyMiddleware(chord.NeighborRemoved(func(remoteNode *nnetnode.RemoteNode) bool {
+		nbr := n.getNbrByNNetNode(remoteNode)
+		if nbr != nil {
+			n.DisconnectNeighbor(nbr)
+		}
+
+		return true
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	err = nn.ApplyMiddleware(routing.RemoteMessageReceived(func(remoteMessage *nnetnode.RemoteMessage) (*nnetnode.RemoteMessage, bool) {
+		var err error
+		if remoteMessage.Msg.MessageType == nnetprotobuf.BYTES {
+			nbr := n
+			if remoteMessage.RemoteNode != nil {
+				nbr = n.getNbrByNNetNode(remoteMessage.RemoteNode)
+				if nbr == nil {
+					log.Error("Cannot get neighbor node")
+					return nil, false
+				}
+			}
+
+			msgBody := &nnetprotobuf.Bytes{}
+			err = proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
+			if err != nil {
+				log.Error(err)
+				return nil, false
+			}
+
+			err := message.HandleNodeMsg(nbr, msgBody.Data)
+			if err != nil {
+				log.Error(err)
+				return nil, false
+			}
+
+			return nil, false
+		}
+		return remoteMessage, true
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	err = nn.ApplyMiddleware(routing.RemoteMessageRouted(func(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
+		if remoteMessage.Msg.MessageType == nnetprotobuf.BYTES && remoteMessage.Msg.RoutingType == nnetprotobuf.RELAY {
+			if localNode != nil {
+				return remoteMessage, localNode, remoteNodes, false
+			}
+
+			if len(remoteNodes) == 0 {
+				log.Error("No next hop found")
+				return nil, nil, nil, false
+			}
+
+			if len(remoteNodes) > 1 {
+				log.Error("Multiple next hop is not supported yet")
+				return nil, nil, nil, false
+			}
+
+			nextHop := n.getNbrByNNetNode(remoteNodes[0])
+			if nextHop == nil {
+				log.Error("Cannot get next hop node")
+				return nil, nil, nil, false
+			}
+
+			msgBody := &nnetprotobuf.Bytes{}
+			err = proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
+			if err != nil {
+				log.Error(err)
+				return nil, nil, nil, false
+			}
+
+			msg, err := message.ParseMsg(msgBody.Data)
+			if err != nil {
+				log.Error(err)
+				return nil, nil, nil, false
+			}
+
+			relayMsg, ok := msg.(*message.RelayMessage)
+			if !ok {
+				log.Error("Msg is not relay message")
+				return nil, nil, nil, false
+			}
+
+			relayPacket := &relayMsg.Packet
+			err = n.relayer.SignRelayPacket(nextHop, relayPacket)
+			if err != nil {
+				log.Error(err)
+				return nil, nil, nil, false
+			}
+
+			relayMsg, err = message.NewRelayMessage(relayPacket)
+			if err != nil {
+				log.Error(err)
+				return nil, nil, nil, false
+			}
+
+			msgBody.Data, err = relayMsg.ToBytes()
+			if err != nil {
+				log.Error(err)
+				return nil, nil, nil, false
+			}
+
+			remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
+			if err != nil {
+				log.Error(err)
+				return nil, nil, nil, false
+			}
+		}
+		return remoteMessage, localNode, remoteNodes, true
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
 }
 
 func (n *node) NodeDisconnected(v interface{}) {
 	if node, ok := v.(*node); ok {
-		node.SetState(INACTIVITY)
 		node.CloseConn()
 	}
 }
@@ -213,64 +314,22 @@ func (node *node) GetID() uint64 {
 	return node.id
 }
 
-func (node *node) GetState() uint32 {
-	return atomic.LoadUint32(&(node.state))
-}
-
-func (node *node) GetConn() net.Conn {
-	return node.conn
-}
-
 func (node *node) GetPort() uint16 {
-	return node.port
+	_, portStr, _ := net.SplitHostPort(node.GetAddrStr())
+	port, _ := strconv.Atoi(portStr)
+	return uint16(port)
 }
 
 func (node *node) GetHttpJsonPort() uint16 {
-	return node.httpJSONPort
+	return uint16(node.JsonRpcPort)
 }
 
-func (node *node) GetWebSockPort() uint16 {
-	return node.webSockPort
-}
-
-func (node *node) GetChordPort() uint16 {
-	return node.chordPort
-}
-
-func (node *node) GetHttpInfoPort() uint16 {
-	return node.httpInfoPort
-}
-
-func (node *node) SetHttpInfoPort(nodeInfoPort uint16) {
-	node.httpInfoPort = nodeInfoPort
-}
-
-func (node *node) GetHttpInfoState() bool {
-	if node.cap[HTTPINFOFLAG] == 0x01 {
-		return true
-	} else {
-		return false
-	}
-}
-
-func (node *node) SetHttpInfoState(nodeInfo bool) {
-	if nodeInfo {
-		node.cap[HTTPINFOFLAG] = 0x01
-	} else {
-		node.cap[HTTPINFOFLAG] = 0x00
-	}
-}
-
-func (node *node) GetRelay() bool {
-	return node.relay
+func (node *node) GetWsPort() uint16 {
+	return uint16(node.WebsocketPort)
 }
 
 func (node *node) Version() uint32 {
 	return node.version
-}
-
-func (node *node) Services() uint64 {
-	return node.services
 }
 
 func (node *node) IncRxTxnCnt() {
@@ -285,19 +344,8 @@ func (node *node) GetRxTxnCnt() uint64 {
 	return node.rxTxnCnt
 }
 
-func (node *node) SetState(state uint32) {
-	atomic.StoreUint32(&(node.state), state)
-	if state == ESTABLISH || state == INACTIVITY {
-		node.LocalNode().RemoveAddrInConnectingList(node.GetAddrStr())
-	}
-}
-
 func (node *node) GetPubKey() *crypto.PubKey {
 	return node.publicKey
-}
-
-func (node *node) CompareAndSetState(old, new uint32) bool {
-	return atomic.CompareAndSwapUint32(&(node.state), old, new)
 }
 
 func (node *node) LocalNode() Noder {
@@ -317,83 +365,30 @@ func (node *node) SetHeight(height uint32) {
 	node.height = height
 }
 
-func (node *node) UpdateRXTime(t time.Time) {
-	node.time = t
-}
-
-func (node *node) Xmit(message interface{}) error {
+func (node *node) Xmit(msg interface{}) error {
 	var buffer []byte
 	var err error
-	switch message.(type) {
+	switch msg.(type) {
 	case *transaction.Transaction:
-		txn := message.(*transaction.Transaction)
-		buffer, err = NewTxn(txn)
+		txn := msg.(*transaction.Transaction)
+		buffer, err = message.NewTxn(txn)
 		if err != nil {
 			log.Error("Error New Tx message: ", err)
 			return err
 		}
 		node.txnCnt++
 		node.ExistHash(txn.Hash())
-	case *ledger.Block:
-		block := message.(*ledger.Block)
-		buffer, err = NewBlock(block)
-		if err != nil {
-			log.Error("Error New Block message: ", err)
-			return err
-		}
-	case *ConsensusPayload:
-		consensusPayload := message.(*ConsensusPayload)
-		buffer, err = NewConsensus(consensusPayload)
-		if err != nil {
-			log.Error("Error New consensus message: ", err)
-			return err
-		}
-	case *IsingPayload:
-		isingPayload := message.(*IsingPayload)
-		buffer, err = NewIsingConsensus(isingPayload)
-		if err != nil {
-			log.Error("Error New ising consensus message: ", err)
-			return err
-		}
-	case Uint256:
-		hash := message.(Uint256)
-		buf := bytes.NewBuffer([]byte{})
-		hash.Serialize(buf)
-		// construct inv message
-		invPayload := NewInvPayload(BLOCK, 1, buf.Bytes())
-		buffer, err = NewInv(invPayload)
-		if err != nil {
-			log.Error("Error New inv message")
-			return err
-		}
 	default:
 		log.Warn("Unknown Xmit message type")
 		return errors.New("Unknown Xmit message type")
 	}
 
-	node.nbrNodes.Broadcast(buffer)
-
-	return nil
-}
-
-func (node *node) BroadcastTransaction(from Noder, txn *transaction.Transaction) error {
-	buffer, err := NewTxn(txn)
-	if err != nil {
-		log.Error("Error New Tx message: ", err)
-		return err
-	}
-	node.txnCnt++
-	for _, n := range node.GetNeighborNoder() {
-		if n.GetRelay() && n.GetID() != from.GetID() {
-			n.Tx(buffer)
-		}
-	}
-
-	return nil
+	return node.Broadcast(buffer)
 }
 
 func (node *node) GetAddr() string {
-	return node.addr
+	host, _, _ := net.SplitHostPort(node.GetAddrStr())
+	return host
 }
 
 func (node *node) GetAddr16() ([16]byte, error) {
@@ -409,33 +404,15 @@ func (node *node) GetAddr16() ([16]byte, error) {
 }
 
 func (node *node) GetAddrStr() string {
-	return net.JoinHostPort(node.GetAddr(), strconv.Itoa(int(node.GetPort())))
+	if node.nnet != nil {
+		return node.nnet.LocalNode.Addr
+	}
+	return node.nnetNode.Addr
 }
 
 func (node *node) GetTime() int64 {
 	t := time.Now()
 	return t.UnixNano()
-}
-
-func (node *node) GetBookKeeperAddr() *crypto.PubKey {
-	return node.publicKey
-}
-
-func (node *node) GetBookKeepersAddrs() ([]*crypto.PubKey, uint64) {
-	pks := make([]*crypto.PubKey, 1)
-	pks[0] = node.publicKey
-	var i uint64
-	i = 1
-	for _, n := range node.GetNeighborNoder() {
-		pktmp := n.GetBookKeeperAddr()
-		pks = append(pks, pktmp)
-		i++
-	}
-	return pks, i
-}
-
-func (node *node) SetBookKeeperAddr(pk *crypto.PubKey) {
-	node.publicKey = pk
 }
 
 func (node *node) WaitForSyncHeaderFinish(isProposer bool) {
@@ -481,6 +458,7 @@ func (node *node) StoreFlightHeight(height uint32) {
 func (node *node) GetFlightHeightCnt() int {
 	return len(node.flightHeights)
 }
+
 func (node *node) GetFlightHeights() []uint32 {
 	return node.flightHeights
 }
@@ -505,64 +483,6 @@ func (node *node) RemoveFlightHeight(height uint32) {
 	node.flightHeights = SliceRemove(node.flightHeights, height)
 }
 
-func (node *node) GetLastRXTime() time.Time {
-	return node.time
-}
-
-func (node *node) AddInRetryList(addr string) {
-	node.RetryConnAddrs.Lock()
-	defer node.RetryConnAddrs.Unlock()
-	if node.RetryAddrs == nil {
-		node.RetryAddrs = make(map[string]int)
-	}
-	if _, ok := node.RetryAddrs[addr]; ok {
-		delete(node.RetryAddrs, addr)
-		log.Debug("remove addr from retry list", addr)
-	}
-	//alway set retry to 0
-	node.RetryAddrs[addr] = 0
-	log.Debug("add addr to retry list", addr)
-}
-
-func (node *node) RemoveFromRetryList(addr string) {
-	node.RetryConnAddrs.Lock()
-	defer node.RetryConnAddrs.Unlock()
-	if len(node.RetryAddrs) > 0 {
-		if _, ok := node.RetryAddrs[addr]; ok {
-			delete(node.RetryAddrs, addr)
-			log.Debug("remove addr from retry list", addr)
-		}
-	}
-
-}
-func (node *node) AcquireMsgHandlerChan() {
-	node.msgHandlerChan.acquire()
-}
-
-func (node *node) ReleaseMsgHandlerChan() {
-	node.msgHandlerChan.release()
-}
-
-func (node *node) AcquireHeaderReqChan() {
-	node.headerReqChan.acquire()
-}
-
-func (node *node) ReleaseHeaderReqChan() {
-	node.headerReqChan.release()
-}
-
-func (node *node) GetChordAddr() []byte {
-	return node.chordAddr
-}
-
-func (node *node) SetChordAddr(addr []byte) {
-	node.chordAddr = addr
-}
-
-func (node *node) GetChordRing() *chord.Ring {
-	return node.ring
-}
-
 func (node *node) blockHeaderSyncing(stopHash Uint256) {
 	noders := node.local.GetNeighborNoder()
 	if len(noders) == 0 {
@@ -580,7 +500,7 @@ func (node *node) blockHeaderSyncing(stopHash Uint256) {
 	}
 	index := rand.Intn(ncout)
 	n := nodelist[index]
-	SendMsgSyncHeaders(n, stopHash)
+	message.SendMsgSyncHeaders(n, stopHash)
 }
 
 func (node *node) blockSyncing() {
@@ -605,8 +525,8 @@ func (node *node) blockSyncing() {
 		if count == 0 {
 			for _, f := range flights {
 				hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(f)
-				if ledger.DefaultLedger.Store.BlockInCache(hash) == false {
-					ReqBlkData(n, hash)
+				if !ledger.DefaultLedger.Store.BlockInCache(hash) {
+					message.ReqBlkData(n, hash)
 				}
 			}
 
@@ -614,8 +534,8 @@ func (node *node) blockSyncing() {
 		for i = 1; i <= count && dValue >= 0; i++ {
 			hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentBlkHeight + reqCnt)
 
-			if ledger.DefaultLedger.Store.BlockInCache(hash) == false {
-				ReqBlkData(n, hash)
+			if !ledger.DefaultLedger.Store.BlockInCache(hash) {
+				message.ReqBlkData(n, hash)
 				n.StoreFlightHeight(currentBlkHeight + reqCnt)
 			}
 			reqCnt++
@@ -624,115 +544,10 @@ func (node *node) blockSyncing() {
 	}
 }
 
-func (node *node) SendPingToNbr() {
-	noders := node.local.GetNeighborNoder()
-	for _, n := range noders {
-		if n.GetState() == ESTABLISH {
-			buf, err := NewPingMsg(node.syncState)
-			if err != nil {
-				log.Error("failed build a new ping message")
-			} else {
-				go n.Tx(buf)
-			}
-		}
-	}
-}
-
-func (node *node) HeartBeatMonitor() {
-	neighbors := node.local.GetActiveNeighbors()
-	for _, n := range neighbors {
-		t := n.GetLastRXTime()
-		if time.Now().Sub(t) > KeepaliveTimeout {
-			log.Warn("Keepalive timeout:", n.GetAddrStr())
-			n.SetState(INACTIVITY)
-			n.CloseConn()
-		}
-	}
-}
-
-func (node *node) ConnectNeighbors() {
-	chordNode, err := node.ring.GetFirstVnode()
-	if err != nil || chordNode == nil {
-		return
-	}
-	neighbors := chordNode.GetNeighbors()
-	for _, chordNbr := range neighbors {
-		if !node.IsChordAddrInNeighbors(chordNbr.Id) {
-			chordNbrAddr, err := chordNbr.NodeAddr()
-			if err != nil {
-				continue
-			}
-			log.Infof("Trying to connect to chord node %x at %s", chordNbr.Id, chordNbrAddr)
-			go node.Connect(chordNbrAddr)
-		}
-	}
-}
-
 func (node *node) DisconnectNeighbor(nbr *node) {
 	_, success := node.nbrNodes.DelNbrNode(nbr.GetID())
 	if success {
-		nbr.SetState(INACTIVITY)
 		nbr.CloseConn()
-	}
-}
-
-func (n *node) DisconnectNonNeighbors() {
-	for _, nodeNbr := range n.GetNeighborNoder() {
-		nodeNbr.GetConnectionCnt()
-		_, port, err := net.SplitHostPort(nodeNbr.GetConn().LocalAddr().String())
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		// Skip inbound connections
-		if port == strconv.Itoa(int(Parameters.NodePort)) {
-			continue
-		}
-		shouldInNbr, err := n.ShouldChordAddrInNeighbors(nodeNbr.GetChordAddr())
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		if !shouldInNbr {
-			log.Info("Disconnect non chord neighbor:", nodeNbr.GetAddrStr())
-			nbr, ok := nodeNbr.(*node)
-			if ok {
-				go n.DisconnectNeighbor(nbr)
-			}
-		}
-	}
-}
-
-func getNodeAddr(n *node) NodeAddr {
-	var addr NodeAddr
-	addr.IpAddr, _ = n.GetAddr16()
-	addr.Time = n.GetTime()
-	addr.Services = n.Services()
-	addr.Port = n.GetPort()
-	addr.ID = n.GetID()
-	return addr
-}
-
-func (node *node) keepalive() {
-	ticker := time.NewTicker(KeepAliveTicker)
-	for {
-		select {
-		case <-ticker.C:
-			node.SendPingToNbr()
-			node.HeartBeatMonitor()
-		}
-	}
-}
-
-func (node *node) updateConnection() {
-	t := time.NewTicker(ConnectionTicker)
-	for {
-		select {
-		case <-t.C:
-			node.ConnectNeighbors()
-			node.DisconnectNonNeighbors()
-			// node.TryConnect()
-		}
 	}
 }
 
@@ -797,4 +612,80 @@ func (node *node) SetSyncStopHash(hash Uint256, height uint32) {
 			BytesToHexString(hash.ToArrayReverse()), height)
 		node.syncStopHash = hash
 	}
+}
+
+func (node *node) GetWsAddr() string {
+	return fmt.Sprintf("%s:%d", node.GetAddr(), node.GetWsPort())
+}
+
+func (node *node) FindWsAddr(key []byte) (string, error) {
+	if node.nnet == nil {
+		return "", errors.New("Node is not local node")
+	}
+
+	c, ok := node.nnet.Overlay.(*chord.Chord)
+	if !ok {
+		return "", errors.New("Overlay is not chord")
+	}
+
+	preds, err := c.FindPredecessors(key, 1)
+	if err != nil {
+		return "", err
+	}
+
+	if len(preds) == 0 {
+		return "", errors.New("Found no predecessors")
+	}
+
+	pred := preds[0]
+	nodeData := &protobuf.Node{}
+	err = proto.Unmarshal(pred.Data, nodeData)
+	if err != nil {
+		return "", err
+	}
+
+	host, _, err := net.SplitHostPort(pred.Addr)
+	if err != nil {
+		return "", err
+	}
+
+	if host == "" {
+		return "", errors.New("Hostname is empty")
+	}
+
+	wsAddr := fmt.Sprintf("%s:%d", host, nodeData.WebsocketPort)
+
+	return wsAddr, nil
+}
+
+func (node *node) GetChordAddr() []byte {
+	if node.nnet != nil {
+		return node.nnet.LocalNode.Id
+	}
+	return node.nnetNode.Id
+}
+
+func (node *node) CloseConn() {
+	node.nnetNode.Stop(nil)
+}
+
+func (node *node) Tx(buf []byte) {
+	err := node.local.nnet.SendBytesDirectAsync(buf, node.nnetNode)
+	if err != nil {
+		log.Error("Error sending messge to peer node ", err.Error())
+		node.CloseConn()
+	}
+}
+
+func (node *node) Broadcast(buf []byte) error {
+	if node.nnet == nil {
+		return errors.New("Node is not local node")
+	}
+
+	_, err := node.nnet.SendBytesBroadcastAsync(buf)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
