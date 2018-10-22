@@ -22,13 +22,10 @@ var (
 	pushBlockTxsFlag bool = false
 )
 
-func StartServer(n Noder, w vault.Wallet) *server.WsServer {
+func NewServer(n Noder, w vault.Wallet) *server.WsServer {
 	//	common.SetNode(n)
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
 	ws = server.InitWsServer(n, w)
-	go func() {
-		ws.Start()
-	}()
 	return ws
 }
 
