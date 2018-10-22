@@ -36,9 +36,10 @@ func (r *Ring) DumpInfo(finger bool) {
 		}
 
 		log.Debugf("\tlast_finger: %d", vnode.last_finger)
-		if vnode.predecessor != nil {
-			log.Debugf("\tpredecessor.Id: %x", string((*vnode.predecessor).Id))
-			log.Debugf("\tpredecessor.Host: %s", (*vnode.predecessor).Host)
+		pred := vnode.predecessor
+		if pred != nil {
+			log.Debugf("\tpredecessor.Id: %x", string(pred.Id))
+			log.Debugf("\tpredecessor.Host: %s", pred.Host)
 		}
 		log.Debugf("\tstabilized: %s", vnode.stabilized.String())
 		log.Debugf("}\n")

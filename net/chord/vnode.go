@@ -143,8 +143,9 @@ func (vn *localVnode) keepalive() {
 			}
 		}
 
-		if vn.predecessor != nil && vn.predecessor.Host != vn.Host {
-			vn.ring.transport.Ping(vn.predecessor)
+		pred := vn.predecessor
+		if pred != nil && pred.Host != vn.Host {
+			vn.ring.transport.Ping(pred)
 		}
 
 		for i, n := range vn.finger {
@@ -362,10 +363,11 @@ func (vn *localVnode) fixFingerTable() error {
 // Checks the health of our predecessor
 func (vn *localVnode) checkPredecessor() error {
 	// Check predecessor
-	if vn.predecessor != nil {
-		alive, err := vn.ring.transport.Ping(vn.predecessor)
+	pred := vn.predecessor
+	if pred != nil {
+		alive, err := vn.ring.transport.Ping(pred)
 		if err != nil || !alive {
-			nlog.Warnf("Removing unreachable predecessor %s", vn.predecessor.Host)
+			nlog.Warnf("Removing unreachable predecessor %s", pred.Host)
 			vn.predecessor = nil
 		}
 		if err != nil {
@@ -461,8 +463,8 @@ func (vn *localVnode) leave() error {
 	// Notify predecessor to advance to their next successor
 	var err error
 	trans := vn.ring.transport
-	if vn.predecessor != nil {
-		err = trans.SkipSuccessor(vn.predecessor, &vn.Vnode)
+	if pred != nil {
+		err = trans.SkipSuccessor(pred, &vn.Vnode)
 	}
 
 	// Notify successor to clear old predecessor
@@ -472,12 +474,12 @@ func (vn *localVnode) leave() error {
 
 // Used to clear our predecessor when a node is leaving
 func (vn *localVnode) ClearPredecessor(p *Vnode) error {
-	if vn.predecessor != nil && vn.predecessor.String() == p.String() {
+	pred := vn.predecessor
+	if pred != nil && pred.String() == p.String() {
 		// Inform the delegate
 		conf := vn.ring.config
-		old := vn.predecessor
 		vn.ring.invokeDelegate(func() {
-			conf.Delegate.PredecessorLeaving(&vn.Vnode, old)
+			conf.Delegate.PredecessorLeaving(&vn.Vnode, pred)
 		})
 		vn.predecessor = nil
 	}
@@ -521,7 +523,8 @@ func (vn *localVnode) shouldConnectToHost(host string) bool {
 	}
 
 	// predecessor
-	if vn.predecessor != nil && vn.predecessor.Host == host {
+	pred := vn.predecessor
+	if pred != nil && pred.Host == host {
 		return true
 	}
 
