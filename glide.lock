@@ -1,5 +1,5 @@
-hash: 1f8b9353dfb0b18a20a1da19c19cd864593565d8573619f88f31405d0afb0460
-updated: 2018-10-02T03:29:31.600692-07:00
+hash: 83294aaa002da5e0620136c1518f39943694b5a7218c3cfe7c3fe85f641582d2
+updated: 2018-10-21T18:15:52.345192-07:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: da1a8928f709389522c8023062a3739f3b4af419
@@ -13,7 +13,7 @@ imports:
   - sortkeys
   - types
 - name: github.com/golang/crypto
-  version: 459e26527287adbc2adcc5d0d49abff9a5f315a7
+  version: 0709b304e793a5edb4a2c0145f281ecdc20838a4
   subpackages:
   - ripemd160
   - ssh/terminal
@@ -25,22 +25,45 @@ imports:
   version: 553a641470496b2327abcac10b36396bd98e45c9
 - name: github.com/gorilla/websocket
   version: a91eba7f97777409bc2c443f5534d41dd20c5720
+- name: github.com/imdario/mergo
+  version: 9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4
 - name: github.com/itchyny/base58-go
   version: 4b24a7dfa1bfba3724ffb3598b1c6ded1cff087f
 - name: github.com/jpillora/backoff
   version: 8eab2debe79d12b7bd3d10653910df25fa9552ba
+- name: github.com/klauspost/cpuid
+  version: e7e905edc00ea8827e58662220139109efea09db
+- name: github.com/klauspost/reedsolomon
+  version: 925cb01d65108f2c935e02fdb79ff4a055a4a20d
 - name: github.com/nknorg/go-portscanner
   version: 8493ef01db79ae14a973300a38600c7400e265d8
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
+- name: github.com/nknorg/nnet
+  version: 8be0074adecc6dae8664e36b186a85dfc1537536
+  subpackages:
+  - cache
+  - common
+  - config
+  - log
+  - message
+  - node
+  - overlay
+  - overlay/chord
+  - overlay/routing
+  - protobuf
+  - transport
+  - util
 - name: github.com/patrickmn/go-cache
-  version: 5633e0862627c011927fa39556acae8b1f1df58a
+  version: a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0
 - name: github.com/pborman/uuid
   version: 1b00554d822231195d1babd97ff4a781231955c9
   subpackages:
   - crypto/secp256k1
   - crypto/sha3
   - params
+- name: github.com/pkg/errors
+  version: 816c9085562cd7ee03e7f8188a1cfd942858cded
 - name: github.com/rdegges/go-ipify
   version: 2d94a6a86c4055118cc30fae2aaed47ec01f2210
 - name: github.com/syndtr/goleveldb
@@ -58,8 +81,41 @@ imports:
   - leveldb/storage
   - leveldb/table
   - leveldb/util
+- name: github.com/templexxx/cpufeat
+  version: cef66df7f161dee20f4d650da7268d77eaaec82d
+- name: github.com/templexxx/xor
+  version: 0af8e873c554da75f37f2049cdffda804533d44c
+- name: github.com/tjfoc/gmsm
+  version: 0b26aafa7604a3cd63d76facfb62dc7885c068fa
+  subpackages:
+  - sm4
 - name: github.com/urfave/cli
   version: f6e8084112db1c3aa9c1e4144f024ab549ea08c1
 - name: github.com/whyrusleeping/tar-utils
   version: e8a5890cfc9d59a203361237581468780d945b6e
+- name: github.com/xtaci/kcp-go
+  version: f48db19e7a48fe347571d6bfc52a7585a53c5315
+- name: golang.org/x/crypto
+  version: 0709b304e793a5edb4a2c0145f281ecdc20838a4
+  subpackages:
+  - blowfish
+  - cast5
+  - internal/subtle
+  - pbkdf2
+  - salsa20
+  - salsa20/salsa
+  - tea
+  - twofish
+  - xtea
+- name: golang.org/x/net
+  version: 161cd47e91fd58ac17490ef4d742dc98bb4cf60e
+  subpackages:
+  - bpf
+  - internal/iana
+  - internal/socket
+  - ipv4
+- name: golang.org/x/sys
+  version: eda9bb28ed513021f3e6a2a361031adc3d8a6301
+  subpackages:
+  - windows
 testImports: []

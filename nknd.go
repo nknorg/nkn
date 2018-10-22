@@ -1,19 +1,20 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
 	"strings"
 	"time"
-	"net/http"
-	"io/ioutil"
-	"encoding/json"
 
 	"github.com/nknorg/nkn/api/httpjson"
+	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/api/websocket"
 	"github.com/nknorg/nkn/consensus/ising"
 	"github.com/nknorg/nkn/core/ledger"
@@ -21,18 +22,22 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/db"
 	"github.com/nknorg/nkn/net"
-	"github.com/nknorg/nkn/net/chord"
+	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nnet"
+	nnetconfig "github.com/nknorg/nnet/config"
+	nnetnode "github.com/nknorg/nnet/node"
+	"github.com/nknorg/nnet/overlay/chord"
 	"github.com/urfave/cli"
 )
 
 const (
-	TestNetVersionNum      = 1
+	TestNetVersionNum = 1
 )
 
 var (
@@ -69,14 +74,27 @@ func InitLedger(account *vault.Account) error {
 	return nil
 }
 
-func StartNetworking(pubKey *crypto.PubKey, ring *chord.Ring) protocol.Noder {
-	return net.StartProtocol(pubKey, ring)
-}
-
 func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
 	log.Info("ising consensus starting ...")
 	account, _ := wallet.GetDefaultAccount()
 	go ising.NewProposerService(account, node).Start()
+}
+
+func JoinNet(nn *nnet.NNet) error {
+	for _, seed := range config.Parameters.SeedList {
+		info, err := client.GetNodeState(seed)
+		if err != nil {
+			log.Warnf("Can't get remote node info from [%s]", seed)
+			continue
+		}
+
+		err = nn.Join(fmt.Sprintf("%s:%d", info.Addr, info.NodePort))
+		if err == nil {
+			return nil
+		}
+		log.Error(err)
+	}
+	return errors.New("Failed to join the network.")
 }
 
 func nknMain(c *cli.Context) error {
@@ -86,11 +104,6 @@ func nknMain(c *cli.Context) error {
 	if err != nil {
 		log.Error(err)
 		os.Exit(1)
-	}
-
-	if len(seedStr) > 0 {
-		// Support input mutil seeds which split by ","
-		config.Parameters.SeedList = strings.Split(seedStr, ",")
 	}
 
 	// Get local account
@@ -103,22 +116,32 @@ func nknMain(c *cli.Context) error {
 		return errors.New("load local account error")
 	}
 
-	var ring *chord.Ring
-	var transport *chord.TCPTransport
-
-	// Start the Chord ring testing process
-	if createMode {
-		ring, transport, err = chord.CreateNet()
-	} else {
-		ring, transport, err = chord.JoinNet()
+	conf := nnetconfig.Config{
+		Transport:        "tcp",
+		Hostname:         config.Parameters.Hostname,
+		Port:             config.Parameters.NodePort,
+		NodeIDBytes:      32,
+		MinNumSuccessors: 8,
 	}
 
+	id := node.GenChordID(fmt.Sprintf("%s:%d", config.Parameters.Hostname, config.Parameters.NodePort))
+
+	nn, err := nnet.NewNNet(id, conf)
 	if err != nil {
 		return err
 	}
 
-	defer transport.Shutdown()
-	defer ring.Leave()
+	if len(seedStr) > 0 {
+		// Support input mutil seeds which split by ","
+		config.Parameters.SeedList = strings.Split(seedStr, ",")
+	}
+
+	if !createMode {
+		err = JoinNet(nn)
+		if err != nil {
+			return err
+		}
+	}
 
 	// initialize ledger
 	err = InitLedger(account)
@@ -128,13 +151,18 @@ func nknMain(c *cli.Context) error {
 	// if InitLedger return err, ledger.DefaultLedger is uninitialized.
 	defer ledger.DefaultLedger.Store.Close()
 
-	err = por.InitPorServer(account, ring)
+	err = por.InitPorServer(account, id)
 	if err != nil {
 		return errors.New("PorServer initialization error")
 	}
 
 	// start P2P networking
-	node := StartNetworking(account.PublicKey, ring)
+	node, err := net.StartProtocol(account.PublicKey, nn)
+	if err != nil {
+		return err
+	}
+
+	defer nn.Stop(nil)
 
 	// start relay service
 	node.StartRelayer(wallet)
@@ -146,12 +174,14 @@ func nknMain(c *cli.Context) error {
 	// start websocket server
 	ws := websocket.StartServer(node, wallet)
 
-	vnode, err := ring.GetFirstVnode()
+	err = nn.ApplyMiddleware(chord.SuccessorAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
+		if index == 0 {
+			ws.NotifyWrongClients()
+		}
+		return true
+	}))
 	if err != nil {
-		return errors.New("Get first vnode in ring error")
-	}
-	vnode.OnNewSuccessor = func() {
-		ws.NotifyWrongClients()
+		return err
 	}
 
 	// start consensus
@@ -178,7 +208,7 @@ func nknMain(c *cli.Context) error {
 }
 
 type testNetVer struct {
-	Ver   int      `json:"version"`
+	Ver int `json:"version"`
 }
 
 func GetRemoteVersionNum() (int, error) {
@@ -199,7 +229,6 @@ func GetRemoteVersionNum() (int, error) {
 	return res.Ver, err
 }
 
-
 func TestNetVersion(timer *time.Timer) {
 	for {
 		select {
@@ -210,7 +239,7 @@ func TestNetVersion(timer *time.Timer) {
 				timer.Reset(30 * time.Minute)
 				break
 			}
-			if (verNum > TestNetVersionNum) {
+			if verNum > TestNetVersionNum {
 				log.Error("Your current nknd is deprecated")
 				log.Error("Please download the latest NKN software from",
 					"https://github.com/nknorg/nkn/releases")

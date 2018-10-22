@@ -61,7 +61,7 @@ func (msg ping) Handle(node Noder) error {
 	if err != nil {
 		log.Error("failed build a new ping message")
 	} else {
-		go node.Tx(buf)
+		node.Tx(buf)
 	}
 	return err
 }

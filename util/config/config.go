@@ -31,7 +31,6 @@ var (
 	Parameters    = &Configuration{
 		Magic:        99281,
 		Version:      1,
-		ChordPort:    30000,
 		NodePort:     30001,
 		HttpWsPort:   30002,
 		HttpJsonPort: 30003,
@@ -52,7 +51,6 @@ type Configuration struct {
 	RPCCert              string   `json:"RPCCert"`
 	RPCKey               string   `json:"RPCKey"`
 	HttpInfoPort         uint16   `json:"HttpInfoPort"`
-	HttpInfoStart        bool     `json:"HttpInfoStart"`
 	HttpWsPort           uint16   `json:"HttpWsPort"`
 	HttpJsonPort         uint16   `json:"HttpJsonPort"`
 	NodePort             uint16   `json:"-"`
@@ -66,7 +64,6 @@ type Configuration struct {
 	MaxLogSize           int64    `json:"MaxLogSize"`
 	MaxTxInBlock         int      `json:"MaxTransactionInBlock"`
 	MaxHdrSyncReqs       int      `json:"MaxConcurrentSyncHeaderReqs"`
-	ChordPort            uint16   `json:"-"`
 	GenesisBlockProposer string   `json:"GenesisBlockProposer"`
 	Hostname             string   `json:"Hostname"`
 }
@@ -97,15 +94,15 @@ func Init() error {
 
 		Parameters.Hostname = ip
 
-		if !SkipCheckPort {
-			ok, err := Parameters.CheckPorts(ip)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				return errors.New("Some ports are not open. Please make sure you set up port forwarding or firewall correctly")
-			}
-		}
+		// if !SkipCheckPort {
+		// 	ok, err := Parameters.CheckPorts(ip)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	if !ok {
+		// 		return errors.New("Some ports are not open. Please make sure you set up port forwarding or firewall correctly")
+		// 	}
+		// }
 	} else if Parameters.Hostname == "127.0.0.1" {
 		Parameters.IncrementPort()
 	}
@@ -142,7 +139,6 @@ func findMinMaxPort(array []uint16) (uint16, uint16) {
 
 func (config *Configuration) IncrementPort() {
 	allPorts := []uint16{
-		config.ChordPort,
 		config.NodePort,
 		config.HttpWsPort,
 		config.HttpJsonPort,
@@ -151,14 +147,14 @@ func (config *Configuration) IncrementPort() {
 	step := maxPort - minPort + 1
 	var delta uint16
 	for {
-		conn, err := net.Listen("tcp", ":"+strconv.Itoa(int(config.ChordPort+delta)))
+		conn, err := net.Listen("tcp", ":"+strconv.Itoa(int(config.NodePort+delta)))
 		if err == nil {
 			conn.Close()
 			break
 		}
+		fmt.Println(err)
 		delta += step
 	}
-	config.ChordPort += delta
 	config.NodePort += delta
 	config.HttpWsPort += delta
 	config.HttpJsonPort += delta
@@ -180,7 +176,6 @@ func checkPort(host string, port uint16) (bool, error) {
 
 func (config *Configuration) CheckPorts(myIP string) (bool, error) {
 	allPorts := []uint16{
-		config.ChordPort,
 		config.NodePort,
 		config.HttpWsPort,
 		config.HttpJsonPort,

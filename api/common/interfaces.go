@@ -115,11 +115,11 @@ func getBlockCount(s Serverer, params map[string]interface{}) map[string]interfa
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]interface{} {
-	node, err := s.GetNetNode()
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	return respPacking(node.GetChordRing().ToData(), SUCCESS)
+	// node, err := s.GetNetNode()
+	// if err != nil {
+	// 	return respPacking(nil, INTERNAL_ERROR)
+	// }
+	return respPacking(nil, SUCCESS)
 }
 
 // getLatestBlockHeight gets the latest block height
@@ -335,18 +335,14 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 	}
 
 	n := netcomm.NodeInfo{
-		State:     node.GetState(),
 		SyncState: protocol.SyncStateString[node.GetSyncState()],
 		Time:      node.GetTime(),
 		Addr:      node.GetAddr(),
 		NodePort:  node.GetPort(),
-		ChordPort: node.GetChordPort(),
 		JsonPort:  node.GetHttpJsonPort(),
-		WsPort:    node.GetWebSockPort(),
+		WsPort:    node.GetWsPort(),
 		ID:        node.GetID(),
 		Version:   node.Version(),
-		Services:  node.Services(),
-		Relay:     node.GetRelay(),
 		Height:    node.GetHeight(),
 		TxnCnt:    node.GetTxnCnt(),
 		RxTxnCnt:  node.GetRxTxnCnt(),
@@ -809,17 +805,7 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 		if err != nil {
 			return respPacking(nil, INTERNAL_ERROR)
 		}
-		ring := node.GetChordRing()
-		if ring == nil {
-			log.Error("Empty ring")
-			return respPacking(nil, INVALID_PARAMS)
-		}
-		vnode, err := ring.GetPredecessor(clientID)
-		if err != nil {
-			log.Error("Cannot get predecessor")
-			return respPacking(nil, INTERNAL_ERROR)
-		}
-		addr, err := vnode.HttpWsAddr()
+		addr, err := node.FindWsAddr(clientID)
 		if err != nil {
 			log.Error("Cannot get websocket address")
 			return respPacking(nil, INTERNAL_ERROR)
