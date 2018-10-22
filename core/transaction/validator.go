@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/core/validation"
@@ -97,6 +98,11 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 		}
 		//3.check issue amount
 		switch txn.TxType {
+		case Coinbase:
+			if txn.Outputs[0].Value != Fixed64 (config.DefaultMiningReward * StorageFactor) {
+				log.Warn("Mining reward incorrectly.")
+				return ErrMineReward
+			}
 		case IssueAsset:
 			results := txn.GetMergedAssetIDValueFromOutputs()
 			for k, delta := range results {

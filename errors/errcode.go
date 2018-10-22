@@ -28,6 +28,7 @@ const (
 	ErrXmitFail             ErrCode = 45013
 	ErrNonOptimalSigChain   ErrCode = 45014
 	ErrDuplicateName        ErrCode = 45015
+	ErrMineReward		ErrCode = 45016
 )
 
 func (err ErrCode) Error() string {

@@ -23,6 +23,7 @@ const (
 const (
 	ConsensusTime      = 10 * time.Second
 	ProposerChangeTime = time.Minute
+	DefaultMiningReward = 10
 )
 
 var (
