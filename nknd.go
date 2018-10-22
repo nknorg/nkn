@@ -21,7 +21,6 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/db"
-	"github.com/nknorg/nkn/net"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
@@ -121,7 +120,7 @@ func nknMain(c *cli.Context) error {
 		Hostname:         config.Parameters.Hostname,
 		Port:             config.Parameters.NodePort,
 		NodeIDBytes:      32,
-		MinNumSuccessors: 8,
+		MinNumSuccessors: 16,
 	}
 
 	id := node.GenChordID(fmt.Sprintf("%s:%d", config.Parameters.Hostname, config.Parameters.NodePort))
@@ -134,13 +133,6 @@ func nknMain(c *cli.Context) error {
 	if len(seedStr) > 0 {
 		// Support input mutil seeds which split by ","
 		config.Parameters.SeedList = strings.Split(seedStr, ",")
-	}
-
-	if !createMode {
-		err = JoinNet(nn)
-		if err != nil {
-			return err
-		}
 	}
 
 	// initialize ledger
@@ -156,23 +148,19 @@ func nknMain(c *cli.Context) error {
 		return errors.New("PorServer initialization error")
 	}
 
-	// start P2P networking
-	node, err := net.StartProtocol(account.PublicKey, nn)
+	node, err := node.InitNode(account.PublicKey, nn)
 	if err != nil {
 		return err
 	}
-
-	defer nn.Stop(nil)
 
 	// start relay service
 	node.StartRelayer(wallet)
 
 	//start JsonRPC
 	rpcServer := httpjson.NewServer(node, wallet)
-	go rpcServer.Start()
 
 	// start websocket server
-	ws := websocket.StartServer(node, wallet)
+	ws := websocket.NewServer(node, wallet)
 
 	err = nn.ApplyMiddleware(chord.SuccessorAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
 		if index == 0 {
@@ -183,6 +171,24 @@ func nknMain(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	err = nn.Start()
+	if err != nil {
+		return err
+	}
+
+	if !createMode {
+		err = JoinNet(nn)
+		if err != nil {
+			return err
+		}
+	}
+
+	defer nn.Stop(nil)
+
+	go rpcServer.Start()
+
+	go ws.Start()
 
 	// start consensus
 	StartConsensus(wallet, node)
