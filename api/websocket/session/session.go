@@ -55,7 +55,7 @@ func (s *Session) Send(msgType int, data []byte) error {
 	s.Lock()
 	defer s.Unlock()
 	if s.mConnection == nil {
-		return errors.New("WebSocket is null")
+		return errors.New("Websocket is null")
 	}
 	return s.mConnection.WriteMessage(msgType, data)
 }

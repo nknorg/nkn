@@ -116,45 +116,10 @@ func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *
 	return nil
 }
 
-func (rs *RelayService) SendPacketToNode(nextHop protocol.Noder, packet *message.RelayPacket) error {
-	nextPubkey, err := nextHop.GetPubKey().EncodePoint(true)
-	if err != nil {
-		log.Error("Get next hop public key error: ", err)
-		return err
-	}
-	mining := false
-	if rs.localNode.GetSyncState() == protocol.PersistFinished {
-		mining = true
-	}
-	err = rs.porServer.Sign(packet.SigChain, nextPubkey, mining)
-	if err != nil {
-		log.Error("Signing signature chain error: ", err)
-		return err
-	}
-	msg, err := message.NewRelayMessage(packet)
-	if err != nil {
-		log.Error("Create relay message error: ", err)
-		return err
-	}
-	msgBytes, err := msg.ToBytes()
-	if err != nil {
-		log.Error("Convert relay message to bytes error: ", err)
-		return err
-	}
-	log.Infof(
-		"Relay packet:\nSrcID: %s\nDestID: %x\nNext Hop: %s:%d\nPayload Size: %d",
-		packet.SrcAddr,
-		packet.DestID,
-		nextHop.GetAddr(),
-		nextHop.GetPort(),
-		len(packet.Payload),
-	)
-	nextHop.Tx(msgBytes)
-	return nil
-}
-
 func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 	destID := packet.DestID
+
+	// handle packet send to self
 	if bytes.Equal(rs.localNode.GetChordAddr(), destID) {
 		log.Infof(
 			"Receive packet:\nSrcID: %s\nDestID: %x\nPayload Size: %d",
@@ -162,28 +127,21 @@ func (rs *RelayService) HandleMsg(packet *message.RelayPacket) error {
 			destID,
 			len(packet.Payload),
 		)
-		// TODO: handle packet send to self
 		return nil
 	}
-	nextHop, err := rs.localNode.NextHop(destID)
-	if err != nil {
-		log.Error("Get next hop error: ", err)
-		return err
-	}
-	if nextHop == nil {
-		clients := websocket.GetServer().GetClientsById(destID)
-		if clients == nil {
-			log.Info("Client Not Online:", hex.EncodeToString(destID))
-			rs.addRelayPacketToBuffer(destID, packet)
-			return nil
-		}
-		rs.SendPacketToClients(clients, packet)
+
+	clients := websocket.GetServer().GetClientsById(destID)
+
+	// client is not online
+	if clients == nil {
+		log.Info("Client Not Online:", hex.EncodeToString(destID))
+		rs.addRelayPacketToBuffer(destID, packet)
 		return nil
 	}
-	err = rs.SendPacketToNode(nextHop, packet)
-	if err != nil {
-		return err
-	}
+
+	// client is online
+	rs.SendPacketToClients(clients, packet)
+
 	return nil
 }
 
@@ -198,7 +156,7 @@ func (rs *RelayService) ReceiveRelayMsg(v interface{}) error {
 func (rs *RelayService) ReceiveRelayMsgNoError(v interface{}) {
 	err := rs.ReceiveRelayMsg(v)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 	}
 }
 
@@ -230,5 +188,23 @@ func (rs *RelayService) SendRelayPacketsInBuffer(clientID []byte) error {
 		rs.SendPacketToClients(clients, packet)
 	}
 	rs.relayPacketBuffer[clientIDStr] = nil
+	return nil
+}
+
+func (rs *RelayService) SignRelayPacket(nextHop protocol.Noder, packet *message.RelayPacket) error {
+	nextPubkey, err := nextHop.GetPubKey().EncodePoint(true)
+	if err != nil {
+		log.Error("Get next hop public key error: ", err)
+		return err
+	}
+	mining := false
+	if rs.localNode.GetSyncState() == protocol.PersistFinished {
+		mining = true
+	}
+	err = rs.porServer.Sign(packet.SigChain, nextPubkey, mining)
+	if err != nil {
+		log.Error("Signing signature chain error: ", err)
+		return err
+	}
 	return nil
 }

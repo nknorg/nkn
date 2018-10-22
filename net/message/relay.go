@@ -24,7 +24,7 @@ type RelayPacket struct {
 
 type RelayMessage struct {
 	msgHdr
-	packet RelayPacket
+	Packet RelayPacket
 }
 
 func NewRelayPacket(srcAddr string, destID, payload []byte, sigChain *por.SigChain, maxHoldingSeconds uint32) (*RelayPacket, error) {
@@ -45,7 +45,7 @@ func NewRelayMessage(packet *RelayPacket) (*RelayMessage, error) {
 	copy(msg.msgHdr.CMD[0:len(cmd)], cmd)
 	tmpBuffer := bytes.NewBuffer(nil)
 	packet.Serialize(tmpBuffer)
-	msg.packet = *packet
+	msg.Packet = *packet
 	b := new(bytes.Buffer)
 	err := binary.Write(b, binary.LittleEndian, tmpBuffer.Bytes())
 	if err != nil {
@@ -63,7 +63,7 @@ func NewRelayMessage(packet *RelayPacket) (*RelayMessage, error) {
 }
 
 func (msg RelayMessage) Handle(node protocol.Noder) error {
-	node.LocalNode().GetEvent("relay").Notify(events.EventRelayMsgReceived, &msg.packet)
+	node.LocalNode().GetEvent("relay").Notify(events.EventRelayMsgReceived, &msg.Packet)
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (msg *RelayMessage) Serialize(w io.Writer) error {
 		return err
 	}
 
-	err = msg.packet.Serialize(w)
+	err = msg.Packet.Serialize(w)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (msg *RelayMessage) Deserialize(r io.Reader) error {
 		return err
 	}
 
-	err = msg.packet.Deserialize(r)
+	err = msg.Packet.Deserialize(r)
 	if err != nil {
 		return err
 	}
@@ -106,8 +106,7 @@ func (msg *RelayMessage) ToBytes() ([]byte, error) {
 }
 
 func (packet *RelayPacket) Serialize(w io.Writer) error {
-	var err error
-	err = serialization.WriteVarString(w, packet.SrcAddr)
+	err := serialization.WriteVarString(w, packet.SrcAddr)
 	if err != nil {
 		return err
 	}

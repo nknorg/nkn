@@ -8,7 +8,6 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -16,31 +15,31 @@ import (
 type PorServer struct {
 	sync.RWMutex
 	account    *vault.Account
-	ring       *chord.Ring
+	id         []byte
 	pors       map[uint32][]*PorPackage
 	minSigHash map[uint32][]byte
 }
 
 var porServer *PorServer
 
-func NewPorServer(account *vault.Account, ring *chord.Ring) *PorServer {
+func NewPorServer(account *vault.Account, id []byte) *PorServer {
 	ps := &PorServer{
 		account:    account,
-		ring:       ring,
+		id:         id,
 		pors:       make(map[uint32][]*PorPackage),
 		minSigHash: make(map[uint32][]byte),
 	}
 	return ps
 }
 
-func InitPorServer(account *vault.Account, ring *chord.Ring) error {
+func InitPorServer(account *vault.Account, id []byte) error {
 	if porServer != nil {
 		return errors.New("PorServer already initialized")
 	}
-	if ring == nil {
-		return errors.New("Ring is not initialized")
+	if id == nil || len(id) == 0 {
+		return errors.New("ID is empty")
 	}
-	porServer = NewPorServer(account, ring)
+	porServer = NewPorServer(account, id)
 	return nil
 }
 
@@ -68,12 +67,7 @@ func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte, mining bool) error {
 		return errors.New("it's not the right signer")
 	}
 
-	vnode, err := ps.ring.GetFirstVnode()
-	if err != nil {
-		return err
-	}
-
-	err = sc.Sign(vnode.Id, nextPubkey, mining, ps.account)
+	err = sc.Sign(ps.id, nextPubkey, mining, ps.account)
 	if err != nil {
 		log.Error("Signature chain signing error:", err)
 		return err

@@ -3,8 +3,6 @@ package protocol
 import (
 	"bytes"
 	"encoding/binary"
-	"net"
-	"time"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
@@ -12,7 +10,6 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/net/chord"
 	"github.com/nknorg/nkn/vault"
 )
 
@@ -40,37 +37,24 @@ var SyncStateString = []string{"SyncStarted", "SyncFinished", "PersistFinished"}
 type Noder interface {
 	Version() uint32
 	GetID() uint64
-	Services() uint64
 	GetAddr() string
 	GetPort() uint16
 	GetAddrStr() string
 	GetAddr16() ([16]byte, error)
-	GetHttpInfoPort() uint16
-	SetHttpInfoPort(uint16)
 	GetHttpJsonPort() uint16
 	//TODO SetHttpJsonPort(uint16)
-	GetWebSockPort() uint16
-	//TODO SetWebSockPort(uint16)
-	GetChordPort() uint16
-	//TODO SetChordPort(uint16)
-	GetHttpInfoState() bool
-	SetHttpInfoState(bool)
-	GetState() uint32
-	SetState(state uint32)
+	GetWsPort() uint16
+	//TODO SetWsPort(uint16)
 	GetSyncState() SyncState
 	SetSyncState(s SyncState)
 	SetSyncStopHash(hash Uint256, height uint32)
 	SyncBlock(bool)
 	SyncBlockMonitor(bool)
 	StopSyncBlock(bool)
-	GetRelay() bool
 	GetPubKey() *crypto.PubKey
-	CompareAndSetState(old, new uint32) bool
-	UpdateRXTime(t time.Time)
 	LocalNode() Noder
 	DelNbrNode(id uint64) (Noder, bool)
 	AddNbrNode(Noder)
-	GetConn() net.Conn
 	CloseConn()
 	GetHeight() uint32
 	GetConnectionCnt() uint
@@ -79,12 +63,8 @@ type Noder interface {
 	AppendTxnPool(*transaction.Transaction) ErrCode
 	ExistHash(hash Uint256) bool
 	DumpInfo()
-	UpdateInfo(t time.Time, version uint32, services uint64, port uint16, nonce uint64, relay uint8, height uint32)
-	ConnectNeighbors()
-	Connect(nodeAddr string) error
 	Tx(buf []byte)
 	GetTime() int64
-	NodeEstablished(uid uint64) bool
 	GetEvent(eventName string) *events.Event
 	GetNeighborAddrs() ([]NodeAddr, uint)
 	GetTransaction(hash Uint256) *transaction.Transaction
@@ -93,51 +73,33 @@ type Noder interface {
 	GetRxTxnCnt() uint64
 
 	Xmit(interface{}) error
-	BroadcastTransaction(from Noder, txn *transaction.Transaction) error
-	GetBookKeeperAddr() *crypto.PubKey
-	GetBookKeepersAddrs() ([]*crypto.PubKey, uint64)
-	SetBookKeeperAddr(pk *crypto.PubKey)
+	Broadcast([]byte) error
 	GetNeighborHeights() ([]uint32, uint)
 	CleanSubmittedTransactions(txns []*transaction.Transaction) error
 
 	GetNeighborNoder() []Noder
 	GetSyncFinishedNeighbors() []Noder
-	GetNbrNodeCnt() uint32
 	StoreFlightHeight(height uint32)
 	GetFlightHeightCnt() int
 	RemoveFlightHeightLessThan(height uint32)
 	RemoveFlightHeight(height uint32)
-	GetLastRXTime() time.Time
 	SetHeight(height uint32)
 	WaitForSyncBlkFinish()
 	GetFlightHeights() []uint32
-	IsAddrInNeighbors(addr string) bool
-	IsChordAddrInNeighbors(chordAddr []byte) bool
-	ShouldChordAddrInNeighbors(addr []byte) (bool, error)
-	SetAddrInConnectingList(addr string) bool
-	RemoveAddrInConnectingList(addr string)
-	AddInRetryList(addr string)
-	RemoveFromRetryList(addr string)
-	AcquireMsgHandlerChan()
-	ReleaseMsgHandlerChan()
-	AcquireHeaderReqChan()
-	ReleaseHeaderReqChan()
 
 	GetChordAddr() []byte
-	SetChordAddr([]byte)
-	GetChordRing() *chord.Ring
 	StartRelayer(wallet vault.Wallet)
-	NextHop(key []byte) (Noder, error)
 	SendRelayPacket(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error
 	SendRelayPacketsInBuffer(clientId []byte) error
+	GetWsAddr() string
+	FindWsAddr([]byte) (string, error)
 }
 
 type NodeAddr struct {
-	Time     int64
-	Services uint64
-	IpAddr   [16]byte
-	Port     uint16
-	ID       uint64
+	Time   int64
+	IpAddr [16]byte
+	Port   uint16
+	ID     uint64
 }
 
 func (msg *NodeAddr) Deserialization(p []byte) error {

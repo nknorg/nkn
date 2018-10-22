@@ -86,7 +86,7 @@ func (ws *WsServer) Start() error {
 	var done = make(chan bool)
 	go ws.checkSessionsTimeout(done)
 
-	ws.server = &http.Server{Handler: http.HandlerFunc(ws.webSocketHandler)}
+	ws.server = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler)}
 	err := ws.server.Serve(ws.listener)
 
 	done <- true
@@ -139,41 +139,14 @@ func (ws *WsServer) registryMethod() {
 			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
 
-		nextHop, err := node.NextHop(clientID)
+		addr, err := node.FindWsAddr(clientID)
 		if err != nil {
-			log.Error("Get next hop error: ", err)
-			return common.RespPacking(nil, common.INVALID_PARAMS)
+			log.Error("Cannot get websocket address")
+			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
-		if nextHop != nil {
-			log.Warn("This is not the correct node to connect")
-			ring := node.GetChordRing()
-			if ring == nil {
-				log.Error("Empty ring")
-				return common.RespPacking(nil, common.INTERNAL_ERROR)
-			}
-			vnode, err := ring.GetPredecessor(clientID)
-			if err != nil {
-				log.Error("Cannot get predecessor")
-				return common.RespPacking(nil, common.INTERNAL_ERROR)
-			}
-			addr, err := vnode.HttpWsAddr()
-			if err != nil {
-				log.Error("Cannot get websocket address")
-				return common.RespPacking(nil, common.INTERNAL_ERROR)
-			}
-			localVnode, err := ring.GetFirstVnode()
-			if err != nil {
-				log.Error("Cannot get localvnode")
-				return common.RespPacking(nil, common.INTERNAL_ERROR)
-			}
-			localAddr, err := localVnode.HttpWsAddr()
-			if err != nil {
-				log.Error("Cannot get local websocket address")
-				return common.RespPacking(nil, common.INTERNAL_ERROR)
-			}
-			if addr != localAddr {
-				return common.RespPacking(addr, common.WRONG_NODE)
-			}
+
+		if addr != node.GetWsAddr() {
+			return common.RespPacking(addr, common.WRONG_NODE)
 		}
 
 		newSessionId := hex.EncodeToString(clientID)
@@ -245,8 +218,8 @@ func (ws *WsServer) checkSessionsTimeout(done chan bool) {
 
 }
 
-//webSocketHandler
-func (ws *WsServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
+//websocketHandler
+func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	wsConn, err := ws.Upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
@@ -464,45 +437,22 @@ func (ws *WsServer) NotifyWrongClients() {
 		if clientID == nil {
 			return
 		}
+
 		node, err := ws.GetNetNode()
 		if err != nil {
 			return
 		}
-		nextHop, err := node.NextHop(clientID)
+
+		addr, err := node.FindWsAddr(clientID)
 		if err != nil {
+			log.Error("Cannot get websocket address")
 			return
 		}
-		if nextHop != nil {
-			ring := node.GetChordRing()
-			if ring == nil {
-				log.Error("Empty ring")
-				return
-			}
-			vnode, err := ring.GetPredecessor(clientID)
-			if err != nil {
-				log.Error("Cannot get predecessor")
-				return
-			}
-			addr, err := vnode.HttpWsAddr()
-			if err != nil {
-				log.Error("Cannot get websocket address")
-				return
-			}
-			localVnode, err := ring.GetFirstVnode()
-			if err != nil {
-				log.Error("Cannot get localvnode")
-				return
-			}
-			localAddr, err := localVnode.HttpWsAddr()
-			if err != nil {
-				log.Error("Cannot get local websocket address")
-				return
-			}
-			if addr != localAddr {
-				resp := common.ResponsePack(common.WRONG_NODE)
-				resp["Result"] = addr
-				ws.respondToSession(client, resp)
-			}
+
+		if addr != node.GetWsAddr() {
+			resp := common.ResponsePack(common.WRONG_NODE)
+			resp["Result"] = addr
+			ws.respondToSession(client, resp)
 		}
 	})
 }
