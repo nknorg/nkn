@@ -23,6 +23,7 @@ import (
 	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/protobuf"
 	"github.com/nknorg/nkn/relay"
+	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nnet"
@@ -147,6 +148,17 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 			return false
 		}
 
+		return true
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	err = nn.ApplyMiddleware(nnetnode.RemoteNodeReady(func(remoteNode *nnetnode.RemoteNode) bool {
+		if address.ShouldRejectAddr(n.GetAddrStr(), remoteNode.Addr) {
+			remoteNode.Stop(errors.New("Remote port is different from local port"))
+			return false
+		}
 		return true
 	}))
 	if err != nil {
