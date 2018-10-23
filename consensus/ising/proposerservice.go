@@ -105,7 +105,7 @@ func (ps *ProposerService) ProcessRollback() {
 			break
 		}
 
-		reqMsg := NewPing(ps.forkCache.probeHeight)
+		reqMsg := NewPing(ps.forkCache.probeHeight, ps.localNode.GetSyncState())
 		nodes := ps.GetPersistedNode(nil)
 		ps.SendConsensusMsg(reqMsg, nodes)
 		time.Sleep(WaitingForProbeFinished)
@@ -145,24 +145,26 @@ func (ps *ProposerService) HandleBlockForking() {
 	for {
 		select {
 		case <-timer.C:
-			// Don't check forked during block syncing
-			if protocol.PersistFinished == ps.localNode.GetSyncState() {
-				//send ping to all neighbors periodically
-				nodes := ps.GetPersistedNode(nil)
-				currentHeight := ledger.DefaultLedger.Store.GetHeight()
-				currentHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
-				ps.forkCache = NewForkCache(currentHeight, currentHash)
-				// ping neighbors with local current height
-				pingMsg := NewPing(MaxUint32) // ping remote with MaxUint32 for get latest hash
-				ps.SendConsensusMsg(pingMsg, nodes)
+			//send ping to all neighbors periodically
+			nodes := ps.GetReceiverNode(nil)
+			currentHeight := ledger.DefaultLedger.Store.GetHeight()
+			currentHash := ledger.DefaultLedger.Store.GetCurrentBlockHash()
+			ps.forkCache = NewForkCache(currentHeight, currentHash)
+			// ping neighbors with local current height
+			pingMsg := NewPing(MaxUint32, ps.localNode.GetSyncState()) // ping remote with MaxUint32 for get latest hash
+			ps.SendConsensusMsg(pingMsg, nodes)
 
-				// wait response from neighbor and handle rollback if needed
-				time.Sleep(WaitingForProbeFinished)
+			// wait response from neighbor and handle rollback if needed
+			time.Sleep(WaitingForProbeFinished)
+
+			// Don't check forked during block syncing
+			if ps.localNode.GetSyncState() == protocol.PersistFinished {
 				if ps.forkCache.AnalyzePingResp() {
 					ps.ProcessRollback()
 				}
 			}
-			// reset timer right away if no forking
+
+			// reset timer if no forking
 			timer.Reset(ForkingDetectTimer)
 		}
 	}
@@ -1000,14 +1002,21 @@ func (ps *ProposerService) HandlePingMsg(msg *Ping, sender uint64) {
 		height = ledger.DefaultLedger.Store.GetHeight()
 		hash = ledger.DefaultLedger.Store.GetCurrentBlockHash()
 	}
-	pongMsg := NewPong(hash, height, pingHeight)
+	pongMsg := NewPong(hash, height, pingHeight, ps.localNode.GetSyncState())
 	nodes := ps.GetReceiverNode([]uint64{sender})
+	for _, n := range nodes {
+		n.SetHeight(pingHeight)
+		n.SetSyncState(msg.syncState)
+	}
 	ps.SendConsensusMsg(pongMsg, nodes)
 }
 
 func (ps *ProposerService) HandlePongMsg(msg *Pong, sender uint64) {
 	if ps.forkCache == nil {
 		log.Error("no ping, receive pong.")
+		return
+	}
+	if msg.syncState != protocol.PersistFinished {
 		return
 	}
 	hash := msg.blockHash
