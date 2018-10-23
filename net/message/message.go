@@ -88,14 +88,6 @@ func AllocMsg(t string, length int) Messenger {
 		var msg notFound
 		copy(msg.msgHdr.CMD[0:len(t)], t)
 		return &msg
-	case "ping":
-		var msg ping
-		copy(msg.msgHdr.CMD[0:len(t)], t)
-		return &msg
-	case "pong":
-		var msg pong
-		copy(msg.msgHdr.CMD[0:len(t)], t)
-		return &msg
 	case "relay":
 		var msg RelayMessage
 		copy(msg.msgHdr.CMD[0:len(t)], t)
