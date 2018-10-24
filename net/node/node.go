@@ -464,10 +464,10 @@ func (node *node) WaitForSyncHeaderFinish(isProposer bool) {
 
 func (node *node) WaitForSyncBlkFinish() {
 	for {
-		headerHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
 		currentBlkHeight := ledger.DefaultLedger.Blockchain.BlockHeight
-		log.Debug("WaitForSyncBlkFinish... current block height is ", currentBlkHeight, " ,current header height is ", headerHeight)
-		if currentBlkHeight >= headerHeight {
+		log.Debugf("WaitForSyncBlkFinish...\ncurrent block %v, expect hash %x", currentBlkHeight, node.syncStopHash)
+		blk, err := ledger.DefaultLedger.Store.GetBlock(node.syncStopHash)
+		if err == nil && blk != nil {
 			break
 		}
 		<-time.After(2 * time.Second)
