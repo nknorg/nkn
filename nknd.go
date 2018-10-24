@@ -116,12 +116,15 @@ func nknMain(c *cli.Context) error {
 	}
 
 	conf := &nnetconfig.Config{
-		Transport:        "tcp",
-		Hostname:         config.Parameters.Hostname,
-		Port:             config.Parameters.NodePort,
-		NodeIDBytes:      32,
-		MinNumSuccessors: 16,
-		Logger:           log.Log,
+		Transport:   "tcp",
+		Hostname:    config.Parameters.Hostname,
+		Port:        config.Parameters.NodePort,
+		NodeIDBytes: 32,
+	}
+
+	err = nnet.SetLogger(log.Log)
+	if err != nil {
+		return err
 	}
 
 	id := node.GenChordID(fmt.Sprintf("%s:%d", config.Parameters.Hostname, config.Parameters.NodePort))
