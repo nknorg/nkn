@@ -107,7 +107,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			w.Write(data)
 		} else {
 			//if the function does not exist
-			log.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
+			log.Warning("HTTP JSON RPC Handle - No function to call for ", request["method"])
 			errcode := common.INVALID_METHOD
 			data, err := json.Marshal(map[string]interface{}{
 				"jsonrpc": "2.0",

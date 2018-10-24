@@ -32,14 +32,14 @@ func (iterable TransactionMap) Iterate(handler func(item *Transaction) ErrCode) 
 
 type TxnPool struct {
 	sync.RWMutex
-	txnCnt        uint64                            // transaction count
-	txnList       map[common.Uint256]*Transaction   // transaction which have been verified will put into this map
+	txnCnt  uint64                          // transaction count
+	txnList map[common.Uint256]*Transaction // transaction which have been verified will put into this map
 }
 
 func NewTxnPool() *TxnPool {
 	return &TxnPool{
-		txnCnt:        0,
-		txnList:       make(map[common.Uint256]*Transaction),
+		txnCnt:  0,
+		txnList: make(map[common.Uint256]*Transaction),
 	}
 }
 
@@ -103,7 +103,7 @@ func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[commo
 			log.Error("can't find necessary transaction: ", common.BytesToHexString(winningHash.ToArrayReverse()))
 			return nil, errors.New("need necessary transaction")
 		} else {
-			log.Warn("collecting wining hash: ", common.BytesToHexString(winningHash.ToArrayReverse()))
+			log.Warning("collecting wining hash: ", common.BytesToHexString(winningHash.ToArrayReverse()))
 			txns[winningHash] = winningTxn
 			i++
 		}

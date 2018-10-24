@@ -1059,7 +1059,7 @@ func getUnspends(s Serverer, params map[string]interface{}) map[string]interface
 
 func VerifyAndSendTx(n protocol.Noder, txn *transaction.Transaction) errors.ErrCode {
 	if errCode := n.AppendTxnPool(txn); errCode != errors.ErrNoError {
-		log.Warn("Can NOT add the transaction to TxnPool")
+		log.Warning("Can NOT add the transaction to TxnPool")
 		return errCode
 	}
 	if err := n.Xmit(txn); err != nil {

@@ -123,7 +123,7 @@ func (ps *ProposerService) ProcessRollback() {
 	} else {
 		cHeight := int(ps.forkCache.GetCurrentHeight())
 		rHeight := int(ps.forkCache.GetRollBackHeight())
-		log.Warnf("roll back blocks from height %d to %d", cHeight, rHeight)
+		log.Warningf("roll back blocks from height %d to %d", cHeight, rHeight)
 		// TODO: Lock db before Rollback for avoid corrupted ledger
 		for i := cHeight; i > rHeight; i-- {
 			b, err := ledger.DefaultLedger.Store.GetBlockByHeight(uint32(i))
@@ -210,7 +210,7 @@ func (ps *ProposerService) ConsensusRoutine(vType voting.VotingContentType, isPr
 		if err != nil {
 			log.Errorf("get final entity error, hash: %s, type: %d, votingHeight: %d",
 				BytesToHexString(finalHash.ToArrayReverse()), vType, votingHeight)
-			log.Warn(err)
+			log.Warning(err)
 			return
 		}
 		// process final block and signature chain
@@ -480,7 +480,7 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 			// cleanup cached block
 			err = ps.syncCache.RemoveBlockFromCache(i)
 			if err != nil {
-				log.Warnf("sync cache cleanup failed for height %d, error: %v", i, err)
+				log.Warningf("sync cache cleanup failed for height %d, error: %v", i, err)
 			}
 			// cleanup block time lock
 			ps.syncCache.timeLock.RemoveForHeight(i)
@@ -506,7 +506,7 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 		// cleanup cached block
 		err = ps.syncCache.RemoveBlockFromCache(i)
 		if err != nil {
-			log.Warnf("sync cache cleanup failed for height %d, error: %v", i, err)
+			log.Warningf("sync cache cleanup failed for height %d, error: %v", i, err)
 		}
 		// cleanup block time lock
 		ps.syncCache.timeLock.RemoveForHeight(i)
@@ -696,7 +696,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender u
 
 	// expect the height of received block is equal to voting height when block syncing finished
 	if height != votingHeight {
-		log.Warnf("receive block which height is invalid, consensus height: %d, received block height: %d,"+
+		log.Warningf("receive block which height is invalid, consensus height: %d, received block height: %d,"+
 			" hash: %s", votingHeight, height, BytesToHexString(blockHash.ToArrayReverse()))
 		return
 	}
@@ -724,18 +724,18 @@ func (ps *ProposerService) HandleRequestMsg(req *Request, sender uint64) {
 	height := req.height
 
 	if height < votingHeight {
-		log.Warnf("receive invalid request, consensus height: %d, request height: %d,"+
+		log.Warningf("receive invalid request, consensus height: %d, request height: %d,"+
 			" hash: %s", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
 	// returns if never send vote
 	if !current.CheckOwnState(hash, voting.ProposalSent) {
-		log.Warn("receive invalid request for hash: ", BytesToHexString(hash.ToArrayReverse()))
+		log.Warning("receive invalid request for hash: ", BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
 	// returns if receive duplicate request
 	if current.CheckAndSetNeighborState(sender, hash, voting.RequestReceived) {
-		log.Warn("duplicate request received for hash: ", BytesToHexString(hash.ToArrayReverse()))
+		log.Warning("duplicate request received for hash: ", BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
 
@@ -754,7 +754,7 @@ func (ps *ProposerService) HandleRequestMsg(req *Request, sender uint64) {
 		}
 	} else {
 		if hash.CompareTo(current.GetConfirmingHash()) != 0 {
-			log.Warn("requested block doesn't match with local block in process")
+			log.Warning("requested block doesn't match with local block in process")
 			return
 		}
 		content, err = current.GetVotingContent(hash, height)
@@ -788,13 +788,13 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender uint64) {
 
 	// returns if not received proposal
 	if !current.CheckNeighborState(sender, *hash, voting.ProposalReceived) {
-		log.Warn("not receive proposal but receive response for hash: ",
+		log.Warning("not receive proposal but receive response for hash: ",
 			BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
 	// returns if no request sent before
 	if !current.CheckNeighborState(sender, *hash, voting.RequestSent) {
-		log.Warn("consensus state error in Response message handler")
+		log.Warning("consensus state error in Response message handler")
 		return
 	}
 	if ps.localNode.GetSyncState() != protocol.PersistFinished {
@@ -807,7 +807,7 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender uint64) {
 		return
 	} else {
 		if height != votingHeight {
-			log.Warnf("receive invalid response, consensus height: %d, response height: %d,"+
+			log.Warningf("receive invalid response, consensus height: %d, response height: %d,"+
 				" hash: %s", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
 			return
 		}
@@ -862,7 +862,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 	votingType := current.VotingType()
 
 	if current.CheckAndSetNeighborState(sender, hash, voting.ProposalReceived) {
-		log.Warn("duplicate proposal received for hash: ", BytesToHexString(hash.ToArrayReverse()))
+		log.Warning("duplicate proposal received for hash: ", BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
 	// handle block proposal when block syncing
@@ -876,7 +876,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 			nodes := ps.GetReceiverNode([]uint64{sender})
 			ps.SendConsensusMsg(requestMsg, nodes)
 			current.CheckAndSetNeighborState(sender, hash, voting.RequestSent)
-			log.Warnf("doesn't contain block hash in sync cache, requesting it from neighbor %s",
+			log.Warningf("doesn't contain block hash in sync cache, requesting it from neighbor %s",
 				BytesToHexString(hash.ToArrayReverse()))
 		}
 		// TODO: start timer when receive first
@@ -901,7 +901,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 	votingHeight := current.GetVotingHeight()
 	neighbors := ps.localNode.GetNeighborNoder()
 	if height < votingHeight {
-		log.Warnf("receive invalid proposal, consensus height: %d, proposal height: %d,"+
+		log.Warningf("receive invalid proposal, consensus height: %d, proposal height: %d,"+
 			" hash: %s", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
@@ -923,7 +923,7 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 		// send request message
 		ps.SendConsensusMsg(requestMsg, nodes)
 		current.CheckAndSetNeighborState(sender, hash, voting.RequestSent)
-		log.Warnf("doesn't contain hash in local cache, requesting it from neighbor %s",
+		log.Warningf("doesn't contain hash in local cache, requesting it from neighbor %s",
 			BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
@@ -954,13 +954,13 @@ func (ps *ProposerService) HandleMindChangingMsg(mindChanging *MindChanging, sen
 	votingType := current.VotingType()
 	votingHeight := current.GetVotingHeight()
 	if height != votingHeight {
-		log.Warnf("receive invalid mind changing, consensus height: %d, mind changing height: %d,"+
+		log.Warningf("receive invalid mind changing, consensus height: %d, mind changing height: %d,"+
 			" hash: %s", votingHeight, height, BytesToHexString(hash.ToArrayReverse()))
 		return
 	}
 	currentVotingPool := current.GetVotingPool()
 	if !currentVotingPool.HasReceivedVoteFrom(votingHeight, sender) {
-		log.Warn("no proposal received before, so mind changing is invalid")
+		log.Warning("no proposal received before, so mind changing is invalid")
 		return
 	}
 	neighborWeight, _ := ledger.DefaultLedger.Store.GetVotingWeight(Uint160{})

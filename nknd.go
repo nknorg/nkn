@@ -83,7 +83,7 @@ func JoinNet(nn *nnet.NNet) error {
 	for _, seed := range config.Parameters.SeedList {
 		info, err := client.GetNodeState(seed)
 		if err != nil {
-			log.Warnf("Can't get remote node info from [%s]", seed)
+			log.Warningf("Can't get remote node info from [%s]", seed)
 			continue
 		}
 
@@ -115,12 +115,13 @@ func nknMain(c *cli.Context) error {
 		return errors.New("load local account error")
 	}
 
-	conf := nnetconfig.Config{
+	conf := &nnetconfig.Config{
 		Transport:        "tcp",
 		Hostname:         config.Parameters.Hostname,
 		Port:             config.Parameters.NodePort,
 		NodeIDBytes:      32,
 		MinNumSuccessors: 16,
+		Logger:           log.Log,
 	}
 
 	id := node.GenChordID(fmt.Sprintf("%s:%d", config.Parameters.Hostname, config.Parameters.NodePort))
@@ -241,7 +242,7 @@ func TestNetVersion(timer *time.Timer) {
 		case <-timer.C:
 			verNum, err := GetRemoteVersionNum()
 			if err != nil {
-				log.Warn("Get the remote version number error")
+				log.Warning("Get the remote version number error")
 				timer.Reset(30 * time.Minute)
 				break
 			}

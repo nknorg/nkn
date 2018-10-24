@@ -24,7 +24,7 @@ func (msg block) Handle(node Noder) error {
 		return nil
 	}
 	if err := ledger.DefaultLedger.Blockchain.AddBlock(&msg.blk); err != nil {
-		log.Warn("Block add failed: ", err, " ,block hash is ", hash)
+		log.Warning("Block add failed: ", err, " ,block hash is ", hash)
 		return err
 	}
 	node.RemoveFlightHeight(msg.blk.Header.Height)
