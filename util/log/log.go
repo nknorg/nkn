@@ -156,11 +156,11 @@ func (l *Logger) Infof(format string, a ...interface{}) {
 	l.Outputf(infoLog, format, a...)
 }
 
-func (l *Logger) Warn(a ...interface{}) {
+func (l *Logger) Warning(a ...interface{}) {
 	l.Output(warnLog, a...)
 }
 
-func (l *Logger) Warnf(format string, a ...interface{}) {
+func (l *Logger) Warningf(format string, a ...interface{}) {
 	l.Outputf(warnLog, format, a...)
 }
 
@@ -216,8 +216,8 @@ func Info(a ...interface{}) {
 	Log.Info(a...)
 }
 
-func Warn(a ...interface{}) {
-	Log.Warn(a...)
+func Warning(a ...interface{}) {
+	Log.Warning(a...)
 }
 
 func Error(a ...interface{}) {
@@ -228,8 +228,8 @@ func Infof(format string, a ...interface{}) {
 	Log.Infof(format, a...)
 }
 
-func Warnf(format string, a ...interface{}) {
-	Log.Warnf(format, a...)
+func Warningf(format string, a ...interface{}) {
+	Log.Warningf(format, a...)
 }
 
 func Errorf(format string, a ...interface{}) {

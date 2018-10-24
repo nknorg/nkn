@@ -38,32 +38,32 @@ type Iterator interface {
 func VerifyTransaction(Tx *Transaction) ErrCode {
 
 	if err := CheckDuplicateInput(Tx); err != nil {
-		log.Warn("[VerifyTransaction],", err)
+		log.Warning("[VerifyTransaction],", err)
 		return ErrDuplicateInput
 	}
 
 	if err := CheckAssetPrecision(Tx); err != nil {
-		log.Warn("[VerifyTransaction],", err)
+		log.Warning("[VerifyTransaction],", err)
 		return ErrAssetPrecision
 	}
 
 	if err := CheckTransactionBalance(Tx); err != nil {
-		log.Warn("[VerifyTransaction],", err)
+		log.Warning("[VerifyTransaction],", err)
 		return ErrTransactionBalance
 	}
 
 	if err := CheckAttributeProgram(Tx); err != nil {
-		log.Warn("[VerifyTransaction],", err)
+		log.Warning("[VerifyTransaction],", err)
 		return ErrAttributeProgram
 	}
 
 	if err := CheckTransactionContracts(Tx); err != nil {
-		log.Warn("[VerifyTransaction],", err)
+		log.Warning("[VerifyTransaction],", err)
 		return ErrTransactionContracts
 	}
 
 	if err := CheckTransactionPayload(Tx); err != nil {
-		log.Warn("[VerifyTransaction],", err)
+		log.Warning("[VerifyTransaction],", err)
 		return ErrTransactionPayload
 	}
 
@@ -82,7 +82,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 	return iterator.Iterate(func(txn *Transaction) ErrCode {
 		//1.check weather have duplicate transaction.
 		if _, exist := txnlist[txn.Hash()]; exist {
-			log.Warn("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
+			log.Warning("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
 			return ErrDuplicatedTx
 		} else {
 			txnlist[txn.Hash()] = struct{}{}
@@ -91,7 +91,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 		for _, UTXOinput := range txn.Inputs {
 			inputString := UTXOinput.ToString()
 			if _, ok := txPoolInputs[inputString]; ok {
-				log.Warn("[VerifyTransactionWithBlock], duplicate input exist in block.")
+				log.Warning("[VerifyTransactionWithBlock], duplicate input exist in block.")
 				return ErrDuplicateInput
 			}
 			txPoolInputs[inputString] = struct{}{}
@@ -111,7 +111,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 				//Get the Asset amount when RegisterAsseted.
 				trx, err := Store.GetTransaction(k)
 				if trx.TxType != RegisterAsset {
-					log.Warn("[VerifyTransactionWithBlock], TxType is illegal.")
+					log.Warning("[VerifyTransactionWithBlock], TxType is illegal.")
 					return ErrSummaryAsset
 				}
 				AssetReg := trx.Payload.(*payload.RegisterAsset)
@@ -123,7 +123,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 				} else {
 					quantity_issued, err = Store.GetQuantityIssued(k)
 					if err != nil {
-						log.Warn("[VerifyTransactionWithBlock], GetQuantityIssued failed.")
+						log.Warning("[VerifyTransactionWithBlock], GetQuantityIssued failed.")
 						return ErrSummaryAsset
 					}
 				}
@@ -133,7 +133,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 				//quantity_issued : amount has been issued of this assedID
 				//issueSummary[k] : amount in transactionPool of this assedID of issue transaction.
 				if AssetReg.Amount-quantity_issued < issueSummary[k] {
-					log.Warn("[VerifyTransactionWithBlock], Amount check error.")
+					log.Warning("[VerifyTransactionWithBlock], Amount check error.")
 					return ErrSummaryAsset
 				}
 			}
@@ -142,14 +142,14 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 
 			name := namePayload.Name
 			if _, ok := registeredNames[name]; ok {
-				log.Warn("[VerifyTransactionWithBlock], duplicate name exist in block.")
+				log.Warning("[VerifyTransactionWithBlock], duplicate name exist in block.")
 				return ErrDuplicateName
 			}
 			registeredNames[name] = struct{}{}
 
 			registrant := BytesToHexString(namePayload.Registrant)
 			if _, ok := nameRegistrants[registrant]; ok {
-				log.Warn("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
+				log.Warning("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
 				return ErrDuplicateName
 			}
 			nameRegistrants[registrant] = struct{}{}
@@ -158,7 +158,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 
 			registrant := BytesToHexString(namePayload.Registrant)
 			if _, ok := nameRegistrants[registrant]; ok {
-				log.Warn("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
+				log.Warning("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
 				return ErrDuplicateName
 			}
 			nameRegistrants[registrant] = struct{}{}

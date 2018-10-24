@@ -52,7 +52,7 @@ func (pc *ProposerCache) Add(height uint32, votingContent voting.VotingContent) 
 			winningHash:     t.Hash(),
 			winningHashType: ledger.WinningBlockHash,
 		}
-		log.Warnf("use proposer of block height %d which public key is %s chord ID is %s to propose block %d",
+		log.Warningf("use proposer of block height %d which public key is %s chord ID is %s to propose block %d",
 			t.Header.Height, BytesToHexString(pbk), BytesToHexString(id), height)
 	case *transaction.Transaction:
 		payload := t.Payload.(*payload.Commit)
@@ -60,7 +60,7 @@ func (pc *ProposerCache) Add(height uint32, votingContent voting.VotingContent) 
 		proto.Unmarshal(payload.SigChain, sigchain)
 		pbk, id, err = sigchain.GetMiner()
 		if err != nil {
-			log.Warn("Get last public key error", err)
+			log.Warning("Get last public key error", err)
 			return
 		}
 		proposerInfo = &ProposerInfo{

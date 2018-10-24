@@ -40,7 +40,7 @@ imports:
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: 8be0074adecc6dae8664e36b186a85dfc1537536
+  version: ae3da041dd03064480512b87cf19a0f8d0d9fc3b
   subpackages:
   - cache
   - common

@@ -93,7 +93,7 @@ func AllocMsg(t string, length int) Messenger {
 		copy(msg.msgHdr.CMD[0:len(t)], t)
 		return &msg
 	default:
-		log.Warn("Unknown message type")
+		log.Warning("Unknown message type")
 		return nil
 	}
 }
@@ -110,7 +110,7 @@ func MsgType(buf []byte) (string, error) {
 
 func ParseMsg(buf []byte) (Messenger, error) {
 	if len(buf) < MsgHdrLen {
-		log.Warn("Unexpected size of received message")
+		log.Warning("Unexpected size of received message")
 		return nil, errors.New("Unexpected size of received message")
 	}
 
@@ -190,14 +190,14 @@ func (hdr *msgHdr) init(cmd string, checksum []byte, length uint32) {
 // @p payload of the message
 func (hdr msgHdr) Verify(buf []byte) error {
 	if !magicVerify(hdr.Magic) {
-		log.Warn(fmt.Sprintf("Unmatched magic number 0x%0x", hdr.Magic))
+		log.Warning(fmt.Sprintf("Unmatched magic number 0x%0x", hdr.Magic))
 		return errors.New("Unmatched magic number")
 	}
 	checkSum := checkSum(buf)
 	if !bytes.Equal(hdr.Checksum[:], checkSum[:]) {
 		str1 := hex.EncodeToString(hdr.Checksum[:])
 		str2 := hex.EncodeToString(checkSum[:])
-		log.Warn(fmt.Sprintf("Message Checksum error, Received checksum %s Wanted checksum: %s",
+		log.Warning(fmt.Sprintf("Message Checksum error, Received checksum %s Wanted checksum: %s",
 			str1, str2))
 		return errors.New("Message Checksum error")
 	}

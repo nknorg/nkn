@@ -391,7 +391,7 @@ func (node *node) Xmit(msg interface{}) error {
 		node.txnCnt++
 		node.ExistHash(txn.Hash())
 	default:
-		log.Warn("Unknown Xmit message type")
+		log.Warning("Unknown Xmit message type")
 		return errors.New("Unknown Xmit message type")
 	}
 
