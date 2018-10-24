@@ -163,7 +163,7 @@ func (ps *ProposerService) HandleBlockForking() {
 				}
 			}
 			// reset timer right away if no forking
-			timer.Reset(0)
+			timer.Reset(100 * time.Millisecond)
 		}
 	}
 }
