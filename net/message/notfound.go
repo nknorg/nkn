@@ -68,12 +68,12 @@ func (msg notFound) Serialize(w io.Writer) error {
 func (msg *notFound) Deserialize(r io.Reader) error {
 	err := binary.Read(r, binary.LittleEndian, &(msg.msgHdr))
 	if err != nil {
-		log.Warn("Parse notfound message hdr error")
+		log.Warning("Parse notfound message hdr error")
 		return errors.New("Parse notfound message hdr error")
 	}
 	err = msg.hash.Deserialize(r)
 	if err != nil {
-		log.Warn("Parse notfound message error")
+		log.Warning("Parse notfound message error")
 		return errors.New("Parse notfound message error")
 	}
 
