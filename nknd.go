@@ -29,7 +29,6 @@ import (
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nnet"
-	nnetconfig "github.com/nknorg/nnet/config"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
 	"github.com/urfave/cli"
@@ -115,7 +114,7 @@ func nknMain(c *cli.Context) error {
 		return errors.New("load local account error")
 	}
 
-	conf := &nnetconfig.Config{
+	conf := &nnet.Config{
 		Transport:   "tcp",
 		Hostname:    config.Parameters.Hostname,
 		Port:        config.Parameters.NodePort,
@@ -166,15 +165,12 @@ func nknMain(c *cli.Context) error {
 	// start websocket server
 	ws := websocket.NewServer(node, wallet)
 
-	err = nn.ApplyMiddleware(chord.SuccessorAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
+	nn.MustApplyMiddleware(chord.SuccessorAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
 		if index == 0 {
 			ws.NotifyWrongClients()
 		}
 		return true
 	}))
-	if err != nil {
-		return err
-	}
 
 	err = nn.Start()
 	if err != nil {
