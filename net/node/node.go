@@ -123,7 +123,7 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	n.WebsocketPort = uint32(Parameters.HttpWsPort)
 	n.JsonRpcPort = uint32(Parameters.HttpJsonPort)
 
-	n.id, err = chordIDToNodeID(nn.LocalNode.Id)
+	n.id, err = chordIDToNodeID(nn.GetLocalNode().Id)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	n.hashCache = NewHashCache()
 	n.nnet = nn
 
-	err = nn.ApplyMiddleware(nnetnode.LocalNodeWillStart(func(localNode *nnetnode.LocalNode) bool {
+	nn.MustApplyMiddleware(nnetnode.LocalNodeWillStart(func(localNode *nnetnode.LocalNode) bool {
 		var err error
 
 		localNode.Node.Data, err = proto.Marshal(&n.Node)
@@ -150,22 +150,16 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 
 		return true
 	}))
-	if err != nil {
-		return nil, err
-	}
 
-	err = nn.ApplyMiddleware(nnetnode.RemoteNodeReady(func(remoteNode *nnetnode.RemoteNode) bool {
+	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady(func(remoteNode *nnetnode.RemoteNode) bool {
 		if address.ShouldRejectAddr(n.GetAddrStr(), remoteNode.Addr) {
 			remoteNode.Stop(errors.New("Remote port is different from local port"))
 			return false
 		}
 		return true
 	}))
-	if err != nil {
-		return nil, err
-	}
 
-	err = nn.ApplyMiddleware(chord.NeighborAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
+	nn.MustApplyMiddleware(chord.NeighborAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
 		var err error
 		node := NewNode()
 		node.local = n
@@ -192,11 +186,8 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 
 		return true
 	}))
-	if err != nil {
-		return nil, err
-	}
 
-	err = nn.ApplyMiddleware(chord.NeighborRemoved(func(remoteNode *nnetnode.RemoteNode) bool {
+	nn.MustApplyMiddleware(chord.NeighborRemoved(func(remoteNode *nnetnode.RemoteNode) bool {
 		nbr := n.getNbrByNNetNode(remoteNode)
 		if nbr != nil {
 			n.DisconnectNeighbor(nbr)
@@ -204,11 +195,8 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 
 		return true
 	}))
-	if err != nil {
-		return nil, err
-	}
 
-	err = nn.ApplyMiddleware(routing.RemoteMessageReceived(func(remoteMessage *nnetnode.RemoteMessage) (*nnetnode.RemoteMessage, bool) {
+	nn.MustApplyMiddleware(routing.RemoteMessageReceived(func(remoteMessage *nnetnode.RemoteMessage) (*nnetnode.RemoteMessage, bool) {
 		var err error
 		if remoteMessage.Msg.MessageType == nnetprotobuf.BYTES {
 			nbr := n
@@ -237,11 +225,8 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 		}
 		return remoteMessage, true
 	}))
-	if err != nil {
-		return nil, err
-	}
 
-	err = nn.ApplyMiddleware(routing.RemoteMessageRouted(func(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
+	nn.MustApplyMiddleware(routing.RemoteMessageRouted(func(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
 		if remoteMessage.Msg.MessageType == nnetprotobuf.BYTES && remoteMessage.Msg.RoutingType == nnetprotobuf.RELAY {
 			if localNode != nil {
 				return remoteMessage, localNode, remoteNodes, false
@@ -309,9 +294,6 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 		}
 		return remoteMessage, localNode, remoteNodes, true
 	}))
-	if err != nil {
-		return nil, err
-	}
 
 	return n, nil
 }
@@ -417,7 +399,7 @@ func (node *node) GetAddr16() ([16]byte, error) {
 
 func (node *node) GetAddrStr() string {
 	if node.nnet != nil {
-		return node.nnet.LocalNode.Addr
+		return node.nnet.GetLocalNode().Addr
 	}
 	return node.nnetNode.Addr
 }
@@ -635,7 +617,7 @@ func (node *node) FindWsAddr(key []byte) (string, error) {
 		return "", errors.New("Node is not local node")
 	}
 
-	c, ok := node.nnet.Overlay.(*chord.Chord)
+	c, ok := node.nnet.Network.(*chord.Chord)
 	if !ok {
 		return "", errors.New("Overlay is not chord")
 	}
@@ -672,7 +654,7 @@ func (node *node) FindWsAddr(key []byte) (string, error) {
 
 func (node *node) GetChordAddr() []byte {
 	if node.nnet != nil {
-		return node.nnet.LocalNode.Id
+		return node.nnet.GetLocalNode().Id
 	}
 	return node.nnetNode.Id
 }
