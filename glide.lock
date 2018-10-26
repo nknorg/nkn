@@ -1,8 +1,6 @@
-hash: 83294aaa002da5e0620136c1518f39943694b5a7218c3cfe7c3fe85f641582d2
-updated: 2018-10-21T18:15:52.345192-07:00
+hash: b561d6788c113a246489fbf20cf437bea9d99966c37701ac71ce257a2b97073f
+updated: 2018-10-26T11:09:14.062789+08:00
 imports:
-- name: github.com/bitly/go-simplejson
-  version: da1a8928f709389522c8023062a3739f3b4af419
 - name: github.com/gogo/protobuf
   version: 636bf0302bc95575d69441b25a2603156ffdddf1
   subpackages:
@@ -18,13 +16,15 @@ imports:
   - ripemd160
   - ssh/terminal
 - name: github.com/golang/protobuf
-  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
+  version: aa810b61a9c79d51363740d207bb46cf8e620ed5
   subpackages:
   - proto
 - name: github.com/golang/snappy
   version: 553a641470496b2327abcac10b36396bd98e45c9
+- name: github.com/google/uuid
+  version: 9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8
 - name: github.com/gorilla/websocket
-  version: a91eba7f97777409bc2c443f5534d41dd20c5720
+  version: 66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d
 - name: github.com/imdario/mergo
   version: 9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4
 - name: github.com/itchyny/base58-go
@@ -54,14 +54,12 @@ imports:
   - protobuf
   - transport
   - util
+- name: github.com/op/go-logging
+  version: 970db520ece77730c7e4724c61121037378659d9
 - name: github.com/patrickmn/go-cache
   version: a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0
 - name: github.com/pborman/uuid
-  version: 1b00554d822231195d1babd97ff4a781231955c9
-  subpackages:
-  - crypto/secp256k1
-  - crypto/sha3
-  - params
+  version: adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1
 - name: github.com/pkg/errors
   version: 816c9085562cd7ee03e7f8188a1cfd942858cded
 - name: github.com/rdegges/go-ipify
@@ -90,13 +88,13 @@ imports:
   subpackages:
   - sm4
 - name: github.com/urfave/cli
-  version: f6e8084112db1c3aa9c1e4144f024ab549ea08c1
-- name: github.com/whyrusleeping/tar-utils
-  version: e8a5890cfc9d59a203361237581468780d945b6e
+  version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
 - name: github.com/xtaci/kcp-go
   version: f48db19e7a48fe347571d6bfc52a7585a53c5315
 - name: golang.org/x/crypto
   version: 0709b304e793a5edb4a2c0145f281ecdc20838a4
+  repo: https://github.com/golang/crypto
+  vcs: git
   subpackages:
   - blowfish
   - cast5
@@ -109,6 +107,8 @@ imports:
   - xtea
 - name: golang.org/x/net
   version: 161cd47e91fd58ac17490ef4d742dc98bb4cf60e
+  repo: https://github.com/golang/net
+  vcs: git
   subpackages:
   - bpf
   - internal/iana
@@ -116,6 +116,9 @@ imports:
   - ipv4
 - name: golang.org/x/sys
   version: eda9bb28ed513021f3e6a2a361031adc3d8a6301
+  repo: https://github.com/golang/sys
+  vcs: git
   subpackages:
+  - unix
   - windows
 testImports: []
