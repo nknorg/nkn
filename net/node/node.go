@@ -128,7 +128,7 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 		return nil, err
 	}
 	log.Infof("Init node ID to %d", n.id)
-	n.nbrNodes.init()
+
 	n.local = n
 	n.publicKey = pubKey
 	n.TxnPool = pool.NewTxnPool()
@@ -139,17 +139,10 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	n.hashCache = NewHashCache()
 	n.nnet = nn
 
-	nn.MustApplyMiddleware(nnetnode.LocalNodeWillStart(func(localNode *nnetnode.LocalNode) bool {
-		var err error
-
-		localNode.Node.Data, err = proto.Marshal(&n.Node)
-		if err != nil {
-			localNode.Stop(err)
-			return false
-		}
-
-		return true
-	}))
+	nn.GetLocalNode().Node.Data, err = proto.Marshal(&n.Node)
+	if err != nil {
+		return nil, err
+	}
 
 	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady(func(remoteNode *nnetnode.RemoteNode) bool {
 		if address.ShouldRejectAddr(n.GetAddrStr(), remoteNode.Addr) {

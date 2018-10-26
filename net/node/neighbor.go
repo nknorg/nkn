@@ -47,9 +47,6 @@ func (nm *nbrNodes) GetConnectionCnt() uint {
 	return uint(len(nm.GetNeighborNoder()))
 }
 
-func (nm *nbrNodes) init() {
-}
-
 func (nm *nbrNodes) GetNeighborAddrs() ([]protocol.NodeAddr, uint) {
 	var addrs []protocol.NodeAddr
 	for _, n := range nm.GetNeighborNoder() {
