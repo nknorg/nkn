@@ -1,33 +1,43 @@
 package: github.com/nknorg/nkn
-ignore:
-- golang.org/x/sys/unix
 import:
+- package: golang.org/x/sys
+  repo: https://github.com/golang/sys
+  vcs: git
+- package: github.com/gogo/protobuf
+  version: ~1.1.1
+  subpackages:
+  - gogoproto
+  - proto
 - package: github.com/golang/crypto
   subpackages:
   - ripemd160
-  - ssh/terminal
+- package: github.com/golang/protobuf
+  version: ~1.2.0
+  subpackages:
+  - proto
+- package: github.com/gorilla/websocket
+  version: ~1.4.0
+- package: github.com/itchyny/base58-go
+- package: github.com/nknorg/go-portscanner
+- package: github.com/nknorg/gopass
+- package: github.com/nknorg/nnet
+  subpackages:
+  - node
+  - overlay/chord
+  - overlay/routing
+  - protobuf
+- package: github.com/patrickmn/go-cache
+  version: ~2.1.0
+- package: github.com/pborman/uuid
+  version: ~1.2.0
+- package: github.com/rdegges/go-ipify
 - package: github.com/syndtr/goleveldb
   subpackages:
   - leveldb
   - leveldb/errors
+  - leveldb/filter
   - leveldb/iterator
   - leveldb/opt
-- package: github.com/itchyny/base58-go
+  - leveldb/util
 - package: github.com/urfave/cli
-- package: github.com/bitly/go-simplejson
-- package: github.com/whyrusleeping/tar-utils
-- package: github.com/nknorg/gopass
-- package: github.com/gorilla/websocket
-- package: github.com/pborman/uuid
-  subpackages:
-  - crypto/secp256k1
-  - crypto/sha3
-  - params
-- package: github.com/golang/protobuf
-  version: v1.1.0
-- package: github.com/rdegges/go-ipify
-- package: github.com/jpillora/backoff
-  version: 1.0.0
-- package: github.com/nknorg/go-portscanner
-- package: github.com/patrickmn/go-cache
-- package: github.com/nknorg/nnet
+  version: ~1.20.0
