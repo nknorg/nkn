@@ -3,7 +3,7 @@ package address
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"net"
+	"net/url"
 	"strings"
 
 	"github.com/nknorg/nkn/util/log"
@@ -26,17 +26,17 @@ func ParseClientAddress(addrStr string) ([]byte, []byte, error) {
 
 // ShouldRejectAddr returns if remoteAddr should be rejected by localAddr
 func ShouldRejectAddr(localAddr, remoteAddr string) bool {
-	localHost, localPort, err := net.SplitHostPort(localAddr)
+	localAddress, err := url.Parse(localAddr)
 	if err != nil {
 		return false
 	}
 
-	remoteHost, remoteport, err := net.SplitHostPort(remoteAddr)
+	remoteAddress, err := url.Parse(remoteAddr)
 	if err != nil {
 		return false
 	}
 
-	if localHost != remoteHost && localPort != remoteport {
+	if localAddress.Hostname() != remoteAddress.Hostname() && localAddress.Port() != remoteAddress.Port() {
 		return true
 	}
 

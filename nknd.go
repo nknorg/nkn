@@ -86,7 +86,7 @@ func JoinNet(nn *nnet.NNet) error {
 			continue
 		}
 
-		err = nn.Join(fmt.Sprintf("%s:%d", info.Addr, info.NodePort))
+		err = nn.Join(info.Addr)
 		if err == nil {
 			return nil
 		}
@@ -115,7 +115,7 @@ func nknMain(c *cli.Context) error {
 	}
 
 	conf := &nnet.Config{
-		Transport:   "tcp",
+		Transport:   config.Parameters.Transport,
 		Hostname:    config.Parameters.Hostname,
 		Port:        config.Parameters.NodePort,
 		NodeIDBytes: 32,

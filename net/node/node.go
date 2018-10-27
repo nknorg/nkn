@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -183,7 +184,7 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	nn.MustApplyMiddleware(chord.NeighborRemoved(func(remoteNode *nnetnode.RemoteNode) bool {
 		nbr := n.getNbrByNNetNode(remoteNode)
 		if nbr != nil {
-			n.DisconnectNeighbor(nbr)
+			n.DelNbrNode(nbr.GetID())
 		}
 
 		return true
@@ -291,19 +292,13 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	return n, nil
 }
 
-func (n *node) NodeDisconnected(v interface{}) {
-	if node, ok := v.(*node); ok {
-		node.CloseConn()
-	}
-}
-
 func (node *node) GetID() uint64 {
 	return node.id
 }
 
 func (node *node) GetPort() uint16 {
-	_, portStr, _ := net.SplitHostPort(node.GetAddrStr())
-	port, _ := strconv.Atoi(portStr)
+	address, _ := url.Parse(node.GetAddrStr())
+	port, _ := strconv.Atoi(address.Port())
 	return uint16(port)
 }
 
@@ -374,8 +369,8 @@ func (node *node) Xmit(msg interface{}) error {
 }
 
 func (node *node) GetAddr() string {
-	host, _, _ := net.SplitHostPort(node.GetAddrStr())
-	return host
+	address, _ := url.Parse(node.GetAddrStr())
+	return address.Hostname()
 }
 
 func (node *node) GetAddr16() ([16]byte, error) {
@@ -531,13 +526,6 @@ func (node *node) blockSyncing() {
 	}
 }
 
-func (node *node) DisconnectNeighbor(nbr *node) {
-	_, success := node.nbrNodes.DelNbrNode(nbr.GetID())
-	if success {
-		nbr.CloseConn()
-	}
-}
-
 func (node *node) SyncBlock(isProposer bool) {
 	ticker := time.NewTicker(BlockSyncingTicker)
 	for {
@@ -631,11 +619,12 @@ func (node *node) FindWsAddr(key []byte) (string, error) {
 		return "", err
 	}
 
-	host, _, err := net.SplitHostPort(pred.Addr)
+	address, _ := url.Parse(pred.Addr)
 	if err != nil {
 		return "", err
 	}
 
+	host := address.Hostname()
 	if host == "" {
 		return "", errors.New("Hostname is empty")
 	}
