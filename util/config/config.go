@@ -115,7 +115,18 @@ func Init() error {
 		if err != nil {
 			return err
 		}
+		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 
+		externalPort, internalPort, err = nat.AddPortMapping("tcp", int(Parameters.HttpWsPort), int(Parameters.HttpWsPort), "nkn", 10*time.Second)
+		if err != nil {
+			return err
+		}
+		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
+		externalPort, internalPort, err = nat.AddPortMapping("tcp", int(Parameters.HttpJsonPort), int(Parameters.HttpJsonPort), "nkn", 10*time.Second)
+		if err != nil {
+			return err
+		}
 		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 	}
 
