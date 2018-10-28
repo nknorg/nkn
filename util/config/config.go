@@ -12,7 +12,9 @@ import (
 	"strconv"
 	"time"
 
+	gonat "github.com/nknorg/go-nat"
 	"github.com/nknorg/go-portscanner"
+	"github.com/nknorg/nnet/transport"
 	"github.com/rdegges/go-ipify"
 )
 
@@ -36,6 +38,7 @@ var (
 		NodePort:     30001,
 		HttpWsPort:   30002,
 		HttpJsonPort: 30003,
+		NAT:          false,
 		LogLevel:     1,
 		SeedList: []string{
 			"http://127.0.0.1:30003",
@@ -68,6 +71,7 @@ type Configuration struct {
 	GenesisBlockProposer string   `json:"GenesisBlockProposer"`
 	Hostname             string   `json:"Hostname"`
 	Transport            string   `json:"Transport"`
+	NAT                  bool     `json:"NAT"`
 }
 
 func Init() error {
@@ -88,6 +92,33 @@ func Init() error {
 		log.Println("Config file not exists, use default parameters.")
 	}
 
+	if Parameters.Hostname == "127.0.0.1" {
+		Parameters.IncrementPort()
+	}
+
+	if Parameters.NAT {
+		log.Println("Discovering NAT gateway...")
+
+		nat, err := gonat.DiscoverGateway()
+		if err != nil {
+			return err
+		}
+
+		log.Printf("Found %s gateway", nat.Type())
+
+		transport, err := transport.NewTransport(Parameters.Transport)
+		if err != nil {
+			return err
+		}
+
+		externalPort, internalPort, err := nat.AddPortMapping(transport.GetNetwork(), int(Parameters.NodePort), int(Parameters.NodePort), "nkn", 10*time.Second)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+	}
+
 	if Parameters.Hostname == "" {
 		ip, err := ipify.GetIp()
 		if err != nil {
@@ -105,8 +136,6 @@ func Init() error {
 		// 		return errors.New("Some ports are not open. Please make sure you set up port forwarding or firewall correctly")
 		// 	}
 		// }
-	} else if Parameters.Hostname == "127.0.0.1" {
-		Parameters.IncrementPort()
 	}
 
 	err := check(Parameters)
@@ -176,7 +205,7 @@ func (config *Configuration) IncrementPort() {
 	config.HttpWsPort += delta
 	config.HttpJsonPort += delta
 	if delta > 0 {
-		log.Println("[WARNING] Port in use! All ports are automatically increased by", delta)
+		log.Println("Port in use! All ports are automatically increased by", delta)
 	}
 }
 
@@ -198,7 +227,7 @@ func (config *Configuration) CheckPorts(myIP string) (bool, error) {
 		config.HttpJsonPort,
 	}
 	for _, port := range allPorts {
-		log.Printf("[INFO] Checking TCP port %d", port)
+		log.Printf("Checking TCP port %d", port)
 		isOpen, err := checkPort(myIP, port)
 		if err != nil {
 			return false, err
@@ -206,7 +235,7 @@ func (config *Configuration) CheckPorts(myIP string) (bool, error) {
 		if !isOpen {
 			return false, fmt.Errorf("Port %d is not open", port)
 		}
-		log.Printf("[INFO] Port %d is open", port)
+		log.Printf("Port %d is open", port)
 	}
 	return true, nil
 }
