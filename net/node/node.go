@@ -658,7 +658,7 @@ func (node *node) Broadcast(buf []byte) error {
 		return errors.New("Node is not local node")
 	}
 
-	_, err := node.nnet.SendBytesBroadcastAsync(buf)
+	_, err := node.nnet.SendBytesBroadcastAsync(buf, nnetprotobuf.BROADCAST_PUSH)
 	if err != nil {
 		return err
 	}
