@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package protobuf;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "protobuf/node.proto";
+
+option (gogoproto.gostring_all) = true;
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.stringer_all) =  true;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+// For tests
+option (gogoproto.testgen_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.populate_all) = true;
+
+enum RoutingType {
+  DIRECT = 0;
+  RELAY = 1;
+  BROADCAST_PUSH = 2;
+  BROADCAST_PULL = 3; // to be implemented
+  BROADCAST_TREE = 4;
+}
+
+enum MessageType {
+  // Node message
+  PING = 0;
+  GET_NODE = 1;
+  STOP = 2;
+
+  // Chord message
+  GET_SUCC_AND_PRED = 3;
+  FIND_SUCC_AND_PRED = 4;
+
+  // Message that contains any bytes
+  BYTES = 5;
+}
+
+message Message {
+  RoutingType routing_type = 1;
+  MessageType message_type = 2;
+  bytes message = 3;
+  bytes message_id = 4;
+  bytes reply_to_id = 5;
+  bytes src_id = 6;
+  bytes dest_id = 7;
+}
+
+message Ping {
+}
+
+message PingReply {
+}
+
+message GetNode {
+}
+
+message GetNodeReply {
+  Node node = 1;
+}
+
+message Stop {
+}
+
+message GetSuccAndPred {
+  uint32 num_succ = 1;
+  uint32 num_pred = 2;
+}
+
+message GetSuccAndPredReply {
+  repeated Node successors = 1;
+  repeated Node predecessors = 2;
+}
+
+message FindSuccAndPred {
+  bytes key = 1;
+  uint32 num_succ = 2;
+  uint32 num_pred = 3;
+}
+
+message FindSuccAndPredReply {
+  repeated Node successors = 1;
+  repeated Node predecessors = 2;
+}
+
+message Bytes {
+  bytes data = 1;
+}

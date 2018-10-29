@@ -1,0 +1,58 @@
+hash: 32f632de97ac36043bfa2a40443f9be08940348bb8f5982d1d752cf025787300
+updated: 2018-10-23T18:51:26.822955-07:00
+imports:
+- name: github.com/gogo/protobuf
+  version: 636bf0302bc95575d69441b25a2603156ffdddf1
+  subpackages:
+  - gogoproto
+  - jsonpb
+  - proto
+  - protoc-gen-gogo/descriptor
+  - sortkeys
+  - types
+- name: github.com/imdario/mergo
+  version: 9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4
+- name: github.com/klauspost/cpuid
+  version: e7e905edc00ea8827e58662220139109efea09db
+- name: github.com/klauspost/reedsolomon
+  version: 925cb01d65108f2c935e02fdb79ff4a055a4a20d
+- name: github.com/op/go-logging
+  version: 970db520ece77730c7e4724c61121037378659d9
+- name: github.com/patrickmn/go-cache
+  version: a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0
+- name: github.com/pkg/errors
+  version: 816c9085562cd7ee03e7f8188a1cfd942858cded
+- name: github.com/templexxx/cpufeat
+  version: cef66df7f161dee20f4d650da7268d77eaaec82d
+- name: github.com/templexxx/xor
+  version: 0af8e873c554da75f37f2049cdffda804533d44c
+- name: github.com/tjfoc/gmsm
+  version: 0b26aafa7604a3cd63d76facfb62dc7885c068fa
+  subpackages:
+  - sm4
+- name: github.com/xtaci/kcp-go
+  version: f48db19e7a48fe347571d6bfc52a7585a53c5315
+- name: golang.org/x/crypto
+  version: 0709b304e793a5edb4a2c0145f281ecdc20838a4
+  repo: https://github.com/golang/crypto
+  vcs: git
+  subpackages:
+  - blowfish
+  - cast5
+  - internal/subtle
+  - pbkdf2
+  - salsa20
+  - salsa20/salsa
+  - tea
+  - twofish
+  - xtea
+- name: golang.org/x/net
+  version: 161cd47e91fd58ac17490ef4d742dc98bb4cf60e
+  repo: https://github.com/golang/net
+  vcs: git
+  subpackages:
+  - bpf
+  - internal/iana
+  - internal/socket
+  - ipv4
+testImports: []
