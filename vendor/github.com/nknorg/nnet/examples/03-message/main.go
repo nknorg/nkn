@@ -18,7 +18,6 @@ import (
 	"github.com/nknorg/nnet/log"
 	"github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
-	"github.com/nknorg/nnet/overlay/routing"
 	"github.com/nknorg/nnet/protobuf"
 	"github.com/nknorg/nnet/util"
 )
@@ -68,32 +67,15 @@ func main() {
 			return
 		}
 
-		nn.MustApplyMiddleware(routing.RemoteMessageReceived(func(remoteMessage *node.RemoteMessage) (*node.RemoteMessage, bool) {
-			if remoteMessage.Msg.MessageType == protobuf.BYTES && remoteMessage.Msg.ReplyToId == nil {
-				msgBody := &protobuf.Bytes{}
-				err = proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
-				if err != nil {
-					log.Error(err)
-				}
+		nn.MustApplyMiddleware(node.BytesReceived(func(msg, msgID, srcID []byte, remoteNode *node.RemoteNode) ([]byte, bool) {
+			log.Infof("Receive message \"%s\" from %x by %x", string(msg), srcID, remoteNode.Id)
 
-				switch remoteMessage.Msg.RoutingType {
-				case protobuf.DIRECT:
-					log.Infof("Receive direct message \"%s\" from %x", string(msgBody.Data), remoteMessage.RemoteNode.Id)
-
-				case protobuf.RELAY:
-					log.Infof("Receive relay message \"%s\" from %x", string(msgBody.Data), remoteMessage.Msg.SrcId)
-					_, err = nn.SendBytesRelayReply(remoteMessage.Msg.MessageId, []byte("Well received!"), remoteMessage.Msg.SrcId)
-					if err != nil {
-						log.Error(err)
-					}
-
-				case protobuf.BROADCAST_PUSH:
-					log.Infof("Receive broadcast message \"%s\" from %x", string(msgBody.Data), remoteMessage.Msg.SrcId)
-				}
-
-				return nil, false
+			_, err = nn.SendBytesRelayReply(msgID, []byte("Well received!"), srcID)
+			if err != nil {
+				log.Error(err)
 			}
-			return remoteMessage, true
+
+			return msg, true
 		}))
 
 		nnets = append(nnets, nn)

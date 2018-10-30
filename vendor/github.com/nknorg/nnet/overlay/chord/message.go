@@ -180,7 +180,6 @@ func (c *Chord) handleRemoteMessage(remoteMsg *node.RemoteMessage) (bool, error)
 			return false, err
 		}
 
-	case protobuf.BYTES:
 	default:
 		return true, nil
 	}

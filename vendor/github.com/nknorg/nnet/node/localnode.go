@@ -206,6 +206,11 @@ func (ln *LocalNode) listen() {
 		ln.SetInternalPort(uint16(port))
 	}
 
+	if ln.address.Port == 0 {
+		ln.address.Port = ln.port
+		ln.Addr = ln.address.String()
+	}
+
 	for {
 		// listener.Accept() is placed before checking stops to prevent the error
 		// log when local node is stopped and thus conn is closed
