@@ -257,12 +257,7 @@ func (c *Chord) Stop(err error) {
 
 // Join joins an existing chord network starting from the seedNodeAddr
 func (c *Chord) Join(seedNodeAddr string) error {
-	err := c.Connect(seedNodeAddr, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.Connect(seedNodeAddr, nil)
 }
 
 // handleMsg starts a loop that handles received msg

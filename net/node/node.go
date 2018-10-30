@@ -85,6 +85,10 @@ func chordIDToNodeID(chordID []byte) (uint64, error) {
 }
 
 func (n *node) getNbrByNNetNode(remoteNode *nnetnode.RemoteNode) *node {
+	if remoteNode == nil {
+		return nil
+	}
+
 	nodeID, err := chordIDToNodeID(remoteNode.Id)
 	if err != nil {
 		return nil
@@ -190,34 +194,23 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 		return true
 	}))
 
-	nn.MustApplyMiddleware(routing.RemoteMessageReceived(func(remoteMessage *nnetnode.RemoteMessage) (*nnetnode.RemoteMessage, bool) {
-		var err error
-		if remoteMessage.Msg.MessageType == nnetprotobuf.BYTES {
-			nbr := n
-			if remoteMessage.RemoteNode != nil {
-				nbr = n.getNbrByNNetNode(remoteMessage.RemoteNode)
-				if nbr == nil {
-					log.Error("Cannot get neighbor node")
-					return nil, false
-				}
+	nn.MustApplyMiddleware(nnetnode.BytesReceived(func(msg, msgID, srcID []byte, remoteNode *nnetnode.RemoteNode) ([]byte, bool) {
+		nbr := n
+		if remoteNode != nil {
+			nbr = n.getNbrByNNetNode(remoteNode)
+			if nbr == nil {
+				log.Error("Cannot get neighbor node")
+				return msg, true
 			}
-
-			msgBody := &nnetprotobuf.Bytes{}
-			err = proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
-			if err != nil {
-				log.Error(err)
-				return nil, false
-			}
-
-			err := message.HandleNodeMsg(nbr, msgBody.Data)
-			if err != nil {
-				log.Error(err)
-				return nil, false
-			}
-
-			return nil, false
 		}
-		return remoteMessage, true
+
+		err := message.HandleNodeMsg(nbr, msg)
+		if err != nil {
+			log.Error(err)
+			return msg, true
+		}
+
+		return msg, true
 	}))
 
 	nn.MustApplyMiddleware(routing.RemoteMessageRouted(func(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {

@@ -117,6 +117,7 @@ func (rn *RemoteNode) Start() error {
 				return
 			}
 
+			var existing *RemoteNode
 			rn.LocalNode.neighbors.Range(func(key, value interface{}) bool {
 				remoteNode, ok := value.(*RemoteNode)
 				if ok && remoteNode.IsReady() && bytes.Equal(remoteNode.Id, n.Id) {
@@ -124,12 +125,16 @@ func (rn *RemoteNode) Start() error {
 						log.Warningf("Remove stopped remote node %v from list", remoteNode)
 						rn.LocalNode.neighbors.Delete(key)
 					} else {
-						remoteNode.Stop(fmt.Errorf("Node with id %x is connecting at new addr %s", remoteNode.Id, remoteNode.Addr))
+						existing = remoteNode
 					}
 					return false
 				}
 				return true
 			})
+			if existing != nil {
+				rn.Stop(fmt.Errorf("Node with id %x is already connected at new addr %s", existing.Id, existing.conn.RemoteAddr().String()))
+				return
+			}
 
 			remoteAddr, err := transport.Parse(n.Addr)
 			if err != nil {
@@ -346,6 +351,10 @@ func (rn *RemoteNode) tx() {
 
 // SendMessage marshals and sends msg, will returns a RemoteMessage chan if hasReply is true
 func (rn *RemoteNode) SendMessage(msg *protobuf.Message, hasReply bool) (<-chan *RemoteMessage, error) {
+	if rn.IsStopped() {
+		return nil, errors.New("Remote node has stopped")
+	}
+
 	if len(msg.MessageId) == 0 {
 		return nil, errors.New("Message ID is empty")
 	}

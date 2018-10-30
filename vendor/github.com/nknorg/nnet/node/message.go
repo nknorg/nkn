@@ -14,7 +14,8 @@ const (
 	msgLenBytes = 4
 )
 
-// RemoteMessage is the received msg from remote node
+// RemoteMessage is the received msg from remote node. RemoteNode is nil if
+// message is sent by local node.
 type RemoteMessage struct {
 	RemoteNode *RemoteNode
 	Msg        *protobuf.Message
@@ -155,7 +156,7 @@ func NewStopMessage() (*protobuf.Message, error) {
 
 // handleRemoteMessage handles a remote message and returns error
 func (ln *LocalNode) handleRemoteMessage(remoteMsg *RemoteMessage) error {
-	if remoteMsg.RemoteNode == nil {
+	if remoteMsg.RemoteNode == nil && remoteMsg.Msg.MessageType != protobuf.BYTES {
 		return errors.New("Message is sent by local node")
 	}
 
@@ -185,6 +186,22 @@ func (ln *LocalNode) handleRemoteMessage(remoteMsg *RemoteMessage) error {
 	case protobuf.STOP:
 		log.Infof("Received stop message from remote node %v", remoteMsg.RemoteNode)
 		remoteMsg.RemoteNode.Stop(nil)
+
+	case protobuf.BYTES:
+		msgBody := &protobuf.Bytes{}
+		err := proto.Unmarshal(remoteMsg.Msg.Message, msgBody)
+		if err != nil {
+			return err
+		}
+
+		data := msgBody.Data
+		var shouldCallNextMiddleware bool
+		for _, f := range ln.middlewareStore.bytesReceived {
+			data, shouldCallNextMiddleware = f(data, remoteMsg.Msg.MessageId, remoteMsg.Msg.SrcId, remoteMsg.RemoteNode)
+			if !shouldCallNextMiddleware {
+				break
+			}
+		}
 
 	default:
 		return errors.New("Unknown message type")
