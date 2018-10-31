@@ -1,5 +1,5 @@
 hash: 486c72d81aa3d9af18bec54daa5210958567a0cb453edc3394f41f19d91af568
-updated: 2018-10-31T02:12:29.882697-07:00
+updated: 2018-10-31T15:13:14.582668-07:00
 imports:
 - name: github.com/gogo/protobuf
   version: 636bf0302bc95575d69441b25a2603156ffdddf1
@@ -55,7 +55,7 @@ imports:
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: af4a6b81f944f79345b6c79952e24c778ebcafd9
+  version: 2291379e1a6b5d119073fcbe79cdd4075115fcf0
   subpackages:
   - cache
   - common
@@ -133,7 +133,7 @@ imports:
   - internal/socket
   - ipv4
 - name: golang.org/x/sys
-  version: 7e31e0c00fa05cb5fbf4347b585621d6709e19a4
+  version: 9b800f95dbbc54abff0acf7ee32d88ba4e328c89
   repo: https://github.com/golang/sys
   vcs: git
   subpackages:
