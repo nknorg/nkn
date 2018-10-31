@@ -23,9 +23,9 @@ const (
 )
 
 const (
-	ConsensusTime      = 10 * time.Second
-	ProposerChangeTime = time.Minute
-	DefaultMiningReward = 10
+	ConsensusTime       = 18 * time.Second
+	ProposerChangeTime  = time.Minute
+	DefaultMiningReward = 15
 )
 
 var (

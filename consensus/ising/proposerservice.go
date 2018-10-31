@@ -21,9 +21,9 @@ import (
 )
 
 const (
-	TxnAmountToBePackaged      = 1024
-	WaitingForFloodingFinished = time.Second * 3
-	WaitingForVotingFinished   = time.Second * 8
+	TxnAmountToBePackaged      = 20480
+	WaitingForFloodingFinished = time.Second * 6
+	WaitingForVotingFinished   = time.Second * 16
 	TimeoutTolerance           = time.Second * 2
 	ForkingDetectTimer         = time.Second * 5
 	WaitingForProbeFinished    = time.Second * 3
