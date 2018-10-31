@@ -172,7 +172,7 @@ $ ./nknd
 If you are using Docker then you should run the following command instead:
 
 ```shell
-$ docker run -p 30000-30003:30000-30003 -v $PWD:/nkn --name nkn --rm -it nkn nknd
+$ docker run -p 30001-30003:30001-30003 -v $PWD:/nkn --name nkn --rm -it nkn nknd
 ```
 
 If you get an error saying `docker: Error response from daemon: Conflict. The
@@ -200,12 +200,15 @@ wrong. If the problem still persists, [create an
 issue](https://github.com/nknorg/nkn/issues/new) or ask us in our [Discord
 group](#community).
 
-### Port forwarding
+### NAT traversal and port forwarding
 
 Most likely your node is behind a router and does not have a public IP address.
-In such case, you **have to** setup port forwarding on your router for **all**
-ports specified in `config.json`, otherwise other nodes cannot establish
-connections to you.
+If your router has a public IP address and supports UPnP or NAT-PMP protocol,
+you can add `--nat` flag when starting nknd OR add `"NAT": true` in
+`config.json` to setup port forwarding automatically. If your router does not
+support such protocol, you **have to** setup port forwarding on your router for
+port 30001 as well as **all** other ports specified in `config.json`, otherwise
+other nodes cannot establish connections to you.
 
 When setting up port forwarding, public port needs to be the same as private
 port mapped to your node. For example, you should map port 30001 on your
