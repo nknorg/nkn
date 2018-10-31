@@ -56,11 +56,12 @@ func (fc *ForkCache) AnalyzePingResp() bool {
 	fc.RLock()
 	defer fc.RUnlock()
 
-	bestHash, _, _, ok := fc.handleResponse(fc.pingResponse)
+	bestHash, bestHeight, _, ok := fc.handleResponse(fc.pingResponse)
 	if !ok {
 		return false
 	}
-	return fc.currentHash.CompareTo(bestHash) != 0
+	hash, err := ledger.DefaultLedger.Store.GetBlockHash(bestHeight)
+	return (err == nil) || (hash.CompareTo(bestHash) != 0)
 }
 
 func (fc *ForkCache) CacheProbeResp(hash Uint256, height uint32, sender uint64) error {
@@ -79,9 +80,13 @@ func (fc *ForkCache) AnalyzeProbeResp() bool {
 	fc.Lock()
 	defer fc.Unlock()
 
-	bestHash, _, _, ok := fc.handleResponse(fc.probeResponse)
+	bestHash, bestHeight, _, ok := fc.handleResponse(fc.probeResponse)
 	if !ok {
 		return false
+	}
+	if bestHeight != fc.probeHeight {
+		log.Errorf("PongResp Height[%v] NOT the appointed height[%v]", bestHeight, fc.probeResponse)
+		// FIXME: Maybe my Chain higher than majority neighbors
 	}
 	hash, _ := ledger.DefaultLedger.Store.GetBlockHash(fc.probeHeight)
 	if hash.CompareTo(bestHash) != 0 {
