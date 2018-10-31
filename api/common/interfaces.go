@@ -1104,6 +1104,39 @@ func getAddressByName(s Serverer, params map[string]interface{}) map[string]inte
 	return respPacking(address, SUCCESS)
 }
 
+// findSuccessor find the successor of a key
+// params: ["address":<address>]
+// return: {"result":<result>, "error":<errcode>}
+func findSuccessorAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	if str, ok := params["key"].(string); ok {
+		key, err := hex.DecodeString(str)
+		if err != nil {
+			log.Error("Invalid hex string:", err)
+			return respPacking(nil, INVALID_PARAMS)
+		}
+
+		node, err := s.GetNetNode()
+		if err != nil {
+			log.Error("Cannot get node:", err)
+			return respPacking(nil, INTERNAL_ERROR)
+		}
+
+		addr, err := node.FindSuccessorAddr(key)
+		if err != nil {
+			log.Error("Cannot get successor address:", err)
+			return respPacking(nil, INTERNAL_ERROR)
+		}
+
+		return respPacking(addr, SUCCESS)
+	} else {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+}
+
 var InitialAPIHandlers = map[string]APIHandler{
 	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
 	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
@@ -1137,4 +1170,5 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getbalancebyasset":    {Handler: getBalanceByAsset},
 	"getunspends":          {Handler: getUnspends},
 	"getaddressbyname":     {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
+	"findsuccessoraddr":    {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
 }

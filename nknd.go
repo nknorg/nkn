@@ -79,14 +79,23 @@ func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
 }
 
 func JoinNet(nn *nnet.NNet) error {
+	var succAddr string
+	var err error
+
 	for _, seed := range config.Parameters.SeedList {
-		info, err := client.GetNodeState(seed)
+		for i := 0; i < 3; i++ {
+			succAddr, err = client.FindSuccessorAddr(seed, nn.GetLocalNode().Id)
+			if err == nil {
+				break
+			}
+			time.Sleep(time.Second)
+		}
 		if err != nil {
-			log.Warningf("Can't get remote node info from [%s]", seed)
+			log.Warningf("Can't get successor address from [%s]", seed)
 			continue
 		}
 
-		err = nn.Join(info.Addr)
+		err = nn.Join(succAddr)
 		if err == nil {
 			return nil
 		}
