@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"io"
 
 	"github.com/nknorg/nkn/common"
@@ -35,7 +35,7 @@ func (msg trn) Handle(node Noder) error {
 		// add transaction to pool when in consensus state
 		if node.LocalNode().GetSyncState() == PersistFinished {
 			if errCode := node.LocalNode().AppendTxnPool(txn); errCode != ErrNoError {
-				return errors.New("[message] VerifyTransaction failed when AppendTxnPool.")
+				return fmt.Errorf("[message] VerifyTransaction failed with %v when AppendTxnPool.", errCode)
 			}
 		}
 	}
