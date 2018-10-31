@@ -20,12 +20,6 @@ import:
 - package: github.com/itchyny/base58-go
 - package: github.com/nknorg/go-portscanner
 - package: github.com/nknorg/gopass
-- package: github.com/nknorg/nnet
-  subpackages:
-  - node
-  - overlay/chord
-  - overlay/routing
-  - protobuf
 - package: github.com/patrickmn/go-cache
   version: ~2.1.0
 - package: github.com/pborman/uuid
@@ -41,3 +35,4 @@ import:
   - leveldb/util
 - package: github.com/urfave/cli
   version: ~1.20.0
+- package: github.com/nknorg/nnet
