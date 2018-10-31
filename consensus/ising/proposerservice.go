@@ -143,9 +143,14 @@ func (ps *ProposerService) ProcessRollback() {
 
 func (ps *ProposerService) HandleBlockForking() {
 	timer := time.NewTimer(ForkingDetectTimer)
+	shouldAnalyzePingResp := false
 	for {
 		select {
 		case <-timer.C:
+			if ps.localNode.GetSyncState() == protocol.PersistFinished {
+				shouldAnalyzePingResp = true
+			}
+
 			//send ping to all neighbors periodically
 			nodes := ps.GetReceiverNode(nil)
 			currentHeight := ledger.DefaultLedger.Store.GetHeight()
@@ -159,10 +164,8 @@ func (ps *ProposerService) HandleBlockForking() {
 			time.Sleep(WaitingForProbeFinished)
 
 			// Don't check forked during block syncing
-			if ps.localNode.GetSyncState() == protocol.PersistFinished {
-				if ps.forkCache.AnalyzePingResp() {
-					ps.ProcessRollback()
-				}
+			if shouldAnalyzePingResp && ps.forkCache.AnalyzePingResp() {
+				ps.ProcessRollback()
 			}
 
 			// reset timer if no forking
