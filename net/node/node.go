@@ -586,6 +586,28 @@ func (node *node) GetWsAddr() string {
 	return fmt.Sprintf("%s:%d", node.GetAddr(), node.GetWsPort())
 }
 
+func (node *node) FindSuccessorAddr(key []byte) (string, error) {
+	if node.nnet == nil {
+		return "", errors.New("Node is not local node")
+	}
+
+	c, ok := node.nnet.Network.(*chord.Chord)
+	if !ok {
+		return "", errors.New("Overlay is not chord")
+	}
+
+	succs, err := c.FindSuccessors(key, 1)
+	if err != nil {
+		return "", err
+	}
+
+	if len(succs) == 0 {
+		return "", errors.New("Found no successors")
+	}
+
+	return succs[0].Addr, nil
+}
+
 func (node *node) FindWsAddr(key []byte) (string, error) {
 	if node.nnet == nil {
 		return "", errors.New("Node is not local node")
