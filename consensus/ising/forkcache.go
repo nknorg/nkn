@@ -60,8 +60,13 @@ func (fc *ForkCache) AnalyzePingResp() bool {
 	if !ok {
 		return false
 	}
+
 	hash, err := ledger.DefaultLedger.Store.GetBlockHash(bestHeight)
-	return (err == nil) || (hash.CompareTo(bestHash) != 0)
+	if err != nil {
+		return true
+	}
+
+	return hash.CompareTo(bestHash) != 0
 }
 
 func (fc *ForkCache) CacheProbeResp(hash Uint256, height uint32, sender uint64) error {
