@@ -41,6 +41,7 @@ type ProposerService struct {
 	mining               Mining                    // built-in mining
 	consensusMsgReceived events.Subscriber         // consensus events listening
 	blockPersisted       events.Subscriber         // block saved events
+	blockPersistedLock   sync.RWMutex              // block persisted lock
 	syncFinished         events.Subscriber         // block syncing finished event
 	forkCache            *ForkCache                // cache for handling block forking
 	proposerCache        *ProposerCache            // cache for block proposer
@@ -379,6 +380,9 @@ func (ps *ProposerService) TimeoutRoutine() {
 }
 
 func (ps *ProposerService) BlockPersistCompleted(v interface{}) {
+	ps.blockPersistedLock.Lock()
+	defer ps.blockPersistedLock.Unlock()
+
 	// reset timer when block persisted
 	ps.proposerChangeTimer.Stop()
 	ps.proposerChangeTimer.Reset(config.ProposerChangeTime)
