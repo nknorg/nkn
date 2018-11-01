@@ -1,5 +1,5 @@
 hash: 486c72d81aa3d9af18bec54daa5210958567a0cb453edc3394f41f19d91af568
-updated: 2018-10-31T19:04:40.054418-07:00
+updated: 2018-11-01T00:38:04.058338-07:00
 imports:
 - name: github.com/gogo/protobuf
   version: 636bf0302bc95575d69441b25a2603156ffdddf1
@@ -55,7 +55,7 @@ imports:
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: 80eb414fe6940587c023be9b65826556f5101c44
+  version: 1b555112dcec4cb9a581697d51bb3162d976320a
   subpackages:
   - cache
   - common
