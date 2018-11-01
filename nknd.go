@@ -83,7 +83,12 @@ func JoinNet(nn *nnet.NNet) error {
 	var succAddr string
 	var err error
 
-	for _, seed := range config.Parameters.SeedList {
+	seeds := config.Parameters.SeedList
+	rand.Shuffle(len(seeds), func(i int, j int) {
+		seeds[i], seeds[j] = seeds[j], seeds[i]
+	})
+
+	for _, seed := range seeds {
 		for i := 0; i < 3; i++ {
 			succAddr, err = client.FindSuccessorAddr(seed, nn.GetLocalNode().Id)
 			if err == nil {
