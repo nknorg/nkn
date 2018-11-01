@@ -30,6 +30,7 @@ import (
 	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nnet"
 	nnetnode "github.com/nknorg/nnet/node"
+	"github.com/nknorg/nnet/overlay"
 	"github.com/nknorg/nnet/overlay/chord"
 	"github.com/urfave/cli"
 )
@@ -106,6 +107,7 @@ func JoinNet(nn *nnet.NNet) error {
 
 func nknMain(c *cli.Context) error {
 	log.Info("Node version: ", config.Version)
+	signalChan := make(chan os.Signal, 1)
 
 	err := config.Init()
 	if err != nil {
@@ -141,6 +143,14 @@ func nknMain(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	nn.MustApplyMiddleware(overlay.NetworkStopped(func(network overlay.Network) bool {
+		select {
+		case signalChan <- os.Interrupt:
+		default:
+		}
+		return true
+	}))
 
 	if len(seedStr) > 0 {
 		// Support input mutil seeds which split by ","
@@ -212,7 +222,6 @@ func nknMain(c *cli.Context) error {
 		}
 	}()
 
-	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	for _ = range signalChan {
 		fmt.Println("\nReceived an interrupt, stopping services...\n")
