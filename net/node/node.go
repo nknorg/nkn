@@ -185,6 +185,12 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 					log.Error("Cannot add remote node:", err)
 					return msg, true
 				}
+
+				nbr = n.getNbrByNNetNode(remoteNode)
+				if nbr == nil {
+					log.Error("Cannot get neighbor node")
+					return msg, true
+				}
 			}
 		}
 
@@ -218,6 +224,12 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 				err := n.AddRemoteNode(remoteNodes[0])
 				if err != nil {
 					log.Error("Cannot add next hop remote node:", err)
+					return nil, nil, nil, false
+				}
+
+				nextHop = n.getNbrByNNetNode(remoteNodes[0])
+				if nextHop == nil {
+					log.Error("Cannot get next hop neighbor node")
 					return nil, nil, nil, false
 				}
 			}
