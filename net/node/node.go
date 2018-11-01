@@ -50,7 +50,7 @@ const (
 
 type node struct {
 	sync.Mutex
-	protobuf.Node
+	protobuf.NodeData
 	id            uint64         // node ID
 	version       uint32         // network protocol version
 	height        uint32         // node latest block height
@@ -144,7 +144,7 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	n.hashCache = NewHashCache()
 	n.nnet = nn
 
-	nn.GetLocalNode().Node.Data, err = proto.Marshal(&n.Node)
+	nn.GetLocalNode().Node.Data, err = proto.Marshal(&n.NodeData)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (n *node) AddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
 		return err
 	}
 
-	err = proto.Unmarshal(remoteNode.Node.Data, &node.Node)
+	err = proto.Unmarshal(remoteNode.Node.Data, &node.NodeData)
 	if err != nil {
 		return err
 	}
@@ -652,7 +652,7 @@ func (node *node) FindWsAddr(key []byte) (string, error) {
 	}
 
 	pred := preds[0]
-	nodeData := &protobuf.Node{}
+	nodeData := &protobuf.NodeData{}
 	err = proto.Unmarshal(pred.Data, nodeData)
 	if err != nil {
 		return "", err
