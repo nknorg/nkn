@@ -158,30 +158,11 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	}))
 
 	nn.MustApplyMiddleware(chord.NeighborAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
-		var err error
-		node := NewNode()
-		node.local = n
-		node.nnetNode = remoteNode
-		node.id, err = chordIDToNodeID(remoteNode.Id)
+		err := n.AddRemoteNode(remoteNode)
 		if err != nil {
 			remoteNode.Stop(err)
 			return false
 		}
-
-		err = proto.Unmarshal(remoteNode.Node.Data, &node.Node)
-		if err != nil {
-			remoteNode.Stop(err)
-			return false
-		}
-
-		node.publicKey, err = crypto.DecodePoint(node.PublicKey)
-		if err != nil {
-			remoteNode.Stop(err)
-			return false
-		}
-
-		n.AddNbrNode(node)
-
 		return true
 	}))
 
@@ -199,8 +180,11 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 		if remoteNode != nil {
 			nbr = n.getNbrByNNetNode(remoteNode)
 			if nbr == nil {
-				log.Error("Cannot get neighbor node")
-				return msg, true
+				err := n.AddRemoteNode(remoteNode)
+				if err != nil {
+					log.Error("Cannot add remote node:", err)
+					return msg, true
+				}
 			}
 		}
 
@@ -231,12 +215,15 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 
 			nextHop := n.getNbrByNNetNode(remoteNodes[0])
 			if nextHop == nil {
-				log.Error("Cannot get next hop node")
-				return nil, nil, nil, false
+				err := n.AddRemoteNode(remoteNodes[0])
+				if err != nil {
+					log.Error("Cannot add next hop remote node:", err)
+					return nil, nil, nil, false
+				}
 			}
 
 			msgBody := &nnetprotobuf.Bytes{}
-			err = proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
+			err := proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
 			if err != nil {
 				log.Error(err)
 				return nil, nil, nil, false
@@ -283,6 +270,31 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	}))
 
 	return n, nil
+}
+
+func (n *node) AddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+	var err error
+	node := NewNode()
+	node.local = n
+	node.nnetNode = remoteNode
+	node.id, err = chordIDToNodeID(remoteNode.Id)
+	if err != nil {
+		return err
+	}
+
+	err = proto.Unmarshal(remoteNode.Node.Data, &node.Node)
+	if err != nil {
+		return err
+	}
+
+	node.publicKey, err = crypto.DecodePoint(node.PublicKey)
+	if err != nil {
+		return err
+	}
+
+	n.AddNbrNode(node)
+
+	return nil
 }
 
 func (node *node) GetID() uint64 {
