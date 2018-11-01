@@ -19,15 +19,15 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-func TestNodeProto(t *testing.T) {
+func TestNodeDataProto(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedNode(popr, false)
+	p := NewPopulatedNodeData(popr, false)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &Node{}
+	msg := &NodeData{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -50,10 +50,10 @@ func TestNodeProto(t *testing.T) {
 	}
 }
 
-func TestNodeMarshalTo(t *testing.T) {
+func TestNodeDataMarshalTo(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedNode(popr, false)
+	p := NewPopulatedNodeData(popr, false)
 	size := p.Size()
 	dAtA := make([]byte, size)
 	for i := range dAtA {
@@ -63,7 +63,7 @@ func TestNodeMarshalTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &Node{}
+	msg := &NodeData{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -75,16 +75,16 @@ func TestNodeMarshalTo(t *testing.T) {
 	}
 }
 
-func TestNodeJSON(t *testing.T) {
+func TestNodeDataJSON(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedNode(popr, true)
+	p := NewPopulatedNodeData(popr, true)
 	marshaler := github_com_gogo_protobuf_jsonpb.Marshaler{}
 	jsondata, err := marshaler.MarshalToString(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &Node{}
+	msg := &NodeData{}
 	err = github_com_gogo_protobuf_jsonpb.UnmarshalString(jsondata, msg)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
@@ -93,12 +93,12 @@ func TestNodeJSON(t *testing.T) {
 		t.Fatalf("seed = %d, %#v !Json Equal %#v", seed, msg, p)
 	}
 }
-func TestNodeProtoText(t *testing.T) {
+func TestNodeDataProtoText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedNode(popr, true)
+	p := NewPopulatedNodeData(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.MarshalTextString(p)
-	msg := &Node{}
+	msg := &NodeData{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -107,12 +107,12 @@ func TestNodeProtoText(t *testing.T) {
 	}
 }
 
-func TestNodeProtoCompactText(t *testing.T) {
+func TestNodeDataProtoCompactText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedNode(popr, true)
+	p := NewPopulatedNodeData(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.CompactTextString(p)
-	msg := &Node{}
+	msg := &NodeData{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -121,9 +121,9 @@ func TestNodeProtoCompactText(t *testing.T) {
 	}
 }
 
-func TestNodeGoString(t *testing.T) {
+func TestNodeDataGoString(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedNode(popr, false)
+	p := NewPopulatedNodeData(popr, false)
 	s1 := p.GoString()
 	s2 := fmt.Sprintf("%#v", p)
 	if s1 != s2 {
@@ -134,10 +134,10 @@ func TestNodeGoString(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestNodeSize(t *testing.T) {
+func TestNodeDataSize(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedNode(popr, true)
+	p := NewPopulatedNodeData(popr, true)
 	size2 := github_com_gogo_protobuf_proto.Size(p)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
@@ -156,9 +156,9 @@ func TestNodeSize(t *testing.T) {
 	}
 }
 
-func TestNodeStringer(t *testing.T) {
+func TestNodeDataStringer(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedNode(popr, false)
+	p := NewPopulatedNodeData(popr, false)
 	s1 := p.String()
 	s2 := fmt.Sprintf("%v", p)
 	if s1 != s2 {
