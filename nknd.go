@@ -119,8 +119,7 @@ func nknMain(c *cli.Context) error {
 
 	err := config.Init()
 	if err != nil {
-		log.Error(err)
-		os.Exit(1)
+		return err
 	}
 
 	// Get local account
@@ -273,10 +272,7 @@ func TestNetVersion(timer *time.Timer) {
 				break
 			}
 			if verNum > TestNetVersionNum {
-				log.Error("Your current nknd is deprecated")
-				log.Error("Please download the latest NKN software from",
-					"https://github.com/nknorg/nkn/releases")
-				os.Exit(1)
+				panic("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
 			}
 
 			timer.Reset(30 * time.Minute)
