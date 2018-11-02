@@ -94,6 +94,10 @@ func JoinNet(nn *nnet.NNet) error {
 
 		success := false
 		for _, succAddr := range succAddrs {
+			if succAddr == nn.GetLocalNode().Addr {
+				log.Warning("Skipping self...")
+				continue
+			}
 			err = nn.Join(succAddr)
 			if err != nil {
 				log.Error(err)
