@@ -93,7 +93,7 @@ type Noder interface {
 	SendRelayPacketsInBuffer(clientId []byte) error
 	GetWsAddr() string
 	FindWsAddr([]byte) (string, error)
-	FindSuccessorAddr([]byte) (string, error)
+	FindSuccessorAddrs([]byte, int) ([]string, error)
 }
 
 type NodeAddr struct {

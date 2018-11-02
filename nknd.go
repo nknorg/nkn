@@ -80,32 +80,31 @@ func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
 }
 
 func JoinNet(nn *nnet.NNet) error {
-	var succAddr string
-	var err error
-
 	seeds := config.Parameters.SeedList
 	rand.Shuffle(len(seeds), func(i int, j int) {
 		seeds[i], seeds[j] = seeds[j], seeds[i]
 	})
 
 	for _, seed := range seeds {
-		for i := 0; i < 3; i++ {
-			succAddr, err = client.FindSuccessorAddr(seed, nn.GetLocalNode().Id)
-			if err == nil {
-				break
-			}
-			time.Sleep(time.Second)
-		}
+		succAddrs, err := client.FindSuccessorAddrs(seed, nn.GetLocalNode().Id)
 		if err != nil {
 			log.Warningf("Can't get successor address from [%s]", seed)
 			continue
 		}
 
-		err = nn.Join(succAddr)
-		if err == nil {
+		success := false
+		for _, succAddr := range succAddrs {
+			err = nn.Join(succAddr)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			success = true
+		}
+
+		if success {
 			return nil
 		}
-		log.Error(err)
 	}
 	return errors.New("Failed to join the network.")
 }
@@ -131,10 +130,11 @@ func nknMain(c *cli.Context) error {
 	}
 
 	conf := &nnet.Config{
-		Transport:   config.Parameters.Transport,
-		Hostname:    config.Parameters.Hostname,
-		Port:        config.Parameters.NodePort,
-		NodeIDBytes: 32,
+		Transport:        config.Parameters.Transport,
+		Hostname:         config.Parameters.Hostname,
+		Port:             config.Parameters.NodePort,
+		NodeIDBytes:      32,
+		MinNumSuccessors: config.MinNumSuccessors,
 	}
 
 	err = nnet.SetLogger(log.Log)
