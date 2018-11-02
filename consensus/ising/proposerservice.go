@@ -3,7 +3,6 @@ package ising
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -138,7 +137,7 @@ func (ps *ProposerService) ProcessRollback() {
 		}
 	}
 	// exit after rolling back block
-	os.Exit(1)
+	panic("Forking detected, prepare to rollback")
 }
 
 func (ps *ProposerService) HandleBlockForking() {
@@ -479,9 +478,8 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 		log.Infof("start saving cached blocks right away, consensus height: %d", ps.syncCache.consensusHeight)
 		err = ps.PersistCachedBlock(ps.syncCache.consensusHeight)
 		if err != nil {
-			log.Errorf("persist cached block error: %v, height: %d", err, ps.syncCache.consensusHeight)
-			os.Exit(1) // Workaround. Don't hung at SyncFinished state
-			//return
+			// Workaround. Don't hung at SyncFinished state
+			panic(fmt.Errorf("persist cached block error: %v, height: %d", err, ps.syncCache.consensusHeight))
 		}
 		for i := ps.syncCache.minHeight; i <= ps.syncCache.maxHeight; i++ {
 			// cleanup cached block
@@ -505,9 +503,8 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 		if i > ps.syncCache.consensusHeight {
 			err = ps.PersistCachedBlock(i)
 			if err != nil {
-				log.Errorf("persist cached block error: %v, height: %d", err, i)
-				os.Exit(1) // Workaround. Don't hung at SyncFinished state
-				//return
+				// Workaround. Don't hung at SyncFinished state
+				panic(fmt.Errorf("persist cached block error: %v, height: %d", err, i))
 			}
 		}
 		// cleanup cached block
@@ -915,10 +912,9 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 	if height > votingHeight {
 		neighborHeight, count := current.CacheProposal(height)
 		if 2*count > len(neighbors) {
-			log.Errorf("state is different with neighbors, "+
+			panic(fmt.Errorf("state is different with neighbors, "+
 				"current voting height: %d, neighbor height: %d (%d/%d), exits.",
-				votingHeight, neighborHeight, count, len(neighbors))
-			os.Exit(1)
+				votingHeight, neighborHeight, count, len(neighbors)))
 		}
 		return
 	}
