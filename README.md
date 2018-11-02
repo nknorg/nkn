@@ -11,6 +11,11 @@
 
 Official website: [https://nkn.org/](https://nkn.org/)
 
+Note: This is a **node** version of the NKN protocol, which relays data for
+clients and earn mining rewards. For **client** implementation which can send
+and receive data (currently for free!), please refer to
+[nkn-client-js](https://github.com/nknorg/nkn-client-js/).
+
 ## Introduction
 
 The core of the NKN network consists of many connected nodes distributed
@@ -18,7 +23,9 @@ globally. Every node is only connected to and aware of a few other nodes called
 neighbors. Packets can be transmitted from any node to any other node in an
 efficient and verifiable route. Data can be sent to any clients without public
 or static IP address using their permanent NKN address with end-to-end
-encryption.
+encryption. The network stack of NKN network is open source at another repo
+called [nnet](https://github.com/nknorg/nnet) that can be used to build other
+decentralized/distributed systems.
 
 The relay workload can be verified using our Proof of Relay (PoR) algorithm. A
 small and fixed portion of the packets will be randomly selected as proof. The
