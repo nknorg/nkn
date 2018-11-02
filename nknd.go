@@ -199,7 +199,7 @@ func nknMain(c *cli.Context) error {
 		return true
 	}))
 
-	err = nn.Start()
+	err = nn.Start(createMode)
 	if err != nil {
 		return err
 	}
