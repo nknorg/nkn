@@ -26,6 +26,7 @@ const (
 	ConsensusTime       = 18 * time.Second
 	ProposerChangeTime  = time.Minute
 	DefaultMiningReward = 15
+	MinNumSuccessors    = 8
 )
 
 var (

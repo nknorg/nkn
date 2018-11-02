@@ -80,21 +80,21 @@ func GetNodeState(remote string) (*comm.NodeInfo, error) {
 	return &ret.Result, nil
 }
 
-func FindSuccessorAddr(remote string, key []byte) (string, error) {
-	resp, err := Call(remote, "findsuccessoraddr", 0, map[string]interface{}{
+func FindSuccessorAddrs(remote string, key []byte) ([]string, error) {
+	resp, err := Call(remote, "findsuccessoraddrs", 0, map[string]interface{}{
 		"key": hex.EncodeToString(key),
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	log.Printf("FindSuccessorAddr: %s\n", string(resp))
+	log.Printf("FindSuccessorAddrs: %s\n", string(resp))
 
 	var ret struct {
-		Result string `json:"result"`
+		Result []string `json:"result"`
 	}
 	if err := json.Unmarshal(resp, &ret); err != nil {
 		log.Println(err)
-		return "", err
+		return nil, err
 	}
 	log.Printf("Successor Address: %v\n", ret)
 
