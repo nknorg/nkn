@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	HashCacheExpiration      = 60 * time.Second
-	HashCacheCleanupInterval = 1 * time.Second
+	HashCacheExpiration      = 300 * time.Second
+	HashCacheCleanupInterval = 10 * time.Second
 )
 
 type hashCache struct {

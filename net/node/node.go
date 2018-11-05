@@ -175,65 +175,8 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 		return true
 	}))
 
-	nn.MustApplyMiddleware(nnetnode.BytesReceived(func(msg, msgID, srcID []byte, remoteNode *nnetnode.RemoteNode) ([]byte, bool) {
-		nbr := n
-		if remoteNode != nil {
-			nbr = n.getNbrByNNetNode(remoteNode)
-			if nbr == nil {
-				err := n.AddRemoteNode(remoteNode)
-				if err != nil {
-					log.Error("Cannot add remote node:", err)
-					return msg, true
-				}
-
-				nbr = n.getNbrByNNetNode(remoteNode)
-				if nbr == nil {
-					log.Error("Cannot get neighbor node")
-					return msg, true
-				}
-			}
-		}
-
-		err := message.HandleNodeMsg(nbr, msg)
-		if err != nil {
-			log.Error(err)
-			return msg, true
-		}
-
-		return msg, true
-	}))
-
 	nn.MustApplyMiddleware(routing.RemoteMessageRouted(func(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
-		if remoteMessage.Msg.MessageType == nnetprotobuf.BYTES && remoteMessage.Msg.RoutingType == nnetprotobuf.RELAY {
-			if localNode != nil {
-				return remoteMessage, localNode, remoteNodes, false
-			}
-
-			if len(remoteNodes) == 0 {
-				log.Error("No next hop found")
-				return nil, nil, nil, false
-			}
-
-			if len(remoteNodes) > 1 {
-				log.Error("Multiple next hop is not supported yet")
-				return nil, nil, nil, false
-			}
-
-			nextHop := n.getNbrByNNetNode(remoteNodes[0])
-			if nextHop == nil {
-				err := n.AddRemoteNode(remoteNodes[0])
-				if err != nil {
-					log.Error("Cannot add next hop remote node:", err)
-					return nil, nil, nil, false
-				}
-
-				nextHop = n.getNbrByNNetNode(remoteNodes[0])
-				if nextHop == nil {
-					log.Error("Cannot get next hop neighbor node")
-					return nil, nil, nil, false
-				}
-			}
-
+		if remoteMessage.Msg.MessageType == nnetprotobuf.BYTES {
 			msgBody := &nnetprotobuf.Bytes{}
 			err := proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
 			if err != nil {
@@ -241,43 +184,105 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 				return nil, nil, nil, false
 			}
 
-			msg, err := message.ParseMsg(msgBody.Data)
-			if err != nil {
-				log.Error(err)
-				return nil, nil, nil, false
+			if localNode != nil {
+				nbr := n
+				if remoteMessage.RemoteNode != nil {
+					nbr = n.getNbrByNNetNode(remoteMessage.RemoteNode)
+					if nbr == nil {
+						err = n.AddRemoteNode(remoteMessage.RemoteNode)
+						if err != nil {
+							log.Error("Cannot add remote node:", err)
+							return nil, nil, nil, false
+						}
+
+						nbr = n.getNbrByNNetNode(remoteMessage.RemoteNode)
+						if nbr == nil {
+							log.Error("Cannot get neighbor node")
+							return nil, nil, nil, false
+						}
+					}
+				}
+
+				err = message.HandleNodeMsg(nbr, msgBody.Data)
+				if err != nil {
+					log.Error(err)
+					return nil, nil, nil, false
+				}
+
+				if len(remoteNodes) == 0 {
+					return nil, nil, nil, false
+				}
+
+				localNode = nil
 			}
 
-			relayMsg, ok := msg.(*message.RelayMessage)
-			if !ok {
-				log.Error("Msg is not relay message")
-				return nil, nil, nil, false
-			}
+			if remoteMessage.Msg.RoutingType == nnetprotobuf.RELAY {
+				if len(remoteNodes) > 1 {
+					log.Error("Multiple next hop is not supported yet")
+					return nil, nil, nil, false
+				}
 
-			relayPacket := &relayMsg.Packet
-			err = n.relayer.SignRelayPacket(nextHop, relayPacket)
-			if err != nil {
-				log.Error(err)
-				return nil, nil, nil, false
-			}
+				nextHop := n.getNbrByNNetNode(remoteNodes[0])
+				if nextHop == nil {
+					err := n.AddRemoteNode(remoteNodes[0])
+					if err != nil {
+						log.Error("Cannot add next hop remote node:", err)
+						return nil, nil, nil, false
+					}
 
-			relayMsg, err = message.NewRelayMessage(relayPacket)
-			if err != nil {
-				log.Error(err)
-				return nil, nil, nil, false
-			}
+					nextHop = n.getNbrByNNetNode(remoteNodes[0])
+					if nextHop == nil {
+						log.Error("Cannot get next hop neighbor node")
+						return nil, nil, nil, false
+					}
+				}
 
-			msgBody.Data, err = relayMsg.ToBytes()
-			if err != nil {
-				log.Error(err)
-				return nil, nil, nil, false
-			}
+				msgBody := &nnetprotobuf.Bytes{}
+				err := proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
+				if err != nil {
+					log.Error(err)
+					return nil, nil, nil, false
+				}
 
-			remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
-			if err != nil {
-				log.Error(err)
-				return nil, nil, nil, false
+				msg, err := message.ParseMsg(msgBody.Data)
+				if err != nil {
+					log.Error(err)
+					return nil, nil, nil, false
+				}
+
+				relayMsg, ok := msg.(*message.RelayMessage)
+				if !ok {
+					log.Error("Msg is not relay message")
+					return nil, nil, nil, false
+				}
+
+				relayPacket := &relayMsg.Packet
+				err = n.relayer.SignRelayPacket(nextHop, relayPacket)
+				if err != nil {
+					log.Error(err)
+					return nil, nil, nil, false
+				}
+
+				relayMsg, err = message.NewRelayMessage(relayPacket)
+				if err != nil {
+					log.Error(err)
+					return nil, nil, nil, false
+				}
+
+				msgBody.Data, err = relayMsg.ToBytes()
+				if err != nil {
+					log.Error(err)
+					return nil, nil, nil, false
+				}
+
+				remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
+				if err != nil {
+					log.Error(err)
+					return nil, nil, nil, false
+				}
 			}
 		}
+
 		return remoteMessage, localNode, remoteNodes, true
 	}))
 
