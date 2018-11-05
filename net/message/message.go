@@ -73,15 +73,9 @@ func AllocMsg(t string, length int) Messenger {
 	case "tx":
 		var msg trn
 		copy(msg.msgHdr.CMD[0:len(t)], t)
-		//if (message.Payload.Length <= 1024 * 1024)
-		//OnInventoryReceived(Transaction.DeserializeFrom(message.Payload));
 		return &msg
 	case "ising":
 		var msg IsingMessage
-		copy(msg.msgHdr.CMD[0:len(t)], t)
-		return &msg
-	case "txnpool":
-		var msg txnPool
 		copy(msg.msgHdr.CMD[0:len(t)], t)
 		return &msg
 	case "notfound":
