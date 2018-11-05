@@ -145,20 +145,3 @@ func (msg *trn) Deserialize(r io.Reader) error {
 
 	return nil
 }
-
-type txnPool struct {
-	msgHdr
-	//TBD
-}
-
-func ReqTxnPool(node Noder) error {
-	msg := AllocMsg("txnpool", 0)
-	buff := bytes.NewBuffer(nil)
-	err := msg.Serialize(buff)
-	if err != nil {
-		return err
-	}
-	node.Tx(buff.Bytes())
-
-	return nil
-}
