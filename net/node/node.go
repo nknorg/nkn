@@ -694,6 +694,7 @@ func (node *node) Tx(buf []byte) {
 	if err != nil {
 		log.Error("Error sending messge to peer node ", err.Error())
 		node.CloseConn()
+		node.local.DelNbrNode(node.GetID())
 	}
 }
 
