@@ -52,10 +52,12 @@ func (nm *nbrNodes) GetNeighborAddrs() ([]protocol.NodeAddr, uint) {
 	for _, n := range nm.GetNeighborNoder() {
 		ip, _ := n.GetAddr16()
 		addrs = append(addrs, protocol.NodeAddr{
-			IpAddr: ip,
-			Time:   n.GetTime(),
-			Port:   n.GetPort(),
-			ID:     n.GetID(),
+			IpAddr:  ip,
+			IpStr:   n.GetAddr(),
+			Time:    n.GetTime(),
+			Port:    n.GetPort(),
+			ID:      n.GetID(),
+			NKNaddr: fmt.Sprintf("%x", n.GetChordAddr()),
 		})
 	}
 	return addrs, uint(len(addrs))

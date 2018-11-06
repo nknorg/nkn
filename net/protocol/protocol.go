@@ -97,10 +97,12 @@ type Noder interface {
 }
 
 type NodeAddr struct {
-	Time   int64
-	IpAddr [16]byte
-	Port   uint16
-	ID     uint64
+	Time    int64
+	IpAddr  [16]byte
+	IpStr   string
+	Port    uint16
+	ID      uint64
+	NKNaddr string
 }
 
 func (msg *NodeAddr) Deserialization(p []byte) error {
