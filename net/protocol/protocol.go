@@ -35,7 +35,6 @@ const (
 var SyncStateString = []string{"SyncStarted", "SyncFinished", "PersistFinished"}
 
 type Noder interface {
-	Version() uint32
 	GetID() uint64
 	GetAddr() string
 	GetPort() uint16

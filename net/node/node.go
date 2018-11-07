@@ -42,7 +42,6 @@ const (
 	KeepAliveTicker      = 3 * time.Second  // ticker for ping/pong and keepalive message
 	KeepaliveTimeout     = 9 * time.Second  // timeout for keeping alive
 	BlockSyncingTicker   = 3 * time.Second  // ticker for syncing block
-	ProtocolVersion      = 0                // protocol version
 	ConnectionTicker     = 10 * time.Second // ticker for connection
 	MaxReqBlkOnce        = 16               // max block count requested
 	ConnectingTimeout    = 10 * time.Second // timeout for waiting for connection
@@ -52,7 +51,6 @@ type node struct {
 	sync.Mutex
 	protobuf.NodeData
 	id            uint64         // node ID
-	version       uint32         // network protocol version
 	height        uint32         // node latest block height
 	local         *node          // local node
 	txnCnt        uint64         // transmitted transaction count
@@ -103,7 +101,6 @@ func (node *node) DumpInfo() {
 	log.Info("\t syncState = ", node.syncState)
 	log.Info(fmt.Sprintf("\t id = 0x%x", node.id))
 	log.Info("\t addr = ", node.GetAddr())
-	log.Info("\t version = ", node.version)
 	log.Info("\t port = ", node.GetPort())
 	log.Info("\t height = ", node.height)
 }
@@ -117,7 +114,6 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	var err error
 
 	n := NewNode()
-	n.version = ProtocolVersion
 	Parameters := config.Parameters
 
 	n.PublicKey, err = pubKey.EncodePoint(true)
@@ -332,10 +328,6 @@ func (node *node) GetWsPort() uint16 {
 	return uint16(node.WebsocketPort)
 }
 
-func (node *node) Version() uint32 {
-	return node.version
-}
-
 func (node *node) IncRxTxnCnt() {
 	node.rxTxnCnt++
 }
@@ -361,6 +353,9 @@ func (node *node) GetTxnPool() *pool.TxnPool {
 }
 
 func (node *node) GetHeight() uint32 {
+	if node.nnet != nil {
+		return ledger.DefaultLedger.Store.GetHeight()
+	}
 	return node.height
 }
 

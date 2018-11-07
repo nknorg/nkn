@@ -341,7 +341,7 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 		JsonPort:  node.GetHttpJsonPort(),
 		WsPort:    node.GetWsPort(),
 		ID:        node.GetID(),
-		Version:   node.Version(),
+		Version:   config.Version,
 		Height:    node.GetHeight(),
 		TxnCnt:    node.GetTxnCnt(),
 		RxTxnCnt:  node.GetRxTxnCnt(),
