@@ -65,3 +65,7 @@ clean:  ## Remove the nknd, nknc binaries and build directory
 .PHONY: deepclean
 deepclean:  ## Remove the existing binaries, the vendor directory and build directory
 	rm -rf nknd nknc vendor build
+
+.PHONY: pb
+pb:
+	protoc -I=. -I=$(GOPATH)/src -I=$(GOPATH)/src/github.com/gogo/protobuf/protobuf --gogoslick_out=. protobuf/*.proto
