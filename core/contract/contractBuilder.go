@@ -3,11 +3,13 @@ package contract
 import (
 	"math/big"
 	"sort"
+	"errors"
+	"fmt"
 
 	. "github.com/nknorg/nkn/common"
 	pg "github.com/nknorg/nkn/core/contract/program"
-	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/vm"
 )
 
@@ -15,7 +17,7 @@ import (
 func CreateSignatureContract(ownerPubKey *crypto.PubKey) (*Contract, error) {
 	temp, err := ownerPubKey.EncodePoint(true)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Contract],CreateSignatureContract failed.")
+		return nil, fmt.Errorf("%v\n%s", "[Contract],CreateSignatureContract failed.")
 	}
 	signatureRedeemScript, err := CreateSignatureRedeemScript(ownerPubKey)
 	if err != nil {
@@ -97,4 +99,17 @@ func CreateMultiSigRedeemScript(m int, pubkeys []*crypto.PubKey) ([]byte, error)
 	sb.PushNumber(big.NewInt(int64(len(pubkeys))))
 	sb.AddOp(vm.CHECKMULTISIG)
 	return sb.ToArray(), nil
+}
+
+func CreateRedeemHash(pubkey *crypto.PubKey) (Uint160, error) {
+	signatureRedeemScript, err := CreateSignatureRedeemScript(pubkey)
+	if err != nil {
+		return Uint160{}, errors.New("CreateSignatureRedeemScript failed")
+	}
+	RedeemHash, err := ToCodeHash(signatureRedeemScript)
+	if err != nil {
+		return Uint160{}, errors.New("ToCodeHash failed")
+	}
+
+	return RedeemHash, err
 }

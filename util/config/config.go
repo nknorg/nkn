@@ -73,6 +73,7 @@ type Configuration struct {
 	Hostname             string   `json:"Hostname"`
 	Transport            string   `json:"Transport"`
 	NAT                  bool     `json:"NAT"`
+	BeneficiaryAddr	     string   `json:"BeneficiaryAddr"`
 }
 
 func Init() error {

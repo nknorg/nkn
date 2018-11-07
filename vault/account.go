@@ -2,6 +2,7 @@ package vault
 
 import (
 	"errors"
+	"fmt"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/contract"
@@ -38,18 +39,15 @@ func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
 		return nil, errors.New("invalid private key length")
 	}
 	pubKey := crypto.NewPubKey(privateKey)
-	signatureRedeemScript, err := contract.CreateSignatureRedeemScript(pubKey)
+	RedeemHash, err := contract.CreateRedeemHash(pubKey)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "CreateSignatureRedeemScript failed")
+		return nil, fmt.Errorf("%v\n%s", err, "New account redeemhash generated failed")
 	}
-	programHash, err := ToCodeHash(signatureRedeemScript)
-	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "ToCodeHash failed")
-	}
+
 	return &Account{
 		PrivateKey:  privateKey,
 		PublicKey:   pubKey,
-		ProgramHash: programHash,
+		ProgramHash: RedeemHash,
 	}, nil
 }
 

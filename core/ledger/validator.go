@@ -83,7 +83,7 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 	if prevHeader.Timestamp >= header.Timestamp {
 		return errors.New("invalid header timestamp")
 	}
-	if header.WinningHashType == GenesisHash && header.Height >= GenesisBlockProposedHeight {
+	if header.WinnerType == GenesisSigner && header.Height >= GenesisBlockProposedHeight {
 		return errors.New("invalid winning hash type")
 	}
 
@@ -135,18 +135,18 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 			return err
 		}
 	} else {
-		winningHash := prevHeader.WinningHash
-		winningHashType := prevHeader.WinningHashType
-		switch winningHashType {
-		case GenesisHash:
+		winnerHash := prevHeader.WinnerHash
+		winnerType := prevHeader.WinnerType
+		switch winnerType {
+		case GenesisSigner:
 			publicKey, chordID, err = genesisBlock.GetSigner()
 			if err != nil {
 				return err
 			}
 			log.Infof("block signer: public key should be %s, which is genesis block proposer",
 				BytesToHexString(publicKey))
-		case WinningTxnHash:
-			txn, err := DefaultLedger.Store.GetTransaction(winningHash)
+		case TxnSigner:
+			txn, err := DefaultLedger.Store.GetTransaction(winnerHash)
 			if err != nil {
 				return err
 			}
