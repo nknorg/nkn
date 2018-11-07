@@ -21,8 +21,8 @@ const (
 type ProposerInfo struct {
 	publicKey       []byte
 	chordID         []byte
-	winningHash     Uint256
-	winningHashType ledger.WinningHashType
+	winnerHash      Uint256
+	winnerType      ledger.WinnerType
 }
 
 type ProposerCache struct {
@@ -49,8 +49,8 @@ func (pc *ProposerCache) Add(height uint32, votingContent voting.VotingContent) 
 		proposerInfo = &ProposerInfo{
 			publicKey:       pbk,
 			chordID:         id,
-			winningHash:     t.Hash(),
-			winningHashType: ledger.WinningBlockHash,
+			winnerHash:      t.Hash(),
+			winnerType:      ledger.BlockSigner,
 		}
 		log.Warningf("use proposer of block height %d which public key is %s chord ID is %s to propose block %d",
 			t.Header.Height, BytesToHexString(pbk), BytesToHexString(id), height)
@@ -64,10 +64,10 @@ func (pc *ProposerCache) Add(height uint32, votingContent voting.VotingContent) 
 			return
 		}
 		proposerInfo = &ProposerInfo{
-			publicKey:       pbk,
-			chordID:         id,
-			winningHash:     t.Hash(),
-			winningHashType: ledger.WinningTxnHash,
+			publicKey:      pbk,
+			chordID:        id,
+			winnerHash:	t.Hash(),
+			winnerType:	ledger.TxnSigner,
 		}
 		sigChainTxnHash := t.Hash()
 		log.Infof("sigchain transaction consensus: %s, %s will be block proposer for height %d",
@@ -85,9 +85,9 @@ func (pc *ProposerCache) Get(height uint32) *ProposerInfo {
 	if height < InitialBlockHeight {
 		proposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)
 		return &ProposerInfo{
-			publicKey:       proposer,
-			winningHash:     EmptyUint256,
-			winningHashType: ledger.GenesisHash,
+			publicKey:      proposer,
+			winnerHash:     EmptyUint256,
+			winnerType:	ledger.GenesisSigner,
 		}
 	}
 

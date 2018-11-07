@@ -18,8 +18,8 @@ import (
 )
 
 type Mining interface {
-	BuildBlock(height uint32, chordID []byte, winningHash Uint256,
-		winningHashType ledger.WinningHashType) (*ledger.Block, error)
+	BuildBlock(height uint32, chordID []byte, winnerHash Uint256,
+		winnerType ledger.WinnerType) (*ledger.Block, error)
 }
 
 type BuiltinMining struct {
@@ -35,14 +35,14 @@ func NewBuiltinMining(account *vault.Account, txnCollector *transaction.TxnColle
 	}
 }
 
-func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash Uint256,
-	winningHashType ledger.WinningHashType) (*ledger.Block, error) {
+func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash Uint256,
+	winnerType ledger.WinnerType) (*ledger.Block, error) {
 	var txnList []*transaction.Transaction
 	var txnHashList []Uint256
 	coinbase := bm.CreateCoinbaseTransaction()
 	txnList = append(txnList, coinbase)
 	txnHashList = append(txnHashList, coinbase.Hash())
-	txns, err := bm.txnCollector.Collect(winningHash)
+	txns, err := bm.txnCollector.Collect(winnerHash)
 	if err != nil {
 		log.Error("collect transaction error: ", err)
 		return nil, err
@@ -69,8 +69,8 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash U
 		ConsensusData:    rand.Uint64(),
 		TransactionsRoot: txnRoot,
 		NextBookKeeper:   Uint160{},
-		WinningHash:      winningHash,
-		WinningHashType:  winningHashType,
+		WinnerHash:       winnerHash,
+		WinnerType:	  winnerType,
 		Signer:           encodedPubKey,
 		ChordID:          chordID,
 		Signature:        nil,
@@ -95,6 +95,17 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash U
 }
 
 func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
+	// Transfer the reward to the beneficiary
+	redeemHash := bm.account.ProgramHash
+	if (config.Parameters.BeneficiaryAddr != "") {
+		hash, err := ToScriptHash(config.Parameters.BeneficiaryAddr)
+		if err == nil {
+			redeemHash = hash
+		} else {
+			log.Error("%v\n%s", err, "Beneficiary account redeemhash convert failed")
+		}
+	}
+
 	return &transaction.Transaction{
 		TxType:         transaction.Coinbase,
 		PayloadVersion: 0,
@@ -110,7 +121,7 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
 			{
 				AssetID:     ledger.DefaultLedger.Blockchain.AssetID,
 				Value:       Fixed64 (config.DefaultMiningReward * StorageFactor),
-				ProgramHash: bm.account.ProgramHash,
+				ProgramHash: redeemHash,
 			},
 		},
 		Programs: []*program.Program{},

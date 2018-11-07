@@ -298,16 +298,16 @@ func (ps *ProposerService) SendNewProposal(votingHeight uint32, vType voting.Vot
 func (ps *ProposerService) ProduceNewBlock() {
 	current := ps.CurrentVoting(voting.BlockVote)
 	votingHeight := current.GetVotingHeight()
-	proposerInfo := ps.proposerCache.Get(votingHeight + 1)
-	if proposerInfo == nil {
-		proposerInfo = &ProposerInfo{
-			winningHash:     EmptyUint256,
-			winningHashType: ledger.WinningBlockHash,
+	info := ps.proposerCache.Get(votingHeight + 1)
+	if info == nil {
+		info = &ProposerInfo{
+			winnerHash:	EmptyUint256,
+			winnerType:	ledger.BlockSigner,
 		}
 	}
 	// build new block to be proposed
 	block, err := ps.mining.BuildBlock(votingHeight, ps.localNode.GetChordAddr(),
-		proposerInfo.winningHash, proposerInfo.winningHashType)
+		info.winnerHash, info.winnerType)
 	if err != nil {
 		log.Error("building block error: ", err)
 	}

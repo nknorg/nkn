@@ -14,16 +14,16 @@ import (
 	. "github.com/nknorg/nkn/errors"
 )
 
-type WinningHashType byte
+type WinnerType byte
 
 const (
 	// The proof of Block proposer validity should exists in previous Block header.
 	// GenesisHash means next Block proposer is GenesisBlockProposer.
-	GenesisHash WinningHashType = 0
+	GenesisSigner WinnerType = 0
 	// WinningTxnHash means next Block proposer is a node on signature chain.
-	WinningTxnHash WinningHashType = 1
+	TxnSigner     WinnerType = 1
 	// WinningBlockHash means next Block proposer is signer of historical Block.
-	WinningBlockHash WinningHashType = 2
+	BlockSigner   WinnerType = 2
 )
 
 const (
@@ -39,8 +39,8 @@ type Header struct {
 	Height           uint32
 	ConsensusData    uint64
 	NextBookKeeper   Uint160
-	WinningHash      Uint256
-	WinningHashType  WinningHashType
+	WinnerHash       Uint256
+	WinnerType	 WinnerType
 	Signer           []byte
 	ChordID          []byte
 	Signature        []byte
@@ -68,8 +68,8 @@ func (h *Header) SerializeUnsigned(w io.Writer) error {
 	serialization.WriteUint32(w, h.Height)
 	serialization.WriteUint64(w, h.ConsensusData)
 	h.NextBookKeeper.Serialize(w)
-	h.WinningHash.Serialize(w)
-	serialization.WriteByte(w, byte(h.WinningHashType))
+	h.WinnerHash.Serialize(w)
+	serialization.WriteByte(w, byte(h.WinnerType))
 	serialization.WriteVarBytes(w, h.Signer)
 	if h.Version == HeaderVersion {
 		serialization.WriteVarBytes(w, h.ChordID)
@@ -139,13 +139,13 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 	//NextBookKeeper
 	h.NextBookKeeper.Deserialize(r)
 
-	h.WinningHash.Deserialize(r)
+	h.WinnerHash.Deserialize(r)
 
 	t, err := serialization.ReadByte(r)
 	if err != nil {
 		return err
 	}
-	h.WinningHashType = WinningHashType(t)
+	h.WinnerType = WinnerType(t)
 
 	h.Signer, err = serialization.ReadVarBytes(r)
 	if err != nil {
@@ -225,8 +225,8 @@ func (h *Header) MarshalJson() ([]byte, error) {
 		Height:           h.Height,
 		ConsensusData:    h.ConsensusData,
 		NextBookKeeper:   BytesToHexString(h.NextBookKeeper.ToArrayReverse()),
-		WinningHash:      BytesToHexString(h.WinningHash.ToArrayReverse()),
-		WinningHashType:  byte(h.WinningHashType),
+		WinnerHash:       BytesToHexString(h.WinnerHash.ToArrayReverse()),
+		WinnerType:	  byte(h.WinnerType),
 		Signer:           BytesToHexString(h.Signer),
 		ChordID:          BytesToHexString(h.ChordID),
 		Signature:        BytesToHexString(h.Signature),
@@ -257,7 +257,7 @@ func (h *Header) UnmarshalJson(data []byte) error {
 	h.Timestamp = headerInfo.Timestamp
 	h.Height = headerInfo.Height
 	h.ConsensusData = headerInfo.ConsensusData
-	h.WinningHashType = WinningHashType(headerInfo.WinningHashType)
+	h.WinnerType = WinnerType(headerInfo.WinnerType)
 
 	prevHash, err := HexStringToBytesReverse(headerInfo.PrevBlockHash)
 	if err != nil {
@@ -286,11 +286,11 @@ func (h *Header) UnmarshalJson(data []byte) error {
 		return err
 	}
 
-	winHash, err := HexStringToBytesReverse(headerInfo.WinningHash)
+	winHash, err := HexStringToBytesReverse(headerInfo.WinnerHash)
 	if err != nil {
 		return err
 	}
-	h.WinningHash, err = Uint256ParseFromBytes(winHash)
+	h.WinnerHash, err = Uint256ParseFromBytes(winHash)
 	if err != nil {
 		return err
 	}
