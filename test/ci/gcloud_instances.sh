@@ -36,7 +36,7 @@ function CreateImage() {
     local FORMAT="value(NAME,PROJECT,FAMILY)"
 
     isExist images "$1" "name:$1" "${FORMAT}" || \
-        gcloud compute images create "$1" --source-disk testbed-demo --family testnet-disk
+        gcloud compute images create "$1" --source-disk testbed-nnet-create --family nnet-test --source-disk-zone asia-southeast1-b
     return $?
 }
 
@@ -48,8 +48,8 @@ function CreateTemplate() {
 
     isExist "instance-templates" "${1}" "name:${1}" "${FORMAT}" || \
         gcloud compute instance-templates create "$1" \
-            --machine-type g1-small \
-            --image-family testnet-disk \
+            --machine-type f1-micro \
+            --image-family nnet-test \
             --image-project nkn-testnet \
             --boot-disk-size 10GB \
             --subnet default \
@@ -70,7 +70,7 @@ function CreateGroup() {
         gcloud compute instance-groups managed resize ${1} --size "$2" --region "$3"
     else    ### create it if not existed
         gcloud beta compute instance-groups managed create "$1" \
-            --base-instance-name testbed-demo --size "$2" --template "${3}-node-template" --region "$3"
+            --base-instance-name testbed-nnet --size "$2" --template "${3}-nnet-template" --region "$3"
     fi
     return $?
 }
@@ -91,14 +91,14 @@ function Start() {
     echo $CNT instances / ${#REGION_LIST[@]} regions = $PER_REG mod $MOD
 
     ### Check image
-    CreateImage testnet-disk-baseline
+    CreateImage nnet-image-baseline
 
     for reg in ${REGION_LIST[@]:0:${MOD}}; do
         cnt=$((${PER_REG}+1))
         echo Start ${cnt} instances in region:${reg}
 
-        CreateTemplate "${reg}-node-template" ${reg} && \
-            CreateGroup "testnet-${reg}-group" ${cnt} ${reg} &
+        CreateTemplate "${reg}-nnet-template" ${reg} && \
+            CreateGroup "nnet-${reg}-group" ${cnt} ${reg} &
     done
 
     if [ $PER_REG -gt 0 ]; then
@@ -106,8 +106,8 @@ function Start() {
             cnt=${PER_REG}
             echo Start ${cnt} instances in region:${reg}
 
-            CreateTemplate "${reg}-node-template" ${reg} && \
-                CreateGroup "testnet-${reg}-group" ${cnt} ${reg} &
+            CreateTemplate "${reg}-nnet-template" ${reg} && \
+                CreateGroup "nnet-${reg}-group" ${cnt} ${reg} &
         done
     fi
     wait
@@ -120,7 +120,7 @@ function Stop() {
 
     for reg in ${REGION_LIST[@]}; do
         echo "Stop all instances in region:${reg}"
-        gcloud compute instance-groups managed resize "testnet-${reg}-group" --size 0 --region ${reg} &
+        gcloud compute instance-groups managed resize "nnet-${reg}-group" --size 0 --region ${reg} &
     done
     wait
 }
