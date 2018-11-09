@@ -214,6 +214,7 @@ func nknMain(c *cli.Context) error {
 			for {
 				time.Sleep(time.Minute)
 				if node.GetConnectionCnt() == 0 {
+					log.Error("Node has no neighbors and is too lonely to run")
 					panic("Node has no neighbors and is too lonely to run")
 				}
 			}
@@ -281,6 +282,7 @@ func TestNetVersion(timer *time.Timer) {
 				break
 			}
 			if verNum > TestNetVersionNum {
+				log.Error("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
 				panic("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
 			}
 
