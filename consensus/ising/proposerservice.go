@@ -137,6 +137,7 @@ func (ps *ProposerService) ProcessRollback() {
 		}
 	}
 	// exit after rolling back block
+	log.Error("Forking detected, prepare to rollback")
 	panic("Forking detected, prepare to rollback")
 }
 
@@ -479,7 +480,9 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 		err = ps.PersistCachedBlock(ps.syncCache.consensusHeight)
 		if err != nil {
 			// Workaround. Don't hung at SyncFinished state
-			panic(fmt.Errorf("persist cached block error: %v, height: %d", err, ps.syncCache.consensusHeight))
+			err = fmt.Errorf("persist cached block error: %v, height: %d", err, ps.syncCache.consensusHeight)
+			log.Error(err)
+			panic(err)
 		}
 		for i := ps.syncCache.minHeight; i <= ps.syncCache.maxHeight; i++ {
 			// cleanup cached block
@@ -504,7 +507,9 @@ func (ps *ProposerService) BlockSyncingFinished(v interface{}) {
 			err = ps.PersistCachedBlock(i)
 			if err != nil {
 				// Workaround. Don't hung at SyncFinished state
-				panic(fmt.Errorf("persist cached block error: %v, height: %d", err, i))
+				err = fmt.Errorf("persist cached block error: %v, height: %d", err, i)
+				log.Error(err)
+				panic(err)
 			}
 		}
 		// cleanup cached block
@@ -912,9 +917,11 @@ func (ps *ProposerService) HandleProposalMsg(proposal *Proposal, sender uint64) 
 	if height > votingHeight {
 		neighborHeight, count := current.CacheProposal(height)
 		if 2*count > len(neighbors) {
-			panic(fmt.Errorf("state is different with neighbors, "+
+			err := fmt.Errorf("state is different with neighbors, "+
 				"current voting height: %d, neighbor height: %d (%d/%d), exits.",
-				votingHeight, neighborHeight, count, len(neighbors)))
+				votingHeight, neighborHeight, count, len(neighbors))
+			log.Error(err)
+			panic(err)
 		}
 		return
 	}
