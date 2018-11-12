@@ -33,7 +33,6 @@ var (
 	Version       string
 	SkipCheckPort bool
 	Parameters    = &Configuration{
-		Magic:        99281,
 		Version:      1,
 		Transport:    "tcp",
 		NodePort:     30001,
@@ -48,7 +47,6 @@ var (
 )
 
 type Configuration struct {
-	Magic                int64    `json:"Magic"`
 	Version              int      `json:"Version"`
 	SeedList             []string `json:"SeedList"`
 	BookKeepers          []string `json:"BookKeepers"`
