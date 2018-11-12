@@ -5,8 +5,6 @@ import (
 	"sync"
 
 	. "github.com/nknorg/nkn/common"
-	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -29,7 +27,7 @@ func NewBlockchain(height uint32, asset Uint256) *Blockchain {
 	}
 }
 
-func NewBlockchainWithGenesisBlock(store ILedgerStore, defaultBookKeeper []*crypto.PubKey) (*Blockchain, error) {
+func NewBlockchainWithGenesisBlock(store ILedgerStore) (*Blockchain, error) {
 	genesisBlock, err := GenesisBlockInit()
 	if err != nil {
 		return nil, err
@@ -38,7 +36,7 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore, defaultBookKeeper []*cryp
 	hashx := genesisBlock.Hash()
 	genesisBlock.hash = &hashx
 
-	height, err := store.InitLedgerStoreWithGenesisBlock(genesisBlock, defaultBookKeeper)
+	height, err := store.InitLedgerStoreWithGenesisBlock(genesisBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -84,20 +82,6 @@ func (bc *Blockchain) ContainsTransaction(hash Uint256) bool {
 		return false
 	}
 	return true
-}
-
-func (bc *Blockchain) GetBookKeepersByTXs(others []*tx.Transaction) []*crypto.PubKey {
-	//TODO: GetBookKeepers()
-	//TODO: Just for TestUse
-
-	return StandbyBookKeepers
-}
-
-func (bc *Blockchain) GetBookKeepers() []*crypto.PubKey {
-	//TODO: GetBookKeepers()
-	//TODO: Just for TestUse
-
-	return StandbyBookKeepers
 }
 
 func (bc *Blockchain) CurrentBlockHash() Uint256 {

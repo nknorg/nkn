@@ -5,7 +5,6 @@ import (
 	"github.com/nknorg/nkn/core/account"
 	. "github.com/nknorg/nkn/core/asset"
 	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/crypto"
 )
 
 // ILedgerStore provides func with store package.
@@ -44,8 +43,7 @@ type ILedgerStore interface {
 	GetHeightByBlockHash(hash Uint256) (uint32, error)
 	GetHeaderHashByHeight(height uint32) Uint256
 
-	GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error)
-	InitLedgerStoreWithGenesisBlock(genesisblock *Block, defaultBookKeeper []*crypto.PubKey) (uint32, error)
+	InitLedgerStoreWithGenesisBlock(genesisblock *Block) (uint32, error)
 
 	GetQuantityIssued(assetid Uint256) (Fixed64, error)
 

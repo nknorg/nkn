@@ -10,7 +10,6 @@ import (
 	"github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/core/validation"
-	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -23,7 +22,6 @@ type TxnStore interface {
 	GetQuantityIssued(AssetId Uint256) (Fixed64, error)
 	IsDoubleSpend(tx *Transaction) bool
 	GetAsset(hash Uint256) (*asset.Asset, error)
-	GetBookKeeperList() ([]*crypto.PubKey, []*crypto.PubKey, error)
 	GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error)
 	IsTxHashDuplicate(txhash Uint256) bool
 	GetName(registrant []byte) (*string, error)
@@ -36,7 +34,6 @@ type Iterator interface {
 
 // VerifyTransaction verifys received single transaction
 func VerifyTransaction(Tx *Transaction) ErrCode {
-
 	if err := CheckDuplicateInput(Tx); err != nil {
 		log.Warning("[VerifyTransaction],", err)
 		return ErrDuplicateInput
@@ -271,29 +268,9 @@ func checkAmountPrecise(amount Fixed64, precision byte) bool {
 	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
 }
 
-func checkIssuerInBookkeeperList(issuer *crypto.PubKey, bookKeepers []*crypto.PubKey) bool {
-	for _, bk := range bookKeepers {
-		r := crypto.Equal(issuer, bk)
-		if r == true {
-			return true
-		}
-	}
-
-	return false
-}
-
 func CheckTransactionPayload(txn *Transaction) error {
 
 	switch pld := txn.Payload.(type) {
-	case *payload.BookKeeper:
-		//Todo: validate bookKeeper Cert
-		_ = pld.Cert
-		bookKeepers, _, _ := Store.GetBookKeeperList()
-		r := checkIssuerInBookkeeperList(pld.Issuer, bookKeepers)
-		if r == false {
-			return errors.New("The issuer isn't bookekeeper, can't add other in bookkeepers list.")
-		}
-		return nil
 	case *payload.RegisterAsset:
 		if pld.Asset.Precision < asset.MinPrecision || pld.Asset.Precision > asset.MaxPrecision {
 			return errors.New("Invalide asset Precision.")

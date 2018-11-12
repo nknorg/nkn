@@ -49,7 +49,6 @@ var (
 type Configuration struct {
 	Version              int      `json:"Version"`
 	SeedList             []string `json:"SeedList"`
-	BookKeepers          []string `json:"BookKeepers"`
 	RestCertPath         string   `json:"RestCertPath"`
 	RestKeyPath          string   `json:"RestKeyPath"`
 	RPCCert              string   `json:"RPCCert"`

@@ -6,7 +6,6 @@ import (
 
 	_ "github.com/nknorg/nkn/cli"
 	"github.com/nknorg/nkn/cli/asset"
-	"github.com/nknorg/nkn/cli/bookkeeper"
 	. "github.com/nknorg/nkn/cli/common"
 	"github.com/nknorg/nkn/cli/debug"
 	"github.com/nknorg/nkn/cli/info"
@@ -36,7 +35,6 @@ func main() {
 		*info.NewCommand(),
 		*wallet.NewCommand(),
 		*asset.NewCommand(),
-		*bookkeeper.NewCommand(),
 		*sigchain.NewCommand(),
 		*name.NewCommand(),
 	}

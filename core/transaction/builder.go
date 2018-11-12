@@ -36,33 +36,6 @@ func NewRegisterAssetTransaction(asset *asset.Asset, amount Fixed64, issuer *cry
 	}, nil
 }
 
-//initial a new transaction with asset registration payload
-func NewBookKeeperTransaction(pubKey *crypto.PubKey, isAdd bool, cert []byte, issuer *crypto.PubKey) (*Transaction, error) {
-	bookKeeperPayload := &payload.BookKeeper{
-		PubKey: pubKey,
-		Action: payload.BookKeeperAction_SUB,
-		Cert:   cert,
-		Issuer: issuer,
-	}
-
-	if isAdd {
-		bookKeeperPayload.Action = payload.BookKeeperAction_ADD
-	}
-
-	return &Transaction{
-		TxType:  BookKeeper,
-		Payload: bookKeeperPayload,
-		Inputs:  []*TxnInput{},
-		Attributes: []*TxnAttribute{
-			{
-				Usage: Nonce,
-				Data:  util.RandomBytes(TransactionNonceLength),
-			},
-		},
-		Programs: []*program.Program{},
-	}, nil
-}
-
 func NewIssueAssetTransaction(outputs []*TxnOutput) (*Transaction, error) {
 	assetRegPayload := &payload.IssueAsset{}
 

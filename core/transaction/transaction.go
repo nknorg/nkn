@@ -28,7 +28,6 @@ const (
 	TransferAsset TransactionType = 0x10
 	RegisterAsset TransactionType = 0x11
 	IssueAsset    TransactionType = 0x12
-	BookKeeper    TransactionType = 0x20
 	Prepaid       TransactionType = 0x40
 	Withdraw      TransactionType = 0x41
 	Commit        TransactionType = 0x42
@@ -200,8 +199,6 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		tx.Payload = new(payload.TransferAsset)
 	case Coinbase:
 		tx.Payload = new(payload.Coinbase)
-	case BookKeeper:
-		tx.Payload = new(payload.BookKeeper)
 	case Prepaid:
 		tx.Payload = new(payload.Prepaid)
 	case Withdraw:
@@ -330,14 +327,6 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		hashs = append(hashs, tx.Payload.(*payload.Commit).Submitter)
 	case Withdraw:
 		hashs = append(hashs, tx.Payload.(*payload.Withdraw).ProgramHash)
-	case BookKeeper:
-		issuer := tx.Payload.(*payload.BookKeeper).Issuer
-		hash, err := contract.CreateRedeemHash(issuer)
-		if err != nil {
-			return nil, fmt.Errorf("%v\n%s", err, "[Transaction] GetProgramHashes bookkeeper hash generated failed")
-		}
-
-		hashs = append(hashs, hash)
 	case RegisterName:
 		registrant := tx.Payload.(*payload.RegisterName).Registrant
 		signatureRedeemScript, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(registrant)
@@ -600,8 +589,6 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 		tx.Payload = new(payload.TransferAsset)
 	case Coinbase:
 		tx.Payload = new(payload.Coinbase)
-	case BookKeeper:
-		tx.Payload = new(payload.BookKeeper)
 	case Prepaid:
 		tx.Payload = new(payload.Prepaid)
 	case Withdraw:
