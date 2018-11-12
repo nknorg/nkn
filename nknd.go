@@ -57,8 +57,7 @@ func InitLedger(account *vault.Account) error {
 	if err != nil {
 		return err
 	}
-	ledger.StandbyBookKeepers = vault.GetBookKeepers(account)
-	blockChain, err := ledger.NewBlockchainWithGenesisBlock(store, ledger.StandbyBookKeepers)
+	blockChain, err := ledger.NewBlockchainWithGenesisBlock(store)
 	if err != nil {
 		return err
 	}

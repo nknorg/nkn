@@ -3,12 +3,9 @@ package vault
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
-	"sort"
-
 	"bytes"
 
 	. "github.com/nknorg/nkn/common"
@@ -17,7 +14,6 @@ import (
 	sig "github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
 )
@@ -318,31 +314,4 @@ func GetWallet() Wallet {
 		return nil
 	}
 	return c
-}
-
-func GetBookKeepers(account *Account) []*crypto.PubKey {
-	var pubKeys = []*crypto.PubKey{}
-
-	if len(config.Parameters.BookKeepers) == 0 {
-		pubKeys = append(pubKeys, account.PublicKey)
-		return pubKeys
-	}
-
-	sort.Strings(config.Parameters.BookKeepers)
-	for _, key := range config.Parameters.BookKeepers {
-		pubKey, err := hex.DecodeString(key)
-		if err != nil {
-			log.Error("Incorrectly book keepers key")
-			return nil
-		}
-		// TODO Convert the key string to byte
-		k, err := crypto.DecodePoint(pubKey)
-		if err != nil {
-			log.Error("Incorrectly book keepers key")
-			return nil
-		}
-		pubKeys = append(pubKeys, k)
-	}
-
-	return pubKeys
 }
