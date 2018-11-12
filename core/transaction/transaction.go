@@ -297,16 +297,12 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	switch tx.TxType {
 	case RegisterAsset:
 		issuer := tx.Payload.(*payload.RegisterAsset).Issuer
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
 
-		astHash, err := ToCodeHash(signatureRedeemScript)
+		hash, err := contract.CreateRedeemHash(issuer)
 		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
+			return nil, fmt.Errorf("%v\n%s", err, "[Transaction] GetProgramHashes Signature register hash generated failed")
 		}
-		hashs = append(hashs, astHash)
+		hashs = append(hashs, hash)
 	case IssueAsset:
 		result := tx.GetMergedAssetIDValueFromOutputs()
 		if err != nil {
@@ -336,16 +332,12 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		hashs = append(hashs, tx.Payload.(*payload.Withdraw).ProgramHash)
 	case BookKeeper:
 		issuer := tx.Payload.(*payload.BookKeeper).Issuer
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScript(issuer)
+		hash, err := contract.CreateRedeemHash(issuer)
 		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction - BookKeeper], GetProgramHashes CreateSignatureRedeemScript failed.")
+			return nil, fmt.Errorf("%v\n%s", err, "[Transaction] GetProgramHashes bookkeeper hash generated failed")
 		}
 
-		astHash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction - BookKeeper], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, astHash)
+		hashs = append(hashs, hash)
 	case RegisterName:
 		registrant := tx.Payload.(*payload.RegisterName).Registrant
 		signatureRedeemScript, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(registrant)
@@ -353,11 +345,11 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
 		}
 
-		astHash, err := ToCodeHash(signatureRedeemScript)
+		hash, err := ToCodeHash(signatureRedeemScript)
 		if err != nil {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
 		}
-		hashs = append(hashs, astHash)
+		hashs = append(hashs, hash)
 	case DeleteName:
 		registrant := tx.Payload.(*payload.DeleteName).Registrant
 		signatureRedeemScript, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(registrant)
@@ -365,11 +357,11 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
 		}
 
-		astHash, err := ToCodeHash(signatureRedeemScript)
+		hash, err := ToCodeHash(signatureRedeemScript)
 		if err != nil {
 			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
 		}
-		hashs = append(hashs, astHash)
+		hashs = append(hashs, hash)
 	default:
 	}
 	//remove dupilicated hashes
