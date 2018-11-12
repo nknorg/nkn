@@ -208,16 +208,12 @@ func (w *WalletImpl) GetDefaultAccount() (*Account, error) {
 }
 
 func (w *WalletImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
-	signatureRedeemScript, err := contract.CreateSignatureRedeemScript(pubKey)
+	redeemHash, err := contract.CreateRedeemHash(pubKey)
 	if err != nil {
-		return nil, err
-	}
-	programHash, err := ToCodeHash(signatureRedeemScript)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%v\n%s", err, "[Account] GetAccount redeemhash generated failed")
 	}
 
-	if programHash != w.account.ProgramHash {
+	if redeemHash != w.account.ProgramHash {
 		return nil, errors.New("invalid account")
 	}
 
