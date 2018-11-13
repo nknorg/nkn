@@ -180,15 +180,13 @@ func VerifyTransactionWithLedger(Tx *Transaction) ErrCode {
 
 //validate the transaction of duplicate UTXO input
 func CheckDuplicateInput(tx *Transaction) error {
-	if len(tx.Inputs) == 0 {
-		return nil
-	}
-	for i, utxoin := range tx.Inputs {
-		for j := 0; j < i; j++ {
-			if utxoin.ReferTxID == tx.Inputs[j].ReferTxID && utxoin.ReferTxOutputIndex == tx.Inputs[j].ReferTxOutputIndex {
-				return errors.New("invalid transaction")
-			}
+	dupMap := make(map[string]struct{})
+	for _, utxoin := range tx.Inputs {
+		k := utxoin.ToString()
+		if _, ok := dupMap[k]; ok { // ok means duplicate
+			return errors.New("invalid transaction")
 		}
+		dupMap[k] = struct{}{}
 	}
 	return nil
 }
