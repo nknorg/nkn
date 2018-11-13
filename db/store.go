@@ -251,11 +251,7 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block) (uint
 func (cs *ChainStore) IsTxHashDuplicate(txhash Uint256) bool {
 	prefix := []byte{byte(DATA_Transaction)}
 	_, err_get := cs.st.Get(append(prefix, txhash.ToArray()...))
-	if err_get != nil {
-		return false
-	} else {
-		return true
-	}
+	return err_get == nil
 }
 
 func (cs *ChainStore) IsDoubleSpend(tx *tx.Transaction) bool {

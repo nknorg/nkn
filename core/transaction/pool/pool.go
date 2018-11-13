@@ -51,10 +51,6 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 		log.Info("Transaction verification failed", txn.Hash())
 		return errCode
 	}
-	if errCode := VerifyTransactionWithBlock(TransactionMap(tp.txnList)); errCode != ErrNoError {
-		log.Info("Transaction verification with block failed", txn.Hash())
-		return errCode
-	}
 	if errCode := VerifyTransactionWithLedger(txn); errCode != ErrNoError {
 		log.Info("Transaction verification with ledger failed", txn.Hash())
 		return errCode
@@ -72,7 +68,16 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	}
 
 	//add the transaction to process scope
-	tp.addtxnList(txn)
+	if tp.addtxnList(txn) {
+		// Check duplicate UTXO reference after append successful
+		if errCode := VerifyTransactionWithBlock(TransactionMap(tp.txnList)); errCode != ErrNoError {
+			log.Info("Transaction verification with block failed", txn.Hash())
+			tp.deltxnList(txn) // Revert previous append action
+			return errCode
+		}
+	} else {
+		return ErrDuplicatedTx // Don't broadcast this txn if hash duplicated
+	}
 
 	return ErrNoError
 }
