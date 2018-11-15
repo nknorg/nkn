@@ -49,9 +49,13 @@ func GenKeyPair() ([]byte, PubKey, error) {
 		return nil, *mPubKey, err
 	}
 
+	privkey := make([]byte, util.PRIVATEKEYLEN)
+	copy(privkey[util.PRIVATEKEYLEN-len(privateD):], privateD)
+
 	mPubKey.X = new(big.Int).Set(X)
 	mPubKey.Y = new(big.Int).Set(Y)
-	return privateD, *mPubKey, nil
+
+	return privkey, *mPubKey, nil
 }
 
 func Sign(privateKey []byte, data []byte) ([]byte, error) {
