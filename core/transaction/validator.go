@@ -234,12 +234,12 @@ func CheckTransactionBalance(txn *Transaction) error {
 	}
 	for _, v := range txn.Outputs {
 		if v.Value <= Fixed64(0) {
-			return errors.New("Invalide transaction UTXO output.")
+			return errors.New("invalid transaction UTXO output.")
 		}
 	}
 	if txn.TxType == IssueAsset {
 		if len(txn.Inputs) > 0 {
-			return errors.New("Invalide Issue transaction.")
+			return errors.New("invalid Issue transaction.")
 		}
 		return nil
 	}
@@ -279,10 +279,10 @@ func CheckTransactionPayload(txn *Transaction) error {
 	switch pld := txn.Payload.(type) {
 	case *payload.RegisterAsset:
 		if pld.Asset.Precision < asset.MinPrecision || pld.Asset.Precision > asset.MaxPrecision {
-			return errors.New("Invalide asset Precision.")
+			return errors.New("invalid asset Precision.")
 		}
 		if checkAmountPrecise(pld.Amount, pld.Asset.Precision) {
-			return errors.New("Invalide asset value,out of precise.")
+			return errors.New("invalid asset value,out of precise.")
 		}
 	case *payload.IssueAsset:
 	case *payload.TransferAsset:

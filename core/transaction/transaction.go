@@ -210,7 +210,7 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	case DeleteName:
 		tx.Payload = new(payload.DeleteName)
 	default:
-		return errors.New("[Transaction],invalide transaction type.")
+		return errors.New("[Transaction],invalid transaction type.")
 	}
 	err = tx.Payload.Deserialize(r, tx.PayloadVersion)
 	if err != nil {
@@ -600,7 +600,7 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 	case DeleteName:
 		tx.Payload = new(payload.DeleteName)
 	default:
-		return errors.New("[Transaction],invalide transaction type.")
+		return errors.New("[Transaction],invalid transaction type.")
 	}
 	err = tx.Payload.UnmarshalJson(info)
 	if err != nil {

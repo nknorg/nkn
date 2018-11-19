@@ -12,6 +12,7 @@ import (
 	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/por"
 )
 
 type WinnerType byte
@@ -21,12 +22,13 @@ const (
 	// GenesisHash means next Block proposer is GenesisBlockProposer.
 	GenesisSigner WinnerType = 0
 	// WinningTxnHash means next Block proposer is a node on signature chain.
-	TxnSigner     WinnerType = 1
+	TxnSigner WinnerType = 1
 	// WinningBlockHash means next Block proposer is signer of historical Block.
-	BlockSigner   WinnerType = 2
-)
+	BlockSigner WinnerType = 2
 
-const (
+	// Genesis block proposer will propose first 5 blocks
+	NumGenesisBlocks = por.SigChainMiningHeightOffset + por.SigChainBlockHeightOffset - 1
+
 	// initial version is 0, current version is 1
 	HeaderVersion = 1
 )
@@ -40,7 +42,7 @@ type Header struct {
 	ConsensusData    uint64
 	NextBookKeeper   Uint160
 	WinnerHash       Uint256
-	WinnerType	 WinnerType
+	WinnerType       WinnerType
 	Signer           []byte
 	ChordID          []byte
 	Signature        []byte
@@ -226,7 +228,7 @@ func (h *Header) MarshalJson() ([]byte, error) {
 		ConsensusData:    h.ConsensusData,
 		NextBookKeeper:   BytesToHexString(h.NextBookKeeper.ToArrayReverse()),
 		WinnerHash:       BytesToHexString(h.WinnerHash.ToArrayReverse()),
-		WinnerType:	  byte(h.WinnerType),
+		WinnerType:       byte(h.WinnerType),
 		Signer:           BytesToHexString(h.Signer),
 		ChordID:          BytesToHexString(h.ChordID),
 		Signature:        BytesToHexString(h.Signature),

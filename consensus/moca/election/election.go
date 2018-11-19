@@ -1,4 +1,4 @@
-package moca
+package election
 
 import (
 	"errors"
@@ -25,7 +25,7 @@ type Election struct {
 	neighborVotes     sync.Map
 	selfVote          interface{}
 	voteReceived      chan struct{}
-	votingChan        chan interface{}
+	txVoteChan        chan interface{}
 }
 
 // Config is the election config.
@@ -52,7 +52,7 @@ func NewElection(config *Config) (*Election, error) {
 		minVotingInterval: config.MinVotingInterval,
 		getWeight:         getWeight,
 		voteReceived:      make(chan struct{}, 1),
-		votingChan:        make(chan interface{}),
+		txVoteChan:        make(chan interface{}),
 	}
 
 	return election, nil
@@ -72,8 +72,11 @@ func (election *Election) SetInitialVote(vote interface{}) error {
 	return nil
 }
 
-// Start starts an election and will stop the election after duration.
-func (election *Election) Start() error {
+// Start starts an election and will stop the election after duration. Returns
+// if start success. Multiple concurrent call will only return success once.
+func (election *Election) Start() bool {
+	success := false
+
 	election.startOnce.Do(func() {
 		election.Lock()
 		election.state = started
@@ -84,9 +87,11 @@ func (election *Election) Start() error {
 		time.AfterFunc(election.duration, func() {
 			election.Stop()
 		})
+
+		success = true
 	})
 
-	return nil
+	return success
 }
 
 // Stop stops an election. Typically this should not be called directly.
@@ -117,42 +122,54 @@ func (election *Election) IsStopped() bool {
 }
 
 // ReceiveVote receives and saves a vote from a neighbor.
-func (election *Election) ReceiveVote(key, value interface{}) {
+func (election *Election) ReceiveVote(neighborID, vote interface{}) error {
 	if election.IsStopped() {
-		return
+		return errors.New("Election has already stopped")
 	}
 
-	election.neighborVotes.Store(key, value)
+	election.neighborVotes.Store(neighborID, vote)
 
 	select {
 	case election.voteReceived <- struct{}{}:
 	default:
 	}
+
+	return nil
 }
 
-// GetVotingChan returns the send vote channel, which should be used to send
+// GetTxVoteChan returns the send vote channel, which should be used to send
 // votes to neighbors.
-func (election *Election) GetVotingChan() <-chan interface{} {
-	return election.votingChan
+func (election *Election) GetTxVoteChan() <-chan interface{} {
+	return election.txVoteChan
 }
 
 // GetResult returns the winner vote if the election is stopped, otherwise
 // returns error.
 func (election *Election) GetResult() (interface{}, error) {
 	if !election.IsStopped() {
-		return nil, errors.New("Voting has not stopped yet")
+		return nil, errors.New("Election has not stopped yet")
 	}
 	return election.selfVote, nil
 }
 
-// updateVote updates self vote and write vote into votingChan if self vote
+// NeighborVoteCount counts the number of neighbor votes received.
+func (election *Election) NeighborVoteCount() int {
+	count := 0
+	election.neighborVotes.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
+	return count
+}
+
+// updateVote updates self vote and write vote into txVoteChan if self vote
 // changes with throttle.
 func (election *Election) updateVote() {
 	for {
 		<-election.voteReceived
 
 		if election.IsStopped() {
-			close(election.votingChan)
+			close(election.txVoteChan)
 			return
 		}
 
@@ -166,7 +183,7 @@ func (election *Election) updateVote() {
 			election.selfVote = majorityVote
 			election.Unlock()
 
-			election.votingChan <- majorityVote
+			election.txVoteChan <- majorityVote
 
 			time.Sleep(election.minVotingInterval)
 		}

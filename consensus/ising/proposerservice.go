@@ -301,8 +301,8 @@ func (ps *ProposerService) ProduceNewBlock() {
 	info := ps.proposerCache.Get(votingHeight + 1)
 	if info == nil {
 		info = &ProposerInfo{
-			winnerHash:	EmptyUint256,
-			winnerType:	ledger.BlockSigner,
+			winnerHash: EmptyUint256,
+			winnerType: ledger.BlockSigner,
 		}
 	}
 	// build new block to be proposed
@@ -318,7 +318,7 @@ func (ps *ProposerService) ProduceNewBlock() {
 	}
 	err = ledger.TransactionCheck(block)
 	if err != nil {
-		log.Error("found invalide transaction when produce new block")
+		log.Error("found invalid transaction when produce new block")
 		return
 	}
 	// generate BlockFlooding message
