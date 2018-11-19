@@ -19,8 +19,7 @@ import (
 )
 
 const (
-	GenesisBlockProposedHeight = 4
-	TimestampTolerance         = 40 * time.Second
+	TimestampTolerance = 60 * time.Second
 )
 
 type VBlock struct {
@@ -66,56 +65,46 @@ func TransactionCheck(block *Block) error {
 	return nil
 }
 
-func HeaderCheck(header *Header, receiveTime int64) error {
-	height := header.Height
-	if height == 0 {
-		return nil
+// GetNextBlockSigner gets the next block signer after block height at timestamp
+func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerType, error) {
+	currentHeight := DefaultLedger.Store.GetHeight()
+	if height > currentHeight {
+		return nil, nil, 0, fmt.Errorf("Height %d is higher than current height %d", height, currentHeight)
 	}
-	prevHeader, err := DefaultLedger.Blockchain.GetHeader(header.PrevBlockHash)
+
+	headerHash := DefaultLedger.Store.GetHeaderHashByHeight(height)
+	header, err := DefaultLedger.Store.GetHeader(headerHash)
 	if err != nil {
-		return errors.New("prev header doesn't exist")
-	}
-	if prevHeader == nil {
-		return errors.New("invalid prev header")
-	}
-	if prevHeader.Height+1 != height {
-		return errors.New("invalid header height")
-	}
-	if time.Unix(header.Timestamp, 0).After(time.Now().Add(TimestampTolerance)) {
-		return errors.New("postdated timestamp over tolerance")
-	}
-	if prevHeader.Timestamp >= header.Timestamp {
-		return errors.New("invalid header timestamp")
-	}
-	if header.WinnerType == GenesisSigner && header.Height >= GenesisBlockProposedHeight {
-		return errors.New("invalid winning hash type")
+		return nil, nil, 0, err
 	}
 
 	// calculate time difference
 	var timeDiff int64
 	genesisBlockHash, err := DefaultLedger.Store.GetBlockHash(0)
 	if err != nil {
-		return err
+		return nil, nil, 0, err
 	}
 	genesisBlock, err := DefaultLedger.Store.GetBlock(genesisBlockHash)
 	if err != nil {
-		return err
+		return nil, nil, 0, err
 	}
-	prevTimestamp, err := DefaultLedger.Blockchain.GetBlockTime(header.PrevBlockHash)
-	if err != nil {
-		return err
-	}
+	prevTimestamp := header.Timestamp
 	if prevTimestamp == genesisBlock.Header.Timestamp {
 		timeDiff = 0
 	} else {
-		timeDiff = receiveTime - prevTimestamp
+		timeDiff = timestamp - prevTimestamp
 	}
 
 	// get miner who will sign next block
 	var publicKey []byte
 	var chordID []byte
+	var winnerType WinnerType
+
 	timeSlot := int64(config.ProposerChangeTime / time.Second)
+
 	if timeDiff >= timeSlot {
+		winnerType = BlockSigner
+
 		// This is a temporary solution
 		proposerBlockHeight := 0
 		// index := timeDiff / timeSlot
@@ -123,46 +112,47 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 		// if proposerBlockHeight < 0 {
 		// proposerBlockHeight = 0
 		// }
+
 		proposerBlockHash, err := DefaultLedger.Store.GetBlockHash(uint32(proposerBlockHeight))
 		if err != nil {
-			return err
+			return nil, nil, 0, err
 		}
 		proposerBlock, err := DefaultLedger.Store.GetBlock(proposerBlockHash)
 		if err != nil {
-			return err
+			return nil, nil, 0, err
 		}
 		publicKey, chordID, err = proposerBlock.GetSigner()
 		log.Infof("block signer: public key should be %s, chord ID should be %s, "+
 			"which is the signer of block %d", BytesToHexString(publicKey),
 			BytesToHexString(chordID), proposerBlockHeight)
 		if err != nil {
-			return err
+			return nil, nil, 0, err
 		}
 	} else {
-		winnerHash := prevHeader.WinnerHash
-		winnerType := prevHeader.WinnerType
+		winnerHash := header.WinnerHash
+		winnerType = header.WinnerType
 		switch winnerType {
 		case GenesisSigner:
 			publicKey, chordID, err = genesisBlock.GetSigner()
 			if err != nil {
-				return err
+				return nil, nil, 0, err
 			}
 			log.Infof("block signer: public key should be %s, which is genesis block proposer",
 				BytesToHexString(publicKey))
 		case TxnSigner:
 			txn, err := DefaultLedger.Store.GetTransaction(winnerHash)
 			if err != nil {
-				return err
+				return nil, nil, 0, err
 			}
 			payload, ok := txn.Payload.(*payload.Commit)
 			if !ok {
-				return errors.New("invalid transaction type")
+				return nil, nil, 0, errors.New("invalid transaction type")
 			}
 			sigchain := &por.SigChain{}
 			proto.Unmarshal(payload.SigChain, sigchain)
 			publicKey, chordID, err = sigchain.GetMiner()
 			if err != nil {
-				return err
+				return nil, nil, 0, err
 			}
 			txnHash := txn.Hash()
 			log.Infof("block signer: public key should be %s, chord ID should be %s, "+
@@ -170,20 +160,71 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 				BytesToHexString(txnHash.ToArrayReverse()))
 		}
 	}
-	// TODO check chord ID is valid
-	_ = chordID
-	// verify if public is expected
-	if bytes.Compare(publicKey, header.Signer) != 0 {
-		return fmt.Errorf("invalid block signer public key: %s", BytesToHexString(header.Signer))
+
+	return publicKey, chordID, winnerType, nil
+}
+
+func SignerCheck(header *Header) error {
+	currentHeight := DefaultLedger.Store.GetHeight()
+	publicKey, chordID, _, err := GetNextBlockSigner(currentHeight, header.Timestamp)
+	if err != nil {
+		return err
 	}
+
+	if !bytes.Equal(header.Signer, publicKey) {
+		return fmt.Errorf("invalid block signer public key %x, should be %x", header.Signer, publicKey)
+	}
+
+	if !bytes.Equal(header.ChordID, chordID) {
+		return fmt.Errorf("invalid block signer chord ID %x, should be %x", header.ChordID, chordID)
+	}
+
 	rawPubKey, err := crypto.DecodePoint(publicKey)
 	if err != nil {
 		return err
 	}
 	err = crypto.Verify(*rawPubKey, signature.GetHashForSigning(header), header.Signature)
 	if err != nil {
-		log.Error("block header verification error: ", err)
 		return err
+	}
+
+	return nil
+}
+
+func HeaderCheck(header *Header) error {
+	if header.Height == 0 {
+		return nil
+	}
+
+	expectedHeight := DefaultLedger.Store.GetHeight() + 1
+	if header.Height != expectedHeight {
+		return fmt.Errorf("Block height %d is different from expected height %d", header.Height, expectedHeight)
+	}
+
+	err := SignerCheck(header)
+	if err != nil {
+		return err
+	}
+
+	currentHash := DefaultLedger.Store.GetCurrentBlockHash()
+	if header.PrevBlockHash != currentHash {
+		return errors.New("invalid prev header")
+	}
+
+	prevHeader, err := DefaultLedger.Blockchain.GetHeader(currentHash)
+	if err != nil {
+		return err
+	}
+	if prevHeader == nil {
+		return errors.New("cannot get prev header")
+	}
+
+	if prevHeader.Timestamp >= header.Timestamp {
+		return errors.New("invalid header timestamp")
+	}
+
+	if header.WinnerType == GenesisSigner && header.Height >= NumGenesisBlocks {
+		return errors.New("invalid winning hash type")
 	}
 
 	return nil
@@ -199,4 +240,8 @@ func TimestampCheck(timestamp int64) error {
 		return fmt.Errorf("timestamp %d exceed my tolerance [%d, %d]", timestamp, earliest.Unix(), latest.Unix())
 	}
 	return nil
+}
+
+func CanVerifyHeight(height uint32) bool {
+	return height == DefaultLedger.Store.GetHeight()+1
 }
