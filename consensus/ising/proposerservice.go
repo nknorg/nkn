@@ -318,7 +318,7 @@ func (ps *ProposerService) ProduceNewBlock() {
 	}
 	err = ledger.TransactionCheck(block)
 	if err != nil {
-		log.Error("found invalide transaction when produce new block")
+		log.Error("found invalid transaction when produce new block")
 		return
 	}
 	// generate BlockFlooding message
