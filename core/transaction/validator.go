@@ -34,6 +34,9 @@ type Iterator interface {
 
 // VerifyTransaction verifys received single transaction
 func VerifyTransaction(Tx *Transaction) ErrCode {
+	if CheckInputOutputTooLong(Tx) {
+		return ErrInputOutputTooLong
+	}
 	if err := CheckDuplicateInput(Tx); err != nil {
 		log.Warning("[VerifyTransaction],", err)
 		return ErrDuplicateInput
@@ -176,6 +179,11 @@ func VerifyTransactionWithLedger(Tx *Transaction) ErrCode {
 		return ErrTxHashDuplicate
 	}
 	return ErrNoError
+}
+
+// CheckInputOutputLen validate len(inputs/outputs) less than MAX of ReferTxOutputIndex
+func CheckInputOutputTooLong(tx *Transaction) bool {
+	return len(tx.Inputs) > MaxRefIndex || len(tx.Outputs) > MaxRefIndex
 }
 
 //validate the transaction of duplicate UTXO input
