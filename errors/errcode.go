@@ -2,6 +2,8 @@ package errors
 
 import (
 	"fmt"
+
+	"github.com/nknorg/nkn/util/log"
 )
 
 type ErrCoder interface {
@@ -28,7 +30,7 @@ const (
 	ErrXmitFail             ErrCode = 45013
 	ErrNonOptimalSigChain   ErrCode = 45014
 	ErrDuplicateName        ErrCode = 45015
-	ErrMineReward		ErrCode = 45016
+	ErrMineReward           ErrCode = 45016
 )
 
 func (err ErrCode) Error() string {
@@ -51,5 +53,6 @@ func ErrerCode(err error) ErrCode {
 	if err, ok := err.(ErrCoder); ok {
 		return err.GetErrCode()
 	}
+	log.Errorf("Can't convert err %s to ErrCode", err)
 	return ErrUnknown
 }
