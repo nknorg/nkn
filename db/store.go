@@ -255,30 +255,28 @@ func (cs *ChainStore) IsTxHashDuplicate(txhash Uint256) bool {
 }
 
 func (cs *ChainStore) IsDoubleSpend(tx *tx.Transaction) bool {
-	if len(tx.Inputs) == 0 {
-		return false
-	}
-
 	unspentPrefix := []byte{byte(IX_Unspent)}
-	for i := 0; i < len(tx.Inputs); i++ {
-		txhash := tx.Inputs[i].ReferTxID
+NEXT:
+	for _, input := range tx.Inputs {
+		txhash := input.ReferTxID
 		unspentValue, err_get := cs.st.Get(append(unspentPrefix, txhash.ToArray()...))
 		if err_get != nil {
+			log.Error(err_get)
 			return true
 		}
 
-		unspents, _ := GetUint16Array(unspentValue)
-		findFlag := false
-		for k := 0; k < len(unspents); k++ {
-			if unspents[k] == tx.Inputs[i].ReferTxOutputIndex {
-				findFlag = true
-				break
+		unspents, err := GetUint16Array(unspentValue)
+		if err != nil {
+			log.Error(err)
+			return true
+		}
+		for _, v := range unspents {
+			if v == input.ReferTxOutputIndex {
+				continue NEXT // found in unspents
 			}
 		}
-
-		if !findFlag {
-			return true
-		}
+		log.Warningf("Transaction %s refer a spent Output [%x:%d]", tx.Hash(), txhash, input.ReferTxOutputIndex)
+		return true // ReferTxOutputIndex not in unspents
 	}
 
 	return false
