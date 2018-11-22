@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 
@@ -13,9 +14,14 @@ import (
 	"github.com/itchyny/base58-go"
 )
 
+const PREFIXCHAR = byte(53)
 const UINT160SIZE = 20
+const SHA256CHKSUM = 4
+const HEXADDRLEN = 1 + UINT160SIZE + SHA256CHKSUM // 1 for prefix char 53
 
 type Uint160 [UINT160SIZE]uint8
+
+var EmptyUint160 Uint160
 
 func (u *Uint160) CompareTo(o Uint160) int {
 	x := u.ToArray()
@@ -35,7 +41,7 @@ func (u *Uint160) CompareTo(o Uint160) int {
 
 func (u *Uint160) ToArray() []byte {
 	var x = make([]byte, UINT160SIZE)
-	for i := 0; i < 20; i++ {
+	for i := 0; i < UINT160SIZE; i++ {
 		x[i] = byte(u[i])
 	}
 
@@ -75,11 +81,20 @@ func (f *Uint160) Deserialize(r io.Reader) error {
 	return nil
 }
 
+func IsValidHexAddr(s []byte) bool {
+	if len(s) == HEXADDRLEN && s[0] == PREFIXCHAR {
+		sha := sha256.Sum256(s[:1+UINT160SIZE])
+		chkSum := sha256.Sum256(sha[:])
+		return bytes.Compare(s[1+UINT160SIZE:], chkSum[:SHA256CHKSUM]) == 0
+	}
+	return false
+}
+
 func (f *Uint160) ToAddress() (string, error) {
-	data := append([]byte{53}, f.ToArray()...)
+	data := append([]byte{PREFIXCHAR}, f.ToArray()...)
 	temp := sha256.Sum256(data)
 	temps := sha256.Sum256(temp[:])
-	data = append(data, temps[0:4]...)
+	data = append(data, temps[0:SHA256CHKSUM]...)
 
 	bi := new(big.Int).SetBytes(data).String()
 	encoding := base58.BitcoinEncoding
@@ -92,11 +107,11 @@ func (f *Uint160) ToAddress() (string, error) {
 
 func Uint160ParseFromBytes(f []byte) (Uint160, error) {
 	if len(f) != UINT160SIZE {
-		return Uint160{}, NewDetailErr(errors.New("[Common]: Uint160ParseFromBytes err, len != 20"), ErrNoCode, "")
+		return EmptyUint160, NewDetailErr(errors.New("[Common]: Uint160ParseFromBytes err, len != 20"), ErrNoCode, "")
 	}
 
-	var hash [20]uint8
-	for i := 0; i < 20; i++ {
+	var hash [UINT160SIZE]uint8
+	for i := 0; i < UINT160SIZE; i++ {
 		hash[i] = f[i]
 	}
 	return Uint160(hash), nil
@@ -106,26 +121,20 @@ func ToScriptHash(address string) (Uint160, error) {
 
 	decoded, err := encoding.Decode([]byte(address))
 	if err != nil {
-		return Uint160{}, err
+		return EmptyUint160, err
 	}
 
-	x, _ := new(big.Int).SetString(string(decoded), 10)
-
-	ph, err := Uint160ParseFromBytes(x.Bytes()[1:21])
-	if err != nil {
-		return Uint160{}, err
+	bint, ok := new(big.Int).SetString(string(decoded), 10)
+	if !ok {
+		return EmptyUint160, fmt.Errorf("Base58.Decode[%s] %s NOT a decimal number", address, decoded)
 	}
 
-	addr, err := ph.ToAddress()
-	if err != nil {
-		return Uint160{}, err
+	hex := bint.Bytes()
+	if !IsValidHexAddr(hex) {
+		return EmptyUint160, fmt.Errorf("address[%s] decode %x not a valid address", address, hex)
 	}
 
-	if addr != address {
-		return Uint160{}, errors.New("[AddressToProgramHash]: decode address verify failed.")
-	}
-
-	return ph, nil
+	return Uint160ParseFromBytes(hex[1 : 1+UINT160SIZE])
 }
 
 func (u *Uint160) SetBytes(b []byte) {
