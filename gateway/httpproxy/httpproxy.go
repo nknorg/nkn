@@ -1,14 +1,17 @@
 package httpproxy
 
 import (
-	"crypto/tls"
+	"bufio"
 	"io"
-	"log"
 	"net"
 	"net/http"
+	"net/textproto"
 	"strconv"
+	"strings"
 
 	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
+	"github.com/xtaci/smux"
 )
 
 type HTTPProxy struct {
@@ -28,45 +31,87 @@ func transfer(destination io.WriteCloser, source io.ReadCloser) {
 	io.Copy(destination, source)
 }
 
-func (s *HTTPProxy) HandleConnect(w http.ResponseWriter, r *http.Request) {
-	dest, err := net.Dial("tcp", r.Host) //TODO: add timeout
-	log.Println(r.Method, r.RequestURI, r.Proto)
+// parseRequestLine parses "GET /foo HTTP/1.1" into its three parts.
+func parseRequestLine(line string) (method, requestURI, proto string, ok bool) {
+	s1 := strings.Index(line, " ")
+	s2 := strings.Index(line[s1+1:], " ")
+	if s1 < 0 || s2 < 0 {
+		return
+	}
+	s2 += s1 + 1
+	return line[:s1], line[s1+1 : s2], line[s2+1:], true
+}
+
+func closeConnection(conn net.Conn) {
+	err := conn.Close()
 	if err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		return
+		log.Error("Error while closing connection:", err)
 	}
-	hijacker, ok := w.(http.Hijacker)
-	if !ok {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		return
+}
+
+func handleSession(conn net.Conn, session *smux.Session) {
+	for {
+		stream, err := session.AcceptStream()
+		if err != nil {
+			log.Error("Couldn't accept stream:", err)
+			break
+		}
+
+		tp := textproto.NewReader(bufio.NewReader(stream))
+
+		line, err := tp.ReadLine()
+		if err != nil {
+			log.Error("Couldn't read line:", err)
+			break
+		}
+
+		method, host, _, _ := parseRequestLine(line)
+
+		// won't proxy HTTP due to security reasons
+		if method != http.MethodConnect {
+			log.Error("Only CONNECT HTTP method supported")
+			stream.Write([]byte("HTTP/1.1 403 Forbidden\r\n\r\n"))
+			stream.Close()
+			break
+		}
+
+		destConn, err := net.Dial("tcp", host) //TODO: add timeout
+		if err != nil {
+			log.Error("Couldn't connect to host", host, "with error:", err)
+			break
+		}
+
+		stream.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+
+		go transfer(destConn, stream)
+		go transfer(stream, destConn)
 	}
-	w.WriteHeader(http.StatusOK)
-	src, _, err := hijacker.Hijack()
-	if err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		return
-	}
-	go transfer(dest, src)
-	go transfer(src, dest)
+
+	session.Close()
+	conn.Close()
 }
 
 func (s *HTTPProxy) Start() {
-	server := &http.Server{
-		Addr: s.listener,
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodConnect {
-				// won't proxy HTTP due to security reasons
-				w.WriteHeader(http.StatusForbidden)
-				return
-			}
-
-			s.HandleConnect(w, r)
-		}),
-
-		// HTTP/2 is disabled for now, need to figure out how to proxy correctly and securely
-		// connection hijacking isn't possible with http2
-		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
+	listener, err := net.Listen("tcp", s.listener)
+	if err != nil {
+		log.Error("Couldn't bind HTTP proxy port:", err)
 	}
 
-	server.ListenAndServe()
+	for {
+		clientConn, err := listener.Accept()
+		if err != nil {
+			log.Error("Couldn't accept client connection:", err)
+			closeConnection(clientConn)
+			continue
+		}
+
+		clientSession, err := smux.Server(clientConn, nil)
+		if err != nil {
+			log.Error("Couldn't create smux session:", err)
+			closeConnection(clientConn)
+			continue
+		}
+
+		go handleSession(clientConn, clientSession)
+	}
 }
