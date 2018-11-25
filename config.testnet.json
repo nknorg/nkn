@@ -1,6 +1,7 @@
 ﻿{
   "HttpWsPort": 30002,
   "HttpJsonPort": 30003,
+  "HttpProxyPort": 30004,
   "SeedList": [
     "http://testnet-seed-0001.nkn.org:30003",
     "http://testnet-seed-0002.nkn.org:30003",

@@ -128,6 +128,7 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 
 	n.WebsocketPort = uint32(Parameters.HttpWsPort)
 	n.JsonRpcPort = uint32(Parameters.HttpJsonPort)
+	n.HttpProxyPort = uint32(Parameters.HttpProxyPort)
 
 	n.id, err = chordIDToNodeID(nn.GetLocalNode().Id)
 	if err != nil {
@@ -643,7 +644,7 @@ func (node *node) FindSuccessorAddrs(key []byte, numSucc int) ([]string, error) 
 	return addrs, nil
 }
 
-func (node *node) FindWsAddr(key []byte) (string, error) {
+func (node *node) findAddr(key []byte, portSupplier func(nodeData *protobuf.NodeData) uint32) (string, error) {
 	if node.nnet == nil {
 		return "", errors.New("Node is not local node")
 	}
@@ -679,9 +680,21 @@ func (node *node) FindWsAddr(key []byte) (string, error) {
 		return "", errors.New("Hostname is empty")
 	}
 
-	wsAddr := fmt.Sprintf("%s:%d", host, nodeData.WebsocketPort)
+	wsAddr := fmt.Sprintf("%s:%d", host, portSupplier(nodeData))
 
 	return wsAddr, nil
+}
+
+func (node *node) FindWsAddr(key []byte) (string, error) {
+	return node.findAddr(key, func(nodeData *protobuf.NodeData) uint32 {
+		return nodeData.WebsocketPort
+	})
+}
+
+func (node *node) FindHttpProxyAddr(key []byte) (string, error) {
+	return node.findAddr(key, func(nodeData *protobuf.NodeData) uint32 {
+		return nodeData.HttpProxyPort
+	})
 }
 
 func (node *node) GetChordAddr() []byte {

@@ -19,4 +19,5 @@ message NodeData {
   bytes public_key = 1;
   uint32 websocket_port = 2;
   uint32 json_rpc_port = 3;
+  uint32 http_proxy_port = 4;
 }

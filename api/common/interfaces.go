@@ -815,6 +815,31 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 	}
 }
 
+// getHttpProxyAddr get a websocket address
+// params: ["address":<address>]
+// return: {"result":<result>, "error":<errcode>}
+func getHttpProxyAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	if str, ok := params["address"].(string); ok {
+		clientID, _, err := address.ParseClientAddress(str)
+		node, err := s.GetNetNode()
+		if err != nil {
+			return respPacking(nil, INTERNAL_ERROR)
+		}
+		addr, err := node.FindHttpProxyAddr(clientID)
+		if err != nil {
+			log.Error("Cannot get http proxy address")
+			return respPacking(nil, INTERNAL_ERROR)
+		}
+		return respPacking(addr, SUCCESS)
+	} else {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+}
+
 // getTotalIssued gets total issued asset
 // params: ["assetid":<assetid>]
 // return: {"result":<result>, "error":<errcode>}
@@ -1179,6 +1204,7 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
 	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
 	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
+	"gethttpproxyaddr":     {Handler: getHttpProxyAddr, AccessCtrl: BIT_JSONRPC},
 	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC},
 	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
 	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
