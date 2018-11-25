@@ -55,6 +55,7 @@ type Configuration struct {
 	RPCKey               string   `json:"RPCKey"`
 	HttpWsPort           uint16   `json:"HttpWsPort"`
 	HttpJsonPort         uint16   `json:"HttpJsonPort"`
+	HttpProxyPort        uint16   `json:"HttpProxyPort"`
 	NodePort             uint16   `json:"-"`
 	LogLevel             int      `json:"LogLevel"`
 	IsTLS                bool     `json:"IsTLS"`

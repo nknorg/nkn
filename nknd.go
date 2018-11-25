@@ -21,6 +21,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/db"
+	"github.com/nknorg/nkn/gateway/httpproxy"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
@@ -191,6 +192,9 @@ func nknMain(c *cli.Context) error {
 	// start websocket server
 	ws := websocket.NewServer(node, wallet)
 
+	// start http proxy
+	hp := httpproxy.NewServer()
+
 	nn.MustApplyMiddleware(chord.SuccessorAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
 		if index == 0 {
 			ws.NotifyWrongClients()
@@ -225,6 +229,8 @@ func nknMain(c *cli.Context) error {
 	go rpcServer.Start()
 
 	go ws.Start()
+
+	go hp.Start()
 
 	// start consensus
 	StartConsensus(wallet, node)
