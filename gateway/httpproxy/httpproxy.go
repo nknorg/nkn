@@ -8,6 +8,7 @@ import (
 	"net/textproto"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -17,11 +18,13 @@ import (
 type HTTPProxy struct {
 	// defines a listeners for http proxy, such as "127.0.0.1:30004"
 	listener string
+	timeout  time.Duration
 }
 
 func NewServer() *HTTPProxy {
 	return &HTTPProxy{
 		listener: ":" + strconv.Itoa(int(config.Parameters.HttpProxyPort)),
+		timeout: time.Duration(config.Parameters.HttpProxyDialTimeout),
 	}
 }
 
@@ -49,7 +52,7 @@ func closeConnection(conn net.Conn) {
 	}
 }
 
-func handleSession(conn net.Conn, session *smux.Session) {
+func (s *HTTPProxy) handleSession(conn net.Conn, session *smux.Session) {
 	for {
 		stream, err := session.AcceptStream()
 		if err != nil {
@@ -76,7 +79,7 @@ func handleSession(conn net.Conn, session *smux.Session) {
 			continue
 		}
 
-		destConn, err := net.Dial("tcp", host) //TODO: add timeout
+		destConn, err := net.DialTimeout("tcp", host, s.timeout * time.Second)
 		if err != nil {
 			log.Error("Couldn't connect to host", host, "with error:", err)
 			closeConnection(stream)
@@ -114,6 +117,6 @@ func (s *HTTPProxy) Start() {
 			continue
 		}
 
-		go handleSession(clientConn, clientSession)
+		go s.handleSession(clientConn, clientSession)
 	}
 }

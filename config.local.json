@@ -2,6 +2,7 @@
   "HttpWsPort": 30002,
   "HttpJsonPort": 30003,
   "HttpProxyPort": 30004,
+  "HttpProxyDialTimeout": 30,
   "Hostname": "127.0.0.1",
   "SeedList": [
     "http://127.0.0.1:30003"
