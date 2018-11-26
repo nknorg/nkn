@@ -62,7 +62,8 @@ func handleSession(conn net.Conn, session *smux.Session) {
 		line, err := tp.ReadLine()
 		if err != nil {
 			log.Error("Couldn't read line:", err)
-			break
+			closeConnection(stream)
+			continue
 		}
 
 		method, host, _, _ := parseRequestLine(line)
@@ -71,14 +72,15 @@ func handleSession(conn net.Conn, session *smux.Session) {
 		if method != http.MethodConnect {
 			log.Error("Only CONNECT HTTP method supported")
 			stream.Write([]byte("HTTP/1.1 403 Forbidden\r\n\r\n"))
-			stream.Close()
-			break
+			closeConnection(stream)
+			continue
 		}
 
 		destConn, err := net.Dial("tcp", host) //TODO: add timeout
 		if err != nil {
 			log.Error("Couldn't connect to host", host, "with error:", err)
-			break
+			closeConnection(stream)
+			continue
 		}
 
 		stream.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
