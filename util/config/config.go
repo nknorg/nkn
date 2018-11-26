@@ -56,6 +56,7 @@ type Configuration struct {
 	HttpWsPort           uint16   `json:"HttpWsPort"`
 	HttpJsonPort         uint16   `json:"HttpJsonPort"`
 	HttpProxyPort        uint16   `json:"HttpProxyPort"`
+	HttpProxyDialTimeout uint16   `json:"HttpProxyDialTimeout"`
 	NodePort             uint16   `json:"-"`
 	LogLevel             int      `json:"LogLevel"`
 	IsTLS                bool     `json:"IsTLS"`
