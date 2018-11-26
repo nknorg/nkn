@@ -36,3 +36,4 @@ import:
 - package: github.com/urfave/cli
   version: ~1.20.0
 - package: github.com/nknorg/nnet
+- package: github.com/xtaci/smux

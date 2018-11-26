@@ -1,5 +1,5 @@
-hash: 486c72d81aa3d9af18bec54daa5210958567a0cb453edc3394f41f19d91af568
-updated: 2018-11-02T03:06:50.633481-07:00
+hash: 8560b3563e7b15a9e0ab39f71dd6da2e29ce7ed4aca35c97d11ac9ac3c75b0b7
+updated: 2018-11-26T09:46:37.190447+03:00
 imports:
 - name: github.com/gogo/protobuf
   version: 636bf0302bc95575d69441b25a2603156ffdddf1
@@ -106,6 +106,8 @@ imports:
   version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
 - name: github.com/xtaci/kcp-go
   version: f48db19e7a48fe347571d6bfc52a7585a53c5315
+- name: github.com/xtaci/smux
+  version: f19baee51e87c9f0d42f61380893caad7bfabf3d
 - name: golang.org/x/crypto
   version: 4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06
   repo: https://github.com/golang/crypto
