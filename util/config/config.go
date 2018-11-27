@@ -33,13 +33,14 @@ var (
 	Version       string
 	SkipCheckPort bool
 	Parameters    = &Configuration{
-		Version:      1,
-		Transport:    "tcp",
-		NodePort:     30001,
-		HttpWsPort:   30002,
-		HttpJsonPort: 30003,
-		NAT:          false,
-		LogLevel:     1,
+		Version:       1,
+		Transport:     "tcp",
+		NodePort:      30001,
+		HttpWsPort:    30002,
+		HttpJsonPort:  30003,
+		HttpProxyPort: 30004,
+		NAT:           false,
+		LogLevel:      1,
 		SeedList: []string{
 			"http://127.0.0.1:30003",
 		},
