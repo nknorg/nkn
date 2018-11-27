@@ -333,10 +333,10 @@ func main() {
 			Destination: &config.SkipCheckPort,
 		},
 		cli.BoolFlag{
-			Name:        "nat",
-			Usage:       "NAT traversal (only works for UPnP and NAT-PMP)",
+			Name:        "no-nat",
+			Usage:       "Skip NAT traversal for UPnP and NAT-PMP",
 			Hidden:      false,
-			Destination: &config.Parameters.NAT,
+			Destination: &config.SkipNAT,
 		},
 	}
 	app.Action = nknMain
