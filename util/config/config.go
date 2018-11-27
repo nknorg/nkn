@@ -32,6 +32,7 @@ const (
 var (
 	Version       string
 	SkipCheckPort bool
+	SkipNAT       bool
 	Parameters    = &Configuration{
 		Version:       1,
 		Transport:     "tcp",
@@ -39,7 +40,7 @@ var (
 		HttpWsPort:    30002,
 		HttpJsonPort:  30003,
 		HttpProxyPort: 30004,
-		NAT:           false,
+		NAT:           true,
 		LogLevel:      1,
 		SeedList: []string{
 			"http://127.0.0.1:30003",
@@ -73,7 +74,7 @@ type Configuration struct {
 	Hostname             string   `json:"Hostname"`
 	Transport            string   `json:"Transport"`
 	NAT                  bool     `json:"NAT"`
-	BeneficiaryAddr	     string   `json:"BeneficiaryAddr"`
+	BeneficiaryAddr      string   `json:"BeneficiaryAddr"`
 }
 
 func Init() error {
@@ -98,38 +99,38 @@ func Init() error {
 		Parameters.IncrementPort()
 	}
 
-	if Parameters.NAT {
+	if Parameters.NAT && !SkipNAT {
 		log.Println("Discovering NAT gateway...")
 
 		nat, err := gonat.DiscoverGateway()
-		if err != nil {
-			return err
-		}
+		if err == nil {
+			log.Printf("Found %s gateway", nat.Type())
 
-		log.Printf("Found %s gateway", nat.Type())
+			transport, err := transport.NewTransport(Parameters.Transport)
+			if err != nil {
+				return err
+			}
 
-		transport, err := transport.NewTransport(Parameters.Transport)
-		if err != nil {
-			return err
-		}
+			externalPort, internalPort, err := nat.AddPortMapping(transport.GetNetwork(), int(Parameters.NodePort), int(Parameters.NodePort), "nkn", 10*time.Second)
+			if err != nil {
+				return err
+			}
+			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 
-		externalPort, internalPort, err := nat.AddPortMapping(transport.GetNetwork(), int(Parameters.NodePort), int(Parameters.NodePort), "nkn", 10*time.Second)
-		if err != nil {
-			return err
-		}
-		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+			externalPort, internalPort, err = nat.AddPortMapping("tcp", int(Parameters.HttpWsPort), int(Parameters.HttpWsPort), "nkn", 10*time.Second)
+			if err != nil {
+				return err
+			}
+			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 
-		externalPort, internalPort, err = nat.AddPortMapping("tcp", int(Parameters.HttpWsPort), int(Parameters.HttpWsPort), "nkn", 10*time.Second)
-		if err != nil {
-			return err
+			externalPort, internalPort, err = nat.AddPortMapping("tcp", int(Parameters.HttpJsonPort), int(Parameters.HttpJsonPort), "nkn", 10*time.Second)
+			if err != nil {
+				return err
+			}
+			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+		} else {
+			log.Printf("No NAT gateway detected")
 		}
-		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
-
-		externalPort, internalPort, err = nat.AddPortMapping("tcp", int(Parameters.HttpJsonPort), int(Parameters.HttpJsonPort), "nkn", 10*time.Second)
-		if err != nil {
-			return err
-		}
-		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 	}
 
 	if Parameters.Hostname == "" {
