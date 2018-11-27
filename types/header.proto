@@ -1,0 +1,32 @@
+syntax = "proto3";
+package types;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+enum WinnerType {
+	GenesisSigner  = 0;
+	TxnSigner      = 1;
+	BlockSigner    = 2;
+
+}
+
+message MetaHeader {
+	uint32 ChainID = 1;
+	bytes ParentHash = 2;
+	bytes TxRootHash =3;
+	bytes StateRoot  =4;
+	uint64 Height    =5;
+	int64 Timestamp  =6;
+	uint64 Nonce     =7;
+	uint64 GasLimit  =8;
+	bytes Winner     =9;
+	bytes NextWinnerHash  = 10;
+	bytes ChordID  = 11;
+	WinnerType NextWinnerType = 12;
+}
+
+message Header {
+	MetaHeader MetaHeader = 1;
+	bytes Signature = 2;
+}
+

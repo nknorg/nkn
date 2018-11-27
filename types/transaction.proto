@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package types;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+////gen GoString()?, default true.
+//option (gogoproto.gostring_all) = true;
+////old string method needs to be disabled, default false
+//option (gogoproto.goproto_stringer_all) = false;
+////gen String()?, default true.
+//option (gogoproto.stringer_all) =  true;
+////gen Marshal()?, default true.
+//option (gogoproto.marshaler_all) = true;
+////gen Size()?, default true.
+//option (gogoproto.sizer_all) = true;
+////gen Unmarshal()?, default true.
+//option (gogoproto.unmarshaler_all) = true;
+////gen test file? default false.
+//option (gogoproto.testgen_all) = true;
+////gen Equal()?, default true.
+//option (gogoproto.equal_all) = true;
+////gen newPopulate()?, default false, just for testgen_all
+//option (gogoproto.populate_all) = true;
+
+enum DataType {
+	TRANSFER = 0;
+}
+message Action {
+	bytes Recipient = 1;
+	int64 Value = 2;
+	DataType DataType = 3;
+	bytes Data = 4;
+}
+
+message MetaTx {
+	uint32 ChainID = 1;
+	uint64 Nonce = 2;
+	bytes Sender = 3;
+	repeated Action Actions = 4;
+	int64 GasPrice = 5;
+	int64 GasLimit = 6;
+}
+
+message Transaction {
+	bytes MetaTx = 1;
+	bytes Signature = 2;
+}
