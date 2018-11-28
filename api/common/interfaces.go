@@ -115,11 +115,11 @@ func getBlockCount(s Serverer, params map[string]interface{}) map[string]interfa
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]interface{} {
-	// node, err := s.GetNetNode()
-	// if err != nil {
-	// 	return respPacking(nil, INTERNAL_ERROR)
-	// }
-	return respPacking(nil, SUCCESS)
+	node, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+	return respPacking(node.DumpChordInfo(), SUCCESS)
 }
 
 // getLatestBlockHeight gets the latest block height
