@@ -10,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/protobuf"
 	"github.com/nknorg/nkn/vault"
 )
 
@@ -94,6 +95,24 @@ type Noder interface {
 	GetWsAddr() string
 	FindWsAddr([]byte) (string, error)
 	FindSuccessorAddrs([]byte, int) ([]string, error)
+	DumpChordInfo() *ChordInfo
+	GetSuccessors() []*ChordNodeInfo
+	GetPredecessors() []*ChordNodeInfo
+	GetFingerTab() map[int][]*ChordNodeInfo
+}
+
+type ChordInfo struct {
+	Node         ChordNodeInfo
+	Successors   []*ChordNodeInfo
+	Predecessors []*ChordNodeInfo
+	FingerTable  map[int][]*ChordNodeInfo
+}
+
+type ChordNodeInfo struct {
+	ID         string
+	Addr       string
+	IsOutbound bool
+	protobuf.NodeData
 }
 
 type NodeAddr struct {

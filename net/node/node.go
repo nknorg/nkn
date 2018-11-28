@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -714,4 +715,71 @@ func (node *node) Broadcast(buf []byte) error {
 	}
 
 	return nil
+}
+
+func (node *node) DumpChordInfo() *ChordInfo {
+	c, ok := node.nnet.Network.(*chord.Chord)
+	if !ok {
+		log.Errorf("Overlay is not chord")
+		return nil
+	}
+
+	n := c.GetLocalNode()
+	ret := ChordInfo{
+		Node:         ChordNodeInfo{ID: hex.EncodeToString(n.GetId()), Addr: n.GetAddr()},
+		Successors:   node.GetSuccessors(),
+		Predecessors: node.GetPredecessors(),
+		FingerTable:  node.GetFingerTab(),
+	}
+	ret.Node.NodeData.Unmarshal(n.GetData())
+	return &ret
+}
+
+func (node *node) GetSuccessors() (ret []*ChordNodeInfo) {
+	c, ok := node.nnet.Network.(*chord.Chord)
+	if !ok {
+		log.Errorf("Overlay is not chord")
+		return []*ChordNodeInfo{}
+	}
+	for _, n := range c.Successors() {
+		info := ChordNodeInfo{ID: hex.EncodeToString(n.GetId()), Addr: n.GetAddr(), IsOutbound: n.IsOutbound}
+		info.NodeData.Unmarshal(n.GetData())
+		ret = append(ret, &info)
+	}
+	return ret
+}
+
+func (node *node) GetPredecessors() (ret []*ChordNodeInfo) {
+	c, ok := node.nnet.Network.(*chord.Chord)
+	if !ok {
+		log.Errorf("Overlay is not chord")
+		return []*ChordNodeInfo{}
+	}
+	for _, n := range c.Predecessors() {
+		info := ChordNodeInfo{ID: hex.EncodeToString(n.GetId()), Addr: n.GetAddr(), IsOutbound: n.IsOutbound}
+		info.NodeData.Unmarshal(n.GetData())
+		ret = append(ret, &info)
+	}
+	return ret
+}
+
+func (node *node) GetFingerTab() (ret map[int][]*ChordNodeInfo) {
+	c, ok := node.nnet.Network.(*chord.Chord)
+	if !ok {
+		log.Errorf("Overlay is not chord")
+		return make(map[int][]*ChordNodeInfo)
+	}
+	ret = make(map[int][]*ChordNodeInfo)
+	for i, lst := range c.FingerTable() {
+		if len(lst) == 0 {
+			continue
+		}
+		ret[i] = []*ChordNodeInfo{}
+		for _, n := range lst {
+			info := ChordNodeInfo{ID: hex.EncodeToString(n.GetId()), Addr: n.GetAddr(), IsOutbound: n.IsOutbound}
+			info.NodeData.Unmarshal(n.GetData())
+			ret[i] = append(ret[i], &info)
+		}
+	}
+	return ret
 }
