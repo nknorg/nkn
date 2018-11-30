@@ -121,6 +121,7 @@ func nknMain(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	log.Log.SetDebugLevel(config.Parameters.LogLevel) // Update LogLevel after config.json loaded
 
 	// Get local account
 	wallet := vault.GetWallet()
