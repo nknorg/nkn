@@ -443,7 +443,7 @@ func (ps *ProposerService) PersistCachedBlock(height uint32) error {
 	if err != nil {
 		return err
 	}
-	err = ledger.HeaderCheck(vBlock.Block.Header, vBlock.ReceiveTime)
+	err = ledger.HeaderCheck(vBlock.Block.Header)
 	if err != nil {
 		return err
 	}
@@ -685,7 +685,7 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender u
 		}
 		// send vote when the block is verified by local node
 		if !current.CheckAndSetOwnState(blockHash, voting.ProposalSent) {
-			err = ledger.HeaderCheck(block.Header, rtime)
+			err = ledger.HeaderCheck(block.Header)
 			if err != nil {
 				log.Error("header verification error when voting in sync mode", err)
 				return

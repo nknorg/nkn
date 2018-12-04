@@ -134,15 +134,17 @@ func (scv *SigChainVoting) GetBestVotingContent(height uint32) (VotingContent, e
 	if err != nil {
 		return nil, err
 	}
-	txnHash, exist := scv.porServer.IsSigChainExist(sigHash, height)
-	if !exist {
+
+	txnHash := scv.porServer.GetTxnHashBySigChainHash(sigHash, height)
+	if txnHash == EmptyUint256 {
 		return nil, errors.New("signature chain doesn't exist")
 	}
-	txnInPool := scv.txnCollector.GetTransaction(*txnHash)
+
+	txnInPool := scv.txnCollector.GetTransaction(txnHash)
 	if txnInPool != nil {
 		return txnInPool, nil
 	}
-	txnInLedger, err := ledger.DefaultLedger.Store.GetTransaction(*txnHash)
+	txnInLedger, err := ledger.DefaultLedger.Store.GetTransaction(txnHash)
 	if err == nil {
 		return txnInLedger, nil
 	}

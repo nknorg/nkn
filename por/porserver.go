@@ -137,7 +137,7 @@ func (ps *PorServer) LenOfSigChain(sc *SigChain) int {
 	return sc.Length()
 }
 
-func (ps *PorServer) GetMiningSigChain(height uint32) (*SigChain, error) {
+func (ps *PorServer) GetMinSigChain(height uint32) (*SigChain, error) {
 	ps.RLock()
 	defer ps.RUnlock()
 
@@ -158,7 +158,7 @@ func (ps *PorServer) GetMiningSigChain(height uint32) (*SigChain, error) {
 }
 
 func (ps *PorServer) GetMiningSigChainTxnHash(height uint32) (common.Uint256, error) {
-	sigChain, err := ps.GetMiningSigChain(height)
+	sigChain, err := ps.GetMinSigChain(height)
 	if err != nil {
 		return common.EmptyUint256, err
 	}

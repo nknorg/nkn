@@ -192,7 +192,7 @@ func (bv *BlockVoting) AddToCache(content VotingContent, rtime int64) error {
 		if blockHeight != localHeight+1 {
 			return errors.New("invalid block height")
 		}
-		err = ledger.HeaderCheck(block.Header, rtime)
+		err = ledger.HeaderCheck(block.Header)
 		if err != nil {
 			return err
 		}
