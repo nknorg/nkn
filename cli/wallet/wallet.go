@@ -96,7 +96,9 @@ func walletAction(c *cli.Context) error {
 			case "account":
 				showAccountInfo(wallet)
 			case "balance":
-				resp, err := client.Call(Address(), "getbalance", 0, map[string]interface{}{})
+				account, _ := wallet.GetDefaultAccount()
+				address, _ := account.ProgramHash.ToAddress()
+				resp, err := client.Call(Address(), "getbalancebyaddr", 0, map[string]interface{}{"address": address})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					return err
