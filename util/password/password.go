@@ -28,6 +28,12 @@ func GetConfirmedPassword() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if len(first) == 0 {
+		fmt.Println("password is invalid.")
+		os.Exit(1)
+	}
+
 	fmt.Printf("Re-enter Password:")
 	second, err := gopass.GetPasswd()
 	if err != nil {
