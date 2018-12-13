@@ -27,7 +27,12 @@ func nameAction(c *cli.Context) error {
 		}
 		resp, err = client.Call(Address(), "registername", 0, map[string]interface{}{"name": name})
 	case c.Bool("del"):
-		resp, err = client.Call(Address(), "deletename", 0, map[string]interface{}{})
+		name := c.String("name")
+		if name == "" {
+			fmt.Println("name is required with [--name]")
+			return nil
+		}
+		resp, err = client.Call(Address(), "deletename", 0, map[string]interface{}{"name": name})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
