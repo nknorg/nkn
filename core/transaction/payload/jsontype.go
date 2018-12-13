@@ -36,6 +36,7 @@ type RegisterNameInfo struct {
 
 type DeleteNameInfo struct {
 	Registrant string `json:"registrant"`
+	Name       string `json:"name"`
 }
 
 type SubscribeInfo struct {
