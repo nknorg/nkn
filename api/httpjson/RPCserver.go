@@ -77,12 +77,43 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Check the input request
+		errcode := common.SUCCESS
+		id, ok := request["id"].(string)
+		if !ok {
+			id = "1" // set default if not in request
+		}
+		method, ok := request["method"].(string)
+		if !ok {
+			errcode = common.INVALID_METHOD
+		}
+		params, ok := request["params"].(map[string]interface{})
+		if !ok {
+			errcode = common.INVALID_PARAMS
+		}
+		if errcode != common.SUCCESS {
+			data, err := json.Marshal(map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    -errcode,
+					"message": common.ErrMessage[errcode],
+				},
+				"id": id,
+			})
+			if err != nil {
+				log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
+				return
+			}
+			w.Write(data)
+			return
+		}
+
 		//get the corresponding function
-		function, ok := s.mainMux.m[request["method"].(string)]
+		function, ok := s.mainMux.m[method]
 		if ok {
 			var data []byte
 			var err error
-			response := function(s, request["params"].(map[string]interface{}))
+			response := function(s, params)
 			errcode := response["error"].(common.ErrCode)
 			if errcode != common.SUCCESS {
 				data, err = json.Marshal(map[string]interface{}{
@@ -91,13 +122,13 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 						"code":    -errcode,
 						"message": common.ErrMessage[errcode],
 					},
-					"id": request["id"],
+					"id": id,
 				})
 			} else {
 				data, err = json.Marshal(map[string]interface{}{
 					"jsonrpc": "2.0",
 					"result":  response["result"],
-					"id":      request["id"],
+					"id":      id,
 				})
 			}
 			if err != nil {
@@ -107,7 +138,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			w.Write(data)
 		} else {
 			//if the function does not exist
-			log.Warning("HTTP JSON RPC Handle - No function to call for ", request["method"])
+			log.Warning("HTTP JSON RPC Handle - No function to call for ", method)
 			errcode := common.INVALID_METHOD
 			data, err := json.Marshal(map[string]interface{}{
 				"jsonrpc": "2.0",
@@ -115,7 +146,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 					"code":    -errcode,
 					"message": common.ErrMessage[errcode],
 				},
-				"id": request["id"],
+				"id": id,
 			})
 			if err != nil {
 				log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
