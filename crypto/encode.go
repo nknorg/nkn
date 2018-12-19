@@ -312,8 +312,5 @@ func NewPubKey(priKey []byte) *PubKey {
 
 	privateKey.PublicKey.X, privateKey.PublicKey.Y = algSet.Curve.ScalarBaseMult(k.Bytes())
 
-	pubKey := new(PubKey)
-	pubKey.X = privateKey.PublicKey.X
-	pubKey.Y = privateKey.PublicKey.Y
-	return pubKey
+	return &PubKey{X: privateKey.PublicKey.X, Y: privateKey.PublicKey.Y}
 }

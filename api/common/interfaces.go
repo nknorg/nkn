@@ -334,6 +334,7 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
+	key, _ := node.GetPubKey().EncodePoint(true)
 	n := netcomm.NodeInfo{
 		SyncState: protocol.SyncStateString[node.GetSyncState()],
 		Time:      node.GetTime(),
@@ -343,6 +344,7 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 		ID:        node.GetID(),
 		Version:   node.Version(),
 		Height:    node.GetHeight(),
+		PubKey:    hex.EncodeToString(key),
 		TxnCnt:    node.GetTxnCnt(),
 		RxTxnCnt:  node.GetRxTxnCnt(),
 		ChordID:   hex.EncodeToString(node.GetChordAddr()),

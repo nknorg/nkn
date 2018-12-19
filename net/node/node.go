@@ -363,7 +363,7 @@ func (node *node) GetTxnPool() *pool.TxnPool {
 }
 
 func (node *node) GetHeight() uint32 {
-	return node.height
+	return ledger.DefaultLedger.Store.GetHeight()
 }
 
 func (node *node) SetHeight(height uint32) {
