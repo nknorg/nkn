@@ -68,6 +68,7 @@ type Noder interface {
 	GetTime() int64
 	GetEvent(eventName string) *events.Event
 	GetNeighborAddrs() ([]NodeAddr, uint)
+	GetConnDirection() string
 	GetTransaction(hash Uint256) *transaction.Transaction
 	IncRxTxnCnt()
 	GetTxnCnt() uint64
@@ -120,6 +121,7 @@ type NodeAddr struct {
 	Time    int64
 	IpAddr  [16]byte
 	IpStr   string
+	InOut   string
 	Port    uint16
 	ID      uint64
 	NKNaddr string

@@ -416,6 +416,16 @@ func (node *node) GetAddrStr() string {
 	return node.nnetNode.Addr
 }
 
+func (node *node) GetConnDirection() string {
+	if node.nnet != nil {
+		return "LocalNode"
+	}
+	if node.nnetNode.IsOutbound { // is RemoteNode
+		return "Outbound"
+	}
+	return "Inbound"
+}
+
 func (node *node) GetTime() int64 {
 	t := time.Now()
 	return t.UnixNano()
