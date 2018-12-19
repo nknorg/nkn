@@ -13,6 +13,7 @@ type NodeInfo struct {
 	Version   uint32 `json:"Version"`  // The network protocol the node used
 	Relay     bool   `json:"Relay"`    // The relay capability of the node (merge into capbility flag)
 	Height    uint32 `json:"Height"`   // The node latest block height
+	PubKey    string `json:"PubKey"`   // The node Public Key
 	TxnCnt    uint64 `json:"TxnCnt"`   // The transactions be transmit by this node
 	RxTxnCnt  uint64 `json:"RxTxnCnt"` // The transaction received by this node
 	ChordID   string `json:"ChordID"`  // Chord ID
