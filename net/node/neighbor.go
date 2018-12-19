@@ -54,6 +54,7 @@ func (nm *nbrNodes) GetNeighborAddrs() ([]protocol.NodeAddr, uint) {
 		addrs = append(addrs, protocol.NodeAddr{
 			IpAddr:  ip,
 			IpStr:   n.GetAddr(),
+			InOut:   n.GetConnDirection(),
 			Time:    n.GetTime(),
 			Port:    n.GetPort(),
 			ID:      n.GetID(),
