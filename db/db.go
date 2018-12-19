@@ -11,6 +11,7 @@ import (
 type IStore interface {
 	Put(key []byte, value []byte) error
 	Get(key []byte) ([]byte, error)
+	Has(key []byte) (bool, error)
 	Delete(key []byte) error
 	NewBatch() error
 	BatchPut(key []byte, value []byte) error
@@ -60,6 +61,10 @@ func (self *LevelDBStore) Put(key []byte, value []byte) error {
 func (self *LevelDBStore) Get(key []byte) ([]byte, error) {
 	dat, err := self.db.Get(key, nil)
 	return dat, err
+}
+
+func (self *LevelDBStore) Has(key []byte) (bool, error) {
+	return self.db.Has(key, nil)
 }
 
 func (self *LevelDBStore) Delete(key []byte) error {

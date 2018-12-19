@@ -17,6 +17,11 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
+const (
+	SubscriptionsLimit = 1000
+	MaxSubscriptionDuration = 65535
+)
+
 type TxnStore interface {
 	GetTransaction(hash Uint256) (*Transaction, error)
 	GetQuantityIssued(AssetId Uint256) (Fixed64, error)
@@ -26,6 +31,8 @@ type TxnStore interface {
 	IsTxHashDuplicate(txhash Uint256) bool
 	GetName(registrant []byte) (*string, error)
 	GetRegistrant(name string) ([]byte, error)
+	IsSubscribed(subscriber []byte, identifier string, topic string) (bool, error)
+	GetSubscribersCount(topic string) int
 }
 
 type Iterator interface {
@@ -78,6 +85,12 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 	issueSummary := make(map[Uint256]Fixed64, 0)
 	registeredNames := make(map[string]struct{}, 0)
 	nameRegistrants := make(map[string]struct{}, 0)
+
+	type subscription struct {topic, subscriber string}
+	subscriptions := make(map[subscription]struct{}, 0)
+
+	subscriptionCount := make(map[string]int, 0)
+
 	//start check
 	return iterator.Iterate(func(txn *Transaction) ErrCode {
 		//1.check weather have duplicate transaction.
@@ -162,6 +175,24 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 				return ErrDuplicateName
 			}
 			nameRegistrants[registrant] = struct{}{}
+		case Subscribe:
+			subscribePayload := txn.Payload.(*payload.Subscribe)
+			topic := subscribePayload.Topic
+			key := subscription{topic, subscribePayload.SubscriberString()}
+			if _, ok := subscriptions[key]; ok {
+				log.Warning("[VerifyTransactionWithBlock], duplicate subscription exist in block.")
+				return ErrDuplicateSubscription
+			}
+			subscriptions[key] = struct{}{}
+
+			if _, ok := subscriptionCount[topic]; !ok {
+				subscriptionCount[topic] = Store.GetSubscribersCount(topic)
+			}
+			if subscriptionCount[topic] >= SubscriptionsLimit {
+				log.Warning("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
+				return ErrSubscriptionLimit
+			}
+			subscriptionCount[topic]++
 		}
 
 		return ErrNoError
@@ -347,6 +378,33 @@ func CheckTransactionPayload(txn *Transaction) error {
 		}
 		if name == nil {
 			return errors.New(fmt.Sprintf("no name registered for pubKey %+v", pld.Registrant))
+		}
+	case *payload.Subscribe:
+		duration := pld.Duration
+		if duration > MaxSubscriptionDuration {
+			return errors.New(fmt.Sprintf("subscription duration %d can't be bigger than %d", duration, MaxSubscriptionDuration))
+		}
+
+		topic := pld.Topic
+		match, err := regexp.MatchString("(^[a-z][a-z0-9-_.~+%]{2,254}$)", topic)
+		if err != nil {
+			return err
+		}
+		if !match {
+			return errors.New(fmt.Sprintf("topic %s should only contain a-z and have length 8-12", topic))
+		}
+
+		subscribed, err := Store.IsSubscribed(pld.Subscriber, pld.Identifier, topic)
+		if err != nil {
+			return err
+		}
+		if subscribed {
+			return errors.New(fmt.Sprintf("subscriber %s already subscribed to %s", pld.SubscriberString(), topic))
+		}
+
+		subscriptionCount := Store.GetSubscribersCount(topic)
+		if subscriptionCount >= SubscriptionsLimit {
+			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", topic, subscriptionCount))
 		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")

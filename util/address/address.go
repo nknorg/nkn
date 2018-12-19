@@ -6,8 +6,20 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/log"
 )
+
+func MakeAddressString(pubKey []byte, identifier string) string {
+	var result strings.Builder
+	if identifier != "" {
+		result.WriteString(identifier)
+		result.WriteString(".")
+	}
+	result.WriteString(common.BytesToHexString(pubKey))
+
+	return result.String()
+}
 
 // ParseClientAddress parse an address string to Chord address and public key
 func ParseClientAddress(addrStr string) ([]byte, []byte, error) {
