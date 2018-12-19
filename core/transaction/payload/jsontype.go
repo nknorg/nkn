@@ -37,3 +37,10 @@ type RegisterNameInfo struct {
 type DeleteNameInfo struct {
 	Registrant string `json:"registrant"`
 }
+
+type SubscribeInfo struct {
+	Subscriber string `json:"subscriber"`
+	Identifier string `json:"identifier"`
+	Topic      string `json:"topic"`
+	Duration   uint32 `json:"duration"`
+}

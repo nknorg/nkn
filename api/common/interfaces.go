@@ -1129,6 +1129,23 @@ func getAddressByName(s Serverer, params map[string]interface{}) map[string]inte
 	return respPacking(address, SUCCESS)
 }
 
+// getSubscribers get subscribers by topic
+// params: ["topic":<topic>]
+// return: {"result":<result>, "error":<errcode>}
+func getSubscribers(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	topic, ok := params["topic"].(string)
+	if !ok {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	subscribers := ledger.DefaultLedger.Store.GetSubscribers(topic)
+	return respPacking(subscribers, SUCCESS)
+}
+
 // findSuccessorAddrs find the successors of a key
 // params: ["address":<address>]
 // return: {"result":<result>, "error":<errcode>}
@@ -1216,8 +1233,8 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"issueasset":           {Handler: issueAsset},
 	"sendtoaddress":        {Handler: sendToAddress},
 	"prepaidasset":         {Handler: prepaidAsset},
-	"registername":         {Handler: registerName, AccessCtrl: BIT_JSONRPC},
-	"deletename":           {Handler: deleteName, AccessCtrl: BIT_JSONRPC},
+	"registername":         {Handler: registerName},
+	"deletename":           {Handler: deleteName},
 	"withdrawasset":        {Handler: withdrawAsset},
 	"commitpor":            {Handler: commitPor},
 	"sigchaintest":         {Handler: sigchaintest},
@@ -1227,6 +1244,7 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getbalancebyasset":    {Handler: getBalanceByAsset},
 	"getunspends":          {Handler: getUnspends},
 	"getaddressbyname":     {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
+	"getsubscribers":       {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddr":    {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddrs":   {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},
 }

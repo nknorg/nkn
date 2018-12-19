@@ -32,6 +32,10 @@ type ILedgerStore interface {
 	GetName(registrant []byte) (*string, error)
 	GetRegistrant(name string) ([]byte, error)
 
+	IsSubscribed(subscriber []byte, identifier string, topic string) (bool, error)
+	GetSubscribers(topic string) []string
+	GetSubscribersCount(topic string) int
+
 	GetContract(codeHash Uint160) ([]byte, error)
 	GetStorage(key []byte) ([]byte, error)
 	GetAccount(programHash Uint160) (*account.AccountState, error)
