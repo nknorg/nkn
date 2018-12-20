@@ -12,7 +12,7 @@ function Usage () {
     printf "${RED}Example${END}: ${BLUE}%s${END} ${GREEN}10${END} ${YELLOW}test_env${END}\n" $1
 }
 
-[ -n "$1" ] && [ "$1" -gt 1 ] || ! Usage $0 || exit $EINVAL
+[ -n "$1" ] && [ "$1" -ge 1 ] || ! Usage $0 || exit $EINVAL
 NodeNum=$1
 
 TARGET_DIR=${2}
@@ -27,14 +27,17 @@ mkdir -p ${TARGET_DIR}
 seq 1 ${NodeNum} | xargs printf "%04d\n" | while read i
 do
     mkdir -p ${TARGET_DIR}/node_${i}
-    cp -a nknd nknc config.json ${TARGET_DIR}/node_${i}/  || exit $?
+    cp -a nknd nknc ${TARGET_DIR}/node_${i}/  || exit $?
+    cp -a config.testnet.json ${TARGET_DIR}/node_${i}/config.json  || exit $?
 
     ### init wallet.dat
     rm -f wallet.dat
+    RANDOM_PASSWD=$(head -c 256 /dev/urandom |base64 |head -c 16)
     ./nknc wallet -c <<EOF
-testbed
-testbed
+${RANDOM_PASSWD}
+${RANDOM_PASSWD}
 EOF
     [ $? -eq 0 ] || exit $?
+    echo ${RANDOM_PASSWD} > ${TARGET_DIR}/node_${i}/wallet.pswd
     mv wallet.dat ${TARGET_DIR}/node_${i}/ || exit $?
 done
