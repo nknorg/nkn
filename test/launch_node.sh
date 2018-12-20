@@ -20,11 +20,10 @@ EOF
 }
 
 function start () {
-    ./nknd "$@" <<EOF
-testbed
-EOF
+    ./nknd "$@" -p $(cat ./wallet.pswd)
 }
 
+ulimit -n 10240
 ulimit -c unlimited
 export GOTRACEBACK=crash
 
