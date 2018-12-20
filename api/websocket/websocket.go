@@ -17,7 +17,7 @@ import (
 var ws *server.WsServer
 
 var (
-	pushBlockFlag    bool = false
+	pushBlockFlag    bool = true
 	pushRawBlockFlag bool = false
 	pushBlockTxsFlag bool = false
 )
