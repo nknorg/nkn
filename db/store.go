@@ -576,6 +576,10 @@ func generateSubscriberKey(subscriber []byte, identifier string, topic string) [
 }
 
 func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic string, duration uint32, height uint32) error {
+	if duration == 0 {
+		return nil
+	}
+
 	subscriberKey := generateSubscriberKey(subscriber, identifier, topic)
 
 	// PUT VALUE
@@ -592,11 +596,20 @@ func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic stri
 	return nil
 }
 
-func (cs *ChainStore) Unsubscribe(subscriber []byte, identifier string, topic string) error {
+func (cs *ChainStore) Unsubscribe(subscriber []byte, identifier string, topic string, duration uint32, height uint32) error {
+	if duration == 0 {
+		return nil
+	}
+
 	subscriberKey := generateSubscriberKey(subscriber, identifier, topic)
 
 	// DELETE VALUE
 	err := cs.st.BatchDelete(subscriberKey)
+	if err != nil {
+		return err
+	}
+
+	err = cs.CancelKeyExpirationAtBlock(height + duration, subscriberKey)
 	if err != nil {
 		return err
 	}
@@ -650,6 +663,20 @@ func (cs *ChainStore) ExpireKeyAtBlock(height uint32, key []byte) error {
 	serialization.WriteVarBytes(expireKey, key)
 
 	err := cs.st.BatchPut(expireKey.Bytes(), []byte{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) CancelKeyExpirationAtBlock(height uint32, key []byte) error {
+	expireKey := bytes.NewBuffer(nil)
+	expireKey.WriteByte(byte(SYS_ExpireKey))
+	serialization.WriteUint32(expireKey, height)
+	serialization.WriteVarBytes(expireKey, key)
+
+	err := cs.st.BatchDelete(expireKey.Bytes())
 	if err != nil {
 		return err
 	}
@@ -875,14 +902,6 @@ func (cs *ChainStore) persist(b *Block) error {
 	// BATCH PUT VALUE
 	cs.st.BatchPut(bhash.Bytes(), hashWriter.Bytes())
 
-	expiredKeys := cs.GetExpiredKeys(b.Header.Height)
-	for i := 0; i < len(expiredKeys); i++ {
-		err := cs.RemoveExpiredKey(expiredKeys[i])
-		if err != nil {
-			return err
-		}
-	}
-
 	getOrCreateAccount := func(programHash Uint160, create bool) (*account.AccountState, error) {
 		if value, ok := accounts[programHash]; ok {
 			return value, nil
@@ -1049,6 +1068,14 @@ func (cs *ChainStore) persist(b *Block) error {
 			}
 		}
 
+	}
+
+	expiredKeys := cs.GetExpiredKeys(b.Header.Height)
+	for i := 0; i < len(expiredKeys); i++ {
+		err := cs.RemoveExpiredKey(expiredKeys[i])
+		if err != nil {
+			return err
+		}
 	}
 
 	// batch put the utxoUnspents
