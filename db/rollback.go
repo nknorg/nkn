@@ -257,10 +257,12 @@ func (cs *ChainStore) rollbackAsset(b *ledger.Block) error {
 }
 
 func (cs *ChainStore) rollbackPubSub(b *ledger.Block) error {
+	height := b.Header.Height
+
 	for _, txn := range b.Transactions {
 		if txn.TxType == tx.Subscribe {
 			subscribePayload := txn.Payload.(*payload.Subscribe)
-			err := cs.Unsubscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic)
+			err := cs.Unsubscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Duration, height)
 			if err != nil {
 				return err
 			}
