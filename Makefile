@@ -68,4 +68,4 @@ deepclean:  ## Remove the existing binaries, the vendor directory and build dire
 
 .PHONY: pb
 pb:
-	protoc -I=. -I=$(GOPATH)/src -I=$(GOPATH)/src/github.com/gogo/protobuf/protobuf --gogoslick_out=. protobuf/*.proto
+	protoc -I=. -I=$(GOPATH)/src -I=$(GOPATH)/src/github.com/gogo/protobuf/protobuf --gogoslick_out=. pb/*.proto

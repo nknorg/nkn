@@ -1,12 +1,12 @@
 package net
 
 import (
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nnet"
 )
 
-func StartProtocol(pubKey *crypto.PubKey, nn *nnet.NNet) (protocol.Noder, error) {
-	return node.InitNode(pubKey, nn)
+func StartProtocol(account *vault.Account, nn *nnet.NNet) (protocol.Noder, error) {
+	return node.InitNode(account, nn)
 }

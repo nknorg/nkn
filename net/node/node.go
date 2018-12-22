@@ -23,16 +23,17 @@ import (
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	. "github.com/nknorg/nkn/net/protocol"
-	"github.com/nknorg/nkn/protobuf"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/relay"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nnet"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
 	"github.com/nknorg/nnet/overlay/routing"
-	nnetprotobuf "github.com/nknorg/nnet/protobuf"
+	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
 const (
@@ -51,13 +52,14 @@ const (
 
 type node struct {
 	sync.Mutex
-	protobuf.NodeData
+	pb.NodeData
 	id            uint64         // node ID
 	version       uint32         // network protocol version
 	height        uint32         // node latest block height
 	local         *node          // local node
 	txnCnt        uint64         // transmitted transaction count
 	rxTxnCnt      uint64         // received transaction count
+	account       *vault.Account // local node wallet account
 	publicKey     *crypto.PubKey // node public key
 	flightHeights []uint32       // flight height
 	nnet          *nnet.NNet
@@ -85,7 +87,7 @@ func chordIDToNodeID(chordID []byte) (uint64, error) {
 	return nodeID, err
 }
 
-func (n *node) getNbrByNNetNode(remoteNode *nnetnode.RemoteNode) *node {
+func (n *node) getNbrByNNetNode(remoteNode *nnetnode.RemoteNode) Noder {
 	if remoteNode == nil {
 		return nil
 	}
@@ -114,14 +116,14 @@ func NewNode() *node {
 	return &n
 }
 
-func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
+func InitNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
 	var err error
 
 	n := NewNode()
 	n.version = ProtocolVersion
 	Parameters := config.Parameters
 
-	n.PublicKey, err = pubKey.EncodePoint(true)
+	n.PublicKey, err = account.PublicKey.EncodePoint(true)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +139,8 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	log.Infof("Init node ID to %d", n.id)
 
 	n.local = n
-	n.publicKey = pubKey
+	n.account = account
+	n.publicKey = account.PublicKey
 	n.TxnPool = pool.NewTxnPool()
 	n.syncState = SyncStarted
 	n.syncStopHash = Uint256{}
@@ -178,8 +181,8 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 	}))
 
 	nn.MustApplyMiddleware(routing.RemoteMessageRouted(func(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
-		if remoteMessage.Msg.MessageType == nnetprotobuf.BYTES {
-			msgBody := &nnetprotobuf.Bytes{}
+		if remoteMessage.Msg.MessageType == nnetpb.BYTES && len(remoteMessage.Msg.ReplyToId) == 0 {
+			msgBody := &nnetpb.Bytes{}
 			err := proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
 			if err != nil {
 				log.Error(err)
@@ -187,7 +190,7 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 			}
 
 			if localNode != nil {
-				nbr := n
+				var nbr Noder = n
 				if remoteMessage.RemoteNode != nil {
 					nbr = n.getNbrByNNetNode(remoteMessage.RemoteNode)
 					if nbr == nil {
@@ -205,10 +208,24 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 					}
 				}
 
-				err = message.HandleNodeMsg(nbr, msgBody.Data)
+				signedMsg := &pb.SignedMessage{}
+				err = proto.Unmarshal(msgBody.Data, signedMsg)
 				if err != nil {
-					log.Error(err)
-					return nil, nil, nil, false
+					err = message.HandleNodeMsg(nbr, msgBody.Data)
+					if err != nil {
+						log.Error(err)
+						return nil, nil, nil, false
+					}
+				} else {
+					reply, err := handleMessage(nbr, signedMsg, remoteMessage.Msg.RoutingType)
+					if err != nil {
+						log.Error(err)
+						return nil, nil, nil, false
+					}
+
+					if len(reply) > 0 {
+						nbr.SendBytesReply(remoteMessage.Msg.MessageId, reply)
+					}
 				}
 
 				if len(remoteNodes) == 0 {
@@ -218,7 +235,7 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 				localNode = nil
 			}
 
-			if remoteMessage.Msg.RoutingType == nnetprotobuf.RELAY {
+			if remoteMessage.Msg.RoutingType == nnetpb.RELAY {
 				if len(remoteNodes) > 1 {
 					log.Error("Multiple next hop is not supported yet")
 					return nil, nil, nil, false
@@ -237,13 +254,6 @@ func InitNode(pubKey *crypto.PubKey, nn *nnet.NNet) (Noder, error) {
 						log.Error("Cannot get next hop neighbor node")
 						return nil, nil, nil, false
 					}
-				}
-
-				msgBody := &nnetprotobuf.Bytes{}
-				err := proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
-				if err != nil {
-					log.Error(err)
-					return nil, nil, nil, false
 				}
 
 				msg, err := message.ParseMsg(msgBody.Data)
@@ -677,7 +687,7 @@ func (node *node) findAddr(key []byte, portSupplier func(nodeData *protobuf.Node
 	}
 
 	pred := preds[0]
-	nodeData := &protobuf.NodeData{}
+	nodeData := &pb.NodeData{}
 	err = proto.Unmarshal(pred.Data, nodeData)
 	if err != nil {
 		return "", err
@@ -722,12 +732,7 @@ func (node *node) CloseConn() {
 }
 
 func (node *node) Tx(buf []byte) {
-	err := node.local.nnet.SendBytesDirectAsync(buf, node.nnetNode)
-	if err != nil {
-		log.Error("Error sending messge to peer node ", err.Error())
-		node.CloseConn()
-		node.local.DelNbrNode(node.GetID())
-	}
+	node.SendBytesAsync(buf)
 }
 
 func (node *node) Broadcast(buf []byte) error {
@@ -735,7 +740,7 @@ func (node *node) Broadcast(buf []byte) error {
 		return errors.New("Node is not local node")
 	}
 
-	_, err := node.nnet.SendBytesBroadcastAsync(buf, nnetprotobuf.BROADCAST_PUSH)
+	_, err := node.nnet.SendBytesBroadcastAsync(buf, nnetpb.BROADCAST_PUSH)
 	if err != nil {
 		return err
 	}
