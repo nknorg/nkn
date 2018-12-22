@@ -33,11 +33,11 @@ func (msg trn) Handle(node Noder) error {
 		node.LocalNode().IncRxTxnCnt()
 
 		// add transaction to pool when in consensus state
-		if node.LocalNode().GetSyncState() == PersistFinished {
-			if errCode := node.LocalNode().AppendTxnPool(txn); errCode != ErrNoError {
-				return fmt.Errorf("[message] VerifyTransaction failed with %v when AppendTxnPool.", errCode)
-			}
+		// if node.LocalNode().GetSyncState() == PersistFinished {
+		if errCode := node.LocalNode().AppendTxnPool(txn); errCode != ErrNoError {
+			return fmt.Errorf("[message] VerifyTransaction failed with %v when AppendTxnPool.", errCode)
 		}
+		// }
 	}
 
 	return nil

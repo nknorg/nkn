@@ -1,20 +1,23 @@
 package moca
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math"
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/moca/election"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/net/protocol"
-	timer "github.com/nknorg/nkn/util/timer.go"
+	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/util/timer"
 	"github.com/nknorg/nkn/vault"
-	"github.com/nknorg/nnet/log"
 )
 
 const (
@@ -65,6 +68,7 @@ func NewConsensus(account *vault.Account, localNode protocol.Noder) (*Consensus,
 		requestProposalChan: make(chan *requestProposalInfo, requestProposalChanLen),
 		mining:              ledger.NewBuiltinMining(account, txnCollector),
 		txnCollector:        txnCollector,
+		expectedHeight:      ledger.DefaultLedger.Store.GetHeight() + 1,
 	}
 	return consensus, nil
 }
@@ -72,8 +76,10 @@ func NewConsensus(account *vault.Account, localNode protocol.Noder) (*Consensus,
 // Start starts the consensus protocol
 func (consensus *Consensus) Start() {
 	consensus.startOnce.Do(func() {
+		consensus.registerMessageHandler()
 		go consensus.startVoting()
 		go consensus.startProposing()
+		go consensus.startRequestProposal()
 	})
 }
 
@@ -91,16 +97,16 @@ func (consensus *Consensus) startVoting() {
 
 		elc, err := consensus.handleProposal()
 		if err != nil {
-			log.Error(err)
+			log.Warningf("Handle proposal error: %v", err)
 			time.Sleep(50 * time.Millisecond)
 			continue
 		}
 
 		consensus.setExpectedHeight(consensusHeight + 1)
 
-		electedBlockHash, err := consensus.startElection(elc)
+		electedBlockHash, err := consensus.startElection(consensusHeight, elc)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("Start election error: %v", err)
 			consensus.setExpectedHeight(consensusHeight)
 			continue
 		}
@@ -111,12 +117,30 @@ func (consensus *Consensus) startVoting() {
 			continue
 		}
 
-		// TODO: save block
+		log.Infof("Accept block %s at height %d", electedBlockHash.ToHexString(), consensusHeight)
+
+		value, ok := consensus.proposals.Get(electedBlockHash.ToArray())
+		if !ok {
+			log.Errorf("Block %s not found in local cache", electedBlockHash.ToHexString())
+			continue
+		}
+
+		block, ok := value.(*ledger.Block)
+		if !ok {
+			log.Errorf("Convert block %s from proposal cache error", electedBlockHash.ToHexString())
+			continue
+		}
+
+		err = ledger.DefaultLedger.Blockchain.AddBlock(block)
+		if err != nil {
+			log.Errorf("Error saving block: %v", err)
+			continue
+		}
 	}
 }
 
 // requestProposal starts the request proposal routine
-func (consensus *Consensus) requestProposal() {
+func (consensus *Consensus) startRequestProposal() {
 	for {
 		requestProposal := <-consensus.requestProposalChan
 
@@ -135,12 +159,26 @@ func (consensus *Consensus) requestProposal() {
 			continue
 		}
 
-		// TODO: request block proposal from neighbor
-		block := &ledger.Block{}
+		neighbor := consensus.localNode.GetNbrNode(requestProposal.neighborID)
+		if neighbor == nil {
+			continue
+		}
 
-		err := consensus.ReceiveProposal(block)
+		log.Infof("Request block %s from neighbor %d", requestProposal.blockHash.ToHexString(), neighbor.GetID())
+
+		block, err := consensus.requestBlock(neighbor, requestProposal.blockHash)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("Request block error: %v", err)
+			continue
+		}
+		if block == nil {
+			log.Warning("Request block msg returned empty block from neighbor %d", neighbor.GetID())
+			continue
+		}
+
+		err = consensus.ReceiveProposal(block)
+		if err != nil {
+			log.Warningf("Receive proposal error: %v", err)
 			continue
 		}
 	}
@@ -165,17 +203,18 @@ func (consensus *Consensus) handleProposal() (*election.Election, error) {
 		return nil, err
 	}
 
-	if !ledger.CanVerifyHeight(consensusHeight) {
-		for {
-			if elc.NeighborVoteCount() > 0 {
-				timerStartOnce.Do(func() {
-					timer.StopTimer(timeoutTimer)
-					electionStartTimer.Reset(electionStartDelay)
-				})
-				break
-			}
-			time.Sleep(50 * time.Millisecond)
+	for {
+		if ledger.CanVerifyHeight(consensusHeight) {
+			break
 		}
+		if elc.NeighborVoteCount() > 0 {
+			timerStartOnce.Do(func() {
+				timer.StopTimer(timeoutTimer)
+				electionStartTimer.Reset(electionStartDelay)
+			})
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	for {
@@ -212,6 +251,12 @@ func (consensus *Consensus) handleProposal() (*election.Election, error) {
 				acceptProposal = false
 			}
 
+			err = ledger.TransactionCheck(proposal)
+			if err != nil {
+				log.Warningf("Proposal fails to pass transaction check: %v", err)
+				acceptProposal = false
+			}
+
 			if acceptProposal {
 				validProposals[blockHash] = proposal
 				if len(validProposals) > 1 {
@@ -224,12 +269,18 @@ func (consensus *Consensus) handleProposal() (*election.Election, error) {
 			if acceptProposal {
 				initialVote = blockHash
 			} else {
-				// TODO: tell neighbor I have this block
+				err = consensus.iHaveBlock(consensusHeight, blockHash)
+				if err != nil {
+					log.Errorf("Send I have block message error: %v", err)
+				}
 			}
 
 			elc.SetInitialVote(initialVote)
 
-			// TODO: send out initial vote
+			err = consensus.vote(consensusHeight, initialVote)
+			if err != nil {
+				log.Errorf("Send initial vote error: %v", err)
+			}
 
 		case <-electionStartTimer.C:
 			return elc, nil
@@ -242,14 +293,21 @@ func (consensus *Consensus) handleProposal() (*election.Election, error) {
 
 // startElection starts an election, sends out self vote, and returns election
 // result after election stops.
-func (consensus *Consensus) startElection(elc *election.Election) (common.Uint256, error) {
+func (consensus *Consensus) startElection(height uint32, elc *election.Election) (common.Uint256, error) {
 	elc.Start()
 
 	txVoteChan := elc.GetTxVoteChan()
 
 	for vote := range txVoteChan {
-		_ = vote
-		// TODO: send vote to neighbor
+		votedBlockHash, ok := vote.(common.Uint256)
+		if !ok {
+			log.Errorf("Convert vote %v to block hash error", vote)
+		}
+
+		err := consensus.vote(height, votedBlockHash)
+		if err != nil {
+			log.Errorf("Send vote error: %v", err)
+		}
 	}
 
 	result, err := elc.GetResult()
@@ -306,6 +364,8 @@ func (consensus *Consensus) GetExpectedHeight() uint32 {
 
 // setExpectedHeight sets the expected consensus height
 func (consensus *Consensus) setExpectedHeight(expectedHeight uint32) {
+	log.Infof("Change expected block height to %d", expectedHeight)
+
 	consensus.proposalLock.Lock()
 	if consensus.expectedHeight != expectedHeight {
 		consensus.expectedHeight = expectedHeight
@@ -335,6 +395,10 @@ func (consensus *Consensus) maybeUpdateConsensusHeight() {
 
 // ReceiveProposal is called when a new proposal is received
 func (consensus *Consensus) ReceiveProposal(block *ledger.Block) error {
+	blockHash := block.Header.Hash()
+
+	log.Debugf("Receive block proposal %s", blockHash.ToHexString())
+
 	consensus.proposalLock.RLock()
 	defer consensus.proposalLock.RUnlock()
 
@@ -350,7 +414,6 @@ func (consensus *Consensus) ReceiveProposal(block *ledger.Block) error {
 		return errors.New("Prososal chan full, discarding proposal")
 	}
 
-	blockHash := block.Header.Hash()
 	consensus.proposals.Set(blockHash.ToArray(), block)
 
 	return nil
@@ -358,6 +421,8 @@ func (consensus *Consensus) ReceiveProposal(block *ledger.Block) error {
 
 // ReceiveVote is called when a vote from neighbor is received
 func (consensus *Consensus) ReceiveVote(neighborID uint64, height uint32, blockHash common.Uint256) error {
+	log.Debugf("Receive vote %s for height %d from neighbor %d", blockHash.ToHexString(), height, neighborID)
+
 	err := consensus.ReceiveBlockHash(neighborID, height, blockHash)
 	if err != nil {
 		log.Warningf("Receive block hash error when receive vote: %v", err)
@@ -378,6 +443,8 @@ func (consensus *Consensus) ReceiveVote(neighborID uint64, height uint32, blockH
 
 // ReceiveBlockHash is called when a node receives a block hash from a neighbor
 func (consensus *Consensus) ReceiveBlockHash(neighborID uint64, height uint32, blockHash common.Uint256) error {
+	log.Debugf("Receive block hash %s for height %d from neighbor %d", blockHash.ToHexString(), height, neighborID)
+
 	expectedHeight := consensus.GetExpectedHeight()
 	if height != expectedHeight {
 		return fmt.Errorf("Receive invalid block hash height %d instead of %d", height, expectedHeight)
@@ -402,4 +469,81 @@ func (consensus *Consensus) ReceiveBlockHash(neighborID uint64, height uint32, b
 	}
 
 	return nil
+}
+
+func (consensus *Consensus) vote(height uint32, blockHash common.Uint256) error {
+	msg, err := NewVoteMessage(height, blockHash)
+	if err != nil {
+		return err
+	}
+
+	buf, err := consensus.localNode.SerializeMessage(msg, true)
+	if err != nil {
+		return err
+	}
+
+	for _, neighbor := range consensus.localNode.GetNeighborNoder() {
+		err = neighbor.SendBytesAsync(buf)
+		if err != nil {
+			log.Errorf("Send vote to neighbor %v error: %v", neighbor, err)
+		}
+	}
+
+	return nil
+}
+
+func (consensus *Consensus) iHaveBlock(height uint32, blockHash common.Uint256) error {
+	msg, err := NewIHaveBlockMessage(height, blockHash)
+	if err != nil {
+		return err
+	}
+
+	buf, err := consensus.localNode.SerializeMessage(msg, true)
+	if err != nil {
+		return err
+	}
+
+	for _, neighbor := range consensus.localNode.GetNeighborNoder() {
+		err = neighbor.SendBytesAsync(buf)
+		if err != nil {
+			log.Errorf("Send vote to neighbor %v error: %v", neighbor, err)
+		}
+	}
+
+	return nil
+}
+
+func (consensus *Consensus) requestBlock(neighbor protocol.Noder, blockHash common.Uint256) (*ledger.Block, error) {
+	msg, err := NewRequestBlockMessage(blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := consensus.localNode.SerializeMessage(msg, true)
+	if err != nil {
+		return nil, err
+	}
+
+	replyBytes, err := neighbor.SendBytesSync(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	replyMsg := &pb.RequestBlockReply{}
+	err = proto.Unmarshal(replyBytes, replyMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(replyMsg.Block) == 0 {
+		return nil, nil
+	}
+
+	block := &ledger.Block{}
+	err = block.Deserialize(bytes.NewReader(replyMsg.Block))
+	if err != nil {
+		return nil, err
+	}
+
+	return block, nil
 }

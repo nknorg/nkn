@@ -16,14 +16,14 @@ import (
 	"github.com/nknorg/nkn/api/httpjson"
 	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/api/websocket"
-	"github.com/nknorg/nkn/consensus/ising"
+	"github.com/nknorg/nkn/consensus/moca"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/db"
 	"github.com/nknorg/nkn/gateway/httpproxy"
+	"github.com/nknorg/nkn/net"
 	"github.com/nknorg/nkn/net/node"
-	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -71,12 +71,6 @@ func InitLedger(account *vault.Account) error {
 	vault.Store = ledger.DefaultLedger.Store
 
 	return nil
-}
-
-func StartConsensus(wallet vault.Wallet, node protocol.Noder) {
-	log.Info("ising consensus starting ...")
-	account, _ := wallet.GetDefaultAccount()
-	go ising.NewProposerService(account, node).Start()
 }
 
 func JoinNet(nn *nnet.NNet) error {
@@ -179,7 +173,7 @@ func nknMain(c *cli.Context) error {
 		return errors.New("PorServer initialization error")
 	}
 
-	node, err := node.InitNode(account.PublicKey, nn)
+	node, err := net.StartProtocol(account, nn)
 	if err != nil {
 		return err
 	}
@@ -231,10 +225,12 @@ func nknMain(c *cli.Context) error {
 
 	go ws.Start()
 
-	go hp.Start()
+	consensus, err := moca.NewConsensus(account, node)
+	if err != nil {
+		return err
+	}
 
-	// start consensus
-	StartConsensus(wallet, node)
+	consensus.Start()
 
 	go func() {
 		for {
