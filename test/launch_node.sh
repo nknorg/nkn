@@ -12,15 +12,21 @@ function Usage () {
 
 function initWallet () {
     rm -f wallet.dat
+    RANDOM_PASSWD=$(head -c 64 /dev/random |base64 |head -c 32)
     ./nknc wallet -c <<EOF
-testbed
-testbed
+${RANDOM_PASSWD}
+${RANDOM_PASSWD}
 EOF
+    echo ${RANDOM_PASSWD} > ./wallet.pswd
     return $?
 }
 
 function start () {
-    ./nknd "$@" -p $(cat ./wallet.pswd)
+    RANDOM_PASSWD=$(cat ./wallet.pswd)
+    ./nknd "$@" <<EOF
+${RANDOM_PASSWD}
+${RANDOM_PASSWD}
+EOF
 }
 
 ulimit -n 10240

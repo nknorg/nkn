@@ -32,7 +32,7 @@ do
 
     ### init wallet.dat
     rm -f wallet.dat
-    RANDOM_PASSWD=$(head -c 256 /dev/urandom |base64 |head -c 16)
+    RANDOM_PASSWD=$(head -c 64 /dev/random |base64 |head -c 32)
     ./nknc wallet -c <<EOF
 ${RANDOM_PASSWD}
 ${RANDOM_PASSWD}
