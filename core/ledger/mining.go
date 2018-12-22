@@ -25,7 +25,6 @@ type BuiltinMining struct {
 }
 
 func NewBuiltinMining(account *vault.Account, txnCollector *transaction.TxnCollector) *BuiltinMining {
-
 	return &BuiltinMining{
 		account:      account,
 		txnCollector: txnCollector,

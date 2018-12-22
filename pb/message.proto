@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package pb;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.gostring_all) = true;
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.stringer_all) =  true;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+option (gogoproto.testgen_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.populate_all) = true;
+
+enum MessageType {
+  VOTE = 0;
+  I_HAVE_BLOCK = 1;
+  REQUEST_BLOCK = 2;
+}
+
+message UnsignedMessage {
+  MessageType message_type = 1;
+  bytes message = 2;
+}
+
+message SignedMessage {
+  bytes message = 1;
+  bytes signature = 2;
+}
+
+message Vote {
+  uint32 height = 1;
+  bytes block_hash = 2;
+}
+
+message IHaveBlock {
+  uint32 height = 1;
+  bytes block_hash = 2;
+}
+
+message RequestBlock {
+  bytes block_hash = 1;
+}
+
+message RequestBlockReply {
+  bytes block = 1;
+}

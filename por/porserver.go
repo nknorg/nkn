@@ -141,25 +141,21 @@ func (ps *PorServer) GetMiningSigChain(height uint32) (*SigChain, error) {
 	ps.RLock()
 	defer ps.RUnlock()
 
-	var minSigChain *SigChain
 	length := len(ps.pors[height])
 	switch {
 	case length > 1:
 		sort.Sort(PorPackages(ps.pors[height]))
 		fallthrough
 	case length == 1:
-		minSigChain = ps.pors[height][0].GetSigChain()
-		return minSigChain, nil
-	case length < 1:
-		return nil, errors.New("no available signature chain")
+		return ps.pors[height][0].GetSigChain(), nil
+	default:
+		return nil, nil
 	}
-
-	return minSigChain, nil
 }
 
 func (ps *PorServer) GetMiningSigChainTxnHash(height uint32) (common.Uint256, error) {
 	sigChain, err := ps.GetMiningSigChain(height)
-	if err != nil {
+	if err != nil || sigChain == nil {
 		return common.EmptyUint256, err
 	}
 

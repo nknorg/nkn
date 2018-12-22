@@ -57,9 +57,9 @@ func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *
 	}
 
 	mining := false
-	if rs.localNode.GetSyncState() == protocol.PersistFinished {
-		mining = true
-	}
+	// if rs.localNode.GetSyncState() == protocol.PersistFinished {
+	mining = true
+	// }
 	err := rs.porServer.Sign(packet.SigChain, destPubKey, mining)
 	if err != nil {
 		log.Error("Signing signature chain error: ", err)
@@ -198,9 +198,9 @@ func (rs *RelayService) SignRelayPacket(nextHop protocol.Noder, packet *message.
 		return err
 	}
 	mining := false
-	if rs.localNode.GetSyncState() == protocol.PersistFinished {
-		mining = true
-	}
+	// if rs.localNode.GetSyncState() == protocol.PersistFinished {
+	mining = true
+	// }
 	err = rs.porServer.Sign(packet.SigChain, nextPubkey, mining)
 	if err != nil {
 		log.Error("Signing signature chain error: ", err)
