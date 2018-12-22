@@ -12,7 +12,7 @@ function Usage () {
 
 function initWallet () {
     rm -f wallet.dat
-    RANDOM_PASSWD=$(head -c 64 /dev/random |base64 |head -c 32)
+    RANDOM_PASSWD=$(head -c 1024 /dev/urandom | shasum -a 512 -b | xxd -r -p | base64 | head -c 32)
     ./nknc wallet -c <<EOF
 ${RANDOM_PASSWD}
 ${RANDOM_PASSWD}
@@ -29,7 +29,7 @@ ${RANDOM_PASSWD}
 EOF
 }
 
-ulimit -n 10240
+ulimit -n 4096
 ulimit -c unlimited
 export GOTRACEBACK=crash
 
