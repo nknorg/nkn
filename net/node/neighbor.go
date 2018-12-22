@@ -12,7 +12,7 @@ type nbrNodes struct {
 	List sync.Map
 }
 
-func (nm *nbrNodes) GetNbrNode(uid uint64) *node {
+func (nm *nbrNodes) GetNbrNode(uid uint64) protocol.Noder {
 	v, ok := nm.List.Load(uid)
 	if !ok {
 		return nil
@@ -77,18 +77,6 @@ func (nm *nbrNodes) GetNeighborNoder() []protocol.Noder {
 	nm.List.Range(func(key, value interface{}) bool {
 		n, ok := value.(*node)
 		if ok {
-			nodes = append(nodes, n)
-		}
-		return true
-	})
-	return nodes
-}
-
-func (nm *nbrNodes) GetSyncFinishedNeighbors() []protocol.Noder {
-	var nodes []protocol.Noder
-	nm.List.Range(func(key, value interface{}) bool {
-		n, ok := value.(*node)
-		if ok && n.GetSyncState() == protocol.PersistFinished {
 			nodes = append(nodes, n)
 		}
 		return true

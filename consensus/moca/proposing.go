@@ -7,18 +7,19 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/por"
-	timer "github.com/nknorg/nkn/util/timer.go"
-	"github.com/nknorg/nnet/log"
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/util/timer"
 )
 
 const (
-	maxNumTxnPerBlock = 20480
+	maxNumTxnPerBlock   = 20480
+	proposingStartDelay = config.ProposerChangeTime + time.Second
 )
 
 // startProposing starts the proposing routing
 func (consensus *Consensus) startProposing() {
-	proposingTimer := time.NewTimer(proposingInterval)
+	proposingTimer := time.NewTimer(proposingStartDelay)
 	for {
 		select {
 		case <-proposingTimer.C:
@@ -26,11 +27,16 @@ func (consensus *Consensus) startProposing() {
 			expectedHeight := consensus.GetExpectedHeight()
 			timestamp := time.Now().Unix()
 			if expectedHeight == currentHeight+1 && consensus.isBlockProposer(currentHeight, timestamp) {
+				log.Infof("I am the block proposer at height %d", expectedHeight)
+
 				block, err := consensus.proposeBlock(expectedHeight, timestamp)
 				if err != nil {
 					log.Error(err)
 					break
 				}
+
+				blockHash := block.Header.Hash()
+				log.Infof("Propose block %s at height %d", blockHash.ToHexString(), expectedHeight)
 
 				err = consensus.ReceiveProposal(block)
 				if err != nil {
@@ -62,7 +68,7 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 		return false
 	}
 
-	if !bytes.Equal(consensus.localNode.GetChordAddr(), nextChordID) {
+	if len(nextChordID) > 0 && !bytes.Equal(consensus.localNode.GetChordAddr(), nextChordID) {
 		return false
 	}
 
@@ -70,25 +76,9 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 }
 
 func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*ledger.Block, error) {
-	var winnerHash common.Uint256
-	var winnerType ledger.WinnerType
-
-	if height < ledger.NumGenesisBlocks {
-		winnerHash = common.EmptyUint256
-		winnerType = ledger.GenesisSigner
-	} else {
-		nextMiningSigChainTxnHash, err := por.GetPorServer().GetMiningSigChainTxnHash(height + 1)
-		if err != nil {
-			return nil, err
-		}
-
-		nextMiningTxn, err := consensus.getTxnByHash(nextMiningSigChainTxnHash)
-		if err != nil {
-			return nil, err
-		}
-
-		winnerHash = nextMiningTxn.Hash()
-		winnerType = ledger.TxnSigner
+	winnerHash, winnerType, err := ledger.GetWinner(height)
+	if err != nil {
+		return nil, err
 	}
 
 	return consensus.mining.BuildBlock(height, consensus.localNode.GetChordAddr(), winnerHash, winnerType, timestamp)

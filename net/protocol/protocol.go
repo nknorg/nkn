@@ -10,7 +10,7 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/protobuf"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/vault"
 )
 
@@ -54,6 +54,7 @@ type Noder interface {
 	StopSyncBlock(bool)
 	GetPubKey() *crypto.PubKey
 	LocalNode() Noder
+	GetNbrNode(uid uint64) Noder
 	DelNbrNode(id uint64) (Noder, bool)
 	AddNbrNode(Noder)
 	CloseConn()
@@ -65,6 +66,10 @@ type Noder interface {
 	ExistHash(hash Uint256) bool
 	DumpInfo()
 	Tx(buf []byte)
+	SerializeMessage(msg *pb.UnsignedMessage, sign bool) ([]byte, error)
+	SendBytesAsync(buf []byte) error
+	SendBytesSync(buf []byte) ([]byte, error)
+	SendBytesReply(replyToID, buf []byte) error
 	GetTime() int64
 	GetEvent(eventName string) *events.Event
 	GetNeighborAddrs() ([]NodeAddr, uint)
@@ -80,7 +85,6 @@ type Noder interface {
 	CleanSubmittedTransactions(txns []*transaction.Transaction) error
 
 	GetNeighborNoder() []Noder
-	GetSyncFinishedNeighbors() []Noder
 	StoreFlightHeight(height uint32)
 	GetFlightHeightCnt() int
 	RemoveFlightHeightLessThan(height uint32)

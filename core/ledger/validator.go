@@ -15,11 +15,10 @@ import (
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
 )
 
 const (
-	TimestampTolerance = 60 * time.Second
+	TimestampTolerance = 40 * time.Second
 )
 
 type VBlock struct {
@@ -65,7 +64,8 @@ func TransactionCheck(block *Block) error {
 	return nil
 }
 
-// GetNextBlockSigner gets the next block signer after block height at timestamp
+// GetNextBlockSigner gets the next block signer after block height at
+// timestamp. Returns next signer's public key, chord ID, winner type, and error
 func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerType, error) {
 	currentHeight := DefaultLedger.Store.GetHeight()
 	if height > currentHeight {
@@ -122,9 +122,6 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			return nil, nil, 0, err
 		}
 		publicKey, chordID, err = proposerBlock.GetSigner()
-		log.Infof("block signer: public key should be %s, chord ID should be %s, "+
-			"which is the signer of block %d", BytesToHexString(publicKey),
-			BytesToHexString(chordID), proposerBlockHeight)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -137,8 +134,6 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			if err != nil {
 				return nil, nil, 0, err
 			}
-			log.Infof("block signer: public key should be %s, which is genesis block proposer",
-				BytesToHexString(publicKey))
 		case TxnSigner:
 			txn, err := DefaultLedger.Store.GetTransaction(winnerHash)
 			if err != nil {
@@ -154,14 +149,29 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			if err != nil {
 				return nil, nil, 0, err
 			}
-			txnHash := txn.Hash()
-			log.Infof("block signer: public key should be %s, chord ID should be %s, "+
-				"which is got in sigchain transaction %s", BytesToHexString(publicKey), BytesToHexString(chordID),
-				BytesToHexString(txnHash.ToArrayReverse()))
 		}
 	}
 
 	return publicKey, chordID, winnerType, nil
+}
+
+// GetWinner returns the winner hash and winner type of a block height using
+// sigchain from PoR server.
+func GetWinner(height uint32) (Uint256, WinnerType, error) {
+	if height < NumGenesisBlocks {
+		return EmptyUint256, GenesisSigner, nil
+	}
+
+	nextMiningSigChainTxnHash, err := por.GetPorServer().GetMiningSigChainTxnHash(height + 1)
+	if err != nil {
+		return EmptyUint256, TxnSigner, err
+	}
+
+	if nextMiningSigChainTxnHash == EmptyUint256 {
+		return EmptyUint256, BlockSigner, nil
+	}
+
+	return nextMiningSigChainTxnHash, TxnSigner, nil
 }
 
 func SignerCheck(header *Header) error {
@@ -175,7 +185,7 @@ func SignerCheck(header *Header) error {
 		return fmt.Errorf("invalid block signer public key %x, should be %x", header.Signer, publicKey)
 	}
 
-	if !bytes.Equal(header.ChordID, chordID) {
+	if len(chordID) > 0 && !bytes.Equal(header.ChordID, chordID) {
 		return fmt.Errorf("invalid block signer chord ID %x, should be %x", header.ChordID, chordID)
 	}
 
