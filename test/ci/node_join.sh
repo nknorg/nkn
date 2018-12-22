@@ -28,7 +28,7 @@ cd $NKN_HOME
 
 ### Obtain latest src code and build binary
 git fetch
-LATEST_TAG=$(git for-each-ref --sort=-taggerdate --count=1 --format "%(refname:short)" refs/tags)
+LATEST_TAG=$(git tag --sort=-creatordate | head -1)
 git checkout ${LATEST_TAG}
 make
 cp -a nkn[cd] ./${BIN_DIR}/
