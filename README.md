@@ -61,9 +61,9 @@ What should I do?
 **A:** Easiest for you will be to follow [docker instructions](#building-using-docker) below. Docker will take care of quite a lot of things for you.
 If you are asked to run or issue command (usually formatted like this:)
 ```shell
-cd change/active/directory/to/this/one
+$ cd change/active/directory/to/this/one
 ```
-open a terminal (or cmd on windows - start -> run/search -> cmd.exe) and write the command there.
+open a terminal (or cmd on windows - start -> run/search -> cmd.exe) and write the command there. (Without the `$ ` symbol)
 
 
 ### Building from source
