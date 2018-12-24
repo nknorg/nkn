@@ -20,7 +20,7 @@ import (
 
 const (
 	GenesisBlockProposedHeight = 4
-	TimestampTolerance         = 60 * time.Second
+	TimestampTolerance         = 40 * time.Second
 )
 
 type VBlock struct {
