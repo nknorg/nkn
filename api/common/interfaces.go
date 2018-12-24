@@ -343,7 +343,7 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 		WsPort:    node.GetWsPort(),
 		ID:        node.GetID(),
 		Version:   node.Version(),
-		Height:    ledger.DefaultLedger.Store.GetHeight(),
+		Height:    node.GetHeight(),
 		PubKey:    hex.EncodeToString(key),
 		TxnCnt:    node.GetTxnCnt(),
 		RxTxnCnt:  node.GetRxTxnCnt(),
