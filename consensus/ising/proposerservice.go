@@ -301,8 +301,8 @@ func (ps *ProposerService) ProduceNewBlock() {
 	info := ps.proposerCache.Get(votingHeight + 1)
 	if info == nil {
 		info = &ProposerInfo{
-			winnerHash:	EmptyUint256,
-			winnerType:	ledger.BlockSigner,
+			winnerHash: EmptyUint256,
+			winnerType: ledger.BlockSigner,
 		}
 	}
 	// build new block to be proposed
@@ -690,11 +690,19 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender u
 				log.Error("header verification error when voting in sync mode", err)
 				return
 			}
+
+			err = ledger.TimestampCheck(block.Header.Timestamp)
+			if err != nil {
+				log.Error("Proposal fails to pass timestamp check", err)
+				return
+			}
+
 			err = ledger.TransactionCheck(block)
 			if err != nil {
 				log.Error("transaction verification error when voting in sync mode", err)
 				return
 			}
+
 			log.Infof("send vote to block %s while syncing", BytesToHexString(blockHash.ToArrayReverse()))
 			proposalMsg := NewProposal(&blockHash, votingHeight, voting.BlockVote)
 			nodes := ps.GetReceiverNode(nil)

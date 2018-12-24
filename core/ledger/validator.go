@@ -20,6 +20,7 @@ import (
 
 const (
 	GenesisBlockProposedHeight = 4
+	TimestampTolerance         = 60 * time.Second
 )
 
 type VBlock struct {
@@ -182,5 +183,15 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 		return err
 	}
 
+	return nil
+}
+
+func TimestampCheck(timestamp int64) error {
+	now := time.Now()
+	earliest := now.Add(-TimestampTolerance).Unix()
+	latest := now.Add(TimestampTolerance).Unix()
+	if timestamp < earliest || timestamp > latest {
+		return errors.New("Invalid timestamp")
+	}
 	return nil
 }
