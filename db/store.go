@@ -9,7 +9,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core/account"
 	. "github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/core/contract/program"
 	. "github.com/nknorg/nkn/core/ledger"
@@ -865,7 +864,6 @@ func (cs *ChainStore) persist(b *Block) error {
 
 	// Get Unspents for every tx
 	unspentPrefix := []byte{byte(IX_Unspent)}
-	accounts := make(map[Uint160]*account.AccountState, 0)
 
 	// batch write begin
 	cs.st.NewBatch()
@@ -901,26 +899,6 @@ func (cs *ChainStore) persist(b *Block) error {
 
 	// BATCH PUT VALUE
 	cs.st.BatchPut(bhash.Bytes(), hashWriter.Bytes())
-
-	getOrCreateAccount := func(programHash Uint160, create bool) (*account.AccountState, error) {
-		if value, ok := accounts[programHash]; ok {
-			return value, nil
-		} else {
-			accountState, err := cs.GetAccount(programHash)
-			if err != nil && err.Error() != ErrDBNotFound.Error() {
-				return nil, err
-			}
-			if accountState == nil {
-				if !create {
-					return nil, nil
-				}
-				balances := make(map[Uint256]Fixed64, 0)
-				accountState = account.NewAccountState(programHash, balances)
-			}
-			accounts[programHash] = accountState
-			return accountState, nil
-		}
-	}
 
 	nLen := len(b.Transactions)
 	for i := 0; i < nLen; i++ {
@@ -987,11 +965,6 @@ func (cs *ChainStore) persist(b *Block) error {
 			output := b.Transactions[i].Outputs[index]
 			programHash := output.ProgramHash
 			assetId := output.AssetID
-			accountState, err := getOrCreateAccount(programHash, true)
-			if err != nil {
-				return err
-			}
-			accountState.Balances[assetId] += output.Value
 
 			unspent := &tx.UTXOUnspent{
 				Txid:  b.Transactions[i].Hash(),
@@ -1012,14 +985,6 @@ func (cs *ChainStore) persist(b *Block) error {
 			output := transaction.Outputs[index]
 			programHash := output.ProgramHash
 			assetId := output.AssetID
-			accountState, err := getOrCreateAccount(programHash, false)
-			if err != nil {
-				return err
-			}
-			accountState.Balances[assetId] -= output.Value
-			if accountState.Balances[assetId] < 0 {
-				return errors.New(fmt.Sprintf("account programHash:%v, assetId:%v insufficient of balance", programHash, assetId))
-			}
 
 			unspent := &tx.UTXOUnspent{
 				Txid:  transaction.Hash(),
@@ -1114,17 +1079,6 @@ func (cs *ChainStore) persist(b *Block) error {
 		qt.Serialize(quantityArray)
 
 		cs.st.BatchPut(quantityKey.Bytes(), quantityArray.Bytes())
-	}
-
-	for programHash, value := range accounts {
-		accountKey := new(bytes.Buffer)
-		accountKey.WriteByte(byte(ST_Account))
-		programHash.Serialize(accountKey)
-
-		accountValue := new(bytes.Buffer)
-		value.Serialize(accountValue)
-
-		cs.st.BatchPut(accountKey.Bytes(), accountValue.Bytes())
 	}
 
 	currentBlockKey := bytes.NewBuffer(nil)
@@ -1379,19 +1333,6 @@ func (cs *ChainStore) GetHeightByBlockHash(hash Uint256) (uint32, error) {
 	}
 
 	return block.Header.Height, nil
-}
-
-func (cs *ChainStore) GetAccount(programHash Uint160) (*account.AccountState, error) {
-	accountPrefix := []byte{byte(ST_Account)}
-	state, err := cs.st.Get(append(accountPrefix, programHash.ToArray()...))
-	if err != nil {
-		return nil, err
-	}
-
-	accountState := new(account.AccountState)
-	accountState.Deserialize(bytes.NewBuffer(state))
-
-	return accountState, nil
 }
 
 func (cs *ChainStore) IsBlockInStore(hash Uint256) bool {
