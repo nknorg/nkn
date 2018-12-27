@@ -2,7 +2,6 @@ package ledger
 
 import (
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/account"
 	. "github.com/nknorg/nkn/core/asset"
 	tx "github.com/nknorg/nkn/core/transaction"
 )
@@ -38,7 +37,6 @@ type ILedgerStore interface {
 
 	GetContract(codeHash Uint160) ([]byte, error)
 	GetStorage(key []byte) ([]byte, error)
-	GetAccount(programHash Uint160) (*account.AccountState, error)
 
 	GetCurrentBlockHash() Uint256
 	GetCurrentHeaderHash() Uint256
