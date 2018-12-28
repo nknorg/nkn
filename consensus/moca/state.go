@@ -76,11 +76,11 @@ func (consensus *Consensus) getAllNeighborsConsensusState() (*sync.Map, error) {
 		wg.Add(1)
 		go func(neighbor protocol.Noder) {
 			defer wg.Done()
-			ConsensusState, err := consensus.getNeighborConsensusState(neighbor)
+			consensusState, err := consensus.getNeighborConsensusState(neighbor)
 			if err != nil {
 				log.Warningf("Get latest block info from neighbor %d", neighbor.GetID())
 			}
-			allInfo.Store(neighbor.GetID(), ConsensusState)
+			allInfo.Store(neighbor.GetID(), consensusState)
 		}(neighbor)
 	}
 	wg.Wait()
@@ -100,9 +100,9 @@ func (consensus *Consensus) getNeighborsMajorityConsensusHeight() uint32 {
 		counter := make(map[uint32]int)
 		totalCount := 0
 		allInfo.Range(func(key, value interface{}) bool {
-			if ConsensusState, ok := value.(*pb.GetConsensusStateReply); ok {
-				if ConsensusState != nil && ConsensusState.ConsensusHeight > 0 {
-					counter[ConsensusState.ConsensusHeight]++
+			if consensusState, ok := value.(*pb.GetConsensusStateReply); ok && consensusState != nil {
+				if consensusState.SyncState != pb.WaitForSyncing && consensusState.ConsensusHeight > 0 {
+					counter[consensusState.ConsensusHeight]++
 					totalCount++
 				}
 			}
