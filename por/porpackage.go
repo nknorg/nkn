@@ -8,6 +8,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/payload"
+	nknerrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -71,7 +72,7 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	if !found {
 		err := errors.New("no miner node in signature chain")
 		log.Error(err)
-		return nil, err
+		return nil, nknerrors.NewDetailErr(err, nknerrors.ErrNoCode, "[SigChain] No miner node in signature chain.")
 	}
 
 	blockHash, err := Uint256ParseFromBytes(sigChain.BlockHash)
