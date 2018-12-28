@@ -22,7 +22,6 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/db"
 	"github.com/nknorg/nkn/gateway/httpproxy"
-	"github.com/nknorg/nkn/net"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
@@ -173,7 +172,12 @@ func nknMain(c *cli.Context) error {
 		return errors.New("PorServer initialization error")
 	}
 
-	node, err := net.StartProtocol(account, nn)
+	node, err := node.NewLocalNode(account, nn)
+	if err != nil {
+		return err
+	}
+
+	err = node.Start()
 	if err != nil {
 		return err
 	}

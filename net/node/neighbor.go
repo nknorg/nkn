@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/net/protocol"
+	nnetnode "github.com/nknorg/nnet/node"
 )
 
 // The neighbor node list
@@ -82,4 +83,18 @@ func (nm *nbrNodes) GetNeighborNoder() []protocol.Noder {
 		return true
 	})
 	return nodes
+}
+
+func (n *node) getNbrByNNetNode(remoteNode *nnetnode.RemoteNode) protocol.Noder {
+	if remoteNode == nil {
+		return nil
+	}
+
+	nodeID, err := chordIDToNodeID(remoteNode.Id)
+	if err != nil {
+		return nil
+	}
+
+	nbr := n.GetNbrNode(nodeID)
+	return nbr
 }

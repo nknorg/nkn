@@ -3,6 +3,7 @@ syntax = "proto3";
 package pb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "pb/node.proto";
 
 option (gogoproto.gostring_all) = true;
 option (gogoproto.goproto_stringer_all) = false;
@@ -19,6 +20,7 @@ enum MessageType {
   VOTE = 0;
   I_HAVE_BLOCK = 1;
   REQUEST_BLOCK = 2;
+  GET_CONSENSUS_STATE = 3;
 }
 
 message UnsignedMessage {
@@ -47,4 +49,14 @@ message RequestBlock {
 
 message RequestBlockReply {
   bytes block = 1;
+}
+
+message GetConsensusState {
+}
+
+message GetConsensusStateReply {
+  uint32 ledger_height = 1;
+  bytes ledger_block_hash = 2;
+  uint32 consensus_height = 3;
+  SyncState sync_state = 4;
 }

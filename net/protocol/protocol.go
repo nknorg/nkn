@@ -24,18 +24,8 @@ const (
 	INACTIVITY = 5
 )
 
-type SyncState byte
-
-const (
-	SyncStarted     SyncState = 0
-	SyncFinished    SyncState = 1
-	PersistFinished SyncState = 2
-)
-
-// SyncStateString is the string of SyncState enum
-var SyncStateString = []string{"SyncStarted", "SyncFinished", "PersistFinished"}
-
 type Noder interface {
+	Start() error
 	Version() uint32
 	GetID() uint64
 	GetAddr() string
@@ -46,8 +36,9 @@ type Noder interface {
 	//TODO SetHttpJsonPort(uint16)
 	GetWsPort() uint16
 	//TODO SetWsPort(uint16)
-	GetSyncState() SyncState
-	SetSyncState(s SyncState)
+	GetSyncState() pb.SyncState
+	SetSyncState(pb.SyncState)
+	GetSyncStopHash() (hash Uint256)
 	SetSyncStopHash(hash Uint256, height uint32)
 	SyncBlock(bool)
 	SyncBlockMonitor(bool)
@@ -64,7 +55,6 @@ type Noder interface {
 	GetTxnPool() *pool.TxnPool
 	AppendTxnPool(*transaction.Transaction) ErrCode
 	ExistHash(hash Uint256) bool
-	DumpInfo()
 	Tx(buf []byte)
 	SerializeMessage(msg *pb.UnsignedMessage, sign bool) ([]byte, error)
 	SendBytesAsync(buf []byte) error

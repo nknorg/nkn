@@ -31,24 +31,27 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 type MessageType int32
 
 const (
-	VOTE          MessageType = 0
-	I_HAVE_BLOCK  MessageType = 1
-	REQUEST_BLOCK MessageType = 2
+	VOTE                MessageType = 0
+	I_HAVE_BLOCK        MessageType = 1
+	REQUEST_BLOCK       MessageType = 2
+	GET_CONSENSUS_STATE MessageType = 3
 )
 
 var MessageType_name = map[int32]string{
 	0: "VOTE",
 	1: "I_HAVE_BLOCK",
 	2: "REQUEST_BLOCK",
+	3: "GET_CONSENSUS_STATE",
 }
 var MessageType_value = map[string]int32{
-	"VOTE":          0,
-	"I_HAVE_BLOCK":  1,
-	"REQUEST_BLOCK": 2,
+	"VOTE":                0,
+	"I_HAVE_BLOCK":        1,
+	"REQUEST_BLOCK":       2,
+	"GET_CONSENSUS_STATE": 3,
 }
 
 func (MessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_message_0756624330455479, []int{0}
+	return fileDescriptor_message_bf987f34f187f6b2, []int{0}
 }
 
 type UnsignedMessage struct {
@@ -59,7 +62,7 @@ type UnsignedMessage struct {
 func (m *UnsignedMessage) Reset()      { *m = UnsignedMessage{} }
 func (*UnsignedMessage) ProtoMessage() {}
 func (*UnsignedMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_0756624330455479, []int{0}
+	return fileDescriptor_message_bf987f34f187f6b2, []int{0}
 }
 func (m *UnsignedMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -110,7 +113,7 @@ type SignedMessage struct {
 func (m *SignedMessage) Reset()      { *m = SignedMessage{} }
 func (*SignedMessage) ProtoMessage() {}
 func (*SignedMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_0756624330455479, []int{1}
+	return fileDescriptor_message_bf987f34f187f6b2, []int{1}
 }
 func (m *SignedMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -161,7 +164,7 @@ type Vote struct {
 func (m *Vote) Reset()      { *m = Vote{} }
 func (*Vote) ProtoMessage() {}
 func (*Vote) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_0756624330455479, []int{2}
+	return fileDescriptor_message_bf987f34f187f6b2, []int{2}
 }
 func (m *Vote) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -212,7 +215,7 @@ type IHaveBlock struct {
 func (m *IHaveBlock) Reset()      { *m = IHaveBlock{} }
 func (*IHaveBlock) ProtoMessage() {}
 func (*IHaveBlock) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_0756624330455479, []int{3}
+	return fileDescriptor_message_bf987f34f187f6b2, []int{3}
 }
 func (m *IHaveBlock) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -262,7 +265,7 @@ type RequestBlock struct {
 func (m *RequestBlock) Reset()      { *m = RequestBlock{} }
 func (*RequestBlock) ProtoMessage() {}
 func (*RequestBlock) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_0756624330455479, []int{4}
+	return fileDescriptor_message_bf987f34f187f6b2, []int{4}
 }
 func (m *RequestBlock) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -305,7 +308,7 @@ type RequestBlockReply struct {
 func (m *RequestBlockReply) Reset()      { *m = RequestBlockReply{} }
 func (*RequestBlockReply) ProtoMessage() {}
 func (*RequestBlockReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_0756624330455479, []int{5}
+	return fileDescriptor_message_bf987f34f187f6b2, []int{5}
 }
 func (m *RequestBlockReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -341,6 +344,108 @@ func (m *RequestBlockReply) GetBlock() []byte {
 	return nil
 }
 
+type GetConsensusState struct {
+}
+
+func (m *GetConsensusState) Reset()      { *m = GetConsensusState{} }
+func (*GetConsensusState) ProtoMessage() {}
+func (*GetConsensusState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_message_bf987f34f187f6b2, []int{6}
+}
+func (m *GetConsensusState) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetConsensusState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetConsensusState.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetConsensusState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetConsensusState.Merge(dst, src)
+}
+func (m *GetConsensusState) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetConsensusState) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetConsensusState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetConsensusState proto.InternalMessageInfo
+
+type GetConsensusStateReply struct {
+	LedgerHeight    uint32    `protobuf:"varint,1,opt,name=ledger_height,json=ledgerHeight,proto3" json:"ledger_height,omitempty"`
+	LedgerBlockHash []byte    `protobuf:"bytes,2,opt,name=ledger_block_hash,json=ledgerBlockHash,proto3" json:"ledger_block_hash,omitempty"`
+	ConsensusHeight uint32    `protobuf:"varint,3,opt,name=consensus_height,json=consensusHeight,proto3" json:"consensus_height,omitempty"`
+	SyncState       SyncState `protobuf:"varint,4,opt,name=sync_state,json=syncState,proto3,enum=pb.SyncState" json:"sync_state,omitempty"`
+}
+
+func (m *GetConsensusStateReply) Reset()      { *m = GetConsensusStateReply{} }
+func (*GetConsensusStateReply) ProtoMessage() {}
+func (*GetConsensusStateReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_message_bf987f34f187f6b2, []int{7}
+}
+func (m *GetConsensusStateReply) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetConsensusStateReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetConsensusStateReply.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetConsensusStateReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetConsensusStateReply.Merge(dst, src)
+}
+func (m *GetConsensusStateReply) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetConsensusStateReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetConsensusStateReply.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetConsensusStateReply proto.InternalMessageInfo
+
+func (m *GetConsensusStateReply) GetLedgerHeight() uint32 {
+	if m != nil {
+		return m.LedgerHeight
+	}
+	return 0
+}
+
+func (m *GetConsensusStateReply) GetLedgerBlockHash() []byte {
+	if m != nil {
+		return m.LedgerBlockHash
+	}
+	return nil
+}
+
+func (m *GetConsensusStateReply) GetConsensusHeight() uint32 {
+	if m != nil {
+		return m.ConsensusHeight
+	}
+	return 0
+}
+
+func (m *GetConsensusStateReply) GetSyncState() SyncState {
+	if m != nil {
+		return m.SyncState
+	}
+	return SyncStarted
+}
+
 func init() {
 	proto.RegisterType((*UnsignedMessage)(nil), "pb.UnsignedMessage")
 	proto.RegisterType((*SignedMessage)(nil), "pb.SignedMessage")
@@ -348,6 +453,8 @@ func init() {
 	proto.RegisterType((*IHaveBlock)(nil), "pb.IHaveBlock")
 	proto.RegisterType((*RequestBlock)(nil), "pb.RequestBlock")
 	proto.RegisterType((*RequestBlockReply)(nil), "pb.RequestBlockReply")
+	proto.RegisterType((*GetConsensusState)(nil), "pb.GetConsensusState")
+	proto.RegisterType((*GetConsensusStateReply)(nil), "pb.GetConsensusStateReply")
 	proto.RegisterEnum("pb.MessageType", MessageType_name, MessageType_value)
 }
 func (x MessageType) String() string {
@@ -513,6 +620,60 @@ func (this *RequestBlockReply) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetConsensusState) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetConsensusState)
+	if !ok {
+		that2, ok := that.(GetConsensusState)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *GetConsensusStateReply) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetConsensusStateReply)
+	if !ok {
+		that2, ok := that.(GetConsensusStateReply)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.LedgerHeight != that1.LedgerHeight {
+		return false
+	}
+	if !bytes.Equal(this.LedgerBlockHash, that1.LedgerBlockHash) {
+		return false
+	}
+	if this.ConsensusHeight != that1.ConsensusHeight {
+		return false
+	}
+	if this.SyncState != that1.SyncState {
+		return false
+	}
+	return true
+}
 func (this *UnsignedMessage) GoString() string {
 	if this == nil {
 		return "nil"
@@ -574,6 +735,28 @@ func (this *RequestBlockReply) GoString() string {
 	s := make([]string, 0, 5)
 	s = append(s, "&pb.RequestBlockReply{")
 	s = append(s, "Block: "+fmt.Sprintf("%#v", this.Block)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetConsensusState) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&pb.GetConsensusState{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetConsensusStateReply) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&pb.GetConsensusStateReply{")
+	s = append(s, "LedgerHeight: "+fmt.Sprintf("%#v", this.LedgerHeight)+",\n")
+	s = append(s, "LedgerBlockHash: "+fmt.Sprintf("%#v", this.LedgerBlockHash)+",\n")
+	s = append(s, "ConsensusHeight: "+fmt.Sprintf("%#v", this.ConsensusHeight)+",\n")
+	s = append(s, "SyncState: "+fmt.Sprintf("%#v", this.SyncState)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -750,6 +933,63 @@ func (m *RequestBlockReply) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *GetConsensusState) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetConsensusState) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
+func (m *GetConsensusStateReply) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetConsensusStateReply) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.LedgerHeight != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintMessage(dAtA, i, uint64(m.LedgerHeight))
+	}
+	if len(m.LedgerBlockHash) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintMessage(dAtA, i, uint64(len(m.LedgerBlockHash)))
+		i += copy(dAtA[i:], m.LedgerBlockHash)
+	}
+	if m.ConsensusHeight != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintMessage(dAtA, i, uint64(m.ConsensusHeight))
+	}
+	if m.SyncState != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintMessage(dAtA, i, uint64(m.SyncState))
+	}
+	return i, nil
+}
+
 func encodeVarintMessage(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -761,7 +1001,7 @@ func encodeVarintMessage(dAtA []byte, offset int, v uint64) int {
 }
 func NewPopulatedUnsignedMessage(r randyMessage, easy bool) *UnsignedMessage {
 	this := &UnsignedMessage{}
-	this.MessageType = MessageType([]int32{0, 1, 2}[r.Intn(3)])
+	this.MessageType = MessageType([]int32{0, 1, 2, 3}[r.Intn(4)])
 	v1 := r.Intn(100)
 	this.Message = make([]byte, v1)
 	for i := 0; i < v1; i++ {
@@ -839,6 +1079,28 @@ func NewPopulatedRequestBlockReply(r randyMessage, easy bool) *RequestBlockReply
 	return this
 }
 
+func NewPopulatedGetConsensusState(r randyMessage, easy bool) *GetConsensusState {
+	this := &GetConsensusState{}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedGetConsensusStateReply(r randyMessage, easy bool) *GetConsensusStateReply {
+	this := &GetConsensusStateReply{}
+	this.LedgerHeight = uint32(r.Uint32())
+	v8 := r.Intn(100)
+	this.LedgerBlockHash = make([]byte, v8)
+	for i := 0; i < v8; i++ {
+		this.LedgerBlockHash[i] = byte(r.Intn(256))
+	}
+	this.ConsensusHeight = uint32(r.Uint32())
+	this.SyncState = SyncState([]int32{0, 1, 2, 3}[r.Intn(4)])
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
 type randyMessage interface {
 	Float32() float32
 	Float64() float64
@@ -858,9 +1120,9 @@ func randUTF8RuneMessage(r randyMessage) rune {
 	return rune(ru + 61)
 }
 func randStringMessage(r randyMessage) string {
-	v8 := r.Intn(100)
-	tmps := make([]rune, v8)
-	for i := 0; i < v8; i++ {
+	v9 := r.Intn(100)
+	tmps := make([]rune, v9)
+	for i := 0; i < v9; i++ {
 		tmps[i] = randUTF8RuneMessage(r)
 	}
 	return string(tmps)
@@ -882,11 +1144,11 @@ func randFieldMessage(dAtA []byte, r randyMessage, fieldNumber int, wire int) []
 	switch wire {
 	case 0:
 		dAtA = encodeVarintPopulateMessage(dAtA, uint64(key))
-		v9 := r.Int63()
+		v10 := r.Int63()
 		if r.Intn(2) == 0 {
-			v9 *= -1
+			v10 *= -1
 		}
-		dAtA = encodeVarintPopulateMessage(dAtA, uint64(v9))
+		dAtA = encodeVarintPopulateMessage(dAtA, uint64(v10))
 	case 1:
 		dAtA = encodeVarintPopulateMessage(dAtA, uint64(key))
 		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
@@ -1002,6 +1264,37 @@ func (m *RequestBlockReply) Size() (n int) {
 	return n
 }
 
+func (m *GetConsensusState) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *GetConsensusStateReply) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.LedgerHeight != 0 {
+		n += 1 + sovMessage(uint64(m.LedgerHeight))
+	}
+	l = len(m.LedgerBlockHash)
+	if l > 0 {
+		n += 1 + l + sovMessage(uint64(l))
+	}
+	if m.ConsensusHeight != 0 {
+		n += 1 + sovMessage(uint64(m.ConsensusHeight))
+	}
+	if m.SyncState != 0 {
+		n += 1 + sovMessage(uint64(m.SyncState))
+	}
+	return n
+}
+
 func sovMessage(x uint64) (n int) {
 	for {
 		n++
@@ -1075,6 +1368,28 @@ func (this *RequestBlockReply) String() string {
 	}
 	s := strings.Join([]string{`&RequestBlockReply{`,
 		`Block:` + fmt.Sprintf("%v", this.Block) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetConsensusState) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetConsensusState{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetConsensusStateReply) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetConsensusStateReply{`,
+		`LedgerHeight:` + fmt.Sprintf("%v", this.LedgerHeight) + `,`,
+		`LedgerBlockHash:` + fmt.Sprintf("%v", this.LedgerBlockHash) + `,`,
+		`ConsensusHeight:` + fmt.Sprintf("%v", this.ConsensusHeight) + `,`,
+		`SyncState:` + fmt.Sprintf("%v", this.SyncState) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1661,6 +1976,194 @@ func (m *RequestBlockReply) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *GetConsensusState) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMessage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetConsensusState: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetConsensusState: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMessage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMessage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetConsensusStateReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMessage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetConsensusStateReply: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetConsensusStateReply: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LedgerHeight", wireType)
+			}
+			m.LedgerHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LedgerHeight |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LedgerBlockHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthMessage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LedgerBlockHash = append(m.LedgerBlockHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.LedgerBlockHash == nil {
+				m.LedgerBlockHash = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsensusHeight", wireType)
+			}
+			m.ConsensusHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ConsensusHeight |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SyncState", wireType)
+			}
+			m.SyncState = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SyncState |= (SyncState(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMessage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMessage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipMessage(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1766,32 +2269,40 @@ var (
 	ErrIntOverflowMessage   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/message.proto", fileDescriptor_message_0756624330455479) }
+func init() { proto.RegisterFile("pb/message.proto", fileDescriptor_message_bf987f34f187f6b2) }
 
-var fileDescriptor_message_0756624330455479 = []byte{
-	// 376 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0xcf, 0x4e, 0xea, 0x40,
-	0x1c, 0x85, 0x3b, 0x84, 0xcb, 0xbd, 0xf7, 0x47, 0x91, 0x32, 0x31, 0x86, 0x18, 0x9d, 0x90, 0xae,
-	0xd0, 0x84, 0x92, 0xe0, 0x16, 0x17, 0x42, 0x1a, 0x21, 0x6a, 0x88, 0xe5, 0xcf, 0xb6, 0x69, 0x71,
-	0x6c, 0x89, 0x40, 0x2b, 0x6d, 0x4d, 0xd8, 0xf9, 0x08, 0x3e, 0x86, 0x8f, 0xe0, 0x23, 0xb8, 0x64,
-	0xc9, 0xd2, 0x0e, 0x1b, 0x97, 0x2c, 0x5d, 0x1a, 0xa6, 0x25, 0x80, 0x4b, 0x77, 0xfd, 0x4e, 0xbf,
-	0x73, 0x32, 0x99, 0x0c, 0x48, 0xae, 0x59, 0x1e, 0x51, 0xcf, 0x33, 0x2c, 0xaa, 0xb8, 0x13, 0xc7,
-	0x77, 0x70, 0xc2, 0x35, 0x0f, 0x4b, 0xd6, 0xc0, 0xb7, 0x03, 0x53, 0xe9, 0x3b, 0xa3, 0xb2, 0xe5,
-	0x58, 0x4e, 0x99, 0xff, 0x32, 0x83, 0x7b, 0x4e, 0x1c, 0xf8, 0x57, 0x54, 0x91, 0x75, 0xc8, 0x76,
-	0xc7, 0xde, 0xc0, 0x1a, 0xd3, 0xbb, 0x9b, 0x68, 0x0b, 0x57, 0x40, 0x8c, 0x67, 0x75, 0x7f, 0xea,
-	0xd2, 0x3c, 0x2a, 0xa0, 0xe2, 0x5e, 0x25, 0xab, 0xb8, 0xa6, 0x12, 0x2b, 0x9d, 0xa9, 0x4b, 0xb5,
-	0xf4, 0x68, 0x03, 0x38, 0x0f, 0x7f, 0x63, 0xcc, 0x27, 0x0a, 0xa8, 0x28, 0x6a, 0x6b, 0x94, 0x2f,
-	0x21, 0xd3, 0xde, 0x99, 0xdf, 0x52, 0xd1, 0x8e, 0x8a, 0x8f, 0xe0, 0xff, 0xea, 0x24, 0x86, 0x1f,
-	0x4c, 0xd6, 0x33, 0x9b, 0x40, 0x3e, 0x87, 0x64, 0xcf, 0xf1, 0x29, 0x3e, 0x80, 0x94, 0x4d, 0x07,
-	0x96, 0xed, 0xf3, 0x7a, 0x46, 0x8b, 0x09, 0x1f, 0x03, 0x98, 0x43, 0xa7, 0xff, 0xa0, 0xdb, 0x86,
-	0x67, 0xaf, 0xeb, 0x3c, 0x69, 0x18, 0x9e, 0x2d, 0xd7, 0x01, 0x9a, 0x0d, 0xe3, 0x89, 0xd6, 0x56,
-	0xc9, 0x6f, 0x47, 0x4a, 0x20, 0x6a, 0xf4, 0x31, 0xa0, 0x9e, 0x1f, 0xcd, 0xec, 0xea, 0xe8, 0xa7,
-	0x7e, 0x02, 0xb9, 0x6d, 0x5d, 0xa3, 0xee, 0x70, 0x8a, 0xf7, 0xe1, 0x0f, 0x37, 0x62, 0x3d, 0x82,
-	0xd3, 0x2a, 0xa4, 0xb7, 0x2e, 0x17, 0xff, 0x83, 0x64, 0xaf, 0xd5, 0x51, 0x25, 0x01, 0x4b, 0x20,
-	0x36, 0xf5, 0xc6, 0x45, 0x4f, 0xd5, 0x6b, 0xd7, 0xad, 0xfa, 0x95, 0x84, 0x70, 0x0e, 0x32, 0x9a,
-	0x7a, 0xdb, 0x55, 0xdb, 0x9d, 0x38, 0x4a, 0xd4, 0xaa, 0xb3, 0x90, 0x08, 0xf3, 0x90, 0x08, 0xcb,
-	0x90, 0xa0, 0xaf, 0x90, 0xa0, 0x67, 0x46, 0xd0, 0x2b, 0x23, 0xe8, 0x8d, 0x11, 0xf4, 0xce, 0x08,
-	0x9a, 0x31, 0x82, 0x3e, 0x18, 0x41, 0x9f, 0x8c, 0x08, 0x4b, 0x46, 0xd0, 0xcb, 0x82, 0x08, 0xb3,
-	0x05, 0x11, 0xe6, 0x0b, 0x22, 0x98, 0x29, 0xfe, 0x14, 0xce, 0xbe, 0x03, 0x00, 0x00, 0xff, 0xff,
-	0xf3, 0x03, 0x99, 0x40, 0x51, 0x02, 0x00, 0x00,
+var fileDescriptor_message_bf987f34f187f6b2 = []byte{
+	// 501 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0x31, 0x6f, 0xd3, 0x40,
+	0x14, 0xc7, 0x7d, 0x69, 0x28, 0xf4, 0xd5, 0x26, 0xce, 0x15, 0x95, 0xa8, 0x82, 0x53, 0x65, 0x96,
+	0xb6, 0xa2, 0x89, 0x54, 0x56, 0x18, 0x9a, 0xc8, 0x4a, 0x2a, 0xa0, 0x11, 0xb6, 0x93, 0xd5, 0xb2,
+	0x9d, 0xc3, 0x8e, 0x48, 0x6c, 0x93, 0x3b, 0x23, 0x79, 0xe3, 0x23, 0xf0, 0x31, 0xf8, 0x08, 0xcc,
+	0x4c, 0x8c, 0x19, 0x3b, 0x12, 0x67, 0x61, 0xec, 0xc8, 0x88, 0x72, 0xb6, 0x69, 0x42, 0x36, 0xb6,
+	0xfb, 0xff, 0xef, 0xff, 0x7e, 0xef, 0x3d, 0xe9, 0x81, 0x1a, 0xbb, 0xad, 0x29, 0x65, 0xcc, 0xf1,
+	0x69, 0x33, 0x9e, 0x45, 0x3c, 0xc2, 0x95, 0xd8, 0x3d, 0x3a, 0xf7, 0xc7, 0x3c, 0x48, 0xdc, 0xa6,
+	0x17, 0x4d, 0x5b, 0x7e, 0xe4, 0x47, 0x2d, 0xf1, 0xe5, 0x26, 0xef, 0x85, 0x12, 0x42, 0xbc, 0xf2,
+	0x92, 0x23, 0x25, 0x76, 0x5b, 0x61, 0x34, 0x2a, 0x08, 0x9a, 0x0d, 0xb5, 0x41, 0xc8, 0xc6, 0x7e,
+	0x48, 0x47, 0x6f, 0x73, 0x34, 0xbe, 0x00, 0xb9, 0xe8, 0x62, 0xf3, 0x34, 0xa6, 0x0d, 0x74, 0x8c,
+	0x4e, 0x1e, 0x5e, 0xd4, 0x9a, 0xb1, 0xdb, 0x2c, 0x22, 0x56, 0x1a, 0x53, 0x63, 0x7f, 0x7a, 0x27,
+	0x70, 0x03, 0xee, 0x17, 0xb2, 0x51, 0x39, 0x46, 0x27, 0xb2, 0x51, 0x4a, 0xad, 0x0b, 0x8a, 0xb9,
+	0x81, 0x5f, 0x8b, 0xa2, 0x8d, 0x28, 0x7e, 0x02, 0x7b, 0xab, 0x49, 0x1c, 0x9e, 0xcc, 0x4a, 0xcc,
+	0x9d, 0xa1, 0xbd, 0x82, 0xea, 0x30, 0xe2, 0x14, 0x1f, 0xc2, 0x6e, 0x40, 0xc7, 0x7e, 0xc0, 0x45,
+	0xb9, 0x62, 0x14, 0x0a, 0x3f, 0x05, 0x70, 0x27, 0x91, 0xf7, 0xc1, 0x0e, 0x1c, 0x16, 0x94, 0xe5,
+	0xc2, 0xe9, 0x39, 0x2c, 0xd0, 0x3a, 0x00, 0x57, 0x3d, 0xe7, 0x13, 0x6d, 0xaf, 0x9c, 0xff, 0x85,
+	0x9c, 0x83, 0x6c, 0xd0, 0x8f, 0x09, 0x65, 0x3c, 0xc7, 0x6c, 0xc6, 0xd1, 0xbf, 0xf1, 0x53, 0xa8,
+	0xaf, 0xc7, 0x0d, 0x1a, 0x4f, 0x52, 0xfc, 0x08, 0xee, 0x89, 0x44, 0x11, 0xcf, 0x85, 0x76, 0x00,
+	0xf5, 0x2e, 0xe5, 0x9d, 0x28, 0x64, 0x34, 0x64, 0x09, 0x33, 0xb9, 0xc3, 0xa9, 0xf6, 0x1d, 0xc1,
+	0xe1, 0x96, 0x9b, 0x53, 0x9e, 0x81, 0x32, 0xa1, 0x23, 0x9f, 0xce, 0xec, 0x8d, 0x3d, 0xe4, 0xdc,
+	0xec, 0xe5, 0xdb, 0x9c, 0x41, 0xbd, 0x08, 0x6d, 0x2d, 0x55, 0xcb, 0x3f, 0xda, 0xe5, 0xac, 0xf8,
+	0x14, 0x54, 0xaf, 0xec, 0x53, 0x32, 0x77, 0x04, 0xb3, 0xf6, 0xd7, 0x2f, 0xb0, 0xcf, 0x01, 0x58,
+	0x1a, 0x7a, 0x36, 0x5b, 0x8d, 0xd3, 0xa8, 0x8a, 0xf3, 0x50, 0x56, 0xe7, 0x61, 0xa6, 0xa1, 0x97,
+	0xcf, 0xb8, 0xc7, 0xca, 0xe7, 0xd9, 0x00, 0xf6, 0xd7, 0xce, 0x06, 0x3f, 0x80, 0xea, 0xb0, 0x6f,
+	0xe9, 0xaa, 0x84, 0x55, 0x90, 0xaf, 0xec, 0xde, 0xe5, 0x50, 0xb7, 0xdb, 0x6f, 0xfa, 0x9d, 0xd7,
+	0x2a, 0xc2, 0x75, 0x50, 0x0c, 0xfd, 0xdd, 0x40, 0x37, 0xad, 0xc2, 0xaa, 0xe0, 0xc7, 0x70, 0xd0,
+	0xd5, 0x2d, 0xbb, 0xd3, 0xbf, 0x36, 0xf5, 0x6b, 0x73, 0x60, 0xda, 0xa6, 0x75, 0x69, 0xe9, 0xea,
+	0x4e, 0xfb, 0xe5, 0x7c, 0x41, 0xa4, 0x9b, 0x05, 0x91, 0x6e, 0x17, 0x04, 0xfd, 0x5e, 0x10, 0xf4,
+	0x39, 0x23, 0xe8, 0x6b, 0x46, 0xd0, 0xb7, 0x8c, 0xa0, 0x1f, 0x19, 0x41, 0xf3, 0x8c, 0xa0, 0x9f,
+	0x19, 0x41, 0xbf, 0x32, 0x22, 0xdd, 0x66, 0x04, 0x7d, 0x59, 0x12, 0x69, 0xbe, 0x24, 0xd2, 0xcd,
+	0x92, 0x48, 0xee, 0xae, 0xb8, 0xfe, 0x17, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x37, 0xc3, 0x63,
+	0xc7, 0x53, 0x03, 0x00, 0x00,
 }
