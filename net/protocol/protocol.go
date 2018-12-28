@@ -108,7 +108,7 @@ type ChordNodeInfo struct {
 	ID         string
 	Addr       string
 	IsOutbound bool
-	protobuf.NodeData
+	pb.NodeData
 }
 
 type NodeAddr struct {
