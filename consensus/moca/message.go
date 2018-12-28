@@ -85,6 +85,34 @@ func NewRequestBlockReply(block *ledger.Block) (*pb.RequestBlockReply, error) {
 	return msg, nil
 }
 
+// NewGetConsensusStateMessage creates a GET_CONSENSUS_STATE message
+func NewGetConsensusStateMessage() (*pb.UnsignedMessage, error) {
+	msgBody := &pb.GetConsensusState{}
+
+	buf, err := proto.Marshal(msgBody)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := &pb.UnsignedMessage{
+		MessageType: pb.GET_CONSENSUS_STATE,
+		Message:     buf,
+	}
+
+	return msg, nil
+}
+
+// NewGetConsensusStateReply creates a GET_CONSENSUS_STATE reply
+func NewGetConsensusStateReply(ledgerHeight uint32, ledgerBlockHash common.Uint256, consensusHeight uint32, syncState pb.SyncState) (*pb.GetConsensusStateReply, error) {
+	msg := &pb.GetConsensusStateReply{
+		LedgerHeight:    ledgerHeight,
+		LedgerBlockHash: ledgerBlockHash[:],
+		ConsensusHeight: consensusHeight,
+		SyncState:       syncState,
+	}
+	return msg, nil
+}
+
 func (consensus *Consensus) registerMessageHandler() {
 	message.AddHandler(pb.VOTE, func(remoteMessage *message.RemoteMessage) ([]byte, bool, error) {
 		msgBody := &pb.Vote{}
@@ -98,7 +126,7 @@ func (consensus *Consensus) registerMessageHandler() {
 			return nil, false, err
 		}
 
-		err = consensus.ReceiveVote(remoteMessage.Sender.GetID(), msgBody.Height, blockHash)
+		err = consensus.receiveVote(remoteMessage.Sender.GetID(), msgBody.Height, blockHash)
 		if err != nil {
 			return nil, false, err
 		}
@@ -118,7 +146,7 @@ func (consensus *Consensus) registerMessageHandler() {
 			return nil, false, err
 		}
 
-		err = consensus.ReceiveBlockHash(remoteMessage.Sender.GetID(), msgBody.Height, blockHash)
+		err = consensus.receiveProposalHash(remoteMessage.Sender.GetID(), msgBody.Height, blockHash)
 		if err != nil {
 			return nil, false, err
 		}
@@ -164,6 +192,21 @@ func (consensus *Consensus) registerMessageHandler() {
 		}
 
 		replyBuf, err = proto.Marshal(replyMsg)
+		return replyBuf, false, err
+	})
+
+	message.AddHandler(pb.GET_CONSENSUS_STATE, func(remoteMessage *message.RemoteMessage) ([]byte, bool, error) {
+		ledgerHeight := ledger.DefaultLedger.Store.GetHeight()
+		ledgerBlockHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(ledgerHeight)
+		consensusHeight := consensus.GetExpectedHeight()
+		syncState := consensus.localNode.GetSyncState()
+
+		replyMsg, err := NewGetConsensusStateReply(ledgerHeight, ledgerBlockHash, consensusHeight, syncState)
+		if err != nil {
+			return nil, false, err
+		}
+
+		replyBuf, err := proto.Marshal(replyMsg)
 		return replyBuf, false, err
 	})
 }
