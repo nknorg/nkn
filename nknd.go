@@ -229,6 +229,8 @@ func nknMain(c *cli.Context) error {
 
 	go ws.Start()
 
+	go hp.Start()
+
 	consensus, err := moca.NewConsensus(account, node)
 	if err != nil {
 		return err
