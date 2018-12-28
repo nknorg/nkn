@@ -4,17 +4,9 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
-)
-
-const (
-	maxNumTxnPerBlock   = 20480
-	proposingStartDelay = config.ProposerChangeTime + time.Second
 )
 
 // startProposing starts the proposing routing
@@ -38,7 +30,7 @@ func (consensus *Consensus) startProposing() {
 				blockHash := block.Header.Hash()
 				log.Infof("Propose block %s at height %d", blockHash.ToHexString(), expectedHeight)
 
-				err = consensus.ReceiveProposal(block)
+				err = consensus.receiveProposal(block)
 				if err != nil {
 					log.Error(err)
 					break
@@ -51,6 +43,8 @@ func (consensus *Consensus) startProposing() {
 	}
 }
 
+// isBlockProposer returns if local node is the block proposer of block height+1
+// at a given timestamp
 func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool {
 	nextPublicKey, nextChordID, _, err := ledger.GetNextBlockSigner(height, timestamp)
 	if err != nil {
@@ -75,6 +69,7 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 	return true
 }
 
+// proposeBlock proposes a new block at give height and timestamp
 func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*ledger.Block, error) {
 	winnerHash, winnerType, err := ledger.GetWinner(height)
 	if err != nil {
@@ -82,13 +77,4 @@ func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*ledge
 	}
 
 	return consensus.mining.BuildBlock(height, consensus.localNode.GetChordAddr(), winnerHash, winnerType, timestamp)
-}
-
-func (consensus *Consensus) getTxnByHash(txnHash common.Uint256) (*transaction.Transaction, error) {
-	txnInPool := consensus.txnCollector.GetTransaction(txnHash)
-	if txnInPool != nil {
-		return txnInPool, nil
-	}
-
-	return ledger.DefaultLedger.Store.GetTransaction(txnHash)
 }

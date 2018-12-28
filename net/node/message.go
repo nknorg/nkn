@@ -106,6 +106,7 @@ func handleMessage(sender protocol.Noder, signedMsg *pb.SignedMessage, routingTy
 		case pb.VOTE:
 		case pb.I_HAVE_BLOCK:
 		case pb.REQUEST_BLOCK:
+		case pb.GET_CONSENSUS_STATE:
 		default:
 			return nil, fmt.Errorf("message of type %v is not allowed for routing type %v", unsignedMsg.MessageType, routingType)
 		}
@@ -123,7 +124,6 @@ func handleMessage(sender protocol.Noder, signedMsg *pb.SignedMessage, routingTy
 		return nil, fmt.Errorf("message of type %v is not allowed for routing type %v", unsignedMsg.MessageType, routingType)
 	}
 
-	// TODO: handle consensus msg
 	remoteMessage := &message.RemoteMessage{
 		Sender:  sender,
 		Message: unsignedMsg.Message,
