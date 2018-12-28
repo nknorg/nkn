@@ -117,13 +117,19 @@ func Init() error {
 			}
 			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 
-			externalPort, internalPort, err = nat.AddPortMapping("tcp", int(Parameters.HttpWsPort), int(Parameters.HttpWsPort), "nkn", 10*time.Second)
+			externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(Parameters.HttpWsPort), int(Parameters.HttpWsPort), "nkn", 10*time.Second)
 			if err != nil {
 				return err
 			}
 			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 
-			externalPort, internalPort, err = nat.AddPortMapping("tcp", int(Parameters.HttpJsonPort), int(Parameters.HttpJsonPort), "nkn", 10*time.Second)
+			externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(Parameters.HttpJsonPort), int(Parameters.HttpJsonPort), "nkn", 10*time.Second)
+			if err != nil {
+				return err
+			}
+			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
+			externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(Parameters.HttpProxyPort), int(Parameters.HttpProxyPort), "nkn", 10*time.Second)
 			if err != nil {
 				return err
 			}
@@ -187,6 +193,7 @@ func (config *Configuration) IncrementPort() {
 		config.NodePort,
 		config.HttpWsPort,
 		config.HttpJsonPort,
+		config.HttpProxyPort,
 	}
 	minPort, maxPort := findMinMaxPort(allPorts)
 	step := maxPort - minPort + 1
@@ -218,6 +225,7 @@ func (config *Configuration) IncrementPort() {
 	config.NodePort += delta
 	config.HttpWsPort += delta
 	config.HttpJsonPort += delta
+	config.HttpProxyPort += delta
 	if delta > 0 {
 		log.Println("Port in use! All ports are automatically increased by", delta)
 	}
@@ -239,6 +247,7 @@ func (config *Configuration) CheckPorts(myIP string) (bool, error) {
 		config.NodePort,
 		config.HttpWsPort,
 		config.HttpJsonPort,
+		config.HttpProxyPort,
 	}
 	for _, port := range allPorts {
 		log.Printf("Checking TCP port %d", port)
