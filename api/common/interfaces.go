@@ -14,6 +14,7 @@ import (
 	"github.com/nknorg/nkn/errors"
 	netcomm "github.com/nknorg/nkn/net/common"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
@@ -336,7 +337,7 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 
 	key, _ := node.GetPubKey().EncodePoint(true)
 	n := netcomm.NodeInfo{
-		SyncState: protocol.SyncStateString[node.GetSyncState()],
+		SyncState: node.GetSyncState().String(),
 		Time:      node.GetTime(),
 		Addr:      node.GetAddrStr(),
 		JsonPort:  node.GetHttpJsonPort(),
@@ -764,7 +765,7 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 	}
 
 	mining := false
-	if node.GetSyncState() == protocol.PersistFinished {
+	if node.GetSyncState() == pb.PersistFinished {
 		mining = true
 	}
 	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], srcID,

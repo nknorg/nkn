@@ -1,13 +1,9 @@
 package node
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/url"
 	"strconv"
@@ -51,7 +47,7 @@ const (
 )
 
 type node struct {
-	sync.Mutex
+	sync.RWMutex
 	pb.NodeData
 	id            uint64         // node ID
 	version       uint32         // network protocol version
@@ -66,7 +62,7 @@ type node struct {
 	nnetNode      *nnetnode.RemoteNode
 	relayer       *relay.RelayService // relay service
 	syncStopHash  Uint256             // block syncing stop hash
-	syncState     SyncState           // block syncing state
+	syncState     pb.SyncState        // block syncing state
 	quit          chan bool           // block syncing channel
 	nbrNodes                          // neighbor nodes
 	eventQueue                        // event queue
@@ -74,49 +70,12 @@ type node struct {
 	*hashCache                        // entity hash cache
 }
 
-// Generates an ID for the node
-func GenChordID(host string) []byte {
-	hash := sha256.New()
-	hash.Write([]byte(host))
-	return hash.Sum(nil)
-}
-
-func chordIDToNodeID(chordID []byte) (uint64, error) {
-	var nodeID uint64
-	err := binary.Read(bytes.NewBuffer(chordID), binary.LittleEndian, &nodeID)
-	return nodeID, err
-}
-
-func (n *node) getNbrByNNetNode(remoteNode *nnetnode.RemoteNode) Noder {
-	if remoteNode == nil {
-		return nil
-	}
-
-	nodeID, err := chordIDToNodeID(remoteNode.Id)
-	if err != nil {
-		return nil
-	}
-
-	nbr := n.GetNbrNode(nodeID)
-	return nbr
-}
-
-func (node *node) DumpInfo() {
-	log.Info("Node info:")
-	log.Info("\t syncState = ", node.syncState)
-	log.Info(fmt.Sprintf("\t id = 0x%x", node.id))
-	log.Info("\t addr = ", node.GetAddr())
-	log.Info("\t version = ", node.version)
-	log.Info("\t port = ", node.GetPort())
-	log.Info("\t height = ", node.height)
-}
-
 func NewNode() *node {
 	n := node{}
 	return &n
 }
 
-func InitNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
+func NewLocalNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
 	var err error
 
 	n := NewNode()
@@ -142,11 +101,14 @@ func InitNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
 	n.account = account
 	n.publicKey = account.PublicKey
 	n.TxnPool = pool.NewTxnPool()
-	n.syncState = SyncStarted
+	n.syncState = pb.WaitForSyncing
 	n.syncStopHash = Uint256{}
 	n.quit = make(chan bool, 1)
 	n.eventQueue.init()
 	n.hashCache = NewHashCache()
+
+	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, n.cleanupTransactions)
+
 	n.nnet = nn
 
 	nn.GetLocalNode().Node.Data, err = proto.Marshal(&n.NodeData)
@@ -301,27 +263,32 @@ func InitNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
 	return n, nil
 }
 
-func (n *node) AddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+func (node *node) Start() error {
+	go node.startSyncingBlock()
+	return nil
+}
+
+func (node *node) AddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
 	var err error
-	node := NewNode()
-	node.local = n
-	node.nnetNode = remoteNode
-	node.id, err = chordIDToNodeID(remoteNode.Id)
+	n := NewNode()
+	n.local = node
+	n.nnetNode = remoteNode
+	n.id, err = chordIDToNodeID(remoteNode.Id)
 	if err != nil {
 		return err
 	}
 
-	err = proto.Unmarshal(remoteNode.Node.Data, &node.NodeData)
+	err = proto.Unmarshal(remoteNode.Node.Data, &n.NodeData)
 	if err != nil {
 		return err
 	}
 
-	node.publicKey, err = crypto.DecodePoint(node.PublicKey)
+	n.publicKey, err = crypto.DecodePoint(n.PublicKey)
 	if err != nil {
 		return err
 	}
 
-	n.AddNbrNode(node)
+	node.AddNbrNode(n)
 
 	return nil
 }
@@ -373,14 +340,18 @@ func (node *node) GetTxnPool() *pool.TxnPool {
 }
 
 func (node *node) GetHeight() uint32 {
-	if node.nnet != nil { // LocalNode
+	if node.IsLocalNode() {
 		return ledger.DefaultLedger.Store.GetHeight()
 	}
-	return node.height // RemoteNode
+
+	node.RLock()
+	defer node.RUnlock()
+	return node.height
 }
 
 func (node *node) SetHeight(height uint32) {
-	//TODO read/write lock
+	node.Lock()
+	defer node.Unlock()
 	node.height = height
 }
 
@@ -423,7 +394,7 @@ func (node *node) GetAddr16() ([16]byte, error) {
 }
 
 func (node *node) GetAddrStr() string {
-	if node.nnet != nil {
+	if node.IsLocalNode() {
 		return node.nnet.GetLocalNode().Addr
 	}
 	return node.nnetNode.Addr
@@ -444,192 +415,48 @@ func (node *node) GetTime() int64 {
 	return t.UnixNano()
 }
 
-func (node *node) WaitForSyncHeaderFinish(isProposer bool) {
-	if isProposer {
-		for {
-			//TODO: proposer node syncs block from 50% neighbors
-			heights, _ := node.GetNeighborHeights()
-			if CompareHeight(ledger.DefaultLedger.Blockchain.BlockHeight, heights) {
-				break
-			}
-			<-time.After(time.Second)
-		}
-	} else {
-		for {
-			if node.syncStopHash != EmptyUint256 {
-				// return if the stop hash has been saved
-				header, err := ledger.DefaultLedger.Blockchain.GetHeader(node.syncStopHash)
-				if err == nil && header != nil {
-					break
-				}
-			}
-			<-time.After(time.Second)
-		}
-	}
+func (node *node) IsLocalNode() bool {
+	return node.nnet != nil
 }
 
-func (node *node) WaitForSyncBlkFinish() {
-	for {
-		headerHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
-		currentBlkHeight := ledger.DefaultLedger.Blockchain.BlockHeight
-		log.Debug("WaitForSyncBlkFinish... current block height is ", currentBlkHeight, " ,current header height is ", headerHeight)
-		if currentBlkHeight >= headerHeight {
-			break
-		}
-		<-time.After(2 * time.Second)
-	}
-}
-
-func (node *node) StoreFlightHeight(height uint32) {
-	node.flightHeights = append(node.flightHeights, height)
-}
-
-func (node *node) GetFlightHeightCnt() int {
-	return len(node.flightHeights)
-}
-
-func (node *node) GetFlightHeights() []uint32 {
-	return node.flightHeights
-}
-
-func (node *node) RemoveFlightHeightLessThan(h uint32) {
-	heights := node.flightHeights
-	p := len(heights)
-	i := 0
-
-	for i < p {
-		if heights[i] < h {
-			p--
-			heights[p], heights[i] = heights[i], heights[p]
-		} else {
-			i++
-		}
-	}
-	node.flightHeights = heights[:p]
-}
-
-func (node *node) RemoveFlightHeight(height uint32) {
-	node.flightHeights = SliceRemove(node.flightHeights, height)
-}
-
-func (node *node) blockHeaderSyncing(stopHash Uint256) {
-	noders := node.local.GetNeighborNoder()
-	if len(noders) == 0 {
-		return
-	}
-	nodelist := []Noder{}
-	for _, v := range noders {
-		if ledger.DefaultLedger.Store.GetHeaderHeight() < v.GetHeight() {
-			nodelist = append(nodelist, v)
-		}
-	}
-	ncout := len(nodelist)
-	if ncout == 0 {
-		return
-	}
-	index := rand.Intn(ncout)
-	n := nodelist[index]
-	message.SendMsgSyncHeaders(n, stopHash)
-}
-
-func (node *node) blockSyncing() {
-	headerHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
-	currentBlkHeight := ledger.DefaultLedger.Blockchain.BlockHeight
-	if currentBlkHeight >= headerHeight {
-		return
-	}
-	var dValue int32
-	var reqCnt uint32
-	var i uint32
-	noders := node.local.GetNeighborNoder()
-
-	for _, n := range noders {
-		if uint32(n.GetHeight()) <= currentBlkHeight {
-			continue
-		}
-		n.RemoveFlightHeightLessThan(currentBlkHeight)
-		count := MaxReqBlkOnce - uint32(n.GetFlightHeightCnt())
-		dValue = int32(headerHeight - currentBlkHeight - reqCnt)
-		flights := n.GetFlightHeights()
-		if count == 0 {
-			for _, f := range flights {
-				hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(f)
-				if !ledger.DefaultLedger.Store.BlockInCache(hash) {
-					message.ReqBlkData(n, hash)
-				}
-			}
-
-		}
-		for i = 1; i <= count && dValue >= 0; i++ {
-			hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentBlkHeight + reqCnt)
-
-			if !ledger.DefaultLedger.Store.BlockInCache(hash) {
-				message.ReqBlkData(n, hash)
-				n.StoreFlightHeight(currentBlkHeight + reqCnt)
-			}
-			reqCnt++
-			dValue--
-		}
-	}
-}
-
-func (node *node) SyncBlock(isProposer bool) {
-	ticker := time.NewTicker(BlockSyncingTicker)
-	for {
-		select {
-		case <-ticker.C:
-			if isProposer {
-				node.blockHeaderSyncing(EmptyUint256)
-			} else if node.syncStopHash != EmptyUint256 {
-				node.blockHeaderSyncing(node.syncStopHash)
-			}
-			node.blockSyncing()
-		case skip := <-node.quit:
-			log.Info("block syncing finished")
-			ticker.Stop()
-			node.LocalNode().GetEvent("sync").Notify(events.EventBlockSyncingFinished, skip)
-			return
-		}
-	}
-}
-
-func (node *node) StopSyncBlock(skip bool) {
-	// switch syncing state
-	node.SetSyncState(SyncFinished)
-	// stop block syncing
-	node.quit <- skip
-}
-
-func (node *node) SyncBlockMonitor(isProposer bool) {
-	// wait for header syncing finished
-	node.WaitForSyncHeaderFinish(isProposer)
-	// wait for block syncing finished
-	node.WaitForSyncBlkFinish()
-	// stop block syncing
-	node.StopSyncBlock(false)
-}
-
-func (node *node) SendRelayPacketsInBuffer(clientId []byte) error {
+func (node *node) SendRelayPacketsInBuffer(clientID []byte) error {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Error("SendRelayPacketsInBuffer recover:", err)
 		}
 	}()
-	return node.relayer.SendRelayPacketsInBuffer(clientId)
+	return node.relayer.SendRelayPacketsInBuffer(clientID)
 }
 
-func (node *node) GetSyncState() SyncState {
+func (node *node) GetSyncState() pb.SyncState {
+	node.RLock()
+	defer node.RUnlock()
 	return node.syncState
 }
 
-func (node *node) SetSyncState(s SyncState) {
+func (node *node) SetSyncState(s pb.SyncState) {
+	node.Lock()
+	defer node.Unlock()
 	node.syncState = s
+
+	if node.IsLocalNode() {
+		if s == pb.PersistFinished || s == pb.WaitForSyncing {
+			node.syncStopHash = EmptyUint256
+		}
+		log.Infof("Set sync state to %s", s.String())
+	}
+}
+
+func (node *node) GetSyncStopHash() Uint256 {
+	node.RLock()
+	defer node.RUnlock()
+	return node.syncStopHash
 }
 
 func (node *node) SetSyncStopHash(hash Uint256, height uint32) {
 	node.Lock()
 	defer node.Unlock()
-	if node.syncStopHash == EmptyUint256 {
+	if node.syncStopHash == EmptyUint256 && hash != EmptyUint256 {
 		log.Infof("block syncing will stop when receive block: %s, height: %d",
 			BytesToHexString(hash.ToArrayReverse()), height)
 		node.syncStopHash = hash
@@ -641,7 +468,7 @@ func (node *node) GetWsAddr() string {
 }
 
 func (node *node) FindSuccessorAddrs(key []byte, numSucc int) ([]string, error) {
-	if node.nnet == nil {
+	if !node.IsLocalNode() {
 		return nil, errors.New("Node is not local node")
 	}
 
@@ -668,7 +495,7 @@ func (node *node) FindSuccessorAddrs(key []byte, numSucc int) ([]string, error) 
 }
 
 func (node *node) findAddr(key []byte, portSupplier func(nodeData *protobuf.NodeData) uint32) (string, error) {
-	if node.nnet == nil {
+	if !node.IsLocalNode() {
 		return "", errors.New("Node is not local node")
 	}
 
@@ -721,7 +548,7 @@ func (node *node) FindHttpProxyAddr(key []byte) (string, error) {
 }
 
 func (node *node) GetChordAddr() []byte {
-	if node.nnet != nil {
+	if node.IsLocalNode() {
 		return node.nnet.GetLocalNode().Id
 	}
 	return node.nnetNode.Id
@@ -736,7 +563,7 @@ func (node *node) Tx(buf []byte) {
 }
 
 func (node *node) Broadcast(buf []byte) error {
-	if node.nnet == nil {
+	if !node.IsLocalNode() {
 		return errors.New("Node is not local node")
 	}
 
@@ -813,4 +640,10 @@ func (node *node) GetFingerTab() (ret map[int][]*ChordNodeInfo) {
 		}
 	}
 	return ret
+}
+
+func (node *node) cleanupTransactions(v interface{}) {
+	if block, ok := v.(*ledger.Block); ok {
+		node.TxnPool.CleanSubmittedTransactions(block.Transactions)
+	}
 }

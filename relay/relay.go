@@ -15,6 +15,7 @@ import (
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/message"
 	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -57,9 +58,9 @@ func (rs *RelayService) SendPacketToClients(clients []*session.Session, packet *
 	}
 
 	mining := false
-	// if rs.localNode.GetSyncState() == protocol.PersistFinished {
-	mining = true
-	// }
+	if rs.localNode.GetSyncState() == pb.PersistFinished {
+		mining = true
+	}
 	err := rs.porServer.Sign(packet.SigChain, destPubKey, mining)
 	if err != nil {
 		log.Error("Signing signature chain error: ", err)
@@ -198,9 +199,9 @@ func (rs *RelayService) SignRelayPacket(nextHop protocol.Noder, packet *message.
 		return err
 	}
 	mining := false
-	// if rs.localNode.GetSyncState() == protocol.PersistFinished {
-	mining = true
-	// }
+	if rs.localNode.GetSyncState() == pb.PersistFinished {
+		mining = true
+	}
 	err = rs.porServer.Sign(packet.SigChain, nextPubkey, mining)
 	if err != nil {
 		log.Error("Signing signature chain error: ", err)
