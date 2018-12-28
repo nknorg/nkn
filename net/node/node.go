@@ -494,7 +494,7 @@ func (node *node) FindSuccessorAddrs(key []byte, numSucc int) ([]string, error) 
 	return addrs, nil
 }
 
-func (node *node) findAddr(key []byte, portSupplier func(nodeData *protobuf.NodeData) uint32) (string, error) {
+func (node *node) findAddr(key []byte, portSupplier func(nodeData *pb.NodeData) uint32) (string, error) {
 	if !node.IsLocalNode() {
 		return "", errors.New("Node is not local node")
 	}
@@ -536,13 +536,13 @@ func (node *node) findAddr(key []byte, portSupplier func(nodeData *protobuf.Node
 }
 
 func (node *node) FindWsAddr(key []byte) (string, error) {
-	return node.findAddr(key, func(nodeData *protobuf.NodeData) uint32 {
+	return node.findAddr(key, func(nodeData *pb.NodeData) uint32 {
 		return nodeData.WebsocketPort
 	})
 }
 
 func (node *node) FindHttpProxyAddr(key []byte) (string, error) {
-	return node.findAddr(key, func(nodeData *protobuf.NodeData) uint32 {
+	return node.findAddr(key, func(nodeData *pb.NodeData) uint32 {
 		return nodeData.HttpProxyPort
 	})
 }
