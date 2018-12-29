@@ -109,7 +109,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				}
 			}
 
-			var initialVote common.Uint256
+			initialVote := common.EmptyUint256
 			if acceptProposal {
 				initialVote = blockHash
 			} else {

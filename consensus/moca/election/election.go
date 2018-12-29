@@ -147,7 +147,10 @@ func (election *Election) GetTxVoteChan() <-chan interface{} {
 // returns error.
 func (election *Election) GetResult() (interface{}, error) {
 	if !election.IsStopped() {
-		return nil, errors.New("Election has not stopped yet")
+		return nil, errors.New("election has not stopped yet")
+	}
+	if election.selfVote == nil {
+		return nil, errors.New("cannot reach consensus")
 	}
 	return election.selfVote, nil
 }
@@ -195,8 +198,10 @@ func (election *Election) getMajorityVote() interface{} {
 	votes := make([]interface{}, 0)
 	weights := make([]uint32, 0)
 
-	votes = append(votes, election.selfVote)
-	weights = append(weights, election.getWeight(nil))
+	if election.selfVote != nil {
+		votes = append(votes, election.selfVote)
+		weights = append(weights, election.getWeight(nil))
+	}
 
 	election.neighborVotes.Range(func(key, value interface{}) bool {
 		found := false
