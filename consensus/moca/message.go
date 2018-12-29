@@ -70,7 +70,7 @@ func NewRequestBlockMessage(blockHash common.Uint256) (*pb.UnsignedMessage, erro
 }
 
 // NewRequestBlockReply creates a REQUEST_BLOCK reply to send a block
-func NewRequestBlockReply(block *ledger.Block) (*pb.RequestBlockReply, error) {
+func NewRequestBlockReply(block *ledger.Block) (*pb.UnsignedMessage, error) {
 	var buf []byte
 	if block != nil {
 		b := new(bytes.Buffer)
@@ -78,8 +78,18 @@ func NewRequestBlockReply(block *ledger.Block) (*pb.RequestBlockReply, error) {
 		buf = b.Bytes()
 	}
 
-	msg := &pb.RequestBlockReply{
+	msgBody := &pb.RequestBlockReply{
 		Block: buf,
+	}
+
+	buf, err := proto.Marshal(msgBody)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := &pb.UnsignedMessage{
+		MessageType: pb.REQUEST_BLOCK_REPLY,
+		Message:     buf,
 	}
 
 	return msg, nil
@@ -103,13 +113,24 @@ func NewGetConsensusStateMessage() (*pb.UnsignedMessage, error) {
 }
 
 // NewGetConsensusStateReply creates a GET_CONSENSUS_STATE reply
-func NewGetConsensusStateReply(ledgerHeight uint32, ledgerBlockHash common.Uint256, consensusHeight uint32, syncState pb.SyncState) (*pb.GetConsensusStateReply, error) {
-	msg := &pb.GetConsensusStateReply{
+func NewGetConsensusStateReply(ledgerHeight uint32, ledgerBlockHash common.Uint256, consensusHeight uint32, syncState pb.SyncState) (*pb.UnsignedMessage, error) {
+	msgBody := &pb.GetConsensusStateReply{
 		LedgerHeight:    ledgerHeight,
 		LedgerBlockHash: ledgerBlockHash[:],
 		ConsensusHeight: consensusHeight,
 		SyncState:       syncState,
 	}
+
+	buf, err := proto.Marshal(msgBody)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := &pb.UnsignedMessage{
+		MessageType: pb.GET_CONSENSUS_STATE_REPLY,
+		Message:     buf,
+	}
+
 	return msg, nil
 }
 
@@ -160,7 +181,7 @@ func (consensus *Consensus) registerMessageHandler() {
 			return nil, false, err
 		}
 
-		replyBuf, err := proto.Marshal(replyMsg)
+		replyBuf, err := consensus.localNode.SerializeMessage(replyMsg, false)
 		if err != nil {
 			return nil, false, err
 		}
@@ -191,7 +212,7 @@ func (consensus *Consensus) registerMessageHandler() {
 			return replyBuf, false, err
 		}
 
-		replyBuf, err = proto.Marshal(replyMsg)
+		replyBuf, err = consensus.localNode.SerializeMessage(replyMsg, false)
 		return replyBuf, false, err
 	})
 
@@ -206,7 +227,7 @@ func (consensus *Consensus) registerMessageHandler() {
 			return nil, false, err
 		}
 
-		replyBuf, err := proto.Marshal(replyMsg)
+		replyBuf, err := consensus.localNode.SerializeMessage(replyMsg, true)
 		return replyBuf, false, err
 	})
 }
