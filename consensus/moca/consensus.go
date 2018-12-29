@@ -90,7 +90,7 @@ func (consensus *Consensus) startConsensus() {
 
 		electedBlockHash, err := consensus.startElection(consensusHeight, elc)
 		if err != nil {
-			log.Errorf("Start election error: %v", err)
+			log.Errorf("Election error: %v", err)
 			consensus.setExpectedHeight(consensusHeight)
 			continue
 		}
@@ -165,7 +165,7 @@ func (consensus *Consensus) loadOrCreateElection(key []byte) (*election.Election
 		return nil, false, err
 	}
 
-	err = consensus.elections.Add(key, elc)
+	err = consensus.elections.Set(key, elc)
 	if err != nil {
 		if value, ok := consensus.elections.Get(key); ok && value != nil {
 			if elc, ok := value.(*election.Election); ok && elc != nil {
