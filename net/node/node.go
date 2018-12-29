@@ -125,7 +125,7 @@ func NewLocalNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
 	}))
 
 	nn.MustApplyMiddleware(chord.NeighborAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
-		err := n.AddRemoteNode(remoteNode)
+		err := n.maybeAddRemoteNode(remoteNode)
 		if err != nil {
 			remoteNode.Stop(err)
 			return false
@@ -142,123 +142,7 @@ func NewLocalNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
 		return true
 	}))
 
-	nn.MustApplyMiddleware(routing.RemoteMessageRouted(func(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
-		if remoteMessage.Msg.MessageType == nnetpb.BYTES && len(remoteMessage.Msg.ReplyToId) == 0 {
-			msgBody := &nnetpb.Bytes{}
-			err := proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
-			if err != nil {
-				log.Error(err)
-				return nil, nil, nil, false
-			}
-
-			if localNode != nil {
-				var nbr Noder = n
-				if remoteMessage.RemoteNode != nil {
-					nbr = n.getNbrByNNetNode(remoteMessage.RemoteNode)
-					if nbr == nil {
-						err = n.AddRemoteNode(remoteMessage.RemoteNode)
-						if err != nil {
-							log.Error("Cannot add remote node:", err)
-							return nil, nil, nil, false
-						}
-
-						nbr = n.getNbrByNNetNode(remoteMessage.RemoteNode)
-						if nbr == nil {
-							log.Error("Cannot get neighbor node")
-							return nil, nil, nil, false
-						}
-					}
-				}
-
-				signedMsg := &pb.SignedMessage{}
-				err = proto.Unmarshal(msgBody.Data, signedMsg)
-				if err != nil {
-					err = message.HandleNodeMsg(nbr, msgBody.Data)
-					if err != nil {
-						log.Error(err)
-						return nil, nil, nil, false
-					}
-				} else {
-					reply, err := handleMessage(nbr, signedMsg, remoteMessage.Msg.RoutingType)
-					if err != nil {
-						log.Error(err)
-						return nil, nil, nil, false
-					}
-
-					if len(reply) > 0 {
-						nbr.SendBytesReply(remoteMessage.Msg.MessageId, reply)
-					}
-				}
-
-				if len(remoteNodes) == 0 {
-					return nil, nil, nil, false
-				}
-
-				localNode = nil
-			}
-
-			if remoteMessage.Msg.RoutingType == nnetpb.RELAY {
-				if len(remoteNodes) > 1 {
-					log.Error("Multiple next hop is not supported yet")
-					return nil, nil, nil, false
-				}
-
-				nextHop := n.getNbrByNNetNode(remoteNodes[0])
-				if nextHop == nil {
-					err := n.AddRemoteNode(remoteNodes[0])
-					if err != nil {
-						log.Error("Cannot add next hop remote node:", err)
-						return nil, nil, nil, false
-					}
-
-					nextHop = n.getNbrByNNetNode(remoteNodes[0])
-					if nextHop == nil {
-						log.Error("Cannot get next hop neighbor node")
-						return nil, nil, nil, false
-					}
-				}
-
-				msg, err := message.ParseMsg(msgBody.Data)
-				if err != nil {
-					log.Error(err)
-					return nil, nil, nil, false
-				}
-
-				relayMsg, ok := msg.(*message.RelayMessage)
-				if !ok {
-					log.Error("Msg is not relay message")
-					return nil, nil, nil, false
-				}
-
-				relayPacket := &relayMsg.Packet
-				err = n.relayer.SignRelayPacket(nextHop, relayPacket)
-				if err != nil {
-					log.Error(err)
-					return nil, nil, nil, false
-				}
-
-				relayMsg, err = message.NewRelayMessage(relayPacket)
-				if err != nil {
-					log.Error(err)
-					return nil, nil, nil, false
-				}
-
-				msgBody.Data, err = relayMsg.ToBytes()
-				if err != nil {
-					log.Error(err)
-					return nil, nil, nil, false
-				}
-
-				remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
-				if err != nil {
-					log.Error(err)
-					return nil, nil, nil, false
-				}
-			}
-		}
-
-		return remoteMessage, localNode, remoteNodes, true
-	}))
+	nn.MustApplyMiddleware(routing.RemoteMessageRouted(n.remoteMessageRouted))
 
 	return n, nil
 }
@@ -268,7 +152,7 @@ func (node *node) Start() error {
 	return nil
 }
 
-func (node *node) AddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+func (node *node) addRemoteNode(remoteNode *nnetnode.RemoteNode) error {
 	var err error
 	n := NewNode()
 	n.local = node
@@ -290,6 +174,13 @@ func (node *node) AddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
 
 	node.AddNbrNode(n)
 
+	return nil
+}
+
+func (node *node) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+	if remoteNode != nil && node.getNbrByNNetNode(remoteNode) == nil {
+		return node.addRemoteNode(remoteNode)
+	}
 	return nil
 }
 

@@ -17,10 +17,67 @@ option (gogoproto.equal_all) = true;
 option (gogoproto.populate_all) = true;
 
 enum MessageType {
-  VOTE = 0;
-  I_HAVE_BLOCK = 1;
-  REQUEST_BLOCK = 2;
-  GET_CONSENSUS_STATE = 3;
+  MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
+  VOTE = 1;
+  I_HAVE_BLOCK = 2;
+  REQUEST_BLOCK = 3;
+  REQUEST_BLOCK_REPLY = 4;
+  GET_CONSENSUS_STATE = 5;
+  GET_CONSENSUS_STATE_REPLY = 6;
+}
+
+// Message type that can be signed message
+// Name doesn't matter, but value nees to match the value in MessageType
+enum AllowedSignedMessageType {
+  ALLOW_SIGNED_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
+  ALLOW_SIGNED_VOTE = 1;
+  ALLOW_SIGNED_I_HAVE_BLOCK = 2;
+  ALLOW_SIGNED_REQUEST_BLOCK = 3;
+  ALLOW_SIGNED_GET_CONSENSUS_STATE = 5;
+  ALLOW_SIGNED_GET_CONSENSUS_STATE_REPLY = 6;
+}
+
+// Message type that can be unsigned message
+// Name doesn't matter, but value nees to match the value in MessageType
+enum AllowedUnsignedMessageType {
+  ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
+  ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY = 4;
+}
+
+// Message type that can be sent as direct message
+// Name doesn't matter, but value nees to match the value in MessageType
+enum AllowedDirectMessageType {
+  ALLOW_DIRECT_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
+  ALLOW_DIRECT_VOTE = 1;
+  ALLOW_DIRECT_I_HAVE_BLOCK = 2;
+  ALLOW_DIRECT_REQUEST_BLOCK = 3;
+  ALLOW_DIRECT_REQUEST_BLOCK_REPLY = 4;
+  ALLOW_DIRECT_GET_CONSENSUS_STATE = 5;
+  ALLOW_DIRECT_GET_CONSENSUS_STATE_REPLY = 6;
+}
+
+// Message type that can be sent as relay message
+// Name doesn't matter, but value nees to match the value in MessageType
+enum AllowedRelayMessageType {
+  ALLOW_RELAY_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
+}
+
+// Message type that can be sent as broadcast_push message
+// Name doesn't matter, but value nees to match the value in MessageType
+enum AllowedBroadcastPushMessageType {
+  ALLOW_BROADCAST_PUSH_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
+}
+
+// Message type that can be sent as broadcast_pull message
+// Name doesn't matter, but value nees to match the value in MessageType
+enum AllowedBroadcastPullMessageType {
+  ALLOW_BROADCAST_PULL_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
+}
+
+// Message type that can be sent as broadcast_tree message
+// Name doesn't matter, but value nees to match the value in MessageType
+enum AllowedBroadcastTreeMessageType {
+  ALLOW_BROADCAST_TREE_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
 }
 
 message UnsignedMessage {
