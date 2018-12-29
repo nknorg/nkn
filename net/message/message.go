@@ -74,10 +74,6 @@ func AllocMsg(t string, length int) Messenger {
 		var msg trn
 		copy(msg.msgHdr.CMD[0:len(t)], t)
 		return &msg
-	case "ising":
-		var msg IsingMessage
-		copy(msg.msgHdr.CMD[0:len(t)], t)
-		return &msg
 	case "notfound":
 		var msg notFound
 		copy(msg.msgHdr.CMD[0:len(t)], t)
