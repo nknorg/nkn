@@ -74,7 +74,7 @@ type Noder interface {
 	GetNeighborHeights() ([]uint32, uint)
 	CleanSubmittedTransactions(txns []*transaction.Transaction) error
 
-	GetNeighborNoder() []Noder
+	GetNeighborNoder(func(Noder) bool) []Noder
 	StoreFlightHeight(height uint32)
 	GetFlightHeightCnt() int
 	RemoveFlightHeightLessThan(height uint32)
