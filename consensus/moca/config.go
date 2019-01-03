@@ -20,4 +20,6 @@ const (
 	getConsensusStateRetryDelay = 3 * time.Second
 	proposalChanLen             = 100
 	requestProposalChanLen      = 10000
+	changeVoteMinRelativeWeight = 0.5
+	consensusMinRelativeWeight  = 2.0 / 3.0
 )

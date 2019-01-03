@@ -45,12 +45,12 @@ func (nm *nbrNodes) DelNbrNode(id uint64) (protocol.Noder, bool) {
 }
 
 func (nm *nbrNodes) GetConnectionCnt() uint {
-	return uint(len(nm.GetNeighborNoder()))
+	return uint(len(nm.GetNeighborNoder(nil)))
 }
 
 func (nm *nbrNodes) GetNeighborAddrs() ([]protocol.NodeAddr, uint) {
 	var addrs []protocol.NodeAddr
-	for _, n := range nm.GetNeighborNoder() {
+	for _, n := range nm.GetNeighborNoder(nil) {
 		ip, _ := n.GetAddr16()
 		addrs = append(addrs, protocol.NodeAddr{
 			IpAddr:  ip,
@@ -67,18 +67,19 @@ func (nm *nbrNodes) GetNeighborAddrs() ([]protocol.NodeAddr, uint) {
 
 func (nm *nbrNodes) GetNeighborHeights() ([]uint32, uint) {
 	heights := []uint32{}
-	for _, n := range nm.GetNeighborNoder() {
+	for _, n := range nm.GetNeighborNoder(nil) {
 		heights = append(heights, n.GetHeight())
 	}
 	return heights, uint(len(heights))
 }
 
-func (nm *nbrNodes) GetNeighborNoder() []protocol.Noder {
+func (nm *nbrNodes) GetNeighborNoder(filter func(protocol.Noder) bool) []protocol.Noder {
 	nodes := []protocol.Noder{}
 	nm.List.Range(func(key, value interface{}) bool {
-		n, ok := value.(*node)
-		if ok {
-			nodes = append(nodes, n)
+		if n, ok := value.(*node); ok {
+			if filter == nil || filter(n) {
+				nodes = append(nodes, n)
+			}
 		}
 		return true
 	})

@@ -121,7 +121,7 @@ func (node *node) RemoveFlightHeight(height uint32) {
 }
 
 func (node *node) blockHeaderSyncing(stopHash common.Uint256) {
-	noders := node.local.GetNeighborNoder()
+	noders := node.local.GetNeighborNoder(nil)
 	if len(noders) == 0 {
 		return
 	}
@@ -149,7 +149,7 @@ func (node *node) blockSyncing() {
 	var dValue int32
 	var reqCnt uint32
 	var i uint32
-	noders := node.local.GetNeighborNoder()
+	noders := node.local.GetNeighborNoder(nil)
 
 	for _, n := range noders {
 		if uint32(n.GetHeight()) <= currentBlkHeight {
