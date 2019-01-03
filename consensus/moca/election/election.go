@@ -151,7 +151,7 @@ func (election *Election) GetResult() (interface{}, error) {
 
 	result, absWeight, relWeight := election.getLeadingVote()
 	if absWeight < election.config.ConsensusMinAbsoluteWeight {
-		return nil, fmt.Errorf("leading vote %v only got %d weight, which is less than threshold %d", result, absWeight*100, election.config.ConsensusMinAbsoluteWeight)
+		return nil, fmt.Errorf("leading vote %v only got %d weight, which is less than threshold %d", result, absWeight, election.config.ConsensusMinAbsoluteWeight)
 	}
 	if relWeight < election.config.ConsensusMinRelativeWeight {
 		return nil, fmt.Errorf("leading vote %v only got %f%% weight, which is less than threshold %f%%", result, relWeight*100, election.config.ConsensusMinRelativeWeight*100)
