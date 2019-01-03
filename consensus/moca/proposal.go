@@ -31,7 +31,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	electionStartTimer := time.NewTimer(math.MaxInt64)
 	electionStartTimer.Stop()
 	timeoutTimer := time.NewTimer(electionStartDelay)
-	validProposals := make(map[common.Uint256]*ledger.Block)
+	proposals := make(map[common.Uint256]*ledger.Block)
 
 	consensus.proposalLock.RLock()
 	consensusHeight := consensus.expectedHeight
@@ -83,6 +83,16 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 
 			acceptProposal := true
 
+			proposals[blockHash] = proposal
+			if len(proposals) > 2 {
+				log.Warningf("Received more than 2 different proposals, ignoring the rest to prevent spam")
+				continue
+			}
+			if len(proposals) > 1 {
+				log.Warningf("Received multiple different proposals, rejecting all of them")
+				acceptProposal = false
+			}
+
 			err = ledger.HeaderCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Proposal fails to pass header check: %v", err)
@@ -99,14 +109,6 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			if err != nil {
 				log.Warningf("Proposal fails to pass transaction check: %v", err)
 				acceptProposal = false
-			}
-
-			if acceptProposal {
-				validProposals[blockHash] = proposal
-				if len(validProposals) > 1 {
-					log.Warningf("Received multiple different valid proposals")
-					acceptProposal = false
-				}
 			}
 
 			initialVote := common.EmptyUint256
