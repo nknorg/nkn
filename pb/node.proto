@@ -17,9 +17,9 @@ option (gogoproto.populate_all) = true;
 
 enum SyncState {
   SyncStarted = 0;
-	SyncFinished = 1;
-	PersistFinished = 2;
-	WaitForSyncing = 3;
+  SyncFinished = 1;
+  PersistFinished = 2;
+  WaitForSyncing = 3;
 }
 
 message NodeData {
