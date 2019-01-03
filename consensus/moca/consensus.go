@@ -155,9 +155,16 @@ func (consensus *Consensus) loadOrCreateElection(key []byte) (*election.Election
 		}
 	}
 
+	consensusNeighbors := consensus.localNode.GetNeighborNoder(func(n protocol.Noder) bool {
+		return n.GetSyncState() == pb.PersistFinished
+	})
+	totalWeight := len(consensusNeighbors) + 1
+
 	config := &election.Config{
-		Duration:          electionDuration,
-		MinVotingInterval: minVotingInterval,
+		Duration:                    electionDuration,
+		MinVotingInterval:           minVotingInterval,
+		ChangeVoteMinAbsoluteWeight: uint32(changeVoteMinRelativeWeight*float32(totalWeight) + 1),
+		ConsensusMinAbsoluteWeight:  uint32(consensusMinRelativeWeight*float32(totalWeight) + 1),
 	}
 
 	elc, err := election.NewElection(config)
