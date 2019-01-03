@@ -10,9 +10,11 @@ import (
 func (consensus *Consensus) receiveVote(neighborID uint64, height uint32, blockHash common.Uint256) error {
 	log.Debugf("Receive vote %s for height %d from neighbor %d", blockHash.ToHexString(), height, neighborID)
 
-	err := consensus.receiveProposalHash(neighborID, height, blockHash)
-	if err != nil && consensus.localNode.GetSyncState() == pb.PersistFinished {
-		log.Warningf("Receive block hash error when receive vote: %v", err)
+	if blockHash != common.EmptyUint256 {
+		err := consensus.receiveProposalHash(neighborID, height, blockHash)
+		if err != nil && consensus.localNode.GetSyncState() == pb.PersistFinished {
+			log.Warningf("Receive block hash error when receive vote: %v", err)
+		}
 	}
 
 	elc, _, err := consensus.loadOrCreateElection(heightToKey(height))
