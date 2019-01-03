@@ -72,7 +72,7 @@ func (consensus *Consensus) getNeighborConsensusState(neighbor protocol.Noder) (
 func (consensus *Consensus) getAllNeighborsConsensusState() (*sync.Map, error) {
 	var allInfo sync.Map
 	var wg sync.WaitGroup
-	for _, neighbor := range consensus.localNode.GetNeighborNoder() {
+	for _, neighbor := range consensus.localNode.GetNeighborNoder(nil) {
 		wg.Add(1)
 		go func(neighbor protocol.Noder) {
 			defer wg.Done()
