@@ -96,7 +96,7 @@ func Init() error {
 	}
 
 	if Parameters.Hostname == "127.0.0.1" {
-		Parameters.IncrementPort()
+		Parameters.incrementPort()
 	}
 
 	if Parameters.NAT && !SkipNAT {
@@ -106,37 +106,16 @@ func Init() error {
 		if err == nil {
 			log.Printf("Found %s gateway", nat.Type())
 
-			transport, err := transport.NewTransport(Parameters.Transport)
+			err = Parameters.addPortMapping(nat)
 			if err != nil {
+				log.Printf("Error adding port mapping. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.")
 				return err
 			}
-
-			externalPort, internalPort, err := nat.AddPortMapping(transport.GetNetwork(), int(Parameters.NodePort), int(Parameters.NodePort), "nkn", 10*time.Second)
-			if err != nil {
-				return err
-			}
-			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
-
-			externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(Parameters.HttpWsPort), int(Parameters.HttpWsPort), "nkn", 10*time.Second)
-			if err != nil {
-				return err
-			}
-			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
-
-			externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(Parameters.HttpJsonPort), int(Parameters.HttpJsonPort), "nkn", 10*time.Second)
-			if err != nil {
-				return err
-			}
-			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
-
-			externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(Parameters.HttpProxyPort), int(Parameters.HttpProxyPort), "nkn", 10*time.Second)
-			if err != nil {
-				return err
-			}
-			log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 		} else {
-			log.Printf("No NAT gateway detected")
+			log.Printf("No NAT gateway detected, skip automatic port forwading. You need to set up port forwarding and firewall yourself.")
 		}
+	} else {
+		log.Printf("Skip automatic port forwading. You need to set up port forwarding and firewall yourself.")
 	}
 
 	if Parameters.Hostname == "" {
@@ -166,6 +145,39 @@ func Init() error {
 	return nil
 }
 
+func (config *Configuration) addPortMapping(nat gonat.NAT) error {
+	transport, err := transport.NewTransport(config.Transport)
+	if err != nil {
+		return err
+	}
+
+	externalPort, internalPort, err := nat.AddPortMapping(transport.GetNetwork(), int(config.NodePort), int(config.NodePort), "nkn", 10*time.Second)
+	if err != nil {
+		return err
+	}
+	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
+	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpWsPort), int(config.HttpWsPort), "nkn", 10*time.Second)
+	if err != nil {
+		return err
+	}
+	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
+	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpJsonPort), int(config.HttpJsonPort), "nkn", 10*time.Second)
+	if err != nil {
+		return err
+	}
+	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
+	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpProxyPort), int(config.HttpProxyPort), "nkn", 10*time.Second)
+	if err != nil {
+		return err
+	}
+	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
+	return nil
+}
+
 func check(config *Configuration) error {
 	if len(config.SeedList) == 0 {
 		return errors.New("seed list in config file should not be blank")
@@ -188,7 +200,7 @@ func findMinMaxPort(array []uint16) (uint16, uint16) {
 	return min, max
 }
 
-func (config *Configuration) IncrementPort() {
+func (config *Configuration) incrementPort() {
 	allPorts := []uint16{
 		config.NodePort,
 		config.HttpWsPort,
