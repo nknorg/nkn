@@ -681,9 +681,9 @@ func (ps *ProposerService) HandleBlockFloodingMsg(bfMsg *BlockFlooding, sender u
 		log.Infof("cached block: %s, block height: %d,  totally cached: %d",
 			BytesToHexString(blockHash.ToArrayReverse()), height, ps.syncCache.CachedBlockHeight())
 		if !HasAbilityToVerifyBlock(block) {
-			return
+			return // Don't participate in voting if no verification ability
 		}
-		// send vote when the block is verified by local node
+		// Verify and send my vote if I have ability to do
 		if !current.CheckAndSetOwnState(blockHash, voting.ProposalSent) {
 			err = ledger.HeaderCheck(block.Header, rtime)
 			if err != nil {
@@ -830,6 +830,7 @@ func (ps *ProposerService) HandleResponseMsg(resp *Response, sender uint64) {
 		}
 		err := current.AddToCache(resp.content, time.Now().Unix())
 		if err != nil {
+			log.Error("AddToCache failed", err)
 			return
 		}
 		currentVotingPool := current.GetVotingPool()

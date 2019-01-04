@@ -81,6 +81,9 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 	if prevHeader.Height+1 != height {
 		return errors.New("invalid header height")
 	}
+	if time.Unix(header.Timestamp, 0).After(time.Now().Add(TimestampTolerance)) {
+		return errors.New("postdated timestamp over tolerance")
+	}
 	if prevHeader.Timestamp >= header.Timestamp {
 		return errors.New("invalid header timestamp")
 	}
@@ -187,11 +190,13 @@ func HeaderCheck(header *Header, receiveTime int64) error {
 }
 
 func TimestampCheck(timestamp int64) error {
+	t := time.Unix(timestamp, 0) // Handle negative
 	now := time.Now()
-	earliest := now.Add(-TimestampTolerance).Unix()
-	latest := now.Add(TimestampTolerance).Unix()
-	if timestamp < earliest || timestamp > latest {
-		return errors.New("Invalid timestamp")
+	earliest := now.Add(-TimestampTolerance)
+	latest := now.Add(TimestampTolerance)
+
+	if t.Before(earliest) || t.After(latest) {
+		return fmt.Errorf("timestamp %d exceed my tolerance [%d, %d]", timestamp, earliest.Unix(), latest.Unix())
 	}
 	return nil
 }
