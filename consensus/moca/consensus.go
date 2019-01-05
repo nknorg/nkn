@@ -11,7 +11,6 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/node"
-	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -20,7 +19,7 @@ import (
 // Consensus is the Majority vOte Cellular Automata (MOCA) consensus layer
 type Consensus struct {
 	account             *vault.Account
-	localNode           *node.Node
+	localNode           *node.LocalNode
 	startOnce           sync.Once
 	elections           common.Cache
 	proposals           common.Cache
@@ -40,7 +39,7 @@ type Consensus struct {
 }
 
 // NewConsensus creates a MOCA consensus
-func NewConsensus(account *vault.Account, localNode *node.Node) (*Consensus, error) {
+func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus, error) {
 	txnCollector := transaction.NewTxnCollector(localNode.GetTxnPool(), maxNumTxnPerBlock)
 	consensus := &Consensus{
 		account:             account,
@@ -156,8 +155,8 @@ func (consensus *Consensus) loadOrCreateElection(key []byte) (*election.Election
 		}
 	}
 
-	consensusNeighbors := consensus.localNode.GetNeighborNoder(func(n protocol.Noder) bool {
-		return n.GetSyncState() == pb.PersistFinished
+	consensusNeighbors := consensus.localNode.GetNeighbors(func(rn *node.RemoteNode) bool {
+		return rn.GetSyncState() == pb.PersistFinished
 	})
 	totalWeight := len(consensusNeighbors) + 1
 
