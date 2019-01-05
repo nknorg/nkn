@@ -18,7 +18,7 @@ func (nm *nbrNodes) GetNbrNode(uid uint64) protocol.Noder {
 	if !ok {
 		return nil
 	}
-	n, ok := v.(*node)
+	n, ok := v.(*Node)
 	if ok {
 		return n
 	}
@@ -26,7 +26,7 @@ func (nm *nbrNodes) GetNbrNode(uid uint64) protocol.Noder {
 }
 
 func (nm *nbrNodes) AddNbrNode(n protocol.Noder) {
-	node, ok := n.(*node)
+	node, ok := n.(*Node)
 	if !ok {
 		fmt.Println("Convert the noder error when add node")
 		return
@@ -39,7 +39,7 @@ func (nm *nbrNodes) DelNbrNode(id uint64) (protocol.Noder, bool) {
 	if !ok {
 		return nil, false
 	}
-	n, _ := v.(*node)
+	n, _ := v.(*Node)
 	nm.List.Delete(id)
 	return n, true
 }
@@ -76,7 +76,7 @@ func (nm *nbrNodes) GetNeighborHeights() ([]uint32, uint) {
 func (nm *nbrNodes) GetNeighborNoder(filter func(protocol.Noder) bool) []protocol.Noder {
 	nodes := []protocol.Noder{}
 	nm.List.Range(func(key, value interface{}) bool {
-		if n, ok := value.(*node); ok {
+		if n, ok := value.(*Node); ok {
 			if filter == nil || filter(n) {
 				nodes = append(nodes, n)
 			}
@@ -86,7 +86,7 @@ func (nm *nbrNodes) GetNeighborNoder(filter func(protocol.Noder) bool) []protoco
 	return nodes
 }
 
-func (n *node) getNbrByNNetNode(remoteNode *nnetnode.RemoteNode) protocol.Noder {
+func (n *Node) getNbrByNNetNode(remoteNode *nnetnode.RemoteNode) protocol.Noder {
 	if remoteNode == nil {
 		return nil
 	}

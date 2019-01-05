@@ -1,4 +1,4 @@
-package message
+package node
 
 import (
 	"github.com/nknorg/nkn/net/protocol"
@@ -15,13 +15,16 @@ type RemoteMessage struct {
 // to other message handler and error
 type Handler func(msg *RemoteMessage) (reply []byte, shouldCallNext bool, err error)
 
-// HandlerStore is the map from message type to message handler
-type HandlerStore map[pb.MessageType][]Handler
+// handlerStore is the map from message type to message handler
+type handlerStore map[pb.MessageType][]Handler
 
-var handlerStore HandlerStore = make(map[pb.MessageType][]Handler)
+func newHandlerStore() *handlerStore {
+	hs := make(handlerStore)
+	return &hs
+}
 
 // AddHandler adds a message handler to a message type
-func AddHandler(messageType pb.MessageType, handler Handler) {
+func (handlerStore handlerStore) AddHandler(messageType pb.MessageType, handler Handler) {
 	handlers, ok := handlerStore[messageType]
 	if !ok {
 		handlerStore[messageType] = make([]Handler, 0)
@@ -32,6 +35,6 @@ func AddHandler(messageType pb.MessageType, handler Handler) {
 }
 
 // GetHandlers gets all handlers of a message type
-func GetHandlers(messageType pb.MessageType) []Handler {
+func (handlerStore handlerStore) GetHandlers(messageType pb.MessageType) []Handler {
 	return handlerStore[messageType]
 }
