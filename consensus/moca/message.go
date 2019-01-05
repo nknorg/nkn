@@ -30,9 +30,9 @@ func NewVoteMessage(height uint32, blockHash common.Uint256) (*pb.UnsignedMessag
 	return msg, nil
 }
 
-// NewIHaveBlockMessage creates a I_HAVE_BLOCK message
-func NewIHaveBlockMessage(height uint32, blockHash common.Uint256) (*pb.UnsignedMessage, error) {
-	msgBody := &pb.IHaveBlock{
+// NewIHaveBlockProposalMessage creates a I_HAVE_BLOCK_PROPOSAL message
+func NewIHaveBlockProposalMessage(height uint32, blockHash common.Uint256) (*pb.UnsignedMessage, error) {
+	msgBody := &pb.IHaveBlockProposal{
 		Height:    height,
 		BlockHash: blockHash[:],
 	}
@@ -43,16 +43,17 @@ func NewIHaveBlockMessage(height uint32, blockHash common.Uint256) (*pb.Unsigned
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.I_HAVE_BLOCK,
+		MessageType: pb.I_HAVE_BLOCK_PROPOSAL,
 		Message:     buf,
 	}
 
 	return msg, nil
 }
 
-// NewRequestBlockMessage creates a REQUEST_BLOCK message to request a block
-func NewRequestBlockMessage(blockHash common.Uint256) (*pb.UnsignedMessage, error) {
-	msgBody := &pb.RequestBlock{
+// NewRequestBlockProposalMessage creates a REQUEST_BLOCK_PROPOSAL message to
+// request a block
+func NewRequestBlockProposalMessage(blockHash common.Uint256) (*pb.UnsignedMessage, error) {
+	msgBody := &pb.RequestBlockProposal{
 		BlockHash: blockHash[:],
 	}
 
@@ -62,15 +63,16 @@ func NewRequestBlockMessage(blockHash common.Uint256) (*pb.UnsignedMessage, erro
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.REQUEST_BLOCK,
+		MessageType: pb.REQUEST_BLOCK_PROPOSAL,
 		Message:     buf,
 	}
 
 	return msg, nil
 }
 
-// NewRequestBlockReply creates a REQUEST_BLOCK reply to send a block
-func NewRequestBlockReply(block *ledger.Block) (*pb.UnsignedMessage, error) {
+// NewRequestBlockProposalReply creates a REQUEST_BLOCK_PROPOSAL reply to send a
+// block
+func NewRequestBlockProposalReply(block *ledger.Block) (*pb.UnsignedMessage, error) {
 	var buf []byte
 	if block != nil {
 		b := new(bytes.Buffer)
@@ -78,7 +80,7 @@ func NewRequestBlockReply(block *ledger.Block) (*pb.UnsignedMessage, error) {
 		buf = b.Bytes()
 	}
 
-	msgBody := &pb.RequestBlockReply{
+	msgBody := &pb.RequestBlockProposalReply{
 		Block: buf,
 	}
 
@@ -88,7 +90,7 @@ func NewRequestBlockReply(block *ledger.Block) (*pb.UnsignedMessage, error) {
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.REQUEST_BLOCK_REPLY,
+		MessageType: pb.REQUEST_BLOCK_PROPOSAL_REPLY,
 		Message:     buf,
 	}
 
@@ -155,8 +157,8 @@ func (consensus *Consensus) registerMessageHandler() {
 		return nil, false, nil
 	})
 
-	message.AddHandler(pb.I_HAVE_BLOCK, func(remoteMessage *message.RemoteMessage) ([]byte, bool, error) {
-		msgBody := &pb.IHaveBlock{}
+	message.AddHandler(pb.I_HAVE_BLOCK_PROPOSAL, func(remoteMessage *message.RemoteMessage) ([]byte, bool, error) {
+		msgBody := &pb.IHaveBlockProposal{}
 		err := proto.Unmarshal(remoteMessage.Message, msgBody)
 		if err != nil {
 			return nil, false, err
@@ -175,8 +177,8 @@ func (consensus *Consensus) registerMessageHandler() {
 		return nil, false, nil
 	})
 
-	message.AddHandler(pb.REQUEST_BLOCK, func(remoteMessage *message.RemoteMessage) ([]byte, bool, error) {
-		replyMsg, err := NewRequestBlockReply(nil)
+	message.AddHandler(pb.REQUEST_BLOCK_PROPOSAL, func(remoteMessage *message.RemoteMessage) ([]byte, bool, error) {
+		replyMsg, err := NewRequestBlockProposalReply(nil)
 		if err != nil {
 			return nil, false, err
 		}
@@ -186,7 +188,7 @@ func (consensus *Consensus) registerMessageHandler() {
 			return nil, false, err
 		}
 
-		msgBody := &pb.RequestBlock{}
+		msgBody := &pb.RequestBlockProposal{}
 		err = proto.Unmarshal(remoteMessage.Message, msgBody)
 		if err != nil {
 			return replyBuf, false, err
@@ -207,7 +209,7 @@ func (consensus *Consensus) registerMessageHandler() {
 			return replyBuf, false, nil
 		}
 
-		replyMsg, err = NewRequestBlockReply(block)
+		replyMsg, err = NewRequestBlockProposalReply(block)
 		if err != nil {
 			return replyBuf, false, err
 		}
