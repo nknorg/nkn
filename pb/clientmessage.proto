@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package client;
+package pb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
@@ -11,7 +11,6 @@ option (gogoproto.marshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 
- // For tests
 option (gogoproto.testgen_all) = true;
 option (gogoproto.equal_all) = true;
 option (gogoproto.populate_all) = true;

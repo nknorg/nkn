@@ -1,4 +1,5 @@
 ﻿{
+  "NAT": false,
   "HttpWsPort": 30002,
   "HttpJsonPort": 30003,
   "HttpProxyPort": 30004,

@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/api/common"
-	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -23,8 +23,8 @@ type RPCServer struct {
 	//defines a slice of listeners for RPCServer, such as "127.0.0.1:30004"
 	listeners []string
 
-	//the reference of Noder
-	node protocol.Noder
+	//the reference of local node
+	localNode *node.LocalNode
 
 	//the reference of Wallet
 	wallet vault.Wallet
@@ -41,13 +41,13 @@ type ServeMux struct {
 }
 
 // NewServer will create a new RPC server instance.
-func NewServer(node protocol.Noder, wallet vault.Wallet) *RPCServer {
+func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
 	server := &RPCServer{
 		mainMux: ServeMux{
 			m: make(map[string]common.Handler),
 		},
 		listeners: []string{":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
-		node:      node,
+		localNode: localNode,
 		wallet:    wallet,
 	}
 
@@ -220,8 +220,8 @@ func (s *RPCServer) Start() {
 	httpServer.Serve(listener)
 }
 
-func (s *RPCServer) GetNetNode() (protocol.Noder, error) {
-	return s.node, nil
+func (s *RPCServer) GetNetNode() (*node.LocalNode, error) {
+	return s.localNode, nil
 }
 
 func (s *RPCServer) GetWallet() (vault.Wallet, error) {

@@ -8,8 +8,6 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/net/message"
-	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
@@ -19,7 +17,7 @@ const (
 	syncBlockInterval = 500 * time.Millisecond
 )
 
-func (node *Node) startSyncingBlock() {
+func (node *LocalNode) startSyncingBlock() {
 	syncBlockTimer := time.NewTimer(0)
 	for {
 		select {
@@ -52,7 +50,7 @@ func (node *Node) startSyncingBlock() {
 	}
 }
 
-func (node *Node) WaitForSyncHeaderFinish(isProposer bool) {
+func (node *LocalNode) WaitForSyncHeaderFinish(isProposer bool) {
 	if isProposer {
 		for {
 			//TODO: proposer node syncs block from 50% neighbors
@@ -76,7 +74,7 @@ func (node *Node) WaitForSyncHeaderFinish(isProposer bool) {
 	}
 }
 
-func (node *Node) WaitForSyncBlkFinish() {
+func (node *LocalNode) WaitForSyncBlkFinish() {
 	for {
 		headerHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
 		currentBlkHeight := ledger.DefaultLedger.Blockchain.BlockHeight
@@ -88,19 +86,19 @@ func (node *Node) WaitForSyncBlkFinish() {
 	}
 }
 
-func (node *Node) StoreFlightHeight(height uint32) {
+func (node *RemoteNode) StoreFlightHeight(height uint32) {
 	node.flightHeights = append(node.flightHeights, height)
 }
 
-func (node *Node) GetFlightHeightCnt() int {
+func (node *RemoteNode) GetFlightHeightCnt() int {
 	return len(node.flightHeights)
 }
 
-func (node *Node) GetFlightHeights() []uint32 {
+func (node *RemoteNode) GetFlightHeights() []uint32 {
 	return node.flightHeights
 }
 
-func (node *Node) RemoveFlightHeightLessThan(h uint32) {
+func (node *RemoteNode) RemoveFlightHeightLessThan(h uint32) {
 	heights := node.flightHeights
 	p := len(heights)
 	i := 0
@@ -116,16 +114,16 @@ func (node *Node) RemoveFlightHeightLessThan(h uint32) {
 	node.flightHeights = heights[:p]
 }
 
-func (node *Node) RemoveFlightHeight(height uint32) {
+func (node *RemoteNode) RemoveFlightHeight(height uint32) {
 	node.flightHeights = common.SliceRemove(node.flightHeights, height)
 }
 
-func (node *Node) blockHeaderSyncing(stopHash common.Uint256) {
-	noders := node.local.GetNeighborNoder(nil)
+func (node *LocalNode) blockHeaderSyncing(stopHash common.Uint256) {
+	noders := node.GetNeighbors(nil)
 	if len(noders) == 0 {
 		return
 	}
-	nodelist := []protocol.Noder{}
+	nodelist := make([]*RemoteNode, 0)
 	for _, v := range noders {
 		if ledger.DefaultLedger.Store.GetHeaderHeight() < v.GetHeight() {
 			nodelist = append(nodelist, v)
@@ -137,10 +135,10 @@ func (node *Node) blockHeaderSyncing(stopHash common.Uint256) {
 	}
 	index := rand.Intn(ncout)
 	n := nodelist[index]
-	message.SendMsgSyncHeaders(n, stopHash)
+	SendMsgSyncHeaders(n, stopHash)
 }
 
-func (node *Node) blockSyncing() {
+func (node *LocalNode) blockSyncing() {
 	headerHeight := ledger.DefaultLedger.Store.GetHeaderHeight()
 	currentBlkHeight := ledger.DefaultLedger.Blockchain.BlockHeight
 	if currentBlkHeight >= headerHeight {
@@ -149,7 +147,7 @@ func (node *Node) blockSyncing() {
 	var dValue int32
 	var reqCnt uint32
 	var i uint32
-	noders := node.local.GetNeighborNoder(nil)
+	noders := node.GetNeighbors(nil)
 
 	for _, n := range noders {
 		if uint32(n.GetHeight()) <= currentBlkHeight {
@@ -163,7 +161,7 @@ func (node *Node) blockSyncing() {
 			for _, f := range flights {
 				hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(f)
 				if !ledger.DefaultLedger.Store.BlockInCache(hash) {
-					message.ReqBlkData(n, hash)
+					ReqBlkData(n, hash)
 				}
 			}
 
@@ -172,7 +170,7 @@ func (node *Node) blockSyncing() {
 			hash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentBlkHeight + reqCnt)
 
 			if !ledger.DefaultLedger.Store.BlockInCache(hash) {
-				message.ReqBlkData(n, hash)
+				ReqBlkData(n, hash)
 				n.StoreFlightHeight(currentBlkHeight + reqCnt)
 			}
 			reqCnt++
@@ -181,7 +179,7 @@ func (node *Node) blockSyncing() {
 	}
 }
 
-func (node *Node) SyncBlock(isProposer bool) {
+func (node *LocalNode) SyncBlock(isProposer bool) {
 	log.Infof("Start syncing block")
 	node.SetSyncState(pb.SyncStarted)
 	ticker := time.NewTicker(BlockSyncingTicker)
@@ -197,19 +195,19 @@ func (node *Node) SyncBlock(isProposer bool) {
 		case skip := <-node.quit:
 			log.Info("block syncing finished")
 			ticker.Stop()
-			node.LocalNode().GetEvent("sync").Notify(events.EventBlockSyncingFinished, skip)
+			node.GetEvent("sync").Notify(events.EventBlockSyncingFinished, skip)
 			return
 		}
 	}
 }
 
-func (node *Node) StopSyncBlock(skip bool) {
+func (node *LocalNode) StopSyncBlock(skip bool) {
 	log.Infof("Sync block Finished")
 	node.SetSyncState(pb.SyncFinished)
 	node.quit <- skip
 }
 
-func (node *Node) SyncBlockMonitor(isProposer bool) {
+func (node *LocalNode) SyncBlockMonitor(isProposer bool) {
 	// wait for header syncing finished
 	node.WaitForSyncHeaderFinish(isProposer)
 	// wait for block syncing finished

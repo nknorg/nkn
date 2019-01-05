@@ -172,7 +172,7 @@ func nknMain(c *cli.Context) error {
 		return errors.New("PorServer initialization error")
 	}
 
-	localNode, err := node.NewLocalNode(account, nn)
+	localNode, err := node.NewLocalNode(wallet, nn)
 	if err != nil {
 		return err
 	}
@@ -181,9 +181,6 @@ func nknMain(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
-	// start relay service
-	localNode.StartRelayer(wallet)
 
 	//start JsonRPC
 	rpcServer := httpjson.NewServer(localNode, wallet)

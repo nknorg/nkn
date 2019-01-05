@@ -7,16 +7,14 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/net/message"
-	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
-func (node *Node) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) ([]byte, error) {
-	if node.account == nil {
+func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) ([]byte, error) {
+	if localNode.account == nil {
 		return nil, errors.New("Account is nil")
 	}
 
@@ -28,7 +26,7 @@ func (node *Node) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) (
 	var signature []byte
 	if sign {
 		hash := sha256.Sum256(buf)
-		signature, err = crypto.Sign(node.account.PrivateKey, hash[:])
+		signature, err = crypto.Sign(localNode.account.PrivateKey, hash[:])
 		if err != nil {
 			return nil, err
 		}
@@ -42,43 +40,43 @@ func (node *Node) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) (
 	return proto.Marshal(signedMsg)
 }
 
-func (node *Node) SendBytesAsync(buf []byte) error {
-	err := node.local.nnet.SendBytesDirectAsync(buf, node.nnetNode)
+func (remoteNode *RemoteNode) SendBytesAsync(buf []byte) error {
+	err := remoteNode.localNode.nnet.SendBytesDirectAsync(buf, remoteNode.nnetNode)
 	if err != nil {
 		log.Errorf("Error sending async messge to node %v, removing node.", err.Error())
-		node.CloseConn()
-		node.local.DelNbrNode(node.GetID())
+		remoteNode.CloseConn()
+		remoteNode.localNode.DelNbrNode(remoteNode.GetID())
 	}
 	return err
 }
 
-func (node *Node) SendBytesSync(buf []byte) ([]byte, error) {
-	reply, _, err := node.local.nnet.SendBytesDirectSync(buf, node.nnetNode)
+func (remoteNode *RemoteNode) SendBytesSync(buf []byte) ([]byte, error) {
+	reply, _, err := remoteNode.localNode.nnet.SendBytesDirectSync(buf, remoteNode.nnetNode)
 	if err != nil {
 		log.Errorf("Error sending sync messge to node: %v", err.Error())
 	}
 	return reply, err
 }
 
-func (node *Node) SendBytesReply(replyToID, buf []byte) error {
-	err := node.local.nnet.SendBytesDirectReply(replyToID, buf, node.nnetNode)
+func (remoteNode *RemoteNode) SendBytesReply(replyToID, buf []byte) error {
+	err := remoteNode.localNode.nnet.SendBytesDirectReply(replyToID, buf, remoteNode.nnetNode)
 	if err != nil {
 		log.Errorf("Error sending async messge to node: %v, removing node.", err.Error())
-		node.CloseConn()
-		node.local.DelNbrNode(node.GetID())
+		remoteNode.CloseConn()
+		remoteNode.localNode.DelNbrNode(remoteNode.GetID())
 	}
 	return err
 }
 
-func (node *Node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
+func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, nnetLocalNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
 	if remoteMessage.Msg.MessageType == nnetpb.BYTES {
-		err := node.maybeAddRemoteNode(remoteMessage.RemoteNode)
+		err := localNode.maybeAddRemoteNode(remoteMessage.RemoteNode)
 		if err != nil {
 			log.Errorf("Add remote node error: %v", err)
 		}
 
 		for _, remoteNode := range remoteNodes {
-			err = node.maybeAddRemoteNode(remoteNode)
+			err = localNode.maybeAddRemoteNode(remoteNode)
 			if err != nil {
 				log.Errorf("Add remote node error: %v", err)
 			}
@@ -105,19 +103,19 @@ func (node *Node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, loc
 				return nil, nil, nil, false
 			}
 
-			err = message.CheckMessageType(unsignedMsg.MessageType)
+			err = checkMessageType(unsignedMsg.MessageType)
 			if err != nil {
 				log.Errorf("Error checking message type: %v", err)
 				return nil, nil, nil, false
 			}
 
-			err = message.CheckSigned(unsignedMsg.MessageType, len(signedMsg.Signature) > 0)
+			err = checkMessageSigned(unsignedMsg.MessageType, len(signedMsg.Signature) > 0)
 			if err != nil {
 				log.Errorf("Error checking signed: %v", err)
 				return nil, nil, nil, false
 			}
 
-			err = message.CheckRoutingType(unsignedMsg.MessageType, remoteMessage.Msg.RoutingType)
+			err = checkMessageRoutingType(unsignedMsg.MessageType, remoteMessage.Msg.RoutingType)
 			if err != nil {
 				log.Errorf("Error checking routing type: %v", err)
 				return nil, nil, nil, false
@@ -129,31 +127,36 @@ func (node *Node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, loc
 			}
 		}
 
-		if localNode != nil {
-			sender := node.getNbrByNNetNode(remoteMessage.RemoteNode)
-			if sender == nil {
+		if nnetLocalNode != nil {
+			var senderNode *Node
+			senderRemoteNode := localNode.getNbrByNNetNode(remoteMessage.RemoteNode)
+			if senderRemoteNode != nil {
+				senderNode = senderRemoteNode.Node
+			} else if remoteMessage.RemoteNode == nil {
+				senderNode = localNode.Node
+			} else {
 				log.Error("Cannot get neighbor node")
 				return nil, nil, nil, false
 			}
 
 			if signedMsg == nil {
 				// TODO: remove this part after all msg are migrated to pb
-				err = message.HandleNodeMsg(sender, msgBody.Data)
+				err = HandleNodeMsg(senderRemoteNode, msgBody.Data)
 				if err != nil {
 					log.Errorf("Error handling node msg: %v", err)
 					return nil, nil, nil, false
 				}
-				localNode = nil
+				nnetLocalNode = nil
 			} else {
 				if len(signedMsg.Signature) > 0 {
-					pubKey := sender.GetPubKey()
+					pubKey := senderNode.GetPubKey()
 					if pubKey == nil {
 						log.Errorf("Neighbor public key is nil")
 						return nil, nil, nil, false
 					}
 
 					hash := sha256.Sum256(signedMsg.Message)
-					err := crypto.Verify(*pubKey, hash[:], signedMsg.Signature)
+					err = crypto.Verify(*pubKey, hash[:], signedMsg.Signature)
 					if err != nil {
 						log.Errorf("Verify signature error: %v", err)
 						return nil, nil, nil, false
@@ -161,21 +164,21 @@ func (node *Node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, loc
 				}
 
 				if len(remoteMessage.Msg.ReplyToId) == 0 {
-					reply, err := node.receiveMessage(sender, unsignedMsg)
+					reply, err := localNode.receiveMessage(senderNode, unsignedMsg)
 					if err != nil {
 						log.Errorf("Error handling message: %v", err)
 						return nil, nil, nil, false
 					}
 
-					if len(reply) > 0 {
-						err = sender.SendBytesReply(remoteMessage.Msg.MessageId, reply)
+					if len(reply) > 0 && senderRemoteNode != nil {
+						err = senderRemoteNode.SendBytesReply(remoteMessage.Msg.MessageId, reply)
 						if err != nil {
 							log.Errorf("Error sending reply: %v", err)
 							return nil, nil, nil, false
 						}
 					}
 
-					localNode = nil
+					nnetLocalNode = nil
 				} else {
 					msgBody.Data = unsignedMsg.Message
 					remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
@@ -187,24 +190,24 @@ func (node *Node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, loc
 			}
 		}
 
-		if localNode == nil && len(remoteNodes) == 0 {
+		if nnetLocalNode == nil && len(remoteNodes) == 0 {
 			return nil, nil, nil, false
 		}
 
 		if remoteMessage.Msg.RoutingType == nnetpb.RELAY && len(remoteNodes) > 0 {
-			msg, err := message.ParseMsg(msgBody.Data)
+			msg, err := ParseMsg(msgBody.Data)
 			if err != nil {
 				log.Errorf("Parse msg error: %v", err)
 				return nil, nil, nil, false
 			}
 
-			relayMsg, ok := msg.(*message.RelayMessage)
+			relayMsg, ok := msg.(*RelayMessage)
 			if !ok {
 				log.Errorf("Msg is not relay message")
 				return nil, nil, nil, false
 			}
 
-			relayMsg, err = node.processRelayMessage(relayMsg, remoteNodes)
+			relayMsg, err = localNode.processRelayMessage(relayMsg, remoteNodes)
 			if err != nil {
 				log.Errorf("Process relay msg error: %v", err)
 				return nil, nil, nil, false
@@ -224,10 +227,10 @@ func (node *Node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, loc
 		}
 	}
 
-	return remoteMessage, localNode, remoteNodes, true
+	return remoteMessage, nnetLocalNode, remoteNodes, true
 }
 
-func (node *Node) receiveMessage(sender protocol.Noder, unsignedMsg *pb.UnsignedMessage) ([]byte, error) {
+func (localNode *LocalNode) receiveMessage(sender *Node, unsignedMsg *pb.UnsignedMessage) ([]byte, error) {
 	remoteMessage := &RemoteMessage{
 		Sender:  sender,
 		Message: unsignedMsg.Message,
@@ -237,7 +240,7 @@ func (node *Node) receiveMessage(sender protocol.Noder, unsignedMsg *pb.Unsigned
 	var shouldCallNext bool
 	var err error
 
-	for _, handler := range node.GetHandlers(unsignedMsg.MessageType) {
+	for _, handler := range localNode.GetHandlers(unsignedMsg.MessageType) {
 		reply, shouldCallNext, err = handler(remoteMessage)
 		if err != nil {
 			log.Errorf("Get error when handling message: %v", err)
@@ -252,7 +255,7 @@ func (node *Node) receiveMessage(sender protocol.Noder, unsignedMsg *pb.Unsigned
 	return reply, nil
 }
 
-func (node *Node) processRelayMessage(relayMsg *message.RelayMessage, remoteNodes []*nnetnode.RemoteNode) (*message.RelayMessage, error) {
+func (localNode *LocalNode) processRelayMessage(relayMsg *RelayMessage, remoteNodes []*nnetnode.RemoteNode) (*RelayMessage, error) {
 	if len(remoteNodes) == 0 {
 		return nil, fmt.Errorf("no next hop")
 	}
@@ -261,21 +264,72 @@ func (node *Node) processRelayMessage(relayMsg *message.RelayMessage, remoteNode
 		return nil, fmt.Errorf("multiple next hop is not supported yet")
 	}
 
-	nextHop := node.getNbrByNNetNode(remoteNodes[0])
+	nextHop := localNode.getNbrByNNetNode(remoteNodes[0])
 	if nextHop == nil {
 		return nil, fmt.Errorf("cannot get next hop neighbor node")
 	}
 
 	relayPacket := &relayMsg.Packet
-	err := node.relayer.SignRelayPacket(nextHop, relayPacket)
+	err := localNode.relayer.SignRelayPacket(nextHop, relayPacket)
 	if err != nil {
 		return nil, err
 	}
 
-	relayMsg, err = message.NewRelayMessage(relayPacket)
+	relayMsg, err = NewRelayMessage(relayPacket)
 	if err != nil {
 		return nil, err
 	}
 
 	return relayMsg, nil
+}
+
+// checkMessageType checks if a message type is allowed
+func checkMessageType(messageType pb.MessageType) error {
+	if messageType == pb.MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE {
+		return fmt.Errorf("message type %s should not be used", pb.MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE.String())
+	}
+
+	return nil
+}
+
+// checkMessageSigned checks if a message type is signed or unsigned as allowed
+func checkMessageSigned(messageType pb.MessageType, signed bool) error {
+	switch signed {
+	case true:
+		if _, ok := pb.AllowedSignedMessageType_name[int32(messageType)]; !ok {
+			return fmt.Errorf("message of type %s should be signed", messageType.String())
+		}
+	case false:
+		if _, ok := pb.AllowedUnsignedMessageType_name[int32(messageType)]; !ok {
+			return fmt.Errorf("message of type %s should not be signed", messageType.String())
+		}
+	}
+	return nil
+}
+
+// checkMessageRoutingType checks if a message type has the allowed routing type
+func checkMessageRoutingType(messageType pb.MessageType, routingType nnetpb.RoutingType) error {
+	switch routingType {
+	case nnetpb.DIRECT:
+		if _, ok := pb.AllowedDirectMessageType_name[int32(messageType)]; ok {
+			return nil
+		}
+	case nnetpb.RELAY:
+		if _, ok := pb.AllowedRelayMessageType_name[int32(messageType)]; ok {
+			return nil
+		}
+	case nnetpb.BROADCAST_PUSH:
+		if _, ok := pb.AllowedBroadcastPushMessageType_name[int32(messageType)]; ok {
+			return nil
+		}
+	case nnetpb.BROADCAST_PULL:
+		if _, ok := pb.AllowedBroadcastPullMessageType_name[int32(messageType)]; ok {
+			return nil
+		}
+	case nnetpb.BROADCAST_TREE:
+		if _, ok := pb.AllowedBroadcastTreeMessageType_name[int32(messageType)]; ok {
+			return nil
+		}
+	}
+	return fmt.Errorf("message of type %s is not allowed for routing type %s", messageType.String(), routingType.String())
 }

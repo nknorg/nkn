@@ -1,13 +1,12 @@
 package node
 
 import (
-	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/pb"
 )
 
 // RemoteMessage is the message received from remote nodes
 type RemoteMessage struct {
-	Sender  protocol.Noder
+	Sender  *Node
 	Message []byte
 }
 

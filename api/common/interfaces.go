@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"math"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
@@ -13,7 +14,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
 	netcomm "github.com/nknorg/nkn/net/common"
-	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/address"
@@ -338,7 +339,7 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 	key, _ := node.GetPubKey().EncodePoint(true)
 	n := netcomm.NodeInfo{
 		SyncState: node.GetSyncState().String(),
-		Time:      node.GetTime(),
+		Time:      time.Now().UnixNano(),
 		Addr:      node.GetAddrStr(),
 		JsonPort:  node.GetHttpJsonPort(),
 		WsPort:    node.GetWsPort(),
@@ -1084,12 +1085,12 @@ func getUnspends(s Serverer, params map[string]interface{}) map[string]interface
 	return respPacking(results, SUCCESS)
 }
 
-func VerifyAndSendTx(n protocol.Noder, txn *transaction.Transaction) errors.ErrCode {
-	if errCode := n.AppendTxnPool(txn); errCode != errors.ErrNoError {
+func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) errors.ErrCode {
+	if errCode := localNode.AppendTxnPool(txn); errCode != errors.ErrNoError {
 		log.Warning("Can NOT add the transaction to TxnPool")
 		return errCode
 	}
-	if err := n.Xmit(txn); err != nil {
+	if err := localNode.Xmit(txn); err != nil {
 		log.Error("Xmit Tx Error:Xmit transaction failed.", err)
 		return errors.ErrXmitFail
 	}
