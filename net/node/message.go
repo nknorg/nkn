@@ -15,7 +15,7 @@ import (
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
-func (node *node) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) ([]byte, error) {
+func (node *Node) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) ([]byte, error) {
 	if node.account == nil {
 		return nil, errors.New("Account is nil")
 	}
@@ -42,7 +42,7 @@ func (node *node) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) (
 	return proto.Marshal(signedMsg)
 }
 
-func (node *node) SendBytesAsync(buf []byte) error {
+func (node *Node) SendBytesAsync(buf []byte) error {
 	err := node.local.nnet.SendBytesDirectAsync(buf, node.nnetNode)
 	if err != nil {
 		log.Errorf("Error sending async messge to node %v, removing node.", err.Error())
@@ -52,7 +52,7 @@ func (node *node) SendBytesAsync(buf []byte) error {
 	return err
 }
 
-func (node *node) SendBytesSync(buf []byte) ([]byte, error) {
+func (node *Node) SendBytesSync(buf []byte) ([]byte, error) {
 	reply, _, err := node.local.nnet.SendBytesDirectSync(buf, node.nnetNode)
 	if err != nil {
 		log.Errorf("Error sending sync messge to node: %v", err.Error())
@@ -60,7 +60,7 @@ func (node *node) SendBytesSync(buf []byte) ([]byte, error) {
 	return reply, err
 }
 
-func (node *node) SendBytesReply(replyToID, buf []byte) error {
+func (node *Node) SendBytesReply(replyToID, buf []byte) error {
 	err := node.local.nnet.SendBytesDirectReply(replyToID, buf, node.nnetNode)
 	if err != nil {
 		log.Errorf("Error sending async messge to node: %v, removing node.", err.Error())
@@ -70,7 +70,7 @@ func (node *node) SendBytesReply(replyToID, buf []byte) error {
 	return err
 }
 
-func (node *node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
+func (node *Node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, localNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
 	if remoteMessage.Msg.MessageType == nnetpb.BYTES {
 		err := node.maybeAddRemoteNode(remoteMessage.RemoteNode)
 		if err != nil {
@@ -161,7 +161,7 @@ func (node *node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, loc
 				}
 
 				if len(remoteMessage.Msg.ReplyToId) == 0 {
-					reply, err := receiveMessage(sender, unsignedMsg)
+					reply, err := node.receiveMessage(sender, unsignedMsg)
 					if err != nil {
 						log.Errorf("Error handling message: %v", err)
 						return nil, nil, nil, false
@@ -227,8 +227,8 @@ func (node *node) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, loc
 	return remoteMessage, localNode, remoteNodes, true
 }
 
-func receiveMessage(sender protocol.Noder, unsignedMsg *pb.UnsignedMessage) ([]byte, error) {
-	remoteMessage := &message.RemoteMessage{
+func (node *Node) receiveMessage(sender protocol.Noder, unsignedMsg *pb.UnsignedMessage) ([]byte, error) {
+	remoteMessage := &RemoteMessage{
 		Sender:  sender,
 		Message: unsignedMsg.Message,
 	}
@@ -237,7 +237,7 @@ func receiveMessage(sender protocol.Noder, unsignedMsg *pb.UnsignedMessage) ([]b
 	var shouldCallNext bool
 	var err error
 
-	for _, handler := range message.GetHandlers(unsignedMsg.MessageType) {
+	for _, handler := range node.GetHandlers(unsignedMsg.MessageType) {
 		reply, shouldCallNext, err = handler(remoteMessage)
 		if err != nil {
 			log.Errorf("Get error when handling message: %v", err)
@@ -252,7 +252,7 @@ func receiveMessage(sender protocol.Noder, unsignedMsg *pb.UnsignedMessage) ([]b
 	return reply, nil
 }
 
-func (node *node) processRelayMessage(relayMsg *message.RelayMessage, remoteNodes []*nnetnode.RemoteNode) (*message.RelayMessage, error) {
+func (node *Node) processRelayMessage(relayMsg *message.RelayMessage, remoteNodes []*nnetnode.RemoteNode) (*message.RelayMessage, error) {
 	if len(remoteNodes) == 0 {
 		return nil, fmt.Errorf("no next hop")
 	}

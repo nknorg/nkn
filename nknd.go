@@ -172,24 +172,24 @@ func nknMain(c *cli.Context) error {
 		return errors.New("PorServer initialization error")
 	}
 
-	node, err := node.NewLocalNode(account, nn)
+	localNode, err := node.NewLocalNode(account, nn)
 	if err != nil {
 		return err
 	}
 
-	err = node.Start()
+	err = localNode.Start()
 	if err != nil {
 		return err
 	}
 
 	// start relay service
-	node.StartRelayer(wallet)
+	localNode.StartRelayer(wallet)
 
 	//start JsonRPC
-	rpcServer := httpjson.NewServer(node, wallet)
+	rpcServer := httpjson.NewServer(localNode, wallet)
 
 	// start websocket server
-	ws := websocket.NewServer(node, wallet)
+	ws := websocket.NewServer(localNode, wallet)
 
 	// start http proxy
 	hp := httpproxy.NewServer()
@@ -215,7 +215,7 @@ func nknMain(c *cli.Context) error {
 		go func() {
 			for {
 				time.Sleep(time.Minute)
-				if node.GetConnectionCnt() == 0 {
+				if localNode.GetConnectionCnt() == 0 {
 					log.Error("Node has no neighbors and is too lonely to run")
 					panic("Node has no neighbors and is too lonely to run")
 				}
@@ -231,7 +231,7 @@ func nknMain(c *cli.Context) error {
 
 	go hp.Start()
 
-	consensus, err := moca.NewConsensus(account, node)
+	consensus, err := moca.NewConsensus(account, localNode)
 	if err != nil {
 		return err
 	}
