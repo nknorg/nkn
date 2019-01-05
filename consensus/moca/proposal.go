@@ -240,9 +240,9 @@ func (consensus *Consensus) receiveProposalHash(neighborID uint64, height uint32
 }
 
 // requestProposal requests a block proposal by block hash from a neighbor using
-// REQUEST_BLOCK message
+// REQUEST_BLOCK_PROPOSAL message
 func (consensus *Consensus) requestProposal(neighbor protocol.Noder, blockHash common.Uint256) (*ledger.Block, error) {
-	msg, err := NewRequestBlockMessage(blockHash)
+	msg, err := NewRequestBlockProposalMessage(blockHash)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func (consensus *Consensus) requestProposal(neighbor protocol.Noder, blockHash c
 		return nil, err
 	}
 
-	replyMsg := &pb.RequestBlockReply{}
+	replyMsg := &pb.RequestBlockProposalReply{}
 	err = proto.Unmarshal(replyBytes, replyMsg)
 	if err != nil {
 		return nil, err
@@ -279,7 +279,7 @@ func (consensus *Consensus) requestProposal(neighbor protocol.Noder, blockHash c
 // iHaveProposal sends I_HAVE_PROPOSAL message to neighbors informing them node
 // has a block proposal
 func (consensus *Consensus) iHaveProposal(height uint32, blockHash common.Uint256) error {
-	msg, err := NewIHaveBlockMessage(height, blockHash)
+	msg, err := NewIHaveBlockProposalMessage(height, blockHash)
 	if err != nil {
 		return err
 	}
