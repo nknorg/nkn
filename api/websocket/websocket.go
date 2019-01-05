@@ -9,7 +9,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/events"
-	. "github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/net/node"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 )
@@ -22,10 +22,10 @@ var (
 	pushBlockTxsFlag bool = false
 )
 
-func NewServer(n Noder, w vault.Wallet) *server.WsServer {
+func NewServer(localNode *node.LocalNode, w vault.Wallet) *server.WsServer {
 	//	common.SetNode(n)
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
-	ws = server.InitWsServer(n, w)
+	ws = server.InitWsServer(localNode, w)
 	return ws
 }
 

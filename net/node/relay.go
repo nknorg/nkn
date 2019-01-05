@@ -1,24 +1,151 @@
 package node
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
+	"sync"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/net/message"
+	nknErrors "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/relay"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nnet/log"
 )
 
-func (node *Node) StartRelayer(wallet vault.Wallet) {
-	node.relayer = relay.NewRelayService(wallet, node)
-	node.relayer.Start()
+type RelayService struct {
+	sync.Mutex
+	wallet    vault.Wallet
+	localNode *LocalNode
+	porServer *por.PorServer
 }
 
-func (node *Node) SendRelayPacket(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error {
+func NewRelayService(wallet vault.Wallet, localNode *LocalNode) *RelayService {
+	service := &RelayService{
+		wallet:    wallet,
+		localNode: localNode,
+		porServer: por.GetPorServer(),
+	}
+	return service
+}
+
+func (rs *RelayService) Start() error {
+	rs.localNode.GetEvent("relay").Subscribe(events.EventRelayMsgReceived, rs.receiveRelayMsgNoError)
+	rs.localNode.GetEvent("relay").Subscribe(events.EventReceiveClientSignedSigChain, rs.receiveClientSignedSigChainNoError)
+	return nil
+}
+
+func (rs *RelayService) HandleMsg(packet *RelayPacket) error {
+	// handle packet send to self
+	if bytes.Equal(rs.localNode.GetChordAddr(), packet.DestID) {
+		log.Infof(
+			"Receive packet:\nSrcID: %s\nDestID: %x\nPayload Size: %d",
+			packet.SrcAddr,
+			packet.DestID,
+			len(packet.Payload),
+		)
+		return nil
+	}
+
+	destPubKey := packet.SigChain.GetDestPubkey()
+	mining := rs.localNode.GetSyncState() == pb.PersistFinished
+
+	err := rs.porServer.Sign(packet.SigChain, destPubKey, mining)
+	if err != nil {
+		log.Error("Signing signature chain error: ", err)
+		return err
+	}
+
+	_, err = packet.SigChain.ExtendElement(packet.DestID, destPubKey, false)
+	if err != nil {
+		return err
+	}
+
+	rs.localNode.GetEvent("relay").Notify(events.EventSendInboundPacketToClient, packet)
+
+	return nil
+}
+
+func (rs *RelayService) receiveRelayMsg(v interface{}) error {
+	if packet, ok := v.(*RelayPacket); ok {
+		return rs.HandleMsg(packet)
+	} else {
+		return errors.New("Decode relay msg failed")
+	}
+}
+
+func (rs *RelayService) receiveRelayMsgNoError(v interface{}) {
+	err := rs.receiveRelayMsg(v)
+	if err != nil {
+		log.Error(err)
+	}
+}
+
+func (rs *RelayService) receiveClientSignedSigChain(v interface{}) error {
+	sigChain, ok := v.(*por.SigChain)
+	if !ok {
+		return errors.New("Decode client signed sigchain failed")
+	}
+
+	// TODO: only pick sigchain to sign when threshold is smaller than
+	buf, err := proto.Marshal(sigChain)
+	if err != nil {
+		return err
+	}
+
+	txn, err := vault.MakeCommitTransaction(rs.wallet, buf)
+	if err != nil {
+		return err
+	}
+
+	errCode := rs.localNode.AppendTxnPool(txn)
+	if errCode != nknErrors.ErrNoError {
+		return errCode
+	}
+
+	err = rs.localNode.Xmit(txn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rs *RelayService) receiveClientSignedSigChainNoError(v interface{}) {
+	err := rs.receiveClientSignedSigChain(v)
+	if err != nil {
+		log.Error(err)
+	}
+}
+
+func (rs *RelayService) SignRelayPacket(nextHop *RemoteNode, packet *RelayPacket) error {
+	nextPubkey, err := nextHop.GetPubKey().EncodePoint(true)
+	if err != nil {
+		log.Error("Get next hop public key error: ", err)
+		return err
+	}
+	mining := false
+	if rs.localNode.GetSyncState() == pb.PersistFinished {
+		mining = true
+	}
+	err = rs.porServer.Sign(packet.SigChain, nextPubkey, mining)
+	if err != nil {
+		log.Error("Signing signature chain error: ", err)
+		return err
+	}
+	return nil
+}
+
+func (localNode *LocalNode) StartRelayer() {
+	localNode.relayer.Start()
+}
+
+func (localNode *LocalNode) SendRelayPacket(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error {
 	srcID, srcPubkey, err := address.ParseClientAddress(srcAddr)
 	if err != nil {
 		return err
@@ -54,12 +181,12 @@ func (node *Node) SendRelayPacket(srcAddr, destAddr string, payload, signature [
 		return err
 	}
 
-	relayPacket, err := message.NewRelayPacket(srcAddr, destID, payload, sigChain, maxHoldingSeconds)
+	relayPacket, err := NewRelayPacket(srcAddr, destID, payload, sigChain, maxHoldingSeconds)
 	if err != nil {
 		return err
 	}
 
-	relayMsg, err := message.NewRelayMessage(relayPacket)
+	relayMsg, err := NewRelayMessage(relayPacket)
 	if err != nil {
 		return err
 	}
@@ -69,10 +196,7 @@ func (node *Node) SendRelayPacket(srcAddr, destAddr string, payload, signature [
 		return err
 	}
 
-	if node.nnet == nil {
-		return errors.New("Node is not local node")
-	}
-	_, err = node.nnet.SendBytesRelayAsync(buf, destID)
+	_, err = localNode.nnet.SendBytesRelayAsync(buf, destID)
 	if err != nil {
 		return err
 	}
