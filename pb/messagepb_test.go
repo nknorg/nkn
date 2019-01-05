@@ -187,15 +187,15 @@ func TestVoteMarshalTo(t *testing.T) {
 	}
 }
 
-func TestIHaveBlockProto(t *testing.T) {
+func TestIHaveBlockProposalProto(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedIHaveBlock(popr, false)
+	p := NewPopulatedIHaveBlockProposal(popr, false)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &IHaveBlock{}
+	msg := &IHaveBlockProposal{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -218,10 +218,10 @@ func TestIHaveBlockProto(t *testing.T) {
 	}
 }
 
-func TestIHaveBlockMarshalTo(t *testing.T) {
+func TestIHaveBlockProposalMarshalTo(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedIHaveBlock(popr, false)
+	p := NewPopulatedIHaveBlockProposal(popr, false)
 	size := p.Size()
 	dAtA := make([]byte, size)
 	for i := range dAtA {
@@ -231,7 +231,7 @@ func TestIHaveBlockMarshalTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &IHaveBlock{}
+	msg := &IHaveBlockProposal{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -243,15 +243,15 @@ func TestIHaveBlockMarshalTo(t *testing.T) {
 	}
 }
 
-func TestRequestBlockProto(t *testing.T) {
+func TestRequestBlockProposalProto(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlock(popr, false)
+	p := NewPopulatedRequestBlockProposal(popr, false)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &RequestBlock{}
+	msg := &RequestBlockProposal{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -274,10 +274,10 @@ func TestRequestBlockProto(t *testing.T) {
 	}
 }
 
-func TestRequestBlockMarshalTo(t *testing.T) {
+func TestRequestBlockProposalMarshalTo(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlock(popr, false)
+	p := NewPopulatedRequestBlockProposal(popr, false)
 	size := p.Size()
 	dAtA := make([]byte, size)
 	for i := range dAtA {
@@ -287,7 +287,7 @@ func TestRequestBlockMarshalTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &RequestBlock{}
+	msg := &RequestBlockProposal{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -299,15 +299,15 @@ func TestRequestBlockMarshalTo(t *testing.T) {
 	}
 }
 
-func TestRequestBlockReplyProto(t *testing.T) {
+func TestRequestBlockProposalReplyProto(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlockReply(popr, false)
+	p := NewPopulatedRequestBlockProposalReply(popr, false)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &RequestBlockReply{}
+	msg := &RequestBlockProposalReply{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -330,10 +330,10 @@ func TestRequestBlockReplyProto(t *testing.T) {
 	}
 }
 
-func TestRequestBlockReplyMarshalTo(t *testing.T) {
+func TestRequestBlockProposalReplyMarshalTo(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlockReply(popr, false)
+	p := NewPopulatedRequestBlockProposalReply(popr, false)
 	size := p.Size()
 	dAtA := make([]byte, size)
 	for i := range dAtA {
@@ -343,7 +343,7 @@ func TestRequestBlockReplyMarshalTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &RequestBlockReply{}
+	msg := &RequestBlockProposalReply{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -521,16 +521,16 @@ func TestVoteJSON(t *testing.T) {
 		t.Fatalf("seed = %d, %#v !Json Equal %#v", seed, msg, p)
 	}
 }
-func TestIHaveBlockJSON(t *testing.T) {
+func TestIHaveBlockProposalJSON(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedIHaveBlock(popr, true)
+	p := NewPopulatedIHaveBlockProposal(popr, true)
 	marshaler := github_com_gogo_protobuf_jsonpb.Marshaler{}
 	jsondata, err := marshaler.MarshalToString(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &IHaveBlock{}
+	msg := &IHaveBlockProposal{}
 	err = github_com_gogo_protobuf_jsonpb.UnmarshalString(jsondata, msg)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
@@ -539,16 +539,16 @@ func TestIHaveBlockJSON(t *testing.T) {
 		t.Fatalf("seed = %d, %#v !Json Equal %#v", seed, msg, p)
 	}
 }
-func TestRequestBlockJSON(t *testing.T) {
+func TestRequestBlockProposalJSON(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlock(popr, true)
+	p := NewPopulatedRequestBlockProposal(popr, true)
 	marshaler := github_com_gogo_protobuf_jsonpb.Marshaler{}
 	jsondata, err := marshaler.MarshalToString(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &RequestBlock{}
+	msg := &RequestBlockProposal{}
 	err = github_com_gogo_protobuf_jsonpb.UnmarshalString(jsondata, msg)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
@@ -557,16 +557,16 @@ func TestRequestBlockJSON(t *testing.T) {
 		t.Fatalf("seed = %d, %#v !Json Equal %#v", seed, msg, p)
 	}
 }
-func TestRequestBlockReplyJSON(t *testing.T) {
+func TestRequestBlockProposalReplyJSON(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlockReply(popr, true)
+	p := NewPopulatedRequestBlockProposalReply(popr, true)
 	marshaler := github_com_gogo_protobuf_jsonpb.Marshaler{}
 	jsondata, err := marshaler.MarshalToString(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &RequestBlockReply{}
+	msg := &RequestBlockProposalReply{}
 	err = github_com_gogo_protobuf_jsonpb.UnmarshalString(jsondata, msg)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
@@ -695,12 +695,12 @@ func TestVoteProtoCompactText(t *testing.T) {
 	}
 }
 
-func TestIHaveBlockProtoText(t *testing.T) {
+func TestIHaveBlockProposalProtoText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedIHaveBlock(popr, true)
+	p := NewPopulatedIHaveBlockProposal(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.MarshalTextString(p)
-	msg := &IHaveBlock{}
+	msg := &IHaveBlockProposal{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -709,12 +709,12 @@ func TestIHaveBlockProtoText(t *testing.T) {
 	}
 }
 
-func TestIHaveBlockProtoCompactText(t *testing.T) {
+func TestIHaveBlockProposalProtoCompactText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedIHaveBlock(popr, true)
+	p := NewPopulatedIHaveBlockProposal(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.CompactTextString(p)
-	msg := &IHaveBlock{}
+	msg := &IHaveBlockProposal{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -723,12 +723,12 @@ func TestIHaveBlockProtoCompactText(t *testing.T) {
 	}
 }
 
-func TestRequestBlockProtoText(t *testing.T) {
+func TestRequestBlockProposalProtoText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlock(popr, true)
+	p := NewPopulatedRequestBlockProposal(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.MarshalTextString(p)
-	msg := &RequestBlock{}
+	msg := &RequestBlockProposal{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -737,12 +737,12 @@ func TestRequestBlockProtoText(t *testing.T) {
 	}
 }
 
-func TestRequestBlockProtoCompactText(t *testing.T) {
+func TestRequestBlockProposalProtoCompactText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlock(popr, true)
+	p := NewPopulatedRequestBlockProposal(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.CompactTextString(p)
-	msg := &RequestBlock{}
+	msg := &RequestBlockProposal{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -751,12 +751,12 @@ func TestRequestBlockProtoCompactText(t *testing.T) {
 	}
 }
 
-func TestRequestBlockReplyProtoText(t *testing.T) {
+func TestRequestBlockProposalReplyProtoText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlockReply(popr, true)
+	p := NewPopulatedRequestBlockProposalReply(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.MarshalTextString(p)
-	msg := &RequestBlockReply{}
+	msg := &RequestBlockProposalReply{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -765,12 +765,12 @@ func TestRequestBlockReplyProtoText(t *testing.T) {
 	}
 }
 
-func TestRequestBlockReplyProtoCompactText(t *testing.T) {
+func TestRequestBlockProposalReplyProtoCompactText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlockReply(popr, true)
+	p := NewPopulatedRequestBlockProposalReply(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.CompactTextString(p)
-	msg := &RequestBlockReply{}
+	msg := &RequestBlockProposalReply{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -874,9 +874,9 @@ func TestVoteGoString(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestIHaveBlockGoString(t *testing.T) {
+func TestIHaveBlockProposalGoString(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedIHaveBlock(popr, false)
+	p := NewPopulatedIHaveBlockProposal(popr, false)
 	s1 := p.GoString()
 	s2 := fmt.Sprintf("%#v", p)
 	if s1 != s2 {
@@ -887,9 +887,9 @@ func TestIHaveBlockGoString(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestRequestBlockGoString(t *testing.T) {
+func TestRequestBlockProposalGoString(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedRequestBlock(popr, false)
+	p := NewPopulatedRequestBlockProposal(popr, false)
 	s1 := p.GoString()
 	s2 := fmt.Sprintf("%#v", p)
 	if s1 != s2 {
@@ -900,9 +900,9 @@ func TestRequestBlockGoString(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestRequestBlockReplyGoString(t *testing.T) {
+func TestRequestBlockProposalReplyGoString(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedRequestBlockReply(popr, false)
+	p := NewPopulatedRequestBlockProposalReply(popr, false)
 	s1 := p.GoString()
 	s2 := fmt.Sprintf("%#v", p)
 	if s1 != s2 {
@@ -1005,10 +1005,10 @@ func TestVoteSize(t *testing.T) {
 	}
 }
 
-func TestIHaveBlockSize(t *testing.T) {
+func TestIHaveBlockProposalSize(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedIHaveBlock(popr, true)
+	p := NewPopulatedIHaveBlockProposal(popr, true)
 	size2 := github_com_gogo_protobuf_proto.Size(p)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
@@ -1027,10 +1027,10 @@ func TestIHaveBlockSize(t *testing.T) {
 	}
 }
 
-func TestRequestBlockSize(t *testing.T) {
+func TestRequestBlockProposalSize(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlock(popr, true)
+	p := NewPopulatedRequestBlockProposal(popr, true)
 	size2 := github_com_gogo_protobuf_proto.Size(p)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
@@ -1049,10 +1049,10 @@ func TestRequestBlockSize(t *testing.T) {
 	}
 }
 
-func TestRequestBlockReplySize(t *testing.T) {
+func TestRequestBlockProposalReplySize(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedRequestBlockReply(popr, true)
+	p := NewPopulatedRequestBlockProposalReply(popr, true)
 	size2 := github_com_gogo_protobuf_proto.Size(p)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
@@ -1142,27 +1142,27 @@ func TestVoteStringer(t *testing.T) {
 		t.Fatalf("String want %v got %v", s1, s2)
 	}
 }
-func TestIHaveBlockStringer(t *testing.T) {
+func TestIHaveBlockProposalStringer(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedIHaveBlock(popr, false)
+	p := NewPopulatedIHaveBlockProposal(popr, false)
 	s1 := p.String()
 	s2 := fmt.Sprintf("%v", p)
 	if s1 != s2 {
 		t.Fatalf("String want %v got %v", s1, s2)
 	}
 }
-func TestRequestBlockStringer(t *testing.T) {
+func TestRequestBlockProposalStringer(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedRequestBlock(popr, false)
+	p := NewPopulatedRequestBlockProposal(popr, false)
 	s1 := p.String()
 	s2 := fmt.Sprintf("%v", p)
 	if s1 != s2 {
 		t.Fatalf("String want %v got %v", s1, s2)
 	}
 }
-func TestRequestBlockReplyStringer(t *testing.T) {
+func TestRequestBlockProposalReplyStringer(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedRequestBlockReply(popr, false)
+	p := NewPopulatedRequestBlockProposalReply(popr, false)
 	s1 := p.String()
 	s2 := fmt.Sprintf("%v", p)
 	if s1 != s2 {
