@@ -13,12 +13,12 @@ import (
 	"github.com/nknorg/nkn/vault"
 )
 
-func (node *node) StartRelayer(wallet vault.Wallet) {
+func (node *Node) StartRelayer(wallet vault.Wallet) {
 	node.relayer = relay.NewRelayService(wallet, node)
 	node.relayer.Start()
 }
 
-func (node *node) SendRelayPacket(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error {
+func (node *Node) SendRelayPacket(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error {
 	srcID, srcPubkey, err := address.ParseClientAddress(srcAddr)
 	if err != nil {
 		return err
