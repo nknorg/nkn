@@ -46,13 +46,13 @@ const (
 	ConnectingTimeout    = 10 * time.Second // timeout for waiting for connection
 )
 
-type node struct {
+type Node struct {
 	sync.RWMutex
 	pb.NodeData
 	id            uint64         // node ID
 	version       uint32         // network protocol version
 	height        uint32         // node latest block height
-	local         *node          // local node
+	local         *Node          // local node
 	txnCnt        uint64         // transmitted transaction count
 	rxTxnCnt      uint64         // received transaction count
 	account       *vault.Account // local node wallet account
@@ -68,14 +68,15 @@ type node struct {
 	eventQueue                        // event queue
 	*pool.TxnPool                     // transaction pool of local node
 	*hashCache                        // entity hash cache
+	*handlerStore
 }
 
-func NewNode() *node {
-	n := node{}
+func NewNode() *Node {
+	n := Node{}
 	return &n
 }
 
-func NewLocalNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
+func NewLocalNode(account *vault.Account, nn *nnet.NNet) (*Node, error) {
 	var err error
 
 	n := NewNode()
@@ -106,6 +107,7 @@ func NewLocalNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
 	n.quit = make(chan bool, 1)
 	n.eventQueue.init()
 	n.hashCache = NewHashCache()
+	n.handlerStore = newHandlerStore()
 
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, n.cleanupTransactions)
 
@@ -147,12 +149,12 @@ func NewLocalNode(account *vault.Account, nn *nnet.NNet) (Noder, error) {
 	return n, nil
 }
 
-func (node *node) Start() error {
+func (node *Node) Start() error {
 	go node.startSyncingBlock()
 	return nil
 }
 
-func (node *node) addRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+func (node *Node) addRemoteNode(remoteNode *nnetnode.RemoteNode) error {
 	var err error
 	n := NewNode()
 	n.local = node
@@ -177,60 +179,60 @@ func (node *node) addRemoteNode(remoteNode *nnetnode.RemoteNode) error {
 	return nil
 }
 
-func (node *node) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+func (node *Node) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
 	if remoteNode != nil && node.getNbrByNNetNode(remoteNode) == nil {
 		return node.addRemoteNode(remoteNode)
 	}
 	return nil
 }
 
-func (node *node) GetID() uint64 {
+func (node *Node) GetID() uint64 {
 	return node.id
 }
 
-func (node *node) GetPort() uint16 {
+func (node *Node) GetPort() uint16 {
 	address, _ := url.Parse(node.GetAddrStr())
 	port, _ := strconv.Atoi(address.Port())
 	return uint16(port)
 }
 
-func (node *node) GetHttpJsonPort() uint16 {
+func (node *Node) GetHttpJsonPort() uint16 {
 	return uint16(node.JsonRpcPort)
 }
 
-func (node *node) GetWsPort() uint16 {
+func (node *Node) GetWsPort() uint16 {
 	return uint16(node.WebsocketPort)
 }
 
-func (node *node) Version() uint32 {
+func (node *Node) Version() uint32 {
 	return node.version
 }
 
-func (node *node) IncRxTxnCnt() {
+func (node *Node) IncRxTxnCnt() {
 	node.rxTxnCnt++
 }
 
-func (node *node) GetTxnCnt() uint64 {
+func (node *Node) GetTxnCnt() uint64 {
 	return node.txnCnt
 }
 
-func (node *node) GetRxTxnCnt() uint64 {
+func (node *Node) GetRxTxnCnt() uint64 {
 	return node.rxTxnCnt
 }
 
-func (node *node) GetPubKey() *crypto.PubKey {
+func (node *Node) GetPubKey() *crypto.PubKey {
 	return node.publicKey
 }
 
-func (node *node) LocalNode() Noder {
+func (node *Node) LocalNode() Noder {
 	return node.local
 }
 
-func (node *node) GetTxnPool() *pool.TxnPool {
+func (node *Node) GetTxnPool() *pool.TxnPool {
 	return node.TxnPool
 }
 
-func (node *node) GetHeight() uint32 {
+func (node *Node) GetHeight() uint32 {
 	if node.IsLocalNode() {
 		return ledger.DefaultLedger.Store.GetHeight()
 	}
@@ -240,13 +242,13 @@ func (node *node) GetHeight() uint32 {
 	return node.height
 }
 
-func (node *node) SetHeight(height uint32) {
+func (node *Node) SetHeight(height uint32) {
 	node.Lock()
 	defer node.Unlock()
 	node.height = height
 }
 
-func (node *node) Xmit(msg interface{}) error {
+func (node *Node) Xmit(msg interface{}) error {
 	var buffer []byte
 	var err error
 	switch msg.(type) {
@@ -267,12 +269,12 @@ func (node *node) Xmit(msg interface{}) error {
 	return node.Broadcast(buffer)
 }
 
-func (node *node) GetAddr() string {
+func (node *Node) GetAddr() string {
 	address, _ := url.Parse(node.GetAddrStr())
 	return address.Hostname()
 }
 
-func (node *node) GetAddr16() ([16]byte, error) {
+func (node *Node) GetAddr16() ([16]byte, error) {
 	var result [16]byte
 	ip := net.ParseIP(node.GetAddr()).To16()
 	if ip == nil {
@@ -284,14 +286,14 @@ func (node *node) GetAddr16() ([16]byte, error) {
 	return result, nil
 }
 
-func (node *node) GetAddrStr() string {
+func (node *Node) GetAddrStr() string {
 	if node.IsLocalNode() {
 		return node.nnet.GetLocalNode().Addr
 	}
 	return node.nnetNode.Addr
 }
 
-func (node *node) GetConnDirection() string {
+func (node *Node) GetConnDirection() string {
 	if node.nnet != nil {
 		return "LocalNode"
 	}
@@ -301,16 +303,16 @@ func (node *node) GetConnDirection() string {
 	return "Inbound"
 }
 
-func (node *node) GetTime() int64 {
+func (node *Node) GetTime() int64 {
 	t := time.Now()
 	return t.UnixNano()
 }
 
-func (node *node) IsLocalNode() bool {
+func (node *Node) IsLocalNode() bool {
 	return node.nnet != nil
 }
 
-func (node *node) SendRelayPacketsInBuffer(clientID []byte) error {
+func (node *Node) SendRelayPacketsInBuffer(clientID []byte) error {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Error("SendRelayPacketsInBuffer recover:", err)
@@ -319,13 +321,13 @@ func (node *node) SendRelayPacketsInBuffer(clientID []byte) error {
 	return node.relayer.SendRelayPacketsInBuffer(clientID)
 }
 
-func (node *node) GetSyncState() pb.SyncState {
+func (node *Node) GetSyncState() pb.SyncState {
 	node.RLock()
 	defer node.RUnlock()
 	return node.syncState
 }
 
-func (node *node) SetSyncState(s pb.SyncState) {
+func (node *Node) SetSyncState(s pb.SyncState) {
 	node.Lock()
 	defer node.Unlock()
 	node.syncState = s
@@ -338,13 +340,13 @@ func (node *node) SetSyncState(s pb.SyncState) {
 	}
 }
 
-func (node *node) GetSyncStopHash() Uint256 {
+func (node *Node) GetSyncStopHash() Uint256 {
 	node.RLock()
 	defer node.RUnlock()
 	return node.syncStopHash
 }
 
-func (node *node) SetSyncStopHash(hash Uint256, height uint32) {
+func (node *Node) SetSyncStopHash(hash Uint256, height uint32) {
 	node.Lock()
 	defer node.Unlock()
 	if node.syncStopHash == EmptyUint256 && hash != EmptyUint256 {
@@ -354,11 +356,11 @@ func (node *node) SetSyncStopHash(hash Uint256, height uint32) {
 	}
 }
 
-func (node *node) GetWsAddr() string {
+func (node *Node) GetWsAddr() string {
 	return fmt.Sprintf("%s:%d", node.GetAddr(), node.GetWsPort())
 }
 
-func (node *node) FindSuccessorAddrs(key []byte, numSucc int) ([]string, error) {
+func (node *Node) FindSuccessorAddrs(key []byte, numSucc int) ([]string, error) {
 	if !node.IsLocalNode() {
 		return nil, errors.New("Node is not local node")
 	}
@@ -385,7 +387,7 @@ func (node *node) FindSuccessorAddrs(key []byte, numSucc int) ([]string, error) 
 	return addrs, nil
 }
 
-func (node *node) findAddr(key []byte, portSupplier func(nodeData *pb.NodeData) uint32) (string, error) {
+func (node *Node) findAddr(key []byte, portSupplier func(nodeData *pb.NodeData) uint32) (string, error) {
 	if !node.IsLocalNode() {
 		return "", errors.New("Node is not local node")
 	}
@@ -426,34 +428,34 @@ func (node *node) findAddr(key []byte, portSupplier func(nodeData *pb.NodeData) 
 	return wsAddr, nil
 }
 
-func (node *node) FindWsAddr(key []byte) (string, error) {
+func (node *Node) FindWsAddr(key []byte) (string, error) {
 	return node.findAddr(key, func(nodeData *pb.NodeData) uint32 {
 		return nodeData.WebsocketPort
 	})
 }
 
-func (node *node) FindHttpProxyAddr(key []byte) (string, error) {
+func (node *Node) FindHttpProxyAddr(key []byte) (string, error) {
 	return node.findAddr(key, func(nodeData *pb.NodeData) uint32 {
 		return nodeData.HttpProxyPort
 	})
 }
 
-func (node *node) GetChordAddr() []byte {
+func (node *Node) GetChordAddr() []byte {
 	if node.IsLocalNode() {
 		return node.nnet.GetLocalNode().Id
 	}
 	return node.nnetNode.Id
 }
 
-func (node *node) CloseConn() {
+func (node *Node) CloseConn() {
 	node.nnetNode.Stop(nil)
 }
 
-func (node *node) Tx(buf []byte) {
+func (node *Node) Tx(buf []byte) {
 	node.SendBytesAsync(buf)
 }
 
-func (node *node) Broadcast(buf []byte) error {
+func (node *Node) Broadcast(buf []byte) error {
 	if !node.IsLocalNode() {
 		return errors.New("Node is not local node")
 	}
@@ -466,7 +468,7 @@ func (node *node) Broadcast(buf []byte) error {
 	return nil
 }
 
-func (node *node) DumpChordInfo() *ChordInfo {
+func (node *Node) DumpChordInfo() *ChordInfo {
 	c, ok := node.nnet.Network.(*chord.Chord)
 	if !ok {
 		log.Errorf("Overlay is not chord")
@@ -484,7 +486,7 @@ func (node *node) DumpChordInfo() *ChordInfo {
 	return &ret
 }
 
-func (node *node) GetSuccessors() (ret []*ChordNodeInfo) {
+func (node *Node) GetSuccessors() (ret []*ChordNodeInfo) {
 	c, ok := node.nnet.Network.(*chord.Chord)
 	if !ok {
 		log.Errorf("Overlay is not chord")
@@ -498,7 +500,7 @@ func (node *node) GetSuccessors() (ret []*ChordNodeInfo) {
 	return ret
 }
 
-func (node *node) GetPredecessors() (ret []*ChordNodeInfo) {
+func (node *Node) GetPredecessors() (ret []*ChordNodeInfo) {
 	c, ok := node.nnet.Network.(*chord.Chord)
 	if !ok {
 		log.Errorf("Overlay is not chord")
@@ -512,7 +514,7 @@ func (node *node) GetPredecessors() (ret []*ChordNodeInfo) {
 	return ret
 }
 
-func (node *node) GetFingerTab() (ret map[int][]*ChordNodeInfo) {
+func (node *Node) GetFingerTab() (ret map[int][]*ChordNodeInfo) {
 	c, ok := node.nnet.Network.(*chord.Chord)
 	if !ok {
 		log.Errorf("Overlay is not chord")
@@ -533,7 +535,7 @@ func (node *node) GetFingerTab() (ret map[int][]*ChordNodeInfo) {
 	return ret
 }
 
-func (node *node) cleanupTransactions(v interface{}) {
+func (node *Node) cleanupTransactions(v interface{}) {
 	if block, ok := v.(*ledger.Block); ok {
 		node.TxnPool.CleanSubmittedTransactions(block.Transactions)
 	}

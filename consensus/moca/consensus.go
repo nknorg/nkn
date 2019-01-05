@@ -10,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
@@ -19,7 +20,7 @@ import (
 // Consensus is the Majority vOte Cellular Automata (MOCA) consensus layer
 type Consensus struct {
 	account             *vault.Account
-	localNode           protocol.Noder
+	localNode           *node.Node
 	startOnce           sync.Once
 	elections           common.Cache
 	proposals           common.Cache
@@ -39,7 +40,7 @@ type Consensus struct {
 }
 
 // NewConsensus creates a MOCA consensus
-func NewConsensus(account *vault.Account, localNode protocol.Noder) (*Consensus, error) {
+func NewConsensus(account *vault.Account, localNode *node.Node) (*Consensus, error) {
 	txnCollector := transaction.NewTxnCollector(localNode.GetTxnPool(), maxNumTxnPerBlock)
 	consensus := &Consensus{
 		account:             account,
