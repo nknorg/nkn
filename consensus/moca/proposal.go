@@ -12,7 +12,7 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/moca/election"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
@@ -241,7 +241,7 @@ func (consensus *Consensus) receiveProposalHash(neighborID uint64, height uint32
 
 // requestProposal requests a block proposal by block hash from a neighbor using
 // REQUEST_BLOCK_PROPOSAL message
-func (consensus *Consensus) requestProposal(neighbor protocol.Noder, blockHash common.Uint256) (*ledger.Block, error) {
+func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash common.Uint256) (*ledger.Block, error) {
 	msg, err := NewRequestBlockProposalMessage(blockHash)
 	if err != nil {
 		return nil, err
@@ -289,7 +289,7 @@ func (consensus *Consensus) iHaveProposal(height uint32, blockHash common.Uint25
 		return err
 	}
 
-	for _, neighbor := range consensus.localNode.GetNeighborNoder(nil) {
+	for _, neighbor := range consensus.localNode.GetNeighbors(nil) {
 		err = neighbor.SendBytesAsync(buf)
 		if err != nil {
 			log.Errorf("Send vote to neighbor %v error: %v", neighbor, err)

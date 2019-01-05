@@ -2,12 +2,12 @@ package common
 
 import (
 	"github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/vault"
 )
 
 type Serverer interface {
-	GetNetNode() (protocol.Noder, error)
+	GetNetNode() (*node.LocalNode, error)
 	GetWallet() (vault.Wallet, error)
 }
 

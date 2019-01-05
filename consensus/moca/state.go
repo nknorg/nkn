@@ -6,7 +6,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/net/protocol"
+	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
@@ -39,7 +39,7 @@ func (consensus *Consensus) startGettingNeighborConsensusState() {
 
 // getNeighborConsensusState returns the latest block info (height, hash, etc)
 // of a neighbor using GET_CONSENSUS_STATE message
-func (consensus *Consensus) getNeighborConsensusState(neighbor protocol.Noder) (*pb.GetConsensusStateReply, error) {
+func (consensus *Consensus) getNeighborConsensusState(neighbor *node.RemoteNode) (*pb.GetConsensusStateReply, error) {
 	msg, err := NewGetConsensusStateMessage()
 	if err != nil {
 		return nil, err
@@ -72,9 +72,9 @@ func (consensus *Consensus) getNeighborConsensusState(neighbor protocol.Noder) (
 func (consensus *Consensus) getAllNeighborsConsensusState() (*sync.Map, error) {
 	var allInfo sync.Map
 	var wg sync.WaitGroup
-	for _, neighbor := range consensus.localNode.GetNeighborNoder(nil) {
+	for _, neighbor := range consensus.localNode.GetNeighbors(nil) {
 		wg.Add(1)
-		go func(neighbor protocol.Noder) {
+		go func(neighbor *node.RemoteNode) {
 			defer wg.Done()
 			consensusState, err := consensus.getNeighborConsensusState(neighbor)
 			if err != nil {
