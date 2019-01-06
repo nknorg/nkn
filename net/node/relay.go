@@ -1,7 +1,6 @@
 package node
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"errors"
 	"sync"
@@ -35,65 +34,54 @@ func NewRelayService(wallet vault.Wallet, localNode *LocalNode) *RelayService {
 }
 
 func (rs *RelayService) Start() error {
-	rs.localNode.GetEvent("relay").Subscribe(events.EventRelayMsgReceived, rs.receiveRelayMsgNoError)
 	rs.localNode.GetEvent("relay").Subscribe(events.EventReceiveClientSignedSigChain, rs.receiveClientSignedSigChainNoError)
+	rs.localNode.AddMessageHandler(pb.RELAY, rs.receiveRelayMessage)
 	return nil
 }
 
-func (rs *RelayService) HandleMsg(packet *RelayPacket) error {
-	// handle packet send to self
-	if bytes.Equal(rs.localNode.GetChordAddr(), packet.DestID) {
-		log.Infof(
-			"Receive packet:\nSrcID: %s\nDestID: %x\nPayload Size: %d",
-			packet.SrcAddr,
-			packet.DestID,
-			len(packet.Payload),
-		)
-		return nil
+func (rs *RelayService) signRelayMessage(relayMessage *pb.Relay, nextHop *RemoteNode) error {
+	var nextPubkey []byte
+	var err error
+	if nextHop != nil {
+		nextPubkey, err = nextHop.GetPubKey().EncodePoint(true)
+		if err != nil {
+			return err
+		}
+	} else {
+		nextPubkey = relayMessage.SigChain.GetDestPubkey()
 	}
 
-	destPubKey := packet.SigChain.GetDestPubkey()
 	mining := rs.localNode.GetSyncState() == pb.PersistFinished
 
-	err := rs.porServer.Sign(packet.SigChain, destPubKey, mining)
-	if err != nil {
-		log.Error("Signing signature chain error: ", err)
-		return err
-	}
-
-	_, err = packet.SigChain.ExtendElement(packet.DestID, destPubKey, false)
-	if err != nil {
-		return err
-	}
-
-	rs.localNode.GetEvent("relay").Notify(events.EventSendInboundPacketToClient, packet)
-
-	return nil
+	return rs.porServer.Sign(relayMessage.SigChain, nextPubkey, mining)
 }
 
-func (rs *RelayService) receiveRelayMsg(v interface{}) error {
-	if packet, ok := v.(*RelayPacket); ok {
-		return rs.HandleMsg(packet)
-	} else {
-		return errors.New("Decode relay msg failed")
-	}
-}
-
-func (rs *RelayService) receiveRelayMsgNoError(v interface{}) {
-	err := rs.receiveRelayMsg(v)
+func (rs *RelayService) receiveRelayMessage(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+	msgBody := &pb.Relay{}
+	err := proto.Unmarshal(remoteMessage.Message, msgBody)
 	if err != nil {
-		log.Error(err)
+		return nil, false, err
 	}
+
+	rs.localNode.GetEvent("relay").Notify(events.EventSendInboundMessageToClient, msgBody)
+
+	return nil, false, nil
 }
 
 func (rs *RelayService) receiveClientSignedSigChain(v interface{}) error {
-	sigChain, ok := v.(*por.SigChain)
+	relayMessage, ok := v.(*pb.Relay)
 	if !ok {
 		return errors.New("Decode client signed sigchain failed")
 	}
 
+	// TODO: client should sign this last piece
+	_, err := relayMessage.SigChain.ExtendElement(relayMessage.DestId, relayMessage.SigChain.GetDestPubkey(), false)
+	if err != nil {
+		return err
+	}
+
 	// TODO: only pick sigchain to sign when threshold is smaller than
-	buf, err := proto.Marshal(sigChain)
+	buf, err := proto.Marshal(relayMessage.SigChain)
 	if err != nil {
 		return err
 	}
@@ -123,29 +111,11 @@ func (rs *RelayService) receiveClientSignedSigChainNoError(v interface{}) {
 	}
 }
 
-func (rs *RelayService) SignRelayPacket(nextHop *RemoteNode, packet *RelayPacket) error {
-	nextPubkey, err := nextHop.GetPubKey().EncodePoint(true)
-	if err != nil {
-		log.Error("Get next hop public key error: ", err)
-		return err
-	}
-	mining := false
-	if rs.localNode.GetSyncState() == pb.PersistFinished {
-		mining = true
-	}
-	err = rs.porServer.Sign(packet.SigChain, nextPubkey, mining)
-	if err != nil {
-		log.Error("Signing signature chain error: ", err)
-		return err
-	}
-	return nil
-}
-
 func (localNode *LocalNode) StartRelayer() {
 	localNode.relayer.Start()
 }
 
-func (localNode *LocalNode) SendRelayPacket(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error {
+func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error {
 	srcID, srcPubkey, err := address.ParseClientAddress(srcAddr)
 	if err != nil {
 		return err
@@ -181,17 +151,12 @@ func (localNode *LocalNode) SendRelayPacket(srcAddr, destAddr string, payload, s
 		return err
 	}
 
-	relayPacket, err := NewRelayPacket(srcAddr, destID, payload, sigChain, maxHoldingSeconds)
+	msg, err := NewRelayMessage(srcAddr, destID, payload, sigChain, maxHoldingSeconds)
 	if err != nil {
 		return err
 	}
 
-	relayMsg, err := NewRelayMessage(relayPacket)
-	if err != nil {
-		return err
-	}
-
-	buf, err := relayMsg.ToBytes()
+	buf, err := localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return err
 	}

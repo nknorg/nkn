@@ -7,7 +7,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -26,31 +25,19 @@ func ResolveDest(Dest string) string {
 	return strings.Join(substrings, ".")
 }
 
-func (ws *WsServer) sendOutboundRelayPacket(clientId string, msg *pb.OutboundMessage) {
-	clients := ws.SessionList.GetSessionsById(clientId)
-	if clients == nil {
-		log.Error("Session not found")
-		return
-	}
-	client := clients[0]
-	if !client.IsClient() {
-		log.Error("Session is not client")
-		return
-	}
-	srcAddrStrPtr := client.GetAddrStr()
+func (ws *WsServer) sendOutboundRelayMessage(srcAddrStrPtr *string, msg *pb.OutboundMessage) {
 	if srcAddrStrPtr == nil {
-		log.Error("Cannot get sender address")
+		log.Error("src addr is nil")
 		return
 	}
-	srcAddrStr := *srcAddrStrPtr
 
 	var signature []byte
 	for _, dest := range append(msg.Dests, msg.Dest) {
 		dest = ResolveDest(dest)
 
-		err := ws.localNode.SendRelayPacket(srcAddrStr, dest, msg.Payload, signature, msg.MaxHoldingSeconds)
+		err := ws.localNode.SendRelayMessage(*srcAddrStrPtr, dest, msg.Payload, signature, msg.MaxHoldingSeconds)
 		if err != nil {
-			log.Error("Send relay packet error:", err)
+			log.Error("Send relay message error:", err)
 		}
 	}
 }
@@ -87,17 +74,17 @@ func (ws *WsServer) sendInboundMessage(clientID string, msg *pb.InboundMessage) 
 	return success
 }
 
-func (ws *WsServer) sendInboundRelayPacket(packet *node.RelayPacket) {
-	clientID := packet.DestID
+func (ws *WsServer) sendInboundRelayMessage(relayMessage *pb.Relay) {
+	clientID := relayMessage.DestId
 	msg := &pb.InboundMessage{
-		Src:     packet.SrcAddr,
-		Payload: packet.Payload,
+		Src:     relayMessage.SrcAddr,
+		Payload: relayMessage.Payload,
 	}
 
 	success := ws.sendInboundMessage(hex.EncodeToString(clientID), msg)
 	if success {
-		ws.localNode.GetEvent("relay").Notify(events.EventReceiveClientSignedSigChain, packet.SigChain)
+		ws.localNode.GetEvent("relay").Notify(events.EventReceiveClientSignedSigChain, relayMessage)
 	} else {
-		ws.packetBuffer.AddPacket(clientID, packet)
+		ws.messageBuffer.AddMessage(clientID, relayMessage)
 	}
 }
