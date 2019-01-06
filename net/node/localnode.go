@@ -57,7 +57,7 @@ type LocalNode struct {
 	eventQueue                   // event queue
 	*pool.TxnPool                // transaction pool of local node
 	*hashCache                   // entity hash cache
-	*handlerStore
+	*messageHandlerStore
 }
 
 func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
@@ -84,15 +84,15 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	}
 
 	localNode := &LocalNode{
-		Node:         node,
-		version:      ProtocolVersion,
-		account:      account,
-		TxnPool:      pool.NewTxnPool(),
-		syncStopHash: Uint256{},
-		quit:         make(chan bool, 1),
-		hashCache:    NewHashCache(),
-		handlerStore: newHandlerStore(),
-		nnet:         nn,
+		Node:                node,
+		version:             ProtocolVersion,
+		account:             account,
+		TxnPool:             pool.NewTxnPool(),
+		syncStopHash:        Uint256{},
+		quit:                make(chan bool, 1),
+		hashCache:           NewHashCache(),
+		messageHandlerStore: newMessageHandlerStore(),
+		nnet:                nn,
 	}
 
 	localNode.relayer = NewRelayService(wallet, localNode)

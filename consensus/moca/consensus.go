@@ -158,7 +158,10 @@ func (consensus *Consensus) loadOrCreateElection(key []byte) (*election.Election
 	consensusNeighbors := consensus.localNode.GetNeighbors(func(rn *node.RemoteNode) bool {
 		return rn.GetSyncState() == pb.PersistFinished
 	})
-	totalWeight := len(consensusNeighbors) + 1
+	totalWeight := len(consensusNeighbors)
+	if consensus.localNode.GetSyncState() == pb.PersistFinished {
+		totalWeight += 1
+	}
 
 	config := &election.Config{
 		Duration:                    electionDuration,

@@ -137,7 +137,7 @@ func NewGetConsensusStateReply(ledgerHeight uint32, ledgerBlockHash common.Uint2
 }
 
 func (consensus *Consensus) registerMessageHandler() {
-	consensus.localNode.AddHandler(pb.VOTE, func(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
+	consensus.localNode.AddMessageHandler(pb.VOTE, func(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 		msgBody := &pb.Vote{}
 		err := proto.Unmarshal(remoteMessage.Message, msgBody)
 		if err != nil {
@@ -157,7 +157,7 @@ func (consensus *Consensus) registerMessageHandler() {
 		return nil, false, nil
 	})
 
-	consensus.localNode.AddHandler(pb.I_HAVE_BLOCK_PROPOSAL, func(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
+	consensus.localNode.AddMessageHandler(pb.I_HAVE_BLOCK_PROPOSAL, func(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 		msgBody := &pb.IHaveBlockProposal{}
 		err := proto.Unmarshal(remoteMessage.Message, msgBody)
 		if err != nil {
@@ -177,7 +177,7 @@ func (consensus *Consensus) registerMessageHandler() {
 		return nil, false, nil
 	})
 
-	consensus.localNode.AddHandler(pb.REQUEST_BLOCK_PROPOSAL, func(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
+	consensus.localNode.AddMessageHandler(pb.REQUEST_BLOCK_PROPOSAL, func(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 		replyMsg, err := NewRequestBlockProposalReply(nil)
 		if err != nil {
 			return nil, false, err
@@ -218,7 +218,7 @@ func (consensus *Consensus) registerMessageHandler() {
 		return replyBuf, false, err
 	})
 
-	consensus.localNode.AddHandler(pb.GET_CONSENSUS_STATE, func(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
+	consensus.localNode.AddMessageHandler(pb.GET_CONSENSUS_STATE, func(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 		ledgerHeight := ledger.DefaultLedger.Store.GetHeight()
 		ledgerBlockHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(ledgerHeight)
 		consensusHeight := consensus.GetExpectedHeight()
