@@ -8,10 +8,34 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
+
+// NewRelayMessage creates a VOTE message
+func NewRelayMessage(srcAddr string, destID, payload []byte, sigChain *por.SigChain, maxHoldingSeconds uint32) (*pb.UnsignedMessage, error) {
+	msgBody := &pb.Relay{
+		SrcAddr:           srcAddr,
+		DestId:            destID,
+		Payload:           payload,
+		SigChain:          sigChain,
+		MaxHoldingSeconds: maxHoldingSeconds,
+	}
+
+	buf, err := proto.Marshal(msgBody)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := &pb.UnsignedMessage{
+		MessageType: pb.RELAY,
+		Message:     buf,
+	}
+
+	return msg, nil
+}
 
 func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) ([]byte, error) {
 	if localNode.account == nil {
@@ -82,6 +106,17 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 			}
 		}
 
+		var senderNode *Node
+		senderRemoteNode := localNode.getNbrByNNetNode(remoteMessage.RemoteNode)
+		if senderRemoteNode != nil {
+			senderNode = senderRemoteNode.Node
+		} else if remoteMessage.RemoteNode == nil {
+			senderNode = localNode.Node
+		} else {
+			log.Error("Cannot get sender node")
+			return nil, nil, nil, false
+		}
+
 		msgBody := &nnetpb.Bytes{}
 		err = proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
 		if err != nil {
@@ -121,24 +156,76 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				return nil, nil, nil, false
 			}
 
-			if len(signedMsg.Signature) > 0 && remoteMessage.Msg.RoutingType != nnetpb.DIRECT {
-				log.Errorf("Signature is only allowed on direct message")
-				return nil, nil, nil, false
+			if len(signedMsg.Signature) > 0 {
+				if remoteMessage.Msg.RoutingType != nnetpb.DIRECT {
+					log.Errorf("Signature is only allowed on direct message")
+					return nil, nil, nil, false
+				}
+
+				pubKey := senderNode.GetPubKey()
+				if pubKey == nil {
+					log.Errorf("Neighbor public key is nil")
+					return nil, nil, nil, false
+				}
+
+				hash := sha256.Sum256(signedMsg.Message)
+				err = crypto.Verify(*pubKey, hash[:], signedMsg.Signature)
+				if err != nil {
+					log.Errorf("Verify signature error: %v", err)
+					return nil, nil, nil, false
+				}
+			}
+
+			if unsignedMsg.MessageType == pb.RELAY {
+				relayMessage := &pb.Relay{}
+				err := proto.Unmarshal(unsignedMsg.Message, relayMessage)
+				if err != nil {
+					log.Errorf("Unmarshal relay message error: %v", err)
+					return nil, nil, nil, false
+				}
+
+				if len(remoteNodes) > 1 {
+					log.Errorf("multiple next hop is not supported for relay message")
+					return nil, nil, nil, false
+				}
+
+				var nextHop *RemoteNode
+				if len(remoteNodes) > 0 {
+					nextHop = localNode.getNbrByNNetNode(remoteNodes[0])
+					if nextHop == nil {
+						log.Errorf("cannot get next hop neighbor node")
+						return nil, nil, nil, false
+					}
+				}
+
+				err = localNode.relayer.signRelayMessage(relayMessage, nextHop)
+				if err != nil {
+					log.Errorf("sign relay message error: %v", err)
+					return nil, nil, nil, false
+				}
+
+				unsignedMsg.Message, err = proto.Marshal(relayMessage)
+				if err != nil {
+					log.Errorf("marshal new relay message error: %v", err)
+					return nil, nil, nil, false
+				}
+
+				msgBody.Data, err = localNode.SerializeMessage(unsignedMsg, false)
+				if err != nil {
+					log.Errorf("serialize new relay message error: %v", err)
+					return nil, nil, nil, false
+				}
+
+				remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
+				if err != nil {
+					log.Errorf("Marshal new relay msg body error: %v", err)
+					return nil, nil, nil, false
+				}
 			}
 		}
 
+		// msg send to local node
 		if nnetLocalNode != nil {
-			var senderNode *Node
-			senderRemoteNode := localNode.getNbrByNNetNode(remoteMessage.RemoteNode)
-			if senderRemoteNode != nil {
-				senderNode = senderRemoteNode.Node
-			} else if remoteMessage.RemoteNode == nil {
-				senderNode = localNode.Node
-			} else {
-				log.Error("Cannot get neighbor node")
-				return nil, nil, nil, false
-			}
-
 			if signedMsg == nil {
 				// TODO: remove this part after all msg are migrated to pb
 				err = HandleNodeMsg(senderRemoteNode, msgBody.Data)
@@ -146,24 +233,9 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 					log.Errorf("Error handling node msg: %v", err)
 					return nil, nil, nil, false
 				}
-				nnetLocalNode = nil
+				return nil, nil, nil, false
 			} else {
-				if len(signedMsg.Signature) > 0 {
-					pubKey := senderNode.GetPubKey()
-					if pubKey == nil {
-						log.Errorf("Neighbor public key is nil")
-						return nil, nil, nil, false
-					}
-
-					hash := sha256.Sum256(signedMsg.Message)
-					err = crypto.Verify(*pubKey, hash[:], signedMsg.Signature)
-					if err != nil {
-						log.Errorf("Verify signature error: %v", err)
-						return nil, nil, nil, false
-					}
-				}
-
-				if len(remoteMessage.Msg.ReplyToId) == 0 {
+				if len(remoteMessage.Msg.ReplyToId) == 0 { // non-reply msg
 					reply, err := localNode.receiveMessage(senderNode, unsignedMsg)
 					if err != nil {
 						log.Errorf("Error handling message: %v", err)
@@ -178,8 +250,8 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 						}
 					}
 
-					nnetLocalNode = nil
-				} else {
+					return nil, nil, nil, false
+				} else { // reply msg
 					msgBody.Data = unsignedMsg.Message
 					remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
 					if err != nil {
@@ -187,42 +259,6 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 						return nil, nil, nil, false
 					}
 				}
-			}
-		}
-
-		if nnetLocalNode == nil && len(remoteNodes) == 0 {
-			return nil, nil, nil, false
-		}
-
-		if remoteMessage.Msg.RoutingType == nnetpb.RELAY && len(remoteNodes) > 0 {
-			msg, err := ParseMsg(msgBody.Data)
-			if err != nil {
-				log.Errorf("Parse msg error: %v", err)
-				return nil, nil, nil, false
-			}
-
-			relayMsg, ok := msg.(*RelayMessage)
-			if !ok {
-				log.Errorf("Msg is not relay message")
-				return nil, nil, nil, false
-			}
-
-			relayMsg, err = localNode.processRelayMessage(relayMsg, remoteNodes)
-			if err != nil {
-				log.Errorf("Process relay msg error: %v", err)
-				return nil, nil, nil, false
-			}
-
-			msgBody.Data, err = relayMsg.ToBytes()
-			if err != nil {
-				log.Errorf("Relay msg to bytes error: %v", err)
-				return nil, nil, nil, false
-			}
-
-			remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
-			if err != nil {
-				log.Errorf("Marshal relay msg body error: %v", err)
-				return nil, nil, nil, false
 			}
 		}
 	}
@@ -240,7 +276,7 @@ func (localNode *LocalNode) receiveMessage(sender *Node, unsignedMsg *pb.Unsigne
 	var shouldCallNext bool
 	var err error
 
-	for _, handler := range localNode.GetHandlers(unsignedMsg.MessageType) {
+	for _, handler := range localNode.GetMessageHandlers(unsignedMsg.MessageType) {
 		reply, shouldCallNext, err = handler(remoteMessage)
 		if err != nil {
 			log.Errorf("Get error when handling message: %v", err)
@@ -253,34 +289,6 @@ func (localNode *LocalNode) receiveMessage(sender *Node, unsignedMsg *pb.Unsigne
 	}
 
 	return reply, nil
-}
-
-func (localNode *LocalNode) processRelayMessage(relayMsg *RelayMessage, remoteNodes []*nnetnode.RemoteNode) (*RelayMessage, error) {
-	if len(remoteNodes) == 0 {
-		return nil, fmt.Errorf("no next hop")
-	}
-
-	if len(remoteNodes) > 1 {
-		return nil, fmt.Errorf("multiple next hop is not supported yet")
-	}
-
-	nextHop := localNode.getNbrByNNetNode(remoteNodes[0])
-	if nextHop == nil {
-		return nil, fmt.Errorf("cannot get next hop neighbor node")
-	}
-
-	relayPacket := &relayMsg.Packet
-	err := localNode.relayer.SignRelayPacket(nextHop, relayPacket)
-	if err != nil {
-		return nil, err
-	}
-
-	relayMsg, err = NewRelayMessage(relayPacket)
-	if err != nil {
-		return nil, err
-	}
-
-	return relayMsg, nil
 }
 
 // checkMessageType checks if a message type is allowed
