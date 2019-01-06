@@ -181,3 +181,24 @@ func NewDeleteNameTransaction(registrant []byte) (*Transaction, error) {
 		Programs: []*program.Program{},
 	}, nil
 }
+
+func NewSubscribeTransaction(subscriber []byte, identifier string, topic string) (*Transaction, error) {
+	SubscribePayload := &payload.Subscribe{
+		Subscriber: subscriber,
+		Identifier: identifier,
+		Topic: topic,
+	}
+
+	return &Transaction{
+		TxType:  Subscribe,
+		Payload: SubscribePayload,
+		Attributes: []*TxnAttribute{
+			{
+				Usage: Nonce,
+				Data:  util.RandomBytes(TransactionNonceLength),
+			},
+		},
+		Inputs:   nil,
+		Programs: []*program.Program{},
+	}, nil
+}
