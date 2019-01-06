@@ -10,30 +10,30 @@ type RemoteMessage struct {
 	Message []byte
 }
 
-// Handler handles a message and returns reply, if it should be passed through
-// to other message handler and error
-type Handler func(msg *RemoteMessage) (reply []byte, shouldCallNext bool, err error)
+// MessageHandler handles a message and returns reply, if it should be passed
+// through to other message handler and error
+type MessageHandler func(msg *RemoteMessage) (reply []byte, shouldCallNext bool, err error)
 
-// handlerStore is the map from message type to message handler
-type handlerStore map[pb.MessageType][]Handler
+// messageHandlerStore is the map from message type to message handler
+type messageHandlerStore map[pb.MessageType][]MessageHandler
 
-func newHandlerStore() *handlerStore {
-	hs := make(handlerStore)
+func newMessageHandlerStore() *messageHandlerStore {
+	hs := make(messageHandlerStore)
 	return &hs
 }
 
-// AddHandler adds a message handler to a message type
-func (handlerStore handlerStore) AddHandler(messageType pb.MessageType, handler Handler) {
+// AddMessageHandler adds a message handler to a message type
+func (handlerStore messageHandlerStore) AddMessageHandler(messageType pb.MessageType, handler MessageHandler) {
 	handlers, ok := handlerStore[messageType]
 	if !ok {
-		handlerStore[messageType] = make([]Handler, 0)
+		handlerStore[messageType] = make([]MessageHandler, 0)
 		handlers = handlerStore[messageType]
 	}
 
 	handlerStore[messageType] = append(handlers, handler)
 }
 
-// GetHandlers gets all handlers of a message type
-func (handlerStore handlerStore) GetHandlers(messageType pb.MessageType) []Handler {
+// GetMessageHandlers gets all handlers of a message type
+func (handlerStore messageHandlerStore) GetMessageHandlers(messageType pb.MessageType) []MessageHandler {
 	return handlerStore[messageType]
 }

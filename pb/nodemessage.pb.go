@@ -7,6 +7,7 @@ import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
+import por "github.com/nknorg/nkn/por"
 
 import strconv "strconv"
 
@@ -38,16 +39,26 @@ const (
 	REQUEST_BLOCK_PROPOSAL_REPLY        MessageType = 4
 	GET_CONSENSUS_STATE                 MessageType = 5
 	GET_CONSENSUS_STATE_REPLY           MessageType = 6
+	GET_BLOCK_HEADERS                   MessageType = 7
+	GET_BLOCK_HEADERS_REPLY             MessageType = 8
+	GET_BLOCKS                          MessageType = 9
+	GET_BLOCKS_REPLY                    MessageType = 10
+	RELAY                               MessageType = 11
 )
 
 var MessageType_name = map[int32]string{
-	0: "MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE",
-	1: "VOTE",
-	2: "I_HAVE_BLOCK_PROPOSAL",
-	3: "REQUEST_BLOCK_PROPOSAL",
-	4: "REQUEST_BLOCK_PROPOSAL_REPLY",
-	5: "GET_CONSENSUS_STATE",
-	6: "GET_CONSENSUS_STATE_REPLY",
+	0:  "MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE",
+	1:  "VOTE",
+	2:  "I_HAVE_BLOCK_PROPOSAL",
+	3:  "REQUEST_BLOCK_PROPOSAL",
+	4:  "REQUEST_BLOCK_PROPOSAL_REPLY",
+	5:  "GET_CONSENSUS_STATE",
+	6:  "GET_CONSENSUS_STATE_REPLY",
+	7:  "GET_BLOCK_HEADERS",
+	8:  "GET_BLOCK_HEADERS_REPLY",
+	9:  "GET_BLOCKS",
+	10: "GET_BLOCKS_REPLY",
+	11: "RELAY",
 }
 var MessageType_value = map[string]int32{
 	"MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE": 0,
@@ -57,10 +68,15 @@ var MessageType_value = map[string]int32{
 	"REQUEST_BLOCK_PROPOSAL_REPLY": 4,
 	"GET_CONSENSUS_STATE":          5,
 	"GET_CONSENSUS_STATE_REPLY":    6,
+	"GET_BLOCK_HEADERS":            7,
+	"GET_BLOCK_HEADERS_REPLY":      8,
+	"GET_BLOCKS":                   9,
+	"GET_BLOCKS_REPLY":             10,
+	"RELAY":                        11,
 }
 
 func (MessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{0}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{0}
 }
 
 // Message type that can be signed message
@@ -74,6 +90,8 @@ const (
 	ALLOW_SIGNED_REQUEST_BLOCK_PROPOSAL    AllowedSignedMessageType = 3
 	ALLOW_SIGNED_GET_CONSENSUS_STATE       AllowedSignedMessageType = 5
 	ALLOW_SIGNED_GET_CONSENSUS_STATE_REPLY AllowedSignedMessageType = 6
+	ALLOW_SIGNED_GET_BLOCK_HEADERS         AllowedSignedMessageType = 7
+	ALLOW_SIGNED_GET_BLOCKS                AllowedSignedMessageType = 9
 )
 
 var AllowedSignedMessageType_name = map[int32]string{
@@ -83,6 +101,8 @@ var AllowedSignedMessageType_name = map[int32]string{
 	3: "ALLOW_SIGNED_REQUEST_BLOCK_PROPOSAL",
 	5: "ALLOW_SIGNED_GET_CONSENSUS_STATE",
 	6: "ALLOW_SIGNED_GET_CONSENSUS_STATE_REPLY",
+	7: "ALLOW_SIGNED_GET_BLOCK_HEADERS",
+	9: "ALLOW_SIGNED_GET_BLOCKS",
 }
 var AllowedSignedMessageType_value = map[string]int32{
 	"ALLOW_SIGNED_PLACEHOLDER_DO_NOT_USE":    0,
@@ -91,10 +111,12 @@ var AllowedSignedMessageType_value = map[string]int32{
 	"ALLOW_SIGNED_REQUEST_BLOCK_PROPOSAL":    3,
 	"ALLOW_SIGNED_GET_CONSENSUS_STATE":       5,
 	"ALLOW_SIGNED_GET_CONSENSUS_STATE_REPLY": 6,
+	"ALLOW_SIGNED_GET_BLOCK_HEADERS":         7,
+	"ALLOW_SIGNED_GET_BLOCKS":                9,
 }
 
 func (AllowedSignedMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{1}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{1}
 }
 
 // Message type that can be unsigned message
@@ -102,21 +124,30 @@ func (AllowedSignedMessageType) EnumDescriptor() ([]byte, []int) {
 type AllowedUnsignedMessageType int32
 
 const (
-	ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE AllowedUnsignedMessageType = 0
-	ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY    AllowedUnsignedMessageType = 4
+	ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE  AllowedUnsignedMessageType = 0
+	ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY     AllowedUnsignedMessageType = 4
+	ALLOW_UNSIGNED_GET_BLOCK_HEADERS_REPLY AllowedUnsignedMessageType = 8
+	ALLOW_UNSIGNED_GET_BLOCKS_REPLY        AllowedUnsignedMessageType = 10
+	ALLOW_UNSIGNED_RELAY                   AllowedUnsignedMessageType = 11
 )
 
 var AllowedUnsignedMessageType_name = map[int32]string{
-	0: "ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE",
-	4: "ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY",
+	0:  "ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE",
+	4:  "ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY",
+	8:  "ALLOW_UNSIGNED_GET_BLOCK_HEADERS_REPLY",
+	10: "ALLOW_UNSIGNED_GET_BLOCKS_REPLY",
+	11: "ALLOW_UNSIGNED_RELAY",
 }
 var AllowedUnsignedMessageType_value = map[string]int32{
-	"ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE": 0,
-	"ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY":    4,
+	"ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE":  0,
+	"ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY":     4,
+	"ALLOW_UNSIGNED_GET_BLOCK_HEADERS_REPLY": 8,
+	"ALLOW_UNSIGNED_GET_BLOCKS_REPLY":        10,
+	"ALLOW_UNSIGNED_RELAY":                   11,
 }
 
 func (AllowedUnsignedMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{2}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{2}
 }
 
 // Message type that can be sent as direct message
@@ -131,16 +162,24 @@ const (
 	ALLOW_DIRECT_REQUEST_BLOCK_REPLY       AllowedDirectMessageType = 4
 	ALLOW_DIRECT_GET_CONSENSUS_STATE       AllowedDirectMessageType = 5
 	ALLOW_DIRECT_GET_CONSENSUS_STATE_REPLY AllowedDirectMessageType = 6
+	ALLOW_DIRECT_GET_BLOCK_HEADERS         AllowedDirectMessageType = 7
+	ALLOW_DIRECT_GET_BLOCK_HEADERS_REPLY   AllowedDirectMessageType = 8
+	ALLOW_DIRECT_GET_BLOCKS                AllowedDirectMessageType = 9
+	ALLOW_DIRECT_GET_BLOCKS_REPLY          AllowedDirectMessageType = 10
 )
 
 var AllowedDirectMessageType_name = map[int32]string{
-	0: "ALLOW_DIRECT_PLACEHOLDER_DO_NOT_USE",
-	1: "ALLOW_DIRECT_VOTE",
-	2: "ALLOW_DIRECT_I_HAVE_BLOCK_PROPOSAL",
-	3: "ALLOW_DIRECT_REQUEST_BLOCK_PROPOSAL",
-	4: "ALLOW_DIRECT_REQUEST_BLOCK_REPLY",
-	5: "ALLOW_DIRECT_GET_CONSENSUS_STATE",
-	6: "ALLOW_DIRECT_GET_CONSENSUS_STATE_REPLY",
+	0:  "ALLOW_DIRECT_PLACEHOLDER_DO_NOT_USE",
+	1:  "ALLOW_DIRECT_VOTE",
+	2:  "ALLOW_DIRECT_I_HAVE_BLOCK_PROPOSAL",
+	3:  "ALLOW_DIRECT_REQUEST_BLOCK_PROPOSAL",
+	4:  "ALLOW_DIRECT_REQUEST_BLOCK_REPLY",
+	5:  "ALLOW_DIRECT_GET_CONSENSUS_STATE",
+	6:  "ALLOW_DIRECT_GET_CONSENSUS_STATE_REPLY",
+	7:  "ALLOW_DIRECT_GET_BLOCK_HEADERS",
+	8:  "ALLOW_DIRECT_GET_BLOCK_HEADERS_REPLY",
+	9:  "ALLOW_DIRECT_GET_BLOCKS",
+	10: "ALLOW_DIRECT_GET_BLOCKS_REPLY",
 }
 var AllowedDirectMessageType_value = map[string]int32{
 	"ALLOW_DIRECT_PLACEHOLDER_DO_NOT_USE":    0,
@@ -150,10 +189,14 @@ var AllowedDirectMessageType_value = map[string]int32{
 	"ALLOW_DIRECT_REQUEST_BLOCK_REPLY":       4,
 	"ALLOW_DIRECT_GET_CONSENSUS_STATE":       5,
 	"ALLOW_DIRECT_GET_CONSENSUS_STATE_REPLY": 6,
+	"ALLOW_DIRECT_GET_BLOCK_HEADERS":         7,
+	"ALLOW_DIRECT_GET_BLOCK_HEADERS_REPLY":   8,
+	"ALLOW_DIRECT_GET_BLOCKS":                9,
+	"ALLOW_DIRECT_GET_BLOCKS_REPLY":          10,
 }
 
 func (AllowedDirectMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{3}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{3}
 }
 
 // Message type that can be sent as relay message
@@ -162,17 +205,20 @@ type AllowedRelayMessageType int32
 
 const (
 	ALLOW_RELAY_PLACEHOLDER_DO_NOT_USE AllowedRelayMessageType = 0
+	ALLOW_RELAY_RELAY                  AllowedRelayMessageType = 11
 )
 
 var AllowedRelayMessageType_name = map[int32]string{
-	0: "ALLOW_RELAY_PLACEHOLDER_DO_NOT_USE",
+	0:  "ALLOW_RELAY_PLACEHOLDER_DO_NOT_USE",
+	11: "ALLOW_RELAY_RELAY",
 }
 var AllowedRelayMessageType_value = map[string]int32{
 	"ALLOW_RELAY_PLACEHOLDER_DO_NOT_USE": 0,
+	"ALLOW_RELAY_RELAY":                  11,
 }
 
 func (AllowedRelayMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{4}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{4}
 }
 
 // Message type that can be sent as broadcast_push message
@@ -191,7 +237,7 @@ var AllowedBroadcastPushMessageType_value = map[string]int32{
 }
 
 func (AllowedBroadcastPushMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{5}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{5}
 }
 
 // Message type that can be sent as broadcast_pull message
@@ -210,7 +256,7 @@ var AllowedBroadcastPullMessageType_value = map[string]int32{
 }
 
 func (AllowedBroadcastPullMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{6}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{6}
 }
 
 // Message type that can be sent as broadcast_tree message
@@ -229,7 +275,7 @@ var AllowedBroadcastTreeMessageType_value = map[string]int32{
 }
 
 func (AllowedBroadcastTreeMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{7}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{7}
 }
 
 type UnsignedMessage struct {
@@ -240,7 +286,7 @@ type UnsignedMessage struct {
 func (m *UnsignedMessage) Reset()      { *m = UnsignedMessage{} }
 func (*UnsignedMessage) ProtoMessage() {}
 func (*UnsignedMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{0}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{0}
 }
 func (m *UnsignedMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -291,7 +337,7 @@ type SignedMessage struct {
 func (m *SignedMessage) Reset()      { *m = SignedMessage{} }
 func (*SignedMessage) ProtoMessage() {}
 func (*SignedMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{1}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{1}
 }
 func (m *SignedMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -342,7 +388,7 @@ type Vote struct {
 func (m *Vote) Reset()      { *m = Vote{} }
 func (*Vote) ProtoMessage() {}
 func (*Vote) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{2}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{2}
 }
 func (m *Vote) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -393,7 +439,7 @@ type IHaveBlockProposal struct {
 func (m *IHaveBlockProposal) Reset()      { *m = IHaveBlockProposal{} }
 func (*IHaveBlockProposal) ProtoMessage() {}
 func (*IHaveBlockProposal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{3}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{3}
 }
 func (m *IHaveBlockProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -443,7 +489,7 @@ type RequestBlockProposal struct {
 func (m *RequestBlockProposal) Reset()      { *m = RequestBlockProposal{} }
 func (*RequestBlockProposal) ProtoMessage() {}
 func (*RequestBlockProposal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{4}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{4}
 }
 func (m *RequestBlockProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -486,7 +532,7 @@ type RequestBlockProposalReply struct {
 func (m *RequestBlockProposalReply) Reset()      { *m = RequestBlockProposalReply{} }
 func (*RequestBlockProposalReply) ProtoMessage() {}
 func (*RequestBlockProposalReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{5}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{5}
 }
 func (m *RequestBlockProposalReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -528,7 +574,7 @@ type GetConsensusState struct {
 func (m *GetConsensusState) Reset()      { *m = GetConsensusState{} }
 func (*GetConsensusState) ProtoMessage() {}
 func (*GetConsensusState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{6}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{6}
 }
 func (m *GetConsensusState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -567,7 +613,7 @@ type GetConsensusStateReply struct {
 func (m *GetConsensusStateReply) Reset()      { *m = GetConsensusStateReply{} }
 func (*GetConsensusStateReply) ProtoMessage() {}
 func (*GetConsensusStateReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_6719c9b185fbcf0a, []int{7}
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{7}
 }
 func (m *GetConsensusStateReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -624,6 +670,269 @@ func (m *GetConsensusStateReply) GetSyncState() SyncState {
 	return SyncStarted
 }
 
+type GetBlockHeaders struct {
+	StartHeight uint32 `protobuf:"varint,1,opt,name=start_height,json=startHeight,proto3" json:"start_height,omitempty"`
+	EndHeight   uint32 `protobuf:"varint,2,opt,name=end_height,json=endHeight,proto3" json:"end_height,omitempty"`
+}
+
+func (m *GetBlockHeaders) Reset()      { *m = GetBlockHeaders{} }
+func (*GetBlockHeaders) ProtoMessage() {}
+func (*GetBlockHeaders) Descriptor() ([]byte, []int) {
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{8}
+}
+func (m *GetBlockHeaders) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetBlockHeaders) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetBlockHeaders.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetBlockHeaders) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetBlockHeaders.Merge(dst, src)
+}
+func (m *GetBlockHeaders) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetBlockHeaders) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetBlockHeaders.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetBlockHeaders proto.InternalMessageInfo
+
+func (m *GetBlockHeaders) GetStartHeight() uint32 {
+	if m != nil {
+		return m.StartHeight
+	}
+	return 0
+}
+
+func (m *GetBlockHeaders) GetEndHeight() uint32 {
+	if m != nil {
+		return m.EndHeight
+	}
+	return 0
+}
+
+type GetBlockHeadersReply struct {
+	BlockHeaders [][]byte `protobuf:"bytes,1,rep,name=block_headers,json=blockHeaders" json:"block_headers,omitempty"`
+}
+
+func (m *GetBlockHeadersReply) Reset()      { *m = GetBlockHeadersReply{} }
+func (*GetBlockHeadersReply) ProtoMessage() {}
+func (*GetBlockHeadersReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{9}
+}
+func (m *GetBlockHeadersReply) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetBlockHeadersReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetBlockHeadersReply.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetBlockHeadersReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetBlockHeadersReply.Merge(dst, src)
+}
+func (m *GetBlockHeadersReply) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetBlockHeadersReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetBlockHeadersReply.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetBlockHeadersReply proto.InternalMessageInfo
+
+func (m *GetBlockHeadersReply) GetBlockHeaders() [][]byte {
+	if m != nil {
+		return m.BlockHeaders
+	}
+	return nil
+}
+
+type GetBlocks struct {
+	StartHeight uint32 `protobuf:"varint,1,opt,name=start_height,json=startHeight,proto3" json:"start_height,omitempty"`
+	EndHeight   uint32 `protobuf:"varint,2,opt,name=end_height,json=endHeight,proto3" json:"end_height,omitempty"`
+}
+
+func (m *GetBlocks) Reset()      { *m = GetBlocks{} }
+func (*GetBlocks) ProtoMessage() {}
+func (*GetBlocks) Descriptor() ([]byte, []int) {
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{10}
+}
+func (m *GetBlocks) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetBlocks) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetBlocks.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetBlocks) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetBlocks.Merge(dst, src)
+}
+func (m *GetBlocks) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetBlocks) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetBlocks.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetBlocks proto.InternalMessageInfo
+
+func (m *GetBlocks) GetStartHeight() uint32 {
+	if m != nil {
+		return m.StartHeight
+	}
+	return 0
+}
+
+func (m *GetBlocks) GetEndHeight() uint32 {
+	if m != nil {
+		return m.EndHeight
+	}
+	return 0
+}
+
+type GetBlocksReply struct {
+	Blocks [][]byte `protobuf:"bytes,1,rep,name=blocks" json:"blocks,omitempty"`
+}
+
+func (m *GetBlocksReply) Reset()      { *m = GetBlocksReply{} }
+func (*GetBlocksReply) ProtoMessage() {}
+func (*GetBlocksReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{11}
+}
+func (m *GetBlocksReply) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetBlocksReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetBlocksReply.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetBlocksReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetBlocksReply.Merge(dst, src)
+}
+func (m *GetBlocksReply) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetBlocksReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetBlocksReply.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetBlocksReply proto.InternalMessageInfo
+
+func (m *GetBlocksReply) GetBlocks() [][]byte {
+	if m != nil {
+		return m.Blocks
+	}
+	return nil
+}
+
+type Relay struct {
+	SrcAddr           string        `protobuf:"bytes,1,opt,name=src_addr,json=srcAddr,proto3" json:"src_addr,omitempty"`
+	DestId            []byte        `protobuf:"bytes,2,opt,name=dest_id,json=destId,proto3" json:"dest_id,omitempty"`
+	Payload           []byte        `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	SigChain          *por.SigChain `protobuf:"bytes,4,opt,name=sig_chain,json=sigChain" json:"sig_chain,omitempty"`
+	MaxHoldingSeconds uint32        `protobuf:"varint,5,opt,name=max_holding_seconds,json=maxHoldingSeconds,proto3" json:"max_holding_seconds,omitempty"`
+}
+
+func (m *Relay) Reset()      { *m = Relay{} }
+func (*Relay) ProtoMessage() {}
+func (*Relay) Descriptor() ([]byte, []int) {
+	return fileDescriptor_nodemessage_8b475f4ecf60ec21, []int{12}
+}
+func (m *Relay) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Relay) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Relay.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Relay) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Relay.Merge(dst, src)
+}
+func (m *Relay) XXX_Size() int {
+	return m.Size()
+}
+func (m *Relay) XXX_DiscardUnknown() {
+	xxx_messageInfo_Relay.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Relay proto.InternalMessageInfo
+
+func (m *Relay) GetSrcAddr() string {
+	if m != nil {
+		return m.SrcAddr
+	}
+	return ""
+}
+
+func (m *Relay) GetDestId() []byte {
+	if m != nil {
+		return m.DestId
+	}
+	return nil
+}
+
+func (m *Relay) GetPayload() []byte {
+	if m != nil {
+		return m.Payload
+	}
+	return nil
+}
+
+func (m *Relay) GetSigChain() *por.SigChain {
+	if m != nil {
+		return m.SigChain
+	}
+	return nil
+}
+
+func (m *Relay) GetMaxHoldingSeconds() uint32 {
+	if m != nil {
+		return m.MaxHoldingSeconds
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*UnsignedMessage)(nil), "pb.UnsignedMessage")
 	proto.RegisterType((*SignedMessage)(nil), "pb.SignedMessage")
@@ -633,6 +942,11 @@ func init() {
 	proto.RegisterType((*RequestBlockProposalReply)(nil), "pb.RequestBlockProposalReply")
 	proto.RegisterType((*GetConsensusState)(nil), "pb.GetConsensusState")
 	proto.RegisterType((*GetConsensusStateReply)(nil), "pb.GetConsensusStateReply")
+	proto.RegisterType((*GetBlockHeaders)(nil), "pb.GetBlockHeaders")
+	proto.RegisterType((*GetBlockHeadersReply)(nil), "pb.GetBlockHeadersReply")
+	proto.RegisterType((*GetBlocks)(nil), "pb.GetBlocks")
+	proto.RegisterType((*GetBlocksReply)(nil), "pb.GetBlocksReply")
+	proto.RegisterType((*Relay)(nil), "pb.Relay")
 	proto.RegisterEnum("pb.MessageType", MessageType_name, MessageType_value)
 	proto.RegisterEnum("pb.AllowedSignedMessageType", AllowedSignedMessageType_name, AllowedSignedMessageType_value)
 	proto.RegisterEnum("pb.AllowedUnsignedMessageType", AllowedUnsignedMessageType_name, AllowedUnsignedMessageType_value)
@@ -908,6 +1222,154 @@ func (this *GetConsensusStateReply) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetBlockHeaders) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetBlockHeaders)
+	if !ok {
+		that2, ok := that.(GetBlockHeaders)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.StartHeight != that1.StartHeight {
+		return false
+	}
+	if this.EndHeight != that1.EndHeight {
+		return false
+	}
+	return true
+}
+func (this *GetBlockHeadersReply) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetBlockHeadersReply)
+	if !ok {
+		that2, ok := that.(GetBlockHeadersReply)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.BlockHeaders) != len(that1.BlockHeaders) {
+		return false
+	}
+	for i := range this.BlockHeaders {
+		if !bytes.Equal(this.BlockHeaders[i], that1.BlockHeaders[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetBlocks) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetBlocks)
+	if !ok {
+		that2, ok := that.(GetBlocks)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.StartHeight != that1.StartHeight {
+		return false
+	}
+	if this.EndHeight != that1.EndHeight {
+		return false
+	}
+	return true
+}
+func (this *GetBlocksReply) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetBlocksReply)
+	if !ok {
+		that2, ok := that.(GetBlocksReply)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Blocks) != len(that1.Blocks) {
+		return false
+	}
+	for i := range this.Blocks {
+		if !bytes.Equal(this.Blocks[i], that1.Blocks[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *Relay) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Relay)
+	if !ok {
+		that2, ok := that.(Relay)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.SrcAddr != that1.SrcAddr {
+		return false
+	}
+	if !bytes.Equal(this.DestId, that1.DestId) {
+		return false
+	}
+	if !bytes.Equal(this.Payload, that1.Payload) {
+		return false
+	}
+	if !this.SigChain.Equal(that1.SigChain) {
+		return false
+	}
+	if this.MaxHoldingSeconds != that1.MaxHoldingSeconds {
+		return false
+	}
+	return true
+}
 func (this *UnsignedMessage) GoString() string {
 	if this == nil {
 		return "nil"
@@ -991,6 +1453,64 @@ func (this *GetConsensusStateReply) GoString() string {
 	s = append(s, "LedgerBlockHash: "+fmt.Sprintf("%#v", this.LedgerBlockHash)+",\n")
 	s = append(s, "ConsensusHeight: "+fmt.Sprintf("%#v", this.ConsensusHeight)+",\n")
 	s = append(s, "SyncState: "+fmt.Sprintf("%#v", this.SyncState)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetBlockHeaders) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&pb.GetBlockHeaders{")
+	s = append(s, "StartHeight: "+fmt.Sprintf("%#v", this.StartHeight)+",\n")
+	s = append(s, "EndHeight: "+fmt.Sprintf("%#v", this.EndHeight)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetBlockHeadersReply) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&pb.GetBlockHeadersReply{")
+	s = append(s, "BlockHeaders: "+fmt.Sprintf("%#v", this.BlockHeaders)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetBlocks) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&pb.GetBlocks{")
+	s = append(s, "StartHeight: "+fmt.Sprintf("%#v", this.StartHeight)+",\n")
+	s = append(s, "EndHeight: "+fmt.Sprintf("%#v", this.EndHeight)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetBlocksReply) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&pb.GetBlocksReply{")
+	s = append(s, "Blocks: "+fmt.Sprintf("%#v", this.Blocks)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Relay) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&pb.Relay{")
+	s = append(s, "SrcAddr: "+fmt.Sprintf("%#v", this.SrcAddr)+",\n")
+	s = append(s, "DestId: "+fmt.Sprintf("%#v", this.DestId)+",\n")
+	s = append(s, "Payload: "+fmt.Sprintf("%#v", this.Payload)+",\n")
+	if this.SigChain != nil {
+		s = append(s, "SigChain: "+fmt.Sprintf("%#v", this.SigChain)+",\n")
+	}
+	s = append(s, "MaxHoldingSeconds: "+fmt.Sprintf("%#v", this.MaxHoldingSeconds)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1224,6 +1744,165 @@ func (m *GetConsensusStateReply) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *GetBlockHeaders) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetBlockHeaders) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.StartHeight != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(m.StartHeight))
+	}
+	if m.EndHeight != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(m.EndHeight))
+	}
+	return i, nil
+}
+
+func (m *GetBlockHeadersReply) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetBlockHeadersReply) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.BlockHeaders) > 0 {
+		for _, b := range m.BlockHeaders {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintNodemessage(dAtA, i, uint64(len(b)))
+			i += copy(dAtA[i:], b)
+		}
+	}
+	return i, nil
+}
+
+func (m *GetBlocks) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetBlocks) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.StartHeight != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(m.StartHeight))
+	}
+	if m.EndHeight != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(m.EndHeight))
+	}
+	return i, nil
+}
+
+func (m *GetBlocksReply) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetBlocksReply) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Blocks) > 0 {
+		for _, b := range m.Blocks {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintNodemessage(dAtA, i, uint64(len(b)))
+			i += copy(dAtA[i:], b)
+		}
+	}
+	return i, nil
+}
+
+func (m *Relay) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Relay) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.SrcAddr) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.SrcAddr)))
+		i += copy(dAtA[i:], m.SrcAddr)
+	}
+	if len(m.DestId) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.DestId)))
+		i += copy(dAtA[i:], m.DestId)
+	}
+	if len(m.Payload) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.Payload)))
+		i += copy(dAtA[i:], m.Payload)
+	}
+	if m.SigChain != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(m.SigChain.Size()))
+		n1, err := m.SigChain.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	if m.MaxHoldingSeconds != 0 {
+		dAtA[i] = 0x28
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(m.MaxHoldingSeconds))
+	}
+	return i, nil
+}
+
 func encodeVarintNodemessage(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -1235,7 +1914,7 @@ func encodeVarintNodemessage(dAtA []byte, offset int, v uint64) int {
 }
 func NewPopulatedUnsignedMessage(r randyNodemessage, easy bool) *UnsignedMessage {
 	this := &UnsignedMessage{}
-	this.MessageType = MessageType([]int32{0, 1, 2, 3, 4, 5, 6}[r.Intn(7)])
+	this.MessageType = MessageType([]int32{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}[r.Intn(12)])
 	v1 := r.Intn(100)
 	this.Message = make([]byte, v1)
 	for i := 0; i < v1; i++ {
@@ -1335,6 +2014,78 @@ func NewPopulatedGetConsensusStateReply(r randyNodemessage, easy bool) *GetConse
 	return this
 }
 
+func NewPopulatedGetBlockHeaders(r randyNodemessage, easy bool) *GetBlockHeaders {
+	this := &GetBlockHeaders{}
+	this.StartHeight = uint32(r.Uint32())
+	this.EndHeight = uint32(r.Uint32())
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedGetBlockHeadersReply(r randyNodemessage, easy bool) *GetBlockHeadersReply {
+	this := &GetBlockHeadersReply{}
+	v9 := r.Intn(10)
+	this.BlockHeaders = make([][]byte, v9)
+	for i := 0; i < v9; i++ {
+		v10 := r.Intn(100)
+		this.BlockHeaders[i] = make([]byte, v10)
+		for j := 0; j < v10; j++ {
+			this.BlockHeaders[i][j] = byte(r.Intn(256))
+		}
+	}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedGetBlocks(r randyNodemessage, easy bool) *GetBlocks {
+	this := &GetBlocks{}
+	this.StartHeight = uint32(r.Uint32())
+	this.EndHeight = uint32(r.Uint32())
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedGetBlocksReply(r randyNodemessage, easy bool) *GetBlocksReply {
+	this := &GetBlocksReply{}
+	v11 := r.Intn(10)
+	this.Blocks = make([][]byte, v11)
+	for i := 0; i < v11; i++ {
+		v12 := r.Intn(100)
+		this.Blocks[i] = make([]byte, v12)
+		for j := 0; j < v12; j++ {
+			this.Blocks[i][j] = byte(r.Intn(256))
+		}
+	}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedRelay(r randyNodemessage, easy bool) *Relay {
+	this := &Relay{}
+	this.SrcAddr = string(randStringNodemessage(r))
+	v13 := r.Intn(100)
+	this.DestId = make([]byte, v13)
+	for i := 0; i < v13; i++ {
+		this.DestId[i] = byte(r.Intn(256))
+	}
+	v14 := r.Intn(100)
+	this.Payload = make([]byte, v14)
+	for i := 0; i < v14; i++ {
+		this.Payload[i] = byte(r.Intn(256))
+	}
+	if r.Intn(10) != 0 {
+		this.SigChain = por.NewPopulatedSigChain(r, easy)
+	}
+	this.MaxHoldingSeconds = uint32(r.Uint32())
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
 type randyNodemessage interface {
 	Float32() float32
 	Float64() float64
@@ -1354,9 +2105,9 @@ func randUTF8RuneNodemessage(r randyNodemessage) rune {
 	return rune(ru + 61)
 }
 func randStringNodemessage(r randyNodemessage) string {
-	v9 := r.Intn(100)
-	tmps := make([]rune, v9)
-	for i := 0; i < v9; i++ {
+	v15 := r.Intn(100)
+	tmps := make([]rune, v15)
+	for i := 0; i < v15; i++ {
 		tmps[i] = randUTF8RuneNodemessage(r)
 	}
 	return string(tmps)
@@ -1378,11 +2129,11 @@ func randFieldNodemessage(dAtA []byte, r randyNodemessage, fieldNumber int, wire
 	switch wire {
 	case 0:
 		dAtA = encodeVarintPopulateNodemessage(dAtA, uint64(key))
-		v10 := r.Int63()
+		v16 := r.Int63()
 		if r.Intn(2) == 0 {
-			v10 *= -1
+			v16 *= -1
 		}
-		dAtA = encodeVarintPopulateNodemessage(dAtA, uint64(v10))
+		dAtA = encodeVarintPopulateNodemessage(dAtA, uint64(v16))
 	case 1:
 		dAtA = encodeVarintPopulateNodemessage(dAtA, uint64(key))
 		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
@@ -1529,6 +2280,94 @@ func (m *GetConsensusStateReply) Size() (n int) {
 	return n
 }
 
+func (m *GetBlockHeaders) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.StartHeight != 0 {
+		n += 1 + sovNodemessage(uint64(m.StartHeight))
+	}
+	if m.EndHeight != 0 {
+		n += 1 + sovNodemessage(uint64(m.EndHeight))
+	}
+	return n
+}
+
+func (m *GetBlockHeadersReply) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.BlockHeaders) > 0 {
+		for _, b := range m.BlockHeaders {
+			l = len(b)
+			n += 1 + l + sovNodemessage(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetBlocks) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.StartHeight != 0 {
+		n += 1 + sovNodemessage(uint64(m.StartHeight))
+	}
+	if m.EndHeight != 0 {
+		n += 1 + sovNodemessage(uint64(m.EndHeight))
+	}
+	return n
+}
+
+func (m *GetBlocksReply) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Blocks) > 0 {
+		for _, b := range m.Blocks {
+			l = len(b)
+			n += 1 + l + sovNodemessage(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *Relay) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.SrcAddr)
+	if l > 0 {
+		n += 1 + l + sovNodemessage(uint64(l))
+	}
+	l = len(m.DestId)
+	if l > 0 {
+		n += 1 + l + sovNodemessage(uint64(l))
+	}
+	l = len(m.Payload)
+	if l > 0 {
+		n += 1 + l + sovNodemessage(uint64(l))
+	}
+	if m.SigChain != nil {
+		l = m.SigChain.Size()
+		n += 1 + l + sovNodemessage(uint64(l))
+	}
+	if m.MaxHoldingSeconds != 0 {
+		n += 1 + sovNodemessage(uint64(m.MaxHoldingSeconds))
+	}
+	return n
+}
+
 func sovNodemessage(x uint64) (n int) {
 	for {
 		n++
@@ -1624,6 +2463,62 @@ func (this *GetConsensusStateReply) String() string {
 		`LedgerBlockHash:` + fmt.Sprintf("%v", this.LedgerBlockHash) + `,`,
 		`ConsensusHeight:` + fmt.Sprintf("%v", this.ConsensusHeight) + `,`,
 		`SyncState:` + fmt.Sprintf("%v", this.SyncState) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetBlockHeaders) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetBlockHeaders{`,
+		`StartHeight:` + fmt.Sprintf("%v", this.StartHeight) + `,`,
+		`EndHeight:` + fmt.Sprintf("%v", this.EndHeight) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetBlockHeadersReply) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetBlockHeadersReply{`,
+		`BlockHeaders:` + fmt.Sprintf("%v", this.BlockHeaders) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetBlocks) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetBlocks{`,
+		`StartHeight:` + fmt.Sprintf("%v", this.StartHeight) + `,`,
+		`EndHeight:` + fmt.Sprintf("%v", this.EndHeight) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetBlocksReply) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetBlocksReply{`,
+		`Blocks:` + fmt.Sprintf("%v", this.Blocks) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Relay) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Relay{`,
+		`SrcAddr:` + fmt.Sprintf("%v", this.SrcAddr) + `,`,
+		`DestId:` + fmt.Sprintf("%v", this.DestId) + `,`,
+		`Payload:` + fmt.Sprintf("%v", this.Payload) + `,`,
+		`SigChain:` + strings.Replace(fmt.Sprintf("%v", this.SigChain), "SigChain", "por.SigChain", 1) + `,`,
+		`MaxHoldingSeconds:` + fmt.Sprintf("%v", this.MaxHoldingSeconds) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2398,6 +3293,533 @@ func (m *GetConsensusStateReply) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *GetBlockHeaders) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowNodemessage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetBlockHeaders: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetBlockHeaders: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartHeight", wireType)
+			}
+			m.StartHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.StartHeight |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EndHeight", wireType)
+			}
+			m.EndHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EndHeight |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipNodemessage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetBlockHeadersReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowNodemessage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetBlockHeadersReply: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetBlockHeadersReply: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeaders", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlockHeaders = append(m.BlockHeaders, make([]byte, postIndex-iNdEx))
+			copy(m.BlockHeaders[len(m.BlockHeaders)-1], dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipNodemessage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetBlocks) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowNodemessage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetBlocks: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetBlocks: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartHeight", wireType)
+			}
+			m.StartHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.StartHeight |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EndHeight", wireType)
+			}
+			m.EndHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.EndHeight |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipNodemessage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetBlocksReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowNodemessage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetBlocksReply: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetBlocksReply: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Blocks", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Blocks = append(m.Blocks, make([]byte, postIndex-iNdEx))
+			copy(m.Blocks[len(m.Blocks)-1], dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipNodemessage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Relay) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowNodemessage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Relay: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Relay: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SrcAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SrcAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestId", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DestId = append(m.DestId[:0], dAtA[iNdEx:postIndex]...)
+			if m.DestId == nil {
+				m.DestId = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Payload", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Payload = append(m.Payload[:0], dAtA[iNdEx:postIndex]...)
+			if m.Payload == nil {
+				m.Payload = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SigChain", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.SigChain == nil {
+				m.SigChain = &por.SigChain{}
+			}
+			if err := m.SigChain.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxHoldingSeconds", wireType)
+			}
+			m.MaxHoldingSeconds = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MaxHoldingSeconds |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipNodemessage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipNodemessage(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2503,58 +3925,78 @@ var (
 	ErrIntOverflowNodemessage   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/nodemessage.proto", fileDescriptor_nodemessage_6719c9b185fbcf0a) }
+func init() { proto.RegisterFile("pb/nodemessage.proto", fileDescriptor_nodemessage_8b475f4ecf60ec21) }
 
-var fileDescriptor_nodemessage_6719c9b185fbcf0a = []byte{
-	// 790 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x55, 0x41, 0x73, 0xea, 0x54,
-	0x14, 0xe6, 0xf2, 0x78, 0xd5, 0x77, 0x5e, 0x11, 0x7a, 0x5f, 0x5f, 0x1f, 0x65, 0xda, 0xc8, 0x50,
-	0xad, 0x2d, 0x2a, 0x8c, 0x75, 0xdc, 0xe9, 0x22, 0xc0, 0x1d, 0x60, 0x9a, 0x92, 0x98, 0x84, 0x3a,
-	0x5d, 0xdd, 0x09, 0x70, 0x05, 0xc6, 0x94, 0x44, 0x12, 0x74, 0xd8, 0xf9, 0x13, 0xfc, 0x0f, 0x6e,
-	0xfc, 0x09, 0xae, 0x5d, 0xb9, 0xac, 0xbb, 0x2e, 0x25, 0xdd, 0xb8, 0xec, 0xd2, 0x8d, 0x33, 0x0e,
-	0xc9, 0x0d, 0x25, 0x14, 0x06, 0xfb, 0x76, 0x39, 0xe7, 0x7c, 0xe7, 0xbb, 0xe7, 0xfb, 0xee, 0x99,
-	0x1b, 0xd8, 0xb5, 0xdb, 0xa5, 0xa1, 0xd5, 0x65, 0xd7, 0xcc, 0x71, 0x8c, 0x1e, 0x2b, 0xda, 0x23,
-	0xcb, 0xb5, 0x70, 0xdc, 0x6e, 0x67, 0x3f, 0xed, 0x0d, 0xdc, 0xfe, 0xb8, 0x5d, 0xec, 0x58, 0xd7,
-	0xa5, 0x9e, 0xd5, 0xb3, 0x4a, 0x7e, 0xa9, 0x3d, 0xfe, 0xd6, 0x8f, 0xfc, 0xc0, 0xff, 0x0a, 0x5a,
-	0xb2, 0x49, 0x4e, 0x14, 0x84, 0x79, 0x0a, 0xa9, 0xd6, 0xd0, 0x19, 0xf4, 0x86, 0xac, 0x7b, 0x11,
-	0x50, 0xe3, 0x33, 0xd8, 0xe6, 0xa7, 0x50, 0x77, 0x62, 0xb3, 0x0c, 0xca, 0xa1, 0x93, 0xf7, 0xce,
-	0x52, 0x45, 0xbb, 0x5d, 0xe4, 0x10, 0x7d, 0x62, 0x33, 0xf5, 0xe5, 0xf5, 0x43, 0x80, 0x33, 0xf0,
-	0x0e, 0x0f, 0x33, 0xf1, 0x1c, 0x3a, 0xd9, 0x56, 0xc3, 0x30, 0x5f, 0x83, 0xa4, 0x16, 0xa1, 0x5f,
-	0x80, 0xa2, 0x08, 0x14, 0x1f, 0xc0, 0x8b, 0xd9, 0x24, 0x86, 0x3b, 0x1e, 0x85, 0x34, 0x0f, 0x89,
-	0xfc, 0x57, 0x90, 0xb8, 0xb4, 0x5c, 0x86, 0xf7, 0x60, 0xab, 0xcf, 0x06, 0xbd, 0xbe, 0xeb, 0xb7,
-	0x27, 0x55, 0x1e, 0xe1, 0x43, 0x80, 0xb6, 0x69, 0x75, 0xbe, 0xa3, 0x7d, 0xc3, 0xe9, 0x87, 0xed,
-	0x7e, 0xa6, 0x6e, 0x38, 0xfd, 0xfc, 0x39, 0xe0, 0x46, 0xdd, 0xf8, 0x81, 0x95, 0x67, 0x19, 0x65,
-	0x64, 0xd9, 0x96, 0x63, 0x98, 0x6f, 0x4b, 0xf6, 0x05, 0xec, 0xaa, 0xec, 0xfb, 0x31, 0x73, 0xdc,
-	0x28, 0x5d, 0xb4, 0x0d, 0x2d, 0xb7, 0x7d, 0x06, 0xfb, 0xab, 0xda, 0x54, 0x66, 0x9b, 0x13, 0xbc,
-	0x0b, 0xcf, 0x7d, 0x24, 0x6f, 0x0b, 0x82, 0xfc, 0x2b, 0xd8, 0xa9, 0x31, 0xb7, 0x62, 0x0d, 0x1d,
-	0x36, 0x74, 0xc6, 0x8e, 0xe6, 0x1a, 0x2e, 0xcb, 0xff, 0x8e, 0x60, 0xef, 0x51, 0x36, 0x60, 0x39,
-	0x82, 0xa4, 0xc9, 0xba, 0x3d, 0x36, 0xa2, 0x11, 0x5d, 0xdb, 0x41, 0xb2, 0x1e, 0xa8, 0x2b, 0xc0,
-	0x0e, 0x07, 0x3d, 0x12, 0x99, 0x0a, 0x0a, 0xe5, 0x70, 0x66, 0x7c, 0x0a, 0xe9, 0x4e, 0x78, 0x4e,
-	0xc8, 0xf9, 0xcc, 0xe7, 0x4c, 0xcd, 0xf3, 0x9c, 0xf6, 0x13, 0x00, 0x67, 0x32, 0xec, 0x50, 0x67,
-	0x36, 0x4e, 0x26, 0xe1, 0xaf, 0x4d, 0x72, 0xb6, 0x36, 0xda, 0x64, 0xd8, 0x09, 0x66, 0x7c, 0xe1,
-	0x84, 0x9f, 0x85, 0x3f, 0x11, 0xbc, 0x5c, 0xd8, 0x27, 0xfc, 0x11, 0x1c, 0x5d, 0x10, 0x4d, 0x13,
-	0x6b, 0x84, 0xea, 0x57, 0x0a, 0xa1, 0x8a, 0x24, 0x56, 0x48, 0x5d, 0x96, 0xaa, 0x44, 0xa5, 0x55,
-	0x99, 0x36, 0x65, 0x9d, 0xb6, 0x34, 0x92, 0x8e, 0xe1, 0x77, 0x21, 0x71, 0x29, 0xeb, 0x24, 0x8d,
-	0xf0, 0x3e, 0xbc, 0x6e, 0xd0, 0xba, 0x78, 0x49, 0x68, 0x59, 0x92, 0x2b, 0xe7, 0x54, 0x51, 0x65,
-	0x45, 0xd6, 0x44, 0x29, 0x1d, 0xc7, 0x59, 0xd8, 0x53, 0xc9, 0xd7, 0x2d, 0xa2, 0xe9, 0xcb, 0xb5,
-	0x67, 0x38, 0x07, 0x07, 0xab, 0x6b, 0x54, 0x25, 0x8a, 0x74, 0x95, 0x4e, 0xe0, 0x37, 0xf0, 0xaa,
-	0x46, 0x74, 0x5a, 0x91, 0x9b, 0x1a, 0x69, 0x6a, 0x2d, 0x8d, 0x6a, 0xba, 0xa8, 0x93, 0xf4, 0x73,
-	0x7c, 0x08, 0xfb, 0x2b, 0x0a, 0xbc, 0x6f, 0xab, 0xf0, 0x2f, 0x82, 0x8c, 0x68, 0x9a, 0xd6, 0x8f,
-	0xac, 0x1b, 0x59, 0xfa, 0x50, 0xa0, 0x28, 0x49, 0xf2, 0x37, 0x54, 0x6b, 0xd4, 0x9a, 0xa4, 0xba,
-	0x5e, 0xe0, 0x6b, 0xd8, 0x89, 0x00, 0xb9, 0xda, 0x63, 0xc8, 0x47, 0xd2, 0xeb, 0xa4, 0x2f, 0x9f,
-	0xb3, 0xd6, 0x87, 0x0f, 0x20, 0x17, 0x01, 0xae, 0x96, 0x5c, 0x80, 0xe3, 0x4d, 0xa8, 0xb9, 0x7e,
-	0x0b, 0xb2, 0x5c, 0xfe, 0xd2, 0xa3, 0xe2, 0x1b, 0x70, 0x0a, 0x1f, 0x06, 0x4c, 0xad, 0xe6, 0x26,
-	0x0b, 0xe6, 0x5a, 0xe7, 0xd0, 0xa8, 0x0a, 0x7e, 0x51, 0x85, 0x5f, 0xe2, 0x73, 0xc3, 0xab, 0x83,
-	0x11, 0xeb, 0xb8, 0x2b, 0x0d, 0xaf, 0x36, 0x54, 0x52, 0xd1, 0xff, 0x87, 0xe1, 0x1c, 0xb8, 0x6c,
-	0x38, 0x4f, 0x6f, 0x34, 0x9c, 0xe3, 0x36, 0x1b, 0xbe, 0x12, 0x18, 0x2e, 0xdf, 0x32, 0x6a, 0xc3,
-	0xb5, 0xac, 0x47, 0xcd, 0xaf, 0x45, 0x84, 0x37, 0xdc, 0x24, 0x95, 0x99, 0xc6, 0x64, 0xd1, 0xa3,
-	0xb9, 0x46, 0x95, 0x48, 0xe2, 0xd5, 0x5a, 0x8b, 0x0a, 0x2a, 0xbc, 0xcf, 0x29, 0xca, 0x23, 0xcb,
-	0xe8, 0x76, 0x0c, 0xc7, 0x55, 0xc6, 0x4e, 0x7f, 0x91, 0xaa, 0x04, 0x1f, 0x07, 0x54, 0x65, 0x55,
-	0x16, 0xab, 0x15, 0x51, 0xd3, 0xa9, 0xd2, 0xd2, 0xea, 0x4f, 0xe4, 0x34, 0xcd, 0x8d, 0x9c, 0x92,
-	0xf4, 0x24, 0x4e, 0x7d, 0xc4, 0xd8, 0x06, 0x4e, 0x5d, 0x25, 0xeb, 0x1f, 0x9c, 0xf2, 0x97, 0x37,
-	0x53, 0x21, 0x76, 0x3b, 0x15, 0x62, 0xf7, 0x53, 0x01, 0xfd, 0x33, 0x15, 0xd0, 0x4f, 0x9e, 0x80,
-	0x7e, 0xf5, 0x04, 0xf4, 0x9b, 0x27, 0xa0, 0x3f, 0x3c, 0x01, 0xdd, 0x78, 0x02, 0xfa, 0xcb, 0x13,
-	0xd0, 0xdf, 0x9e, 0x10, 0xbb, 0xf7, 0x04, 0xf4, 0xf3, 0x9d, 0x10, 0xbb, 0xb9, 0x13, 0x62, 0xb7,
-	0x77, 0x42, 0xac, 0xbd, 0xe5, 0xff, 0x68, 0x3f, 0xff, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xfa, 0x6a,
-	0x6f, 0xf6, 0xc2, 0x07, 0x00, 0x00,
+var fileDescriptor_nodemessage_8b475f4ecf60ec21 = []byte{
+	// 1117 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0xcd, 0x77, 0xe2, 0x54,
+	0x14, 0x27, 0xf4, 0x93, 0x5b, 0xda, 0xd2, 0x57, 0xda, 0xd2, 0x3a, 0xcd, 0x74, 0xd2, 0x71, 0x64,
+	0x50, 0xe1, 0x38, 0x1e, 0x57, 0xea, 0x22, 0x40, 0x0e, 0xf4, 0x0c, 0x2d, 0x98, 0x84, 0x6a, 0x57,
+	0xef, 0x04, 0xf2, 0x04, 0xce, 0xd0, 0x04, 0xf3, 0x82, 0x0e, 0x3b, 0xff, 0x04, 0xff, 0x0c, 0xb7,
+	0xb3, 0xf1, 0xb8, 0x72, 0xe1, 0xca, 0x65, 0x97, 0x73, 0x5c, 0x59, 0xba, 0x71, 0x39, 0x4b, 0x97,
+	0x1e, 0x5e, 0x5e, 0x52, 0xc2, 0x87, 0x8c, 0x1e, 0x57, 0xe4, 0xde, 0xfb, 0xbb, 0x1f, 0xef, 0x77,
+	0x7f, 0x2f, 0x01, 0x92, 0xbd, 0x46, 0xce, 0xb2, 0x4d, 0x72, 0x4d, 0x28, 0x35, 0x5a, 0x24, 0xdb,
+	0x73, 0x6c, 0xd7, 0x46, 0xd1, 0x5e, 0xe3, 0xe8, 0xc3, 0x56, 0xc7, 0x6d, 0xf7, 0x1b, 0xd9, 0xa6,
+	0x7d, 0x9d, 0x6b, 0xd9, 0x2d, 0x3b, 0xc7, 0x42, 0x8d, 0xfe, 0xd7, 0xcc, 0x62, 0x06, 0x7b, 0xf2,
+	0x52, 0x8e, 0xd2, 0x63, 0x70, 0xeb, 0x85, 0x65, 0x3b, 0xad, 0xd1, 0x4f, 0xae, 0x67, 0x3b, 0x39,
+	0xda, 0x69, 0x35, 0xdb, 0x46, 0xc7, 0xe2, 0xc8, 0x4d, 0xde, 0xd2, 0x33, 0x25, 0x0c, 0xdb, 0x75,
+	0x8b, 0x76, 0x5a, 0x16, 0x31, 0xcf, 0xbd, 0x21, 0xd0, 0x33, 0x88, 0xf3, 0x79, 0xb0, 0x3b, 0xe8,
+	0x91, 0x94, 0x70, 0x22, 0xa4, 0xb7, 0x9e, 0x6d, 0x67, 0x7b, 0x8d, 0x2c, 0x87, 0xe8, 0x83, 0x1e,
+	0x51, 0x37, 0xae, 0xef, 0x0d, 0x94, 0x82, 0x35, 0x6e, 0xa6, 0xa2, 0x27, 0x42, 0x3a, 0xae, 0xfa,
+	0xa6, 0x54, 0x82, 0x4d, 0x2d, 0x54, 0x7e, 0x0c, 0x2a, 0x84, 0xa0, 0xe8, 0x01, 0xc4, 0x46, 0x93,
+	0x18, 0x6e, 0xdf, 0xf1, 0xcb, 0xdc, 0x3b, 0xa4, 0xcf, 0x61, 0xf9, 0xd2, 0x76, 0x09, 0xda, 0x87,
+	0xd5, 0x36, 0xe9, 0xb4, 0xda, 0x2e, 0x4b, 0xdf, 0x54, 0xb9, 0x85, 0x8e, 0x01, 0x1a, 0x5d, 0xbb,
+	0xf9, 0x02, 0xb7, 0x0d, 0xda, 0xf6, 0xd3, 0x99, 0xa7, 0x6c, 0xd0, 0xb6, 0xf4, 0x1c, 0xd0, 0x59,
+	0xd9, 0xf8, 0x96, 0xe4, 0x47, 0x9e, 0x9a, 0x63, 0xf7, 0x6c, 0x6a, 0x74, 0xff, 0x6b, 0xb1, 0x4f,
+	0x20, 0xa9, 0x92, 0x6f, 0xfa, 0x84, 0xba, 0xe1, 0x72, 0xe1, 0x34, 0x61, 0x32, 0xed, 0x23, 0x38,
+	0x9c, 0x95, 0xa6, 0x92, 0x5e, 0x77, 0x80, 0x92, 0xb0, 0xc2, 0x90, 0x3c, 0xcd, 0x33, 0xa4, 0x5d,
+	0xd8, 0x29, 0x11, 0xb7, 0x60, 0x5b, 0x94, 0x58, 0xb4, 0x4f, 0x35, 0xd7, 0x70, 0x89, 0xf4, 0xab,
+	0x00, 0xfb, 0x53, 0x5e, 0xaf, 0xca, 0x29, 0x6c, 0x76, 0x89, 0xd9, 0x22, 0x0e, 0x0e, 0x9d, 0x2b,
+	0xee, 0x39, 0xcb, 0xde, 0xe9, 0x32, 0xb0, 0xc3, 0x41, 0x53, 0x87, 0xdc, 0xf6, 0x02, 0x79, 0x7f,
+	0x66, 0xf4, 0x14, 0x12, 0x4d, 0xbf, 0x8f, 0x5f, 0x73, 0x89, 0xd5, 0xdc, 0x0e, 0xfc, 0xbc, 0xec,
+	0x07, 0x00, 0x74, 0x60, 0x35, 0x31, 0x1d, 0x8d, 0x93, 0x5a, 0x66, 0xb2, 0xd9, 0x1c, 0xc9, 0x46,
+	0x1b, 0x58, 0x4d, 0x6f, 0xc6, 0x18, 0xf5, 0x1f, 0x25, 0x0d, 0xb6, 0x4b, 0xc4, 0x23, 0xa2, 0x4c,
+	0x0c, 0x93, 0x38, 0x14, 0x3d, 0x82, 0x38, 0x75, 0x0d, 0xc7, 0x0d, 0xcf, 0xbe, 0xc1, 0x7c, 0xe5,
+	0x60, 0x31, 0xc4, 0x32, 0x7d, 0x40, 0x94, 0x01, 0x62, 0xc4, 0x32, 0xbd, 0xb0, 0xf4, 0x29, 0x24,
+	0x27, 0x8a, 0x06, 0xb4, 0xf0, 0xa3, 0x7a, 0xde, 0x94, 0x70, 0xb2, 0x94, 0x8e, 0xab, 0xf1, 0xc6,
+	0x18, 0x52, 0x3a, 0x87, 0x98, 0x9f, 0xfc, 0x7f, 0xcc, 0x92, 0x86, 0xad, 0xa0, 0x9c, 0x37, 0xc5,
+	0x3e, 0xac, 0xb2, 0x86, 0x7e, 0x7b, 0x6e, 0x49, 0xaf, 0x04, 0x58, 0x51, 0x49, 0xd7, 0x18, 0xa0,
+	0x43, 0x58, 0xa7, 0x4e, 0x13, 0x1b, 0xa6, 0xe9, 0xb0, 0x8e, 0x31, 0x75, 0x8d, 0x3a, 0x4d, 0xd9,
+	0x34, 0x1d, 0x74, 0x00, 0x6b, 0x26, 0xa1, 0x2e, 0xee, 0x98, 0x7c, 0x55, 0xab, 0x23, 0xf3, 0xcc,
+	0x1c, 0x5d, 0xa8, 0x9e, 0x31, 0xe8, 0xda, 0x86, 0xc9, 0x16, 0x13, 0x57, 0x7d, 0x13, 0x65, 0xd8,
+	0x85, 0xc2, 0xec, 0xfa, 0xb3, 0x7d, 0x6c, 0x8c, 0xf6, 0x61, 0x3b, 0x59, 0xad, 0xd3, 0x2a, 0x8c,
+	0x9c, 0xea, 0x3a, 0xe5, 0x4f, 0x28, 0x0b, 0xbb, 0xd7, 0xc6, 0x4b, 0xdc, 0xb6, 0xbb, 0x66, 0xc7,
+	0x6a, 0x61, 0x4a, 0x9a, 0xb6, 0x65, 0xd2, 0xd4, 0x0a, 0x3b, 0xd5, 0xce, 0xb5, 0xf1, 0xb2, 0xec,
+	0x45, 0x34, 0x2f, 0x90, 0xf9, 0x29, 0x0a, 0x1b, 0x63, 0xaf, 0x03, 0xf4, 0x1e, 0x9c, 0x9e, 0x2b,
+	0x9a, 0x26, 0x97, 0x14, 0xac, 0x5f, 0xd5, 0x14, 0x5c, 0xab, 0xc8, 0x05, 0xa5, 0x5c, 0xad, 0x14,
+	0x15, 0x15, 0x17, 0xab, 0xf8, 0xa2, 0xaa, 0xe3, 0xba, 0xa6, 0x24, 0x22, 0x68, 0x1d, 0x96, 0x2f,
+	0xab, 0xba, 0x92, 0x10, 0xd0, 0x21, 0xec, 0x9d, 0xe1, 0xb2, 0x7c, 0xa9, 0xe0, 0x7c, 0xa5, 0x5a,
+	0x78, 0x8e, 0x6b, 0x6a, 0xb5, 0x56, 0xd5, 0xe4, 0x4a, 0x22, 0x8a, 0x8e, 0x60, 0x5f, 0x55, 0xbe,
+	0xa8, 0x2b, 0x9a, 0x3e, 0x19, 0x5b, 0x42, 0x27, 0xf0, 0x60, 0x76, 0x0c, 0xab, 0x4a, 0xad, 0x72,
+	0x95, 0x58, 0x46, 0x07, 0xb0, 0x5b, 0x52, 0x74, 0x5c, 0xa8, 0x5e, 0x68, 0xca, 0x85, 0x56, 0xd7,
+	0xb0, 0xa6, 0xcb, 0xba, 0x92, 0x58, 0x41, 0xc7, 0x70, 0x38, 0x23, 0xc0, 0xf3, 0x56, 0xd1, 0x1e,
+	0xec, 0x8c, 0xc2, 0x5e, 0xd5, 0xb2, 0x22, 0x17, 0x15, 0x55, 0x4b, 0xac, 0xa1, 0x77, 0xe0, 0x60,
+	0xca, 0xcd, 0x73, 0xd6, 0xd1, 0x16, 0x40, 0x10, 0xd4, 0x12, 0x31, 0x94, 0x84, 0xc4, 0xbd, 0xcd,
+	0x51, 0x80, 0x62, 0xb0, 0xa2, 0x2a, 0x15, 0xf9, 0x2a, 0xb1, 0x91, 0xf9, 0x25, 0x0a, 0x29, 0xb9,
+	0xdb, 0xb5, 0xbf, 0x23, 0x66, 0xe8, 0xc5, 0xe8, 0xb3, 0x28, 0x57, 0x2a, 0xd5, 0x2f, 0xb1, 0x76,
+	0x56, 0xba, 0x50, 0x8a, 0xf3, 0x59, 0xdc, 0x83, 0x9d, 0x10, 0x90, 0x53, 0xfa, 0x04, 0xa4, 0x90,
+	0x7b, 0x1e, 0xbf, 0x93, 0x7d, 0xe6, 0x92, 0xfd, 0x18, 0x4e, 0x42, 0xc0, 0xd9, 0xbc, 0x66, 0xe0,
+	0xc9, 0x22, 0x54, 0x40, 0xb2, 0x04, 0xe2, 0x14, 0x76, 0x06, 0xe3, 0xb3, 0x31, 0x5a, 0x22, 0x96,
+	0xf9, 0x5d, 0x80, 0x23, 0x4e, 0xe0, 0xc4, 0xa7, 0x8b, 0x51, 0xf8, 0x14, 0xde, 0xf5, 0x72, 0xeb,
+	0x17, 0x8b, 0x48, 0x0c, 0xd8, 0x0a, 0xa0, 0x61, 0x1e, 0x7c, 0x3d, 0x05, 0xc7, 0x0b, 0x70, 0xf3,
+	0xf5, 0x70, 0x0a, 0x0f, 0xe7, 0x61, 0xef, 0xe5, 0x90, 0x82, 0xe4, 0x54, 0x63, 0x4f, 0x1d, 0xaf,
+	0x96, 0x02, 0x75, 0x14, 0x3b, 0x0e, 0x69, 0xba, 0x33, 0xd5, 0x51, 0x3c, 0x53, 0x95, 0x82, 0xfe,
+	0x16, 0xea, 0xe0, 0xc0, 0x49, 0x75, 0x70, 0xf7, 0x42, 0x75, 0x70, 0xdc, 0x62, 0x75, 0xcc, 0x04,
+	0xfa, 0xf4, 0x4d, 0xa2, 0x16, 0x68, 0x68, 0x3e, 0x6a, 0x5a, 0x43, 0x63, 0xd8, 0x49, 0x0d, 0xa5,
+	0xe1, 0xf1, 0x3f, 0x63, 0x82, 0x95, 0x05, 0x6a, 0x9b, 0x44, 0x8e, 0xee, 0xf3, 0x23, 0x38, 0x9e,
+	0x13, 0xf4, 0xb7, 0x99, 0xf9, 0x0a, 0x0e, 0xf8, 0xca, 0xd8, 0x4b, 0x7c, 0x7c, 0x63, 0x01, 0xe3,
+	0x6c, 0xbf, 0x6f, 0xb1, 0x30, 0x0f, 0xe7, 0xab, 0x41, 0x85, 0x87, 0xbc, 0x72, 0xde, 0xb1, 0x0d,
+	0xb3, 0x69, 0x50, 0xb7, 0xd6, 0xa7, 0xed, 0xf1, 0x0e, 0x39, 0x78, 0xdf, 0xcb, 0xcc, 0xab, 0x55,
+	0xb9, 0x58, 0x90, 0x35, 0x1d, 0xd7, 0xea, 0x5a, 0x79, 0x6e, 0xab, 0xd9, 0x35, 0xbb, 0xdd, 0x85,
+	0x35, 0x2b, 0x95, 0x7f, 0x55, 0x53, 0x77, 0x08, 0x59, 0x50, 0x53, 0x57, 0x95, 0xf9, 0xdf, 0x89,
+	0xfc, 0x67, 0x37, 0xb7, 0x62, 0xe4, 0xf5, 0xad, 0x18, 0x79, 0x73, 0x2b, 0x0a, 0x7f, 0xdd, 0x8a,
+	0xc2, 0xf7, 0x43, 0x51, 0xf8, 0x71, 0x28, 0x0a, 0x3f, 0x0f, 0x45, 0xe1, 0xb7, 0xa1, 0x28, 0xdc,
+	0x0c, 0x45, 0xe1, 0x8f, 0xa1, 0x28, 0xfc, 0x39, 0x14, 0x23, 0x6f, 0x86, 0xa2, 0xf0, 0xc3, 0x9d,
+	0x18, 0xb9, 0xb9, 0x13, 0x23, 0xaf, 0xef, 0xc4, 0x48, 0x63, 0x95, 0xfd, 0xbd, 0xfd, 0xf8, 0xef,
+	0x00, 0x00, 0x00, 0xff, 0xff, 0x0a, 0x1a, 0x02, 0xac, 0x62, 0x0b, 0x00, 0x00,
 }
