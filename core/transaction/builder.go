@@ -182,11 +182,12 @@ func NewDeleteNameTransaction(registrant []byte) (*Transaction, error) {
 	}, nil
 }
 
-func NewSubscribeTransaction(subscriber []byte, identifier string, topic string) (*Transaction, error) {
+func NewSubscribeTransaction(subscriber []byte, identifier string, topic string, duration uint32) (*Transaction, error) {
 	SubscribePayload := &payload.Subscribe{
 		Subscriber: subscriber,
 		Identifier: identifier,
 		Topic: topic,
+		Duration: duration,
 	}
 
 	return &Transaction{
