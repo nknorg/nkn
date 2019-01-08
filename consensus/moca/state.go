@@ -78,7 +78,7 @@ func (consensus *Consensus) getAllNeighborsConsensusState() (*sync.Map, error) {
 			defer wg.Done()
 			consensusState, err := consensus.getNeighborConsensusState(neighbor)
 			if err != nil {
-				log.Warningf("Get latest block info from neighbor %d error: %v", neighbor.GetID(), err)
+				log.Warningf("Get latest block info from neighbor %v error: %v", neighbor.GetID(), err)
 			}
 			allInfo.Store(neighbor.GetID(), consensusState)
 		}(neighbor)
