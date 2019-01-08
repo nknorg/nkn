@@ -19,7 +19,7 @@ import (
 )
 
 type requestProposalInfo struct {
-	neighborID uint64
+	neighborID string
 	height     uint32
 	blockHash  common.Uint256
 }
@@ -162,7 +162,7 @@ func (consensus *Consensus) startRequestingProposal() {
 			continue
 		}
 
-		log.Infof("Request block %s from neighbor %d", requestProposal.blockHash.ToHexString(), neighbor.GetID())
+		log.Infof("Request block %s from neighbor %v", requestProposal.blockHash.ToHexString(), neighbor.GetID())
 
 		block, err := consensus.requestProposal(neighbor, requestProposal.blockHash)
 		if err != nil {
@@ -170,7 +170,7 @@ func (consensus *Consensus) startRequestingProposal() {
 			continue
 		}
 		if block == nil {
-			log.Warning("Request block msg returned empty block from neighbor %d", neighbor.GetID())
+			log.Warning("Request block msg returned empty block from neighbor %v", neighbor.GetID())
 			continue
 		}
 
@@ -210,7 +210,7 @@ func (consensus *Consensus) receiveProposal(block *ledger.Block) error {
 
 // receiveProposalHash is called when a node receives a block proposal hash from
 // a neighbor
-func (consensus *Consensus) receiveProposalHash(neighborID uint64, height uint32, blockHash common.Uint256) error {
+func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32, blockHash common.Uint256) error {
 	log.Debugf("Receive block hash %s for height %d from neighbor %d", blockHash.ToHexString(), height, neighborID)
 
 	expectedHeight := consensus.GetExpectedHeight()

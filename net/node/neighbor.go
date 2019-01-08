@@ -11,8 +11,8 @@ type nbrNodes struct {
 	List sync.Map
 }
 
-func (nm *nbrNodes) GetNbrNode(uid uint64) *RemoteNode {
-	v, ok := nm.List.Load(uid)
+func (nm *nbrNodes) GetNbrNode(id string) *RemoteNode {
+	v, ok := nm.List.Load(id)
 	if !ok {
 		return nil
 	}
@@ -28,7 +28,7 @@ func (nm *nbrNodes) AddNbrNode(remoteNode *RemoteNode) error {
 	return nil
 }
 
-func (nm *nbrNodes) DelNbrNode(id uint64) {
+func (nm *nbrNodes) DelNbrNode(id string) {
 	nm.List.Delete(id)
 }
 
@@ -62,11 +62,6 @@ func (localNode *LocalNode) getNbrByNNetNode(nnetRemoteNode *nnetnode.RemoteNode
 		return nil
 	}
 
-	nodeID, err := chordIDToNodeID(nnetRemoteNode.Id)
-	if err != nil {
-		return nil
-	}
-
-	nbr := localNode.GetNbrNode(nodeID)
+	nbr := localNode.GetNbrNode(chordIDToNodeID(nnetRemoteNode.Id))
 	return nbr
 }
