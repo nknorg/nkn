@@ -141,18 +141,18 @@ func (ws *WsServer) registryMethod() {
 
 		// TODO: use signature (or better, with one-time challange) to verify identity
 
-		node, err := s.GetNetNode()
+		localNode, err := s.GetNetNode()
 		if err != nil {
 			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
 
-		addr, err := node.FindWsAddr(clientID)
+		addr, err := localNode.FindWsAddr(clientID)
 		if err != nil {
 			log.Error("Cannot get websocket address")
 			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
 
-		if addr != node.GetWsAddr() {
+		if addr != localNode.GetWsAddr() {
 			return common.RespPacking(addr, common.WRONG_NODE)
 		}
 
@@ -451,18 +451,18 @@ func (ws *WsServer) NotifyWrongClients() {
 			return
 		}
 
-		node, err := ws.GetNetNode()
+		localNode, err := ws.GetNetNode()
 		if err != nil {
 			return
 		}
 
-		addr, err := node.FindWsAddr(clientID)
+		addr, err := localNode.FindWsAddr(clientID)
 		if err != nil {
 			log.Error("Cannot get websocket address")
 			return
 		}
 
-		if addr != node.GetWsAddr() {
+		if addr != localNode.GetWsAddr() {
 			resp := common.ResponsePack(common.WRONG_NODE)
 			resp["Result"] = addr
 			ws.respondToSession(client, resp)

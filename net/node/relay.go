@@ -13,8 +13,8 @@ import (
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/address"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
-	"github.com/nknorg/nnet/log"
 )
 
 type RelayService struct {

@@ -704,8 +704,6 @@ type trn struct {
 func (msg trn) Handle(node *RemoteNode) error {
 	txn := &msg.txn
 	if !node.LocalNode().ExistHash(txn.Hash()) {
-		node.LocalNode().IncRxTxnCnt()
-
 		// add transaction to pool when in consensus state
 		if node.LocalNode().GetSyncState() == pb.PersistFinished {
 			if errCode := node.LocalNode().AppendTxnPool(txn); errCode != nknErrors.ErrNoError {

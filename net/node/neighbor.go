@@ -1,11 +1,8 @@
 package node
 
 import (
-	"fmt"
 	"sync"
-	"time"
 
-	"github.com/nknorg/nkn/net/protocol"
 	nnetnode "github.com/nknorg/nnet/node"
 )
 
@@ -37,23 +34,6 @@ func (nm *nbrNodes) DelNbrNode(id uint64) {
 
 func (nm *nbrNodes) GetConnectionCnt() uint {
 	return uint(len(nm.GetNeighbors(nil)))
-}
-
-func (nm *nbrNodes) GetNeighborAddrs() ([]protocol.NodeAddr, uint) {
-	var addrs []protocol.NodeAddr
-	for _, n := range nm.GetNeighbors(nil) {
-		ip, _ := n.GetAddr16()
-		addrs = append(addrs, protocol.NodeAddr{
-			IpAddr:  ip,
-			IpStr:   n.GetAddr(),
-			InOut:   n.GetConnDirection(),
-			Time:    time.Now().UnixNano(),
-			Port:    n.GetPort(),
-			ID:      n.GetID(),
-			NKNaddr: fmt.Sprintf("%x", n.GetChordAddr()),
-		})
-	}
-	return addrs, uint(len(addrs))
 }
 
 func (nm *nbrNodes) GetNeighborHeights() ([]uint32, uint) {

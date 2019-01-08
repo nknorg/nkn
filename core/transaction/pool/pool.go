@@ -32,13 +32,11 @@ func (iterable TransactionMap) Iterate(handler func(item *Transaction) ErrCode) 
 
 type TxnPool struct {
 	sync.RWMutex
-	txnCnt  uint64                          // transaction count
 	txnList map[common.Uint256]*Transaction // transaction which have been verified will put into this map
 }
 
 func NewTxnPool() *TxnPool {
 	return &TxnPool{
-		txnCnt:  0,
 		txnList: make(map[common.Uint256]*Transaction),
 	}
 }
