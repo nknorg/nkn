@@ -115,7 +115,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return nil, err
 	}
 
-	log.Infof("Init node ID to %d", localNode.GetID())
+	log.Infof("Init node ID to %v", localNode.GetID())
 
 	localNode.eventQueue.init()
 
