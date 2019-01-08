@@ -270,7 +270,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.Height, ledger.DefaultLedger.Store.GetHeight())
 	}
 
-	consensus.localNode.SetSyncStopHash(block.Header.Hash(), block.Header.Height)
+	consensus.localNode.SetSyncStopHash(block.Header.PrevBlockHash, block.Header.Height-1)
 
 	return nil
 }
