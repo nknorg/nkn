@@ -1,30 +1,70 @@
 package node
 
 import (
+	"encoding/hex"
+	"encoding/json"
+	"net/url"
 	"sync"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
+	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
 type Node struct {
-	sync.RWMutex
-	pb.NodeData
-	id        uint64
+	*nnetpb.Node
+	*pb.NodeData
 	publicKey *crypto.PubKey
-	height    uint32
+
+	sync.RWMutex
 	syncState pb.SyncState
 }
 
-func NewNode(chordID []byte, publicKey *crypto.PubKey, nodeData pb.NodeData) (*Node, error) {
-	id, err := chordIDToNodeID(chordID)
+func (node *Node) MarshalJSON() ([]byte, error) {
+	var out map[string]interface{}
+
+	marshaler := &jsonpb.Marshaler{}
+
+	s, err := marshaler.MarshalToString(node.Node)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(s), &out)
+	if err != nil {
+		return nil, err
+	}
+
+	delete(out, "data")
+	out["id"] = hex.EncodeToString(node.Node.Id)
+
+	s, err = marshaler.MarshalToString(node.NodeData)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(s), &out)
+	if err != nil {
+		return nil, err
+	}
+
+	out["publicKey"] = hex.EncodeToString(node.NodeData.PublicKey)
+
+	out["syncState"] = node.GetSyncState().String()
+
+	return json.Marshal(out)
+}
+
+func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
+	publicKey, err := crypto.DecodePoint(nodeData.PublicKey)
 	if err != nil {
 		return nil, err
 	}
 
 	node := &Node{
+		Node:      nnetNode,
 		NodeData:  nodeData,
-		id:        id,
 		publicKey: publicKey,
 		syncState: pb.WaitForSyncing,
 	}
@@ -32,32 +72,22 @@ func NewNode(chordID []byte, publicKey *crypto.PubKey, nodeData pb.NodeData) (*N
 	return node, nil
 }
 
+func (node *Node) GetChordId() []byte {
+	return node.GetId()
+}
+
 func (node *Node) GetID() uint64 {
-	return node.id
-}
-
-func (node *Node) GetHttpJsonPort() uint16 {
-	return uint16(node.JsonRpcPort)
-}
-
-func (node *Node) GetWsPort() uint16 {
-	return uint16(node.WebsocketPort)
+	id, _ := chordIDToNodeID(node.GetId())
+	return id
 }
 
 func (node *Node) GetPubKey() *crypto.PubKey {
 	return node.publicKey
 }
 
-func (node *Node) GetHeight() uint32 {
-	node.RLock()
-	defer node.RUnlock()
-	return node.height
-}
-
-func (node *Node) SetHeight(height uint32) {
-	node.Lock()
-	defer node.Unlock()
-	node.height = height
+func (node *Node) GetHostname() string {
+	address, _ := url.Parse(node.GetAddr())
+	return address.Hostname()
 }
 
 func (node *Node) GetSyncState() pb.SyncState {

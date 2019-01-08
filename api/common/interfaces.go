@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"math"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
@@ -13,7 +12,6 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
-	netcomm "github.com/nknorg/nkn/net/common"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
@@ -117,11 +115,11 @@ func getBlockCount(s Serverer, params map[string]interface{}) map[string]interfa
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]interface{} {
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	return respPacking(node.DumpChordInfo(), SUCCESS)
+	return respPacking(localNode.GetChordInfo(), SUCCESS)
 }
 
 // getLatestBlockHeight gets the latest block height
@@ -207,25 +205,25 @@ func getBlockTxsByHeight(s Serverer, params map[string]interface{}) map[string]i
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getConnectionCount(s Serverer, params map[string]interface{}) map[string]interface{} {
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	return respPacking(node.GetConnectionCnt(), SUCCESS)
+	return respPacking(localNode.GetConnectionCnt(), SUCCESS)
 }
 
 // getRawMemPool gets the transactions in txpool
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getRawMemPool(s Serverer, params map[string]interface{}) map[string]interface{} {
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	txs := []interface{}{}
-	txpool := node.GetTxnPool()
+	txpool := localNode.GetTxnPool()
 	for _, t := range txpool.GetAllTransactions() {
 		info, err := t.MarshalJson()
 		if err != nil {
@@ -287,7 +285,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
@@ -304,7 +302,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		}
 
 		hash = txn.Hash()
-		if errCode := VerifyAndSendTx(node, &txn); errCode != errors.ErrNoError {
+		if errCode := VerifyAndSendTx(localNode, &txn); errCode != errors.ErrNoError {
 			return respPacking(nil, INVALID_TRANSACTION)
 		}
 	} else {
@@ -318,41 +316,24 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getNeighbor(s Serverer, params map[string]interface{}) map[string]interface{} {
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	result, _ := node.GetNeighborAddrs()
-	return respPacking(result, SUCCESS)
+	return respPacking(localNode.GetNeighborInfo(), SUCCESS)
 }
 
 // getNodeState gets the state of this node
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getNodeState(s Serverer, params map[string]interface{}) map[string]interface{} {
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	key, _ := node.GetPubKey().EncodePoint(true)
-	n := netcomm.NodeInfo{
-		SyncState: node.GetSyncState().String(),
-		Time:      time.Now().UnixNano(),
-		Addr:      node.GetAddrStr(),
-		JsonPort:  node.GetHttpJsonPort(),
-		WsPort:    node.GetWsPort(),
-		ID:        node.GetID(),
-		Version:   node.Version(),
-		Height:    node.GetHeight(),
-		PubKey:    hex.EncodeToString(key),
-		TxnCnt:    node.GetTxnCnt(),
-		RxTxnCnt:  node.GetRxTxnCnt(),
-		ChordID:   hex.EncodeToString(node.GetChordAddr()),
-	}
-
-	return respPacking(n, SUCCESS)
+	return respPacking(localNode, SUCCESS)
 }
 
 // setDebugInfo sets log level
@@ -433,12 +414,12 @@ func registAsset(s Serverer, params map[string]interface{}) map[string]interface
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -478,12 +459,12 @@ func issueAsset(s Serverer, params map[string]interface{}) map[string]interface{
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -527,12 +508,12 @@ func sendToAddress(s Serverer, params map[string]interface{}) map[string]interfa
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -571,12 +552,12 @@ func prepaidAsset(s Serverer, params map[string]interface{}) map[string]interfac
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -605,12 +586,12 @@ func registerName(s Serverer, params map[string]interface{}) map[string]interfac
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -634,12 +615,12 @@ func deleteName(s Serverer, params map[string]interface{}) map[string]interface{
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -680,12 +661,12 @@ func withdrawAsset(s Serverer, params map[string]interface{}) map[string]interfa
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -722,12 +703,12 @@ func commitPor(s Serverer, params map[string]interface{}) map[string]interface{}
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -755,18 +736,18 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 		return respPacking(nil, UNKNOWN_HASH)
 	}
 
-	node, err := s.GetNetNode()
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	srcID := node.GetChordAddr()
+	srcID := localNode.GetChordId()
 	encodedPublickKey, err := account.PubKey().EncodePoint(true)
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
 	mining := false
-	if node.GetSyncState() == pb.PersistFinished {
+	if localNode.GetSyncState() == pb.PersistFinished {
 		mining = true
 	}
 	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], srcID,
@@ -786,7 +767,7 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(node, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -804,11 +785,11 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 
 	if str, ok := params["address"].(string); ok {
 		clientID, _, err := address.ParseClientAddress(str)
-		node, err := s.GetNetNode()
+		localNode, err := s.GetNetNode()
 		if err != nil {
 			return respPacking(nil, INTERNAL_ERROR)
 		}
-		addr, err := node.FindWsAddr(clientID)
+		addr, err := localNode.FindWsAddr(clientID)
 		if err != nil {
 			log.Error("Cannot get websocket address")
 			return respPacking(nil, INTERNAL_ERROR)
@@ -829,11 +810,11 @@ func getHttpProxyAddr(s Serverer, params map[string]interface{}) map[string]inte
 
 	if str, ok := params["address"].(string); ok {
 		clientID, _, err := address.ParseClientAddress(str)
-		node, err := s.GetNetNode()
+		localNode, err := s.GetNetNode()
 		if err != nil {
 			return respPacking(nil, INTERNAL_ERROR)
 		}
-		addr, err := node.FindHttpProxyAddr(clientID)
+		addr, err := localNode.FindHttpProxyAddr(clientID)
 		if err != nil {
 			log.Error("Cannot get http proxy address")
 			return respPacking(nil, INTERNAL_ERROR)
@@ -1165,13 +1146,13 @@ func findSuccessorAddrs(s Serverer, params map[string]interface{}) map[string]in
 			return respPacking(nil, INVALID_PARAMS)
 		}
 
-		node, err := s.GetNetNode()
+		localNode, err := s.GetNetNode()
 		if err != nil {
 			log.Error("Cannot get node:", err)
 			return respPacking(nil, INTERNAL_ERROR)
 		}
 
-		addrs, err := node.FindSuccessorAddrs(key, config.MinNumSuccessors)
+		addrs, err := localNode.FindSuccessorAddrs(key, config.MinNumSuccessors)
 		if err != nil {
 			log.Error("Cannot get successor address:", err)
 			return respPacking(nil, INTERNAL_ERROR)
@@ -1196,13 +1177,13 @@ func findSuccessorAddr(s Serverer, params map[string]interface{}) map[string]int
 			return respPacking(nil, INVALID_PARAMS)
 		}
 
-		node, err := s.GetNetNode()
+		localNode, err := s.GetNetNode()
 		if err != nil {
 			log.Error("Cannot get node:", err)
 			return respPacking(nil, INTERNAL_ERROR)
 		}
 
-		addrs, err := node.FindSuccessorAddrs(key, 1)
+		addrs, err := localNode.FindSuccessorAddrs(key, 1)
 		if err != nil || len(addrs) == 0 {
 			log.Error("Cannot get successor address:", err)
 			return respPacking(nil, INTERNAL_ERROR)

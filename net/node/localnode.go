@@ -1,21 +1,19 @@
 package node
 
 import (
-	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/pool"
 	"github.com/nknorg/nkn/events"
-	. "github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
@@ -36,7 +34,6 @@ const (
 	KeepAliveTicker      = 3 * time.Second  // ticker for ping/pong and keepalive message
 	KeepaliveTimeout     = 9 * time.Second  // timeout for keeping alive
 	BlockSyncingTicker   = 3 * time.Second  // ticker for syncing block
-	ProtocolVersion      = 0                // protocol version
 	ConnectionTicker     = 10 * time.Second // ticker for connection
 	MaxReqBlkOnce        = 16               // max block count requested
 	ConnectingTimeout    = 10 * time.Second // timeout for waiting for connection
@@ -44,20 +41,37 @@ const (
 
 type LocalNode struct {
 	*Node
-	sync.RWMutex
-	version       uint32         // network protocol version
-	txnCnt        uint64         // transmitted transaction count
-	rxTxnCnt      uint64         // received transaction count
 	account       *vault.Account // local node wallet account
 	nnet          *nnet.NNet     // nnet instance
 	relayer       *RelayService  // relay service
-	syncStopHash  Uint256        // block syncing stop hash
 	quit          chan bool      // block syncing channel
 	nbrNodes                     // neighbor nodes
 	eventQueue                   // event queue
 	*pool.TxnPool                // transaction pool of local node
 	*hashCache                   // entity hash cache
 	*messageHandlerStore
+
+	sync.RWMutex
+	syncStopHash common.Uint256 // block syncing stop hash
+}
+
+func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
+	var out map[string]interface{}
+
+	buf, err := json.Marshal(localNode.Node)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(buf, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	out["height"] = localNode.GetHeight()
+	out["version"] = config.Version
+
+	return json.Marshal(out)
 }
 
 func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
@@ -71,24 +85,23 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return nil, err
 	}
 
-	nodeData := pb.NodeData{
+	nodeData := &pb.NodeData{
 		PublicKey:     publicKey,
 		WebsocketPort: uint32(config.Parameters.HttpWsPort),
 		JsonRpcPort:   uint32(config.Parameters.HttpJsonPort),
 		HttpProxyPort: uint32(config.Parameters.HttpProxyPort),
 	}
 
-	node, err := NewNode(nn.GetLocalNode().Id, account.PublicKey, nodeData)
+	node, err := NewNode(nn.GetLocalNode().Node.Node, nodeData)
 	if err != nil {
 		return nil, err
 	}
 
 	localNode := &LocalNode{
 		Node:                node,
-		version:             ProtocolVersion,
 		account:             account,
 		TxnPool:             pool.NewTxnPool(),
-		syncStopHash:        Uint256{},
+		syncStopHash:        common.Uint256{},
 		quit:                make(chan bool, 1),
 		hashCache:           NewHashCache(),
 		messageHandlerStore: newMessageHandlerStore(),
@@ -97,19 +110,19 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	localNode.relayer = NewRelayService(wallet, localNode)
 
-	nn.GetLocalNode().Node.Data, err = proto.Marshal(&localNode.NodeData)
+	nn.GetLocalNode().Node.Data, err = proto.Marshal(localNode.NodeData)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Infof("Init node ID to %d", localNode.id)
+	log.Infof("Init node ID to %d", localNode.GetID())
 
 	localNode.eventQueue.init()
 
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, localNode.cleanupTransactions)
 
 	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady(func(remoteNode *nnetnode.RemoteNode) bool {
-		if address.ShouldRejectAddr(localNode.GetAddrStr(), remoteNode.Addr) {
+		if address.ShouldRejectAddr(localNode.GetAddr(), remoteNode.GetAddr()) {
 			remoteNode.Stop(errors.New("Remote port is different from local port"))
 			return false
 		}
@@ -166,22 +179,6 @@ func (localNode *LocalNode) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) 
 	return nil
 }
 
-func (localNode *LocalNode) Version() uint32 {
-	return localNode.version
-}
-
-func (localNode *LocalNode) IncRxTxnCnt() {
-	localNode.rxTxnCnt++
-}
-
-func (localNode *LocalNode) GetTxnCnt() uint64 {
-	return localNode.txnCnt
-}
-
-func (localNode *LocalNode) GetRxTxnCnt() uint64 {
-	return localNode.rxTxnCnt
-}
-
 func (localNode *LocalNode) GetTxnPool() *pool.TxnPool {
 	return localNode.TxnPool
 }
@@ -201,7 +198,6 @@ func (localNode *LocalNode) Xmit(msg interface{}) error {
 			log.Error("Error New Tx message: ", err)
 			return err
 		}
-		localNode.txnCnt++
 		localNode.ExistHash(txn.Hash())
 	default:
 		log.Warning("Unknown Xmit message type")
@@ -211,51 +207,36 @@ func (localNode *LocalNode) Xmit(msg interface{}) error {
 	return localNode.Broadcast(buffer)
 }
 
-func (localNode *LocalNode) GetAddrStr() string {
-	return localNode.nnet.GetLocalNode().Addr
-}
-
-func (localNode *LocalNode) GetAddr() string {
-	address, _ := url.Parse(localNode.GetAddrStr())
-	return address.Hostname()
-}
-
-func (localNode *LocalNode) GetPort() uint16 {
-	address, _ := url.Parse(localNode.GetAddrStr())
-	port, _ := strconv.Atoi(address.Port())
-	return uint16(port)
-}
-
 func (localNode *LocalNode) SetSyncState(s pb.SyncState) {
 	localNode.Node.Lock()
 	defer localNode.Node.Unlock()
 	localNode.syncState = s
 
 	if s == pb.PersistFinished || s == pb.WaitForSyncing {
-		localNode.syncStopHash = EmptyUint256
+		localNode.syncStopHash = common.EmptyUint256
 	}
 
 	log.Infof("Set sync state to %s", s.String())
 }
 
-func (localNode *LocalNode) GetSyncStopHash() Uint256 {
+func (localNode *LocalNode) GetSyncStopHash() common.Uint256 {
 	localNode.RLock()
 	defer localNode.RUnlock()
 	return localNode.syncStopHash
 }
 
-func (localNode *LocalNode) SetSyncStopHash(hash Uint256, height uint32) {
+func (localNode *LocalNode) SetSyncStopHash(hash common.Uint256, height uint32) {
 	localNode.Lock()
 	defer localNode.Unlock()
-	if localNode.syncStopHash == EmptyUint256 && hash != EmptyUint256 {
+	if localNode.syncStopHash == common.EmptyUint256 && hash != common.EmptyUint256 {
 		log.Infof("block syncing will stop when receive block: %s, height: %d",
-			BytesToHexString(hash.ToArrayReverse()), height)
+			common.BytesToHexString(hash.ToArrayReverse()), height)
 		localNode.syncStopHash = hash
 	}
 }
 
 func (localNode *LocalNode) GetWsAddr() string {
-	return fmt.Sprintf("%s:%d", localNode.GetAddr(), localNode.GetWsPort())
+	return fmt.Sprintf("%s:%d", localNode.GetHostname(), localNode.GetWebsocketPort())
 }
 
 func (localNode *LocalNode) FindSuccessorAddrs(key []byte, numSucc int) ([]string, error) {
@@ -330,10 +311,6 @@ func (localNode *LocalNode) FindHttpProxyAddr(key []byte) (string, error) {
 	})
 }
 
-func (localNode *LocalNode) GetChordAddr() []byte {
-	return localNode.nnet.GetLocalNode().Id
-}
-
 func (localNode *LocalNode) Broadcast(buf []byte) error {
 	_, err := localNode.nnet.SendBytesBroadcastAsync(buf, nnetpb.BROADCAST_PUSH)
 	if err != nil {
@@ -341,73 +318,6 @@ func (localNode *LocalNode) Broadcast(buf []byte) error {
 	}
 
 	return nil
-}
-
-func (localNode *LocalNode) DumpChordInfo() *ChordInfo {
-	c, ok := localNode.nnet.Network.(*chord.Chord)
-	if !ok {
-		log.Errorf("Overlay is not chord")
-		return nil
-	}
-
-	n := c.GetLocalNode()
-	ret := ChordInfo{
-		Node:         ChordNodeInfo{ID: hex.EncodeToString(n.GetId()), Addr: n.GetAddr()},
-		Successors:   localNode.GetSuccessors(),
-		Predecessors: localNode.GetPredecessors(),
-		FingerTable:  localNode.GetFingerTable(),
-	}
-	ret.Node.NodeData.Unmarshal(n.GetData())
-	return &ret
-}
-
-func (localNode *LocalNode) GetSuccessors() (ret []*ChordNodeInfo) {
-	c, ok := localNode.nnet.Network.(*chord.Chord)
-	if !ok {
-		log.Errorf("Overlay is not chord")
-		return []*ChordNodeInfo{}
-	}
-	for _, n := range c.Successors() {
-		info := ChordNodeInfo{ID: hex.EncodeToString(n.GetId()), Addr: n.GetAddr(), IsOutbound: n.IsOutbound}
-		info.NodeData.Unmarshal(n.GetData())
-		ret = append(ret, &info)
-	}
-	return ret
-}
-
-func (localNode *LocalNode) GetPredecessors() (ret []*ChordNodeInfo) {
-	c, ok := localNode.nnet.Network.(*chord.Chord)
-	if !ok {
-		log.Errorf("Overlay is not chord")
-		return []*ChordNodeInfo{}
-	}
-	for _, n := range c.Predecessors() {
-		info := ChordNodeInfo{ID: hex.EncodeToString(n.GetId()), Addr: n.GetAddr(), IsOutbound: n.IsOutbound}
-		info.NodeData.Unmarshal(n.GetData())
-		ret = append(ret, &info)
-	}
-	return ret
-}
-
-func (localNode *LocalNode) GetFingerTable() (ret map[int][]*ChordNodeInfo) {
-	c, ok := localNode.nnet.Network.(*chord.Chord)
-	if !ok {
-		log.Errorf("Overlay is not chord")
-		return make(map[int][]*ChordNodeInfo)
-	}
-	ret = make(map[int][]*ChordNodeInfo)
-	for i, lst := range c.FingerTable() {
-		if len(lst) == 0 {
-			continue
-		}
-		ret[i] = []*ChordNodeInfo{}
-		for _, n := range lst {
-			info := ChordNodeInfo{ID: hex.EncodeToString(n.GetId()), Addr: n.GetAddr(), IsOutbound: n.IsOutbound}
-			info.NodeData.Unmarshal(n.GetData())
-			ret[i] = append(ret[i], &info)
-		}
-	}
-	return ret
 }
 
 func (localNode *LocalNode) cleanupTransactions(v interface{}) {
