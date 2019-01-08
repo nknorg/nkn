@@ -7,7 +7,7 @@ import (
 )
 
 // receiveVote is called when a vote from neighbor is received
-func (consensus *Consensus) receiveVote(neighborID uint64, height uint32, blockHash common.Uint256) error {
+func (consensus *Consensus) receiveVote(neighborID string, height uint32, blockHash common.Uint256) error {
 	log.Debugf("Receive vote %s for height %d from neighbor %d", blockHash.ToHexString(), height, neighborID)
 
 	if blockHash != common.EmptyUint256 {

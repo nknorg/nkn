@@ -73,12 +73,11 @@ func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
 }
 
 func (node *Node) GetChordId() []byte {
-	return node.GetId()
+	return node.Id
 }
 
-func (node *Node) GetID() uint64 {
-	id, _ := chordIDToNodeID(node.GetId())
-	return id
+func (node *Node) GetID() string {
+	return chordIDToNodeID(node.GetChordId())
 }
 
 func (node *Node) GetPubKey() *crypto.PubKey {
