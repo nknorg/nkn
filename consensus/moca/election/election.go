@@ -163,6 +163,18 @@ func (election *Election) GetResult() (interface{}, error) {
 	return result, nil
 }
 
+// GetNeighborIDsByVote get neighbor id list that vote for a certain vote
+func (election *Election) GetNeighborIDsByVote(vote interface{}) []interface{} {
+	var neighborIDs []interface{}
+	election.neighborVotes.Range(func(key, value interface{}) bool {
+		if value == vote {
+			neighborIDs = append(neighborIDs, key)
+		}
+		return true
+	})
+	return neighborIDs
+}
+
 // NeighborVoteCount counts the number of neighbor votes received.
 func (election *Election) NeighborVoteCount() int {
 	count := 0
@@ -206,40 +218,25 @@ func (election *Election) updateVote() {
 // getLeadingVote returns the vote with the highest weight, its absolute and
 // relative weight.
 func (election *Election) getLeadingVote() (interface{}, uint32, float32) {
-	votes := make([]interface{}, 0)
-	weights := make([]uint32, 0)
-
+	weightByVote := make(map[interface{}]uint32)
 	if election.selfVote != nil {
-		votes = append(votes, election.selfVote)
-		weights = append(weights, election.config.GetWeight(nil))
+		weightByVote[election.selfVote] = election.config.GetWeight(nil)
 	}
 
 	election.neighborVotes.Range(func(key, value interface{}) bool {
-		weight := election.config.GetWeight(key)
-		found := false
-		for i, vote := range votes {
-			if vote == value {
-				weights[i] += weight
-				found = true
-				break
-			}
+		if value != nil {
+			weightByVote[value] += election.config.GetWeight(key)
 		}
-
-		if !found {
-			votes = append(votes, value)
-			weights = append(weights, weight)
-		}
-
 		return true
 	})
 
 	var maxWeight, totalWeight uint32
 	var majorityVote interface{}
-	for i, weight := range weights {
+	for vote, weight := range weightByVote {
 		totalWeight += weight
 		if weight > maxWeight {
 			maxWeight = weight
-			majorityVote = votes[i]
+			majorityVote = vote
 		}
 	}
 

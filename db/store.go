@@ -304,17 +304,7 @@ func (cs *ChainStore) GetBlockHash(height uint32) (Uint256, error) {
 }
 
 func (cs *ChainStore) GetBlockByHeight(height uint32) (*Block, error) {
-	key := bytes.NewBuffer(nil)
-	key.WriteByte(byte(DATA_BlockHash))
-	err := serialization.WriteUint32(key, height)
-	if err != nil {
-		return nil, err
-	}
-	value, err := cs.st.Get(key.Bytes())
-	if err != nil {
-		return nil, err
-	}
-	hash, err := Uint256ParseFromBytes(value)
+	hash, err := cs.GetBlockHash(height)
 	if err != nil {
 		return nil, err
 	}
@@ -381,14 +371,14 @@ func (cs *ChainStore) verifyHeader(header *Header) bool {
 	return true
 }
 
-func (cs *ChainStore) AddHeaders(headers []Header, ledger *Ledger) error {
+func (cs *ChainStore) AddHeaders(headers []*Header) error {
 
 	sort.Slice(headers, func(i, j int) bool {
 		return headers[i].Height < headers[j].Height
 	})
 
 	for i := 0; i < len(headers); i++ {
-		cs.taskCh <- &persistHeaderTask{header: &headers[i]}
+		cs.taskCh <- &persistHeaderTask{header: headers[i]}
 	}
 
 	return nil
@@ -427,6 +417,11 @@ func (cs *ChainStore) GetHeader(hash Uint256) (*Header, error) {
 	}
 
 	return h, err
+}
+
+func (cs *ChainStore) GetHeaderByHeight(height uint32) (*Header, error) {
+	hash := cs.GetHeaderHashByHeight(height)
+	return cs.GetHeader(hash)
 }
 
 func (cs *ChainStore) SaveAsset(assetId Uint256, asset *Asset) error {
@@ -604,7 +599,7 @@ func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic stri
 		return err
 	}
 
-	err = cs.ExpireKeyAtBlock(height + duration, subscriberKey)
+	err = cs.ExpireKeyAtBlock(height+duration, subscriberKey)
 	if err != nil {
 		return err
 	}
@@ -625,7 +620,7 @@ func (cs *ChainStore) Unsubscribe(subscriber []byte, identifier string, topic st
 		return err
 	}
 
-	err = cs.CancelKeyExpirationAtBlock(height + duration, subscriberKey)
+	err = cs.CancelKeyExpirationAtBlock(height+duration, subscriberKey)
 	if err != nil {
 		return err
 	}
