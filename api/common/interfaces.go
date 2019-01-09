@@ -740,7 +740,7 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	srcID := localNode.GetChordId()
+	srcID := localNode.GetChordID()
 	encodedPublickKey, err := account.PubKey().EncodePoint(true)
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
@@ -1071,7 +1071,7 @@ func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) er
 		log.Warning("Can NOT add the transaction to TxnPool")
 		return errCode
 	}
-	if err := localNode.Xmit(txn); err != nil {
+	if err := localNode.BroadcastTransaction(txn); err != nil {
 		log.Error("Xmit Tx Error:Xmit transaction failed.", err)
 		return errors.ErrXmitFail
 	}

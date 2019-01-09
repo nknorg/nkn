@@ -104,137 +104,129 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 		unsignedMsg := &pb.UnsignedMessage{}
 		err = proto.Unmarshal(msgBody.Data, signedMsg)
 		if err != nil {
-			// TODO: remove this part after all msg are migrated to pb
-			signedMsg = nil
-			unsignedMsg = nil
-		} else {
-			err = proto.Unmarshal(signedMsg.Message, unsignedMsg)
-			if err != nil {
-				log.Errorf("Error unmarshal signed unsigned msg: %v", err)
+			log.Errorf("Error unmarshal byte msg data: %v", err)
+			return nil, nil, nil, false
+		}
+
+		err = proto.Unmarshal(signedMsg.Message, unsignedMsg)
+		if err != nil {
+			log.Errorf("Error unmarshal signed unsigned msg: %v", err)
+			return nil, nil, nil, false
+		}
+
+		err = checkMessageType(unsignedMsg.MessageType)
+		if err != nil {
+			log.Errorf("Error checking message type: %v", err)
+			return nil, nil, nil, false
+		}
+
+		err = checkMessageSigned(unsignedMsg.MessageType, len(signedMsg.Signature) > 0)
+		if err != nil {
+			log.Errorf("Error checking signed: %v", err)
+			return nil, nil, nil, false
+		}
+
+		err = checkMessageRoutingType(unsignedMsg.MessageType, remoteMessage.Msg.RoutingType)
+		if err != nil {
+			log.Errorf("Error checking routing type: %v", err)
+			return nil, nil, nil, false
+		}
+
+		if len(signedMsg.Signature) > 0 {
+			if remoteMessage.Msg.RoutingType != nnetpb.DIRECT {
+				log.Errorf("Signature is only allowed on direct message")
 				return nil, nil, nil, false
 			}
 
-			err = checkMessageType(unsignedMsg.MessageType)
-			if err != nil {
-				log.Errorf("Error checking message type: %v", err)
+			pubKey := senderNode.GetPubKey()
+			if pubKey == nil {
+				log.Errorf("Neighbor public key is nil")
 				return nil, nil, nil, false
 			}
 
-			err = checkMessageSigned(unsignedMsg.MessageType, len(signedMsg.Signature) > 0)
+			hash := sha256.Sum256(signedMsg.Message)
+			err = crypto.Verify(*pubKey, hash[:], signedMsg.Signature)
 			if err != nil {
-				log.Errorf("Error checking signed: %v", err)
+				log.Errorf("Verify signature error: %v", err)
+				return nil, nil, nil, false
+			}
+		}
+
+		if unsignedMsg.MessageType == pb.RELAY {
+			relayMessage := &pb.Relay{}
+			err = proto.Unmarshal(unsignedMsg.Message, relayMessage)
+			if err != nil {
+				log.Errorf("Unmarshal relay message error: %v", err)
 				return nil, nil, nil, false
 			}
 
-			err = checkMessageRoutingType(unsignedMsg.MessageType, remoteMessage.Msg.RoutingType)
-			if err != nil {
-				log.Errorf("Error checking routing type: %v", err)
+			if len(remoteNodes) > 1 {
+				log.Errorf("multiple next hop is not supported for relay message")
 				return nil, nil, nil, false
 			}
 
-			if len(signedMsg.Signature) > 0 {
-				if remoteMessage.Msg.RoutingType != nnetpb.DIRECT {
-					log.Errorf("Signature is only allowed on direct message")
-					return nil, nil, nil, false
-				}
-
-				pubKey := senderNode.GetPubKey()
-				if pubKey == nil {
-					log.Errorf("Neighbor public key is nil")
-					return nil, nil, nil, false
-				}
-
-				hash := sha256.Sum256(signedMsg.Message)
-				err = crypto.Verify(*pubKey, hash[:], signedMsg.Signature)
-				if err != nil {
-					log.Errorf("Verify signature error: %v", err)
+			var nextHop *RemoteNode
+			if len(remoteNodes) > 0 {
+				nextHop = localNode.getNbrByNNetNode(remoteNodes[0])
+				if nextHop == nil {
+					log.Errorf("cannot get next hop neighbor node")
 					return nil, nil, nil, false
 				}
 			}
 
-			if unsignedMsg.MessageType == pb.RELAY {
-				relayMessage := &pb.Relay{}
-				err := proto.Unmarshal(unsignedMsg.Message, relayMessage)
-				if err != nil {
-					log.Errorf("Unmarshal relay message error: %v", err)
-					return nil, nil, nil, false
-				}
+			err = localNode.relayer.signRelayMessage(relayMessage, nextHop)
+			if err != nil {
+				log.Errorf("sign relay message error: %v", err)
+				return nil, nil, nil, false
+			}
 
-				if len(remoteNodes) > 1 {
-					log.Errorf("multiple next hop is not supported for relay message")
-					return nil, nil, nil, false
-				}
+			unsignedMsg.Message, err = proto.Marshal(relayMessage)
+			if err != nil {
+				log.Errorf("marshal new relay message error: %v", err)
+				return nil, nil, nil, false
+			}
 
-				var nextHop *RemoteNode
-				if len(remoteNodes) > 0 {
-					nextHop = localNode.getNbrByNNetNode(remoteNodes[0])
-					if nextHop == nil {
-						log.Errorf("cannot get next hop neighbor node")
-						return nil, nil, nil, false
-					}
-				}
+			msgBody.Data, err = localNode.SerializeMessage(unsignedMsg, false)
+			if err != nil {
+				log.Errorf("serialize new relay message error: %v", err)
+				return nil, nil, nil, false
+			}
 
-				err = localNode.relayer.signRelayMessage(relayMessage, nextHop)
-				if err != nil {
-					log.Errorf("sign relay message error: %v", err)
-					return nil, nil, nil, false
-				}
-
-				unsignedMsg.Message, err = proto.Marshal(relayMessage)
-				if err != nil {
-					log.Errorf("marshal new relay message error: %v", err)
-					return nil, nil, nil, false
-				}
-
-				msgBody.Data, err = localNode.SerializeMessage(unsignedMsg, false)
-				if err != nil {
-					log.Errorf("serialize new relay message error: %v", err)
-					return nil, nil, nil, false
-				}
-
-				remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
-				if err != nil {
-					log.Errorf("Marshal new relay msg body error: %v", err)
-					return nil, nil, nil, false
-				}
+			remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
+			if err != nil {
+				log.Errorf("Marshal new relay msg body error: %v", err)
+				return nil, nil, nil, false
 			}
 		}
 
 		// msg send to local node
 		if nnetLocalNode != nil {
-			if signedMsg == nil {
-				// TODO: remove this part after all msg are migrated to pb
-				err = HandleNodeMsg(senderRemoteNode, msgBody.Data)
+			// non-reply msg
+			if len(remoteMessage.Msg.ReplyToId) == 0 {
+				var reply []byte
+				reply, err = localNode.receiveMessage(senderNode, unsignedMsg)
 				if err != nil {
-					log.Errorf("Error handling node msg: %v", err)
+					log.Errorf("Error handling message: %v", err)
 					return nil, nil, nil, false
 				}
+
+				if len(reply) > 0 && senderRemoteNode != nil {
+					err = senderRemoteNode.SendBytesReply(remoteMessage.Msg.MessageId, reply)
+					if err != nil {
+						log.Errorf("Error sending reply: %v", err)
+						return nil, nil, nil, false
+					}
+				}
+
 				return nil, nil, nil, false
-			} else {
-				if len(remoteMessage.Msg.ReplyToId) == 0 { // non-reply msg
-					reply, err := localNode.receiveMessage(senderNode, unsignedMsg)
-					if err != nil {
-						log.Errorf("Error handling message: %v", err)
-						return nil, nil, nil, false
-					}
+			}
 
-					if len(reply) > 0 && senderRemoteNode != nil {
-						err = senderRemoteNode.SendBytesReply(remoteMessage.Msg.MessageId, reply)
-						if err != nil {
-							log.Errorf("Error sending reply: %v", err)
-							return nil, nil, nil, false
-						}
-					}
-
-					return nil, nil, nil, false
-				} else { // reply msg
-					msgBody.Data = unsignedMsg.Message
-					remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
-					if err != nil {
-						log.Errorf("Marshal reply msg body error: %v", err)
-						return nil, nil, nil, false
-					}
-				}
+			// reply msg
+			msgBody.Data = unsignedMsg.Message
+			remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
+			if err != nil {
+				log.Errorf("Marshal reply msg body error: %v", err)
+				return nil, nil, nil, false
 			}
 		}
 	}
