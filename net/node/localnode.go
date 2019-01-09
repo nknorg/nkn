@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/pool"
@@ -52,7 +51,7 @@ type LocalNode struct {
 	*messageHandlerStore
 
 	sync.RWMutex
-	syncStopHash common.Uint256 // block syncing stop hash
+	syncOnce *sync.Once
 }
 
 func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
@@ -101,7 +100,6 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		Node:                node,
 		account:             account,
 		TxnPool:             pool.NewTxnPool(),
-		syncStopHash:        common.Uint256{},
 		quit:                make(chan bool, 1),
 		hashCache:           NewHashCache(),
 		messageHandlerStore: newMessageHandlerStore(),
@@ -153,8 +151,8 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 }
 
 func (localNode *LocalNode) Start() error {
-	localNode.StartRelayer()
-	go localNode.startSyncingBlock()
+	localNode.startRelayer()
+	localNode.initSyncing()
 	return nil
 }
 
@@ -211,28 +209,7 @@ func (localNode *LocalNode) SetSyncState(s pb.SyncState) {
 	localNode.Node.Lock()
 	defer localNode.Node.Unlock()
 	localNode.syncState = s
-
-	if s == pb.PersistFinished || s == pb.WaitForSyncing {
-		localNode.syncStopHash = common.EmptyUint256
-	}
-
 	log.Infof("Set sync state to %s", s.String())
-}
-
-func (localNode *LocalNode) GetSyncStopHash() common.Uint256 {
-	localNode.RLock()
-	defer localNode.RUnlock()
-	return localNode.syncStopHash
-}
-
-func (localNode *LocalNode) SetSyncStopHash(hash common.Uint256, height uint32) {
-	localNode.Lock()
-	defer localNode.Unlock()
-	if localNode.syncStopHash == common.EmptyUint256 && hash != common.EmptyUint256 {
-		log.Infof("block syncing will stop when receive block: %s, height: %d",
-			common.BytesToHexString(hash.ToArrayReverse()), height)
-		localNode.syncStopHash = hash
-	}
 }
 
 func (localNode *LocalNode) GetWsAddr() string {
