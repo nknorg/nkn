@@ -9,7 +9,6 @@ import (
 	"github.com/nknorg/nkn/consensus/moca/election"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
@@ -58,7 +57,6 @@ func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus
 // Start starts the consensus protocol
 func (consensus *Consensus) Start() {
 	consensus.startOnce.Do(func() {
-		consensus.localNode.GetEvent("sync").Subscribe(events.EventBlockSyncingFinished, consensus.syncFinished)
 		consensus.registerMessageHandler()
 		go consensus.startConsensus()
 		go consensus.startProposing()
@@ -270,29 +268,57 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.Height, ledger.DefaultLedger.Store.GetHeight())
 	}
 
-	consensus.localNode.SetSyncStopHash(block.Header.PrevBlockHash, block.Header.Height-1)
+	elc, loaded, err := consensus.loadOrCreateElection(heightToKey(block.Header.Height))
+	if err != nil {
+		return fmt.Errorf("Error load election: %v", err)
+	}
+	if !loaded {
+		return fmt.Errorf("Election is created instead of loaded")
+	}
+
+	neighborIDs := elc.GetNeighborIDsByVote(electedBlockHash)
+	neighbors := consensus.localNode.GetNeighbors(func(neighbor *node.RemoteNode) bool {
+		for _, neighborID := range neighborIDs {
+			if neighbor.GetID() == neighborID {
+				return true
+			}
+		}
+		return false
+	})
+	if len(neighbors) == 0 {
+		return fmt.Errorf("Cannot get neighbors voted for block hash %s", electedBlockHash.ToHexString())
+	}
+
+	go func() {
+		started, err := consensus.localNode.StartSyncing(block.Header.PrevBlockHash, block.Header.Height-1, neighbors)
+		if !started {
+			return
+		}
+		if err != nil {
+			panic(fmt.Errorf("Error syncing blocks: %v", err))
+		}
+
+		err = consensus.saveBlocksAcceptedDuringSync(block.Header.Height)
+		if err != nil {
+			log.Errorf("Error saving blocks accepted during sync: %v", err)
+			return
+		}
+
+		consensus.localNode.SetSyncState(pb.PersistFinished)
+		consensus.localNode.ResetSyncing()
+	}()
 
 	return nil
 }
 
-func (consensus *Consensus) saveBlocksAcceptedDuringSync() error {
+func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) error {
 	log.Infof("Start saving blocks accepted during sync")
 
-	syncStopHash := consensus.localNode.GetSyncStopHash()
-	if syncStopHash == common.EmptyUint256 {
-		return fmt.Errorf("syncStopHash is empty")
-	}
-
-	syncStopHeader, err := ledger.DefaultLedger.Blockchain.GetHeader(syncStopHash)
-	if err != nil {
-		return err
-	}
-	if syncStopHeader == nil {
-		return fmt.Errorf("Cannot get sync stop block header with hash %s", syncStopHash.ToHexString())
-	}
-
-	height := syncStopHeader.Height + 1
+	height := startHeight
 	for height <= consensus.GetAcceptedHeight() {
+		// FIXME: use sync save block api
+		time.Sleep(300 * time.Millisecond)
+
 		value, ok := consensus.elections.Get(heightToKey(height))
 		if !ok || value == nil {
 			return fmt.Errorf("Election at height %d not found in local cache", height)
@@ -318,24 +344,10 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync() error {
 			return err
 		}
 
-		// FIXME: add sync save block api
-		time.Sleep(300 * time.Millisecond)
-
 		height++
 	}
 
-	log.Infof("Saved %d blocks accepted during sync", height-syncStopHeader.Height-1)
+	log.Infof("Saved %d blocks accepted during sync", height-startHeight)
 
 	return nil
-}
-
-func (consensus *Consensus) syncFinished(v interface{}) {
-	err := consensus.saveBlocksAcceptedDuringSync()
-	if err != nil {
-		log.Errorf("Error saving blocks accepted during sync: %v", err)
-		return
-	}
-
-	consensus.localNode.SetSyncState(pb.PersistFinished)
-	consensus.localNode.SetSyncStopHash(common.EmptyUint256, 0)
 }

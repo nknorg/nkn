@@ -33,9 +33,45 @@ func NewRelayService(wallet vault.Wallet, localNode *LocalNode) *RelayService {
 	return service
 }
 
+// NewRelayMessage creates a RELAY message
+func NewRelayMessage(srcAddr string, destID, payload []byte, sigChain *por.SigChain, maxHoldingSeconds uint32) (*pb.UnsignedMessage, error) {
+	msgBody := &pb.Relay{
+		SrcAddr:           srcAddr,
+		DestId:            destID,
+		Payload:           payload,
+		SigChain:          sigChain,
+		MaxHoldingSeconds: maxHoldingSeconds,
+	}
+
+	buf, err := proto.Marshal(msgBody)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := &pb.UnsignedMessage{
+		MessageType: pb.RELAY,
+		Message:     buf,
+	}
+
+	return msg, nil
+}
+
+// relayMessageHandler handles a RELAY message
+func (rs *RelayService) relayMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+	msgBody := &pb.Relay{}
+	err := proto.Unmarshal(remoteMessage.Message, msgBody)
+	if err != nil {
+		return nil, false, err
+	}
+
+	rs.localNode.GetEvent("relay").Notify(events.EventSendInboundMessageToClient, msgBody)
+
+	return nil, false, nil
+}
+
 func (rs *RelayService) Start() error {
 	rs.localNode.GetEvent("relay").Subscribe(events.EventReceiveClientSignedSigChain, rs.receiveClientSignedSigChainNoError)
-	rs.localNode.AddMessageHandler(pb.RELAY, rs.receiveRelayMessage)
+	rs.localNode.AddMessageHandler(pb.RELAY, rs.relayMessageHandler)
 	return nil
 }
 
@@ -54,18 +90,6 @@ func (rs *RelayService) signRelayMessage(relayMessage *pb.Relay, nextHop *Remote
 	mining := rs.localNode.GetSyncState() == pb.PersistFinished
 
 	return rs.porServer.Sign(relayMessage.SigChain, nextPubkey, mining)
-}
-
-func (rs *RelayService) receiveRelayMessage(remoteMessage *RemoteMessage) ([]byte, bool, error) {
-	msgBody := &pb.Relay{}
-	err := proto.Unmarshal(remoteMessage.Message, msgBody)
-	if err != nil {
-		return nil, false, err
-	}
-
-	rs.localNode.GetEvent("relay").Notify(events.EventSendInboundMessageToClient, msgBody)
-
-	return nil, false, nil
 }
 
 func (rs *RelayService) receiveClientSignedSigChain(v interface{}) error {
@@ -111,7 +135,7 @@ func (rs *RelayService) receiveClientSignedSigChainNoError(v interface{}) {
 	}
 }
 
-func (localNode *LocalNode) StartRelayer() {
+func (localNode *LocalNode) startRelayer() {
 	localNode.relayer.Start()
 }
 

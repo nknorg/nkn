@@ -11,9 +11,8 @@ import (
 
 type RemoteNode struct {
 	*Node
-	localNode     *LocalNode
-	nnetNode      *nnetnode.RemoteNode
-	flightHeights []uint32
+	localNode *LocalNode
+	nnetNode  *nnetnode.RemoteNode
 
 	sync.RWMutex
 	height uint32
@@ -69,10 +68,6 @@ func (remoteNode *RemoteNode) SetHeight(height uint32) {
 	remoteNode.Lock()
 	defer remoteNode.Unlock()
 	remoteNode.height = height
-}
-
-func (remoteNode *RemoteNode) LocalNode() *LocalNode {
-	return remoteNode.localNode
 }
 
 func (remoteNode *RemoteNode) CloseConn() {

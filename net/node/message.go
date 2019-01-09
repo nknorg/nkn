@@ -8,34 +8,10 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
-
-// NewRelayMessage creates a VOTE message
-func NewRelayMessage(srcAddr string, destID, payload []byte, sigChain *por.SigChain, maxHoldingSeconds uint32) (*pb.UnsignedMessage, error) {
-	msgBody := &pb.Relay{
-		SrcAddr:           srcAddr,
-		DestId:            destID,
-		Payload:           payload,
-		SigChain:          sigChain,
-		MaxHoldingSeconds: maxHoldingSeconds,
-	}
-
-	buf, err := proto.Marshal(msgBody)
-	if err != nil {
-		return nil, err
-	}
-
-	msg := &pb.UnsignedMessage{
-		MessageType: pb.RELAY,
-		Message:     buf,
-	}
-
-	return msg, nil
-}
 
 func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) ([]byte, error) {
 	if localNode.account == nil {
