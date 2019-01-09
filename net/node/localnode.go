@@ -10,7 +10,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/core/transaction/pool"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/pb"
@@ -22,7 +21,6 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
 	"github.com/nknorg/nnet/overlay/routing"
-	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
 const (
@@ -153,6 +151,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 func (localNode *LocalNode) Start() error {
 	localNode.startRelayer()
 	localNode.initSyncing()
+	localNode.AddMessageHandler(pb.TRANSACTIONS, localNode.transactionsMessageHandler)
 	return nil
 }
 
@@ -183,26 +182,6 @@ func (localNode *LocalNode) GetTxnPool() *pool.TxnPool {
 
 func (localNode *LocalNode) GetHeight() uint32 {
 	return ledger.DefaultLedger.Store.GetHeight()
-}
-
-func (localNode *LocalNode) Xmit(msg interface{}) error {
-	var buffer []byte
-	var err error
-	switch msg.(type) {
-	case *transaction.Transaction:
-		txn := msg.(*transaction.Transaction)
-		buffer, err = NewTxn(txn)
-		if err != nil {
-			log.Error("Error New Tx message: ", err)
-			return err
-		}
-		localNode.ExistHash(txn.Hash())
-	default:
-		log.Warning("Unknown Xmit message type")
-		return errors.New("Unknown Xmit message type")
-	}
-
-	return localNode.Broadcast(buffer)
 }
 
 func (localNode *LocalNode) SetSyncState(s pb.SyncState) {
@@ -286,19 +265,4 @@ func (localNode *LocalNode) FindHttpProxyAddr(key []byte) (string, error) {
 	return localNode.findAddr(key, func(nodeData *pb.NodeData) uint32 {
 		return nodeData.HttpProxyPort
 	})
-}
-
-func (localNode *LocalNode) Broadcast(buf []byte) error {
-	_, err := localNode.nnet.SendBytesBroadcastAsync(buf, nnetpb.BROADCAST_PUSH)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (localNode *LocalNode) cleanupTransactions(v interface{}) {
-	if block, ok := v.(*ledger.Block); ok {
-		localNode.TxnPool.CleanSubmittedTransactions(block.Transactions)
-	}
 }

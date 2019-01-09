@@ -72,7 +72,7 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	if !found {
 		err := errors.New("no miner node in signature chain")
 		log.Error(err)
-		return nil, nknerrors.NewDetailErr(err, nknerrors.ErrNoCode, "[SigChain] No miner node in signature chain.")
+		return nil, nknerrors.NewDetailErr(err, nknerrors.ErrNoCode, err.Error())
 	}
 
 	blockHash, err := Uint256ParseFromBytes(sigChain.BlockHash)

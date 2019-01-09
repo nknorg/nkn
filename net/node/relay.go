@@ -120,7 +120,7 @@ func (rs *RelayService) receiveClientSignedSigChain(v interface{}) error {
 		return errCode
 	}
 
-	err = rs.localNode.Xmit(txn)
+	err = rs.localNode.BroadcastTransaction(txn)
 	if err != nil {
 		return err
 	}

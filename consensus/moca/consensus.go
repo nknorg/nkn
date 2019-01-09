@@ -280,7 +280,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 	neighbors := consensus.localNode.GetNeighbors(func(neighbor *node.RemoteNode) bool {
 		for _, neighborID := range neighborIDs {
 			if neighbor.GetID() == neighborID {
-				return true
+				return neighbor.GetHeight() > ledger.DefaultLedger.Store.GetHeight()
 			}
 		}
 		return false

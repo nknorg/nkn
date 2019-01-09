@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
@@ -20,7 +19,6 @@ const (
 	maxSyncBlockHeadersBatchSize     = 4096
 	syncBlocksBatchSize              = 32
 	maxSyncBlocksBatchSize           = 256
-	syncBlockInterval                = 500 * time.Millisecond
 )
 
 // NewGetBlockHeadersMessage creates a GET_BLOCK_HEADERS message
@@ -159,7 +157,7 @@ func (localNode *LocalNode) getBlockHeadersMessageHandler(remoteMessage *RemoteM
 	for height := startHeight; height <= endHeight; height++ {
 		headers[height-startHeight], err = ledger.DefaultLedger.Store.GetHeaderByHeight(height)
 		if err != nil {
-			return replyBuf, false, nil
+			return replyBuf, false, err
 		}
 	}
 
@@ -208,7 +206,7 @@ func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *RemoteMessage
 	for height := startHeight; height <= endHeight; height++ {
 		blocks[height-startHeight], err = ledger.DefaultLedger.Store.GetBlockByHeight(height)
 		if err != nil {
-			return replyBuf, false, nil
+			return replyBuf, false, err
 		}
 	}
 
@@ -221,7 +219,7 @@ func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *RemoteMessage
 	return replyBuf, false, err
 }
 
-// getBlockHeaders requests a range of consecutive block headers from a neighbor
+// GetBlockHeaders requests a range of consecutive block headers from a neighbor
 // using GET_BLOCK_HEADERS message
 func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]*ledger.Header, error) {
 	if startHeight > endHeight {
@@ -265,7 +263,7 @@ func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]
 	return headers, nil
 }
 
-// getBlocks requests a range of consecutive blocks from a neighbor using
+// GetBlocks requests a range of consecutive blocks from a neighbor using
 // GET_BLOCKS message
 func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*ledger.Block, error) {
 	if startHeight > endHeight {
