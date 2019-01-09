@@ -19,8 +19,9 @@ type ILedgerStore interface {
 
 	IsDoubleSpend(tx *tx.Transaction) bool
 
-	AddHeaders(headers []Header, ledger *Ledger) error
+	AddHeaders(headers []*Header) error
 	GetHeader(hash Uint256) (*Header, error)
+	GetHeaderByHeight(height uint32) (*Header, error)
 
 	GetTransaction(hash Uint256) (*tx.Transaction, error)
 
