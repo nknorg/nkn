@@ -30,6 +30,7 @@ enum MessageType {
   GET_BLOCKS = 9;
   GET_BLOCKS_REPLY = 10;
   RELAY = 11;
+  TRANSACTIONS = 12;
 }
 
 // Message type that can be signed message
@@ -53,6 +54,7 @@ enum AllowedUnsignedMessageType {
   ALLOW_UNSIGNED_GET_BLOCK_HEADERS_REPLY = 8;
   ALLOW_UNSIGNED_GET_BLOCKS_REPLY = 10;
   ALLOW_UNSIGNED_RELAY = 11;
+  ALLOW_UNSIGNED_TRANSACTIONS = 12;
 }
 
 // Message type that can be sent as direct message
@@ -82,6 +84,7 @@ enum AllowedRelayMessageType {
 // Name doesn't matter, but value nees to match the value in MessageType
 enum AllowedBroadcastPushMessageType {
   ALLOW_BROADCAST_PUSH_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
+  ALLOW_BROADCAST_PUSH_TRANSACTIONS = 12;
 }
 
 // Message type that can be sent as broadcast_pull message
@@ -94,6 +97,7 @@ enum AllowedBroadcastPullMessageType {
 // Name doesn't matter, but value nees to match the value in MessageType
 enum AllowedBroadcastTreeMessageType {
   ALLOW_BROADCAST_TREE_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
+  ALLOW_BROADCAST_TREE_TRANSACTIONS = 12;
 }
 
 message UnsignedMessage {
@@ -158,4 +162,8 @@ message Relay {
   bytes payload = 3;
   por.SigChain sig_chain = 4;
   uint32 max_holding_seconds = 5;
+}
+
+message Transactions {
+  repeated bytes transactions = 1;
 }

@@ -62,7 +62,7 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 		return false
 	}
 
-	if len(nextChordID) > 0 && !bytes.Equal(consensus.localNode.GetChordId(), nextChordID) {
+	if len(nextChordID) > 0 && !bytes.Equal(consensus.localNode.GetChordID(), nextChordID) {
 		return false
 	}
 
@@ -76,5 +76,5 @@ func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*ledge
 		return nil, err
 	}
 
-	return consensus.mining.BuildBlock(height, consensus.localNode.GetChordId(), winnerHash, winnerType, timestamp)
+	return consensus.mining.BuildBlock(height, consensus.localNode.GetChordID(), winnerHash, winnerType, timestamp)
 }
