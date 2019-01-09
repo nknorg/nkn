@@ -58,10 +58,10 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	if txn.TxType == Commit {
 		added, err := por.GetPorServer().AddSigChainFromTx(txn)
 		if err != nil {
-			return ErrerCode(err)
+			return ErrerCode(NewDetailErr(err, ErrNoCode, err.Error()))
 		}
 		if !added {
-			return ErrNonOptimalSigChain
+			return ErrNoError
 		}
 	}
 
