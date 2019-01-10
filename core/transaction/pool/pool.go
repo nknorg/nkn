@@ -103,10 +103,10 @@ func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[commo
 	// get transactions which should be packaged
 	if winningHash.CompareTo(common.EmptyUint256) != 0 {
 		if winningTxn, ok := tp.txnList[winningHash]; !ok {
-			log.Error("can't find necessary transaction: ", common.BytesToHexString(winningHash.ToArrayReverse()))
+			log.Errorf("can't find necessary transaction: %s", winningHash.ToHexString())
 			return nil, errors.New("need necessary transaction")
 		} else {
-			log.Warning("collecting wining hash: ", common.BytesToHexString(winningHash.ToArrayReverse()))
+			log.Infof("collecting wining hash: %s", winningHash.ToHexString())
 			txns[winningHash] = winningTxn
 			i++
 		}
