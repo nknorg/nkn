@@ -28,14 +28,15 @@ type Config struct {
 
 // Election is the structure of an election.
 type Election struct {
-	sync.RWMutex
-	config        *Config
-	state         electionState
+	*Config
 	startOnce     sync.Once
 	neighborVotes sync.Map
-	selfVote      interface{}
 	voteReceived  chan struct{}
 	txVoteChan    chan interface{}
+
+	sync.RWMutex
+	selfVote interface{}
+	state    electionState
 }
 
 // NewElection creates an election using the config provided.
@@ -49,7 +50,7 @@ func NewElection(config *Config) (*Election, error) {
 	}
 
 	election := &Election{
-		config:       config,
+		Config:       config,
 		state:        initialized,
 		voteReceived: make(chan struct{}, 1),
 		txVoteChan:   make(chan interface{}),
@@ -84,7 +85,7 @@ func (election *Election) Start() bool {
 
 		go election.updateVote()
 
-		time.AfterFunc(election.config.Duration, func() {
+		time.AfterFunc(election.Duration, func() {
 			election.Stop()
 		})
 
@@ -150,11 +151,11 @@ func (election *Election) GetResult() (interface{}, error) {
 	}
 
 	result, absWeight, relWeight := election.getLeadingVote()
-	if absWeight < election.config.ConsensusMinAbsoluteWeight {
-		return nil, fmt.Errorf("leading vote %v only got %d weight, which is less than threshold %d", result, absWeight, election.config.ConsensusMinAbsoluteWeight)
+	if absWeight < election.ConsensusMinAbsoluteWeight {
+		return nil, fmt.Errorf("leading vote %v only got %d weight, which is less than threshold %d", result, absWeight, election.ConsensusMinAbsoluteWeight)
 	}
-	if relWeight < election.config.ConsensusMinRelativeWeight {
-		return nil, fmt.Errorf("leading vote %v only got %f%% weight, which is less than threshold %f%%", result, relWeight*100, election.config.ConsensusMinRelativeWeight*100)
+	if relWeight < election.ConsensusMinRelativeWeight {
+		return nil, fmt.Errorf("leading vote %v only got %f%% weight, which is less than threshold %f%%", result, relWeight*100, election.ConsensusMinRelativeWeight*100)
 	}
 	if result == nil {
 		return nil, errors.New("election result is nil")
@@ -201,7 +202,7 @@ func (election *Election) updateVote() {
 		selfVote := election.selfVote
 		election.RUnlock()
 
-		if absWeight >= election.config.ChangeVoteMinAbsoluteWeight && relWeight >= election.config.ChangeVoteMinRelativeWeight {
+		if absWeight >= election.ChangeVoteMinAbsoluteWeight && relWeight >= election.ChangeVoteMinRelativeWeight {
 			if selfVote != leadingVote {
 				election.Lock()
 				election.selfVote = leadingVote
@@ -209,7 +210,7 @@ func (election *Election) updateVote() {
 
 				election.txVoteChan <- leadingVote
 
-				time.Sleep(election.config.MinVotingInterval)
+				time.Sleep(election.MinVotingInterval)
 			}
 		}
 	}
@@ -220,12 +221,12 @@ func (election *Election) updateVote() {
 func (election *Election) getLeadingVote() (interface{}, uint32, float32) {
 	weightByVote := make(map[interface{}]uint32)
 	if election.selfVote != nil {
-		weightByVote[election.selfVote] = election.config.GetWeight(nil)
+		weightByVote[election.selfVote] = election.GetWeight(nil)
 	}
 
 	election.neighborVotes.Range(func(key, value interface{}) bool {
 		if value != nil {
-			weightByVote[value] += election.config.GetWeight(key)
+			weightByVote[value] += election.GetWeight(key)
 		}
 		return true
 	})
