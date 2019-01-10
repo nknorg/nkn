@@ -15,12 +15,15 @@ import (
 )
 
 const (
-	concurrentSyncRequestPerNeighbor = 1
+	concurrentSyncRequestPerNeighbor = 2
 	syncBatchWindowSize              = 4096
-	syncBlockHeadersBatchSize        = 64
+	syncBlockHeadersBatchSize        = 256
 	maxSyncBlockHeadersBatchSize     = 1024
-	syncBlocksBatchSize              = 1
-	maxSyncBlocksBatchSize           = 16
+	syncBlocksBatchSize              = 4
+	maxSyncBlocksBatchSize           = 32
+	syncReplyTimeout                 = 20 * time.Second
+	maxSyncWorkerFails               = 3
+	syncWorkerStartInterval          = 20 * time.Millisecond
 )
 
 // NewGetBlockHeadersMessage creates a GET_BLOCK_HEADERS message
@@ -238,7 +241,7 @@ func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]
 		return nil, err
 	}
 
-	replyBytes, err := remoteNode.SendBytesSync(buf)
+	replyBytes, err := remoteNode.SendBytesSyncWithTimeout(buf, syncReplyTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +285,7 @@ func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*ledge
 		return nil, err
 	}
 
-	replyBytes, err := remoteNode.SendBytesSync(buf)
+	replyBytes, err := remoteNode.SendBytesSyncWithTimeout(buf, syncReplyTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +439,16 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		return true
 	}
 
-	cs, err := consequential.NewConSequential(numBatches-1, 0, syncBatchWindowSize, numWorkers, getHeader, saveHeader)
+	cs, err := consequential.NewConSequential(&consequential.Config{
+		StartJobID:          numBatches - 1,
+		EndJobID:            0,
+		JobBufSize:          syncBatchWindowSize,
+		WorkerPoolSize:      numWorkers,
+		MaxWorkerFails:      maxSyncWorkerFails,
+		WorkerStartInterval: syncWorkerStartInterval,
+		RunJob:              getHeader,
+		FinishJob:           saveHeader,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -506,7 +518,16 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, headers [
 		return true
 	}
 
-	cs, err := consequential.NewConSequential(0, numBatches-1, syncBatchWindowSize, numWorkers, getBlock, saveBlock)
+	cs, err := consequential.NewConSequential(&consequential.Config{
+		StartJobID:          0,
+		EndJobID:            numBatches - 1,
+		JobBufSize:          syncBatchWindowSize,
+		WorkerPoolSize:      numWorkers,
+		MaxWorkerFails:      maxSyncWorkerFails,
+		WorkerStartInterval: syncWorkerStartInterval,
+		RunJob:              getBlock,
+		FinishJob:           saveBlock,
+	})
 	if err != nil {
 		return err
 	}

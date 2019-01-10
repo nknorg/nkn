@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/crypto"
@@ -51,7 +52,11 @@ func (remoteNode *RemoteNode) SendBytesAsync(buf []byte) error {
 }
 
 func (remoteNode *RemoteNode) SendBytesSync(buf []byte) ([]byte, error) {
-	reply, _, err := remoteNode.localNode.nnet.SendBytesDirectSync(buf, remoteNode.nnetNode)
+	return remoteNode.SendBytesSyncWithTimeout(buf, 0)
+}
+
+func (remoteNode *RemoteNode) SendBytesSyncWithTimeout(buf []byte, replyTimeout time.Duration) ([]byte, error) {
+	reply, _, err := remoteNode.localNode.nnet.SendBytesDirectSyncWithTimeout(buf, remoteNode.nnetNode, replyTimeout)
 	if err != nil {
 		log.Errorf("Error sending sync messge to node: %v", err.Error())
 	}
