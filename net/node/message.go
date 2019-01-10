@@ -231,6 +231,10 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 		}
 	}
 
+	if nnetLocalNode == nil && len(remoteNodes) == 0 {
+		return nil, nil, nil, false
+	}
+
 	return remoteMessage, nnetLocalNode, remoteNodes, true
 }
 

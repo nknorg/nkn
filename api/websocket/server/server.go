@@ -256,16 +256,13 @@ func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		messageType, bysMsg, err := wsConn.ReadMessage()
-		if err == nil {
-			if ws.OnDataHandle(nsSession, messageType, bysMsg, r) {
-				nsSession.UpdateActiveTime()
-			}
-			continue
+		if err != nil {
+			log.Debugf("websocket read message error: %v", err)
+			break
 		}
-		e, ok := err.(net.Error)
-		if !ok || !e.Timeout() {
-			log.Warning("websocket conn:", err)
-			return
+
+		if ws.OnDataHandle(nsSession, messageType, bysMsg, r) {
+			nsSession.UpdateActiveTime()
 		}
 	}
 }

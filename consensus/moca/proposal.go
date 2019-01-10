@@ -213,13 +213,17 @@ func (consensus *Consensus) receiveProposal(block *ledger.Block) error {
 func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32, blockHash common.Uint256) error {
 	log.Debugf("Receive block hash %s for height %d from neighbor %d", blockHash.ToHexString(), height, neighborID)
 
+	if blockHash == common.EmptyUint256 {
+		return errors.New("Receive empty block hash")
+	}
+
+	if _, ok := consensus.proposals.Get(blockHash.ToArray()); ok {
+		return nil
+	}
+
 	expectedHeight := consensus.GetExpectedHeight()
 	if height != expectedHeight {
 		return fmt.Errorf("Receive invalid block hash height %d instead of %d", height, expectedHeight)
-	}
-
-	if blockHash == common.EmptyUint256 {
-		return errors.New("Receive empty block hash")
 	}
 
 	if _, ok := consensus.proposals.Get(blockHash.ToArray()); !ok {
