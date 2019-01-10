@@ -1197,8 +1197,20 @@ func (cs *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 		//}
 	}
 
-	cs.taskCh <- &persistBlockTask{block: b, ledger: ledger}
+	cs.addBlockToCache(b)
+
+	select {
+	case cs.taskCh <- &persistBlockTask{block: b, ledger: ledger}:
+	default:
+	}
+
 	return nil
+}
+
+func (cs *ChainStore) addBlockToCache(b *Block) {
+	cs.mu.Lock()
+	cs.blockCache[b.Hash()] = b
+	cs.mu.Unlock()
 }
 
 func (cs *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
@@ -1206,9 +1218,7 @@ func (cs *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
 		return
 	}
 
-	cs.mu.Lock()
-	cs.blockCache[b.Hash()] = b
-	cs.mu.Unlock()
+	cs.addBlockToCache(b)
 
 	if b.Header.Height < cs.GetHeaderHeight()+1 {
 		cs.persistBlocks(ledger)
