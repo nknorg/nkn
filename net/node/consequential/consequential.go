@@ -4,6 +4,7 @@
 package consequential
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -97,7 +98,7 @@ func (cs *ConSequential) shiftRingBuf() {
 }
 
 // Start starts workers concurrently
-func (cs *ConSequential) Start() {
+func (cs *ConSequential) Start() error {
 	cs.initJobChan()
 
 	var wg sync.WaitGroup
@@ -110,6 +111,14 @@ func (cs *ConSequential) Start() {
 		}(workerID)
 	}
 	wg.Wait()
+
+	cs.RLock()
+	defer cs.RUnlock()
+	if cs.isJobIDInRange(cs.ringBufStartJobID) {
+		return fmt.Errorf("all workers failed")
+	}
+
+	return nil
 }
 
 // startWorker starts a worker, and returns if any job fails to run or all jobs
