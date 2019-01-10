@@ -32,6 +32,7 @@ type ConSequential struct {
 	*Config
 	unstartedJobChan chan uint32
 	failedJobChan    chan uint32
+	stopChans        []chan struct{}
 
 	sync.RWMutex
 	jobResultBuf      []interface{}
@@ -45,8 +46,12 @@ func NewConSequential(config *Config) (*ConSequential, error) {
 		Config:            config,
 		unstartedJobChan:  make(chan uint32, config.JobBufSize),
 		failedJobChan:     make(chan uint32, config.JobBufSize),
+		stopChans:         make([]chan struct{}, config.JobBufSize, config.JobBufSize),
 		jobResultBuf:      make([]interface{}, config.JobBufSize, config.JobBufSize),
 		ringBufStartJobID: config.StartJobID,
+	}
+	for i := uint32(0); i < config.JobBufSize; i++ {
+		cs.stopChans[i] = make(chan struct{}, 1)
 	}
 	return cs, nil
 }
@@ -75,6 +80,10 @@ func (cs *ConSequential) initJobChan() {
 
 // shiftRingBuf shifts the ring buffer by one job id
 func (cs *ConSequential) shiftRingBuf() {
+	if !cs.isJobIDInRange(cs.ringBufStartJobID) {
+		return
+	}
+
 	cs.jobResultBuf[cs.ringBufStartIdx] = nil
 	cs.ringBufStartIdx = (cs.ringBufStartIdx + 1) % cs.JobBufSize
 
@@ -97,6 +106,12 @@ func (cs *ConSequential) shiftRingBuf() {
 
 	if cs.isJobIDInRange(ringBufEndJobID) {
 		cs.unstartedJobChan <- ringBufEndJobID
+	}
+
+	if !cs.isJobIDInRange(cs.ringBufStartJobID) {
+		for _, c := range cs.stopChans {
+			c <- struct{}{}
+		}
 	}
 }
 
@@ -135,30 +150,18 @@ func (cs *ConSequential) startWorker(workerID uint32) {
 	for {
 		select {
 		case jobID = <-cs.failedJobChan:
-			if !cs.tryJob(workerID, jobID) {
-				failCount++
-			}
-		default:
+		case jobID = <-cs.unstartedJobChan:
+		case <-cs.stopChans[workerID]:
+			return
 		}
 
-		select {
-		case jobID = <-cs.unstartedJobChan:
-			if !cs.tryJob(workerID, jobID) {
-				failCount++
-			}
-		default:
+		if !cs.tryJob(workerID, jobID) {
+			failCount++
 		}
 
 		if failCount > cs.MaxWorkerFails {
 			return
 		}
-
-		cs.RLock()
-		if !cs.isJobIDInRange(cs.ringBufStartJobID) {
-			cs.RUnlock()
-			return
-		}
-		cs.RUnlock()
 	}
 }
 
