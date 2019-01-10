@@ -19,7 +19,7 @@ const (
 	syncBatchWindowSize              = 4096
 	syncBlockHeadersBatchSize        = 256
 	maxSyncBlockHeadersBatchSize     = 1024
-	syncBlocksBatchSize              = 4
+	syncBlocksBatchSize              = 8
 	maxSyncBlocksBatchSize           = 32
 	syncReplyTimeout                 = 20 * time.Second
 	maxSyncWorkerFails               = 3
