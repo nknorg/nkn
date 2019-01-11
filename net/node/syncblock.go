@@ -322,15 +322,17 @@ func (localNode *LocalNode) initSyncing() {
 // StartSyncing starts block syncing from current local ledger until it gets to
 // block height stopHeight with block hash stopHash from given neighbors
 func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uint32, neighbors []*RemoteNode) (bool, error) {
-	localNode.Lock()
-	defer localNode.Unlock()
-
-	started := false
 	var err error
+	started := false
 
-	localNode.syncOnce.Do(func() {
+	localNode.RLock()
+	syncOnce := localNode.syncOnce
+	localNode.RUnlock()
+
+	syncOnce.Do(func() {
 		started = true
 		localNode.SetSyncState(pb.SyncStarted)
+		defer localNode.ResetSyncing()
 
 		currentHeight := ledger.DefaultLedger.Store.GetHeight()
 		currentHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
@@ -366,9 +368,8 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 		localNode.SetSyncState(pb.SyncFinished)
 	})
 
-	if err != nil {
-		log.Errorf("Syncing error: %v", err)
-		localNode.syncOnce = new(sync.Once)
+	if started && err != nil {
+		localNode.SetSyncState(pb.WaitForSyncing)
 	}
 
 	return started, err
