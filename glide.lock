@@ -1,5 +1,5 @@
 hash: 8560b3563e7b15a9e0ab39f71dd6da2e29ce7ed4aca35c97d11ac9ac3c75b0b7
-updated: 2018-11-26T09:46:37.190447+03:00
+updated: 2019-01-10T06:22:21.728422-08:00
 imports:
 - name: github.com/gogo/protobuf
   version: 636bf0302bc95575d69441b25a2603156ffdddf1
@@ -11,7 +11,7 @@ imports:
   - sortkeys
   - types
 - name: github.com/golang/crypto
-  version: 4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06
+  version: ff983b9c42bc9fbf91556e191cc8efb585c16908
   subpackages:
   - ripemd160
   - ssh/terminal
@@ -37,7 +37,7 @@ imports:
 - name: github.com/imdario/mergo
   version: 9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4
 - name: github.com/itchyny/base58-go
-  version: 56d50cf40874c738595ef72ee2445a4de104d27d
+  version: fab293004121aca58c909390f8d4dbd872f448a6
 - name: github.com/jackpal/gateway
   version: cbcf4e3f3baee7952fc386c8b2534af4d267c875
 - name: github.com/jackpal/go-nat-pmp
@@ -45,9 +45,9 @@ imports:
 - name: github.com/jpillora/backoff
   version: 3050d21c67d7c46b07ca1b5e1be0b26669c8d04c
 - name: github.com/klauspost/cpuid
-  version: e7e905edc00ea8827e58662220139109efea09db
+  version: 0da02118eaa37aa89aea6776b464a4ad00990af1
 - name: github.com/klauspost/reedsolomon
-  version: 925cb01d65108f2c935e02fdb79ff4a055a4a20d
+  version: 8885f3a1c73882e6f11b766242c69a1eb8f44b28
 - name: github.com/nknorg/go-nat
   version: 6339479af9cce1e6c4f5efe96c0306fb6149397c
 - name: github.com/nknorg/go-portscanner
@@ -55,7 +55,7 @@ imports:
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: ae33039c242f1d2a4e13cd690d98b7a8f4f0cfa6
+  version: b9ceb9e1c12e773d794030143b8d373b915452f8
   subpackages:
   - cache
   - common
@@ -76,11 +76,11 @@ imports:
 - name: github.com/pborman/uuid
   version: adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1
 - name: github.com/pkg/errors
-  version: 059132a15dd08d6704c67711dae0cf35ab991756
+  version: ffb6e22f01932bf7ac35e0bad9be11f01d1c8685
 - name: github.com/rdegges/go-ipify
   version: 2d94a6a86c4055118cc30fae2aaed47ec01f2210
 - name: github.com/syndtr/goleveldb
-  version: 6b91fda63f2e36186f1c9d0e48578defb69c5d43
+  version: b001fa50d6b27f3f0bb175a87d0cb55426d0a0ae
   subpackages:
   - leveldb
   - leveldb/cache
@@ -107,9 +107,9 @@ imports:
 - name: github.com/xtaci/kcp-go
   version: f48db19e7a48fe347571d6bfc52a7585a53c5315
 - name: github.com/xtaci/smux
-  version: f19baee51e87c9f0d42f61380893caad7bfabf3d
+  version: 6cf098d439391c8f8f6a485f8928f47575b6002e
 - name: golang.org/x/crypto
-  version: 4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06
+  version: ff983b9c42bc9fbf91556e191cc8efb585c16908
   repo: https://github.com/golang/crypto
   vcs: git
   subpackages:
@@ -123,7 +123,7 @@ imports:
   - twofish
   - xtea
 - name: golang.org/x/net
-  version: c10e9556a7bc0e7c942242b606f0acf024ad5d6a
+  version: be1c187aa6c66b9daa1d9461c228d17e9dd2cab7
   repo: https://github.com/golang/net
   vcs: git
   subpackages:
@@ -135,14 +135,14 @@ imports:
   - internal/socket
   - ipv4
 - name: golang.org/x/sys
-  version: 9b800f95dbbc54abff0acf7ee32d88ba4e328c89
+  version: 48ac38b7c8cbedd50b1613c0fccacfc7d88dfcdf
   repo: https://github.com/golang/sys
   vcs: git
   subpackages:
   - unix
   - windows
 - name: golang.org/x/text
-  version: 6f44c5a2ea40ee3593d98cdcc905cc1fdaa660e2
+  version: e6919f6577db79269a6443b9dc46d18f2238fb5d
   subpackages:
   - encoding
   - encoding/charmap
