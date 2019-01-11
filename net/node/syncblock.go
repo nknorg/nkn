@@ -16,7 +16,7 @@ import (
 
 const (
 	concurrentSyncRequestPerNeighbor = 2
-	syncBatchWindowSize              = 4096
+	syncBatchWindowSize              = 1024
 	syncBlockHeadersBatchSize        = 256
 	maxSyncBlockHeadersBatchSize     = 1024
 	syncBlocksBatchSize              = 8
@@ -332,7 +332,6 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 	syncOnce.Do(func() {
 		started = true
 		localNode.SetSyncState(pb.SyncStarted)
-		defer localNode.ResetSyncing()
 
 		currentHeight := ledger.DefaultLedger.Store.GetHeight()
 		currentHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
@@ -347,23 +346,22 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 		}
 
 		startTime := time.Now()
-		var headers []*ledger.Header
-		headers, err = localNode.syncBlockHeaders(currentHeight+1, stopHeight, currentHash, stopHash, neighbors)
+		err = localNode.syncBlockHeaders(currentHeight+1, stopHeight, currentHash, stopHash, neighbors)
 		if err != nil {
 			err = fmt.Errorf("sync block headers error: %v", err)
 			return
 		}
 
-		log.Infof("Synced %d block headers in %s", len(headers), time.Since(startTime))
+		log.Infof("Synced %d block headers in %s", stopHeight-currentHeight, time.Since(startTime))
 
 		startTime = time.Now()
-		err = localNode.syncBlocks(currentHeight+1, stopHeight, headers, neighbors)
+		err = localNode.syncBlocks(currentHeight+1, stopHeight, neighbors)
 		if err != nil {
 			err = fmt.Errorf("sync blocks error: %v", err)
 			return
 		}
 
-		log.Infof("Synced %d blocks in %s", len(headers), time.Since(startTime))
+		log.Infof("Synced %d blocks in %s", stopHeight-currentHeight, time.Since(startTime))
 
 		localNode.SetSyncState(pb.SyncFinished)
 	})
@@ -382,7 +380,7 @@ func (localNode *LocalNode) ResetSyncing() {
 	localNode.syncOnce = new(sync.Once)
 }
 
-func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, startPrevHash, stopHash common.Uint256, neighbors []*RemoteNode) ([]*ledger.Header, error) {
+func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, startPrevHash, stopHash common.Uint256, neighbors []*RemoteNode) error {
 	headers := make([]*ledger.Header, stopHeight-startHeight+1, stopHeight-startHeight+1)
 	numBatches := (stopHeight-startHeight)/syncBlockHeadersBatchSize + 1
 	numWorkers := uint32(len(neighbors)) * concurrentSyncRequestPerNeighbor
@@ -451,23 +449,23 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		FinishJob:           saveHeader,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = cs.Start()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = ledger.DefaultLedger.Store.AddHeaders(headers)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return headers, nil
+	return nil
 }
 
-func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, headers []*ledger.Header, neighbors []*RemoteNode) error {
+func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors []*RemoteNode) error {
 	numBatches := (stopHeight-startHeight)/syncBlocksBatchSize + 1
 	numWorkers := uint32(len(neighbors)) * concurrentSyncRequestPerNeighbor
 
@@ -504,7 +502,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, headers [
 		for height := batchStartHeight; height <= batchEndHeight; height++ {
 			block := batchBlocks[height-batchStartHeight]
 			blockHash := block.Header.Hash()
-			headerHash := headers[height-startHeight].Hash()
+			headerHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(height)
 			if blockHash != headerHash {
 				log.Warningf("Block hash %s is different from header hash %s", (&blockHash).ToHexString(), (&headerHash).ToHexString())
 				return false
