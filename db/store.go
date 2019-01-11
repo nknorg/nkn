@@ -119,23 +119,14 @@ func (cs *ChainStore) loop() {
 }
 
 // can only be invoked by backend write goroutine
-func (cs *ChainStore) clearCache() {
+func (cs *ChainStore) clearCache(height uint32) {
+	hashToDelete := cs.GetHeaderHashByHeight(height - CleanCacheThreshold - 1)
+
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
-	currBlockHeight := cs.currentBlockHeight
-	for hash, header := range cs.headerCache {
-		if header.Height+CleanCacheThreshold < currBlockHeight {
-			delete(cs.headerCache, hash)
-		}
-	}
-
-	for hash, block := range cs.blockCache {
-		if block.Header.Height+CleanCacheThreshold < currBlockHeight {
-			delete(cs.blockCache, hash)
-		}
-	}
-
+	delete(cs.headerCache, hashToDelete)
+	delete(cs.blockCache, hashToDelete)
 }
 
 func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block) (uint32, error) {
@@ -1255,8 +1246,6 @@ func (cs *ChainStore) handlePersistBlockTask(b *Block, ledger *Ledger) {
 		cs.mu.Lock()
 		cs.storedHeaderCount = storedHeaderCount
 		cs.mu.Unlock()
-
-		cs.clearCache()
 	}
 }
 
@@ -1288,6 +1277,8 @@ func (cs *ChainStore) persistBlocks(ledger *Ledger) {
 
 		ledger.Blockchain.BCEvents.Notify(events.EventBlockPersistCompleted, block)
 		log.Infof("# current block height: %d, block hash: %x", block.Header.Height, hash.ToArrayReverse())
+
+		cs.clearCache(h)
 	}
 
 }
