@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/api/common"
+	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/protocol"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -116,14 +117,21 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			response := function(s, params)
 			errcode := response["error"].(common.ErrCode)
 			if errcode != common.SUCCESS {
-				data, err = json.Marshal(map[string]interface{}{
+				result := map[string]interface{}{
 					"jsonrpc": "2.0",
 					"error": map[string]interface{}{
 						"code":    -errcode,
 						"message": common.ErrMessage[errcode],
 					},
 					"id": id,
-				})
+				}
+				if details, ok := response["details"].(errors.ErrCode); ok {
+					result["details"] = map[string]interface{}{
+						"code":    details,
+						"message": details.Error(),
+					}
+				}
+				data, err = json.Marshal(result)
 			} else {
 				data, err = json.Marshal(map[string]interface{}{
 					"jsonrpc": "2.0",

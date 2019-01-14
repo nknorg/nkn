@@ -72,6 +72,9 @@ func VerifyTransaction(Tx *Transaction) ErrCode {
 
 	if err := CheckTransactionPayload(Tx); err != nil {
 		log.Warning("[VerifyTransaction],", err)
+		if err, ok := err.(ErrCode); ok {
+			return err
+		}
 		return ErrTransactionPayload
 	}
 
@@ -413,7 +416,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 
 		subscriptionCount := Store.GetSubscribersCount(topic, bucket)
 		if subscriptionCount >= SubscriptionsLimit {
-			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", topic, subscriptionCount))
+			return ErrSubscriptionLimit
 		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")
