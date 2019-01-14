@@ -279,7 +279,7 @@ func getTransaction(s Serverer, params map[string]interface{}) map[string]interf
 
 // sendRawTransaction  sends raw transaction to the block chain
 // params: ["tx":<transaction>]
-// return: {"result":<result>, "error":<errcode>}
+// return: {"result":<result>, "error":<errcode>, "details":<details>}
 func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(nil, INVALID_PARAMS)
@@ -303,7 +303,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 
 		hash = txn.Hash()
 		if errCode := VerifyAndSendTx(node, &txn); errCode != errors.ErrNoError {
-			return respPacking(nil, INVALID_TRANSACTION)
+			return respPackingDetails(nil, INVALID_TRANSACTION, errCode)
 		}
 	} else {
 		return respPacking(nil, INVALID_PARAMS)
@@ -1153,10 +1153,10 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 	return respPacking(subscribers, SUCCESS)
 }
 
-// getFreeTopicBucket get free topic bucket
+// getFirstAvailableTopicBucket get free topic bucket
 // params: ["topic":<topic>]
 // return: {"result":<result>, "error":<errcode>}
-func getFreeTopicBucket(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getFirstAvailableTopicBucket(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(nil, INVALID_PARAMS)
 	}
@@ -1166,8 +1166,8 @@ func getFreeTopicBucket(s Serverer, params map[string]interface{}) map[string]in
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	freeBucket := ledger.DefaultLedger.Store.GetFreeTopicBucket(topic)
-	return respPacking(freeBucket, SUCCESS)
+	bucket := ledger.DefaultLedger.Store.GetFirstAvailableTopicBucket(topic)
+	return respPacking(bucket, SUCCESS)
 }
 
 // getTopicBucketsCount get topic buckets count
@@ -1183,8 +1183,8 @@ func getTopicBucketsCount(s Serverer, params map[string]interface{}) map[string]
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	lastBucket := ledger.DefaultLedger.Store.GetTopicBucketsCount(topic)
-	return respPacking(lastBucket, SUCCESS)
+	count := ledger.DefaultLedger.Store.GetTopicBucketsCount(topic)
+	return respPacking(count, SUCCESS)
 }
 
 // findSuccessorAddrs find the successors of a key
@@ -1252,42 +1252,42 @@ func findSuccessorAddr(s Serverer, params map[string]interface{}) map[string]int
 }
 
 var InitialAPIHandlers = map[string]APIHandler{
-	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
-	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
-	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
-	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getrawmempool":        {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC},
-	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
-	"gethttpproxyaddr":     {Handler: getHttpProxyAddr, AccessCtrl: BIT_JSONRPC},
-	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC},
-	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
-	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
-	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
-	"getunspendoutput":     {Handler: getUnspendOutput, AccessCtrl: BIT_JSONRPC},
-	"getbalance":           {Handler: getBalance},
-	"setdebuginfo":         {Handler: setDebugInfo},
-	"registasset":          {Handler: registAsset},
-	"issueasset":           {Handler: issueAsset},
-	"sendtoaddress":        {Handler: sendToAddress},
-	"prepaidasset":         {Handler: prepaidAsset},
-	"registername":         {Handler: registerName},
-	"deletename":           {Handler: deleteName},
-	"withdrawasset":        {Handler: withdrawAsset},
-	"commitpor":            {Handler: commitPor},
-	"sigchaintest":         {Handler: sigchaintest},
-	"gettotalissued":       {Handler: getTotalIssued},
-	"getassetbyhash":       {Handler: getAssetByHash},
-	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
-	"getbalancebyasset":    {Handler: getBalanceByAsset},
-	"getunspends":          {Handler: getUnspends},
-	"getaddressbyname":     {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
-	"getsubscribers":       {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
-	"getfreetopicbucket":   {Handler: getFreeTopicBucket, AccessCtrl: BIT_JSONRPC},
-	"gettopicbucketscount": {Handler: getTopicBucketsCount, AccessCtrl: BIT_JSONRPC},
-	"findsuccessoraddr":    {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
-	"findsuccessoraddrs":   {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},
+	"getlatestblockhash":           {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
+	"getblock":                     {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getblockcount":                {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
+	"getlatestblockheight":         {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getblocktxsbyheight":          {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
+	"getconnectioncount":           {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getrawmempool":                {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC},
+	"gettransaction":               {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"sendrawtransaction":           {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getwsaddr":                    {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
+	"gethttpproxyaddr":             {Handler: getHttpProxyAddr, AccessCtrl: BIT_JSONRPC},
+	"getversion":                   {Handler: getVersion, AccessCtrl: BIT_JSONRPC},
+	"getneighbor":                  {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
+	"getnodestate":                 {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
+	"getchordringinfo":             {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
+	"getunspendoutput":             {Handler: getUnspendOutput, AccessCtrl: BIT_JSONRPC},
+	"getbalance":                   {Handler: getBalance},
+	"setdebuginfo":                 {Handler: setDebugInfo},
+	"registasset":                  {Handler: registAsset},
+	"issueasset":                   {Handler: issueAsset},
+	"sendtoaddress":                {Handler: sendToAddress},
+	"prepaidasset":                 {Handler: prepaidAsset},
+	"registername":                 {Handler: registerName},
+	"deletename":                   {Handler: deleteName},
+	"withdrawasset":                {Handler: withdrawAsset},
+	"commitpor":                    {Handler: commitPor},
+	"sigchaintest":                 {Handler: sigchaintest},
+	"gettotalissued":               {Handler: getTotalIssued},
+	"getassetbyhash":               {Handler: getAssetByHash},
+	"getbalancebyaddr":             {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
+	"getbalancebyasset":            {Handler: getBalanceByAsset},
+	"getunspends":                  {Handler: getUnspends},
+	"getaddressbyname":             {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
+	"getsubscribers":               {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
+	"getfirstavailabletopicbucket": {Handler: getFirstAvailableTopicBucket, AccessCtrl: BIT_JSONRPC},
+	"gettopicbucketscount":         {Handler: getTopicBucketsCount, AccessCtrl: BIT_JSONRPC},
+	"findsuccessoraddr":            {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
+	"findsuccessoraddrs":           {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},
 }

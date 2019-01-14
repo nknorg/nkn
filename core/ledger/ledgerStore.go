@@ -34,7 +34,7 @@ type ILedgerStore interface {
 	IsSubscribed(subscriber []byte, identifier string, topic string, bucket uint32) (bool, error)
 	GetSubscribers(topic string, bucket uint32) []string
 	GetSubscribersCount(topic string, bucket uint32) int
-	GetFreeTopicBucket(topic string) int
+	GetFirstAvailableTopicBucket(topic string) int
 	GetTopicBucketsCount(topic string) uint32
 
 	GetContract(codeHash Uint160) ([]byte, error)
