@@ -15,6 +15,7 @@ type Subscribe struct {
 	Subscriber []byte
 	Identifier string
 	Topic      string
+	Bucket     uint32
 	Duration   uint32
 }
 
@@ -28,6 +29,7 @@ func (s *Subscribe) Serialize(w io.Writer, version byte) error {
 	serialization.WriteVarBytes(w, s.Subscriber)
 	serialization.WriteVarString(w, s.Identifier)
 	serialization.WriteVarString(w, s.Topic)
+	serialization.WriteUint32(w, s.Bucket)
 	serialization.WriteUint32(w, s.Duration)
 	return nil
 }
@@ -45,6 +47,10 @@ func (s *Subscribe) Deserialize(r io.Reader, version byte) error {
 	s.Topic, err = serialization.ReadVarString(r)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[Subscribe], Topic Deserialize failed.")
+	}
+	s.Bucket, err = serialization.ReadUint32(r)
+	if err != nil {
+		return NewDetailErr(err, ErrNoCode, "[Subscribe], Bucket Deserialize failed.")
 	}
 	s.Duration, err = serialization.ReadUint32(r)
 	if err != nil {
@@ -66,6 +72,10 @@ func (s *Subscribe) Equal(s2 *Subscribe) bool {
 		return false
 	}
 
+	if s.Bucket != s2.Bucket {
+		return false
+	}
+
 	if s.Duration != s2.Duration {
 		return false
 	}
@@ -82,6 +92,7 @@ func (s *Subscribe) MarshalJson() ([]byte, error) {
 		Subscriber: common.BytesToHexString(s.Subscriber),
 		Identifier: s.Identifier,
 		Topic:      s.Topic,
+		Bucket:     s.Bucket,
 		Duration:   s.Duration,
 	}
 
@@ -104,6 +115,8 @@ func (s *Subscribe) UnmarshalJson(data []byte) error {
 	s.Identifier = si.Identifier
 
 	s.Topic = si.Topic
+
+	s.Bucket = si.Bucket
 
 	s.Duration = si.Duration
 

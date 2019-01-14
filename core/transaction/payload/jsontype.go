@@ -42,5 +42,6 @@ type SubscribeInfo struct {
 	Subscriber string `json:"subscriber"`
 	Identifier string `json:"identifier"`
 	Topic      string `json:"topic"`
+	Bucket     uint32 `json:"bucket"`
 	Duration   uint32 `json:"duration"`
 }

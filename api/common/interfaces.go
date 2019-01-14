@@ -1132,7 +1132,7 @@ func getAddressByName(s Serverer, params map[string]interface{}) map[string]inte
 }
 
 // getSubscribers get subscribers by topic
-// params: ["topic":<topic>]
+// params: ["topic":<topic>, "bucket":<bucket>]
 // return: {"result":<result>, "error":<errcode>}
 func getSubscribers(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
@@ -1144,7 +1144,12 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	subscribers := ledger.DefaultLedger.Store.GetSubscribers(topic)
+	bucket, ok := params["bucket"].(float64)
+	if !ok {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	subscribers := ledger.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket))
 	return respPacking(subscribers, SUCCESS)
 }
 
