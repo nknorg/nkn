@@ -19,6 +19,7 @@ import (
 
 const (
 	SubscriptionsLimit = 1000
+	BucketsLimit = 1000
 	MaxSubscriptionDuration = 65535
 )
 
@@ -383,6 +384,11 @@ func CheckTransactionPayload(txn *Transaction) error {
 			return errors.New(fmt.Sprintf("no name registered for pubKey %+v", pld.Registrant))
 		}
 	case *payload.Subscribe:
+		bucket := pld.Bucket
+		if bucket > BucketsLimit {
+			return errors.New(fmt.Sprintf("topic bucket %d can't be bigger than %d", bucket, BucketsLimit))
+		}
+
 		duration := pld.Duration
 		if duration > MaxSubscriptionDuration {
 			return errors.New(fmt.Sprintf("subscription duration %d can't be bigger than %d", duration, MaxSubscriptionDuration))
@@ -397,7 +403,6 @@ func CheckTransactionPayload(txn *Transaction) error {
 			return errors.New(fmt.Sprintf("topic %s should only contain a-z and have length 8-12", topic))
 		}
 
-		bucket := pld.Bucket
 		subscribed, err := Store.IsSubscribed(pld.Subscriber, pld.Identifier, topic, bucket)
 		if err != nil {
 			return err
