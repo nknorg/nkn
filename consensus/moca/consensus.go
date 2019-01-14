@@ -291,21 +291,26 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 
 	go func() {
 		started, err := consensus.localNode.StartSyncing(block.Header.PrevBlockHash, block.Header.Height-1, neighbors)
+		if err != nil {
+			log.Errorf("Error syncing blocks: %v", err)
+			if started {
+				panic(err)
+			}
+		}
 		if !started {
 			return
 		}
-		if err != nil {
-			panic(fmt.Errorf("Error syncing blocks: %v", err))
-		}
+
+		defer consensus.localNode.ResetSyncing()
 
 		err = consensus.saveBlocksAcceptedDuringSync(block.Header.Height)
 		if err != nil {
 			log.Errorf("Error saving blocks accepted during sync: %v", err)
+			consensus.localNode.SetSyncState(pb.WaitForSyncing)
 			return
 		}
 
 		consensus.localNode.SetSyncState(pb.PersistFinished)
-		consensus.localNode.ResetSyncing()
 	}()
 
 	return nil
