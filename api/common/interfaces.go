@@ -1153,6 +1153,23 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 	return respPacking(subscribers, SUCCESS)
 }
 
+// getFreeTopicBucket get free topic bucket
+// params: ["topic":<topic>]
+// return: {"result":<result>, "error":<errcode>}
+func getFreeTopicBucket(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	topic, ok := params["topic"].(string)
+	if !ok {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	freeBucket := ledger.DefaultLedger.Store.GetFreeTopicBucket(topic)
+	return respPacking(freeBucket, SUCCESS)
+}
+
 // getTopicBucketsCount get topic buckets count
 // params: ["topic":<topic>]
 // return: {"result":<result>, "error":<errcode>}
@@ -1269,6 +1286,7 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getunspends":          {Handler: getUnspends},
 	"getaddressbyname":     {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
 	"getsubscribers":       {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
+	"getfreetopicbucket":   {Handler: getFreeTopicBucket, AccessCtrl: BIT_JSONRPC},
 	"gettopicbucketscount": {Handler: getTopicBucketsCount, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddr":    {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddrs":   {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},

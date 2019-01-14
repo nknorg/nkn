@@ -672,6 +672,17 @@ func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
 	return subscribers
 }
 
+func (cs *ChainStore) GetFreeTopicBucket(topic string) int {
+	for i := uint32(0); i < tx.BucketsLimit; i++ {
+		count := cs.GetSubscribersCount(topic, i)
+		if count < tx.SubscriptionsLimit {
+			return int(i)
+		}
+	}
+
+	return -1
+}
+
 func (cs *ChainStore) GetTopicBucketsCount(topic string) uint32 {
 	lastBucket := uint32(0)
 
