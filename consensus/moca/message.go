@@ -205,14 +205,9 @@ func (consensus *Consensus) requestBlockProposalMessageHandler(remoteMessage *no
 		return replyBuf, false, err
 	}
 
-	value, ok := consensus.proposals.Get(blockHash.ToArray())
-	if !ok {
-		return replyBuf, false, nil
-	}
-
-	block, ok := value.(*ledger.Block)
-	if !ok {
-		return replyBuf, false, nil
+	block, err := consensus.getBlockProposal(blockHash)
+	if err != nil {
+		return replyBuf, false, err
 	}
 
 	replyMsg, err = NewRequestBlockProposalReply(block)
