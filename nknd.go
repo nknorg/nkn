@@ -24,6 +24,7 @@ import (
 	"github.com/nknorg/nkn/gateway/httpproxy"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
@@ -139,7 +140,7 @@ func nknMain(c *cli.Context) error {
 		return err
 	}
 
-	id := node.GenChordID(fmt.Sprintf("%s:%d", config.Parameters.Hostname, config.Parameters.NodePort))
+	id := address.GenChordID(fmt.Sprintf("%s:%d", config.Parameters.Hostname, config.Parameters.NodePort))
 
 	nn, err := nnet.NewNNet(id, conf)
 	if err != nil {
