@@ -564,22 +564,31 @@ func (cs *ChainStore) GetRegistrant(name string) ([]byte, error) {
 	return registrant, nil
 }
 
-func generateSubscriberKey(subscriber []byte, identifier string, topic string) []byte {
+func generateTopicKey(topic string, bucket uint32) []byte {
+	topicKey := bytes.NewBuffer(nil)
+	topicKey.WriteByte(byte(PS_Topic))
+	serialization.WriteVarString(topicKey, topic)
+	serialization.WriteUint32(topicKey, bucket)
+
+	return topicKey.Bytes()
+}
+
+func generateSubscriberKey(subscriber []byte, identifier string, topic string, bucket uint32) []byte {
 	subscriberKey := bytes.NewBuffer(nil)
-	subscriberKey.WriteByte(byte(PS_Topic))
-	serialization.WriteVarString(subscriberKey, topic)
+	topicKey := generateTopicKey(topic, bucket)
+	subscriberKey.Write(topicKey)
 	serialization.WriteVarBytes(subscriberKey, subscriber)
 	serialization.WriteVarString(subscriberKey, identifier)
 
 	return subscriberKey.Bytes()
 }
 
-func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic string, duration uint32, height uint32) error {
+func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic string, bucket uint32, duration uint32, height uint32) error {
 	if duration == 0 {
 		return nil
 	}
 
-	subscriberKey := generateSubscriberKey(subscriber, identifier, topic)
+	subscriberKey := generateSubscriberKey(subscriber, identifier, topic, bucket)
 
 	// PUT VALUE
 	err := cs.st.BatchPut(subscriberKey, []byte{})
@@ -595,12 +604,12 @@ func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic stri
 	return nil
 }
 
-func (cs *ChainStore) Unsubscribe(subscriber []byte, identifier string, topic string, duration uint32, height uint32) error {
+func (cs *ChainStore) Unsubscribe(subscriber []byte, identifier string, topic string, bucket uint32, duration uint32, height uint32) error {
 	if duration == 0 {
 		return nil
 	}
 
-	subscriberKey := generateSubscriberKey(subscriber, identifier, topic)
+	subscriberKey := generateSubscriberKey(subscriber, identifier, topic, bucket)
 
 	// DELETE VALUE
 	err := cs.st.BatchDelete(subscriberKey)
@@ -616,16 +625,16 @@ func (cs *ChainStore) Unsubscribe(subscriber []byte, identifier string, topic st
 	return nil
 }
 
-func (cs *ChainStore) IsSubscribed(subscriber []byte, identifier string, topic string) (bool, error) {
-	subscriberKey := generateSubscriberKey(subscriber, identifier, topic)
+func (cs *ChainStore) IsSubscribed(subscriber []byte, identifier string, topic string, bucket uint32) (bool, error) {
+	subscriberKey := generateSubscriberKey(subscriber, identifier, topic, bucket)
 
 	return cs.st.Has(subscriberKey)
 }
 
-func (cs *ChainStore) GetSubscribers(topic string) []string {
+func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) []string {
 	subscribers := make([]string, 0)
 
-	prefix := append([]byte{byte(PS_Topic), byte(len(topic))}, []byte(topic)...)
+	prefix := generateTopicKey(topic, bucket)
 	iter := cs.st.NewIterator(prefix)
 	for iter.Next() {
 		rk := bytes.NewReader(iter.Key())
@@ -643,10 +652,10 @@ func (cs *ChainStore) GetSubscribers(topic string) []string {
 	return subscribers
 }
 
-func (cs *ChainStore) GetSubscribersCount(topic string) int {
+func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
 	subscribers := 0
 
-	prefix := append([]byte{byte(PS_Topic), byte(len(topic))}, []byte(topic)...)
+	prefix := generateTopicKey(topic, bucket)
 	iter := cs.st.NewIterator(prefix)
 	for iter.Next() {
 		subscribers++
@@ -956,7 +965,7 @@ func (cs *ChainStore) persist(b *Block) error {
 			}
 		case tx.Subscribe:
 			subscribePayload := b.Transactions[i].Payload.(*payload.Subscribe)
-			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Duration, b.Header.Height)
+			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, b.Header.Height)
 			if err != nil {
 				return err
 			}

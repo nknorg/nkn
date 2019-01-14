@@ -31,8 +31,8 @@ type TxnStore interface {
 	IsTxHashDuplicate(txhash Uint256) bool
 	GetName(registrant []byte) (*string, error)
 	GetRegistrant(name string) ([]byte, error)
-	IsSubscribed(subscriber []byte, identifier string, topic string) (bool, error)
-	GetSubscribersCount(topic string) int
+	IsSubscribed(subscriber []byte, identifier string, topic string, bucket uint32) (bool, error)
+	GetSubscribersCount(topic string, bucket uint32) int
 }
 
 type Iterator interface {
@@ -86,10 +86,11 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 	registeredNames := make(map[string]struct{}, 0)
 	nameRegistrants := make(map[string]struct{}, 0)
 
-	type subscription struct {topic, subscriber string}
+	type subscription struct {topic string; bucket uint32; subscriber string}
+	type topicKey struct {topic string; bucket uint32}
 	subscriptions := make(map[subscription]struct{}, 0)
 
-	subscriptionCount := make(map[string]int, 0)
+	subscriptionCount := make(map[topicKey]int, 0)
 
 	//start check
 	return iterator.Iterate(func(txn *Transaction) ErrCode {
@@ -178,21 +179,23 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 		case Subscribe:
 			subscribePayload := txn.Payload.(*payload.Subscribe)
 			topic := subscribePayload.Topic
-			key := subscription{topic, subscribePayload.SubscriberString()}
+			bucket := subscribePayload.Bucket
+			key := subscription{topic, bucket, subscribePayload.SubscriberString()}
 			if _, ok := subscriptions[key]; ok {
 				log.Warning("[VerifyTransactionWithBlock], duplicate subscription exist in block.")
 				return ErrDuplicateSubscription
 			}
 			subscriptions[key] = struct{}{}
 
-			if _, ok := subscriptionCount[topic]; !ok {
-				subscriptionCount[topic] = Store.GetSubscribersCount(topic)
+			topicKey := topicKey{topic, bucket}
+			if _, ok := subscriptionCount[topicKey]; !ok {
+				subscriptionCount[topicKey] = Store.GetSubscribersCount(topic, bucket)
 			}
-			if subscriptionCount[topic] >= SubscriptionsLimit {
+			if subscriptionCount[topicKey] >= SubscriptionsLimit {
 				log.Warning("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
 				return ErrSubscriptionLimit
 			}
-			subscriptionCount[topic]++
+			subscriptionCount[topicKey]++
 		}
 
 		return ErrNoError
@@ -394,7 +397,8 @@ func CheckTransactionPayload(txn *Transaction) error {
 			return errors.New(fmt.Sprintf("topic %s should only contain a-z and have length 8-12", topic))
 		}
 
-		subscribed, err := Store.IsSubscribed(pld.Subscriber, pld.Identifier, topic)
+		bucket := pld.Bucket
+		subscribed, err := Store.IsSubscribed(pld.Subscriber, pld.Identifier, topic, bucket)
 		if err != nil {
 			return err
 		}
@@ -402,7 +406,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 			return errors.New(fmt.Sprintf("subscriber %s already subscribed to %s", pld.SubscriberString(), topic))
 		}
 
-		subscriptionCount := Store.GetSubscribersCount(topic)
+		subscriptionCount := Store.GetSubscribersCount(topic, bucket)
 		if subscriptionCount >= SubscriptionsLimit {
 			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", topic, subscriptionCount))
 		}
