@@ -366,10 +366,6 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 		localNode.SetSyncState(pb.SyncFinished)
 	})
 
-	if started && err != nil {
-		localNode.SetSyncState(pb.WaitForSyncing)
-	}
-
 	return started, err
 }
 
