@@ -564,19 +564,27 @@ func (cs *ChainStore) GetRegistrant(name string) ([]byte, error) {
 	return registrant, nil
 }
 
-func generateTopicKey(topic string, bucket uint32) []byte {
+func generateTopicKey(topic string) []byte {
 	topicKey := bytes.NewBuffer(nil)
 	topicKey.WriteByte(byte(PS_Topic))
 	serialization.WriteVarString(topicKey, topic)
-	serialization.WriteUint32(topicKey, bucket)
 
 	return topicKey.Bytes()
 }
 
+func generateTopicBucketKey(topic string, bucket uint32) []byte {
+	topicBucketKey := bytes.NewBuffer(nil)
+	topicKey := generateTopicKey(topic)
+	topicBucketKey.Write(topicKey)
+	serialization.WriteUint32(topicBucketKey, bucket)
+
+	return topicBucketKey.Bytes()
+}
+
 func generateSubscriberKey(subscriber []byte, identifier string, topic string, bucket uint32) []byte {
 	subscriberKey := bytes.NewBuffer(nil)
-	topicKey := generateTopicKey(topic, bucket)
-	subscriberKey.Write(topicKey)
+	topicBucketKey := generateTopicBucketKey(topic, bucket)
+	subscriberKey.Write(topicBucketKey)
 	serialization.WriteVarBytes(subscriberKey, subscriber)
 	serialization.WriteVarString(subscriberKey, identifier)
 
@@ -634,7 +642,7 @@ func (cs *ChainStore) IsSubscribed(subscriber []byte, identifier string, topic s
 func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) []string {
 	subscribers := make([]string, 0)
 
-	prefix := generateTopicKey(topic, bucket)
+	prefix := generateTopicBucketKey(topic, bucket)
 	iter := cs.st.NewIterator(prefix)
 	for iter.Next() {
 		rk := bytes.NewReader(iter.Key())
@@ -655,13 +663,33 @@ func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) []string {
 func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
 	subscribers := 0
 
-	prefix := generateTopicKey(topic, bucket)
+	prefix := generateTopicBucketKey(topic, bucket)
 	iter := cs.st.NewIterator(prefix)
 	for iter.Next() {
 		subscribers++
 	}
 
 	return subscribers
+}
+
+func (cs *ChainStore) GetTopicBucketsCount(topic string) uint32 {
+	lastBucket := uint32(0)
+
+	prefix := generateTopicKey(topic)
+
+	iter := cs.st.NewIterator(prefix)
+	for iter.Next() {
+		rk := bytes.NewReader(iter.Key())
+
+		// read prefix
+		_, _ = serialization.ReadBytes(rk, uint64(len(prefix)))
+
+		bucket, _ := serialization.ReadUint32(rk)
+
+		lastBucket = bucket
+	}
+
+	return lastBucket
 }
 
 func (cs *ChainStore) ExpireKeyAtBlock(height uint32, key []byte) error {
