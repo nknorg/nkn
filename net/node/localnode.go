@@ -1,9 +1,11 @@
 package node
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"sync"
 	"time"
@@ -118,8 +120,9 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, localNode.cleanupTransactions)
 
 	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady(func(remoteNode *nnetnode.RemoteNode) bool {
-		if address.ShouldRejectAddr(localNode.GetAddr(), remoteNode.GetAddr()) {
-			remoteNode.Stop(errors.New("Remote port is different from local port"))
+		err := localNode.validateRemoteNode(remoteNode)
+		if err != nil {
+			remoteNode.Stop(err)
 			return false
 		}
 		return true
@@ -152,6 +155,36 @@ func (localNode *LocalNode) Start() error {
 	localNode.startRelayer()
 	localNode.initSyncing()
 	localNode.AddMessageHandler(pb.TRANSACTIONS, localNode.transactionsMessageHandler)
+	return nil
+}
+
+func (localNode *LocalNode) validateRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+	addr, err := url.Parse(remoteNode.GetAddr())
+	if err != nil {
+		return err
+	}
+
+	connHost, connPort, err := net.SplitHostPort(remoteNode.GetConn().RemoteAddr().String())
+	if err != nil {
+		return err
+	}
+
+	if !address.IsPrivateIP(net.ParseIP(connHost)) && addr.Hostname() != connHost {
+		return fmt.Errorf("Remote node host %s is different from its connection host %s", addr.Hostname(), connHost)
+	}
+
+	if remoteNode.IsOutbound && addr.Port() != connPort {
+		return fmt.Errorf("Remote node port %v is different from its connection port %v", addr.Port(), connPort)
+	}
+
+	if !bytes.Equal(address.GenChordID(addr.Host), remoteNode.GetId()) {
+		return fmt.Errorf("Remote node id should be %x instead of %x", address.GenChordID(addr.Host), remoteNode.GetId())
+	}
+
+	if address.ShouldRejectAddr(localNode.GetAddr(), remoteNode.GetAddr()) {
+		return errors.New("Remote port is different from local port")
+	}
+
 	return nil
 }
 
