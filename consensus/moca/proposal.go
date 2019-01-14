@@ -24,6 +24,21 @@ type requestProposalInfo struct {
 	blockHash  common.Uint256
 }
 
+// getBlockProposal gets a proposal from proposal cache and convert to block
+func (consensus *Consensus) getBlockProposal(blockHash common.Uint256) (*ledger.Block, error) {
+	value, ok := consensus.proposals.Get(blockHash.ToArray())
+	if !ok {
+		return nil, fmt.Errorf("Block %s not found in local cache", blockHash.ToHexString())
+	}
+
+	block, ok := value.(*ledger.Block)
+	if !ok {
+		return nil, fmt.Errorf("Convert block %s from proposal cache error", blockHash.ToHexString())
+	}
+
+	return block, nil
+}
+
 // waitAndHandleProposal waits for first valid proposal, and continues to handle
 // proposal for electionStartDelay duration.
 func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) {

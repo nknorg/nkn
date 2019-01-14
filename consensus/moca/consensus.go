@@ -247,14 +247,9 @@ func (consensus *Consensus) maybeUpdateConsensusHeight() {
 }
 
 func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) error {
-	value, ok := consensus.proposals.Get(electedBlockHash.ToArray())
-	if !ok {
-		return fmt.Errorf("Block %s not found in local cache", electedBlockHash.ToHexString())
-	}
-
-	block, ok := value.(*ledger.Block)
-	if !ok {
-		return fmt.Errorf("Convert block %s from proposal cache error", electedBlockHash.ToHexString())
+	block, err := consensus.getBlockProposal(electedBlockHash)
+	if err != nil {
+		return err
 	}
 
 	if block.Header.Height == ledger.DefaultLedger.Store.GetHeight()+1 {
@@ -344,7 +339,12 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 			return fmt.Errorf("Convert election result to block hash error")
 		}
 
-		err = consensus.saveAcceptedBlock(electedBlockHash)
+		block, err := consensus.getBlockProposal(electedBlockHash)
+		if err != nil {
+			return err
+		}
+
+		err = ledger.DefaultLedger.Blockchain.AddBlock(block)
 		if err != nil {
 			return err
 		}
