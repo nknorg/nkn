@@ -6,14 +6,17 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nnet/overlay/chord"
 )
 
 // for the first relay node
@@ -276,6 +279,30 @@ func (sc *SigChain) Verify() error {
 
 		prevNextPubkey = e.NextPubkey
 		prevSig = e.Signature
+	}
+
+	return nil
+}
+
+func (sc *SigChain) VerifyPath() error {
+	if !sc.IsFinal() {
+		return fmt.Errorf("signature chain")
+	}
+
+	if len(sc.Elems) < 3 {
+		return fmt.Errorf("signature chain should have at least 3 elements, but only has %d", len(sc.Elems))
+	}
+
+	var t big.Int
+	lastNodeAddr := sc.Elems[len(sc.Elems)-2].Addr
+	prevDistance := chord.Distance(sc.Elems[1].Addr, lastNodeAddr, config.NodeIDBytes)
+	for i := 2; i < len(sc.Elems)-2; i++ {
+		dist := chord.Distance(sc.Elems[i].Addr, lastNodeAddr, config.NodeIDBytes)
+		(&t).Mul(dist, big.NewInt(2))
+		if t.Cmp(prevDistance) > 0 {
+			return fmt.Errorf("signature chain path is invalid")
+		}
+		prevDistance = dist
 	}
 
 	return nil

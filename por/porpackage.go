@@ -61,6 +61,16 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 		return nil, err
 	}
 
+	err = sigChain.Verify()
+	if err != nil {
+		return nil, err
+	}
+
+	err = sigChain.VerifyPath()
+	if err != nil {
+		return nil, err
+	}
+
 	//TODO threshold
 	found := false
 	for _, elem := range sigChain.Elems {
