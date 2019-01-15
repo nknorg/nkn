@@ -27,6 +27,7 @@ const (
 	ProposerChangeTime  = time.Minute
 	DefaultMiningReward = 15
 	MinNumSuccessors    = 8
+	NodeIDBytes         = 32
 )
 
 var (

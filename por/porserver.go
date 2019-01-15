@@ -223,9 +223,6 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) (bool, erro
 		return false, nil
 	}
 
-	if _, ok := ps.pors[height]; !ok {
-		ps.pors[height] = make([]*PorPackage, 0)
-	}
 	ps.pors[height] = append(ps.pors[height], porpkg)
 
 	return true, nil

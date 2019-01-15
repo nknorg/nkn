@@ -131,7 +131,7 @@ func nknMain(c *cli.Context) error {
 		Transport:        config.Parameters.Transport,
 		Hostname:         config.Parameters.Hostname,
 		Port:             config.Parameters.NodePort,
-		NodeIDBytes:      32,
+		NodeIDBytes:      config.NodeIDBytes,
 		MinNumSuccessors: config.MinNumSuccessors,
 	}
 
