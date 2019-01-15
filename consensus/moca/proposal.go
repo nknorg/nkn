@@ -120,6 +120,12 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				acceptProposal = false
 			}
 
+			err = ledger.NextBlockProposerCheck(proposal.Header)
+			if err != nil {
+				log.Warningf("Proposal fails to pass next block proposal check: %v", err)
+				acceptProposal = false
+			}
+
 			err = ledger.TransactionCheck(proposal)
 			if err != nil {
 				log.Warningf("Proposal fails to pass transaction check: %v", err)

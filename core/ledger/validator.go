@@ -252,6 +252,23 @@ func TimestampCheck(timestamp int64) error {
 	return nil
 }
 
+func NextBlockProposerCheck(header *Header) error {
+	winnerHash, winnerType, err := GetWinner(header.Height)
+	if err != nil {
+		return err
+	}
+
+	if winnerType != header.WinnerType {
+		return fmt.Errorf("Winner type should be %v instead of %v", winnerType, header.WinnerType)
+	}
+
+	if winnerHash != header.WinnerHash {
+		return fmt.Errorf("Winner type should be %s instead of %s", winnerHash.ToHexString(), header.WinnerHash.ToHexString())
+	}
+
+	return nil
+}
+
 func CanVerifyHeight(height uint32) bool {
 	return height == DefaultLedger.Store.GetHeight()+1
 }
