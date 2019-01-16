@@ -1,12 +1,10 @@
 package pool
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/ledger"
 	. "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
@@ -56,13 +54,12 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 
 	// get signature chain from commit transaction then add it to POR server
 	if txn.TxType == Commit {
-		added, err := por.GetPorServer().AddSigChainFromTx(txn)
+		_, err := por.GetPorServer().AddSigChainFromTx(txn)
 		if err != nil {
+			log.Infof("Add sigchain from transaction error: %v", err)
 			return ErrerCode(NewDetailErr(err, ErrNoCode, err.Error()))
 		}
-		if !added {
-			return ErrNoError
-		}
+		return ErrNoError
 	}
 
 	//add the transaction to process scope
@@ -80,7 +77,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	return ErrNoError
 }
 
-func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[common.Uint256]*Transaction, error) {
+func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*Transaction, error) {
 	tp.RLock()
 	defer tp.RUnlock()
 
@@ -89,37 +86,15 @@ func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[commo
 		n = num
 	}
 
-	// get transactions which should not be packaged
-	exclusivedHashes, err := por.GetPorServer().GetTxnHashBySigChainHeight(ledger.DefaultLedger.Store.GetHeight() +
-		ExclusivedSigchainHeight)
-	if err != nil {
-		log.Error("collect transaction error: ", err)
-		return nil, err
-	}
-
 	i := 0
 	txns := make(map[common.Uint256]*Transaction, n)
 
-	// get transactions which should be packaged
-	if winningHash.CompareTo(common.EmptyUint256) != 0 {
-		if winningTxn, ok := tp.txnList[winningHash]; !ok {
-			log.Errorf("can't find necessary transaction: %s", winningHash.ToHexString())
-			return nil, errors.New("need necessary transaction")
-		} else {
-			log.Infof("collecting wining hash: %s", winningHash.ToHexString())
-			txns[winningHash] = winningTxn
-			i++
-		}
-	}
-
 	//TODO sort transaction list
 	for hash, txn := range tp.txnList {
-		if !isHashExist(hash, exclusivedHashes) {
-			txns[hash] = txn
-			i++
-			if i >= n {
-				break
-			}
+		txns[hash] = txn
+		i++
+		if i >= n {
+			break
 		}
 	}
 

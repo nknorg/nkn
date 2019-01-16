@@ -3,8 +3,9 @@ package por
 import (
 	"bytes"
 	"errors"
-	"sort"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
@@ -12,22 +13,28 @@ import (
 	"github.com/nknorg/nkn/vault"
 )
 
+const (
+	sigChainTxnCacheExpiration      = 300 * time.Second
+	sigChainTxnCacheCleanupInterval = 10 * time.Second
+)
+
 type PorServer struct {
+	account          *vault.Account
+	id               []byte
+	sigChainTxnCache common.Cache
+
 	sync.RWMutex
-	account    *vault.Account
-	id         []byte
-	pors       map[uint32][]*PorPackage
-	minSigHash map[uint32][]byte
+	miningPorPackage map[uint32]*PorPackage
 }
 
 var porServer *PorServer
 
 func NewPorServer(account *vault.Account, id []byte) *PorServer {
 	ps := &PorServer{
-		account:    account,
-		id:         id,
-		pors:       make(map[uint32][]*PorPackage),
-		minSigHash: make(map[uint32][]byte),
+		account:          account,
+		id:               id,
+		sigChainTxnCache: common.NewGoCache(sigChainTxnCacheExpiration, sigChainTxnCacheCleanupInterval),
+		miningPorPackage: make(map[uint32]*PorPackage),
 	}
 	return ps
 }
@@ -119,20 +126,6 @@ func (ps *PorServer) GetSignature(sc *SigChain) ([]byte, error) {
 	return sc.GetSignature()
 }
 
-//TODO subscriber
-func (ps *PorServer) CleanChainList(height uint32) {
-
-	ps.Lock()
-	if height == 0 {
-		ps.pors = make(map[uint32][]*PorPackage)
-	} else {
-		if _, ok := ps.pors[height]; ok {
-			delete(ps.pors, height)
-		}
-	}
-	ps.Unlock()
-}
-
 func (ps *PorServer) LenOfSigChain(sc *SigChain) int {
 	return sc.Length()
 }
@@ -141,107 +134,66 @@ func (ps *PorServer) GetMiningSigChain(height uint32) (*SigChain, error) {
 	ps.RLock()
 	defer ps.RUnlock()
 
-	length := len(ps.pors[height])
-	switch {
-	case length > 1:
-		sort.Sort(PorPackages(ps.pors[height]))
-		fallthrough
-	case length == 1:
-		return ps.pors[height][0].GetSigChain(), nil
-	default:
+	miningPorPackage := ps.miningPorPackage[height]
+	if miningPorPackage == nil {
 		return nil, nil
 	}
+
+	return miningPorPackage.GetSigChain(), nil
 }
 
 func (ps *PorServer) GetMiningSigChainTxnHash(height uint32) (common.Uint256, error) {
-	sigChain, err := ps.GetMiningSigChain(height)
-	if err != nil || sigChain == nil {
-		return common.EmptyUint256, err
-	}
-
-	sigHash, err := sigChain.SignatureHash()
-	if err != nil {
-		return common.EmptyUint256, err
-	}
-
-	txnHash := ps.GetTxnHashBySigChainHash(sigHash, height)
-	if txnHash == common.EmptyUint256 {
-		return common.EmptyUint256, errors.New("signature chain doesn't exist")
-	}
-
-	return txnHash, nil
-}
-
-func (ps *PorServer) GetSigChain(height uint32, hash common.Uint256) (*SigChain, error) {
 	ps.RLock()
 	defer ps.RUnlock()
 
-	for _, pkg := range ps.pors[height] {
-		if bytes.Compare(pkg.SigHash, hash[:]) == 0 {
-			return pkg.SigChain, nil
-		}
+	porPackage := ps.miningPorPackage[height]
+	if porPackage == nil {
+		return common.EmptyUint256, nil
 	}
 
-	return nil, errors.New("can't find the signature chain")
+	if _, ok := ps.sigChainTxnCache.Get(porPackage.TxHash); !ok {
+		return common.EmptyUint256, nil
+	}
+
+	return common.Uint256ParseFromBytes(porPackage.TxHash)
 }
 
-func (ps *PorServer) GetTxnHashBySigChainHeight(height uint32) ([]common.Uint256, error) {
-	ps.RLock()
-	defer ps.RUnlock()
-
-	var txnHashes []common.Uint256
-	var porPackages []*PorPackage
-	for h, p := range ps.pors {
-		if h >= height {
-			porPackages = append(porPackages, p...)
-		}
-	}
-	for _, p := range porPackages {
-		hash, err := common.Uint256ParseFromBytes(p.TxHash)
-		if err != nil {
-			return nil, errors.New("invalid transaction hash for por package")
-		}
-		txnHashes = append(txnHashes, hash)
+func (ps *PorServer) GetMiningSigChainTxn(txnHash common.Uint256) (*transaction.Transaction, error) {
+	v, ok := ps.sigChainTxnCache.Get(txnHash[:])
+	if !ok {
+		return nil, fmt.Errorf("sigchain txn %s not found", txnHash.ToHexString())
 	}
 
-	return txnHashes, nil
+	txn, ok := v.(*transaction.Transaction)
+	if !ok {
+		return nil, fmt.Errorf("convert to sigchain txn %s error", txnHash.ToHexString())
+	}
+
+	return txn, nil
 }
 
 func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) (bool, error) {
-	porpkg, err := NewPorPackage(txn)
+	porPkg, err := NewPorPackage(txn)
 	if err != nil {
 		return false, err
 	}
 
-	height := porpkg.GetVoteForHeight()
+	height := porPkg.GetVoteForHeight()
 	ps.Lock()
 	defer ps.Unlock()
 
-	if ps.minSigHash[height] == nil || bytes.Compare(porpkg.SigHash, ps.minSigHash[height]) < 0 {
-		ps.minSigHash[height] = porpkg.SigHash
-	} else {
+	if ps.miningPorPackage[height] != nil && bytes.Compare(porPkg.SigHash, ps.miningPorPackage[height].SigHash) >= 0 {
 		return false, nil
 	}
 
-	ps.pors[height] = append(ps.pors[height], porpkg)
+	err = ps.sigChainTxnCache.Add(porPkg.TxHash, txn)
+	if err != nil {
+		return false, err
+	}
+
+	ps.miningPorPackage[height] = porPkg
 
 	return true, nil
-}
-
-func (ps *PorServer) GetTxnHashBySigChainHash(hash []byte, height uint32) common.Uint256 {
-	ps.RLock()
-	defer ps.RUnlock()
-	for _, pkg := range ps.pors[height] {
-		if bytes.Compare(pkg.SigHash, hash[:]) == 0 {
-			txHash, err := common.Uint256ParseFromBytes(pkg.GetTxHash())
-			if err != nil {
-				log.Error(err)
-				return common.EmptyUint256
-			}
-			return txHash
-		}
-	}
-	return common.EmptyUint256
 }
 
 func (ps *PorServer) GetThreshold() common.Uint256 {

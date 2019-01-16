@@ -321,7 +321,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			case *payload.RegisterAsset:
 				hashs = append(hashs, v1.Controller)
 			default:
-				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], payload is illegal", k))
+				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], payload %v is illegal", k))
 			}
 		}
 	case Prepaid:
