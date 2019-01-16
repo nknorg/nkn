@@ -206,8 +206,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 
 		// msg send to local node
 		if nnetLocalNode != nil {
-			// non-reply msg
-			if len(remoteMessage.Msg.ReplyToId) == 0 {
+			if len(remoteMessage.Msg.ReplyToId) == 0 { // non-reply msg
 				var reply []byte
 				reply, err = localNode.receiveMessage(senderNode, unsignedMsg)
 				if err != nil {
@@ -223,15 +222,14 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 					}
 				}
 
-				return nil, nil, nil, false
-			}
-
-			// reply msg
-			msgBody.Data = unsignedMsg.Message
-			remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
-			if err != nil {
-				log.Errorf("Marshal reply msg body error: %v", err)
-				return nil, nil, nil, false
+				nnetLocalNode = nil
+			} else { // reply msg
+				msgBody.Data = unsignedMsg.Message
+				remoteMessage.Msg.Message, err = proto.Marshal(msgBody)
+				if err != nil {
+					log.Errorf("Marshal reply msg body error: %v", err)
+					return nil, nil, nil, false
+				}
 			}
 		}
 	}
