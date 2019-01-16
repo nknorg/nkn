@@ -157,7 +157,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 
 // GetWinner returns the winner hash and winner type of a block height using
 // sigchain from PoR server.
-func GetWinner(height uint32) (Uint256, WinnerType, error) {
+func GetNextMiningSigChainTxnHash(height uint32) (Uint256, WinnerType, error) {
 	if height < NumGenesisBlocks {
 		return EmptyUint256, GenesisSigner, nil
 	}
@@ -252,18 +252,41 @@ func TimestampCheck(timestamp int64) error {
 	return nil
 }
 
-func NextBlockProposerCheck(header *Header) error {
-	winnerHash, winnerType, err := GetWinner(header.Height)
+func NextBlockProposerCheck(block *Block) error {
+	winnerHash, winnerType, err := GetNextMiningSigChainTxnHash(block.Header.Height)
 	if err != nil {
 		return err
 	}
 
-	if winnerType != header.WinnerType {
-		return fmt.Errorf("Winner type should be %v instead of %v", winnerType, header.WinnerType)
+	if winnerHash == EmptyUint256 && block.Header.WinnerHash != EmptyUint256 {
+		for _, txn := range block.Transactions {
+			if txn.Hash() == block.Header.WinnerHash {
+				_, err = por.NewPorPackage(txn)
+				return err
+			}
+		}
+		return fmt.Errorf("mining sigchain txn %s not found in block", block.Header.WinnerHash.ToHexString())
 	}
 
-	if winnerHash != header.WinnerHash {
-		return fmt.Errorf("Winner type should be %s instead of %s", winnerHash.ToHexString(), header.WinnerHash.ToHexString())
+	if winnerType != block.Header.WinnerType {
+		return fmt.Errorf("Winner type should be %v instead of %v", winnerType, block.Header.WinnerType)
+	}
+
+	if winnerHash != block.Header.WinnerHash {
+		return fmt.Errorf("Winner hash should be %s instead of %s", winnerHash.ToHexString(), block.Header.WinnerHash.ToHexString())
+	}
+
+	if block.Header.WinnerHash != EmptyUint256 {
+		found := false
+		for _, txn := range block.Transactions {
+			if txn.Hash() == block.Header.WinnerHash {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("mining sigchain txn %s not found in block", block.Header.WinnerHash.ToHexString())
+		}
 	}
 
 	return nil

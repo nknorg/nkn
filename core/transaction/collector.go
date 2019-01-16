@@ -11,7 +11,7 @@ const (
 
 // Transaction pool should be a concrete entity of this interface
 type TxnSource interface {
-	GetTxnByCount(num int, hash Uint256) (map[Uint256]*Transaction, error)
+	GetTxnByCount(num int) (map[Uint256]*Transaction, error)
 	GetTransaction(hash Uint256) *Transaction
 	AppendTxnPool(txn *Transaction) errors.ErrCode
 	CleanSubmittedTransactions(txns []*Transaction) error
@@ -39,8 +39,8 @@ func NewTxnCollector(source TxnSource, num int) *TxnCollector {
 	}
 }
 
-func (tc *TxnCollector) Collect(winningHash Uint256) (map[Uint256]*Transaction, error) {
-	return tc.TxnSource.GetTxnByCount(tc.TxnNum, winningHash)
+func (tc *TxnCollector) Collect() (map[Uint256]*Transaction, error) {
+	return tc.TxnSource.GetTxnByCount(tc.TxnNum)
 }
 
 func (tc *TxnCollector) GetTransaction(hash Uint256) *Transaction {

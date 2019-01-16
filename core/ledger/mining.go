@@ -10,8 +10,8 @@ import (
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/crypto/util"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
 
@@ -37,9 +37,18 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	coinbase := bm.CreateCoinbaseTransaction()
 	txnList = append(txnList, coinbase)
 	txnHashList = append(txnHashList, coinbase.Hash())
-	txns, err := bm.txnCollector.Collect(winningHash)
+
+	if winnerType == TxnSigner {
+		miningSigChainTxn, err := por.GetPorServer().GetMiningSigChainTxn(winningHash)
+		if err != nil {
+			return nil, err
+		}
+		txnList = append(txnList, miningSigChainTxn)
+		txnHashList = append(txnHashList, miningSigChainTxn.Hash())
+	}
+
+	txns, err := bm.txnCollector.Collect()
 	if err != nil {
-		log.Error("collect transaction error: ", err)
 		return nil, err
 	}
 	for txnHash, txn := range txns {
