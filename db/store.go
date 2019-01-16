@@ -16,13 +16,13 @@ import (
 	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/util/address"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
 
 const (
 	HeaderHashListCount = 2000
 	CleanCacheThreshold = 2
-	TaskChanCap         = 4
 )
 
 var (
@@ -83,7 +83,7 @@ func NewChainStore(file string) (*ChainStore, error) {
 		headerCache:        map[Uint256]*Header{},
 		currentBlockHeight: 0,
 		storedHeaderCount:  0,
-		taskCh:             make(chan persistTask, TaskChanCap),
+		taskCh:             make(chan persistTask, config.Parameters.SyncBatchWindowSize*config.Parameters.SyncBlocksBatchSize),
 		quit:               make(chan chan bool, 1),
 	}
 
@@ -326,9 +326,9 @@ func (cs *ChainStore) GetContract(codeHash Uint160) ([]byte, error) {
 
 func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*Header, error) {
 	cs.mu.RLock()
-	if _, ok := cs.headerCache[hash]; ok {
+	if header, ok := cs.headerCache[hash]; ok {
 		cs.mu.RUnlock()
-		return cs.headerCache[hash], nil
+		return header, nil
 	}
 	cs.mu.RUnlock()
 
@@ -1173,27 +1173,10 @@ func (cs *ChainStore) SaveBlock(b *Block, ledger *Ledger) error {
 	}
 
 	if b.Header.Height == headerHeight {
-		//err := VerifyBlock(b, ledger, false)
-		//if err != nil {
-		//	log.Error("VerifyBlock error!")
-		//	return err
-		//}
-
-		cs.taskCh <- &persistHeaderTask{header: b.Header}
-	} else {
-		//flag, err := validation.VerifySignableData(b)
-		//if flag == false || err != nil {
-		//	log.Error("VerifyBlock error!")
-		//	return err
-		//}
+		cs.handlePersistHeaderTask(b.Header)
 	}
 
-	cs.addBlockToCache(b)
-
-	select {
-	case cs.taskCh <- &persistBlockTask{block: b, ledger: ledger}:
-	default:
-	}
+	cs.taskCh <- &persistBlockTask{block: b, ledger: ledger}
 
 	return nil
 }
