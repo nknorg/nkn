@@ -29,7 +29,9 @@ func (s *Subscribe) Serialize(w io.Writer, version byte) error {
 	serialization.WriteVarBytes(w, s.Subscriber)
 	serialization.WriteVarString(w, s.Identifier)
 	serialization.WriteVarString(w, s.Topic)
-	serialization.WriteUint32(w, s.Bucket)
+	if version == 1 {
+		serialization.WriteUint32(w, s.Bucket)
+	}
 	serialization.WriteUint32(w, s.Duration)
 	return nil
 }
@@ -48,9 +50,11 @@ func (s *Subscribe) Deserialize(r io.Reader, version byte) error {
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[Subscribe], Topic Deserialize failed.")
 	}
-	s.Bucket, err = serialization.ReadUint32(r)
-	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "[Subscribe], Bucket Deserialize failed.")
+	if version == 1 {
+		s.Bucket, err = serialization.ReadUint32(r)
+		if err != nil {
+			return NewDetailErr(err, ErrNoCode, "[Subscribe], Bucket Deserialize failed.")
+		}
 	}
 	s.Duration, err = serialization.ReadUint32(r)
 	if err != nil {
