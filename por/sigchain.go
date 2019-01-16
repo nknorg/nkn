@@ -295,9 +295,9 @@ func (sc *SigChain) VerifyPath() error {
 
 	var t big.Int
 	lastNodeAddr := sc.Elems[len(sc.Elems)-2].Addr
-	prevDistance := chord.Distance(sc.Elems[1].Addr, lastNodeAddr, config.NodeIDBytes)
+	prevDistance := chord.Distance(sc.Elems[1].Addr, lastNodeAddr, config.NodeIDBytes*8)
 	for i := 2; i < len(sc.Elems)-2; i++ {
-		dist := chord.Distance(sc.Elems[i].Addr, lastNodeAddr, config.NodeIDBytes)
+		dist := chord.Distance(sc.Elems[i].Addr, lastNodeAddr, config.NodeIDBytes*8)
 		(&t).Mul(dist, big.NewInt(2))
 		if t.Cmp(prevDistance) > 0 {
 			return fmt.Errorf("signature chain path is invalid")

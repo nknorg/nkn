@@ -23,7 +23,7 @@ func (consensus *Consensus) startProposing() {
 
 				block, err := consensus.proposeBlock(expectedHeight, timestamp)
 				if err != nil {
-					log.Error(err)
+					log.Errorf("Propose block %d at %v error: %v", expectedHeight, timestamp, err)
 					break
 				}
 
@@ -71,7 +71,7 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 
 // proposeBlock proposes a new block at give height and timestamp
 func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*ledger.Block, error) {
-	winnerHash, winnerType, err := ledger.GetWinner(height)
+	winnerHash, winnerType, err := ledger.GetNextMiningSigChainTxnHash(height)
 	if err != nil {
 		return nil, err
 	}

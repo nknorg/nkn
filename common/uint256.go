@@ -31,12 +31,7 @@ func (u *Uint256) CompareTo(o Uint256) int {
 }
 
 func (u *Uint256) ToArray() []byte {
-	var x = make([]byte, UINT256SIZE)
-	for i := 0; i < 32; i++ {
-		x[i] = byte(u[i])
-	}
-
-	return x
+	return u[:]
 }
 func (u *Uint256) ToArrayReverse() []byte {
 	var x = make([]byte, UINT256SIZE)
