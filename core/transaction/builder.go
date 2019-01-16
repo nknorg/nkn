@@ -193,6 +193,7 @@ func NewSubscribeTransaction(subscriber []byte, identifier string, topic string,
 
 	return &Transaction{
 		TxType:  Subscribe,
+		PayloadVersion: 1,
 		Payload: SubscribePayload,
 		Attributes: []*TxnAttribute{
 			{
