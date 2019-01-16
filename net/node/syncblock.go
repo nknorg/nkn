@@ -11,15 +11,13 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/net/node/consequential"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
 
 const (
-	concurrentSyncRequestPerNeighbor = 2
-	syncBatchWindowSize              = 1024
-	syncBlockHeadersBatchSize        = 256
+	concurrentSyncRequestPerNeighbor = 1
 	maxSyncBlockHeadersBatchSize     = 1024
-	syncBlocksBatchSize              = 8
 	maxSyncBlocksBatchSize           = 32
 	syncReplyTimeout                 = 20 * time.Second
 	maxSyncWorkerFails               = 3
@@ -346,7 +344,7 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 		}
 
 		startTime := time.Now()
-		err = localNode.syncBlockHeaders(currentHeight+1, stopHeight, currentHash, stopHash, neighbors)
+		headersHash, err := localNode.syncBlockHeaders(currentHeight+1, stopHeight, currentHash, stopHash, neighbors)
 		if err != nil {
 			err = fmt.Errorf("sync block headers error: %v", err)
 			return
@@ -355,7 +353,7 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 		log.Infof("Synced %d block headers in %s", stopHeight-currentHeight, time.Since(startTime))
 
 		startTime = time.Now()
-		err = localNode.syncBlocks(currentHeight+1, stopHeight, neighbors)
+		err = localNode.syncBlocks(currentHeight+1, stopHeight, neighbors, headersHash)
 		if err != nil {
 			err = fmt.Errorf("sync blocks error: %v", err)
 			return
@@ -376,14 +374,15 @@ func (localNode *LocalNode) ResetSyncing() {
 	localNode.syncOnce = new(sync.Once)
 }
 
-func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, startPrevHash, stopHash common.Uint256, neighbors []*RemoteNode) error {
-	headers := make([]*ledger.Header, stopHeight-startHeight+1, stopHeight-startHeight+1)
-	numBatches := (stopHeight-startHeight)/syncBlockHeadersBatchSize + 1
+func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, startPrevHash, stopHash common.Uint256, neighbors []*RemoteNode) ([]common.Uint256, error) {
+	var nextHeader *ledger.Header
+	headersHash := make([]common.Uint256, stopHeight-startHeight+1, stopHeight-startHeight+1)
+	numBatches := (stopHeight-startHeight)/config.Parameters.SyncBlockHeadersBatchSize + 1
 	numWorkers := uint32(len(neighbors)) * concurrentSyncRequestPerNeighbor
 
 	getBatchHeightRange := func(batchID uint32) (uint32, uint32) {
-		batchStartHeight := startHeight + batchID*syncBlockHeadersBatchSize
-		batchEndHeight := batchStartHeight + syncBlockHeadersBatchSize - 1
+		batchStartHeight := startHeight + batchID*config.Parameters.SyncBlockHeadersBatchSize
+		batchEndHeight := batchStartHeight + config.Parameters.SyncBlockHeadersBatchSize - 1
 		if batchEndHeight > stopHeight {
 			batchEndHeight = stopHeight
 		}
@@ -419,7 +418,6 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 				return false
 			}
 			if height < stopHeight {
-				nextHeader := headers[height-startHeight+1]
 				if nextHeader == nil || headerHash != nextHeader.PrevBlockHash {
 					log.Warningf("Header hash %s is different from prev hash in next block %s", (&headerHash).ToHexString(), nextHeader.PrevBlockHash.ToHexString())
 					return false
@@ -429,7 +427,8 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 				log.Warningf("Start header prev hash %s is different from start prev hash %s", header.PrevBlockHash.ToHexString(), startPrevHash.ToHexString())
 				return false
 			}
-			headers[height-startHeight] = header
+			headersHash[height-startHeight] = headerHash
+			nextHeader = header
 		}
 		return true
 	}
@@ -437,7 +436,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 	cs, err := consequential.NewConSequential(&consequential.Config{
 		StartJobID:          numBatches - 1,
 		EndJobID:            0,
-		JobBufSize:          syncBatchWindowSize,
+		JobBufSize:          config.Parameters.SyncBatchWindowSize,
 		WorkerPoolSize:      numWorkers,
 		MaxWorkerFails:      maxSyncWorkerFails,
 		WorkerStartInterval: syncWorkerStartInterval,
@@ -445,29 +444,24 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		FinishJob:           saveHeader,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = cs.Start()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = ledger.DefaultLedger.Store.AddHeaders(headers)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return headersHash, nil
 }
 
-func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors []*RemoteNode) error {
-	numBatches := (stopHeight-startHeight)/syncBlocksBatchSize + 1
+func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors []*RemoteNode, headersHash []common.Uint256) error {
+	numBatches := (stopHeight-startHeight)/config.Parameters.SyncBlocksBatchSize + 1
 	numWorkers := uint32(len(neighbors)) * concurrentSyncRequestPerNeighbor
 
 	getBatchHeightRange := func(batchID uint32) (uint32, uint32) {
-		batchStartHeight := startHeight + batchID*syncBlocksBatchSize
-		batchEndHeight := batchStartHeight + syncBlocksBatchSize - 1
+		batchStartHeight := startHeight + batchID*config.Parameters.SyncBlocksBatchSize
+		batchEndHeight := batchStartHeight + config.Parameters.SyncBlocksBatchSize - 1
 		if batchEndHeight > stopHeight {
 			batchEndHeight = stopHeight
 		}
@@ -498,7 +492,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors
 		for height := batchStartHeight; height <= batchEndHeight; height++ {
 			block := batchBlocks[height-batchStartHeight]
 			blockHash := block.Header.Hash()
-			headerHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(height)
+			headerHash := headersHash[height-startHeight]
 			if blockHash != headerHash {
 				log.Warningf("Block hash %s is different from header hash %s", (&blockHash).ToHexString(), (&headerHash).ToHexString())
 				return false
@@ -516,7 +510,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors
 	cs, err := consequential.NewConSequential(&consequential.Config{
 		StartJobID:          0,
 		EndJobID:            numBatches - 1,
-		JobBufSize:          syncBatchWindowSize,
+		JobBufSize:          config.Parameters.SyncBatchWindowSize,
 		WorkerPoolSize:      numWorkers,
 		MaxWorkerFails:      maxSyncWorkerFails,
 		WorkerStartInterval: syncWorkerStartInterval,
