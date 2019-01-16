@@ -213,9 +213,12 @@ func nknMain(c *cli.Context) error {
 		go func() {
 			for {
 				time.Sleep(time.Minute)
+				err = fmt.Errorf("Node has no neighbors and is too lonely to run")
 				if localNode.GetConnectionCnt() == 0 {
-					log.Error("Node has no neighbors and is too lonely to run")
-					panic("Node has no neighbors and is too lonely to run")
+					panic(err)
+				}
+				if nnetNeighbors, _ := nn.GetLocalNode().GetNeighbors(nil); len(nnetNeighbors) == 0 {
+					panic(err)
 				}
 			}
 		}()
