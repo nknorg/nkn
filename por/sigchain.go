@@ -26,7 +26,10 @@ import (
 // 1. Sign: sign the element created in Sign
 
 // TODO: move sigAlgo to config.json
-const sigAlgo = ECDSA
+const (
+	sigAlgo                    = ECDSA
+	bitShiftPerSigChainElement = 2
+)
 
 func (sce *SigChainElem) SerializationUnsigned(w io.Writer) error {
 	err := serialization.WriteVarBytes(w, sce.Addr)
@@ -465,8 +468,10 @@ func (sc *SigChain) SignatureHash() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	sigHash := sha256.Sum256(signature)
-	return sigHash[:], nil
+	sigHashArray := sha256.Sum256(signature)
+	sigHash := sigHashArray[:]
+	rightShiftBytes(sigHash, bitShiftPerSigChainElement*sc.Length())
+	return sigHash, nil
 }
 
 func (sc *SigChain) GetOwner() ([]byte, error) {
