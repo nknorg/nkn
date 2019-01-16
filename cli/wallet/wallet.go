@@ -63,7 +63,11 @@ func walletAction(c *cli.Context) error {
 		fmt.Fprintln(os.Stderr, "invalid wallet name")
 		os.Exit(1)
 	}
+	// get password from the command line or from environment variable
 	passwd := c.String("password")
+	if passwd == "" {
+		passwd = os.Getenv("NKN_PASSWORD")
+	}
 
 	// create wallet
 	if c.Bool("create") {
