@@ -46,7 +46,7 @@ var (
 		SeedList: []string{
 			"http://127.0.0.1:30003",
 		},
-		SyncBatchWindowSize:       256,
+		SyncBatchWindowSize:       1024,
 		SyncBlockHeadersBatchSize: 256,
 		SyncBlocksBatchSize:       8,
 	}
