@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/url"
 	"sync"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/core/ledger"
@@ -23,19 +22,6 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
 	"github.com/nknorg/nnet/overlay/routing"
-)
-
-const (
-	MaxSyncHeaderReq     = 2                // max concurrent sync header request count
-	MaxMsgChanNum        = 2048             // max goroutine num for message handler
-	ConnectionMaxBackoff = 4000             // back off for retry
-	MaxRetryCount        = 3                // max retry count
-	KeepAliveTicker      = 3 * time.Second  // ticker for ping/pong and keepalive message
-	KeepaliveTimeout     = 9 * time.Second  // timeout for keeping alive
-	BlockSyncingTicker   = 3 * time.Second  // ticker for syncing block
-	ConnectionTicker     = 10 * time.Second // ticker for connection
-	MaxReqBlkOnce        = 16               // max block count requested
-	ConnectingTimeout    = 10 * time.Second // timeout for waiting for connection
 )
 
 type LocalNode struct {
