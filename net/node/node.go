@@ -12,6 +12,8 @@ import (
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
+var NodeRelayMessage uint64 = 0
+
 type Node struct {
 	*nnetpb.Node
 	*pb.NodeData
