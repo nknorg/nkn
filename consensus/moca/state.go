@@ -114,7 +114,7 @@ func (consensus *Consensus) getNeighborsMajorityConsensusHeight() uint32 {
 		}
 
 		for consensusHeight, count := range counter {
-			if count > int(consensusMinRelativeWeight*float32(totalCount)+1) {
+			if count > int(consensusMinRelativeWeight*float32(totalCount)) {
 				return consensusHeight
 			}
 		}
