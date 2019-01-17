@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"sync/atomic"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/crypto"
@@ -202,6 +203,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				log.Errorf("Marshal new relay msg body error: %v", err)
 				return nil, nil, nil, false
 			}
+			atomic.AddUint64(&NodeRelayMessage, 1)
 		}
 
 		// msg send to local node
