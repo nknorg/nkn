@@ -273,10 +273,13 @@ func (cs *ChainStore) rollbackNames(b *ledger.Block) error {
 
 	for _, txn := range b.Transactions {
 		if txn.TxType == tx.DeleteName {
-			deleteNamePayload := txn.Payload.(*payload.DeleteName)
-			err := cs.SaveName(deleteNamePayload.Registrant, deleteNamePayload.Name)
-			if err != nil {
-				return err
+			version := txn.PayloadVersion
+			if version > 0 { // can't rollback DeleteName tx with version 0
+				deleteNamePayload := txn.Payload.(*payload.DeleteName)
+				err := cs.SaveName(deleteNamePayload.Registrant, deleteNamePayload.Name)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
