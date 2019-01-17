@@ -171,6 +171,7 @@ func NewDeleteNameTransaction(registrant []byte, name string) (*Transaction, err
 
 	return &Transaction{
 		TxType:  DeleteName,
+		PayloadVersion: 1,
 		Payload: DeleteNamePayload,
 		Attributes: []*TxnAttribute{
 			{
