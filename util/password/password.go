@@ -53,10 +53,10 @@ func GetConfirmedPassword() ([]byte, error) {
 }
 
 // GetAccountPassword gets the node's wallet password from the command line,
-// the NKN_PASSWORD environment variable, or from user input - in this order
+// the NKN_WALLET_PASSWORD environment variable, or user input, in this order
 func GetAccountPassword() ([]byte, error) {
 	if Passwd == "" {
-		Passwd = os.Getenv("NKN_PASSWORD")
+		Passwd = os.Getenv("NKN_WALLET_PASSWORD")
 	}
 	if Passwd == "" {
 		return GetPassword()

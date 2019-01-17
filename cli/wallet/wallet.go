@@ -66,7 +66,7 @@ func walletAction(c *cli.Context) error {
 	// get password from the command line or from environment variable
 	passwd := c.String("password")
 	if passwd == "" {
-		passwd = os.Getenv("NKN_PASSWORD")
+		passwd = os.Getenv("NKN_WALLET_PASSWORD")
 	}
 
 	// create wallet
