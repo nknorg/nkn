@@ -158,7 +158,7 @@ func (consensus *Consensus) loadOrCreateElection(key []byte) (*election.Election
 	})
 	totalWeight := len(consensusNeighbors)
 	if consensus.localNode.GetSyncState() == pb.PersistFinished {
-		totalWeight += 1
+		totalWeight++
 	}
 
 	config := &election.Config{

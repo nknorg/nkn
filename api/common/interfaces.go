@@ -791,7 +791,7 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 		}
 		addr, err := localNode.FindWsAddr(clientID)
 		if err != nil {
-			log.Error("Cannot get websocket address")
+			log.Errorf("Find websocket address error: %v", err)
 			return respPacking(nil, INTERNAL_ERROR)
 		}
 		return respPacking(addr, SUCCESS)
