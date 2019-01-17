@@ -204,9 +204,7 @@ func (localNode *LocalNode) GetHeight() uint32 {
 }
 
 func (localNode *LocalNode) SetSyncState(s pb.SyncState) {
-	localNode.Node.Lock()
-	defer localNode.Node.Unlock()
-	localNode.syncState = s
+	localNode.Node.SetSyncState(s)
 	log.Infof("Set sync state to %s", s.String())
 }
 
