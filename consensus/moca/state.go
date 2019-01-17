@@ -91,6 +91,8 @@ func (consensus *Consensus) getAllNeighborsConsensusState() (*sync.Map, error) {
 // consensus height, or zero if no majority can be found
 func (consensus *Consensus) getNeighborsMajorityConsensusHeight() uint32 {
 	for i := 0; i < getConsensusStateRetries; i++ {
+		time.Sleep(getConsensusStateRetryDelay)
+
 		allInfo, err := consensus.getAllNeighborsConsensusState()
 		if err != nil {
 			log.Warningf("Get neighbors latest block info error: %v", err)
@@ -118,8 +120,6 @@ func (consensus *Consensus) getNeighborsMajorityConsensusHeight() uint32 {
 				return consensusHeight
 			}
 		}
-
-		time.Sleep(getConsensusStateRetryDelay)
 	}
 
 	return 0
