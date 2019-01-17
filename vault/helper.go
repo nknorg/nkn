@@ -280,7 +280,7 @@ func MakeRegisterNameTransaction(wallet Wallet, name string) (*transaction.Trans
 	return txn, nil
 }
 
-func MakeDeleteNameTransaction(wallet Wallet) (*transaction.Transaction, error) {
+func MakeDeleteNameTransaction(wallet Wallet, name string) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -289,7 +289,7 @@ func MakeDeleteNameTransaction(wallet Wallet) (*transaction.Transaction, error) 
 	if err != nil {
 		return nil, err
 	}
-	txn, err := transaction.NewDeleteNameTransaction(registrant)
+	txn, err := transaction.NewDeleteNameTransaction(registrant, name)
 	if err != nil {
 		return nil, err
 	}
