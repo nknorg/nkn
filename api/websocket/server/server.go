@@ -148,7 +148,7 @@ func (ws *WsServer) registryMethod() {
 
 		addr, err := localNode.FindWsAddr(clientID)
 		if err != nil {
-			log.Error("Cannot get websocket address")
+			log.Errorf("Find websocket address error: %v", err)
 			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
 
@@ -455,7 +455,7 @@ func (ws *WsServer) NotifyWrongClients() {
 
 		addr, err := localNode.FindWsAddr(clientID)
 		if err != nil {
-			log.Error("Cannot get websocket address")
+			log.Errorf("Find websocket address error: %v", err)
 			return
 		}
 
