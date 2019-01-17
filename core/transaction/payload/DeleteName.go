@@ -23,7 +23,9 @@ func (a *DeleteName) Data(version byte) []byte {
 
 func (a *DeleteName) Serialize(w io.Writer, version byte) error {
 	serialization.WriteVarBytes(w, a.Registrant)
-	serialization.WriteVarString(w, a.Name)
+	if version == 1 {
+		serialization.WriteVarString(w, a.Name)
+	}
 	return nil
 }
 
@@ -33,9 +35,11 @@ func (a *DeleteName) Deserialize(r io.Reader, version byte) error {
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[DeleteName], Registrant Deserialize failed.")
 	}
-	a.Name, err = serialization.ReadVarString(r)
-	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "[DeleteName], Name Deserialize failed.")
+	if version == 1 {
+		a.Name, err = serialization.ReadVarString(r)
+		if err != nil {
+			return NewDetailErr(err, ErrNoCode, "[DeleteName], Name Deserialize failed.")
+		}
 	}
 	return nil
 }
