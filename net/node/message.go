@@ -253,17 +253,12 @@ func (localNode *LocalNode) receiveMessage(sender *Node, unsignedMsg *pb.Unsigne
 
 	for _, handler := range localNode.GetMessageHandlers(unsignedMsg.MessageType) {
 		reply, shouldCallNext, err = handler(remoteMessage)
-		if err != nil {
-			log.Errorf("Get error when handling message: %v", err)
-			continue
-		}
-
-		if !shouldCallNext {
+		if err != nil || !shouldCallNext {
 			break
 		}
 	}
 
-	return reply, nil
+	return reply, err
 }
 
 // checkMessageType checks if a message type is allowed
