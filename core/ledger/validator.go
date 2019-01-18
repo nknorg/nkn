@@ -247,8 +247,9 @@ func TimestampCheck(timestamp int64) error {
 	latest := now.Add(TimestampTolerance)
 
 	if t.Before(earliest) || t.After(latest) {
-		return fmt.Errorf("timestamp %d exceed my tolerance [%d, %d]", timestamp, earliest.Unix(), latest.Unix())
+		return fmt.Errorf("timestamp %v exceed my tolerance [%v, %v]", t, earliest, latest)
 	}
+
 	return nil
 }
 
