@@ -78,36 +78,44 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 		return nil, nil, 0, err
 	}
 
-	// calculate time difference
-	var timeDiff int64
-	genesisBlockHash, err := DefaultLedger.Store.GetBlockHash(0)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	genesisBlock, err := DefaultLedger.Store.GetBlock(genesisBlockHash)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	prevTimestamp := header.Timestamp
-	if prevTimestamp == genesisBlock.Header.Timestamp {
-		timeDiff = 0
-	} else {
-		timeDiff = timestamp - prevTimestamp
-	}
-
-	// get miner who will sign next block
 	var publicKey []byte
 	var chordID []byte
-	var winnerType WinnerType
+	winnerType := header.WinnerType
+
+	if winnerType == GenesisSigner {
+		genesisBlockHash, err := DefaultLedger.Store.GetBlockHash(0)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+
+		genesisBlock, err := DefaultLedger.Store.GetBlock(genesisBlockHash)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+
+		publicKey, chordID, err = genesisBlock.GetSigner()
+		if err != nil {
+			return nil, nil, 0, err
+		}
+
+		return publicKey, chordID, GenesisSigner, nil
+	}
+
+	// calculate time difference
+	timeSinceLastBlock := timestamp - header.Timestamp
+
+	if timeSinceLastBlock <= 0 {
+		return nil, nil, 0, fmt.Errorf("timestamp %d is earlier than previous block timestamp %d", timestamp, header.Timestamp)
+	}
 
 	timeSlot := int64(config.ProposerChangeTime / time.Second)
 
-	if timeDiff >= timeSlot {
+	if timeSinceLastBlock >= timeSlot {
 		winnerType = BlockSigner
 
 		// This is a temporary solution
 		proposerBlockHeight := 0
-		// index := timeDiff / timeSlot
+		// index := timeSinceLastBlock / timeSlot
 		// proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - index
 		// if proposerBlockHeight < 0 {
 		// proposerBlockHeight = 0
@@ -126,16 +134,9 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			return nil, nil, 0, err
 		}
 	} else {
-		winnerHash := header.WinnerHash
-		winnerType = header.WinnerType
 		switch winnerType {
-		case GenesisSigner:
-			publicKey, chordID, err = genesisBlock.GetSigner()
-			if err != nil {
-				return nil, nil, 0, err
-			}
 		case TxnSigner:
-			txn, err := DefaultLedger.Store.GetTransaction(winnerHash)
+			txn, err := DefaultLedger.Store.GetTransaction(header.WinnerHash)
 			if err != nil {
 				return nil, nil, 0, err
 			}
@@ -149,6 +150,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			if err != nil {
 				return nil, nil, 0, err
 			}
+		case BlockSigner:
 		}
 	}
 
