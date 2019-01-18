@@ -35,6 +35,7 @@ type LocalNode struct {
 	*pool.TxnPool                // transaction pool of local node
 	*hashCache                   // entity hash cache
 	*messageHandlerStore
+	relayMessageCount int        // count node relayData
 
 	sync.RWMutex
 	syncOnce *sync.Once
@@ -55,7 +56,8 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 
 	out["height"] = localNode.GetHeight()
 	out["version"] = config.Version
-
+	out["relayMessageCount"] = localNode.relayMessageCount
+	
 	return json.Marshal(out)
 }
 
