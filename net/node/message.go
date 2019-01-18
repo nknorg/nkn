@@ -202,9 +202,8 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				log.Errorf("Marshal new relay msg body error: %v", err)
 				return nil, nil, nil, false
 			}
-			localNode.RWMutex.Lock()
-			localNode.relayMessageCount++
-			localNode.RWMutex.Unlock()
+
+			localNode.IncrementRelayMessageCount()
 		}
 
 		// msg send to local node
