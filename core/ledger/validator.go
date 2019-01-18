@@ -101,13 +101,12 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 		return publicKey, chordID, GenesisSigner, nil
 	}
 
-	// calculate time difference
-	timeSinceLastBlock := timestamp - header.Timestamp
-
-	if timeSinceLastBlock <= 0 {
+	if timestamp <= header.Timestamp {
 		return nil, nil, 0, fmt.Errorf("timestamp %d is earlier than previous block timestamp %d", timestamp, header.Timestamp)
 	}
 
+	// calculate time difference
+	timeSinceLastBlock := timestamp - header.Timestamp
 	timeSlot := int64(config.ProposerChangeTime / time.Second)
 
 	if timeSinceLastBlock >= timeSlot {
