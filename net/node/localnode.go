@@ -37,8 +37,8 @@ type LocalNode struct {
 	*messageHandlerStore
 
 	sync.RWMutex
-	syncOnce *sync.Once
-	relayMessageCount int        // count node relayData
+	syncOnce          *sync.Once
+	relayMessageCount uint64 // count how many messages node has relayed since start
 }
 
 func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
@@ -56,7 +56,7 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 
 	out["height"] = localNode.GetHeight()
 	out["version"] = config.Version
-	out["relayMessageCount"] = localNode.relayMessageCount
+	out["relayMessageCount"] = localNode.GetRelayMessageCount()
 
 	return json.Marshal(out)
 }
@@ -195,6 +195,18 @@ func (localNode *LocalNode) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) 
 		return localNode.addRemoteNode(remoteNode)
 	}
 	return nil
+}
+
+func (localNode *LocalNode) GetRelayMessageCount() uint64 {
+	localNode.RLock()
+	defer localNode.RUnlock()
+	return localNode.relayMessageCount
+}
+
+func (localNode *LocalNode) IncrementRelayMessageCount() {
+	localNode.Lock()
+	localNode.relayMessageCount++
+	localNode.Unlock()
 }
 
 func (localNode *LocalNode) GetTxnPool() *pool.TxnPool {
