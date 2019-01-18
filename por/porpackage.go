@@ -3,6 +3,7 @@ package por
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
@@ -88,6 +89,11 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if blockHash == EmptyUint256 {
+		return nil, fmt.Errorf("block hash in sigchain is empty")
+	}
+
 	height, err := Store.GetHeightByBlockHash(blockHash)
 	if err != nil {
 		return nil, err

@@ -54,10 +54,13 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 
 	// get signature chain from commit transaction then add it to POR server
 	if txn.TxType == Commit {
-		_, err := por.GetPorServer().AddSigChainFromTx(txn)
+		added, err := por.GetPorServer().AddSigChainFromTx(txn)
 		if err != nil {
 			log.Infof("Add sigchain from transaction error: %v", err)
 			return ErrerCode(NewDetailErr(err, ErrNoCode, err.Error()))
+		}
+		if !added {
+			return ErrNonOptimalSigChain
 		}
 		return ErrNoError
 	}
