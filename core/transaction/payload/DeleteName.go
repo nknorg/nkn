@@ -12,6 +12,7 @@ import (
 
 type DeleteName struct {
 	Registrant []byte
+	Name       string
 }
 
 func (a *DeleteName) Data(version byte) []byte {
@@ -22,6 +23,9 @@ func (a *DeleteName) Data(version byte) []byte {
 
 func (a *DeleteName) Serialize(w io.Writer, version byte) error {
 	serialization.WriteVarBytes(w, a.Registrant)
+	if version == 1 {
+		serialization.WriteVarString(w, a.Name)
+	}
 	return nil
 }
 
@@ -29,7 +33,13 @@ func (a *DeleteName) Deserialize(r io.Reader, version byte) error {
 	var err error
 	a.Registrant, err = serialization.ReadVarBytes(r)
 	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "[RegisterName], Registrant Deserialize failed.")
+		return NewDetailErr(err, ErrNoCode, "[DeleteName], Registrant Deserialize failed.")
+	}
+	if version == 1 {
+		a.Name, err = serialization.ReadVarString(r)
+		if err != nil {
+			return NewDetailErr(err, ErrNoCode, "[DeleteName], Name Deserialize failed.")
+		}
 	}
 	return nil
 }
@@ -39,12 +49,17 @@ func (a *DeleteName) Equal(b *DeleteName) bool {
 		return false
 	}
 
+	if a.Name != b.Name {
+		return false
+	}
+
 	return true
 }
 
 func (a *DeleteName) MarshalJson() ([]byte, error) {
 	ra := &DeleteNameInfo{
 		Registrant: common.BytesToHexString(a.Registrant),
+		Name:       a.Name,
 	}
 
 	data, err := json.Marshal(ra)
@@ -65,6 +80,7 @@ func (a *DeleteName) UnmarshalJson(data []byte) error {
 	if err != nil {
 		return err
 	}
+	a.Name = ra.Name
 
 	return nil
 }

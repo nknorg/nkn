@@ -174,6 +174,15 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 		case DeleteName:
 			namePayload := txn.Payload.(*payload.DeleteName)
 
+			if txn.PayloadVersion > 0 {
+				name := namePayload.Name
+				if _, ok := registeredNames[name]; ok {
+					log.Warning("[VerifyTransactionWithBlock], duplicate name exist in block.")
+					return ErrDuplicateName
+				}
+				registeredNames[name] = struct{}{}
+			}
+
 			registrant := BytesToHexString(namePayload.Registrant)
 			if _, ok := nameRegistrants[registrant]; ok {
 				log.Warning("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
@@ -383,7 +392,9 @@ func CheckTransactionPayload(txn *Transaction) error {
 		if err != leveldb.ErrNotFound {
 			return err
 		}
-		if name == nil {
+		if txn.PayloadVersion > 0 && *name != pld.Name {
+			return errors.New(fmt.Sprintf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant))
+		} else if name == nil {
 			return errors.New(fmt.Sprintf("no name registered for pubKey %+v", pld.Registrant))
 		}
 	case *payload.Subscribe:

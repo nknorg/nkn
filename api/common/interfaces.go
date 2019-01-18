@@ -609,10 +609,15 @@ func registerName(s Serverer, params map[string]interface{}) map[string]interfac
 }
 
 // deleteName register name to address
-// params: []
+// params: ["name":<name>]
 // return: {"result":<result>, "error":<errcode>}
 func deleteName(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	name, ok := params["name"].(string)
+	if !ok {
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
@@ -620,7 +625,7 @@ func deleteName(s Serverer, params map[string]interface{}) map[string]interface{
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	txn, err := MakeDeleteNameTransaction(wallet)
+	txn, err := MakeDeleteNameTransaction(wallet, name)
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
@@ -800,7 +805,7 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 		}
 		addr, err := localNode.FindWsAddr(clientID)
 		if err != nil {
-			log.Error("Cannot get websocket address")
+			log.Errorf("Find websocket address error: %v", err)
 			return respPacking(nil, INTERNAL_ERROR)
 		}
 		return respPacking(addr, SUCCESS)

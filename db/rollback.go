@@ -41,6 +41,10 @@ func (cs *ChainStore) Rollback(b *ledger.Block) error {
 		return err
 	}
 
+	if err := cs.rollbackNames(b); err != nil {
+		return err
+	}
+
 	if err := cs.rollbackPubSub(b); err != nil {
 		return err
 	}
@@ -249,6 +253,33 @@ func (cs *ChainStore) rollbackAsset(b *ledger.Block) error {
 			txhash := txn.Hash()
 			if err := cs.st.BatchDelete(append([]byte{byte(ST_Info)}, txhash.ToArray()...)); err != nil {
 				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) rollbackNames(b *ledger.Block) error {
+	for _, txn := range b.Transactions {
+		if txn.TxType == tx.RegisterName {
+			registerNamePayload := txn.Payload.(*payload.RegisterName)
+			err := cs.DeleteName(registerNamePayload.Registrant)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, txn := range b.Transactions {
+		if txn.TxType == tx.DeleteName {
+			version := txn.PayloadVersion
+			if version > 0 { // can't rollback DeleteName tx with version 0
+				deleteNamePayload := txn.Payload.(*payload.DeleteName)
+				err := cs.SaveName(deleteNamePayload.Registrant, deleteNamePayload.Name)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
