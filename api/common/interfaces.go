@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"math"
-	"sync/atomic"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
@@ -128,14 +127,6 @@ func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]inte
 // return: {"result":<result>, "error":<errcode>}
 func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]interface{} {
 	return respPacking(ledger.DefaultLedger.Blockchain.BlockHeight, SUCCESS)
-}
-
-func getNodeRelayMessageCount(s Serverer, params map[string]interface{}) map[string]interface{} {
-	ret := map[string]interface{}{
-		"height": ledger.DefaultLedger.Blockchain.BlockHeight,
-		"count":  atomic.LoadUint64(&node.NodeRelayMessage),
-	}
-	return respPacking(ret, SUCCESS)
 }
 
 //// getBlockHash gets the block hash by height
@@ -1253,7 +1244,6 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getblock":                     {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
 	"getblockcount":                {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
 	"getlatestblockheight":         {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getNodeRelayMessageCount":     {Handler: getNodeRelayMessageCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
 	"getblocktxsbyheight":          {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
 	"getconnectioncount":           {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
 	"getrawmempool":                {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC},

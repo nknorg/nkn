@@ -38,6 +38,7 @@ type LocalNode struct {
 
 	sync.RWMutex
 	syncOnce *sync.Once
+	relayMessageCount int        // count node relayData
 }
 
 func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
@@ -55,6 +56,7 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 
 	out["height"] = localNode.GetHeight()
 	out["version"] = config.Version
+	out["relayMessageCount"] = localNode.relayMessageCount
 
 	return json.Marshal(out)
 }
