@@ -34,6 +34,7 @@ const (
 	ErrMineReward            ErrCode = 45016
 	ErrDuplicateSubscription ErrCode = 45017
 	ErrSubscriptionLimit     ErrCode = 45018
+	ErrDoNotPropagate        ErrCode = 45019
 )
 
 var ErrCode2Str = map[ErrCode]string{
@@ -58,6 +59,7 @@ var ErrCode2Str = map[ErrCode]string{
 	ErrMineReward:            "Incorrect Mining reward",
 	ErrDuplicateSubscription: "Duplicate subscription in one block",
 	ErrSubscriptionLimit:     "Subscription limit exceeded in one block",
+	ErrDoNotPropagate:        "Transaction should not be further propagated",
 }
 
 func (err ErrCode) Error() string {

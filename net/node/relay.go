@@ -116,6 +116,9 @@ func (rs *RelayService) receiveClientSignedSigChain(v interface{}) error {
 	}
 
 	errCode := rs.localNode.AppendTxnPool(txn)
+	if errCode == nknErrors.ErrNonOptimalSigChain {
+		return nil
+	}
 	if errCode != nknErrors.ErrNoError {
 		return errCode
 	}
