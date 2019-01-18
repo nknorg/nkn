@@ -85,6 +85,12 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				continue
 			}
 
+			err = ledger.TimestampCheck(proposal.Header.Timestamp)
+			if err != nil {
+				log.Warningf("Ignore proposal that fails to pass timestamp check: %v", err)
+				continue
+			}
+
 			err := ledger.SignerCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Ignore proposal that fails to pass signer check: %v", err)
@@ -111,12 +117,6 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			err = ledger.HeaderCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Proposal fails to pass header check: %v", err)
-				acceptProposal = false
-			}
-
-			err = ledger.TimestampCheck(proposal.Header.Timestamp)
-			if err != nil {
-				log.Warningf("Proposal fails to pass timestamp check: %v", err)
 				acceptProposal = false
 			}
 
