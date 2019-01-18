@@ -13,6 +13,7 @@ import (
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nnet/log"
 )
 
 type Mining interface {
@@ -99,6 +100,17 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 }
 
 func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
+	// Transfer the reward to the beneficiary
+	redeemHash := bm.account.ProgramHash
+	if config.Parameters.BeneficiaryAddr != "" {
+		hash, err := common.ToScriptHash(config.Parameters.BeneficiaryAddr)
+		if err == nil {
+			redeemHash = hash
+		} else {
+			log.Errorf("Convert beneficiary account to redeemhash error: %v", err)
+		}
+	}
+
 	return &transaction.Transaction{
 		TxType:         transaction.Coinbase,
 		PayloadVersion: 0,
@@ -114,7 +126,7 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
 			{
 				AssetID:     DefaultLedger.Blockchain.AssetID,
 				Value:       common.Fixed64(config.DefaultMiningReward * common.StorageFactor),
-				ProgramHash: bm.account.ProgramHash,
+				ProgramHash: redeemHash,
 			},
 		},
 		Programs: []*program.Program{},
