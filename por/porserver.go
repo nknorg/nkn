@@ -172,17 +172,21 @@ func (ps *PorServer) GetMiningSigChainTxn(txnHash common.Uint256) (*transaction.
 	return txn, nil
 }
 
-func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) (bool, error) {
+func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeight uint32) (bool, error) {
 	porPkg, err := NewPorPackage(txn)
 	if err != nil {
 		return false, err
 	}
 
-	height := porPkg.GetVoteForHeight()
+	voteForHeight := porPkg.GetVoteForHeight()
+	if voteForHeight < currentHeight+2 {
+		return false, fmt.Errorf("sigchain vote for height %d is less than %d", voteForHeight, currentHeight+2)
+	}
+
 	ps.Lock()
 	defer ps.Unlock()
 
-	if ps.miningPorPackage[height] != nil && bytes.Compare(porPkg.SigHash, ps.miningPorPackage[height].SigHash) >= 0 {
+	if ps.miningPorPackage[voteForHeight] != nil && bytes.Compare(porPkg.SigHash, ps.miningPorPackage[voteForHeight].SigHash) >= 0 {
 		return false, nil
 	}
 
@@ -191,7 +195,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) (bool, erro
 		return false, err
 	}
 
-	ps.miningPorPackage[height] = porPkg
+	ps.miningPorPackage[voteForHeight] = porPkg
 
 	return true, nil
 }

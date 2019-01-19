@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/ledger"
 	. "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
@@ -42,19 +43,20 @@ func NewTxnPool() *TxnPool {
 //append transaction to txnpool when check ok.
 //1.check transaction. 2.check with ledger(db) 3.check with pool
 func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
+	txnHash := txn.Hash()
 	//verify transaction with Concurrency
 	if errCode := VerifyTransaction(txn); errCode != ErrNoError {
-		log.Info("Transaction verification failed", txn.Hash())
+		log.Infof("Transaction verification failed: %s", txnHash.ToHexString())
 		return errCode
 	}
 	if errCode := VerifyTransactionWithLedger(txn); errCode != ErrNoError {
-		log.Info("Transaction verification with ledger failed", txn.Hash())
+		log.Infof("Transaction verification with ledger failed: %s", txnHash.ToHexString())
 		return errCode
 	}
 
 	// get signature chain from commit transaction then add it to POR server
 	if txn.TxType == Commit {
-		added, err := por.GetPorServer().AddSigChainFromTx(txn)
+		added, err := por.GetPorServer().AddSigChainFromTx(txn, ledger.DefaultLedger.Store.GetHeight())
 		if err != nil {
 			log.Infof("Add sigchain from transaction error: %v", err)
 			return ErrerCode(NewDetailErr(err, ErrNoCode, err.Error()))
