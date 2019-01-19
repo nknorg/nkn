@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	HashCacheExpiration      = 300 * time.Second
-	HashCacheCleanupInterval = 10 * time.Second
+	HashCacheExpiration      = 3600 * time.Second
+	HashCacheCleanupInterval = 60 * time.Second
 )
 
 type hashCache struct {
@@ -22,7 +22,6 @@ func NewHashCache() *hashCache {
 }
 
 func (hc *hashCache) ExistHash(hash common.Uint256) bool {
-	_, ok := hc.cache.Get(hash.ToArray())
-	hc.cache.Set(hash.ToArray(), true)
-	return ok
+	err := hc.cache.Add(hash.ToArray(), struct{}{})
+	return err != nil
 }

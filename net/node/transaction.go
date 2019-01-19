@@ -44,10 +44,6 @@ func NewTransactionsMessage(transactions []*transaction.Transaction) (*pb.Unsign
 
 // transactionsMessageHandler handles a TRANSACTIONS message
 func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
-	if localNode.GetSyncState() != pb.PersistFinished {
-		return nil, false, nil
-	}
-
 	msgBody := &pb.Transactions{}
 	err := proto.Unmarshal(remoteMessage.Message, msgBody)
 	if err != nil {
