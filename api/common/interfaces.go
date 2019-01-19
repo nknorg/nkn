@@ -1073,11 +1073,11 @@ func getUnspends(s Serverer, params map[string]interface{}) map[string]interface
 
 func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) errors.ErrCode {
 	if errCode := localNode.AppendTxnPool(txn); errCode != errors.ErrNoError {
-		log.Warning("Can NOT add the transaction to TxnPool")
+		log.Warningf("Can NOT add the transaction to TxnPool: %v", errCode)
 		return errCode
 	}
 	if err := localNode.BroadcastTransaction(txn); err != nil {
-		log.Error("Xmit Tx Error:Xmit transaction failed.", err)
+		log.Errorf("Broadcast Tx Error: %v", err)
 		return errors.ErrXmitFail
 	}
 	return errors.ErrNoError
