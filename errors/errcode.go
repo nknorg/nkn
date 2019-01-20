@@ -35,6 +35,7 @@ const (
 	ErrDuplicateSubscription ErrCode = 45017
 	ErrSubscriptionLimit     ErrCode = 45018
 	ErrDoNotPropagate        ErrCode = 45019
+	ErrAlreadySubscribed     ErrCode = 45020
 )
 
 var ErrCode2Str = map[ErrCode]string{
@@ -60,6 +61,7 @@ var ErrCode2Str = map[ErrCode]string{
 	ErrDuplicateSubscription: "Duplicate subscription in one block",
 	ErrSubscriptionLimit:     "Subscription limit exceeded in one block",
 	ErrDoNotPropagate:        "Transaction should not be further propagated",
+	ErrAlreadySubscribed:     "Client already subscribed to topic",
 }
 
 func (err ErrCode) Error() string {
