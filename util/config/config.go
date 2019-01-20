@@ -41,7 +41,6 @@ var (
 		NodePort:      30001,
 		HttpWsPort:    30002,
 		HttpJsonPort:  30003,
-		HttpProxyPort: 30004,
 		NAT:           true,
 		LogLevel:      1,
 		SeedList: []string{
@@ -62,8 +61,6 @@ type Configuration struct {
 	RPCKey                    string   `json:"RPCKey"`
 	HttpWsPort                uint16   `json:"HttpWsPort"`
 	HttpJsonPort              uint16   `json:"HttpJsonPort"`
-	HttpProxyPort             uint16   `json:"HttpProxyPort"`
-	HttpProxyDialTimeout      uint16   `json:"HttpProxyDialTimeout"`
 	NodePort                  uint16   `json:"-"`
 	LogLevel                  int      `json:"LogLevel"`
 	IsTLS                     bool     `json:"IsTLS"`
@@ -179,12 +176,6 @@ func (config *Configuration) addPortMapping(nat gonat.NAT) error {
 	}
 	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 
-	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpProxyPort), int(config.HttpProxyPort), "nkn", 10*time.Second)
-	if err != nil {
-		return err
-	}
-	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
-
 	return nil
 }
 
@@ -215,7 +206,6 @@ func (config *Configuration) incrementPort() {
 		config.NodePort,
 		config.HttpWsPort,
 		config.HttpJsonPort,
-		config.HttpProxyPort,
 	}
 	minPort, maxPort := findMinMaxPort(allPorts)
 	step := maxPort - minPort + 1
@@ -247,7 +237,6 @@ func (config *Configuration) incrementPort() {
 	config.NodePort += delta
 	config.HttpWsPort += delta
 	config.HttpJsonPort += delta
-	config.HttpProxyPort += delta
 	if delta > 0 {
 		log.Println("Port in use! All ports are automatically increased by", delta)
 	}
@@ -269,7 +258,6 @@ func (config *Configuration) CheckPorts(myIP string) (bool, error) {
 		config.NodePort,
 		config.HttpWsPort,
 		config.HttpJsonPort,
-		config.HttpProxyPort,
 	}
 	for _, port := range allPorts {
 		log.Printf("Checking TCP port %d", port)
