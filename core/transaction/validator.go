@@ -422,7 +422,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 			return err
 		}
 		if subscribed {
-			return errors.New(fmt.Sprintf("subscriber %s already subscribed to %s", pld.SubscriberString(), topic))
+			return ErrAlreadySubscribed
 		}
 
 		subscriptionCount := Store.GetSubscribersCount(topic, bucket)
