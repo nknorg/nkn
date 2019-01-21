@@ -45,4 +45,5 @@ type SubscribeInfo struct {
 	Topic      string `json:"topic"`
 	Bucket     uint32 `json:"bucket"`
 	Duration   uint32 `json:"duration"`
+	Meta       string `json:"meta"`
 }

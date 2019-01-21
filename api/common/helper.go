@@ -303,7 +303,7 @@ func MakeDeleteNameTransaction(wallet vault.Wallet, name string) (*transaction.T
 	return txn, nil
 }
 
-func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic string, bucket uint32, duration uint32) (*transaction.Transaction, error) {
+func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic string, bucket uint32, duration uint32, meta string) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -312,7 +312,7 @@ func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic stri
 	if err != nil {
 		return nil, err
 	}
-	txn, err := transaction.NewSubscribeTransaction(subscriber, identifier, topic, bucket, duration)
+	txn, err := transaction.NewSubscribeTransaction(subscriber, identifier, topic, bucket, duration, meta)
 	if err != nil {
 		return nil, err
 	}

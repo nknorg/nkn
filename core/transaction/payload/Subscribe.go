@@ -17,6 +17,7 @@ type Subscribe struct {
 	Topic      string
 	Bucket     uint32
 	Duration   uint32
+	Meta       string
 }
 
 func (s *Subscribe) Data(version byte) []byte {
@@ -29,10 +30,13 @@ func (s *Subscribe) Serialize(w io.Writer, version byte) error {
 	serialization.WriteVarBytes(w, s.Subscriber)
 	serialization.WriteVarString(w, s.Identifier)
 	serialization.WriteVarString(w, s.Topic)
-	if version == 1 {
+	if version >= 1 {
 		serialization.WriteUint32(w, s.Bucket)
 	}
 	serialization.WriteUint32(w, s.Duration)
+	if version >= 2 {
+		serialization.WriteVarString(w, s.Meta)
+	}
 	return nil
 }
 
@@ -50,7 +54,7 @@ func (s *Subscribe) Deserialize(r io.Reader, version byte) error {
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[Subscribe], Topic Deserialize failed.")
 	}
-	if version == 1 {
+	if version >= 1 {
 		s.Bucket, err = serialization.ReadUint32(r)
 		if err != nil {
 			return NewDetailErr(err, ErrNoCode, "[Subscribe], Bucket Deserialize failed.")
@@ -59,6 +63,12 @@ func (s *Subscribe) Deserialize(r io.Reader, version byte) error {
 	s.Duration, err = serialization.ReadUint32(r)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[Subscribe], Duration Deserialize failed.")
+	}
+	if version >= 2 {
+		s.Meta, err = serialization.ReadVarString(r)
+		if err != nil {
+			return NewDetailErr(err, ErrNoCode, "[Subscribe], Meta Deserialize failed.")
+		}
 	}
 	return nil
 }
@@ -84,6 +94,10 @@ func (s *Subscribe) Equal(s2 *Subscribe) bool {
 		return false
 	}
 
+	if s.Meta != s2.Meta {
+		return false
+	}
+
 	return true
 }
 
@@ -98,6 +112,7 @@ func (s *Subscribe) MarshalJson() ([]byte, error) {
 		Topic:      s.Topic,
 		Bucket:     s.Bucket,
 		Duration:   s.Duration,
+		Meta:       s.Meta,
 	}
 
 	data, err := json.Marshal(si)
@@ -123,6 +138,8 @@ func (s *Subscribe) UnmarshalJson(data []byte) error {
 	s.Bucket = si.Bucket
 
 	s.Duration = si.Duration
+
+	s.Meta = si.Meta
 
 	return nil
 }
