@@ -577,7 +577,7 @@ func generateSubscriberKey(subscriber []byte, identifier string, topic string, b
 	return subscriberKey.Bytes()
 }
 
-func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic string, bucket uint32, duration uint32, height uint32) error {
+func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic string, bucket uint32, duration uint32, meta string, height uint32) error {
 	if duration == 0 {
 		return nil
 	}
@@ -585,7 +585,7 @@ func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic stri
 	subscriberKey := generateSubscriberKey(subscriber, identifier, topic, bucket)
 
 	// PUT VALUE
-	err := cs.st.BatchPut(subscriberKey, []byte{})
+	err := cs.st.BatchPut(subscriberKey, []byte(meta))
 	if err != nil {
 		return err
 	}
@@ -625,8 +625,8 @@ func (cs *ChainStore) IsSubscribed(subscriber []byte, identifier string, topic s
 	return cs.st.Has(subscriberKey)
 }
 
-func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) []string {
-	subscribers := make([]string, 0)
+func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) map[string]string {
+	subscribers := make(map[string]string, 0)
 
 	prefix := generateTopicBucketKey(topic, bucket)
 	iter := cs.st.NewIterator(prefix)
@@ -640,7 +640,7 @@ func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) []string {
 		identifier, _ := serialization.ReadVarString(rk)
 		subscriberString := address.MakeAddressString(subscriber, identifier)
 
-		subscribers = append(subscribers, subscriberString)
+		subscribers[subscriberString] = string(iter.Value())
 	}
 
 	return subscribers
@@ -990,7 +990,7 @@ func (cs *ChainStore) persist(b *Block) error {
 			}
 		case tx.Subscribe:
 			subscribePayload := b.Transactions[i].Payload.(*payload.Subscribe)
-			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, b.Header.Height)
+			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.Height)
 			if err != nil {
 				return err
 			}
