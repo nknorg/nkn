@@ -13,9 +13,7 @@ type ProgramBuilder struct {
 }
 
 func NewProgramBuilder() *ProgramBuilder {
-	return &ProgramBuilder{
-		//TODO: add sync pool for create ProgramBuilder
-	}
+	return &ProgramBuilder{}
 }
 
 func (pb *ProgramBuilder) AddOp(op vm.OpCode) {
