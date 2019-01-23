@@ -1,5 +1,5 @@
 hash: 8560b3563e7b15a9e0ab39f71dd6da2e29ce7ed4aca35c97d11ac9ac3c75b0b7
-updated: 2019-01-16T21:02:21.803237-08:00
+updated: 2019-01-23T03:05:37.073522-08:00
 imports:
 - name: github.com/gogo/protobuf
   version: 636bf0302bc95575d69441b25a2603156ffdddf1
@@ -11,7 +11,7 @@ imports:
   - sortkeys
   - types
 - name: github.com/golang/crypto
-  version: ff983b9c42bc9fbf91556e191cc8efb585c16908
+  version: 057139ce5d2bdbe6fe73c53679e24e9cf007f637
   subpackages:
   - ripemd160
   - ssh/terminal
@@ -55,7 +55,7 @@ imports:
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: 5e7a25cc73ae6a6652238ba84f4d17a5cb655d72
+  version: b477418fc56b5152598892b4d05ff41a4082394d
   subpackages:
   - cache
   - common
@@ -109,7 +109,7 @@ imports:
 - name: github.com/xtaci/smux
   version: 6cf098d439391c8f8f6a485f8928f47575b6002e
 - name: golang.org/x/crypto
-  version: ff983b9c42bc9fbf91556e191cc8efb585c16908
+  version: 057139ce5d2bdbe6fe73c53679e24e9cf007f637
   repo: https://github.com/golang/crypto
   vcs: git
   subpackages:
@@ -123,7 +123,7 @@ imports:
   - twofish
   - xtea
 - name: golang.org/x/net
-  version: 915654e7eabcea33ae277abbecf52f0d8b7a9fdc
+  version: ed066c81e75eba56dd9bd2139ade88125b855585
   repo: https://github.com/golang/net
   vcs: git
   subpackages:
@@ -135,7 +135,7 @@ imports:
   - internal/socket
   - ipv4
 - name: golang.org/x/sys
-  version: 11f53e03133963fb11ae0588e08b5e0b85be8be5
+  version: c6b37f3e92850b723493d63fd35aad34e19e048d
   repo: https://github.com/golang/sys
   vcs: git
   subpackages:

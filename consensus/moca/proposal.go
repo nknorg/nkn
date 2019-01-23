@@ -232,7 +232,7 @@ func (consensus *Consensus) receiveProposal(block *ledger.Block) error {
 // receiveProposalHash is called when a node receives a block proposal hash from
 // a neighbor
 func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32, blockHash common.Uint256) error {
-	log.Debugf("Receive block hash %s for height %d from neighbor %d", blockHash.ToHexString(), height, neighborID)
+	log.Debugf("Receive block hash %s for height %d from neighbor %v", blockHash.ToHexString(), height, neighborID)
 
 	if blockHash == common.EmptyUint256 {
 		return errors.New("Receive empty block hash")
