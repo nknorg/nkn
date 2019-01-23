@@ -1,7 +1,6 @@
 package ledger
 
 import (
-	"errors"
 	"sync"
 
 	. "github.com/nknorg/nkn/common"
@@ -40,16 +39,17 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore) (*Blockchain, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	blockchain := NewBlockchain(height, genesisBlock.Transactions[0].Hash())
 
 	return blockchain, nil
 }
 
-func (bc *Blockchain) AddBlock(block *Block) error {
+func (bc *Blockchain) AddBlock(block *Block, fastAdd bool) error {
 	bc.mutex.Lock()
 	defer bc.mutex.Unlock()
 
-	err := bc.SaveBlock(block)
+	err := bc.SaveBlock(block, fastAdd)
 	if err != nil {
 		return err
 	}
@@ -65,8 +65,8 @@ func (bc *Blockchain) GetHeader(hash Uint256) (*Header, error) {
 	return header, nil
 }
 
-func (bc *Blockchain) SaveBlock(block *Block) error {
-	err := DefaultLedger.Store.SaveBlock(block, DefaultLedger)
+func (bc *Blockchain) SaveBlock(block *Block, fastAdd bool) error {
+	err := DefaultLedger.Store.SaveBlock(block, DefaultLedger, fastAdd)
 	if err != nil {
 		log.Warning("Save Block failure , ", err)
 		return err
@@ -86,31 +86,4 @@ func (bc *Blockchain) ContainsTransaction(hash Uint256) bool {
 
 func (bc *Blockchain) CurrentBlockHash() Uint256 {
 	return DefaultLedger.Store.GetCurrentBlockHash()
-}
-
-func (bc *Blockchain) AddBlockTime(hash Uint256, time int64) {
-	bc.muTime.Lock()
-	defer bc.muTime.Unlock()
-
-	bc.BlockPersistTime[hash] = time
-}
-
-func (bc *Blockchain) GetBlockTime(hash Uint256) (int64, error) {
-	bc.muTime.Lock()
-	defer bc.muTime.Unlock()
-
-	// use previous timestamp as block persisted time when cache is empty
-	if len(bc.BlockPersistTime) == 0 {
-		block, err := DefaultLedger.Store.GetBlock(hash)
-		if err != nil {
-			return 0, err
-		}
-		return block.Header.Timestamp, nil
-	}
-
-	if time, ok := bc.BlockPersistTime[hash]; ok {
-		return time, nil
-	}
-
-	return 0, errors.New("no receive time for block")
 }

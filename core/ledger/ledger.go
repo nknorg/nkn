@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/asset"
 	tx "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
 )
@@ -30,13 +29,13 @@ func GetDefaultLedger() (*Ledger, error) {
 }
 
 //Get the Asset from store.
-func (l *Ledger) GetAsset(assetId Uint256) (*asset.Asset, error) {
-	asset, err := l.Store.GetAsset(assetId)
-	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Ledger],GetAsset failed with assetId ="+assetId.ToString())
-	}
-	return asset, nil
-}
+//func (l *Ledger) GetAsset(assetId Uint256) (*asset.Asset, error) {
+//	asset, err := l.Store.GetAsset(assetId)
+//	if err != nil {
+//		return nil, NewDetailErr(err, ErrNoCode, "[Ledger],GetAsset failed with assetId ="+assetId.ToString())
+//	}
+//	return asset, nil
+//}
 
 //Get Block With Height.
 func (l *Ledger) GetBlockWithHeight(height uint32) (*Block, error) {
