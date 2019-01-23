@@ -63,6 +63,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 		Height:           height,
 		ConsensusData:    rand.Uint64(),
 		TransactionsRoot: txnRoot,
+		StateRoot:        DefaultLedger.Store.GetStateRootHash(),
 		NextBookKeeper:   common.Uint160{},
 		WinnerHash:       winningHash,
 		WinnerType:       winnerType,
@@ -93,19 +94,15 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
 	return &transaction.Transaction{
 		TxType:         transaction.Coinbase,
 		PayloadVersion: 0,
-		Payload:        &payload.Coinbase{},
+		Payload: &payload.Coinbase{
+			Sender:    common.EmptyUint160,
+			Recipient: bm.account.ProgramHash,
+			Amount:    common.Fixed64(config.DefaultMiningReward * common.StorageFactor),
+		},
 		Attributes: []*transaction.TxnAttribute{
 			{
 				Usage: transaction.Nonce,
 				Data:  util.RandomBytes(transaction.TransactionNonceLength),
-			},
-		},
-		Inputs: []*transaction.TxnInput{},
-		Outputs: []*transaction.TxnOutput{
-			{
-				AssetID:     DefaultLedger.Blockchain.AssetID,
-				Value:       common.Fixed64(config.DefaultMiningReward * common.StorageFactor),
-				ProgramHash: bm.account.ProgramHash,
 			},
 		},
 		Programs: []*program.Program{},

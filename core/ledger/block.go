@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"math/big"
 	"time"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core/asset"
 	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	tx "github.com/nknorg/nkn/core/transaction"
@@ -187,23 +185,17 @@ func GenesisBlockInit() (*Block, error) {
 			Parameter: []byte{0x00},
 		},
 	}
-	// asset transaction
+
+	rewardAddress, _ := ToScriptHash("NcX9BWx5uxsevCZ2MUEbBJGoYGSNCuJJpf")
 	trans := &tx.Transaction{
-		TxType:         tx.RegisterAsset,
+		TxType:         tx.Coinbase,
 		PayloadVersion: 0,
-		Payload: &payload.RegisterAsset{
-			Asset: &asset.Asset{
-				Name:        "NKN",
-				Description: "NKN Test Token",
-				Precision:   MaximumPrecision,
-			},
-			Amount: 700000000 * StorageFactor,
-			Issuer: &crypto.PubKey{
-				X: big.NewInt(0),
-				Y: big.NewInt(0),
-			},
-			Controller: Uint160{},
+		Payload: &payload.Coinbase{
+			Sender:    EmptyUint160,
+			Recipient: rewardAddress,
+			Amount:    Fixed64(config.DefaultMiningReward * StorageFactor),
 		},
+
 		Attributes: []*tx.TxnAttribute{},
 		Programs: []*program.Program{
 			{
@@ -212,6 +204,7 @@ func GenesisBlockInit() (*Block, error) {
 			},
 		},
 	}
+
 	// genesis block
 	genesisBlock := &Block{
 		Header:       genesisBlockHeader,
