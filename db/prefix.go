@@ -1,5 +1,11 @@
 package db
 
+import (
+	"encoding/binary"
+
+	"github.com/nknorg/nkn/common"
+)
+
 type DataEntryPrefix byte
 
 const (
@@ -8,17 +14,8 @@ const (
 	DATA_Header      DataEntryPrefix = 0x01
 	DATA_Transaction DataEntryPrefix = 0x02
 
-	// INDEX
-	IX_HeaderHashList DataEntryPrefix = 0x80
-	IX_Unspent        DataEntryPrefix = 0x90
-	IX_Unspent_UTXO   DataEntryPrefix = 0x91
-
-	// ASSET
-	ST_Info           DataEntryPrefix = 0xc0
-	ST_QuantityIssued DataEntryPrefix = 0xc1
-	ST_Contract       DataEntryPrefix = 0xc2
-	ST_Storage        DataEntryPrefix = 0xc3
-	ST_Prepaid        DataEntryPrefix = 0xc7
+	ST_Prepaid   DataEntryPrefix = 0xc7
+	ST_StateTrie DataEntryPrefix = 0xc8
 
 	//SYSTEM
 	SYS_CurrentBlock DataEntryPrefix = 0x40
@@ -34,3 +31,42 @@ const (
 	//CONFIG
 	CFG_Version DataEntryPrefix = 0xf0
 )
+
+func paddingKey(prefix DataEntryPrefix, key []byte) []byte {
+	return append([]byte{byte(prefix)}, key...)
+}
+
+func versionKey() []byte {
+	return paddingKey(CFG_Version, nil)
+}
+
+func currentBlockHashKey() []byte {
+	return paddingKey(SYS_CurrentBlock, nil)
+}
+
+func currentStateTrie() []byte {
+	return paddingKey(ST_StateTrie, nil)
+}
+
+func prepaidKey(programHash common.Uint160) []byte {
+	return paddingKey(ST_Prepaid, programHash.ToArray())
+}
+
+func blockhashKey(height uint32) []byte {
+	heightBuffer := make([]byte, 4)
+	binary.LittleEndian.PutUint32(heightBuffer[:], height)
+
+	return paddingKey(DATA_BlockHash, heightBuffer)
+}
+
+func headerKey(blockHash common.Uint256) []byte {
+	return paddingKey(DATA_Header, blockHash.ToArray())
+}
+
+func transactionKey(txHash common.Uint256) []byte {
+	return paddingKey(DATA_Transaction, txHash.ToArray())
+}
+
+func iteratorBlockHash(store IStore) IIterator {
+	return store.NewIterator([]byte{byte(DATA_BlockHash)})
+}
