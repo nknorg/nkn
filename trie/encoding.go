@@ -1,5 +1,7 @@
 package trie
 
+import "crypto/sha256"
+
 func hexToCompact(hex []byte) []byte {
 	terminator := byte(0)
 	if hasTerm(hex) {
@@ -69,4 +71,10 @@ func copyBytes(b []byte) (copiedBytes []byte) {
 	copy(copiedBytes, b)
 
 	return
+}
+
+func hash256(bs []byte) []byte {
+	temp := sha256.Sum256([]byte(bs))
+	u256 := sha256.Sum256(temp[:])
+	return u256[:]
 }

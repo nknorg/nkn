@@ -7,7 +7,7 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
-var secureKeyPrefix = []byte{20}
+var secureKeyPrefix = []byte{0xa0}
 
 const secureKeyLength = 1 + 32
 
@@ -74,7 +74,7 @@ func (t *SecureTrie) Commit() (common.Uint256, error) {
 	return t.CommitTo(t.trie.db)
 }
 
-func (t *SecureTrie) CommitTo(db DatabaseWriter) (common.Uint256, error) {
+func (t *SecureTrie) CommitTo(db Database) (common.Uint256, error) {
 	if len(t.getSecKeyCache()) > 0 {
 		for hk, key := range t.secKeyCache {
 			if err := db.BatchPut(t.secKey([]byte(hk)), key); err != nil {
@@ -94,7 +94,7 @@ func (t *SecureTrie) secKey(key []byte) []byte {
 
 func (t *SecureTrie) hashKey(key []byte) []byte {
 	h := newHasher()
-	h.sha, _ = common.Uint256ParseFromBytes(ToHash256(key))
+	h.sha, _ = common.Uint256ParseFromBytes(hash256(key))
 	return h.sha.ToArray()
 }
 
