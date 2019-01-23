@@ -509,7 +509,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors
 				return false
 			}
 
-			err := ledger.DefaultLedger.Blockchain.AddBlock(block)
+			err := ledger.DefaultLedger.Blockchain.AddBlock(block, false)
 			if err != nil {
 				return false
 			}
