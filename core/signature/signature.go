@@ -15,13 +15,9 @@ import (
 //SignableData describe the data need be signed.
 type SignableData interface {
 	interfaces.ICodeContainer
-
 	GetProgramHashes() ([]common.Uint160, error)
-
 	SetPrograms([]*program.Program)
-
 	GetPrograms() []*program.Program
-
 	SerializeUnsigned(io.Writer) error
 }
 
