@@ -17,6 +17,8 @@ const (
 	ST_Prepaid   DataEntryPrefix = 0xc7
 	ST_StateTrie DataEntryPrefix = 0xc8
 
+	secureKeyPrefix DataEntryPrefix = 0xa0
+
 	//SYSTEM
 	SYS_CurrentBlock DataEntryPrefix = 0x40
 	SYS_ExpireKey    DataEntryPrefix = 0x41

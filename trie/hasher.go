@@ -2,7 +2,6 @@ package trie
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"sync"
 
 	"github.com/nknorg/nkn/common"
@@ -19,7 +18,7 @@ var hasherPool = sync.Pool{
 	},
 }
 
-func (h *hasher) hash(n node, db DatabaseWriter, force bool) (node, node, error) {
+func (h *hasher) hash(n node, db Database, force bool) (node, node, error) {
 	if hash, dirty := n.cache(); hash != nil {
 		if !dirty {
 			return hash, n, nil
@@ -45,7 +44,7 @@ func (h *hasher) hash(n node, db DatabaseWriter, force bool) (node, node, error)
 	return hashed, cached, nil
 }
 
-func (h *hasher) hasChildren(original node, db DatabaseWriter) (node, node, error) {
+func (h *hasher) hasChildren(original node, db Database) (node, node, error) {
 	var err error
 	switch n := original.(type) {
 	case *shortNode:
@@ -84,7 +83,7 @@ func (h *hasher) hasChildren(original node, db DatabaseWriter) (node, node, erro
 	}
 }
 
-func (h *hasher) store(n node, db DatabaseWriter, force bool) (node, error) {
+func (h *hasher) store(n node, db Database, force bool) (node, error) {
 	if _, isHash := n.(hashNode); n == nil || isHash {
 		return n, nil
 	}
@@ -99,7 +98,7 @@ func (h *hasher) store(n node, db DatabaseWriter, force bool) (node, error) {
 	}
 	hs, _ := n.cache()
 	if hs == nil {
-		u256 := ToHash256(h.tmp.Bytes())
+		u256 := hash256(h.tmp.Bytes())
 		hs = hashNode(u256[:])
 	}
 	if db != nil {
@@ -115,10 +114,4 @@ func newHasher() *hasher {
 
 func returnHasherToPool(h *hasher) {
 	hasherPool.Put(h)
-}
-
-func ToHash256(bs []byte) []byte {
-	temp := sha256.Sum256([]byte(bs))
-	u256 := sha256.Sum256(temp[:])
-	return u256[:]
 }
