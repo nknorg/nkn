@@ -1,13 +1,17 @@
 package asset
 
 import (
+	"bytes"
+	"encoding/hex"
 	"fmt"
 	"os"
 
+	. "github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto/util"
+	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
 
 	"github.com/urfave/cli"
@@ -36,20 +40,18 @@ func parseAssetID(c *cli.Context) string {
 	return asset
 }
 
-func parseAddress(c *cli.Context) string {
+func parseAddress(c *cli.Context) Uint160 {
 	if address := c.String("to"); address != "" {
-		_, err := ToScriptHash(address)
+		pg, err := ToScriptHash(address)
 		if err != nil {
 			fmt.Println("invalid receiver address")
 			os.Exit(1)
 		}
-		return address
-	} else {
-		fmt.Println("missing flag [--to]")
-		os.Exit(1)
+		return pg
 	}
-
-	return ""
+	fmt.Println("missing flag [--to]")
+	os.Exit(1)
+	return EmptyUint160
 }
 
 func assetAction(c *cli.Context) error {
@@ -71,7 +73,17 @@ func assetAction(c *cli.Context) error {
 	case c.Bool("issue"):
 		resp, err = client.Call(Address(), "issueasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "address": parseAddress(c), "value": value})
 	case c.Bool("transfer"):
-		resp, err = client.Call(Address(), "sendtoaddress", 0, map[string]interface{}{"assetid": parseAssetID(c), "address": parseAddress(c), "value": value})
+		myWallet, err := vault.OpenWallet(vault.WalletFileName, getPassword("tt"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		receipt := parseAddress(c)
+		amount, _ := StringToFixed64(value)
+		txn, _ := MakeTransferTransaction(myWallet, receipt, amount, 0)
+		buff := bytes.NewBuffer(nil)
+		txn.Serialize(buff)
+		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff.Bytes())})
 	case c.Bool("prepaid"):
 		rates := c.String("rates")
 		if rates == "" {
@@ -158,4 +170,19 @@ func NewCommand() *cli.Command {
 			return cli.NewExitError("", 1)
 		},
 	}
+}
+
+func getPassword(passwd string) []byte {
+	var tmp []byte
+	var err error
+	if passwd != "" {
+		tmp = []byte(passwd)
+	} else {
+		tmp, err = password.GetPassword()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+	return tmp
 }

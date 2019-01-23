@@ -117,7 +117,7 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
 		PayloadVersion: 0,
 		Payload: &payload.Coinbase{
 			Sender:    common.EmptyUint160,
-			Recipient: bm.account.ProgramHash,
+			Recipient: redeemHash,
 			Amount:    common.Fixed64(config.DefaultMiningReward * common.StorageFactor),
 		},
 
