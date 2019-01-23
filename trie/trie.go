@@ -9,29 +9,21 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
-type DatabaseReader interface {
+type Database interface {
 	Get(key []byte) ([]byte, error)
 	Has(key []byte) (bool, error)
-}
-
-type DatabaseWriter interface {
 	BatchPut(key, value []byte) error
 }
 
-type Database interface {
-	DatabaseReader
-	DatabaseWriter
-}
-
 type Trie struct {
-	root     node
-	db       Database
-	rootHash common.Uint256
+	root         node
+	db           Database
+	originalRoot common.Uint256
 }
 
 func New(hash common.Uint256, db Database) (*Trie, error) {
-	trie := &Trie{db: db, rootHash: hash}
-	if (hash != common.Uint256{}) && db != nil {
+	trie := &Trie{db: db, originalRoot: hash}
+	if hash != common.EmptyUint256 && db != nil {
 		root, err := trie.resolveHash(hash.ToArray(), nil)
 		if err != nil {
 			return nil, err
@@ -115,7 +107,7 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 }
 
 func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
-	fmt.Printf("=====insert node type : %v,%v\n", reflect.TypeOf(n), common.BytesToHexString(key))
+	log.Errorf("=====insert node type : %v,%v\n", reflect.TypeOf(n), common.BytesToHexString(key))
 	if len(key) == 0 {
 		return value, nil
 	}
@@ -145,7 +137,7 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
 		}
 		return &shortNode{key[:matchLen], branch, nodeFlag{dirty: true}}, nil
 	case *fullNode:
-		fmt.Println("---------->", key[0], reflect.TypeOf(n.Children[key[0]]))
+		log.Errorf("---------->", key[0], reflect.TypeOf(n.Children[key[0]]))
 		nn, err := t.insert(n.Children[key[0]], append(prefix, key[0]), key[1:], value)
 		if err != nil {
 			return nil, err
@@ -266,7 +258,7 @@ func (t *Trie) Commit() (common.Uint256, error) {
 	return t.commitTo(t.db)
 }
 
-func (t *Trie) commitTo(db DatabaseWriter) (common.Uint256, error) {
+func (t *Trie) commitTo(db Database) (common.Uint256, error) {
 	hash, cached, err := t.hashRoot(db)
 	if err != nil {
 		return common.Uint256{}, err
@@ -289,7 +281,7 @@ func (t *Trie) Hash() common.Uint256 {
 	return u
 }
 
-func (t *Trie) hashRoot(db DatabaseWriter) (node, node, error) {
+func (t *Trie) hashRoot(db Database) (node, node, error) {
 	if t.root == nil {
 		return nil, nil, nil
 	}
