@@ -22,6 +22,7 @@ type TransactionInfo struct {
 	TxType         TransactionType       `json:"txType"`
 	PayloadVersion byte                  `json:"payloadVersion"`
 	Payload        interface{}           `json:"payload"`
+	Fee            string                `json:"fee"`
 	Attributes     []TxnAttributeInfo    `json:"attributes"`
 	Inputs         []TxnInputInfo        `json:"inputs"`
 	Outputs        []TxnOutputInfo       `json:"outputs"`
