@@ -22,4 +22,5 @@ const (
 	requestProposalChanLen      = 10000
 	changeVoteMinRelativeWeight = 0.5
 	consensusMinRelativeWeight  = 2.0 / 3.0
+	syncMinRelativeWeight       = 1.0 / 2.0
 )
