@@ -1,29 +1,5 @@
 package payload
 
-import (
-	"github.com/nknorg/nkn/core/asset"
-	"github.com/nknorg/nkn/crypto"
-)
-
-// define RegisterAssetInfo
-type RegisterAssetInfo struct {
-	Asset      *asset.Asset   `json:"asset"`
-	Amount     string         `json:"amount"`
-	Issuer     *crypto.PubKey `json:"issuer"`
-	Controller string         `json:"controller"`
-}
-
-// define PrepaidInfo
-type PrepaidInfo struct {
-	Asset  string `json:"asset"`
-	Amount string `json:"amount"`
-	Rates  string `json:"rates"`
-}
-
-type WithdrawInfo struct {
-	ProgramHash string `json:"programHash"`
-}
-
 type CommitInfo struct {
 	SigChain  string `json:"sigChain"`
 	Submitter string `json:"submitter"`
@@ -46,4 +22,16 @@ type SubscribeInfo struct {
 	Bucket     uint32 `json:"bucket"`
 	Duration   uint32 `json:"duration"`
 	Meta       string `json:"meta"`
+}
+
+type TransferAssetInfo struct {
+	Sender    string `json:"sender"`
+	Recipient string `json:"recipient"`
+	Amount    string `json:"amount"`
+}
+
+type CoinbaseInfo struct {
+	Sender    string `json:"sender"`
+	Recipient string `json:"recipient"`
+	Amount    string `json:"amount"`
 }
