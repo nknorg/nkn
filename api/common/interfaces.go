@@ -56,10 +56,14 @@ func (ah *APIHandler) IsAccessableByWebsocket() bool {
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getLatestBlockHash(s Serverer, params map[string]interface{}) map[string]interface{} {
-	hash := ledger.DefaultLedger.Blockchain.CurrentBlockHash()
+	height := ledger.DefaultLedger.Store.GetHeight()
+	hash, err := ledger.DefaultLedger.Store.GetBlockHash(height)
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
 	ret := map[string]interface{}{
-		"height": ledger.DefaultLedger.Blockchain.BlockHeight,
-		"hash":   common.BytesToHexString(hash.ToArrayReverse()),
+		"height": height,
+		"hash":   hash.ToHexString(),
 	}
 	return respPacking(ret, SUCCESS)
 }
@@ -108,7 +112,7 @@ func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} 
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getBlockCount(s Serverer, params map[string]interface{}) map[string]interface{} {
-	return respPacking(ledger.DefaultLedger.Blockchain.BlockHeight+1, SUCCESS)
+	return respPacking(ledger.DefaultLedger.Store.GetHeight()+1, SUCCESS)
 }
 
 // getChordRingInfo gets the information of Chord
@@ -126,7 +130,7 @@ func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]inte
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]interface{} {
-	return respPacking(ledger.DefaultLedger.Blockchain.BlockHeight, SUCCESS)
+	return respPacking(ledger.DefaultLedger.Store.GetHeight(), SUCCESS)
 }
 
 //// getBlockHash gets the block hash by height

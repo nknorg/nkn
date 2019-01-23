@@ -126,10 +126,12 @@ func Init() error {
 	}
 
 	if Parameters.Hostname == "" {
+		log.Println("Getting my IP address...")
 		ip, err := ipify.GetIp()
 		if err != nil {
 			return err
 		}
+		log.Printf("My IP address is %s", ip)
 
 		Parameters.Hostname = ip
 
