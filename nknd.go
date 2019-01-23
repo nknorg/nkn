@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	TestNetVersionNum = 4
+	TestNetVersionNum = 10
 )
 
 var (
@@ -67,7 +67,6 @@ func InitLedger(account *vault.Account) error {
 	}
 	transaction.Store = ledger.DefaultLedger.Store
 	por.Store = ledger.DefaultLedger.Store
-	vault.Store = ledger.DefaultLedger.Store
 
 	return nil
 }

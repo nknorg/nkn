@@ -7,7 +7,9 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core/transaction"
 	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/pb"
@@ -110,7 +112,7 @@ func (rs *RelayService) receiveClientSignedSigChain(v interface{}) error {
 		return err
 	}
 
-	txn, err := vault.MakeCommitTransaction(rs.wallet, buf)
+	txn, err := MakeCommitTransaction(rs.wallet, buf)
 	if err != nil {
 		return err
 	}
@@ -191,4 +193,22 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 	}
 
 	return nil
+}
+
+func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*transaction.Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+	txn, err := transaction.NewCommitTransaction(sigChain, account.ProgramHash)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	ctx := contract.NewContractContext(txn)
+	wallet.Sign(ctx)
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
 }

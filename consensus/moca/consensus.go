@@ -261,7 +261,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		if consensus.localNode.GetSyncState() == pb.WaitForSyncing {
 			consensus.localNode.SetSyncState(pb.PersistFinished)
 		}
-		return ledger.DefaultLedger.Blockchain.AddBlock(block)
+		return ledger.DefaultLedger.Blockchain.AddBlock(block, false)
 	}
 
 	if consensus.localNode.GetSyncState() == pb.PersistFinished {
