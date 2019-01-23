@@ -160,6 +160,7 @@ func (tp *TxnPool) cleanTransactionList(txns []*Transaction) error {
 			txnsNum = txnsNum - 1
 			continue
 		}
+
 		if tp.deltxnList(txn) {
 			cleaned++
 		}

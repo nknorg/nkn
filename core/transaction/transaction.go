@@ -5,13 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"sort"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/core/transaction/payload"
@@ -26,10 +23,6 @@ type TransactionType byte
 const (
 	Coinbase      TransactionType = 0x00
 	TransferAsset TransactionType = 0x10
-	RegisterAsset TransactionType = 0x11
-	IssueAsset    TransactionType = 0x12
-	Prepaid       TransactionType = 0x40
-	Withdraw      TransactionType = 0x41
 	Commit        TransactionType = 0x42
 	RegisterName  TransactionType = 0x50
 	TransferName  TransactionType = 0x51
@@ -64,9 +57,8 @@ type Transaction struct {
 	TxType         TransactionType
 	PayloadVersion byte
 	Payload        Payload
+	Fee            Fixed64
 	Attributes     []*TxnAttribute
-	Inputs         []*TxnInput
-	Outputs        []*TxnOutput
 	Programs       []*program.Program
 
 	hash *Uint256
@@ -107,6 +99,7 @@ func (tx *Transaction) SerializeUnsigned(w io.Writer) error {
 		return errors.New("Transaction Payload is nil.")
 	}
 	tx.Payload.Serialize(w, tx.PayloadVersion)
+	tx.Fee.Serialize(w)
 	//[]*txAttribute
 	err := serialization.WriteVarUint(w, uint64(len(tx.Attributes)))
 	if err != nil {
@@ -115,27 +108,6 @@ func (tx *Transaction) SerializeUnsigned(w io.Writer) error {
 	if len(tx.Attributes) > 0 {
 		for _, attr := range tx.Attributes {
 			attr.Serialize(w)
-		}
-	}
-	//[]*Inputs
-	err = serialization.WriteVarUint(w, uint64(len(tx.Inputs)))
-	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Transaction item Inputs length serialization failed.")
-	}
-	if len(tx.Inputs) > 0 {
-		for _, utxo := range tx.Inputs {
-			utxo.Serialize(w)
-		}
-	}
-	// TODO BalanceInputs
-	//[]*Outputs
-	err = serialization.WriteVarUint(w, uint64(len(tx.Outputs)))
-	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Transaction item Outputs length serialization failed.")
-	}
-	if len(tx.Outputs) > 0 {
-		for _, output := range tx.Outputs {
-			output.Serialize(w)
 		}
 	}
 
@@ -192,18 +164,10 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 	//payload
 	//tx.Payload.Deserialize(r)
 	switch tx.TxType {
-	case RegisterAsset:
-		tx.Payload = new(payload.RegisterAsset)
-	case IssueAsset:
-		tx.Payload = new(payload.IssueAsset)
 	case TransferAsset:
 		tx.Payload = new(payload.TransferAsset)
 	case Coinbase:
 		tx.Payload = new(payload.Coinbase)
-	case Prepaid:
-		tx.Payload = new(payload.Prepaid)
-	case Withdraw:
-		tx.Payload = new(payload.Withdraw)
 	case Commit:
 		tx.Payload = new(payload.Commit)
 	case RegisterName:
@@ -220,6 +184,8 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 		log.Error("tx Payload Deserialize:", err)
 		return NewDetailErr(err, ErrNoCode, "Payload Parse error")
 	}
+
+	err = tx.Fee.Deserialize(r)
 	//attributes
 	Len, err := serialization.ReadVarUint(r, 0)
 	if err != nil {
@@ -236,148 +202,21 @@ func (tx *Transaction) DeserializeUnsignedWithoutType(r io.Reader) error {
 			tx.Attributes = append(tx.Attributes, attr)
 		}
 	}
-	//Inputs
-	Len, err = serialization.ReadVarUint(r, 0)
-	if err != nil {
-		log.Error("tx Inputs Deserialize:", err)
 
-		return err
-	}
-	if Len > uint64(0) {
-		for i := uint64(0); i < Len; i++ {
-			utxo := new(TxnInput)
-			err = utxo.Deserialize(r)
-			if err != nil {
-				return err
-			}
-			tx.Inputs = append(tx.Inputs, utxo)
-		}
-	}
-	//TODO balanceInputs
-	//Outputs
-	Len, err = serialization.ReadVarUint(r, 0)
-	if err != nil {
-		return err
-	}
-	if Len > uint64(0) {
-		for i := uint64(0); i < Len; i++ {
-			output := new(TxnOutput)
-			output.Deserialize(r)
-
-			tx.Outputs = append(tx.Outputs, output)
-		}
-	}
 	return nil
 }
 
 func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
-	if tx == nil {
-		return []Uint160{}, errors.New("[Transaction],GetProgramHashes transaction is nil.")
-	}
-	hashs := []Uint160{}
-	uniqHashes := []Uint160{}
-	// add inputUTXO's transaction
-	referenceWithUTXO_Output, err := tx.GetReference()
-	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes failed.")
-	}
-	for _, output := range referenceWithUTXO_Output {
-		programHash := output.ProgramHash
-		hashs = append(hashs, programHash)
-	}
-	for _, attribute := range tx.Attributes {
-		if attribute.Usage == Script {
-			dataHash, err := Uint160ParseFromBytes(attribute.Data)
-			if err != nil {
-				return nil, NewDetailErr(errors.New("[Transaction], GetProgramHashes err."), ErrNoCode, "")
-			}
-			hashs = append(hashs, Uint160(dataHash))
-		}
-	}
+	hashes := []Uint160{}
+
 	switch tx.TxType {
-	case RegisterAsset:
-		issuer := tx.Payload.(*payload.RegisterAsset).Issuer
-
-		hash, err := contract.CreateRedeemHash(issuer)
-		if err != nil {
-			return nil, fmt.Errorf("%v\n%s", err, "[Transaction] GetProgramHashes Signature register hash generated failed")
-		}
-		hashs = append(hashs, hash)
-	case IssueAsset:
-		result := tx.GetMergedAssetIDValueFromOutputs()
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetTransactionResults failed.")
-		}
-		for k := range result {
-			tx, err := Store.GetTransaction(k)
-			if err != nil {
-				return nil, NewDetailErr(err, ErrNoCode, fmt.Sprintf("[Transaction], GetTransaction failed With AssetID:=%x", k))
-			}
-			if tx.TxType != RegisterAsset {
-				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], Transaction Type ileage With AssetID:=%x", k))
-			}
-
-			switch v1 := tx.Payload.(type) {
-			case *payload.RegisterAsset:
-				hashs = append(hashs, v1.Controller)
-			default:
-				return nil, NewDetailErr(errors.New("[Transaction] error"), ErrNoCode, fmt.Sprintf("[Transaction], payload is illegal", k))
-			}
-		}
-	case Prepaid:
 	case TransferAsset:
-	case Commit:
-		hashs = append(hashs, tx.Payload.(*payload.Commit).Submitter)
-	case Withdraw:
-		hashs = append(hashs, tx.Payload.(*payload.Withdraw).ProgramHash)
-	case RegisterName:
-		registrant := tx.Payload.(*payload.RegisterName).Registrant
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(registrant)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
-
-		hash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, hash)
-	case DeleteName:
-		registrant := tx.Payload.(*payload.DeleteName).Registrant
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(registrant)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
-
-		hash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, hash)
-	case Subscribe:
-		subscriber := tx.Payload.(*payload.Subscribe).Subscriber
-		signatureRedeemScript, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(subscriber)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes CreateSignatureRedeemScript failed.")
-		}
-
-		hash, err := ToCodeHash(signatureRedeemScript)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetProgramHashes ToCodeHash failed.")
-		}
-		hashs = append(hashs, hash)
+		sender := tx.Payload.(*payload.TransferAsset).Sender
+		hashes = append(hashes, sender)
 	default:
 	}
-	//remove dupilicated hashes
-	uniq := make(map[Uint160]bool)
-	for _, v := range hashs {
-		uniq[v] = true
-	}
-	for k := range uniq {
-		uniqHashes = append(uniqHashes, k)
-	}
-	sort.Sort(byProgramHashes(uniqHashes))
-	return uniqHashes, nil
+
+	return hashes, nil
 }
 
 func (tx *Transaction) SetPrograms(programs []*program.Program) {
@@ -386,16 +225,6 @@ func (tx *Transaction) SetPrograms(programs []*program.Program) {
 
 func (tx *Transaction) GetPrograms() []*program.Program {
 	return tx.Programs
-}
-
-func (tx *Transaction) GetOutputHashes() ([]Uint160, error) {
-	//TODO: implement Transaction.GetOutputHashes()
-
-	return []Uint160{}, nil
-}
-
-func (tx *Transaction) GenerateAssetMaps() {
-	//TODO: implement Transaction.GenerateAssetMaps()
 }
 
 func (tx *Transaction) GetMessage() []byte {
@@ -431,76 +260,6 @@ func (tx *Transaction) Verify() error {
 	return nil
 }
 
-func (tx *Transaction) GetReference() (map[*TxnInput]*TxnOutput, error) {
-	if tx.TxType == RegisterAsset {
-		return nil, nil
-	}
-	//UTXO input /  Outputs
-	reference := make(map[*TxnInput]*TxnOutput)
-	// Key index，v UTXOInput
-	for _, utxo := range tx.Inputs {
-		transaction, err := Store.GetTransaction(utxo.ReferTxID)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Transaction], GetReference failed.")
-		}
-		index := utxo.ReferTxOutputIndex
-		reference[utxo] = transaction.Outputs[index]
-	}
-	return reference, nil
-}
-func (tx *Transaction) GetTransactionResults() (TransactionResult, error) {
-	result := make(map[Uint256]Fixed64)
-	outputResult := tx.GetMergedAssetIDValueFromOutputs()
-	InputResult, err := tx.GetMergedAssetIDValueFromReference()
-	if err != nil {
-		return nil, err
-	}
-	//calc the balance of input vs output
-	for outputAssetid, outputValue := range outputResult {
-		if inputValue, ok := InputResult[outputAssetid]; ok {
-			result[outputAssetid] = inputValue - outputValue
-		} else {
-			result[outputAssetid] -= outputValue
-		}
-	}
-	for inputAssetid, inputValue := range InputResult {
-		if _, exist := result[inputAssetid]; !exist {
-			result[inputAssetid] += inputValue
-		}
-	}
-	return result, nil
-}
-
-func (tx *Transaction) GetMergedAssetIDValueFromOutputs() TransactionResult {
-	var result = make(map[Uint256]Fixed64)
-	for _, v := range tx.Outputs {
-		amout, ok := result[v.AssetID]
-		if ok {
-			result[v.AssetID] = amout + v.Value
-		} else {
-			result[v.AssetID] = v.Value
-		}
-	}
-	return result
-}
-
-func (tx *Transaction) GetMergedAssetIDValueFromReference() (TransactionResult, error) {
-	reference, err := tx.GetReference()
-	if err != nil {
-		return nil, err
-	}
-	var result = make(map[Uint256]Fixed64)
-	for _, v := range reference {
-		amout, ok := result[v.AssetID]
-		if ok {
-			result[v.AssetID] = amout + v.Value
-		} else {
-			result[v.AssetID] = v.Value
-		}
-	}
-	return result, nil
-}
-
 type byProgramHashes []Uint160
 
 func (a byProgramHashes) Len() int      { return len(a) }
@@ -530,6 +289,8 @@ func (tx *Transaction) MarshalJson() ([]byte, error) {
 		txInfo.Payload = t
 	}
 
+	txInfo.Fee = tx.Fee.String()
+
 	for _, v := range tx.Attributes {
 		info, err := v.MarshalJson()
 		if err != nil {
@@ -538,26 +299,6 @@ func (tx *Transaction) MarshalJson() ([]byte, error) {
 		var t TxnAttributeInfo
 		json.Unmarshal(info, &t)
 		txInfo.Attributes = append(txInfo.Attributes, t)
-	}
-
-	for _, v := range tx.Inputs {
-		info, err := v.MarshalJson()
-		if err != nil {
-			return nil, err
-		}
-		var t TxnInputInfo
-		json.Unmarshal(info, &t)
-		txInfo.Inputs = append(txInfo.Inputs, t)
-	}
-
-	for _, v := range tx.Outputs {
-		info, err := v.MarshalJson()
-		if err != nil {
-			return nil, err
-		}
-		var t TxnOutputInfo
-		json.Unmarshal(info, &t)
-		txInfo.Outputs = append(txInfo.Outputs, t)
 	}
 
 	for _, v := range tx.Programs {
@@ -596,18 +337,10 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 		return err
 	}
 	switch tx.TxType {
-	case RegisterAsset:
-		tx.Payload = new(payload.RegisterAsset)
-	case IssueAsset:
-		tx.Payload = new(payload.IssueAsset)
 	case TransferAsset:
 		tx.Payload = new(payload.TransferAsset)
 	case Coinbase:
 		tx.Payload = new(payload.Coinbase)
-	case Prepaid:
-		tx.Payload = new(payload.Prepaid)
-	case Withdraw:
-		tx.Payload = new(payload.Withdraw)
 	case Commit:
 		tx.Payload = new(payload.Commit)
 	case RegisterName:
@@ -624,6 +357,8 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 		return err
 	}
 
+	tx.Fee, _ = StringToFixed64(txInfo.Fee)
+
 	for _, v := range txInfo.Attributes {
 		info, err := json.Marshal(v)
 		if err != nil {
@@ -635,32 +370,6 @@ func (tx *Transaction) UnmarshalJson(data []byte) error {
 			return err
 		}
 		tx.Attributes = append(tx.Attributes, &at)
-	}
-
-	for _, v := range txInfo.Inputs {
-		info, err := json.Marshal(v)
-		if err != nil {
-			return err
-		}
-		var ui TxnInput
-		err = ui.UnmarshalJson(info)
-		if err != nil {
-			return err
-		}
-		tx.Inputs = append(tx.Inputs, &ui)
-	}
-
-	for _, v := range txInfo.Outputs {
-		info, err := json.Marshal(v)
-		if err != nil {
-			return err
-		}
-		var o TxnOutput
-		err = o.UnmarshalJson(info)
-		if err != nil {
-			return err
-		}
-		tx.Outputs = append(tx.Outputs, &o)
 	}
 
 	for _, v := range txInfo.Programs {
