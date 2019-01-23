@@ -343,8 +343,19 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 			return
 		}
 
+		var rollbacked bool
+		rollbacked, err = localNode.maybeRollback(neighbors)
+		if err != nil {
+			panic(fmt.Errorf("Rollback error: %v", err))
+		}
+		if rollbacked {
+			currentHeight = ledger.DefaultLedger.Store.GetHeight()
+			currentHash = ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
+		}
+
 		startTime := time.Now()
-		headersHash, err := localNode.syncBlockHeaders(currentHeight+1, stopHeight, currentHash, stopHash, neighbors)
+		var headersHash []common.Uint256
+		headersHash, err = localNode.syncBlockHeaders(currentHeight+1, stopHeight, currentHash, stopHash, neighbors)
 		if err != nil {
 			err = fmt.Errorf("sync block headers error: %v", err)
 			return

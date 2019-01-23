@@ -450,5 +450,7 @@ func (cs *ChainStore) rollbackCached(b *ledger.Block) error {
 		delete(cs.headerCache, hash)
 	}
 
+	cs.currentBlockHeight = b.Header.Height - 1
+
 	return nil
 }
