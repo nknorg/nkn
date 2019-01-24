@@ -107,7 +107,7 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 }
 
 func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
-	log.Errorf("=====insert node type : %v,%v\n", reflect.TypeOf(n), common.BytesToHexString(key))
+	log.Infof("=====insert node type : %v,%v\n", reflect.TypeOf(n), common.BytesToHexString(key))
 	if len(key) == 0 {
 		return value, nil
 	}
@@ -137,7 +137,7 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
 		}
 		return &shortNode{key[:matchLen], branch, nodeFlag{dirty: true}}, nil
 	case *fullNode:
-		log.Errorf("---------->", key[0], reflect.TypeOf(n.Children[key[0]]))
+		log.Info("---------->", key[0], reflect.TypeOf(n.Children[key[0]]))
 		nn, err := t.insert(n.Children[key[0]], append(prefix, key[0]), key[1:], value)
 		if err != nil {
 			return nil, err

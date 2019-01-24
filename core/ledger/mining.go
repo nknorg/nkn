@@ -7,10 +7,10 @@ import (
 	"github.com/nknorg/nkn/core/contract/program"
 	"github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nnet/log"
@@ -81,8 +81,10 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 		ChordID:          chordID,
 		Signature:        nil,
 		Program: &program.Program{
-			Code:      []byte{0x00},
-			Parameter: []byte{0x00},
+			Program: types.Program{
+				Code:      []byte{0x00},
+				Parameter: []byte{0x00},
+			},
 		},
 	}
 	hash := signature.GetHashForSigning(header)
@@ -112,21 +114,16 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
 		}
 	}
 
-	return &transaction.Transaction{
-		TxType:         transaction.Coinbase,
-		PayloadVersion: 0,
-		Payload: &payload.Coinbase{
-			Sender:    common.EmptyUint160,
-			Recipient: redeemHash,
-			Amount:    common.Fixed64(config.DefaultMiningReward * common.StorageFactor),
-		},
-
-		Attributes: []*transaction.TxnAttribute{
-			{
-				Usage: transaction.Nonce,
-				Data:  util.RandomBytes(transaction.TransactionNonceLength),
-			},
-		},
-		Programs: []*program.Program{},
+	payload := types.NewCoinbase(common.EmptyUint160, redeemHash, common.Fixed64(config.DefaultMiningReward*common.StorageFactor))
+	pl, err := types.Pack(types.CoinbaseType, payload)
+	if err != nil {
+		return nil
 	}
+
+	txn := types.NewMsgTx(pl, rand.Uint64(), 0, util.RandomBytes(transaction.TransactionNonceLength))
+	trans := &transaction.Transaction{
+		MsgTx: *txn,
+	}
+
+	return trans
 }

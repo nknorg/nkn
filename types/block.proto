@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package types;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "header.proto";
+import "transaction.proto";
+
+message Block {
+	BlockHeader     Header                 = 1;
+	repeated MsgTx  Transactions           = 2;
+}
+
+message TrimmedBlock {
+	BlockHeader     Header           = 1;
+	repeated bytes  Transactions     = 2;
+}
+
+

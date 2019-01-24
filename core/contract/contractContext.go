@@ -10,6 +10,7 @@ import (
 	sig "github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/crypto"
 	_ "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -205,8 +206,10 @@ func (ctx *ContractContext) GetPrograms() []*pg.Program {
 			}
 		}
 		programs[i] = &pg.Program{
-			Code:      ctx.Codes[i],
-			Parameter: sb.ToArray(),
+			Program: types.Program{
+				Code:      ctx.Codes[i],
+				Parameter: sb.ToArray(),
+			},
 		}
 	}
 	return programs
