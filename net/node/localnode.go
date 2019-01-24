@@ -24,6 +24,12 @@ import (
 	"github.com/nknorg/nnet/overlay/routing"
 )
 
+const (
+	protocolVersion              = 1
+	minCompatibleProtocolVersion = 0
+	maxCompatibleProtocolVersion = 10
+)
+
 type LocalNode struct {
 	*Node
 	account       *vault.Account // local node wallet account
@@ -73,10 +79,11 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	}
 
 	nodeData := &pb.NodeData{
-		PublicKey:     publicKey,
-		WebsocketPort: uint32(config.Parameters.HttpWsPort),
-		JsonRpcPort:   uint32(config.Parameters.HttpJsonPort),
-		HttpProxyPort: uint32(config.Parameters.HttpProxyPort),
+		PublicKey:       publicKey,
+		WebsocketPort:   uint32(config.Parameters.HttpWsPort),
+		JsonRpcPort:     uint32(config.Parameters.HttpJsonPort),
+		HttpProxyPort:   uint32(config.Parameters.HttpProxyPort),
+		ProtocolVersion: uint32(protocolVersion),
 	}
 
 	node, err := NewNode(nn.GetLocalNode().Node.Node, nodeData)

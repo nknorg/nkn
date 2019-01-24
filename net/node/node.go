@@ -12,7 +12,6 @@ import (
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
-
 type Node struct {
 	*nnetpb.Node
 	*pb.NodeData
@@ -51,7 +50,6 @@ func (node *Node) MarshalJSON() ([]byte, error) {
 	}
 
 	out["publicKey"] = hex.EncodeToString(node.NodeData.PublicKey)
-
 	out["syncState"] = node.GetSyncState().String()
 
 	return json.Marshal(out)
