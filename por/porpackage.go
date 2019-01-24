@@ -8,8 +8,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/transaction/payload"
 	nknerrors "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -52,12 +52,17 @@ func (c PorPackages) Less(i, j int) bool {
 }
 
 func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
-	if txn.TxType != transaction.Commit {
+	if txn.UnsignedTx.Payload.Type != types.CommitType {
 		return nil, errors.New("Transaction type mismatch")
 	}
-	rs := txn.Payload.(*payload.Commit)
+	payload, err := types.Unpack(txn.UnsignedTx.Payload)
+	if err != nil {
+		return nil, err
+	}
+
+	rs := payload.(*types.Commit)
 	sigChain := &SigChain{}
-	err := proto.Unmarshal(rs.SigChain, sigChain)
+	err = proto.Unmarshal(rs.SigChain, sigChain)
 	if err != nil {
 		return nil, err
 	}

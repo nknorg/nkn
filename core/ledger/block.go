@@ -12,9 +12,9 @@ import (
 	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -181,28 +181,29 @@ func GenesisBlockInit() (*Block, error) {
 		NextBookKeeper:   Uint160{},
 		Signer:           genesisBlockProposer,
 		Program: &program.Program{
-			Code:      []byte{0x00},
-			Parameter: []byte{0x00},
-		},
-	}
-
-	rewardAddress, _ := ToScriptHash("NcX9BWx5uxsevCZ2MUEbBJGoYGSNCuJJpf")
-	trans := &tx.Transaction{
-		TxType:         tx.Coinbase,
-		PayloadVersion: 0,
-		Payload: &payload.Coinbase{
-			Sender:    EmptyUint160,
-			Recipient: rewardAddress,
-			Amount:    Fixed64(config.DefaultMiningReward * StorageFactor),
-		},
-
-		Attributes: []*tx.TxnAttribute{},
-		Programs: []*program.Program{
-			{
+			Program: types.Program{
 				Code:      []byte{0x00},
 				Parameter: []byte{0x00},
 			},
 		},
+	}
+
+	rewardAddress, _ := ToScriptHash("NcX9BWx5uxsevCZ2MUEbBJGoYGSNCuJJpf")
+	payload := types.NewCoinbase(EmptyUint160, rewardAddress, Fixed64(config.DefaultMiningReward*StorageFactor))
+	pl, err := types.Pack(types.CoinbaseType, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	txn := types.NewMsgTx(pl, 0, 0, []byte{})
+	txn.Programs = []*types.Program{
+		{
+			Code:      []byte{0x00},
+			Parameter: []byte{0x00},
+		},
+	}
+	trans := &tx.Transaction{
+		MsgTx: *txn,
 	}
 
 	// genesis block
@@ -233,81 +234,10 @@ func (b *Block) SerializeUnsigned(w io.Writer) error {
 	return b.Header.SerializeUnsigned(w)
 }
 
-func (b *Block) MarshalJson() ([]byte, error) {
-	var blockInfo BlocksInfo
-
-	info, err := b.Header.MarshalJson()
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(info, &blockInfo.Header)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, v := range b.Transactions {
-		info, err := v.MarshalJson()
-		if err != nil {
-			return nil, err
-		}
-		var t tx.TransactionInfo
-		err = json.Unmarshal(info, &t)
-		if err != nil {
-			return nil, err
-		}
-		blockInfo.Transactions = append(blockInfo.Transactions, &t)
-	}
-
-	if b.hash != nil {
-		blockInfo.Hash = BytesToHexString(b.hash.ToArrayReverse())
-	}
-
-	data, err := json.Marshal(blockInfo)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+func (bd *Block) MarshalJson() ([]byte, error) {
+	return json.Marshal(bd)
 }
 
-func (b *Block) UnmarshalJson(data []byte) error {
-	blockInfo := new(BlocksInfo)
-	var err error
-	if err = json.Unmarshal(data, &blockInfo); err != nil {
-		return err
-	}
-
-	info, err := json.Marshal(blockInfo.Header)
-	if err != nil {
-		return err
-	}
-	var header Header
-	err = header.UnmarshalJson(info)
-	b.Header = &header
-
-	for _, v := range blockInfo.Transactions {
-		info, err := json.Marshal(v)
-		if err != nil {
-			return err
-		}
-		var txn tx.Transaction
-		err = txn.UnmarshalJson(info)
-		if err != nil {
-			return err
-		}
-		b.Transactions = append(b.Transactions, &txn)
-	}
-
-	if blockInfo.Hash != "" {
-		hashSlice, err := HexStringToBytesReverse(blockInfo.Hash)
-		if err != nil {
-			return err
-		}
-		hash, err := Uint256ParseFromBytes(hashSlice)
-		if err != nil {
-			return err
-		}
-		b.hash = &hash
-	}
-
-	return nil
+func (bd *Block) UnmarshalJson(data []byte) error {
+	return json.Unmarshal(data, bd)
 }

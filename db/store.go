@@ -11,9 +11,9 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/core/validation"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -260,43 +260,63 @@ func (cs *ChainStore) persist(b *Block) error {
 			return err
 		}
 
-		switch txn.TxType {
-		case tx.Coinbase:
-			coinbase := txn.Payload.(*payload.Coinbase)
-			acc := cs.States.GetOrNewAccount(coinbase.Recipient)
+		switch txn.UnsignedTx.Payload.Type {
+		case types.CoinbaseType:
+			pl, err := types.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+			coinbase := pl.(*types.Coinbase)
+			acc := cs.States.GetOrNewAccount(BytesToUint160(coinbase.Recipient))
 			amount := acc.GetBalance()
-			acc.SetBalance(amount + coinbase.Amount)
-			cs.States.setAccount(coinbase.Recipient, acc)
-		case tx.TransferAsset:
-			transfer := txn.Payload.(*payload.TransferAsset)
-			accSender := cs.States.GetOrNewAccount(transfer.Sender)
+			acc.SetBalance(amount + Fixed64(coinbase.Amount))
+			cs.States.setAccount(BytesToUint160(coinbase.Recipient), acc)
+		case types.TransferAssetType:
+			pl, err := types.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+			transfer := pl.(*types.TransferAsset)
+			accSender := cs.States.GetOrNewAccount(BytesToUint160(transfer.Sender))
 			amountSender := accSender.GetBalance()
-			accSender.SetBalance(amountSender - transfer.Amount)
-			cs.States.setAccount(transfer.Sender, accSender)
+			accSender.SetBalance(amountSender - Fixed64(transfer.Amount))
+			cs.States.setAccount(BytesToUint160(transfer.Sender), accSender)
 
-			accRecipient := cs.States.GetOrNewAccount(transfer.Recipient)
+			accRecipient := cs.States.GetOrNewAccount(BytesToUint160(transfer.Recipient))
 			amountRecipient := accRecipient.GetBalance()
-			accRecipient.SetBalance(amountRecipient + transfer.Amount)
-			cs.States.setAccount(transfer.Recipient, accRecipient)
-		case tx.RegisterName:
-			registerNamePayload := txn.Payload.(*payload.RegisterName)
-			err := cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
+			accRecipient.SetBalance(amountRecipient + Fixed64(transfer.Amount))
+			cs.States.setAccount(BytesToUint160(transfer.Recipient), accRecipient)
+		case types.RegisterNameType:
+			pl, err := types.Unpack(txn.UnsignedTx.Payload)
 			if err != nil {
 				return err
 			}
-		case tx.DeleteName:
-			deleteNamePayload := txn.Payload.(*payload.DeleteName)
-			err := cs.DeleteName(deleteNamePayload.Registrant)
+			registerNamePayload := pl.(*types.RegisterName)
+			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
 			if err != nil {
 				return err
 			}
-		case tx.Subscribe:
-			subscribePayload := txn.Payload.(*payload.Subscribe)
-			err := cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.Height)
+		case types.DeleteNameType:
+			pl, err := types.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+			deleteNamePayload := pl.(*types.DeleteName)
+			err = cs.DeleteName(deleteNamePayload.Registrant)
+			if err != nil {
+				return err
+			}
+		case types.SubscribeType:
+			pl, err := types.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+			subscribePayload := pl.(*types.Subscribe)
+			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.Height)
+			if err != nil {
+				return err
+			}
 
-			if err != nil {
-				return err
-			}
 		}
 	}
 
