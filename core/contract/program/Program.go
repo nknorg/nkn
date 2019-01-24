@@ -7,15 +7,11 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/types"
 )
 
 type Program struct {
-
-	//the contract program code,which will be run on VM or specific envrionment
-	Code []byte
-
-	//the program code's parameter
-	Parameter []byte
+	types.Program
 }
 
 //Serialize the Program

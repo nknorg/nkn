@@ -10,6 +10,7 @@ import (
 	. "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -55,7 +56,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	}
 
 	// get signature chain from commit transaction then add it to POR server
-	if txn.TxType == Commit {
+	if txn.UnsignedTx.Payload.Type == types.CommitType {
 		added, err := por.GetPorServer().AddSigChainFromTx(txn)
 		if err != nil {
 			return ErrerCode(NewDetailErr(err, ErrNoCode, err.Error()))
@@ -156,7 +157,7 @@ func (tp *TxnPool) cleanTransactionList(txns []*Transaction) error {
 	cleaned := 0
 	txnsNum := len(txns)
 	for _, txn := range txns {
-		if txn.TxType == Coinbase {
+		if txn.UnsignedTx.Payload.Type == types.CoinbaseType {
 			txnsNum = txnsNum - 1
 			continue
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
@@ -93,7 +94,7 @@ func (localNode *LocalNode) BroadcastTransaction(txn *transaction.Transaction) e
 		return err
 	}
 
-	if txn.TxType == transaction.Commit {
+	if txn.UnsignedTx.Payload.Type == types.CommitType {
 		_, err = localNode.nnet.SendBytesBroadcastAsync(buf, nnetpb.BROADCAST_PUSH)
 	} else {
 		_, err = localNode.nnet.SendBytesBroadcastAsync(buf, nnetpb.BROADCAST_TREE)

@@ -1,10 +1,11 @@
 package transaction
 
 import (
+	"math/rand"
+
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/contract/program"
-	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto/util"
+	"github.com/nknorg/nkn/types"
 )
 
 const (
@@ -12,78 +13,53 @@ const (
 )
 
 func NewTransferAssetTransaction(sender, recipient Uint160, value, fee Fixed64) (*Transaction, error) {
-	payload := &payload.TransferAsset{
-		Sender:    sender,
-		Recipient: recipient,
-		Amount:    value,
+	payload := types.NewTransferAsset(sender, recipient, value)
+	pl, err := types.Pack(types.TransferAssetType, payload)
+	if err != nil {
+		return nil, err
 	}
 
+	tx := types.NewMsgTx(pl, rand.Uint64(), 0, util.RandomBytes(TransactionNonceLength))
 	return &Transaction{
-		TxType:  TransferAsset,
-		Payload: payload,
-		Fee:     fee,
-		Attributes: []*TxnAttribute{
-			{
-				Usage: Nonce,
-				Data:  util.RandomBytes(TransactionNonceLength),
-			},
-		},
-		Programs: []*program.Program{},
+		MsgTx: *tx,
 	}, nil
 }
 
 func NewCommitTransaction(sigChain []byte, submitter Uint160) (*Transaction, error) {
-	CommitPayload := &payload.Commit{
-		SigChain:  sigChain,
-		Submitter: submitter,
+	payload := types.NewCommit(sigChain, submitter)
+	pl, err := types.Pack(types.CommitType, payload)
+	if err != nil {
+		return nil, err
 	}
 
+	tx := types.NewMsgTx(pl, rand.Uint64(), 0, util.RandomBytes(TransactionNonceLength))
 	return &Transaction{
-		TxType:  Commit,
-		Payload: CommitPayload,
-		Attributes: []*TxnAttribute{
-			{
-				Usage: Nonce,
-				Data:  util.RandomBytes(TransactionNonceLength),
-			},
-		},
-		Programs: []*program.Program{},
+		MsgTx: *tx,
 	}, nil
 }
 
 func NewRegisterNameTransaction(registrant []byte, name string) (*Transaction, error) {
-	RegisterNamePayload := &payload.RegisterName{
-		Registrant: registrant,
-		Name:       name,
+	payload := types.NewRegisterName(registrant, name)
+	pl, err := types.Pack(types.RegisterNameType, payload)
+	if err != nil {
+		return nil, err
 	}
 
+	tx := types.NewMsgTx(pl, rand.Uint64(), 0, util.RandomBytes(TransactionNonceLength))
 	return &Transaction{
-		TxType:  RegisterName,
-		Payload: RegisterNamePayload,
-		Attributes: []*TxnAttribute{
-			{
-				Usage: Nonce,
-				Data:  util.RandomBytes(TransactionNonceLength),
-			},
-		},
-		Programs: []*program.Program{},
+		MsgTx: *tx,
 	}, nil
 }
 
 func NewDeleteNameTransaction(registrant []byte) (*Transaction, error) {
-	DeleteNamePayload := &payload.DeleteName{
-		Registrant: registrant,
+	payload := types.NewDeleteName(registrant)
+	pl, err := types.Pack(types.DeleteNameType, payload)
+	if err != nil {
+		return nil, err
 	}
 
+	tx := types.NewMsgTx(pl, rand.Uint64(), 0, util.RandomBytes(TransactionNonceLength))
 	return &Transaction{
-		TxType:  DeleteName,
-		Payload: DeleteNamePayload,
-		Attributes: []*TxnAttribute{
-			{
-				Usage: Nonce,
-				Data:  util.RandomBytes(TransactionNonceLength),
-			},
-		},
-		Programs: []*program.Program{},
+		MsgTx: *tx,
 	}, nil
 }

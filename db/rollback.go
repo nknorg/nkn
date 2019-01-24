@@ -7,8 +7,7 @@ import (
 
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
-	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/transaction/payload"
+	"github.com/nknorg/nkn/types"
 )
 
 func (cs *ChainStore) Rollback(b *ledger.Block) error {
@@ -85,9 +84,14 @@ func (cs *ChainStore) rollbackPubSub(b *ledger.Block) error {
 	height := b.Header.Height
 
 	for _, txn := range b.Transactions {
-		if txn.TxType == tx.Subscribe {
-			subscribePayload := txn.Payload.(*payload.Subscribe)
-			err := cs.Unsubscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Duration, height)
+		if txn.UnsignedTx.Payload.Type == types.SubscribeType {
+			pl, err := types.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+
+			subscribePayload := pl.(*types.Subscribe)
+			err = cs.Unsubscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Duration, height)
 			if err != nil {
 				return err
 			}

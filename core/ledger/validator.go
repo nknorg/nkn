@@ -10,10 +10,10 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/signature"
 	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/transaction/payload"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
 )
 
@@ -40,26 +40,26 @@ func (iterable TransactionArray) Iterate(handler func(item *tx.Transaction) ErrC
 }
 
 func TransactionCheck(block *Block) error {
-	if block.Transactions == nil {
-		return errors.New("empty block")
-	}
-	if block.Transactions[0].TxType != tx.Coinbase {
-		return errors.New("first transaction in block is not Coinbase")
-	}
-	for i, txn := range block.Transactions {
-		if i != 0 && txn.TxType == tx.Coinbase {
-			return errors.New("Coinbase transaction order is incorrect")
-		}
-		if errCode := tx.VerifyTransaction(txn); errCode != ErrNoError {
-			return errors.New("transaction sanity check failed")
-		}
-		if errCode := tx.VerifyTransactionWithLedger(txn); errCode != ErrNoError {
-			return errors.New("transaction history check failed")
-		}
-	}
-	if errCode := tx.VerifyTransactionWithBlock(TransactionArray(block.Transactions)); errCode != ErrNoError {
-		return errors.New("transaction block check failed")
-	}
+	//if block.Transactions == nil {
+	//	return errors.New("empty block")
+	//}
+	//if block.Transactions[0].TxType != tx.Coinbase {
+	//	return errors.New("first transaction in block is not Coinbase")
+	//}
+	//for i, txn := range block.Transactions {
+	//	if i != 0 && txn.TxType == tx.Coinbase {
+	//		return errors.New("Coinbase transaction order is incorrect")
+	//	}
+	//	if errCode := tx.VerifyTransaction(txn); errCode != ErrNoError {
+	//		return errors.New("transaction sanity check failed")
+	//	}
+	//	if errCode := tx.VerifyTransactionWithLedger(txn); errCode != ErrNoError {
+	//		return errors.New("transaction history check failed")
+	//	}
+	//}
+	//if errCode := tx.VerifyTransactionWithBlock(TransactionArray(block.Transactions)); errCode != ErrNoError {
+	//	return errors.New("transaction block check failed")
+	//}
 
 	return nil
 }
@@ -139,10 +139,16 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			if err != nil {
 				return nil, nil, 0, err
 			}
-			payload, ok := txn.Payload.(*payload.Commit)
-			if !ok {
+
+			if txn.UnsignedTx.Payload.Type != types.CommitType {
 				return nil, nil, 0, errors.New("invalid transaction type")
 			}
+			commit, err := types.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				return nil, nil, 0, errors.New("invalid payload type")
+			}
+
+			payload := commit.(*types.Commit)
 			sigchain := &por.SigChain{}
 			proto.Unmarshal(payload.SigChain, sigchain)
 			publicKey, chordID, err = sigchain.GetMiner()
