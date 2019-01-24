@@ -13,8 +13,8 @@ func heightToKey(height uint32) []byte {
 	return key
 }
 
-// Generates a random duration
-func randDuration(average time.Duration) time.Duration {
-	// uniform random number between 2/3 * average to 4/3 * average
-	return time.Duration(2.0 / 3.0 * (1 + rand.Float64()) * float64(average))
+// randDuration generates a random duration
+func randDuration(average time.Duration, delta float64) time.Duration {
+	// uniform random number between (1 - delta) * average to (1 + delta) * average
+	return time.Duration((1 - delta + 2*rand.Float64()*delta) * float64(average))
 }

@@ -30,10 +30,13 @@ func (consensus *Consensus) startGettingNeighborConsensusState() {
 			if localConsensusHeight == 0 || localConsensusHeight+1 < majorityConsensusHeight {
 				if majorityConsensusHeight+1 > localLedgerHeight {
 					consensus.setNextConsensusHeight(majorityConsensusHeight + 1)
+					if consensus.localNode.GetSyncState() == pb.PersistFinished {
+						consensus.localNode.SetSyncState(pb.WaitForSyncing)
+					}
 				}
 			}
 		}
-		timer.ResetTimer(getNeighborConsensusStateTimer, randDuration(getConsensusStateInterval))
+		timer.ResetTimer(getNeighborConsensusStateTimer, randDuration(getConsensusStateInterval, 1.0/6.0))
 	}
 }
 

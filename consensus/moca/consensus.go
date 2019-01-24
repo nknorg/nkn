@@ -252,16 +252,19 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		return err
 	}
 
+	syncState := consensus.localNode.GetSyncState()
 	if block.Header.Height == ledger.DefaultLedger.Store.GetHeight()+1 {
-		if consensus.localNode.GetSyncState() == pb.WaitForSyncing {
+		if syncState == pb.WaitForSyncing {
 			consensus.localNode.SetSyncState(pb.PersistFinished)
 		}
 		return ledger.DefaultLedger.Blockchain.AddBlock(block)
 	}
 
-	if consensus.localNode.GetSyncState() == pb.PersistFinished {
-		log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.Height, ledger.DefaultLedger.Store.GetHeight())
+	if syncState == pb.SyncStarted || syncState == pb.SyncFinished {
+		return nil
 	}
+
+	log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.Height, ledger.DefaultLedger.Store.GetHeight())
 
 	elc, loaded, err := consensus.loadOrCreateElection(heightToKey(block.Header.Height))
 	if err != nil {
