@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package types;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+
+enum PayloadType {
+    CoinbaseType       = 0;
+	TransferAssetType  = 1;
+	CommitType         = 2;
+	RegisterNameType   = 3;
+	TransferNameType   = 4;
+	DeleteNameType     = 5;
+	SubscribeType      = 6;
+}
+
+message Payload {
+	PayloadType     Type   = 1;
+	bytes           Data   = 2;
+}
+
+message Coinbase {
+	bytes Sender      = 1;
+	bytes Recipient   = 2;
+	int64 Amount      = 3;
+}
+
+message Commit {
+	bytes SigChain     = 1;
+	bytes Submitter    = 2;
+}
+
+message DeleteName {
+	bytes  Registrant  = 1;
+    string Name        = 2;
+}
+
+message RegisterName {
+	bytes  Registrant = 1;
+	string Name       = 2;
+}
+
+message Subscribe {
+	bytes Subscriber   = 1;
+	string Identifier  = 2;
+	string Topic       = 3;
+	uint32 Bucket      = 4; 
+	uint32 Duration    = 5;
+	string Meta        = 6;
+}
+
+message TransferAsset {
+	bytes Sender    = 1;
+	bytes Recipient = 2;
+	int64 Amount    = 3;
+}
+
+
+
+

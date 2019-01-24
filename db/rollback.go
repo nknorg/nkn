@@ -7,8 +7,7 @@ import (
 
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
-	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/transaction/payload"
+	"github.com/nknorg/nkn/types"
 )
 
 func (cs *ChainStore) Rollback(b *ledger.Block) error {
@@ -87,9 +86,14 @@ func (cs *ChainStore) rollbackCurrentBlockHash(b *ledger.Block) error {
 
 func (cs *ChainStore) rollbackNames(b *ledger.Block) error {
 	for _, txn := range b.Transactions {
-		if txn.TxType == tx.RegisterName {
-			registerNamePayload := txn.Payload.(*payload.RegisterName)
-			err := cs.DeleteName(registerNamePayload.Registrant)
+		if txn.UnsignedTx.Payload.Type == types.RegisterNameType {
+			pl, err := types.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+
+			registerNamePayload := pl.(*types.RegisterName)
+			err = cs.DeleteName(registerNamePayload.Registrant)
 			if err != nil {
 				return err
 			}
@@ -97,14 +101,16 @@ func (cs *ChainStore) rollbackNames(b *ledger.Block) error {
 	}
 
 	for _, txn := range b.Transactions {
-		if txn.TxType == tx.DeleteName {
-			version := txn.PayloadVersion
-			if version > 0 { // can't rollback DeleteName tx with version 0
-				deleteNamePayload := txn.Payload.(*payload.DeleteName)
-				err := cs.SaveName(deleteNamePayload.Registrant, deleteNamePayload.Name)
-				if err != nil {
-					return err
-				}
+		if txn.UnsignedTx.Payload.Type == types.DeleteNameType {
+			pl, err := types.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+
+			deleteNamePayload := pl.(*types.DeleteName)
+			err = cs.SaveName(deleteNamePayload.Registrant, deleteNamePayload.Name)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -116,9 +122,15 @@ func (cs *ChainStore) rollbackPubSub(b *ledger.Block) error {
 	height := b.Header.Height
 
 	for _, txn := range b.Transactions {
-		if txn.TxType == tx.Subscribe {
-			subscribePayload := txn.Payload.(*payload.Subscribe)
-			err := cs.Unsubscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, height)
+		if txn.UnsignedTx.Payload.Type == types.SubscribeType {
+			pl, err := types.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+
+			subscribePayload := pl.(*types.Subscribe)
+			err = cs.Unsubscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, height)
+
 			if err != nil {
 				return err
 			}
