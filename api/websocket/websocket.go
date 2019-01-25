@@ -119,7 +119,7 @@ func PushSigChainBlockHash(v interface{}) {
 	if block, ok := v.(*ledger.Block); ok {
 		resp["Action"] = "updateSigChainBlockHash"
 		//resp["Result"] = common.GetBlockInfo(block).BlockData.PrevBlockHash
-		resp["Result"] = BytesToHexString(block.Header.PrevBlockHash.ToArrayReverse())
+		resp["Result"] = BytesToHexString(block.Header.UnsignedHeader.PrevBlockHash)
 		ws.PushResult(resp)
 	}
 }

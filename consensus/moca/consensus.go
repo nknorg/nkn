@@ -257,7 +257,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		return fmt.Errorf("Convert block %s from proposal cache error", electedBlockHash.ToHexString())
 	}
 
-	if block.Header.Height == ledger.DefaultLedger.Store.GetHeight()+1 {
+	if block.Header.UnsignedHeader.Height == ledger.DefaultLedger.Store.GetHeight()+1 {
 		if consensus.localNode.GetSyncState() == pb.WaitForSyncing {
 			consensus.localNode.SetSyncState(pb.PersistFinished)
 		}
@@ -265,10 +265,10 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 	}
 
 	if consensus.localNode.GetSyncState() == pb.PersistFinished {
-		log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.Height, ledger.DefaultLedger.Store.GetHeight())
+		log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.UnsignedHeader.Height, ledger.DefaultLedger.Store.GetHeight())
 	}
 
-	elc, loaded, err := consensus.loadOrCreateElection(heightToKey(block.Header.Height))
+	elc, loaded, err := consensus.loadOrCreateElection(heightToKey(block.Header.UnsignedHeader.Height))
 	if err != nil {
 		return fmt.Errorf("Error load election: %v", err)
 	}
@@ -290,7 +290,8 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 	}
 
 	go func() {
-		started, err := consensus.localNode.StartSyncing(block.Header.PrevBlockHash, block.Header.Height-1, neighbors)
+		prevHash, _ := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.PrevBlockHash)
+		started, err := consensus.localNode.StartSyncing(prevHash, block.Header.UnsignedHeader.Height-1, neighbors)
 		if !started {
 			return
 		}
@@ -298,7 +299,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 			panic(fmt.Errorf("Error syncing blocks: %v", err))
 		}
 
-		err = consensus.saveBlocksAcceptedDuringSync(block.Header.Height)
+		err = consensus.saveBlocksAcceptedDuringSync(block.Header.UnsignedHeader.Height)
 		if err != nil {
 			log.Errorf("Error saving blocks accepted during sync: %v", err)
 			return

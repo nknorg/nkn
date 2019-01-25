@@ -424,13 +424,16 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 			}
 			if height < stopHeight {
 				nextHeader := headers[height-startHeight+1]
-				if nextHeader == nil || headerHash != nextHeader.PrevBlockHash {
-					log.Warningf("Header hash %s is different from prev hash in next block %s", (&headerHash).ToHexString(), nextHeader.PrevBlockHash.ToHexString())
+				nextPrevHash, _ := common.Uint256ParseFromBytes(nextHeader.UnsignedHeader.PrevBlockHash)
+				if nextHeader == nil || headerHash != nextPrevHash {
+					log.Warningf("Header hash %s is different from prev hash in next block %s", (&headerHash).ToHexString(), nextHeader.UnsignedHeader.PrevBlockHash)
 					return false
 				}
 			}
-			if height == startHeight && header.PrevBlockHash != startPrevHash {
-				log.Warningf("Start header prev hash %s is different from start prev hash %s", header.PrevBlockHash.ToHexString(), startPrevHash.ToHexString())
+
+			prevHash, _ := common.Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+			if height == startHeight && prevHash != startPrevHash {
+				log.Warningf("Start header prev hash %s is different from start prev hash %s", header.UnsignedHeader.PrevBlockHash, startPrevHash.ToHexString())
 				return false
 			}
 			headers[height-startHeight] = header

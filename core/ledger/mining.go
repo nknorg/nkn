@@ -4,7 +4,6 @@ import (
 	"math/rand"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/contract/program"
 	"github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
@@ -16,7 +15,7 @@ import (
 )
 
 type Mining interface {
-	BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType WinnerType, timestamp int64) (*Block, error)
+	BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType types.WinnerType, timestamp int64) (*Block, error)
 }
 
 type BuiltinMining struct {
@@ -31,7 +30,7 @@ func NewBuiltinMining(account *vault.Account, txnCollector *transaction.TxnColle
 	}
 }
 
-func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType WinnerType, timestamp int64) (*Block, error) {
+func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType types.WinnerType, timestamp int64) (*Block, error) {
 	var txnList []*transaction.Transaction
 	var txnHashList []common.Uint256
 	coinbase := bm.CreateCoinbaseTransaction()
@@ -56,27 +55,32 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	if err != nil {
 		return nil, err
 	}
+	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
+	curStateHash := DefaultLedger.Store.GetStateRootHash()
 	header := &Header{
-		Version:          HeaderVersion,
-		PrevBlockHash:    DefaultLedger.Store.GetCurrentBlockHash(),
-		Timestamp:        timestamp,
-		Height:           height,
-		ConsensusData:    rand.Uint64(),
-		TransactionsRoot: txnRoot,
-		StateRoot:        DefaultLedger.Store.GetStateRootHash(),
-		NextBookKeeper:   common.Uint160{},
-		WinnerHash:       winningHash,
-		WinnerType:       winnerType,
-		Signer:           encodedPubKey,
-		ChordID:          chordID,
-		Signature:        nil,
-		Program: &program.Program{
-			Program: types.Program{
+		BlockHeader: types.BlockHeader{
+			UnsignedHeader: &types.UnsignedHeader{
+				Version:          HeaderVersion,
+				PrevBlockHash:    curBlockHash.ToArray(),
+				Timestamp:        timestamp,
+				Height:           height,
+				ConsensusData:    rand.Uint64(),
+				TransactionsRoot: txnRoot.ToArray(),
+				StateRoot:        curStateHash.ToArray(),
+				NextBookKeeper:   common.EmptyUint160.ToArray(),
+				WinnerHash:       winningHash.ToArray(),
+				WinnerType:       winnerType,
+				Signer:           encodedPubKey,
+				ChordID:          chordID,
+			},
+			Signature: nil,
+			Program: &types.Program{
 				Code:      []byte{0x00},
 				Parameter: []byte{0x00},
 			},
 		},
 	}
+
 	hash := signature.GetHashForSigning(header)
 	sig, err := crypto.Sign(bm.account.PrivateKey, hash)
 	if err != nil {

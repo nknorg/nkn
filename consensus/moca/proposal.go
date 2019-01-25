@@ -99,7 +99,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				acceptProposal = false
 			}
 
-			err = ledger.TimestampCheck(proposal.Header.Timestamp)
+			err = ledger.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp)
 			if err != nil {
 				log.Warningf("Proposal fails to pass timestamp check: %v", err)
 				acceptProposal = false
@@ -191,7 +191,7 @@ func (consensus *Consensus) receiveProposal(block *ledger.Block) error {
 	consensus.proposalLock.RLock()
 	defer consensus.proposalLock.RUnlock()
 
-	receivedHeight := block.Header.Height
+	receivedHeight := block.Header.UnsignedHeader.Height
 	expectedHeight := consensus.expectedHeight
 	if receivedHeight != expectedHeight {
 		return fmt.Errorf("Receive invalid proposal height %d instead of %d", receivedHeight, expectedHeight)

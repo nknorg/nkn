@@ -64,16 +64,17 @@ func (b *Block) Deserialize(r io.Reader) error {
 		tharray = append(tharray, txhash)
 	}
 
-	b.Header.TransactionsRoot, err = crypto.ComputeRoot(tharray)
+	root, err := crypto.ComputeRoot(tharray)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "Block Deserialize merkleTree compute failed")
 	}
+	b.Header.UnsignedHeader.TransactionsRoot = root.ToArray()
 
 	return nil
 }
 
 func (b *Block) GetSigner() ([]byte, []byte, error) {
-	return b.Header.Signer, b.Header.ChordID, nil
+	return b.Header.UnsignedHeader.Signer, b.Header.UnsignedHeader.ChordID, nil
 }
 
 func (b *Block) Trim(w io.Writer) error {
@@ -112,10 +113,11 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 		tharray = append(tharray, txhash)
 	}
 
-	b.Header.TransactionsRoot, err = crypto.ComputeRoot(tharray)
+	root, err := crypto.ComputeRoot(tharray)
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "Block Deserialize merkleTree compute failed")
 	}
+	b.Header.UnsignedHeader.TransactionsRoot = root.ToArray()
 
 	return nil
 }
@@ -172,16 +174,18 @@ func GenesisBlockInit() (*Block, error) {
 	genesisBlockProposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)
 	// block header
 	genesisBlockHeader := &Header{
-		Version:          BlockVersion,
-		PrevBlockHash:    Uint256{},
-		TransactionsRoot: Uint256{},
-		Timestamp:        time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix(),
-		Height:           uint32(0),
-		ConsensusData:    GenesisNonce,
-		NextBookKeeper:   Uint160{},
-		Signer:           genesisBlockProposer,
-		Program: &program.Program{
-			Program: types.Program{
+		BlockHeader: types.BlockHeader{
+			UnsignedHeader: &types.UnsignedHeader{
+				Version:       BlockVersion,
+				PrevBlockHash: EmptyUint256.ToArray(),
+				Timestamp:     time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix(),
+
+				Height:         uint32(0),
+				ConsensusData:  GenesisNonce,
+				NextBookKeeper: EmptyUint160.ToArray(),
+				Signer:         genesisBlockProposer,
+			},
+			Program: &types.Program{
 				Code:      []byte{0x00},
 				Parameter: []byte{0x00},
 			},
@@ -225,7 +229,7 @@ func (b *Block) RebuildMerkleRoot() error {
 	if err != nil {
 		return NewDetailErr(err, ErrNoCode, "[Block] , RebuildMerkleRoot ComputeRoot failed.")
 	}
-	b.Header.TransactionsRoot = hash
+	b.Header.UnsignedHeader.TransactionsRoot = hash.ToArray()
 	return nil
 
 }
