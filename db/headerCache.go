@@ -28,9 +28,9 @@ func (hc *HeaderCache) AddHeaderToCache(header *ledger.Header) {
 	hc.mu.Lock()
 	hash := header.Hash()
 	hc.headerCache[hash] = *header
-	hc.headerIndex[header.Height] = hash
-	if hc.currentCacheHeight < header.Height {
-		hc.currentCacheHeight = header.Height
+	hc.headerIndex[header.UnsignedHeader.Height] = hash
+	if hc.currentCacheHeight < header.UnsignedHeader.Height {
+		hc.currentCacheHeight = header.UnsignedHeader.Height
 	}
 	hc.mu.Unlock()
 }
@@ -43,8 +43,8 @@ func (hc *HeaderCache) RemoveCachedHeader(stopHeight uint32) {
 		return
 	}
 	for hash, header := range hc.headerCache {
-		if header.Height < stopHeight {
-			delete(hc.headerIndex, header.Height)
+		if header.UnsignedHeader.Height < stopHeight {
+			delete(hc.headerIndex, header.UnsignedHeader.Height)
 			delete(hc.headerCache, hash)
 		}
 	}

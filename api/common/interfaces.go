@@ -170,7 +170,7 @@ func GetBlockTransactions(block *ledger.Block) interface{} {
 	}
 	b := BlockTransactions{
 		Hash:         common.BytesToHexString(hash.ToArrayReverse()),
-		Height:       block.Header.Height,
+		Height:       block.Header.UnsignedHeader.Height,
 		Transactions: trans,
 	}
 	return b

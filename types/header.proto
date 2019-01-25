@@ -30,6 +30,6 @@ message UnsignedHeader {
 message BlockHeader {
     UnsignedHeader UnsignedHeader     = 1;
 	bytes          Signature          = 2;
-    Program        Programs           = 3;
+    Program        Program           = 3;
 }
 

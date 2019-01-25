@@ -261,7 +261,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 	}
 
 	syncState := consensus.localNode.GetSyncState()
-	if block.Header.Height == ledger.DefaultLedger.Store.GetHeight()+1 {
+	if block.Header.UnsignedHeader.Height == ledger.DefaultLedger.Store.GetHeight()+1 {
 		if syncState == pb.WaitForSyncing {
 			consensus.localNode.SetSyncState(pb.PersistFinished)
 		}
@@ -272,9 +272,9 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		return nil
 	}
 
-	log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.Height, ledger.DefaultLedger.Store.GetHeight())
+	log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.UnsignedHeader.Height, ledger.DefaultLedger.Store.GetHeight())
 
-	elc, loaded, err := consensus.loadOrCreateElection(heightToKey(block.Header.Height))
+	elc, loaded, err := consensus.loadOrCreateElection(heightToKey(block.Header.UnsignedHeader.Height))
 	if err != nil {
 		return fmt.Errorf("Error load election: %v", err)
 	}
@@ -296,7 +296,8 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 	}
 
 	go func() {
-		started, err := consensus.localNode.StartSyncing(block.Header.PrevBlockHash, block.Header.Height-1, neighbors)
+		prevhash, _ := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.PrevBlockHash)
+		started, err := consensus.localNode.StartSyncing(prevhash, block.Header.UnsignedHeader.Height-1, neighbors)
 		if err != nil {
 			log.Errorf("Error syncing blocks: %v", err)
 			if started {
@@ -309,7 +310,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 
 		defer consensus.localNode.ResetSyncing()
 
-		err = consensus.saveBlocksAcceptedDuringSync(block.Header.Height)
+		err = consensus.saveBlocksAcceptedDuringSync(block.Header.UnsignedHeader.Height)
 		if err != nil {
 			log.Errorf("Error saving blocks accepted during sync: %v", err)
 			consensus.localNode.SetSyncState(pb.WaitForSyncing)
