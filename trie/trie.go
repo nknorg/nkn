@@ -137,7 +137,10 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
 		}
 		return &shortNode{key[:matchLen], branch, nodeFlag{dirty: true}}, nil
 	case *fullNode:
-		log.Info("---------->", key[0], reflect.TypeOf(n.Children[key[0]]))
+		x, ok := n.Children[key[0]].(valueNode)
+		if ok {
+			log.Info("---------->", key[0], reflect.TypeOf(n.Children[key[0]]), len(x), n.fString(""))
+		}
 		nn, err := t.insert(n.Children[key[0]], append(prefix, key[0]), key[1:], value)
 		if err != nil {
 			return nil, err
@@ -159,7 +162,7 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
 		}
 		return nn, nil
 	default:
-		panic(fmt.Sprintf("invalid insert node type : %v, %v", reflect.TypeOf(n), n.fString("")))
+		panic(fmt.Sprintf("invalid insert node type : %v,, %v", reflect.TypeOf(n), n))
 	}
 }
 
