@@ -11,9 +11,3 @@ message Block {
 	repeated MsgTx  Transactions           = 2;
 }
 
-message TrimmedBlock {
-	BlockHeader     Header           = 1;
-	repeated bytes  Transactions     = 2;
-}
-
-

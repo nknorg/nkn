@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"io"
 
 	. "github.com/nknorg/nkn/common"
@@ -13,172 +12,73 @@ import (
 	sig "github.com/nknorg/nkn/core/signature"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/types"
 )
 
 type WinnerType byte
 
 const (
-	// The proof of Block proposer validity should exists in previous Block header.
-	// GenesisHash means next Block proposer is GenesisBlockProposer.
-	GenesisSigner WinnerType = 0
-	// WinningTxnHash means next Block proposer is a node on signature chain.
-	TxnSigner WinnerType = 1
-	// WinningBlockHash means next Block proposer is signer of historical Block.
-	BlockSigner WinnerType = 2
-
-	// Genesis block proposer will propose first 5 blocks
 	NumGenesisBlocks = por.SigChainMiningHeightOffset + por.SigChainBlockHeightOffset - 1
-
-	// initial version is 0, current version is 1
-	HeaderVersion = 1
+	HeaderVersion    = 1
 )
 
 type Header struct {
-	Version          uint32
-	PrevBlockHash    Uint256
-	TransactionsRoot Uint256
-	StateRoot        Uint256
-	Timestamp        int64
-	Height           uint32
-	ConsensusData    uint64
-	NextBookKeeper   Uint160
-	WinnerHash       Uint256
-	WinnerType       WinnerType
-	Signer           []byte
-	ChordID          []byte
-	Signature        []byte
-	Program          *program.Program
-	hash             Uint256
+	types.BlockHeader
+	hash Uint256
 }
 
 //Serialize the blockheader
 func (h *Header) Serialize(w io.Writer) error {
-	h.SerializeUnsigned(w)
-	serialization.WriteVarBytes(w, h.Signature)
-	w.Write([]byte{byte(1)})
-	if h.Program != nil {
-		h.Program.Serialize(w)
+	data, err := h.Marshal()
+	if err != nil {
+		return err
 	}
-	return nil
+
+	err = serialization.WriteVarBytes(w, data)
+	return err
 }
 
 //Serialize the blockheader data without program
 func (h *Header) SerializeUnsigned(w io.Writer) error {
-	serialization.WriteUint32(w, h.Version)
-	h.PrevBlockHash.Serialize(w)
-	h.TransactionsRoot.Serialize(w)
-	h.StateRoot.Serialize(w)
-	serialization.WriteUint64(w, uint64(h.Timestamp))
-	serialization.WriteUint32(w, h.Height)
-	serialization.WriteUint64(w, h.ConsensusData)
-	h.NextBookKeeper.Serialize(w)
-	h.WinnerHash.Serialize(w)
-	serialization.WriteByte(w, byte(h.WinnerType))
-	serialization.WriteVarBytes(w, h.Signer)
-	if h.Version == HeaderVersion {
-		serialization.WriteVarBytes(w, h.ChordID)
+	data, err := h.UnsignedHeader.Marshal()
+	if err != nil {
+		return err
 	}
-	return nil
+
+	err = serialization.WriteVarBytes(w, data)
+	return err
 }
 
 func (h *Header) Deserialize(r io.Reader) error {
-	h.DeserializeUnsigned(r)
-	h.Signature, _ = serialization.ReadVarBytes(r)
-	p := make([]byte, 1)
-	n, err := r.Read(p)
-	if n > 0 {
-		x := []byte(p[:])
-
-		if x[0] != byte(1) {
-			return NewDetailErr(errors.New("Header Deserialize get format error."), ErrNoCode, "")
-		}
-	} else {
-		return NewDetailErr(errors.New("Header Deserialize get format error."), ErrNoCode, "")
-	}
-
-	pg := new(program.Program)
-	err = pg.Deserialize(r)
+	data, err := serialization.ReadVarBytes(r)
 	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Header item Program Deserialize failed.")
+		return err
 	}
-	h.Program = pg
-	return nil
+
+	err = h.Unmarshal(data)
+	return err
+
 }
 
 func (h *Header) DeserializeUnsigned(r io.Reader) error {
-	//Version
-	temp, err := serialization.ReadUint32(r)
-	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Header item Version Deserialize failed.")
-	}
-	h.Version = temp
-
-	//PrevBlockHash
-	preBlock := new(Uint256)
-	err = preBlock.Deserialize(r)
-	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Header item preBlock Deserialize failed.")
-	}
-	h.PrevBlockHash = *preBlock
-
-	//TransactionsRoot
-	txRoot := new(Uint256)
-	err = txRoot.Deserialize(r)
-	if err != nil {
-		return err
-	}
-	h.TransactionsRoot = *txRoot
-
-	//stateRoot
-	sRoot := new(Uint256)
-	err = sRoot.Deserialize(r)
-	if err != nil {
-		return err
-	}
-	h.StateRoot = *sRoot
-
-	//Timestamp
-	time, _ := serialization.ReadUint64(r)
-	h.Timestamp = int64(time)
-
-	//Height
-	temp, _ = serialization.ReadUint32(r)
-	h.Height = temp
-
-	//consensusData
-	h.ConsensusData, _ = serialization.ReadUint64(r)
-
-	//NextBookKeeper
-	h.NextBookKeeper.Deserialize(r)
-
-	h.WinnerHash.Deserialize(r)
-
-	t, err := serialization.ReadByte(r)
-	if err != nil {
-		return err
-	}
-	h.WinnerType = WinnerType(t)
-
-	h.Signer, err = serialization.ReadVarBytes(r)
+	data, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
 	}
 
-	if h.Version == HeaderVersion {
-		h.ChordID, err = serialization.ReadVarBytes(r)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	err = h.UnsignedHeader.Unmarshal(data)
+	return err
 }
 
 func (h *Header) GetProgramHashes() ([]Uint160, error) {
 	programHashes := []Uint160{}
 	zero := Uint256{}
 
-	if h.PrevBlockHash == zero {
+	prevHash, err := Uint256ParseFromBytes(h.UnsignedHeader.PrevBlockHash)
+	if err != nil {
+		return programHashes, err
+	}
+	if prevHash == zero {
 		pg := *h.Program
 		outputHashes, err := ToCodeHash(pg.Code)
 		if err != nil {
@@ -187,11 +87,11 @@ func (h *Header) GetProgramHashes() ([]Uint160, error) {
 		programHashes = append(programHashes, outputHashes)
 		return programHashes, nil
 	} else {
-		prev_header, err := DefaultLedger.Store.GetHeader(h.PrevBlockHash)
+		prev_header, err := DefaultLedger.Store.GetHeader(prevHash)
 		if err != nil {
 			return programHashes, err
 		}
-		programHashes = append(programHashes, prev_header.NextBookKeeper)
+		programHashes = append(programHashes, BytesToUint160(prev_header.UnsignedHeader.NextBookKeeper))
 		return programHashes, nil
 	}
 
@@ -201,11 +101,13 @@ func (h *Header) SetPrograms(programs []*program.Program) {
 	if len(programs) != 1 {
 		return
 	}
-	h.Program = programs[0]
+	h.Program = &programs[0].Program
 }
 
 func (h *Header) GetPrograms() []*program.Program {
-	return []*program.Program{h.Program}
+	return []*program.Program{
+		&program.Program{*h.Program},
+	}
 }
 
 func (h *Header) Hash() Uint256 {
