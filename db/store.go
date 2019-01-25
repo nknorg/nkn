@@ -212,7 +212,7 @@ func (cs *ChainStore) GetBlock(hash Uint256) (*Block, error) {
 func (cs *ChainStore) GetHeightByBlockHash(hash Uint256) (uint32, error) {
 	header, err := cs.getHeaderWithCache(hash)
 	if err == nil {
-		return header.Height, nil
+		return header.UnsignedHeader.Height, nil
 	}
 
 	block, err := cs.GetBlock(hash)
@@ -220,11 +220,11 @@ func (cs *ChainStore) GetHeightByBlockHash(hash Uint256) (uint32, error) {
 		return 0, err
 	}
 
-	return block.Header.Height, nil
+	return block.Header.UnsignedHeader.Height, nil
 }
 
 func (cs *ChainStore) IsBlockInStore(hash Uint256) bool {
-	if header, err := cs.GetHeader(hash); err != nil || header.Height > cs.currentBlockHeight {
+	if header, err := cs.GetHeader(hash); err != nil || header.UnsignedHeader.Height > cs.currentBlockHeight {
 		return false
 	}
 
@@ -246,14 +246,14 @@ func (cs *ChainStore) persist(b *Block) error {
 	//batch put headerhash
 	headerHashBuffer := bytes.NewBuffer(nil)
 	headerHash.Serialize(headerHashBuffer)
-	if err := cs.st.BatchPut(blockhashKey(b.Header.Height), headerHashBuffer.Bytes()); err != nil {
+	if err := cs.st.BatchPut(blockhashKey(b.Header.UnsignedHeader.Height), headerHashBuffer.Bytes()); err != nil {
 		return err
 	}
 
 	//batch put transactions
 	for _, txn := range b.Transactions {
 		w := bytes.NewBuffer(nil)
-		serialization.WriteUint32(w, b.Header.Height)
+		serialization.WriteUint32(w, b.Header.UnsignedHeader.Height)
 		txn.Serialize(w)
 
 		if err := cs.st.BatchPut(transactionKey(txn.Hash()), w.Bytes()); err != nil {
@@ -312,7 +312,7 @@ func (cs *ChainStore) persist(b *Block) error {
 				return err
 			}
 			subscribePayload := pl.(*types.Subscribe)
-			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.Height)
+			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.UnsignedHeader.Height)
 			if err != nil {
 				return err
 			}
@@ -320,7 +320,7 @@ func (cs *ChainStore) persist(b *Block) error {
 		}
 	}
 
-	expiredKeys := cs.GetExpiredKeys(b.Header.Height)
+	expiredKeys := cs.GetExpiredKeys(b.Header.UnsignedHeader.Height)
 	for i := 0; i < len(expiredKeys); i++ {
 		err := cs.RemoveExpiredKey(expiredKeys[i])
 		if err != nil {
@@ -334,14 +334,13 @@ func (cs *ChainStore) persist(b *Block) error {
 		return err
 	}
 
-	fmt.Println("xxxxxxxxxxxxx", root.ToHexString(), b.Header.StateRoot.ToHexString())
 	err = cs.st.BatchPut(currentStateTrie(), root.ToArray())
 	if err != nil {
 		return err
 	}
 
 	//batch put currentblockhash
-	serialization.WriteUint32(headerHashBuffer, b.Header.Height)
+	serialization.WriteUint32(headerHashBuffer, b.Header.UnsignedHeader.Height)
 	err = cs.st.BatchPut(currentBlockHashKey(), headerHashBuffer.Bytes())
 	if err != nil {
 		return err
@@ -357,7 +356,7 @@ func (cs *ChainStore) SaveBlock(b *Block, ledger *Ledger, fastAdd bool) error {
 	}
 
 	cs.mu.Lock()
-	cs.currentBlockHeight = b.Header.Height
+	cs.currentBlockHeight = b.Header.UnsignedHeader.Height
 	cs.currentBlockHash = b.Hash()
 	cs.mu.Unlock()
 
@@ -389,18 +388,19 @@ func (cs *ChainStore) GetHeight() uint32 {
 }
 
 func (cs *ChainStore) verifyHeader(header *Header) bool {
-	prevHeader, err := cs.getHeaderWithCache(header.PrevBlockHash)
+	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+	prevHeader, err := cs.getHeaderWithCache(prevHash)
 	if err != nil || prevHeader == nil {
 		log.Error("[verifyHeader] failed, not found prevHeader.")
 		return false
 	}
 
-	if prevHeader.Height+1 != header.Height {
+	if prevHeader.UnsignedHeader.Height+1 != header.UnsignedHeader.Height {
 		log.Error("[verifyHeader] failed, prevHeader.Height + 1 != header.Height")
 		return false
 	}
 
-	if prevHeader.Timestamp >= header.Timestamp {
+	if prevHeader.UnsignedHeader.Timestamp >= header.UnsignedHeader.Timestamp {
 		log.Error("[verifyHeader] failed, prevHeader.Timestamp >= header.Timestamp")
 		return false
 	}
@@ -417,7 +417,7 @@ func (cs *ChainStore) verifyHeader(header *Header) bool {
 
 func (cs *ChainStore) AddHeaders(headers []*Header) error {
 	sort.Slice(headers, func(i, j int) bool {
-		return headers[i].Height < headers[j].Height
+		return headers[i].UnsignedHeader.Height < headers[j].UnsignedHeader.Height
 	})
 
 	for i := 0; i < len(headers); i++ {

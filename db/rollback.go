@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/types"
@@ -15,7 +16,7 @@ func (cs *ChainStore) Rollback(b *ledger.Block) error {
 		return err
 	}
 
-	if b.Header.Height == 0 {
+	if b.Header.UnsignedHeader.Height == 0 {
 		return errors.New("the genesis block need not be rolled back.")
 	}
 
@@ -68,16 +69,17 @@ func (cs *ChainStore) rollbackTransaction(b *ledger.Block) error {
 
 func (cs *ChainStore) rollbackBlockHash(b *ledger.Block) error {
 	height := make([]byte, 4)
-	binary.LittleEndian.PutUint32(height[:], b.Header.Height)
+	binary.LittleEndian.PutUint32(height[:], b.Header.UnsignedHeader.Height)
 	return cs.st.BatchDelete(append([]byte{byte(DATA_BlockHash)}, height...))
 }
 
 func (cs *ChainStore) rollbackCurrentBlockHash(b *ledger.Block) error {
 	value := new(bytes.Buffer)
-	if _, err := b.Header.PrevBlockHash.Serialize(value); err != nil {
+	prevHash, _ := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
+	if _, err := prevHash.Serialize(value); err != nil {
 		return err
 	}
-	if err := serialization.WriteUint32(value, b.Header.Height-1); err != nil {
+	if err := serialization.WriteUint32(value, b.Header.UnsignedHeader.Height-1); err != nil {
 		return err
 	}
 
@@ -119,7 +121,7 @@ func (cs *ChainStore) rollbackNames(b *ledger.Block) error {
 }
 
 func (cs *ChainStore) rollbackPubSub(b *ledger.Block) error {
-	height := b.Header.Height
+	height := b.Header.UnsignedHeader.Height
 
 	for _, txn := range b.Transactions {
 		if txn.UnsignedTx.Payload.Type == types.SubscribeType {

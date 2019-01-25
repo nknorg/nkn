@@ -66,7 +66,7 @@ func TransactionCheck(block *Block) error {
 
 // GetNextBlockSigner gets the next block signer after block height at
 // timestamp. Returns next signer's public key, chord ID, winner type, and error
-func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerType, error) {
+func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, types.WinnerType, error) {
 	currentHeight := DefaultLedger.Store.GetHeight()
 	if height > currentHeight {
 		return nil, nil, 0, fmt.Errorf("Height %d is higher than current height %d", height, currentHeight)
@@ -80,9 +80,9 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 
 	var publicKey []byte
 	var chordID []byte
-	winnerType := header.WinnerType
+	winnerType := header.UnsignedHeader.WinnerType
 
-	if winnerType == GenesisSigner {
+	if winnerType == types.GenesisSigner {
 		genesisBlockHash, err := DefaultLedger.Store.GetBlockHash(0)
 		if err != nil {
 			return nil, nil, 0, err
@@ -98,14 +98,14 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			return nil, nil, 0, err
 		}
 
-		return publicKey, chordID, GenesisSigner, nil
+		return publicKey, chordID, types.GenesisSigner, nil
 	}
 
-	if timestamp <= header.Timestamp {
-		return nil, nil, 0, fmt.Errorf("timestamp %d is earlier than previous block timestamp %d", timestamp, header.Timestamp)
+	if timestamp <= header.UnsignedHeader.Timestamp {
+		return nil, nil, 0, fmt.Errorf("timestamp %d is earlier than previous block timestamp %d", timestamp, header.UnsignedHeader.Timestamp)
 	}
 
-	timeSinceLastBlock := timestamp - header.Timestamp
+	timeSinceLastBlock := timestamp - header.UnsignedHeader.Timestamp
 	proposerChangeTime := int64(config.ConsensusTimeout.Seconds())
 
 	if proposerChangeTime-timeSinceLastBlock%proposerChangeTime <= int64(config.ConsensusDuration.Seconds()) {
@@ -113,7 +113,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 	}
 
 	if timeSinceLastBlock >= proposerChangeTime {
-		winnerType = BlockSigner
+		winnerType = types.BlockSigner
 
 		proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - timeSinceLastBlock/proposerChangeTime
 		if proposerBlockHeight < 0 {
@@ -134,8 +134,9 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 		}
 	} else {
 		switch winnerType {
-		case TxnSigner:
-			txn, err := DefaultLedger.Store.GetTransaction(header.WinnerHash)
+		case types.TxnSigner:
+			whash, _ := Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
+			txn, err := DefaultLedger.Store.GetTransaction(whash)
 			if err != nil {
 				return nil, nil, 0, err
 			}
@@ -156,7 +157,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			if err != nil {
 				return nil, nil, 0, err
 			}
-		case BlockSigner:
+		case types.BlockSigner:
 		}
 	}
 
@@ -165,36 +166,36 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 
 // GetWinner returns the winner hash and winner type of a block height using
 // sigchain from PoR server.
-func GetNextMiningSigChainTxnHash(height uint32) (Uint256, WinnerType, error) {
+func GetNextMiningSigChainTxnHash(height uint32) (Uint256, types.WinnerType, error) {
 	if height < NumGenesisBlocks {
-		return EmptyUint256, GenesisSigner, nil
+		return EmptyUint256, types.GenesisSigner, nil
 	}
 
 	nextMiningSigChainTxnHash, err := por.GetPorServer().GetMiningSigChainTxnHash(height + 1)
 	if err != nil {
-		return EmptyUint256, TxnSigner, err
+		return EmptyUint256, types.TxnSigner, err
 	}
 
 	if nextMiningSigChainTxnHash == EmptyUint256 {
-		return EmptyUint256, BlockSigner, nil
+		return EmptyUint256, types.BlockSigner, nil
 	}
 
-	return nextMiningSigChainTxnHash, TxnSigner, nil
+	return nextMiningSigChainTxnHash, types.TxnSigner, nil
 }
 
 func SignerCheck(header *Header) error {
 	currentHeight := DefaultLedger.Store.GetHeight()
-	publicKey, chordID, _, err := GetNextBlockSigner(currentHeight, header.Timestamp)
+	publicKey, chordID, _, err := GetNextBlockSigner(currentHeight, header.UnsignedHeader.Timestamp)
 	if err != nil {
 		return err
 	}
 
-	if !bytes.Equal(header.Signer, publicKey) {
-		return fmt.Errorf("invalid block signer public key %x, should be %x", header.Signer, publicKey)
+	if !bytes.Equal(header.UnsignedHeader.Signer, publicKey) {
+		return fmt.Errorf("invalid block signer public key %x, should be %x", header.UnsignedHeader.Signer, publicKey)
 	}
 
-	if len(chordID) > 0 && !bytes.Equal(header.ChordID, chordID) {
-		return fmt.Errorf("invalid block signer chord ID %x, should be %x", header.ChordID, chordID)
+	if len(chordID) > 0 && !bytes.Equal(header.UnsignedHeader.ChordID, chordID) {
+		return fmt.Errorf("invalid block signer chord ID %x, should be %x", header.UnsignedHeader.ChordID, chordID)
 	}
 
 	rawPubKey, err := crypto.DecodePoint(publicKey)
@@ -210,13 +211,13 @@ func SignerCheck(header *Header) error {
 }
 
 func HeaderCheck(header *Header) error {
-	if header.Height == 0 {
+	if header.UnsignedHeader.Height == 0 {
 		return nil
 	}
 
 	expectedHeight := DefaultLedger.Store.GetHeight() + 1
-	if header.Height != expectedHeight {
-		return fmt.Errorf("Block height %d is different from expected height %d", header.Height, expectedHeight)
+	if header.UnsignedHeader.Height != expectedHeight {
+		return fmt.Errorf("Block height %d is different from expected height %d", header.UnsignedHeader.Height, expectedHeight)
 	}
 
 	err := SignerCheck(header)
@@ -225,7 +226,8 @@ func HeaderCheck(header *Header) error {
 	}
 
 	currentHash := DefaultLedger.Store.GetCurrentBlockHash()
-	if header.PrevBlockHash != currentHash {
+	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+	if prevHash != currentHash {
 		return errors.New("invalid prev header")
 	}
 
@@ -237,11 +239,11 @@ func HeaderCheck(header *Header) error {
 		return errors.New("cannot get prev header")
 	}
 
-	if prevHeader.Timestamp >= header.Timestamp {
+	if prevHeader.UnsignedHeader.Timestamp >= header.UnsignedHeader.Timestamp {
 		return errors.New("invalid header timestamp")
 	}
 
-	if header.WinnerType == GenesisSigner && header.Height >= NumGenesisBlocks {
+	if header.UnsignedHeader.WinnerType == types.GenesisSigner && header.UnsignedHeader.Height >= NumGenesisBlocks {
 		return errors.New("invalid winning hash type")
 	}
 
@@ -262,39 +264,40 @@ func TimestampCheck(timestamp int64) error {
 }
 
 func NextBlockProposerCheck(block *Block) error {
-	winnerHash, winnerType, err := GetNextMiningSigChainTxnHash(block.Header.Height)
+	winnerHash, winnerType, err := GetNextMiningSigChainTxnHash(block.Header.UnsignedHeader.Height)
 	if err != nil {
 		return err
 	}
 
-	if winnerHash == EmptyUint256 && block.Header.WinnerHash != EmptyUint256 {
+	bwhash, _ := Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
+	if winnerHash == EmptyUint256 && bwhash != EmptyUint256 {
 		for _, txn := range block.Transactions {
-			if txn.Hash() == block.Header.WinnerHash {
+			if txn.Hash() == bwhash {
 				_, err = por.NewPorPackage(txn)
 				return err
 			}
 		}
-		return fmt.Errorf("mining sigchain txn %s not found in block", block.Header.WinnerHash.ToHexString())
+		return fmt.Errorf("mining sigchain txn %s not found in block", bwhash)
 	}
 
-	if winnerType != block.Header.WinnerType {
-		return fmt.Errorf("Winner type should be %v instead of %v", winnerType, block.Header.WinnerType)
+	if winnerType != block.Header.UnsignedHeader.WinnerType {
+		return fmt.Errorf("Winner type should be %v instead of %v", winnerType, block.Header.UnsignedHeader.WinnerType)
 	}
 
-	if winnerHash != block.Header.WinnerHash {
-		return fmt.Errorf("Winner hash should be %s instead of %s", winnerHash.ToHexString(), block.Header.WinnerHash.ToHexString())
+	if winnerHash != bwhash {
+		return fmt.Errorf("Winner hash should be %s instead of %s", winnerHash.ToHexString(), block.Header.UnsignedHeader.WinnerHash)
 	}
 
-	if block.Header.WinnerHash != EmptyUint256 {
+	if bwhash != EmptyUint256 {
 		found := false
 		for _, txn := range block.Transactions {
-			if txn.Hash() == block.Header.WinnerHash {
+			if txn.Hash() == bwhash {
 				found = true
 				break
 			}
 		}
 		if !found {
-			return fmt.Errorf("mining sigchain txn %s not found in block", block.Header.WinnerHash.ToHexString())
+			return fmt.Errorf("mining sigchain txn %s not found in block", block.Header.UnsignedHeader.WinnerHash)
 		}
 	}
 
