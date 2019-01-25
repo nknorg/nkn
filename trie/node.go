@@ -206,7 +206,7 @@ func Deserialize(r io.Reader) (node, error) {
 			return nil, err
 		}
 		//fmt.Println("+++++++++++++++++", len(buff), buff, valueNode(buff), valueNode(nil))
-		if buff == nil {
+		if len(buff) == 0 || buff == nil {
 			return nil, nil
 		}
 
