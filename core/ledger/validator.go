@@ -18,10 +18,12 @@ import (
 
 const (
 	TimestampTolerance = 40 * time.Second
+	NumGenesisBlocks   = por.SigChainMiningHeightOffset + por.SigChainBlockHeightOffset - 1
+	HeaderVersion      = 1
 )
 
 type VBlock struct {
-	Block       *Block
+	Block       *types.Block
 	ReceiveTime int64
 }
 
@@ -38,7 +40,7 @@ func (iterable TransactionArray) Iterate(handler func(item *types.Transaction) E
 	return ErrNoError
 }
 
-func TransactionCheck(block *Block) error {
+func TransactionCheck(block *types.Block) error {
 	//if block.Transactions == nil {
 	//	return errors.New("empty block")
 	//}
@@ -182,7 +184,7 @@ func GetNextMiningSigChainTxnHash(height uint32) (Uint256, types.WinnerType, err
 	return nextMiningSigChainTxnHash, types.TxnSigner, nil
 }
 
-func SignerCheck(header *Header) error {
+func SignerCheck(header *types.Header) error {
 	currentHeight := DefaultLedger.Store.GetHeight()
 	publicKey, chordID, _, err := GetNextBlockSigner(currentHeight, header.UnsignedHeader.Timestamp)
 	if err != nil {
@@ -209,7 +211,7 @@ func SignerCheck(header *Header) error {
 	return nil
 }
 
-func HeaderCheck(header *Header) error {
+func HeaderCheck(header *types.Header) error {
 	if header.UnsignedHeader.Height == 0 {
 		return nil
 	}
@@ -262,7 +264,7 @@ func TimestampCheck(timestamp int64) error {
 	return nil
 }
 
-func NextBlockProposerCheck(block *Block) error {
+func NextBlockProposerCheck(block *types.Block) error {
 	winnerHash, winnerType, err := GetNextMiningSigChainTxnHash(block.Header.UnsignedHeader.Height)
 	if err != nil {
 		return err

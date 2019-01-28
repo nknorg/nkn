@@ -9,7 +9,7 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	. "github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
@@ -20,7 +20,7 @@ type ChainStore struct {
 	st IStore
 
 	mu          sync.RWMutex
-	blockCache  map[Uint256]*Block
+	blockCache  map[Uint256]*types.Block
 	headerCache *HeaderCache
 	States      *StateDB
 
@@ -28,7 +28,7 @@ type ChainStore struct {
 	currentBlockHeight uint32
 }
 
-func NewLedgerStore() (ILedgerStore, error) {
+func NewLedgerStore() (ledger.ILedgerStore, error) {
 	st, err := NewLevelDBStore("Chain")
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func NewLedgerStore() (ILedgerStore, error) {
 
 	chain := &ChainStore{
 		st:                 st,
-		blockCache:         map[Uint256]*Block{},
+		blockCache:         map[Uint256]*types.Block{},
 		headerCache:        NewHeaderCache(),
 		currentBlockHeight: 0,
 		currentBlockHash:   EmptyUint256,
@@ -60,7 +60,7 @@ func (cs *ChainStore) ResetDB() error {
 	return cs.st.BatchCommit()
 }
 
-func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block) (uint32, error) {
+func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *types.Block) (uint32, error) {
 	version, err := cs.st.Get(versionKey())
 	if err != nil {
 		version = []byte{0x00}
@@ -126,7 +126,7 @@ func (cs *ChainStore) GetBlockHash(height uint32) (Uint256, error) {
 	return Uint256ParseFromBytes(blockHash)
 }
 
-func (cs *ChainStore) GetBlockByHeight(height uint32) (*Block, error) {
+func (cs *ChainStore) GetBlockByHeight(height uint32) (*types.Block, error) {
 	hash, err := cs.GetBlockHash(height)
 	if err != nil {
 		return nil, err
@@ -135,13 +135,13 @@ func (cs *ChainStore) GetBlockByHeight(height uint32) (*Block, error) {
 	return cs.GetBlock(hash)
 }
 
-func (cs *ChainStore) GetHeader(hash Uint256) (*Header, error) {
+func (cs *ChainStore) GetHeader(hash Uint256) (*types.Header, error) {
 	data, err := cs.st.Get(headerKey(hash))
 	if err != nil {
 		return nil, err
 	}
 
-	h := new(Header)
+	h := new(types.Header)
 	err = h.Deserialize(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (cs *ChainStore) GetHeader(hash Uint256) (*Header, error) {
 	return h, nil
 }
 
-func (cs *ChainStore) GetHeaderByHeight(height uint32) (*Header, error) {
+func (cs *ChainStore) GetHeaderByHeight(height uint32) (*types.Header, error) {
 	hash, err := cs.GetBlockHash(height)
 	if err != nil {
 		return nil, err
@@ -188,13 +188,13 @@ func (cs *ChainStore) getTx(hash Uint256) (*types.Transaction, uint32, error) {
 	return &txn, height, nil
 }
 
-func (cs *ChainStore) GetBlock(hash Uint256) (*Block, error) {
+func (cs *ChainStore) GetBlock(hash Uint256) (*types.Block, error) {
 	bHash, err := cs.st.Get(headerKey(hash))
 	if err != nil {
 		return nil, err
 	}
 
-	b := new(Block)
+	b := new(types.Block)
 	if err = b.FromTrimmedData(bytes.NewReader(bHash)); err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func (cs *ChainStore) IsBlockInStore(hash Uint256) bool {
 	return true
 }
 
-func (cs *ChainStore) persist(b *Block) error {
+func (cs *ChainStore) persist(b *types.Block) error {
 	cs.st.NewBatch()
 
 	headerHash := b.Hash()
@@ -348,7 +348,7 @@ func (cs *ChainStore) persist(b *Block) error {
 	return cs.st.BatchCommit()
 }
 
-func (cs *ChainStore) SaveBlock(b *Block, ledger *Ledger, fastAdd bool) error {
+func (cs *ChainStore) SaveBlock(b *types.Block, ledger *ledger.Ledger, fastAdd bool) error {
 	if err := cs.persist(b); err != nil {
 		log.Error("error to persist block:", err.Error())
 		return err
@@ -386,7 +386,7 @@ func (cs *ChainStore) GetHeight() uint32 {
 	return cs.currentBlockHeight
 }
 
-func (cs *ChainStore) verifyHeader(header *Header) bool {
+func (cs *ChainStore) verifyHeader(header *types.Header) bool {
 	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
 	prevHeader, err := cs.getHeaderWithCache(prevHash)
 	if err != nil || prevHeader == nil {
@@ -414,7 +414,7 @@ func (cs *ChainStore) verifyHeader(header *Header) bool {
 	return true
 }
 
-func (cs *ChainStore) AddHeaders(headers []*Header) error {
+func (cs *ChainStore) AddHeaders(headers []*types.Header) error {
 	sort.Slice(headers, func(i, j int) bool {
 		return headers[i].UnsignedHeader.Height < headers[j].UnsignedHeader.Height
 	})
@@ -456,7 +456,7 @@ func (cs *ChainStore) GetHeaderHashByHeight(height uint32) Uint256 {
 	return cs.headerCache.GetCachedHeaderHashByHeight(height)
 }
 
-func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*Header, error) {
+func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*types.Header, error) {
 	return cs.headerCache.GetCachedHeader(hash)
 }
 

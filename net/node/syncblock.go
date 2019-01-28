@@ -11,6 +11,7 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/net/node/consequential"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -46,7 +47,7 @@ func NewGetBlockHeadersMessage(startHeight, endHeight uint32) (*pb.UnsignedMessa
 
 // NewGetBlockHeadersReply creates a GET_BLOCK_HEADERS_REPLY message in respond
 // to GET_BLOCK_HEADERS message
-func NewGetBlockHeadersReply(headers []*ledger.Header) (*pb.UnsignedMessage, error) {
+func NewGetBlockHeadersReply(headers []*types.Header) (*pb.UnsignedMessage, error) {
 	headersBytes := make([][]byte, len(headers), len(headers))
 	for i, header := range headers {
 		b := new(bytes.Buffer)
@@ -96,7 +97,7 @@ func NewGetBlocksMessage(startHeight, endHeight uint32) (*pb.UnsignedMessage, er
 
 // NewGetBlocksReply creates a GET_BLOCKS_REPLY message in respond to GET_BLOCKS
 // message
-func NewGetBlocksReply(blocks []*ledger.Block) (*pb.UnsignedMessage, error) {
+func NewGetBlocksReply(blocks []*types.Block) (*pb.UnsignedMessage, error) {
 	blocksBytes := make([][]byte, len(blocks), len(blocks))
 	for i, block := range blocks {
 		b := new(bytes.Buffer)
@@ -156,7 +157,7 @@ func (localNode *LocalNode) getBlockHeadersMessageHandler(remoteMessage *RemoteM
 		return replyBuf, false, nil
 	}
 
-	headers := make([]*ledger.Header, endHeight-startHeight+1, endHeight-startHeight+1)
+	headers := make([]*types.Header, endHeight-startHeight+1, endHeight-startHeight+1)
 	for height := startHeight; height <= endHeight; height++ {
 		headers[height-startHeight], err = ledger.DefaultLedger.Store.GetHeaderByHeight(height)
 		if err != nil {
@@ -205,7 +206,7 @@ func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *RemoteMessage
 		return replyBuf, false, nil
 	}
 
-	blocks := make([]*ledger.Block, endHeight-startHeight+1, endHeight-startHeight+1)
+	blocks := make([]*types.Block, endHeight-startHeight+1, endHeight-startHeight+1)
 	for height := startHeight; height <= endHeight; height++ {
 		blocks[height-startHeight], err = ledger.DefaultLedger.Store.GetBlockByHeight(height)
 		if err != nil {
@@ -224,7 +225,7 @@ func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *RemoteMessage
 
 // GetBlockHeaders requests a range of consecutive block headers from a neighbor
 // using GET_BLOCK_HEADERS message
-func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]*ledger.Header, error) {
+func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]*types.Header, error) {
 	if startHeight > endHeight {
 		return nil, fmt.Errorf("start height %d is higher than end height %d", startHeight, endHeight)
 	}
@@ -254,9 +255,9 @@ func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]
 		return nil, fmt.Errorf("result contains %d instead of %d headers", len(replyMsg.BlockHeaders), endHeight-startHeight+1)
 	}
 
-	headers := make([]*ledger.Header, len(replyMsg.BlockHeaders), len(replyMsg.BlockHeaders))
+	headers := make([]*types.Header, len(replyMsg.BlockHeaders), len(replyMsg.BlockHeaders))
 	for i := range replyMsg.BlockHeaders {
-		headers[i] = &ledger.Header{}
+		headers[i] = &types.Header{}
 		err = headers[i].Deserialize(bytes.NewReader(replyMsg.BlockHeaders[i]))
 		if err != nil {
 			return nil, err
@@ -268,7 +269,7 @@ func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]
 
 // GetBlocks requests a range of consecutive blocks from a neighbor using
 // GET_BLOCKS message
-func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*ledger.Block, error) {
+func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*types.Block, error) {
 	if startHeight > endHeight {
 		return nil, fmt.Errorf("start height %d is higher than end height %d", startHeight, endHeight)
 	}
@@ -298,9 +299,9 @@ func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*ledge
 		return nil, fmt.Errorf("result contains %d instead of %d blocks", len(replyMsg.Blocks), endHeight-startHeight+1)
 	}
 
-	blocks := make([]*ledger.Block, len(replyMsg.Blocks), len(replyMsg.Blocks))
+	blocks := make([]*types.Block, len(replyMsg.Blocks), len(replyMsg.Blocks))
 	for i := range replyMsg.Blocks {
-		blocks[i] = &ledger.Block{}
+		blocks[i] = &types.Block{}
 		err = blocks[i].Deserialize(bytes.NewReader(replyMsg.Blocks[i]))
 		if err != nil {
 			return nil, err
@@ -386,7 +387,7 @@ func (localNode *LocalNode) ResetSyncing() {
 }
 
 func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, startPrevHash, stopHash common.Uint256, neighbors []*RemoteNode) ([]common.Uint256, error) {
-	var nextHeader *ledger.Header
+	var nextHeader *types.Header
 	headersHash := make([]common.Uint256, stopHeight-startHeight+1, stopHeight-startHeight+1)
 	numBatches := (stopHeight-startHeight)/config.Parameters.SyncBlockHeadersBatchSize + 1
 	numWorkers := uint32(len(neighbors)) * concurrentSyncRequestPerNeighbor
@@ -414,7 +415,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 	}
 
 	saveHeader := func(batchID uint32, result interface{}) bool {
-		batchHeaders, ok := result.([]*ledger.Header)
+		batchHeaders, ok := result.([]*types.Header)
 		if !ok {
 			log.Warningf("Convert batch headers error")
 			return false
@@ -496,7 +497,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors
 	}
 
 	saveBlock := func(batchID uint32, result interface{}) bool {
-		batchBlocks, ok := result.([]*ledger.Block)
+		batchBlocks, ok := result.([]*types.Block)
 		if !ok {
 			log.Warningf("Convert batch blocks error")
 			return false
