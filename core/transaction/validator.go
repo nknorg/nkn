@@ -4,8 +4,8 @@ import (
 	"math"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/validation"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -172,7 +172,7 @@ func CheckAttributeProgram(Tx *Transaction) error {
 }
 
 func CheckTransactionContracts(Tx *Transaction) error {
-	flag, err := validation.VerifySignableData(Tx)
+	flag, err := signature.VerifySignableData(Tx)
 	if flag && err == nil {
 		return nil
 	} else {

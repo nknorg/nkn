@@ -8,7 +8,7 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	sig "github.com/nknorg/nkn/core/signature"
+	sig "github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
 )
 

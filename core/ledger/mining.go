@@ -4,10 +4,10 @@ import (
 	"math/rand"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/crypto/util"
+	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"

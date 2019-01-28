@@ -9,10 +9,10 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	sig "github.com/nknorg/nkn/core/signature"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
+	sig "github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
