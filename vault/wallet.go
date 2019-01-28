@@ -9,10 +9,9 @@ import (
 	"os"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/contract"
-	ct "github.com/nknorg/nkn/core/contract"
+	"github.com/nknorg/nkn/contract"
 	"github.com/nknorg/nkn/crypto"
-	sig "github.com/nknorg/nkn/signature"
+	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
 )
@@ -24,7 +23,7 @@ const (
 )
 
 type Wallet interface {
-	Sign(context *ct.ContractContext) error
+	Sign(context *contract.ContractContext) error
 	GetAccount(pubKey *crypto.PubKey) (*Account, error)
 	GetDefaultAccount() (*Account, error)
 	//GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error)
@@ -35,7 +34,7 @@ type WalletImpl struct {
 	iv        []byte
 	masterKey []byte
 	account   *Account
-	contract  *ct.Contract
+	contract  *contract.Contract
 	*WalletStore
 }
 
@@ -131,7 +130,7 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 
 	rawdata, _ := HexStringToBytes(store.Data.ContractData)
 	r := bytes.NewReader(rawdata)
-	ct := new(ct.Contract)
+	ct := new(contract.Contract)
 	ct.Deserialize(r)
 
 	return &WalletImpl{
@@ -209,7 +208,7 @@ func (w *WalletImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
 	return w.account, nil
 }
 
-func (w *WalletImpl) Sign(context *ct.ContractContext) error {
+func (w *WalletImpl) Sign(context *contract.ContractContext) error {
 	var err error
 	contract, err := w.GetContract()
 	if err != nil {
@@ -220,7 +219,7 @@ func (w *WalletImpl) Sign(context *ct.ContractContext) error {
 		return errors.New("no available account in wallet")
 	}
 
-	signature, err := sig.SignBySigner(context.Data, account)
+	signature, err := signature.SignBySigner(context.Data, account)
 	if err != nil {
 		return err
 	}
@@ -271,7 +270,7 @@ func (w *WalletImpl) ChangePassword(oldPassword []byte, newPassword []byte) bool
 	return true
 }
 
-func (w *WalletImpl) GetContract() (*ct.Contract, error) {
+func (w *WalletImpl) GetContract() (*contract.Contract, error) {
 	if w.contract == nil {
 		return nil, errors.New("contract error")
 	}
