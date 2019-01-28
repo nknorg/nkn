@@ -11,7 +11,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/moca/election"
-	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/types"
@@ -60,7 +60,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	}
 
 	for {
-		if ledger.CanVerifyHeight(consensusHeight) {
+		if core.CanVerifyHeight(consensusHeight) {
 			break
 		}
 
@@ -85,7 +85,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 		case proposal := <-proposalChan:
 			blockHash := proposal.Header.Hash()
 
-			if !ledger.CanVerifyHeight(consensusHeight) {
+			if !core.CanVerifyHeight(consensusHeight) {
 				err = consensus.iHaveProposal(consensusHeight, blockHash)
 				if err != nil {
 					log.Errorf("Send I have block message error: %v", err)
@@ -93,13 +93,13 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				continue
 			}
 
-			err = ledger.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp)
+			err = core.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp)
 			if err != nil {
 				log.Warningf("Ignore proposal that fails to pass timestamp check: %v", err)
 				continue
 			}
 
-			err := ledger.SignerCheck(proposal.Header)
+			err := core.SignerCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Ignore proposal that fails to pass signer check: %v", err)
 				continue
@@ -122,19 +122,19 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				acceptProposal = false
 			}
 
-			err = ledger.HeaderCheck(proposal.Header)
+			err = core.HeaderCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Proposal fails to pass header check: %v", err)
 				acceptProposal = false
 			}
 
-			err = ledger.NextBlockProposerCheck(proposal)
+			err = core.NextBlockProposerCheck(proposal)
 			if err != nil {
 				log.Warningf("Proposal fails to pass next block proposal check: %v", err)
 				acceptProposal = false
 			}
 
-			err = ledger.TransactionCheck(proposal)
+			err = core.TransactionCheck(proposal)
 			if err != nil {
 				log.Warningf("Proposal fails to pass transaction check: %v", err)
 				acceptProposal = false
