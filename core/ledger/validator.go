@@ -8,7 +8,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
-	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
@@ -26,9 +25,9 @@ type VBlock struct {
 	ReceiveTime int64
 }
 
-type TransactionArray []*tx.Transaction
+type TransactionArray []*types.Transaction
 
-func (iterable TransactionArray) Iterate(handler func(item *tx.Transaction) ErrCode) ErrCode {
+func (iterable TransactionArray) Iterate(handler func(item *types.Transaction) ErrCode) ErrCode {
 	for _, item := range iterable {
 		result := handler(item)
 		if result != ErrNoError {

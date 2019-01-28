@@ -7,8 +7,8 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/moca/election"
+	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
@@ -24,7 +24,7 @@ type Consensus struct {
 	proposals           common.Cache
 	requestProposalChan chan *requestProposalInfo
 	mining              ledger.Mining
-	txnCollector        *transaction.TxnCollector
+	txnCollector        *core.TxnCollector
 
 	proposalLock   sync.RWMutex
 	proposalChan   chan *ledger.Block
@@ -39,7 +39,7 @@ type Consensus struct {
 
 // NewConsensus creates a MOCA consensus
 func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus, error) {
-	txnCollector := transaction.NewTxnCollector(localNode.GetTxnPool(), maxNumTxnPerBlock)
+	txnCollector := core.NewTxnCollector(localNode.GetTxnPool(), maxNumTxnPerBlock)
 	consensus := &Consensus{
 		account:             account,
 		localNode:           localNode,

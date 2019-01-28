@@ -9,11 +9,11 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -295,7 +295,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		if err != nil {
 			return respPacking(nil, INVALID_PARAMS)
 		}
-		var txn transaction.Transaction
+		var txn types.Transaction
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
 			return respPacking(nil, INVALID_TRANSACTION)
 		}
@@ -686,7 +686,7 @@ func getUnspends(s Serverer, params map[string]interface{}) map[string]interface
 	return respPacking(nil, INTERNAL_ERROR)
 }
 
-func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) errors.ErrCode {
+func VerifyAndSendTx(localNode *node.LocalNode, txn *types.Transaction) errors.ErrCode {
 	if errCode := localNode.AppendTxnPool(txn); errCode != errors.ErrNoError {
 		log.Warning("Can NOT add the transaction to TxnPool")
 		return errCode

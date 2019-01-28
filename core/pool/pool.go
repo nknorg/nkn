@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/core/ledger"
-	. "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/types"
@@ -18,9 +18,9 @@ const (
 	ExclusivedSigchainHeight = 3
 )
 
-type TransactionMap map[common.Uint256]*Transaction
+type TransactionMap map[common.Uint256]*types.Transaction
 
-func (iterable TransactionMap) Iterate(handler func(item *Transaction) ErrCode) ErrCode {
+func (iterable TransactionMap) Iterate(handler func(item *types.Transaction) ErrCode) ErrCode {
 	for _, item := range iterable {
 		result := handler(item)
 		if result != ErrNoError {
@@ -33,24 +33,24 @@ func (iterable TransactionMap) Iterate(handler func(item *Transaction) ErrCode) 
 
 type TxnPool struct {
 	sync.RWMutex
-	txnList map[common.Uint256]*Transaction // transaction which have been verified will put into this map
+	txnList map[common.Uint256]*types.Transaction // transaction which have been verified will put into this map
 }
 
 func NewTxnPool() *TxnPool {
 	return &TxnPool{
-		txnList: make(map[common.Uint256]*Transaction),
+		txnList: make(map[common.Uint256]*types.Transaction),
 	}
 }
 
 //append transaction to txnpool when check ok.
 //1.check transaction. 2.check with ledger(db) 3.check with pool
-func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
+func (tp *TxnPool) AppendTxnPool(txn *types.Transaction) ErrCode {
 	//verify transaction with Concurrency
-	if errCode := VerifyTransaction(txn); errCode != ErrNoError {
+	if errCode := core.VerifyTransaction(txn); errCode != ErrNoError {
 		log.Info("Transaction verification failed", txn.Hash())
 		return errCode
 	}
-	if errCode := VerifyTransactionWithLedger(txn); errCode != ErrNoError {
+	if errCode := core.VerifyTransactionWithLedger(txn); errCode != ErrNoError {
 		log.Info("Transaction verification with ledger failed", txn.Hash())
 		return errCode
 	}
@@ -69,7 +69,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	//add the transaction to process scope
 	if tp.addtxnList(txn) {
 		// Check duplicate UTXO reference after append successful
-		if errCode := VerifyTransactionWithBlock(TransactionMap(tp.txnList)); errCode != ErrNoError {
+		if errCode := core.VerifyTransactionWithBlock(TransactionMap(tp.txnList)); errCode != ErrNoError {
 			log.Info("Transaction verification with block failed", txn.Hash())
 			tp.deltxnList(txn) // Revert previous append action
 			return errCode
@@ -81,7 +81,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	return ErrNoError
 }
 
-func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[common.Uint256]*Transaction, error) {
+func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[common.Uint256]*types.Transaction, error) {
 	tp.RLock()
 	defer tp.RUnlock()
 
@@ -99,7 +99,7 @@ func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[commo
 	}
 
 	i := 0
-	txns := make(map[common.Uint256]*Transaction, n)
+	txns := make(map[common.Uint256]*types.Transaction, n)
 
 	// get transactions which should be packaged
 	if winningHash.CompareTo(common.EmptyUint256) != 0 {
@@ -128,23 +128,23 @@ func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[commo
 }
 
 //clean the trasaction Pool with committed block.
-func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
+func (tp *TxnPool) CleanSubmittedTransactions(txns []*types.Transaction) error {
 	tp.cleanTransactionList(txns)
 	return nil
 }
 
 //get the transaction by hash
-func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {
+func (tp *TxnPool) GetTransaction(hash common.Uint256) *types.Transaction {
 	tp.RLock()
 	defer tp.RUnlock()
 	return tp.txnList[hash]
 }
 
-func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
+func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*types.Transaction {
 	tp.RLock()
 	defer tp.RUnlock()
 
-	txns := make(map[common.Uint256]*Transaction, len(tp.txnList))
+	txns := make(map[common.Uint256]*types.Transaction, len(tp.txnList))
 	for hash, txn := range tp.txnList {
 		txns[hash] = txn
 	}
@@ -153,7 +153,7 @@ func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
 }
 
 // clean the trasaction Pool with committed transactions.
-func (tp *TxnPool) cleanTransactionList(txns []*Transaction) error {
+func (tp *TxnPool) cleanTransactionList(txns []*types.Transaction) error {
 	cleaned := 0
 	txnsNum := len(txns)
 	for _, txn := range txns {
@@ -170,7 +170,7 @@ func (tp *TxnPool) cleanTransactionList(txns []*Transaction) error {
 	return nil
 }
 
-func (tp *TxnPool) addtxnList(txn *Transaction) bool {
+func (tp *TxnPool) addtxnList(txn *types.Transaction) bool {
 	tp.Lock()
 	defer tp.Unlock()
 	txnHash := txn.Hash()
@@ -181,7 +181,7 @@ func (tp *TxnPool) addtxnList(txn *Transaction) bool {
 	return true
 }
 
-func (tp *TxnPool) deltxnList(tx *Transaction) bool {
+func (tp *TxnPool) deltxnList(tx *types.Transaction) bool {
 	tp.Lock()
 	defer tp.Unlock()
 	txHash := tx.Hash()

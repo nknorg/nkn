@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -207,7 +207,7 @@ func (ps *PorServer) GetTxnHashBySigChainHeight(height uint32) ([]common.Uint256
 	return txnHashes, nil
 }
 
-func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction) (bool, error) {
+func (ps *PorServer) AddSigChainFromTx(txn *types.Transaction) (bool, error) {
 	porpkg, err := NewPorPackage(txn)
 	if err != nil {
 		return false, err
