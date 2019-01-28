@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/moca/election"
-	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/types"
@@ -28,8 +28,8 @@ type Consensus struct {
 	elections           common.Cache
 	proposals           common.Cache
 	requestProposalChan chan *requestProposalInfo
-	mining              core.Mining
-	txnCollector        *core.TxnCollector
+	mining              blockchain.Mining
+	txnCollector        *blockchain.TxnCollector
 
 	proposalLock   sync.RWMutex
 	proposalChan   chan *types.Block
@@ -44,7 +44,7 @@ type Consensus struct {
 
 // NewConsensus creates a MOCA consensus
 func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus, error) {
-	txnCollector := core.NewTxnCollector(localNode.GetTxnPool(), config.MaxNumTxnPerBlock)
+	txnCollector := blockchain.NewTxnCollector(localNode.GetTxnPool(), config.MaxNumTxnPerBlock)
 	consensus := &Consensus{
 		account:             account,
 		localNode:           localNode,
@@ -52,9 +52,9 @@ func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus
 		proposals:           common.NewGoCache(cacheExpiration, cacheCleanupInterval),
 		proposalChan:        make(chan *types.Block, proposalChanLen),
 		requestProposalChan: make(chan *requestProposalInfo, requestProposalChanLen),
-		mining:              core.NewBuiltinMining(account, txnCollector),
+		mining:              blockchain.NewBuiltinMining(account, txnCollector),
 		txnCollector:        txnCollector,
-		expectedHeight:      core.DefaultLedger.Store.GetHeight() + 1,
+		expectedHeight:      blockchain.DefaultLedger.Store.GetHeight() + 1,
 	}
 	return consensus, nil
 }
@@ -261,18 +261,18 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 	}
 
 	syncState := consensus.localNode.GetSyncState()
-	if block.Header.UnsignedHeader.Height == core.DefaultLedger.Store.GetHeight()+1 {
+	if block.Header.UnsignedHeader.Height == blockchain.DefaultLedger.Store.GetHeight()+1 {
 		if syncState == pb.WaitForSyncing {
 			consensus.localNode.SetSyncState(pb.PersistFinished)
 		}
-		return core.DefaultLedger.Blockchain.AddBlock(block, false)
+		return blockchain.DefaultLedger.Blockchain.AddBlock(block, false)
 	}
 
 	if syncState == pb.SyncStarted || syncState == pb.SyncFinished {
 		return nil
 	}
 
-	log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.UnsignedHeader.Height, core.DefaultLedger.Store.GetHeight())
+	log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.UnsignedHeader.Height, blockchain.DefaultLedger.Store.GetHeight())
 
 	elc, loaded, err := consensus.loadOrCreateElection(heightToKey(block.Header.UnsignedHeader.Height))
 	if err != nil {
@@ -286,7 +286,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 	neighbors := consensus.localNode.GetNeighbors(func(neighbor *node.RemoteNode) bool {
 		for _, neighborID := range neighborIDs {
 			if neighbor.GetID() == neighborID {
-				return neighbor.GetHeight() > core.DefaultLedger.Store.GetHeight()
+				return neighbor.GetHeight() > blockchain.DefaultLedger.Store.GetHeight()
 			}
 		}
 		return false
@@ -356,7 +356,7 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 			return err
 		}
 
-		err = core.DefaultLedger.Blockchain.AddBlock(block, false)
+		err = blockchain.DefaultLedger.Blockchain.AddBlock(block, false)
 		if err != nil {
 			return err
 		}
