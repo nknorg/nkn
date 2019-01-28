@@ -227,6 +227,7 @@ func (s *RPCServer) Start() {
 		Handler:      rpcServeMux,
 		ReadTimeout:  config.Parameters.RPCReadTimeout * time.Second,
 		WriteTimeout: config.Parameters.RPCWriteTimeout * time.Second,
+		IdleTimeout:  config.Parameters.KeepAliveTimeout * time.Second,
 	}
 	httpServer.Serve(listener)
 }

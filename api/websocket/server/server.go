@@ -93,10 +93,7 @@ func (ws *WsServer) Start() error {
 	var done = make(chan bool)
 	go ws.checkSessionsTimeout(done)
 
-	ws.server = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler),
-		ReadTimeout:  config.Parameters.RPCReadTimeout * time.Second,
-		WriteTimeout: config.Parameters.RPCWriteTimeout * time.Second,
-	}
+	ws.server = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler)}
 	err := ws.server.Serve(ws.listener)
 
 	done <- true

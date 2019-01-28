@@ -51,6 +51,7 @@ var (
 		SyncBlocksBatchSize:       8,
 		RPCReadTimeout:            5,
 		RPCWriteTimeout:           10,
+		KeepAliveTimeout:          15,
 	}
 )
 
@@ -84,6 +85,7 @@ type Configuration struct {
 	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
 	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`
 	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`
+	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`
 }
 
 func Init() error {
