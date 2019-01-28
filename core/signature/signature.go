@@ -6,9 +6,9 @@ import (
 	"io"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/contract/program"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/vm/interfaces"
 )
 
@@ -16,8 +16,8 @@ import (
 type SignableData interface {
 	interfaces.ICodeContainer
 	GetProgramHashes() ([]common.Uint160, error)
-	SetPrograms([]*program.Program)
-	GetPrograms() []*program.Program
+	SetPrograms([]*types.Program)
+	GetPrograms() []*types.Program
 	SerializeUnsigned(io.Writer) error
 }
 

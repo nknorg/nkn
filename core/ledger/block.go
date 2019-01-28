@@ -9,7 +9,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
@@ -137,12 +136,12 @@ func (b *Block) GetProgramHashes() ([]Uint160, error) {
 	return b.Header.GetProgramHashes()
 }
 
-func (b *Block) SetPrograms(prog []*program.Program) {
+func (b *Block) SetPrograms(prog []*types.Program) {
 	b.Header.SetPrograms(prog)
 	return
 }
 
-func (b *Block) GetPrograms() []*program.Program {
+func (b *Block) GetPrograms() []*types.Program {
 	return b.Header.GetPrograms()
 }
 

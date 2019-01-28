@@ -1,15 +1,14 @@
 package contract
 
 import (
-	"math/big"
-	"sort"
 	"errors"
 	"fmt"
+	"math/big"
+	"sort"
 
 	. "github.com/nknorg/nkn/common"
-	pg "github.com/nknorg/nkn/core/contract/program"
-	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/crypto"
+	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/vm"
 )
 
@@ -48,7 +47,7 @@ func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
 }
 
 func CreateSignatureRedeemScriptWithEncodedPublicKey(encodedPublicKey []byte) ([]byte, error) {
-	sb := pg.NewProgramBuilder()
+	sb := NewProgramBuilder()
 	sb.PushData(encodedPublicKey)
 	sb.AddOp(vm.CHECKSIG)
 	return sb.ToArray(), nil
@@ -82,7 +81,7 @@ func CreateMultiSigRedeemScript(m int, pubkeys []*crypto.PubKey) ([]byte, error)
 		return nil, nil //TODO: add panic
 	}
 
-	sb := pg.NewProgramBuilder()
+	sb := NewProgramBuilder()
 	sb.PushNumber(big.NewInt(int64(m)))
 
 	//sort pubkey

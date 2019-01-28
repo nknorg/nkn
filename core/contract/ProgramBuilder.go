@@ -1,4 +1,4 @@
-package program
+package contract
 
 import (
 	"bytes"
