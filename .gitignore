@@ -16,4 +16,5 @@ cscope*
 *~
 build/
 wallet.dat
+wallet.pswd
 config.json
