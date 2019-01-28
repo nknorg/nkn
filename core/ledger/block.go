@@ -9,7 +9,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	sig "github.com/nknorg/nkn/signature"
@@ -23,7 +22,7 @@ const GenesisNonce uint64 = 2083236893
 
 type Block struct {
 	Header       *Header
-	Transactions []*tx.Transaction
+	Transactions []*types.Transaction
 
 	hash *Uint256
 }
@@ -56,7 +55,7 @@ func (b *Block) Deserialize(r io.Reader) error {
 	var txhash Uint256
 	var tharray []Uint256
 	for i = 0; i < Len; i++ {
-		transaction := new(tx.Transaction)
+		transaction := new(types.Transaction)
 		transaction.Deserialize(r)
 		txhash = transaction.Hash()
 		b.Transactions = append(b.Transactions, transaction)
@@ -106,7 +105,7 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 	var tharray []Uint256
 	for i = 0; i < Len; i++ {
 		txhash.Deserialize(r)
-		transaction := new(tx.Transaction)
+		transaction := new(types.Transaction)
 		transaction.SetHash(txhash)
 		b.Transactions = append(b.Transactions, transaction)
 		tharray = append(tharray, txhash)
@@ -205,14 +204,14 @@ func GenesisBlockInit() (*Block, error) {
 			Parameter: []byte{0x00},
 		},
 	}
-	trans := &tx.Transaction{
+	trans := &types.Transaction{
 		MsgTx: *txn,
 	}
 
 	// genesis block
 	genesisBlock := &Block{
 		Header:       genesisBlockHeader,
-		Transactions: []*tx.Transaction{trans},
+		Transactions: []*types.Transaction{trans},
 	}
 
 	return genesisBlock, nil

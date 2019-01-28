@@ -4,7 +4,7 @@ import (
 	"math/rand"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/por"
@@ -20,11 +20,11 @@ type Mining interface {
 }
 
 type BuiltinMining struct {
-	account      *vault.Account            // local account
-	txnCollector *transaction.TxnCollector // transaction pool
+	account      *vault.Account     // local account
+	txnCollector *core.TxnCollector // transaction pool
 }
 
-func NewBuiltinMining(account *vault.Account, txnCollector *transaction.TxnCollector) *BuiltinMining {
+func NewBuiltinMining(account *vault.Account, txnCollector *core.TxnCollector) *BuiltinMining {
 	return &BuiltinMining{
 		account:      account,
 		txnCollector: txnCollector,
@@ -32,7 +32,7 @@ func NewBuiltinMining(account *vault.Account, txnCollector *transaction.TxnColle
 }
 
 func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType types.WinnerType, timestamp int64) (*Block, error) {
-	var txnList []*transaction.Transaction
+	var txnList []*types.Transaction
 	var txnHashList []common.Uint256
 	coinbase := bm.CreateCoinbaseTransaction()
 	txnList = append(txnList, coinbase)
@@ -106,7 +106,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	return block, nil
 }
 
-func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
+func (bm *BuiltinMining) CreateCoinbaseTransaction() *types.Transaction {
 	// Transfer the reward to the beneficiary
 	redeemHash := bm.account.ProgramHash
 	if config.Parameters.BeneficiaryAddr != "" {
@@ -124,8 +124,8 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction() *transaction.Transaction {
 		return nil
 	}
 
-	txn := types.NewMsgTx(pl, rand.Uint64(), 0, util.RandomBytes(transaction.TransactionNonceLength))
-	trans := &transaction.Transaction{
+	txn := types.NewMsgTx(pl, rand.Uint64(), 0, util.RandomBytes(types.TransactionNonceLength))
+	trans := &types.Transaction{
 		MsgTx: *txn,
 	}
 

@@ -9,11 +9,11 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/contract"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/core/transaction"
 	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -198,12 +198,12 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 	return nil
 }
 
-func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*transaction.Transaction, error) {
+func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*types.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
 	}
-	txn, err := transaction.NewCommitTransaction(sigChain, account.ProgramHash)
+	txn, err := types.NewCommitTransaction(sigChain, account.ProgramHash)
 	if err != nil {
 		return nil, err
 	}
