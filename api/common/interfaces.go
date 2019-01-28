@@ -7,7 +7,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/contract"
+	"github.com/nknorg/nkn/contract"
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/node"
