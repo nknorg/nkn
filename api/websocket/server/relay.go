@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
@@ -15,7 +15,7 @@ func ResolveDest(Dest string) string {
 	substrings := strings.Split(Dest, ".")
 	pubKeyOrName := substrings[len(substrings)-1]
 
-	registrant, err := ledger.DefaultLedger.Store.GetRegistrant(pubKeyOrName)
+	registrant, err := core.DefaultLedger.Store.GetRegistrant(pubKeyOrName)
 	if err != nil {
 		return Dest
 	}

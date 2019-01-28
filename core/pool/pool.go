@@ -6,7 +6,6 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core"
-	"github.com/nknorg/nkn/core/ledger"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/types"
@@ -57,7 +56,7 @@ func (tp *TxnPool) AppendTxnPool(txn *types.Transaction) ErrCode {
 
 	// get signature chain from commit transaction then add it to POR server
 	if txn.UnsignedTx.Payload.Type == types.CommitType {
-		added, err := por.GetPorServer().AddSigChainFromTx(txn, ledger.DefaultLedger.Store.GetHeight())
+		added, err := por.GetPorServer().AddSigChainFromTx(txn, core.DefaultLedger.Store.GetHeight())
 		if err != nil {
 			log.Infof("Add sigchain from transaction error: %v", err)
 			return ErrerCode(NewDetailErr(err, ErrNoCode, err.Error()))
