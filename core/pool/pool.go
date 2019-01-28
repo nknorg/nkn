@@ -7,7 +7,6 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core"
-	"github.com/nknorg/nkn/core/ledger"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/types"
@@ -91,7 +90,7 @@ func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[commo
 	}
 
 	// get transactions which should not be packaged
-	exclusivedHashes, err := por.GetPorServer().GetTxnHashBySigChainHeight(ledger.DefaultLedger.Store.GetHeight() +
+	exclusivedHashes, err := por.GetPorServer().GetTxnHashBySigChainHeight(core.DefaultLedger.Store.GetHeight() +
 		ExclusivedSigchainHeight)
 	if err != nil {
 		log.Error("collect transaction error: ", err)

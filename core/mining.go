@@ -1,10 +1,9 @@
-package ledger
+package core
 
 import (
 	"math/rand"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/signature"
@@ -19,11 +18,11 @@ type Mining interface {
 }
 
 type BuiltinMining struct {
-	account      *vault.Account     // local account
-	txnCollector *core.TxnCollector // transaction pool
+	account      *vault.Account // local account
+	txnCollector *TxnCollector  // transaction pool
 }
 
-func NewBuiltinMining(account *vault.Account, txnCollector *core.TxnCollector) *BuiltinMining {
+func NewBuiltinMining(account *vault.Account, txnCollector *TxnCollector) *BuiltinMining {
 	return &BuiltinMining{
 		account:      account,
 		txnCollector: txnCollector,

@@ -8,7 +8,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/net/node/consequential"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/types"
@@ -155,13 +155,13 @@ func (localNode *LocalNode) getBlockHeadersMessageHandler(remoteMessage *RemoteM
 		return replyBuf, false, nil
 	}
 
-	if endHeight > ledger.DefaultLedger.Store.GetHeaderHeight() {
+	if endHeight > core.DefaultLedger.Store.GetHeaderHeight() {
 		return replyBuf, false, nil
 	}
 
 	headers := make([]*types.Header, endHeight-startHeight+1, endHeight-startHeight+1)
 	for height := startHeight; height <= endHeight; height++ {
-		headers[height-startHeight], err = ledger.DefaultLedger.Store.GetHeaderByHeight(height)
+		headers[height-startHeight], err = core.DefaultLedger.Store.GetHeaderByHeight(height)
 		if err != nil {
 			return replyBuf, false, err
 		}
@@ -204,13 +204,13 @@ func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *RemoteMessage
 		return replyBuf, false, nil
 	}
 
-	if endHeight > ledger.DefaultLedger.Store.GetHeight() {
+	if endHeight > core.DefaultLedger.Store.GetHeight() {
 		return replyBuf, false, nil
 	}
 
 	blocks := make([]*types.Block, endHeight-startHeight+1, endHeight-startHeight+1)
 	for height := startHeight; height <= endHeight; height++ {
-		blocks[height-startHeight], err = ledger.DefaultLedger.Store.GetBlockByHeight(height)
+		blocks[height-startHeight], err = core.DefaultLedger.Store.GetBlockByHeight(height)
 		if err != nil {
 			return replyBuf, false, err
 		}
@@ -334,8 +334,8 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 		started = true
 		localNode.SetSyncState(pb.SyncStarted)
 
-		currentHeight := ledger.DefaultLedger.Store.GetHeight()
-		currentHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
+		currentHeight := core.DefaultLedger.Store.GetHeight()
+		currentHash := core.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
 		if stopHeight <= currentHeight {
 			err = fmt.Errorf("sync stop height %d is not higher than current height %d", stopHeight, currentHeight)
 			return
@@ -461,7 +461,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		return err
 	}
 
-	err = ledger.DefaultLedger.Store.AddHeaders(headers)
+	err = core.DefaultLedger.Store.AddHeaders(headers)
 	if err != nil {
 		return err
 	}
@@ -506,13 +506,13 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors
 		for height := batchStartHeight; height <= batchEndHeight; height++ {
 			block := batchBlocks[height-batchStartHeight]
 			blockHash := block.Header.Hash()
-			headerHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(height)
+			headerHash := core.DefaultLedger.Store.GetHeaderHashByHeight(height)
 			if blockHash != headerHash {
 				log.Warningf("Block hash %s is different from header hash %s", (&blockHash).ToHexString(), (&headerHash).ToHexString())
 				return false
 			}
 
-			err := ledger.DefaultLedger.Blockchain.AddBlock(block, false)
+			err := core.DefaultLedger.Blockchain.AddBlock(block, false)
 			if err != nil {
 				return false
 			}

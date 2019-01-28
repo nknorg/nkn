@@ -1,4 +1,4 @@
-package ledger
+package core
 
 import (
 	. "github.com/nknorg/nkn/common"
