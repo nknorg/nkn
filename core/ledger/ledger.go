@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	. "github.com/nknorg/nkn/common"
-	tx "github.com/nknorg/nkn/core/transaction"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/types"
 )
 
 var DefaultLedger *Ledger
@@ -16,7 +16,7 @@ type Ledger struct {
 }
 
 // double spend checking for transaction
-func (l *Ledger) IsDoubleSpend(Tx *tx.Transaction) bool {
+func (l *Ledger) IsDoubleSpend(Tx *types.Transaction) bool {
 	return DefaultLedger.Store.IsDoubleSpend(Tx)
 }
 
@@ -65,7 +65,7 @@ func (l *Ledger) BlockInLedger(hash Uint256) bool {
 }
 
 //Get transaction with hash.
-func (l *Ledger) GetTransactionWithHash(hash Uint256) (*tx.Transaction, error) {
+func (l *Ledger) GetTransactionWithHash(hash Uint256) (*types.Transaction, error) {
 	tx, err := l.Store.GetTransaction(hash)
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Ledger],GetTransactionWithHash failed with hash="+hash.ToString())

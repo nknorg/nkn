@@ -7,7 +7,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/transaction"
 	nknerrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
@@ -51,7 +50,7 @@ func (c PorPackages) Less(i, j int) bool {
 	return false
 }
 
-func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
+func NewPorPackage(txn *types.Transaction) (*PorPackage, error) {
 	if txn.UnsignedTx.Payload.Type != types.CommitType {
 		return nil, errors.New("Transaction type mismatch")
 	}

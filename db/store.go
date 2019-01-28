@@ -10,7 +10,6 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/core/ledger"
-	tx "github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
@@ -160,7 +159,7 @@ func (cs *ChainStore) GetHeaderByHeight(height uint32) (*Header, error) {
 	return cs.GetHeader(hash)
 }
 
-func (cs *ChainStore) GetTransaction(hash Uint256) (*tx.Transaction, error) {
+func (cs *ChainStore) GetTransaction(hash Uint256) (*types.Transaction, error) {
 	t, _, err := cs.getTx(hash)
 	if err != nil {
 		return nil, err
@@ -169,7 +168,7 @@ func (cs *ChainStore) GetTransaction(hash Uint256) (*tx.Transaction, error) {
 	return t, nil
 }
 
-func (cs *ChainStore) getTx(hash Uint256) (*tx.Transaction, uint32, error) {
+func (cs *ChainStore) getTx(hash Uint256) (*types.Transaction, uint32, error) {
 	value, err := cs.st.Get(transactionKey(hash))
 	if err != nil {
 		return nil, 0, err
@@ -181,7 +180,7 @@ func (cs *ChainStore) getTx(hash Uint256) (*tx.Transaction, uint32, error) {
 		return nil, 0, err
 	}
 
-	var txn tx.Transaction
+	var txn types.Transaction
 	if err := txn.Deserialize(r); err != nil {
 		return nil, height, err
 	}
@@ -461,7 +460,7 @@ func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*Header, error) {
 	return cs.headerCache.GetCachedHeader(hash)
 }
 
-func (cs *ChainStore) IsDoubleSpend(tx *tx.Transaction) bool {
+func (cs *ChainStore) IsDoubleSpend(tx *types.Transaction) bool {
 	//TODO implament
 	return false
 }

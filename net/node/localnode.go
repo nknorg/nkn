@@ -12,7 +12,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/core/ledger"
-	"github.com/nknorg/nkn/core/transaction/pool"
+	"github.com/nknorg/nkn/core/pool"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/address"
