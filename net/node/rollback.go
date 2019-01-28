@@ -7,6 +7,7 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nnet/log"
 )
@@ -105,7 +106,7 @@ func (localNode *LocalNode) getNeighborsMajorityBlockHashByHeight(height uint32,
 		counter := make(map[common.Uint256]int)
 		totalCount := 0
 		allHeaders.Range(func(key, value interface{}) bool {
-			if header, ok := value.(*ledger.Header); ok && header != nil {
+			if header, ok := value.(*types.Header); ok && header != nil {
 				counter[header.Hash()]++
 				totalCount++
 			}

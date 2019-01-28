@@ -5,6 +5,7 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -27,13 +28,12 @@ func NewBlockchain(height uint32, asset Uint256) *Blockchain {
 }
 
 func NewBlockchainWithGenesisBlock(store ILedgerStore) (*Blockchain, error) {
-	genesisBlock, err := GenesisBlockInit()
+	genesisBlock, err := types.GenesisBlockInit()
 	if err != nil {
 		return nil, err
 	}
 	genesisBlock.RebuildMerkleRoot()
-	hashx := genesisBlock.Hash()
-	genesisBlock.hash = &hashx
+	genesisBlock.Hash()
 
 	height, err := store.InitLedgerStoreWithGenesisBlock(genesisBlock)
 	if err != nil {
@@ -45,7 +45,7 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore) (*Blockchain, error) {
 	return blockchain, nil
 }
 
-func (bc *Blockchain) AddBlock(block *Block, fastAdd bool) error {
+func (bc *Blockchain) AddBlock(block *types.Block, fastAdd bool) error {
 	bc.mutex.Lock()
 	defer bc.mutex.Unlock()
 
@@ -57,7 +57,7 @@ func (bc *Blockchain) AddBlock(block *Block, fastAdd bool) error {
 	return nil
 }
 
-func (bc *Blockchain) GetHeader(hash Uint256) (*Header, error) {
+func (bc *Blockchain) GetHeader(hash Uint256) (*types.Header, error) {
 	header, err := DefaultLedger.Store.GetHeader(hash)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (bc *Blockchain) GetHeader(hash Uint256) (*Header, error) {
 	return header, nil
 }
 
-func (bc *Blockchain) SaveBlock(block *Block, fastAdd bool) error {
+func (bc *Blockchain) SaveBlock(block *types.Block, fastAdd bool) error {
 	err := DefaultLedger.Store.SaveBlock(block, DefaultLedger, fastAdd)
 	if err != nil {
 		log.Warning("Save Block failure , ", err)
