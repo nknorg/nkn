@@ -1,18 +1,12 @@
-package program
+package types
 
 import (
 	"encoding/json"
 	"io"
 
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/types"
 )
-
-type Program struct {
-	types.Program
-}
 
 //Serialize the Program
 func (p *Program) Serialize(w io.Writer) error {
@@ -42,47 +36,10 @@ func (p *Program) Deserialize(w io.Reader) error {
 	return nil
 }
 
-func (p *Program) Equal(b *Program) bool {
-	if !common.IsEqualBytes(p.Code, b.Code) {
-		return false
-	}
-
-	if !common.IsEqualBytes(p.Parameter, b.Parameter) {
-		return false
-	}
-
-	return true
-}
-
 func (p *Program) MarshalJson() ([]byte, error) {
-	program := ProgramInfo{
-		Code:      common.BytesToHexString(p.Code),
-		Parameter: common.BytesToHexString(p.Parameter),
-	}
-
-	data, err := json.Marshal(program)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return json.Marshal(p)
 }
 
 func (p *Program) UnmarshalJson(data []byte) error {
-	program := new(ProgramInfo)
-	var err error
-	if err = json.Unmarshal(data, &program); err != nil {
-		return err
-	}
-
-	p.Code, err = common.HexStringToBytes(program.Code)
-	if err != nil {
-		return nil
-	}
-
-	p.Parameter, err = common.HexStringToBytes(program.Parameter)
-	if err != nil {
-		return nil
-	}
-
-	return nil
+	return json.Unmarshal(data, p)
 }
