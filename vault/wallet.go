@@ -11,8 +11,8 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/core/contract"
 	ct "github.com/nknorg/nkn/core/contract"
-	sig "github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/crypto"
+	sig "github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
 )
