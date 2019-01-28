@@ -6,25 +6,25 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/types"
 )
 
 type HeaderCache struct {
 	mu                 sync.RWMutex
 	headerIndex        map[uint32]common.Uint256
-	headerCache        map[common.Uint256]ledger.Header
+	headerCache        map[common.Uint256]types.Header
 	currentCacheHeight uint32
 }
 
 func NewHeaderCache() *HeaderCache {
 	return &HeaderCache{
 		headerIndex:        map[uint32]common.Uint256{},
-		headerCache:        map[common.Uint256]ledger.Header{},
+		headerCache:        map[common.Uint256]types.Header{},
 		currentCacheHeight: 0,
 	}
 }
 
-func (hc *HeaderCache) AddHeaderToCache(header *ledger.Header) {
+func (hc *HeaderCache) AddHeaderToCache(header *types.Header) {
 	hc.mu.Lock()
 	hash := header.Hash()
 	hc.headerCache[hash] = *header
@@ -50,7 +50,7 @@ func (hc *HeaderCache) RemoveCachedHeader(stopHeight uint32) {
 	}
 }
 
-func (hc *HeaderCache) GetCachedHeader(hash common.Uint256) (*ledger.Header, error) {
+func (hc *HeaderCache) GetCachedHeader(hash common.Uint256) (*types.Header, error) {
 	hc.mu.RLock()
 	defer hc.mu.RUnlock()
 	if header, ok := hc.headerCache[hash]; !ok {

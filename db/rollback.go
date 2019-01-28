@@ -7,11 +7,10 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/types"
 )
 
-func (cs *ChainStore) Rollback(b *ledger.Block) error {
+func (cs *ChainStore) Rollback(b *types.Block) error {
 	if err := cs.st.NewBatch(); err != nil {
 		return err
 	}
@@ -51,12 +50,12 @@ func (cs *ChainStore) Rollback(b *ledger.Block) error {
 	return nil
 }
 
-func (cs *ChainStore) rollbackHeader(b *ledger.Block) error {
+func (cs *ChainStore) rollbackHeader(b *types.Block) error {
 	blockHash := b.Hash()
 	return cs.st.BatchDelete(append([]byte{byte(DATA_Header)}, blockHash[:]...))
 }
 
-func (cs *ChainStore) rollbackTransaction(b *ledger.Block) error {
+func (cs *ChainStore) rollbackTransaction(b *types.Block) error {
 	for _, txn := range b.Transactions {
 		txHash := txn.Hash()
 		if err := cs.st.BatchDelete(append([]byte{byte(DATA_Transaction)}, txHash[:]...)); err != nil {
@@ -67,13 +66,13 @@ func (cs *ChainStore) rollbackTransaction(b *ledger.Block) error {
 	return nil
 }
 
-func (cs *ChainStore) rollbackBlockHash(b *ledger.Block) error {
+func (cs *ChainStore) rollbackBlockHash(b *types.Block) error {
 	height := make([]byte, 4)
 	binary.LittleEndian.PutUint32(height[:], b.Header.UnsignedHeader.Height)
 	return cs.st.BatchDelete(append([]byte{byte(DATA_BlockHash)}, height...))
 }
 
-func (cs *ChainStore) rollbackCurrentBlockHash(b *ledger.Block) error {
+func (cs *ChainStore) rollbackCurrentBlockHash(b *types.Block) error {
 	value := new(bytes.Buffer)
 	prevHash, _ := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
 	if _, err := prevHash.Serialize(value); err != nil {
@@ -86,7 +85,7 @@ func (cs *ChainStore) rollbackCurrentBlockHash(b *ledger.Block) error {
 	return cs.st.BatchPut([]byte{byte(SYS_CurrentBlock)}, value.Bytes())
 }
 
-func (cs *ChainStore) rollbackNames(b *ledger.Block) error {
+func (cs *ChainStore) rollbackNames(b *types.Block) error {
 	for _, txn := range b.Transactions {
 		if txn.UnsignedTx.Payload.Type == types.RegisterNameType {
 			pl, err := types.Unpack(txn.UnsignedTx.Payload)
@@ -120,7 +119,7 @@ func (cs *ChainStore) rollbackNames(b *ledger.Block) error {
 	return nil
 }
 
-func (cs *ChainStore) rollbackPubSub(b *ledger.Block) error {
+func (cs *ChainStore) rollbackPubSub(b *types.Block) error {
 	height := b.Header.UnsignedHeader.Height
 
 	for _, txn := range b.Transactions {

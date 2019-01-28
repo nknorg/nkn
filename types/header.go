@@ -1,4 +1,4 @@
-package ledger
+package types
 
 import (
 	"bytes"
@@ -9,20 +9,10 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/por"
-	sig "github.com/nknorg/nkn/signature"
-	"github.com/nknorg/nkn/types"
-)
-
-type WinnerType byte
-
-const (
-	NumGenesisBlocks = por.SigChainMiningHeightOffset + por.SigChainBlockHeightOffset - 1
-	HeaderVersion    = 1
 )
 
 type Header struct {
-	types.BlockHeader
+	BlockHeader
 	hash Uint256
 }
 
@@ -71,32 +61,17 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 
 func (h *Header) GetProgramHashes() ([]Uint160, error) {
 	programHashes := []Uint160{}
-	zero := Uint256{}
 
-	prevHash, err := Uint256ParseFromBytes(h.UnsignedHeader.PrevBlockHash)
+	pg := *h.Program
+	outputHashes, err := ToCodeHash(pg.Code)
 	if err != nil {
-		return programHashes, err
+		return nil, NewDetailErr(err, ErrNoCode, "[Header], GetProgramHashes failed.")
 	}
-	if prevHash == zero {
-		pg := *h.Program
-		outputHashes, err := ToCodeHash(pg.Code)
-		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Header], GetProgramHashes failed.")
-		}
-		programHashes = append(programHashes, outputHashes)
-		return programHashes, nil
-	} else {
-		prev_header, err := DefaultLedger.Store.GetHeader(prevHash)
-		if err != nil {
-			return programHashes, err
-		}
-		programHashes = append(programHashes, BytesToUint160(prev_header.UnsignedHeader.NextBookKeeper))
-		return programHashes, nil
-	}
-
+	programHashes = append(programHashes, outputHashes)
+	return programHashes, nil
 }
 
-func (h *Header) SetPrograms(programs []*types.Program) {
+func (h *Header) SetPrograms(programs []*Program) {
 	if len(programs) != 1 {
 		return
 	}
@@ -104,13 +79,12 @@ func (h *Header) SetPrograms(programs []*types.Program) {
 	h.Program = programs[0]
 }
 
-func (h *Header) GetPrograms() []*types.Program {
-	return []*types.Program{h.Program}
+func (h *Header) GetPrograms() []*Program {
+	return []*Program{h.Program}
 }
 
 func (h *Header) Hash() Uint256 {
-
-	d := sig.GetHashData(h)
+	d := h.GetMessage()
 	temp := sha256.Sum256([]byte(d))
 	f := sha256.Sum256(temp[:])
 	hash := Uint256(f)
@@ -118,7 +92,9 @@ func (h *Header) Hash() Uint256 {
 }
 
 func (h *Header) GetMessage() []byte {
-	return sig.GetHashData(h)
+	b_buf := new(bytes.Buffer)
+	h.SerializeUnsigned(b_buf)
+	return b_buf.Bytes()
 }
 
 func (h *Header) ToArray() []byte {

@@ -38,7 +38,7 @@ func GetDefaultLedger() (*Ledger, error) {
 //}
 
 //Get Block With Height.
-func (l *Ledger) GetBlockWithHeight(height uint32) (*Block, error) {
+func (l *Ledger) GetBlockWithHeight(height uint32) (*types.Block, error) {
 	temp, err := l.Store.GetBlockHash(height)
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Ledger],GetBlockWithHeight failed with height="+string(height))
@@ -51,7 +51,7 @@ func (l *Ledger) GetBlockWithHeight(height uint32) (*Block, error) {
 }
 
 //Get block with block hash.
-func (l *Ledger) GetBlockWithHash(hash Uint256) (*Block, error) {
+func (l *Ledger) GetBlockWithHash(hash Uint256) (*types.Block, error) {
 	bk, err := l.Store.GetBlock(hash)
 	if err != nil {
 		return nil, NewDetailErr(err, ErrNoCode, "[Ledger],GetBlockWithHeight failed with hash="+hash.ToString())
