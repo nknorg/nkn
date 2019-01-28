@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/net/node/consequential"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/types"
@@ -153,13 +153,13 @@ func (localNode *LocalNode) getBlockHeadersMessageHandler(remoteMessage *RemoteM
 		return replyBuf, false, nil
 	}
 
-	if endHeight > core.DefaultLedger.Store.GetHeaderHeight() {
+	if endHeight > blockchain.DefaultLedger.Store.GetHeaderHeight() {
 		return replyBuf, false, nil
 	}
 
 	headers := make([]*types.Header, endHeight-startHeight+1, endHeight-startHeight+1)
 	for height := startHeight; height <= endHeight; height++ {
-		headers[height-startHeight], err = core.DefaultLedger.Store.GetHeaderByHeight(height)
+		headers[height-startHeight], err = blockchain.DefaultLedger.Store.GetHeaderByHeight(height)
 		if err != nil {
 			return replyBuf, false, err
 		}
@@ -202,13 +202,13 @@ func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *RemoteMessage
 		return replyBuf, false, nil
 	}
 
-	if endHeight > core.DefaultLedger.Store.GetHeight() {
+	if endHeight > blockchain.DefaultLedger.Store.GetHeight() {
 		return replyBuf, false, nil
 	}
 
 	blocks := make([]*types.Block, endHeight-startHeight+1, endHeight-startHeight+1)
 	for height := startHeight; height <= endHeight; height++ {
-		blocks[height-startHeight], err = core.DefaultLedger.Store.GetBlockByHeight(height)
+		blocks[height-startHeight], err = blockchain.DefaultLedger.Store.GetBlockByHeight(height)
 		if err != nil {
 			return replyBuf, false, err
 		}
@@ -332,8 +332,8 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 		started = true
 		localNode.SetSyncState(pb.SyncStarted)
 
-		currentHeight := core.DefaultLedger.Store.GetHeight()
-		currentHash := core.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
+		currentHeight := blockchain.DefaultLedger.Store.GetHeight()
+		currentHash := blockchain.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
 		if stopHeight <= currentHeight {
 			err = fmt.Errorf("sync stop height %d is not higher than current height %d", stopHeight, currentHeight)
 			return
@@ -350,8 +350,8 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 			panic(fmt.Errorf("Rollback error: %v", err))
 		}
 		if rollbacked {
-			currentHeight = core.DefaultLedger.Store.GetHeight()
-			currentHash = core.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
+			currentHeight = blockchain.DefaultLedger.Store.GetHeight()
+			currentHash = blockchain.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
 		}
 
 		startTime := time.Now()
@@ -513,7 +513,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors
 				return false
 			}
 
-			err := core.DefaultLedger.Blockchain.AddBlock(block, false)
+			err := blockchain.DefaultLedger.Blockchain.AddBlock(block, false)
 			if err != nil {
 				return false
 			}

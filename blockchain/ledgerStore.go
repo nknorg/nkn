@@ -1,4 +1,4 @@
-package core
+package blockchain
 
 import (
 	. "github.com/nknorg/nkn/common"
