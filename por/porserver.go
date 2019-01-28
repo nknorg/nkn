@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -158,13 +158,13 @@ func (ps *PorServer) GetMiningSigChainTxnHash(height uint32) (common.Uint256, er
 	return common.Uint256ParseFromBytes(porPackage.TxHash)
 }
 
-func (ps *PorServer) GetMiningSigChainTxn(txnHash common.Uint256) (*transaction.Transaction, error) {
+func (ps *PorServer) GetMiningSigChainTxn(txnHash common.Uint256) (*types.Transaction, error) {
 	v, ok := ps.sigChainTxnCache.Get(txnHash[:])
 	if !ok {
 		return nil, fmt.Errorf("sigchain txn %s not found", txnHash.ToHexString())
 	}
 
-	txn, ok := v.(*transaction.Transaction)
+	txn, ok := v.(*types.Transaction)
 	if !ok {
 		return nil, fmt.Errorf("convert to sigchain txn %s error", txnHash.ToHexString())
 	}
@@ -172,7 +172,7 @@ func (ps *PorServer) GetMiningSigChainTxn(txnHash common.Uint256) (*transaction.
 	return txn, nil
 }
 
-func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeight uint32) (bool, error) {
+func (ps *PorServer) AddSigChainFromTx(txn *types.Transaction, currentHeight uint32) (bool, error) {
 	porPkg, err := NewPorPackage(txn)
 	if err != nil {
 		return false, err

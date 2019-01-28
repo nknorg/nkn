@@ -2,7 +2,7 @@ package ledger
 
 import (
 	. "github.com/nknorg/nkn/common"
-	tx "github.com/nknorg/nkn/core/transaction"
+	"github.com/nknorg/nkn/types"
 )
 
 // ILedgerStore provides func with store package.
@@ -16,13 +16,13 @@ type ILedgerStore interface {
 	//CheckBlockHistory(history map[uint32]Uint256) (uint32, bool)
 	//GetVotingWeight(hash Uint160) (int, error)
 
-	IsDoubleSpend(tx *tx.Transaction) bool
+	IsDoubleSpend(tx *types.Transaction) bool
 
 	AddHeaders(headers []*Header) error
 	GetHeader(hash Uint256) (*Header, error)
 	GetHeaderByHeight(height uint32) (*Header, error)
 
-	GetTransaction(hash Uint256) (*tx.Transaction, error)
+	GetTransaction(hash Uint256) (*types.Transaction, error)
 
 	//SaveAsset(assetid Uint256, asset *Asset) error
 	//GetAsset(hash Uint256) (*Asset, error)

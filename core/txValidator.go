@@ -1,4 +1,4 @@
-package transaction
+package core
 
 import (
 	"math"
@@ -6,6 +6,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/signature"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -15,9 +16,11 @@ const (
 	MaxSubscriptionDuration = 65535
 )
 
+var Store TxnStore
+
 type TxnStore interface {
-	GetTransaction(hash Uint256) (*Transaction, error)
-	IsDoubleSpend(tx *Transaction) bool
+	GetTransaction(hash Uint256) (*types.Transaction, error)
+	IsDoubleSpend(tx *types.Transaction) bool
 	IsTxHashDuplicate(txhash Uint256) bool
 	GetName(registrant []byte) (*string, error)
 	GetRegistrant(name string) ([]byte, error)
@@ -26,11 +29,11 @@ type TxnStore interface {
 }
 
 type Iterator interface {
-	Iterate(handler func(item *Transaction) ErrCode) ErrCode
+	Iterate(handler func(item *types.Transaction) ErrCode) ErrCode
 }
 
 // VerifyTransaction verifys received single transaction
-func VerifyTransaction(Tx *Transaction) ErrCode {
+func VerifyTransaction(Tx *types.Transaction) ErrCode {
 	if err := CheckAssetPrecision(Tx); err != nil {
 		log.Warning("[VerifyTransaction],", err)
 		return ErrAssetPrecision
@@ -161,7 +164,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 }
 
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
-func VerifyTransactionWithLedger(Tx *Transaction) ErrCode {
+func VerifyTransactionWithLedger(Tx *types.Transaction) ErrCode {
 	if IsDoubleSpend(Tx) {
 		log.Info("[VerifyTransactionWithLedger] IsDoubleSpend check faild.")
 		return ErrDoubleSpend
@@ -173,15 +176,15 @@ func VerifyTransactionWithLedger(Tx *Transaction) ErrCode {
 	return ErrNoError
 }
 
-func IsDoubleSpend(tx *Transaction) bool {
+func IsDoubleSpend(tx *types.Transaction) bool {
 	return Store.IsDoubleSpend(tx)
 }
 
-func CheckAssetPrecision(Tx *Transaction) error {
+func CheckAssetPrecision(Tx *types.Transaction) error {
 	return nil
 }
 
-func CheckTransactionBalance(txn *Transaction) error {
+func CheckTransactionBalance(txn *types.Transaction) error {
 	//if txn.TxType == Coinbase {
 	//	return nil
 	//}
@@ -189,12 +192,12 @@ func CheckTransactionBalance(txn *Transaction) error {
 	return nil
 }
 
-func CheckAttributeProgram(Tx *Transaction) error {
+func CheckAttributeProgram(Tx *types.Transaction) error {
 	//TODO: implement CheckAttributeProgram
 	return nil
 }
 
-func CheckTransactionContracts(Tx *Transaction) error {
+func CheckTransactionContracts(Tx *types.Transaction) error {
 	flag, err := signature.VerifySignableData(Tx)
 	if flag && err == nil {
 		return nil
@@ -207,7 +210,7 @@ func checkAmountPrecise(amount Fixed64, precision byte) bool {
 	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
 }
 
-func CheckTransactionPayload(txn *Transaction) error {
+func CheckTransactionPayload(txn *types.Transaction) error {
 
 	//switch pld := txn.Payload.(type) {
 	//case *payload.TransferAsset:
