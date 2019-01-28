@@ -1,18 +1,16 @@
-package validation
+package signature
 
 import (
 	"errors"
 
-	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/common"
-	sig "github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/vm"
 	"github.com/nknorg/nkn/vm/interfaces"
 )
 
-func VerifySignableData(signableData sig.SignableData) (bool, error) {
+func VerifySignableData(signableData SignableData) (bool, error) {
 
 	hashes, err := signableData.GetProgramHashes()
 	if err != nil {
@@ -34,7 +32,7 @@ func VerifySignableData(signableData sig.SignableData) (bool, error) {
 		//execute program on VM
 		var cryptos interfaces.ICrypto
 		cryptos = new(vm.ECDsaCrypto)
-		se := vm.NewExecutionEngine(signableData, cryptos, nil, nil, common.Fixed64(0))
+		se := vm.NewExecutionEngine(signableData, cryptos, nil, nil, Fixed64(0))
 		se.LoadCode(programs[i].Code, false)
 		se.LoadCode(programs[i].Parameter, true)
 		err := se.Execute()
@@ -60,8 +58,8 @@ func VerifySignableData(signableData sig.SignableData) (bool, error) {
 	return true, nil
 }
 
-func VerifySignature(signableData sig.SignableData, pubkey *crypto.PubKey, signature []byte) (bool, error) {
-	err := crypto.Verify(*pubkey, sig.GetHashData(signableData), signature)
+func VerifySignature(signableData SignableData, pubkey *crypto.PubKey, signature []byte) (bool, error) {
+	err := crypto.Verify(*pubkey, GetHashData(signableData), signature)
 	if err != nil {
 		return false, NewDetailErr(err, ErrNoCode, "[Validation], VerifySignature failed.")
 	} else {

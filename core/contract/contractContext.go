@@ -6,9 +6,9 @@ import (
 	"sort"
 
 	. "github.com/nknorg/nkn/common"
-	sig "github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/crypto"
 	_ "github.com/nknorg/nkn/errors"
+	sig "github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )

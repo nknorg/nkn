@@ -11,8 +11,8 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/core/ledger"
 	tx "github.com/nknorg/nkn/core/transaction"
-	"github.com/nknorg/nkn/core/validation"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -405,7 +405,7 @@ func (cs *ChainStore) verifyHeader(header *Header) bool {
 		return false
 	}
 
-	flag, err := validation.VerifySignableData(header)
+	flag, err := signature.VerifySignableData(header)
 	if flag == false || err != nil {
 		log.Error("[verifyHeader] failed, VerifySignableData failed.")
 		log.Error(err)
