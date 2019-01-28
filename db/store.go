@@ -7,9 +7,9 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/nknorg/nkn/blockchain"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
@@ -28,7 +28,7 @@ type ChainStore struct {
 	currentBlockHeight uint32
 }
 
-func NewLedgerStore() (core.ILedgerStore, error) {
+func NewLedgerStore() (blockchain.ILedgerStore, error) {
 	st, err := NewLevelDBStore("Chain")
 	if err != nil {
 		return nil, err
@@ -347,7 +347,7 @@ func (cs *ChainStore) persist(b *types.Block) error {
 	return cs.st.BatchCommit()
 }
 
-func (cs *ChainStore) SaveBlock(b *types.Block, ledger *core.Ledger, fastAdd bool) error {
+func (cs *ChainStore) SaveBlock(b *types.Block, ledger *blockchain.Ledger, fastAdd bool) error {
 	if err := cs.persist(b); err != nil {
 		log.Error("error to persist block:", err.Error())
 		return err

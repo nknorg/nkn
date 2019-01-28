@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/contract"
-	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
@@ -55,9 +55,9 @@ func (ah *APIHandler) IsAccessableByWebsocket() bool {
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getLatestBlockHash(s Serverer, params map[string]interface{}) map[string]interface{} {
-	hash := core.DefaultLedger.Blockchain.CurrentBlockHash()
+	hash := blockchain.DefaultLedger.Blockchain.CurrentBlockHash()
 	ret := map[string]interface{}{
-		"height": core.DefaultLedger.Blockchain.BlockHeight,
+		"height": blockchain.DefaultLedger.Blockchain.BlockHeight,
 		"hash":   common.BytesToHexString(hash.ToArrayReverse()),
 	}
 	return respPacking(ret, SUCCESS)
@@ -75,7 +75,7 @@ func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} 
 	if index, ok := params["height"].(float64); ok {
 		var err error
 		height := uint32(index)
-		if hash, err = core.DefaultLedger.Store.GetBlockHash(height); err != nil {
+		if hash, err = blockchain.DefaultLedger.Store.GetBlockHash(height); err != nil {
 			return respPacking(nil, UNKNOWN_HASH)
 		}
 	} else if str, ok := params["hash"].(string); ok {
@@ -90,7 +90,7 @@ func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} 
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	block, err := core.DefaultLedger.Store.GetBlock(hash)
+	block, err := blockchain.DefaultLedger.Store.GetBlock(hash)
 	if err != nil {
 		return respPacking(nil, UNKNOWN_BLOCK)
 	}
@@ -107,7 +107,7 @@ func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} 
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getBlockCount(s Serverer, params map[string]interface{}) map[string]interface{} {
-	return respPacking(core.DefaultLedger.Blockchain.BlockHeight+1, SUCCESS)
+	return respPacking(blockchain.DefaultLedger.Blockchain.BlockHeight+1, SUCCESS)
 }
 
 // getChordRingInfo gets the information of Chord
@@ -125,7 +125,7 @@ func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]inte
 // params: []
 // return: {"result":<result>, "error":<errcode>}
 func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]interface{} {
-	return respPacking(core.DefaultLedger.Blockchain.BlockHeight, SUCCESS)
+	return respPacking(blockchain.DefaultLedger.Blockchain.BlockHeight, SUCCESS)
 }
 
 //// getBlockHash gets the block hash by height
@@ -140,7 +140,7 @@ func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]
 //	switch params[0].(type) {
 //	case float64:
 //		height := uint32(params[0].(float64))
-//		hash, err := core.DefaultLedger.Store.GetBlockHash(height)
+//		hash, err := blockchain.DefaultLedger.Store.GetBlockHash(height)
 //		if err != nil {
 //			return nil, UNKNOWN_HASH
 //		}
@@ -185,12 +185,12 @@ func getBlockTxsByHeight(s Serverer, params map[string]interface{}) map[string]i
 		return respPacking(nil, INVALID_PARAMS)
 	}
 	index := uint32(params["height"].(float64))
-	hash, err := core.DefaultLedger.Store.GetBlockHash(index)
+	hash, err := blockchain.DefaultLedger.Store.GetBlockHash(index)
 	if err != nil {
 		return respPacking(nil, UNKNOWN_HASH)
 	}
 
-	block, err := core.DefaultLedger.Store.GetBlock(hash)
+	block, err := blockchain.DefaultLedger.Store.GetBlock(hash)
 	if err != nil {
 		return respPacking(nil, UNKNOWN_BLOCK)
 	}
@@ -260,7 +260,7 @@ func getTransaction(s Serverer, params map[string]interface{}) map[string]interf
 		if err != nil {
 			return respPacking(nil, INVALID_PARAMS)
 		}
-		tx, err := core.DefaultLedger.Store.GetTransaction(hash)
+		tx, err := blockchain.DefaultLedger.Store.GetTransaction(hash)
 		if err != nil {
 			return respPacking(nil, UNKNOWN_TRANSACTION)
 		}
@@ -528,8 +528,8 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 	dataHash := common.Uint256{}
-	currentHeight := core.DefaultLedger.Store.GetHeight()
-	blockHash, err := core.DefaultLedger.Store.GetBlockHash(currentHeight - 1)
+	currentHeight := blockchain.DefaultLedger.Store.GetHeight()
+	blockHash, err := blockchain.DefaultLedger.Store.GetBlockHash(currentHeight - 1)
 	if err != nil {
 		return respPacking(nil, UNKNOWN_HASH)
 	}
@@ -653,7 +653,7 @@ func getBalanceByAddr(s Serverer, params map[string]interface{}) map[string]inte
 	}
 
 	pg, _ := common.ToScriptHash(addr)
-	value := core.DefaultLedger.Store.GetBalance(pg)
+	value := blockchain.DefaultLedger.Store.GetBalance(pg)
 
 	ret := map[string]interface{}{
 		"amount": value.String(),
@@ -711,7 +711,7 @@ func getAddressByName(s Serverer, params map[string]interface{}) map[string]inte
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	publicKey, err := core.DefaultLedger.Store.GetRegistrant(name)
+	publicKey, err := blockchain.DefaultLedger.Store.GetRegistrant(name)
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
@@ -747,7 +747,7 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
-	subscribers := core.DefaultLedger.Store.GetSubscribers(topic)
+	subscribers := blockchain.DefaultLedger.Store.GetSubscribers(topic)
 	return respPacking(subscribers, SUCCESS)
 }
 

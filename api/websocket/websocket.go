@@ -6,8 +6,8 @@ import (
 
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket/server"
+	"github.com/nknorg/nkn/blockchain"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/types"
@@ -25,7 +25,7 @@ var (
 
 func NewServer(localNode *node.LocalNode, w vault.Wallet) *server.WsServer {
 	//	common.SetNode(n)
-	core.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
+	blockchain.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
 	ws = server.InitWsServer(localNode, w)
 	return ws
 }

@@ -4,8 +4,8 @@ import (
 	"bytes"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/types"
@@ -227,8 +227,8 @@ func (consensus *Consensus) requestBlockProposalMessageHandler(remoteMessage *no
 
 // getConsensusStateMessageHandler handles a GET_CONSENSUS_STATE message
 func (consensus *Consensus) getConsensusStateMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
-	ledgerHeight := core.DefaultLedger.Store.GetHeight()
-	ledgerBlockHash := core.DefaultLedger.Store.GetHeaderHashByHeight(ledgerHeight)
+	ledgerHeight := blockchain.DefaultLedger.Store.GetHeight()
+	ledgerBlockHash := blockchain.DefaultLedger.Store.GetHeaderHashByHeight(ledgerHeight)
 	consensusHeight := consensus.GetExpectedHeight()
 	syncState := consensus.localNode.GetSyncState()
 

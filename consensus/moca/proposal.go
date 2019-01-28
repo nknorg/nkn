@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/moca/election"
-	"github.com/nknorg/nkn/core"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/types"
@@ -45,7 +45,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	}
 
 	for {
-		if core.CanVerifyHeight(consensusHeight) {
+		if blockchain.CanVerifyHeight(consensusHeight) {
 			break
 		}
 		if elc.NeighborVoteCount() > 0 {
@@ -63,7 +63,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 		case proposal := <-proposalChan:
 			blockHash := proposal.Header.Hash()
 
-			if !core.CanVerifyHeight(consensusHeight) {
+			if !blockchain.CanVerifyHeight(consensusHeight) {
 				err = consensus.iHaveProposal(consensusHeight, blockHash)
 				if err != nil {
 					log.Errorf("Send I have block message error: %v", err)
@@ -71,7 +71,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				continue
 			}
 
-			err := core.SignerCheck(proposal.Header)
+			err := blockchain.SignerCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Ignore proposal that fails to pass signer check: %v", err)
 				continue
@@ -94,19 +94,19 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				acceptProposal = false
 			}
 
-			err = core.HeaderCheck(proposal.Header)
+			err = blockchain.HeaderCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Proposal fails to pass header check: %v", err)
 				acceptProposal = false
 			}
 
-			err = core.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp)
+			err = blockchain.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp)
 			if err != nil {
 				log.Warningf("Proposal fails to pass timestamp check: %v", err)
 				acceptProposal = false
 			}
 
-			err = core.TransactionCheck(proposal)
+			err = blockchain.TransactionCheck(proposal)
 			if err != nil {
 				log.Warningf("Proposal fails to pass transaction check: %v", err)
 				acceptProposal = false

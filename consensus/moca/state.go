@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/core"
+	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
@@ -21,7 +21,7 @@ func (consensus *Consensus) startGettingNeighborConsensusState() {
 		case <-getNeighborConsensusStateTimer.C:
 			majorityConsensusHeight := consensus.getNeighborsMajorityConsensusHeight()
 			localConsensusHeight := consensus.GetExpectedHeight()
-			localLedgerHeight := core.DefaultLedger.Store.GetHeight()
+			localLedgerHeight := blockchain.DefaultLedger.Store.GetHeight()
 
 			if localConsensusHeight > majorityConsensusHeight {
 				break
