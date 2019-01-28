@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/errors"
@@ -223,7 +224,9 @@ func (s *RPCServer) Start() {
 	rpcServeMux := http.NewServeMux()
 	rpcServeMux.HandleFunc("/", s.Handle)
 	httpServer := &http.Server{
-		Handler: rpcServeMux,
+		Handler:      rpcServeMux,
+		ReadTimeout:  config.Parameters.RPCReadTimeout * time.Second,
+		WriteTimeout: config.Parameters.RPCWriteTimeout * time.Second,
 	}
 	httpServer.Serve(listener)
 }

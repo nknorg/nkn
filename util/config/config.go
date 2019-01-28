@@ -36,50 +36,54 @@ var (
 	SkipCheckPort bool
 	SkipNAT       bool
 	Parameters    = &Configuration{
-		Version:       1,
-		Transport:     "tcp",
-		NodePort:      30001,
-		HttpWsPort:    30002,
-		HttpJsonPort:  30003,
-		NAT:           true,
-		LogLevel:      1,
+		Version:      1,
+		Transport:    "tcp",
+		NodePort:     30001,
+		HttpWsPort:   30002,
+		HttpJsonPort: 30003,
+		NAT:          true,
+		LogLevel:     1,
 		SeedList: []string{
 			"http://127.0.0.1:30003",
 		},
 		SyncBatchWindowSize:       1024,
 		SyncBlockHeadersBatchSize: 256,
 		SyncBlocksBatchSize:       8,
+		RPCReadTimeout:            5,
+		RPCWriteTimeout:           10,
 	}
 )
 
 type Configuration struct {
-	Version                   int      `json:"Version"`
-	SeedList                  []string `json:"SeedList"`
-	RestCertPath              string   `json:"RestCertPath"`
-	RestKeyPath               string   `json:"RestKeyPath"`
-	RPCCert                   string   `json:"RPCCert"`
-	RPCKey                    string   `json:"RPCKey"`
-	HttpWsPort                uint16   `json:"HttpWsPort"`
-	HttpJsonPort              uint16   `json:"HttpJsonPort"`
-	NodePort                  uint16   `json:"-"`
-	LogLevel                  int      `json:"LogLevel"`
-	IsTLS                     bool     `json:"IsTLS"`
-	CertPath                  string   `json:"CertPath"`
-	KeyPath                   string   `json:"KeyPath"`
-	CAPath                    string   `json:"CAPath"`
-	GenBlockTime              uint     `json:"GenBlockTime"`
-	EncryptAlg                string   `json:"EncryptAlg"`
-	MaxLogSize                int64    `json:"MaxLogSize"`
-	MaxTxInBlock              int      `json:"MaxTransactionInBlock"`
-	MaxHdrSyncReqs            int      `json:"MaxConcurrentSyncHeaderReqs"`
-	GenesisBlockProposer      string   `json:"GenesisBlockProposer"`
-	Hostname                  string   `json:"Hostname"`
-	Transport                 string   `json:"Transport"`
-	NAT                       bool     `json:"NAT"`
-	BeneficiaryAddr           string   `json:"BeneficiaryAddr"`
-	SyncBatchWindowSize       uint32   `json:"SyncBatchWindowSize"`
-	SyncBlockHeadersBatchSize uint32   `json:"SyncBlockHeadersBatchSize"`
-	SyncBlocksBatchSize       uint32   `json:"SyncBlocksBatchSize"`
+	Version                   int           `json:"Version"`
+	SeedList                  []string      `json:"SeedList"`
+	RestCertPath              string        `json:"RestCertPath"`
+	RestKeyPath               string        `json:"RestKeyPath"`
+	RPCCert                   string        `json:"RPCCert"`
+	RPCKey                    string        `json:"RPCKey"`
+	HttpWsPort                uint16        `json:"HttpWsPort"`
+	HttpJsonPort              uint16        `json:"HttpJsonPort"`
+	NodePort                  uint16        `json:"-"`
+	LogLevel                  int           `json:"LogLevel"`
+	IsTLS                     bool          `json:"IsTLS"`
+	CertPath                  string        `json:"CertPath"`
+	KeyPath                   string        `json:"KeyPath"`
+	CAPath                    string        `json:"CAPath"`
+	GenBlockTime              uint          `json:"GenBlockTime"`
+	EncryptAlg                string        `json:"EncryptAlg"`
+	MaxLogSize                int64         `json:"MaxLogSize"`
+	MaxTxInBlock              int           `json:"MaxTransactionInBlock"`
+	MaxHdrSyncReqs            int           `json:"MaxConcurrentSyncHeaderReqs"`
+	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
+	Hostname                  string        `json:"Hostname"`
+	Transport                 string        `json:"Transport"`
+	NAT                       bool          `json:"NAT"`
+	BeneficiaryAddr           string        `json:"BeneficiaryAddr"`
+	SyncBatchWindowSize       uint32        `json:"SyncBatchWindowSize"`
+	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
+	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
+	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`
+	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`
 }
 
 func Init() error {
