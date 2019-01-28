@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/core/ledger"
 	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/types"
@@ -108,7 +107,7 @@ func (localNode *LocalNode) BroadcastTransaction(txn *types.Transaction) error {
 }
 
 func (localNode *LocalNode) cleanupTransactions(v interface{}) {
-	if block, ok := v.(*ledger.Block); ok {
+	if block, ok := v.(*types.Block); ok {
 		localNode.TxnPool.CleanSubmittedTransactions(block.Transactions)
 	}
 }

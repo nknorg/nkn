@@ -15,7 +15,7 @@ import (
 )
 
 type Mining interface {
-	BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType types.WinnerType, timestamp int64) (*Block, error)
+	BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType types.WinnerType, timestamp int64) (*types.Block, error)
 }
 
 type BuiltinMining struct {
@@ -30,7 +30,7 @@ func NewBuiltinMining(account *vault.Account, txnCollector *core.TxnCollector) *
 	}
 }
 
-func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType types.WinnerType, timestamp int64) (*Block, error) {
+func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType types.WinnerType, timestamp int64) (*types.Block, error) {
 	var txnList []*types.Transaction
 	var txnHashList []common.Uint256
 	coinbase := bm.CreateCoinbaseTransaction()
@@ -57,7 +57,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	}
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
 	curStateHash := DefaultLedger.Store.GetStateRootHash()
-	header := &Header{
+	header := &types.Header{
 		BlockHeader: types.BlockHeader{
 			UnsignedHeader: &types.UnsignedHeader{
 				Version:          HeaderVersion,
@@ -88,7 +88,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	}
 	header.Signature = append(header.Signature, sig...)
 
-	block := &Block{
+	block := &types.Block{
 		Header:       header,
 		Transactions: txnList,
 	}

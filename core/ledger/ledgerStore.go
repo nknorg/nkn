@@ -7,9 +7,9 @@ import (
 
 // ILedgerStore provides func with store package.
 type ILedgerStore interface {
-	SaveBlock(b *Block, ledger *Ledger, fastAdd bool) error
-	GetBlock(hash Uint256) (*Block, error)
-	GetBlockByHeight(height uint32) (*Block, error)
+	SaveBlock(b *types.Block, ledger *Ledger, fastAdd bool) error
+	GetBlock(hash Uint256) (*types.Block, error)
+	GetBlockByHeight(height uint32) (*types.Block, error)
 	//BlockInCache(hash Uint256) bool
 	GetBlockHash(height uint32) (Uint256, error)
 	//GetBlockHistory(startHeight, blockNum uint32) map[uint32]Uint256
@@ -18,9 +18,9 @@ type ILedgerStore interface {
 
 	IsDoubleSpend(tx *types.Transaction) bool
 
-	AddHeaders(headers []*Header) error
-	GetHeader(hash Uint256) (*Header, error)
-	GetHeaderByHeight(height uint32) (*Header, error)
+	AddHeaders(headers []*types.Header) error
+	GetHeader(hash Uint256) (*types.Header, error)
+	GetHeaderByHeight(height uint32) (*types.Header, error)
 
 	GetTransaction(hash Uint256) (*types.Transaction, error)
 
@@ -48,7 +48,7 @@ type ILedgerStore interface {
 	GetHeightByBlockHash(hash Uint256) (uint32, error)
 	GetHeaderHashByHeight(height uint32) Uint256
 
-	InitLedgerStoreWithGenesisBlock(genesisblock *Block) (uint32, error)
+	InitLedgerStoreWithGenesisBlock(genesisblock *types.Block) (uint32, error)
 
 	//GetQuantityIssued(assetid Uint256) (Fixed64, error)
 	//GetUnspent(txid Uint256, index uint16) (*tx.TxnOutput, error)
@@ -61,6 +61,6 @@ type ILedgerStore interface {
 
 	IsTxHashDuplicate(txhash Uint256) bool
 	IsBlockInStore(hash Uint256) bool
-	Rollback(b *Block) error
+	Rollback(b *types.Block) error
 	Close()
 }

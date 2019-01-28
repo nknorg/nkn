@@ -1,4 +1,4 @@
-package ledger
+package types
 
 import (
 	"bytes"
@@ -11,10 +11,7 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/errors"
-	sig "github.com/nknorg/nkn/signature"
-	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
 )
 
 const BlockVersion uint32 = 0
@@ -22,7 +19,7 @@ const GenesisNonce uint64 = 2083236893
 
 type Block struct {
 	Header       *Header
-	Transactions []*types.Transaction
+	Transactions []*Transaction
 
 	hash *Uint256
 }
@@ -55,7 +52,7 @@ func (b *Block) Deserialize(r io.Reader) error {
 	var txhash Uint256
 	var tharray []Uint256
 	for i = 0; i < Len; i++ {
-		transaction := new(types.Transaction)
+		transaction := new(Transaction)
 		transaction.Deserialize(r)
 		txhash = transaction.Hash()
 		b.Transactions = append(b.Transactions, transaction)
@@ -105,7 +102,7 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 	var tharray []Uint256
 	for i = 0; i < Len; i++ {
 		txhash.Deserialize(r)
-		transaction := new(types.Transaction)
+		transaction := new(Transaction)
 		transaction.SetHash(txhash)
 		b.Transactions = append(b.Transactions, transaction)
 		tharray = append(tharray, txhash)
@@ -121,7 +118,9 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 }
 
 func (b *Block) GetMessage() []byte {
-	return sig.GetHashData(b)
+	b_buf := new(bytes.Buffer)
+	b.SerializeUnsigned(b_buf)
+	return b_buf.Bytes()
 }
 
 func (b *Block) ToArray() []byte {
@@ -135,12 +134,12 @@ func (b *Block) GetProgramHashes() ([]Uint160, error) {
 	return b.Header.GetProgramHashes()
 }
 
-func (b *Block) SetPrograms(prog []*types.Program) {
+func (b *Block) SetPrograms(prog []*Program) {
 	b.Header.SetPrograms(prog)
 	return
 }
 
-func (b *Block) GetPrograms() []*types.Program {
+func (b *Block) GetPrograms() []*Program {
 	return b.Header.GetPrograms()
 }
 
@@ -153,7 +152,6 @@ func (b *Block) Hash() Uint256 {
 }
 
 func (b *Block) Verify() error {
-	log.Info("This function is expired.please use Validation/blockValidator to Verify Block.")
 	return nil
 }
 
@@ -172,8 +170,8 @@ func GenesisBlockInit() (*Block, error) {
 	genesisBlockProposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)
 	// block header
 	genesisBlockHeader := &Header{
-		BlockHeader: types.BlockHeader{
-			UnsignedHeader: &types.UnsignedHeader{
+		BlockHeader: BlockHeader{
+			UnsignedHeader: &UnsignedHeader{
 				Version:       BlockVersion,
 				PrevBlockHash: EmptyUint256.ToArray(),
 				Timestamp:     time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix(),
@@ -183,7 +181,7 @@ func GenesisBlockInit() (*Block, error) {
 				NextBookKeeper: EmptyUint160.ToArray(),
 				Signer:         genesisBlockProposer,
 			},
-			Program: &types.Program{
+			Program: &Program{
 				Code:      []byte{0x00},
 				Parameter: []byte{0x00},
 			},
@@ -191,27 +189,27 @@ func GenesisBlockInit() (*Block, error) {
 	}
 
 	rewardAddress, _ := ToScriptHash("NcX9BWx5uxsevCZ2MUEbBJGoYGSNCuJJpf")
-	payload := types.NewCoinbase(EmptyUint160, rewardAddress, Fixed64(config.DefaultMiningReward*StorageFactor))
-	pl, err := types.Pack(types.CoinbaseType, payload)
+	payload := NewCoinbase(EmptyUint160, rewardAddress, Fixed64(config.DefaultMiningReward*StorageFactor))
+	pl, err := Pack(CoinbaseType, payload)
 	if err != nil {
 		return nil, err
 	}
 
-	txn := types.NewMsgTx(pl, 0, 0, []byte{})
-	txn.Programs = []*types.Program{
+	txn := NewMsgTx(pl, 0, 0, []byte{})
+	txn.Programs = []*Program{
 		{
 			Code:      []byte{0x00},
 			Parameter: []byte{0x00},
 		},
 	}
-	trans := &types.Transaction{
+	trans := &Transaction{
 		MsgTx: *txn,
 	}
 
 	// genesis block
 	genesisBlock := &Block{
 		Header:       genesisBlockHeader,
-		Transactions: []*types.Transaction{trans},
+		Transactions: []*Transaction{trans},
 	}
 
 	return genesisBlock, nil

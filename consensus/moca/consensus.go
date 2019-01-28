@@ -11,6 +11,7 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -27,7 +28,7 @@ type Consensus struct {
 	txnCollector        *core.TxnCollector
 
 	proposalLock   sync.RWMutex
-	proposalChan   chan *ledger.Block
+	proposalChan   chan *types.Block
 	expectedHeight uint32
 
 	nextConsensusHeightLock sync.Mutex
@@ -45,7 +46,7 @@ func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus
 		localNode:           localNode,
 		elections:           common.NewGoCache(cacheExpiration, cacheCleanupInterval),
 		proposals:           common.NewGoCache(cacheExpiration, cacheCleanupInterval),
-		proposalChan:        make(chan *ledger.Block, proposalChanLen),
+		proposalChan:        make(chan *types.Block, proposalChanLen),
 		requestProposalChan: make(chan *requestProposalInfo, requestProposalChanLen),
 		mining:              ledger.NewBuiltinMining(account, txnCollector),
 		txnCollector:        txnCollector,
@@ -206,7 +207,7 @@ func (consensus *Consensus) setExpectedHeight(expectedHeight uint32) {
 		}
 
 		consensus.expectedHeight = expectedHeight
-		consensus.proposalChan = make(chan *ledger.Block, proposalChanLen)
+		consensus.proposalChan = make(chan *types.Block, proposalChanLen)
 	}
 	consensus.proposalLock.Unlock()
 }
@@ -252,7 +253,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		return fmt.Errorf("Block %s not found in local cache", electedBlockHash.ToHexString())
 	}
 
-	block, ok := value.(*ledger.Block)
+	block, ok := value.(*types.Block)
 	if !ok {
 		return fmt.Errorf("Convert block %s from proposal cache error", electedBlockHash.ToHexString())
 	}

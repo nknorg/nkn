@@ -14,6 +14,7 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
 )
@@ -31,7 +32,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	electionStartTimer := time.NewTimer(math.MaxInt64)
 	electionStartTimer.Stop()
 	timeoutTimer := time.NewTimer(electionStartDelay)
-	proposals := make(map[common.Uint256]*ledger.Block)
+	proposals := make(map[common.Uint256]*types.Block)
 
 	consensus.proposalLock.RLock()
 	consensusHeight := consensus.expectedHeight
@@ -183,7 +184,7 @@ func (consensus *Consensus) startRequestingProposal() {
 }
 
 // receiveProposal is called when a new proposal is received
-func (consensus *Consensus) receiveProposal(block *ledger.Block) error {
+func (consensus *Consensus) receiveProposal(block *types.Block) error {
 	blockHash := block.Header.Hash()
 
 	log.Debugf("Receive block proposal %s", blockHash.ToHexString())
@@ -245,7 +246,7 @@ func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32
 
 // requestProposal requests a block proposal by block hash from a neighbor using
 // REQUEST_BLOCK_PROPOSAL message
-func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash common.Uint256) (*ledger.Block, error) {
+func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash common.Uint256) (*types.Block, error) {
 	msg, err := NewRequestBlockProposalMessage(blockHash)
 	if err != nil {
 		return nil, err
@@ -271,7 +272,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		return nil, nil
 	}
 
-	block := &ledger.Block{}
+	block := &types.Block{}
 	err = block.Deserialize(bytes.NewReader(replyMsg.Block))
 	if err != nil {
 		return nil, err

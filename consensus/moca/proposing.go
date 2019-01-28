@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/core/ledger"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
 )
@@ -70,7 +71,7 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 }
 
 // proposeBlock proposes a new block at give height and timestamp
-func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*ledger.Block, error) {
+func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*types.Block, error) {
 	winnerHash, winnerType, err := ledger.GetWinner(height)
 	if err != nil {
 		return nil, err

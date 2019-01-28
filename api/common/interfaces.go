@@ -152,7 +152,7 @@ func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]
 //	}
 //}
 
-func GetBlockTransactions(block *ledger.Block) interface{} {
+func GetBlockTransactions(block *types.Block) interface{} {
 	trans := make([]string, len(block.Transactions))
 	for i := 0; i < len(block.Transactions); i++ {
 		h := block.Transactions[i].Hash()
