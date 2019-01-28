@@ -33,7 +33,7 @@ func (remoteNode *RemoteNode) MarshalJSON() ([]byte, error) {
 	}
 
 	out["height"] = remoteNode.GetHeight()
-	out["isOutBound"] = remoteNode.nnetNode.IsOutbound
+	out["isOutbound"] = remoteNode.nnetNode.IsOutbound
 
 	return json.Marshal(out)
 }

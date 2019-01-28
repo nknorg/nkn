@@ -37,7 +37,7 @@ func (rn *ChordRemoteNodeInfo) MarshalJSON() ([]byte, error) {
 
 	delete(out, "data")
 	out["id"] = hex.EncodeToString(rn.Node.Node.Id)
-	out["isOutBound"] = rn.IsOutbound
+	out["isOutbound"] = rn.IsOutbound
 
 	return json.Marshal(out)
 }
