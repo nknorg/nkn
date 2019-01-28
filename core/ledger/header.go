@@ -8,7 +8,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/por"
@@ -97,17 +96,16 @@ func (h *Header) GetProgramHashes() ([]Uint160, error) {
 
 }
 
-func (h *Header) SetPrograms(programs []*program.Program) {
+func (h *Header) SetPrograms(programs []*types.Program) {
 	if len(programs) != 1 {
 		return
 	}
-	h.Program = &programs[0].Program
+
+	h.Program = programs[0]
 }
 
-func (h *Header) GetPrograms() []*program.Program {
-	return []*program.Program{
-		&program.Program{*h.Program},
-	}
+func (h *Header) GetPrograms() []*types.Program {
+	return []*types.Program{h.Program}
 }
 
 func (h *Header) Hash() Uint256 {

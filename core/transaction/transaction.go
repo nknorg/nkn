@@ -8,7 +8,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/core/contract/program"
 	sig "github.com/nknorg/nkn/core/signature"
 	"github.com/nknorg/nkn/types"
 )
@@ -84,31 +83,12 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 
 }
 
-func (tx *Transaction) SetPrograms(programs []*program.Program) {
-	pgs := make([]*types.Program, len(programs))
-	for i, pg := range programs {
-		pgs[i] = &pg.Program
-	}
-	tx.Programs = pgs
-	//tx.Programs = []*types.Program{&programs[0].Program}
+func (tx *Transaction) SetPrograms(programs []*types.Program) {
+	tx.Programs = programs
 }
 
-func (tx *Transaction) GetPrograms() []*program.Program {
-	pgs := make([]*program.Program, len(tx.Programs))
-	for i, pg := range tx.Programs {
-		p := &program.Program{
-			Program: *pg,
-		}
-		pgs[i] = p
-	}
-
-	return pgs
-	//return []*program.Program{
-	//	&program.Program{
-	//		Program: *tx.Programs[0],
-	//	},
-	//}
-
+func (tx *Transaction) GetPrograms() []*types.Program {
+	return tx.Programs
 }
 
 func (tx *Transaction) GetMessage() []byte {
