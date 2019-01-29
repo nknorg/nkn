@@ -494,10 +494,9 @@ func (cs *ChainStore) GetStateRootHash() Uint256 {
 }
 
 func (cs *ChainStore) GetBalance(addr Uint160) Fixed64 {
-	acc, err := cs.States.getAccount(addr)
-	if err != nil {
-		return Fixed64(0)
-	}
+	return cs.States.GetBalance(addr)
+}
 
-	return acc.GetBalance()
+func (cs *ChainStore) GetNonce(addr Uint160) Fixed64 {
+	return cs.States.GetBalance(addr)
 }

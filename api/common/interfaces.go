@@ -598,6 +598,29 @@ func getBalanceByAddr(s Serverer, params map[string]interface{}) map[string]inte
 	return respPacking(ret, SUCCESS)
 }
 
+// getNonceByAddr gets balance by address
+// params: ["address":<address>]
+// return: {"result":<result>, "error":<errcode>}
+func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	addr, ok := params["address"].(string)
+	if !ok {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	pg, _ := common.ToScriptHash(addr)
+	value := blockchain.DefaultLedger.Store.GetNonce(pg)
+
+	ret := map[string]interface{}{
+		"amount": value,
+	}
+
+	return respPacking(ret, SUCCESS)
+}
+
 func VerifyAndSendTx(localNode *node.LocalNode, txn *types.Transaction) errors.ErrCode {
 	if errCode := localNode.AppendTxnPool(txn); errCode != errors.ErrNoError {
 		log.Warning("Can NOT add the transaction to TxnPool")
@@ -749,6 +772,7 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"commitpor":            {Handler: commitPor},
 	"sigchaintest":         {Handler: sigchaintest},
 	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
+	"getnoncebyaddr":       {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
 	"getaddressbyname":     {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
 	"getsubscribers":       {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddr":    {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
