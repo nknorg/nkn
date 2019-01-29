@@ -582,6 +582,29 @@ func getBalanceByAddr(s Serverer, params map[string]interface{}) map[string]inte
 	return respPacking(ret, SUCCESS)
 }
 
+// getNonceByAddr gets balance by address
+// params: ["address":<address>]
+// return: {"result":<result>, "error":<errcode>}
+func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	addr, ok := params["address"].(string)
+	if !ok {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	pg, _ := common.ToScriptHash(addr)
+	value := blockchain.DefaultLedger.Store.GetNonce(pg)
+
+	ret := map[string]interface{}{
+		"amount": value,
+	}
+
+	return respPacking(ret, SUCCESS)
+}
+
 func VerifyAndSendTx(localNode *node.LocalNode, txn *types.Transaction) errors.ErrCode {
 	if errCode := localNode.AppendTxnPool(txn); errCode != errors.ErrNoError {
 		log.Warningf("Can NOT add the transaction to TxnPool: %v", errCode)
@@ -751,26 +774,28 @@ func findSuccessorAddr(s Serverer, params map[string]interface{}) map[string]int
 }
 
 var InitialAPIHandlers = map[string]APIHandler{
-	"getlatestblockhash":           {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
-	"getblock":                     {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getblockcount":                {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
-	"getlatestblockheight":         {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getblocktxsbyheight":          {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
-	"getconnectioncount":           {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getrawmempool":                {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC},
-	"gettransaction":               {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"sendrawtransaction":           {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getwsaddr":                    {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
-	"getversion":                   {Handler: getVersion, AccessCtrl: BIT_JSONRPC},
-	"getneighbor":                  {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
-	"getnodestate":                 {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
-	"getchordringinfo":             {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
-	"setdebuginfo":                 {Handler: setDebugInfo},
-	"registername":                 {Handler: registerName},
-	"deletename":                   {Handler: deleteName},
-	"commitpor":                    {Handler: commitPor},
-	"sigchaintest":                 {Handler: sigchaintest},
-	"getbalancebyaddr":             {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
+	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
+	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
+	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
+	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getrawmempool":        {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC},
+	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
+	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC},
+	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
+	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
+	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
+	"setdebuginfo":         {Handler: setDebugInfo},
+	"registername":         {Handler: registerName},
+	"deletename":           {Handler: deleteName},
+	"commitpor":            {Handler: commitPor},
+	"sigchaintest":         {Handler: sigchaintest},
+	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
+	"getnoncebyaddr":       {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
+
 	"getaddressbyname":             {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
 	"getsubscribers":               {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
 	"getfirstavailabletopicbucket": {Handler: getFirstAvailableTopicBucket, AccessCtrl: BIT_JSONRPC},
