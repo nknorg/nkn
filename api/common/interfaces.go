@@ -365,46 +365,6 @@ func getVersion(s Serverer, params map[string]interface{}) map[string]interface{
 	return respPacking(config.Version, SUCCESS)
 }
 
-// getBalance gets the balance of the wallet used by this server
-// params: []
-// return: {"result":<result>, "error":<errcode>}
-func getBalance(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
-}
-
-// registAsset regist an asset to blockchain
-// params: ["name":<name>, "value":<value>]
-// return: {"result":<result>, "error":<errcode>}
-func registAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
-}
-
-// issueAsset issue an asset to an address
-// params: ["assetid":<assetd>, "address":<address>, "value":<value>]
-// return: {"result":<result>, "error":<errcode>}
-func issueAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
-}
-
-// sendToAddress transfers asset to an address
-// params: ["assetid":<assetid>, "addresss":<address>, "value":<value>]
-// return: {"result":<result>, "error":<errcode>}
-func sendToAddress(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
-}
-
-// prepaid prepaid asset to system
-// params: ["assetid":<assetid>, "vaule":<value>, "rates":<rates>]
-// return: {"result":<result>, "error":<errcode>}
-func prepaidAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
-}
-
 // registerName register name to address
 // params: ["name":<name>]
 // return: {"result":<result>, "error":<errcode>}
@@ -471,14 +431,6 @@ func deleteName(s Serverer, params map[string]interface{}) map[string]interface{
 
 	txHash := txn.Hash()
 	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
-}
-
-// withdraw withdraw asset from system
-// params: ["assetid":<assetid>, "value":<value>]
-// return: {"result":<result>, "error":<errcode>}
-func withdrawAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
 }
 
 // commitPor send por transaction
@@ -607,22 +559,6 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 	}
 }
 
-// getTotalIssued gets total issued asset
-// params: ["assetid":<assetid>]
-// return: {"result":<result>, "error":<errcode>}
-func getTotalIssued(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
-}
-
-// getAssetByHash gets asset by hash
-// params: ["hash":<hash>]
-// return: {"result":<result>, "error":<errcode>}
-func getAssetByHash(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
-}
-
 // getBalanceByAddr gets balance by address
 // params: ["address":<address>]
 // return: {"result":<result>, "error":<errcode>}
@@ -644,30 +580,6 @@ func getBalanceByAddr(s Serverer, params map[string]interface{}) map[string]inte
 	}
 
 	return respPacking(ret, SUCCESS)
-}
-
-// getBalanceByAsset gets balance by asset
-// params: ["address":<address>,"assetid":<assetid>]
-// return: {"result":<result>, "error":<errcode>}
-func getBalanceByAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
-}
-
-// getUnspendOutput gets unspents by address
-// params: ["address":<address>, "assetid":<assetid>]
-// return: {"result":<result>, "error":<errcode>}
-func getUnspendOutput(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
-}
-
-// getUnspends gets all assets by address
-// params: ["address":<address>]
-// return: {"result":<result>, "error":<errcode>}
-func getUnspends(s Serverer, params map[string]interface{}) map[string]interface{} {
-	//TODO delete
-	return respPacking(nil, INTERNAL_ERROR)
 }
 
 func VerifyAndSendTx(localNode *node.LocalNode, txn *types.Transaction) errors.ErrCode {
@@ -853,23 +765,12 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getneighbor":                  {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
 	"getnodestate":                 {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
 	"getchordringinfo":             {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
-	"getunspendoutput":             {Handler: getUnspendOutput, AccessCtrl: BIT_JSONRPC},
-	"getbalance":                   {Handler: getBalance},
 	"setdebuginfo":                 {Handler: setDebugInfo},
-	"registasset":                  {Handler: registAsset},
-	"issueasset":                   {Handler: issueAsset},
-	"sendtoaddress":                {Handler: sendToAddress},
-	"prepaidasset":                 {Handler: prepaidAsset},
 	"registername":                 {Handler: registerName},
 	"deletename":                   {Handler: deleteName},
-	"withdrawasset":                {Handler: withdrawAsset},
 	"commitpor":                    {Handler: commitPor},
 	"sigchaintest":                 {Handler: sigchaintest},
-	"gettotalissued":               {Handler: getTotalIssued},
-	"getassetbyhash":               {Handler: getAssetByHash},
 	"getbalancebyaddr":             {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
-	"getbalancebyasset":            {Handler: getBalanceByAsset},
-	"getunspends":                  {Handler: getUnspends},
 	"getaddressbyname":             {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
 	"getsubscribers":               {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
 	"getfirstavailabletopicbucket": {Handler: getFirstAvailableTopicBucket, AccessCtrl: BIT_JSONRPC},
