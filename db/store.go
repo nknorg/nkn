@@ -462,6 +462,7 @@ func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*types.Header, error) {
 
 func (cs *ChainStore) IsDoubleSpend(tx *types.Transaction) bool {
 	//TODO implament
+	//nonce < db nonce
 	return false
 }
 
