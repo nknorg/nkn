@@ -64,7 +64,6 @@ func InitLedger(account *vault.Account) error {
 		Blockchain: blockChain,
 		Store:      store,
 	}
-	blockchain.Store = blockchain.DefaultLedger.Store
 	por.Store = blockchain.DefaultLedger.Store
 
 	return nil
