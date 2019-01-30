@@ -45,13 +45,13 @@ func NewTxnPool() *TxnPool {
 //1.check transaction. 2.check with ledger(db) 3.check with pool
 func (tp *TxnPool) AppendTxnPool(txn *types.Transaction) ErrCode {
 	//verify transaction with Concurrency
-	if errCode := blockchain.VerifyTransaction(txn); errCode != ErrNoError {
-		log.Info("Transaction verification failed", txn.Hash())
-		return errCode
+	if err := blockchain.VerifyTransaction(txn); err != nil {
+		log.Info("Transaction verification failed", txn.Hash(), err)
+		return ErrNoCode
 	}
-	if errCode := blockchain.VerifyTransactionWithLedger(txn); errCode != ErrNoError {
-		log.Info("Transaction verification with ledger failed", txn.Hash())
-		return errCode
+	if err := blockchain.VerifyTransactionWithLedger(txn); err != nil {
+		log.Info("Transaction verification with ledger failed", txn.Hash(), err)
+		return ErrNoCode
 	}
 
 	// get signature chain from commit transaction then add it to POR server

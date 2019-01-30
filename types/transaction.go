@@ -86,6 +86,8 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		sender := payload.(*TransferAsset).Sender
 		hashes = append(hashes, BytesToUint160(sender))
 	default:
+		//hash, _ := ToCodeHash(tx.Program[0].Code)
+		//hashes = append(hashes, hash)
 	}
 
 	return hashes, nil

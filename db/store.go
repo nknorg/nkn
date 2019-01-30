@@ -497,6 +497,6 @@ func (cs *ChainStore) GetBalance(addr Uint160) Fixed64 {
 	return cs.States.GetBalance(addr)
 }
 
-func (cs *ChainStore) GetNonce(addr Uint160) Fixed64 {
-	return cs.States.GetBalance(addr)
+func (cs *ChainStore) GetNonce(addr Uint160) uint64 {
+	return cs.States.GetNonce(addr)
 }
