@@ -41,26 +41,26 @@ func (iterable TransactionArray) Iterate(handler func(item *types.Transaction) E
 }
 
 func TransactionCheck(block *types.Block) error {
-	//if block.Transactions == nil {
-	//	return errors.New("empty block")
-	//}
-	//if block.Transactions[0].TxType != tx.Coinbase {
-	//	return errors.New("first transaction in block is not Coinbase")
-	//}
-	//for i, txn := range block.Transactions {
-	//	if i != 0 && txn.TxType == tx.Coinbase {
-	//		return errors.New("Coinbase transaction order is incorrect")
-	//	}
-	//	if errCode := tx.VerifyTransaction(txn); errCode != ErrNoError {
-	//		return errors.New("transaction sanity check failed")
-	//	}
-	//	if errCode := tx.VerifyTransactionWithLedger(txn); errCode != ErrNoError {
-	//		return errors.New("transaction history check failed")
-	//	}
-	//}
-	//if errCode := tx.VerifyTransactionWithBlock(TransactionArray(block.Transactions)); errCode != ErrNoError {
-	//	return errors.New("transaction block check failed")
-	//}
+	if block.Transactions == nil {
+		return errors.New("empty block")
+	}
+	if block.Transactions[0].UnsignedTx.Payload.Type != types.CoinbaseType {
+		return errors.New("first transaction in block is not Coinbase")
+	}
+	for i, txn := range block.Transactions {
+		if i != 0 && txn.UnsignedTx.Payload.Type == types.CoinbaseType {
+			return errors.New("Coinbase transaction order is incorrect")
+		}
+		if err := VerifyTransaction(txn); err != nil {
+			return fmt.Errorf("transaction sanity check failed: %v", err)
+		}
+		if err := VerifyTransactionWithLedger(txn); err != nil {
+			return fmt.Errorf("transaction history check failed: %v", err)
+		}
+	}
+	if errCode := VerifyTransactionWithBlock(TransactionArray(block.Transactions)); errCode != ErrNoError {
+		return errors.New("transaction block check failed")
+	}
 
 	return nil
 }
@@ -261,3 +261,31 @@ func TimestampCheck(timestamp int64) error {
 func CanVerifyHeight(height uint32) bool {
 	return height == DefaultLedger.Store.GetHeight()+1
 }
+
+//func (cs *ChainStore) verifyHeader(header *types.Header) bool {
+//	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+//	prevHeader, err := cs.getHeaderWithCache(prevHash)
+//	if err != nil || prevHeader == nil {
+//		log.Error("[verifyHeader] failed, not found prevHeader.")
+//		return false
+//	}
+//
+//	if prevHeader.UnsignedHeader.Height+1 != header.UnsignedHeader.Height {
+//		log.Error("[verifyHeader] failed, prevHeader.Height + 1 != header.Height")
+//		return false
+//	}
+//
+//	if prevHeader.UnsignedHeader.Timestamp >= header.UnsignedHeader.Timestamp {
+//		log.Error("[verifyHeader] failed, prevHeader.Timestamp >= header.Timestamp")
+//		return false
+//	}
+//
+//	flag, err := signature.VerifySignableData(header)
+//	if flag == false || err != nil {
+//		log.Error("[verifyHeader] failed, VerifySignableData failed.")
+//		log.Error(err)
+//		return false
+//	}
+//
+//	return true
+//}

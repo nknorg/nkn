@@ -11,6 +11,7 @@ import (
 	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nnet/log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -161,12 +162,13 @@ func VerifyTransactionWithLedger(txn *types.Transaction) error {
 	}
 
 	//TODO GetProgramHashes
-	addr, _ := ToCodeHash(txn.Programs[0].Code)
-	nonce := DefaultLedger.Store.GetNonce(addr)
 	if txn.UnsignedTx.Payload.Type != types.CoinbaseType &&
-		txn.UnsignedTx.Payload.Type != types.CommitType &&
-		nonce != txn.UnsignedTx.Nonce {
-		return errors.New("[VerifyTransactionWithLedger] txn nonce error.")
+		txn.UnsignedTx.Payload.Type != types.CommitType {
+		addr, _ := ToCodeHash(txn.Programs[0].Code)
+		nonce := DefaultLedger.Store.GetNonce(addr)
+		if nonce != txn.UnsignedTx.Nonce {
+			return errors.New("[VerifyTransactionWithLedger] txn nonce error.")
+		}
 	}
 
 	payload, err := types.Unpack(txn.UnsignedTx.Payload)
@@ -238,78 +240,86 @@ type Iterator interface {
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
 func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 	//initial
-	//txnlist := make(map[Uint256]struct{}, 0)
-	//registeredNames := make(map[string]struct{}, 0)
-	//nameRegistrants := make(map[string]struct{}, 0)
+	txnlist := make(map[Uint256]struct{}, 0)
+	registeredNames := make(map[string]struct{}, 0)
+	nameRegistrants := make(map[string]struct{}, 0)
 
-	//type subscription struct{ topic, subscriber string }
-	//subscriptions := make(map[subscription]struct{}, 0)
+	type subscription struct{ topic, subscriber string }
+	subscriptions := make(map[subscription]struct{}, 0)
 
-	//subscriptionCount := make(map[string]int, 0)
+	subscriptionCount := make(map[string]int, 0)
 
-	////start check
-	//return iterator.Iterate(func(txn *Transaction) ErrCode {
-	//	//1.check weather have duplicate transaction.
-	//	if _, exist := txnlist[txn.Hash()]; exist {
-	//		log.Warning("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
-	//		return ErrDuplicatedTx
-	//	} else {
-	//		txnlist[txn.Hash()] = struct{}{}
-	//	}
-	//	//3.check issue amount
-	//	switch txn.TxType {
-	//	case Coinbase:
-	//		coinbase := txn.Payload.(*payload.Coinbase)
-	//		if coinbase.Amount != Fixed64(config.DefaultMiningReward*StorageFactor) {
-	//			log.Warning("Mining reward incorrectly.")
-	//			return ErrMineReward
-	//		}
+	//start check
+	return iterator.Iterate(func(txn *types.Transaction) ErrCode {
+		//1.check weather have duplicate transaction.
+		if _, exist := txnlist[txn.Hash()]; exist {
+			log.Warning("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
+			return ErrDuplicatedTx
+		} else {
+			txnlist[txn.Hash()] = struct{}{}
+		}
 
-	//	case RegisterName:
-	//		namePayload := txn.Payload.(*payload.RegisterName)
+		//TODO check nonce duplicate
 
-	//		name := namePayload.Name
-	//		if _, ok := registeredNames[name]; ok {
-	//			log.Warning("[VerifyTransactionWithBlock], duplicate name exist in block.")
-	//			return ErrDuplicateName
-	//		}
-	//		registeredNames[name] = struct{}{}
+		//3.check issue amount
+		payload, err := types.Unpack(txn.UnsignedTx.Payload)
+		if err != nil {
+			return ErrDuplicatedTx
+		}
 
-	//		registrant := BytesToHexString(namePayload.Registrant)
-	//		if _, ok := nameRegistrants[registrant]; ok {
-	//			log.Warning("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
-	//			return ErrDuplicateName
-	//		}
-	//		nameRegistrants[registrant] = struct{}{}
-	//	case DeleteName:
-	//		namePayload := txn.Payload.(*payload.DeleteName)
+		switch txn.UnsignedTx.Payload.Type {
+		case types.CoinbaseType:
+			coinbase := payload.(*types.Coinbase)
+			if Fixed64(coinbase.Amount) != Fixed64(config.DefaultMiningReward*StorageFactor) {
+				log.Warning("Mining reward incorrectly.")
+				return ErrMineReward
+			}
 
-	//		registrant := BytesToHexString(namePayload.Registrant)
-	//		if _, ok := nameRegistrants[registrant]; ok {
-	//			log.Warning("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
-	//			return ErrDuplicateName
-	//		}
-	//		nameRegistrants[registrant] = struct{}{}
-	//	case Subscribe:
-	//		subscribePayload := txn.Payload.(*payload.Subscribe)
-	//		topic := subscribePayload.Topic
-	//		key := subscription{topic, subscribePayload.SubscriberString()}
-	//		if _, ok := subscriptions[key]; ok {
-	//			log.Warning("[VerifyTransactionWithBlock], duplicate subscription exist in block.")
-	//			return ErrDuplicateSubscription
-	//		}
-	//		subscriptions[key] = struct{}{}
+		case types.RegisterNameType:
+			namePayload := payload.(*types.RegisterName)
 
-	//		if _, ok := subscriptionCount[topic]; !ok {
-	//			subscriptionCount[topic] = Store.GetSubscribersCount(topic)
-	//		}
-	//		if subscriptionCount[topic] >= SubscriptionsLimit {
-	//			log.Warning("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
-	//			return ErrSubscriptionLimit
-	//		}
-	//		subscriptionCount[topic]++
-	//	}
+			name := namePayload.Name
+			if _, ok := registeredNames[name]; ok {
+				log.Warning("[VerifyTransactionWithBlock], duplicate name exist in block.")
+				return ErrDuplicateName
+			}
+			registeredNames[name] = struct{}{}
 
-	return ErrNoError
-	//})
+			registrant := BytesToHexString(namePayload.Registrant)
+			if _, ok := nameRegistrants[registrant]; ok {
+				log.Warning("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
+				return ErrDuplicateName
+			}
+			nameRegistrants[registrant] = struct{}{}
+		case types.DeleteNameType:
+			namePayload := payload.(*types.DeleteName)
+
+			registrant := BytesToHexString(namePayload.Registrant)
+			if _, ok := nameRegistrants[registrant]; ok {
+				log.Warning("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
+				return ErrDuplicateName
+			}
+			nameRegistrants[registrant] = struct{}{}
+		case types.SubscribeType:
+			subscribePayload := payload.(*types.Subscribe)
+			topic := subscribePayload.Topic
+			key := subscription{topic, subscribePayload.SubscriberString()}
+			if _, ok := subscriptions[key]; ok {
+				log.Warning("[VerifyTransactionWithBlock], duplicate subscription exist in block.")
+				return ErrDuplicateSubscription
+			}
+			subscriptions[key] = struct{}{}
+
+			if _, ok := subscriptionCount[topic]; !ok {
+				subscriptionCount[topic] = DefaultLedger.Store.GetSubscribersCount(topic)
+			}
+			if subscriptionCount[topic] >= SubscriptionsLimit {
+				log.Warning("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
+				return ErrSubscriptionLimit
+			}
+			subscriptionCount[topic]++
+		}
+
+		return ErrNoError
+	})
 }
