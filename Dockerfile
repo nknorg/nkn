@@ -1,4 +1,4 @@
-FROM golang:1.10-stretch
+FROM golang:1.10-stretch AS build
 LABEL maintainer="gdmmx@nkn.org"
 
 # apt-get
@@ -23,4 +23,9 @@ RUN make vendor
 RUN make
 RUN cp nknd nknc /usr/local/go/bin/
 
+WORKDIR /nkn
+
+FROM buildpack-deps:stretch-scm
+COPY --from=build /go/src/github.com/nknorg/nkn/nknd /usr/local/bin/
+COPY --from=build /go/src/github.com/nknorg/nkn/nknc /usr/local/bin/
 WORKDIR /nkn
