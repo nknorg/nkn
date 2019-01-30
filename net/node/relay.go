@@ -203,7 +203,8 @@ func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*types.Transac
 	if err != nil {
 		return nil, err
 	}
-	txn, err := types.NewCommitTransaction(sigChain, account.ProgramHash)
+	//TODO modify nonce
+	txn, err := types.NewCommitTransaction(sigChain, account.ProgramHash, 0)
 	if err != nil {
 		return nil, err
 	}

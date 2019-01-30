@@ -365,74 +365,6 @@ func getVersion(s Serverer, params map[string]interface{}) map[string]interface{
 	return respPacking(config.Version, SUCCESS)
 }
 
-// registerName register name to address
-// params: ["name":<name>]
-// return: {"result":<result>, "error":<errcode>}
-func registerName(s Serverer, params map[string]interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return respPacking(nil, INVALID_PARAMS)
-	}
-
-	name, ok := params["name"].(string)
-	if !ok {
-		return respPacking(nil, INVALID_PARAMS)
-	}
-
-	wallet, err := s.GetWallet()
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	txn, err := MakeRegisterNameTransaction(wallet, name)
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	localNode, err := s.GetNetNode()
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-
-	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
-		return respPacking(nil, INVALID_TRANSACTION)
-	}
-
-	txHash := txn.Hash()
-	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
-}
-
-// deleteName register name to address
-// params: ["name":<name>]
-// return: {"result":<result>, "error":<errcode>}
-func deleteName(s Serverer, params map[string]interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return respPacking(nil, INVALID_PARAMS)
-	}
-
-	name, ok := params["name"].(string)
-	if !ok {
-		return respPacking(nil, INVALID_PARAMS)
-	}
-
-	wallet, err := s.GetWallet()
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	txn, err := MakeDeleteNameTransaction(wallet, name)
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	localNode, err := s.GetNetNode()
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-
-	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
-		return respPacking(nil, INVALID_TRANSACTION)
-	}
-
-	txHash := txn.Hash()
-	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
-}
-
 // commitPor send por transaction
 // params: ["sigchain":<sigchain>]
 // return: {"result":<result>, "error":<errcode>}
@@ -457,7 +389,8 @@ func commitPor(s Serverer, params map[string]interface{}) map[string]interface{}
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	txn, err := MakeCommitTransaction(wallet, sigChain)
+	//TODO nonce
+	txn, err := MakeCommitTransaction(wallet, sigChain, 0)
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
@@ -521,7 +454,7 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 	buf, err := proto.Marshal(sigChain)
-	txn, err := MakeCommitTransaction(wallet, buf)
+	txn, err := MakeCommitTransaction(wallet, buf, 0)
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
@@ -599,7 +532,7 @@ func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interf
 	value := blockchain.DefaultLedger.Store.GetNonce(pg)
 
 	ret := map[string]interface{}{
-		"amount": value,
+		"nonce": value,
 	}
 
 	return respPacking(ret, SUCCESS)
@@ -789,8 +722,6 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
 	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
 	"setdebuginfo":         {Handler: setDebugInfo},
-	"registername":         {Handler: registerName},
-	"deletename":           {Handler: deleteName},
 	"commitpor":            {Handler: commitPor},
 	"sigchaintest":         {Handler: sigchaintest},
 	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
