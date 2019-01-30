@@ -259,6 +259,16 @@ func (cs *ChainStore) persist(b *types.Block) error {
 			return err
 		}
 
+		//TODO if need New?
+		if txn.UnsignedTx.Payload.Type != types.CoinbaseType {
+			pg, _ := ToCodeHash(txn.Programs[0].Code)
+			nonce := cs.States.GetNonce(pg)
+			err := cs.States.SetNonce(pg, nonce+1)
+			if err != nil {
+				return errors.New("nonce increasement error")
+			}
+		}
+
 		switch txn.UnsignedTx.Payload.Type {
 		case types.CoinbaseType:
 			pl, err := types.Unpack(txn.UnsignedTx.Payload)
@@ -460,8 +470,12 @@ func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*types.Header, error) {
 }
 
 func (cs *ChainStore) IsDoubleSpend(tx *types.Transaction) bool {
-	//TODO implament
-	//nonce < db nonce
+	pg, _ := ToCodeHash(tx.Programs[0].Code)
+	nonce := cs.States.GetNonce(pg)
+	if tx.UnsignedTx.Nonce < nonce {
+		return true
+	}
+
 	return false
 }
 

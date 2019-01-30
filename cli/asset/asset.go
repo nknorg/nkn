@@ -80,7 +80,9 @@ func assetAction(c *cli.Context) error {
 		}
 		receipt := parseAddress(c)
 		amount, _ := StringToFixed64(value)
-		txn, _ := MakeTransferTransaction(myWallet, receipt, amount, 0)
+
+		nonce := c.Uint64("nonce")
+		txn, _ := MakeTransferTransaction(myWallet, receipt, nonce, amount, 0)
 		buff := bytes.NewBuffer(nil)
 		txn.Serialize(buff)
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff.Bytes())})
@@ -162,6 +164,10 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "rates",
 				Usage: "rates",
+			},
+			cli.Uint64Flag{
+				Name:  "nonce",
+				Usage: "nonce",
 			},
 		},
 		Action: assetAction,
