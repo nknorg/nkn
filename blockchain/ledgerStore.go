@@ -18,7 +18,7 @@ type ILedgerStore interface {
 
 	IsDoubleSpend(tx *types.Transaction) bool
 
-	AddHeaders(headers []*types.Header) error
+	AddHeader(header *types.Header) error
 	GetHeader(hash Uint256) (*types.Header, error)
 	GetHeaderByHeight(height uint32) (*types.Header, error)
 
@@ -50,6 +50,8 @@ type ILedgerStore interface {
 	GetHeight() uint32
 	GetHeightByBlockHash(hash Uint256) (uint32, error)
 	GetHeaderHashByHeight(height uint32) Uint256
+
+	GetHeaderWithCache(hash Uint256) (*types.Header, error)
 
 	InitLedgerStoreWithGenesisBlock(genesisblock *types.Block) (uint32, error)
 
