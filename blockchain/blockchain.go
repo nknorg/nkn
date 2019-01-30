@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"errors"
+	"sort"
 	"sync"
 
 	. "github.com/nknorg/nkn/common"
@@ -86,4 +88,21 @@ func (bc *Blockchain) ContainsTransaction(hash Uint256) bool {
 
 func (bc *Blockchain) CurrentBlockHash() Uint256 {
 	return DefaultLedger.Store.GetCurrentBlockHash()
+}
+
+func (bc *Blockchain) AddHeaders(headers []*types.Header) error {
+	//TODO mutex
+	sort.Slice(headers, func(i, j int) bool {
+		return headers[i].UnsignedHeader.Height < headers[j].UnsignedHeader.Height
+	})
+
+	for i := 0; i < len(headers); i++ {
+		if !VerifyHeader(headers[i]) {
+			return errors.New("header verify error.")
+		}
+
+		DefaultLedger.Store.AddHeader(headers[i])
+	}
+
+	return nil
 }

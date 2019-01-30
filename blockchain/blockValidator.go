@@ -14,6 +14,7 @@ import (
 	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nnet/log"
 )
 
 const (
@@ -309,30 +310,34 @@ func CanVerifyHeight(height uint32) bool {
 	return height == DefaultLedger.Store.GetHeight()+1
 }
 
-//func (cs *ChainStore) verifyHeader(header *types.Header) bool {
-//	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
-//	prevHeader, err := cs.getHeaderWithCache(prevHash)
-//	if err != nil || prevHeader == nil {
-//		log.Error("[verifyHeader] failed, not found prevHeader.")
-//		return false
-//	}
-//
-//	if prevHeader.UnsignedHeader.Height+1 != header.UnsignedHeader.Height {
-//		log.Error("[verifyHeader] failed, prevHeader.Height + 1 != header.Height")
-//		return false
-//	}
-//
-//	if prevHeader.UnsignedHeader.Timestamp >= header.UnsignedHeader.Timestamp {
-//		log.Error("[verifyHeader] failed, prevHeader.Timestamp >= header.Timestamp")
-//		return false
-//	}
-//
-//	flag, err := signature.VerifySignableData(header)
-//	if flag == false || err != nil {
-//		log.Error("[verifyHeader] failed, VerifySignableData failed.")
-//		log.Error(err)
-//		return false
-//	}
-//
-//	return true
-//}
+func VerifyHeader(header *types.Header) bool {
+	if header.UnsignedHeader.Height != DefaultLedger.Store.GetHeaderHeight()+1 {
+		log.Error("[VerifyHeader] failed, header height error.")
+		return false
+	}
+	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+	prevHeader, err := DefaultLedger.Store.GetHeaderWithCache(prevHash)
+	if err != nil || prevHeader == nil {
+		log.Error("[VerifyHeader] failed, not found prevHeader.")
+		return false
+	}
+
+	if prevHeader.UnsignedHeader.Height+1 != header.UnsignedHeader.Height {
+		log.Error("[VerifyHeader] failed, prevHeader.Height + 1 != header.Height")
+		return false
+	}
+
+	if prevHeader.UnsignedHeader.Timestamp >= header.UnsignedHeader.Timestamp {
+		log.Error("[VerifyHeader] failed, prevHeader.Timestamp >= header.Timestamp")
+		return false
+	}
+
+	//	flag, err := signature.VerifySignableData(header)
+	//	if flag == false || err != nil {
+	//		log.Error("[VerifyHeader] failed, VerifySignableData failed.")
+	//		log.Error(err)
+	//		return false
+	//	}
+
+	return true
+}
