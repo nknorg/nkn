@@ -471,12 +471,6 @@ func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*types.Header, error) {
 }
 
 func (cs *ChainStore) IsDoubleSpend(tx *types.Transaction) bool {
-	pg, _ := ToCodeHash(tx.Programs[0].Code)
-	nonce := cs.States.GetNonce(pg)
-	if tx.UnsignedTx.Nonce < nonce {
-		return true
-	}
-
 	return false
 }
 
