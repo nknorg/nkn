@@ -91,8 +91,8 @@ func walletAction(c *cli.Context) error {
 
 	// list wallet info
 	if item := c.String("list"); item != "" {
-		if item != "account" && item != "balance" && item != "verbose" {
-			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose]")
+		if item != "account" && item != "balance" && item != "verbose" && item != "nonce" {
+			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose | nonce]")
 			os.Exit(1)
 		} else {
 			wallet, err := vault.OpenWallet(name, getPassword(passwd))
@@ -111,6 +111,15 @@ func walletAction(c *cli.Context) error {
 				account, _ := wallet.GetDefaultAccount()
 				address, _ := account.ProgramHash.ToAddress()
 				resp, err := client.Call(Address(), "getbalancebyaddr", 0, map[string]interface{}{"address": address})
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					return err
+				}
+				FormatOutput(resp)
+			case "nonce":
+				account, _ := wallet.GetDefaultAccount()
+				address, _ := account.ProgramHash.ToAddress()
+				resp, err := client.Call(Address(), "getnoncebyaddr", 0, map[string]interface{}{"address": address})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					return err
@@ -156,7 +165,7 @@ func NewCommand() *cli.Command {
 			},
 			cli.StringFlag{
 				Name:  "list, l",
-				Usage: "list wallet information [account, balance, verbose]",
+				Usage: "list wallet information [account, balance, verbose, nonce]",
 			},
 			cli.BoolFlag{
 				Name:  "changepassword",

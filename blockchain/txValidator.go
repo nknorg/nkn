@@ -164,7 +164,9 @@ func VerifyTransactionWithLedger(txn *types.Transaction) error {
 	//TODO GetProgramHashes
 	addr, _ := ToCodeHash(txn.Programs[0].Code)
 	nonce := DefaultLedger.Store.GetNonce(addr)
-	if txn.UnsignedTx.Payload.Type != types.CoinbaseType && nonce != txn.UnsignedTx.Nonce {
+	if txn.UnsignedTx.Payload.Type != types.CoinbaseType &&
+		txn.UnsignedTx.Payload.Type != types.CommitType &&
+		nonce != txn.UnsignedTx.Nonce {
 		return errors.New("[VerifyTransactionWithLedger] txn nonce error.")
 	}
 
