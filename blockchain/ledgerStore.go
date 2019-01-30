@@ -39,7 +39,7 @@ type ILedgerStore interface {
 
 	GetStateRootHash() Uint256
 	GetBalance(addr Uint160) Fixed64
-	GetNonce(addr Uint160) Fixed64
+	GetNonce(addr Uint160) uint64
 
 	//GetContract(codeHash Uint160) ([]byte, error)
 	//GetStorage(key []byte) ([]byte, error)

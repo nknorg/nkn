@@ -11,7 +11,6 @@ import (
 	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -21,48 +20,237 @@ const (
 	MaxSubscriptionDuration = 65535
 )
 
-var Store TxnStore
+// VerifyTransaction verifys received single transaction
+func VerifyTransaction(txn *types.Transaction) error {
+	if err := CheckTransactionFee(txn); err != nil {
+		return fmt.Errorf("[VerifyTransaction],%v\n", err)
+	}
 
-type TxnStore interface {
-	GetTransaction(hash Uint256) (*types.Transaction, error)
-	IsDoubleSpend(tx *types.Transaction) bool
-	IsTxHashDuplicate(txhash Uint256) bool
-	GetName(registrant []byte) (*string, error)
-	GetRegistrant(name string) ([]byte, error)
-	IsSubscribed(subscriber []byte, identifier string, topic string, bucket uint32) (bool, error)
-	GetSubscribersCount(topic string, bucket uint32) int
+	if err := CheckTransactionNonce(txn); err != nil {
+		return fmt.Errorf("[VerifyTransaction],%v\n", err)
+	}
+
+	if err := CheckTransactionAttribute(txn); err != nil {
+		return fmt.Errorf("[VerifyTransaction],%v\n", err)
+	}
+
+	if err := CheckTransactionContracts(txn); err != nil {
+		return fmt.Errorf("[VerifyTransaction],%v\n", err)
+	}
+
+	if err := CheckTransactionPayload(txn); err != nil {
+		return fmt.Errorf("[VerifyTransaction],%v\n", err)
+	}
+
+	return nil
+}
+
+func CheckTransactionFee(txn *types.Transaction) error {
+	// precise
+	if checkAmountPrecise(Fixed64(txn.UnsignedTx.Fee), 8) {
+		return errors.New("The precision of fee is incorrect.")
+	}
+
+	// amount
+	if txn.UnsignedTx.Fee < 0 {
+		return errors.New("tx fee error.")
+	}
+
+	return nil
+}
+
+func CheckTransactionNonce(txn *types.Transaction) error {
+	return nil
+}
+
+func CheckTransactionAttribute(txn *types.Transaction) error {
+	if len(txn.UnsignedTx.Attributes) > 100 {
+		return errors.New("Attributes too long.")
+	}
+	return nil
+}
+
+func CheckTransactionContracts(txn *types.Transaction) error {
+	flag, err := signature.VerifySignableData(txn)
+	if flag && err == nil {
+		return nil
+	} else {
+		return err
+	}
+}
+
+func checkAmountPrecise(amount Fixed64, precision byte) bool {
+	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
+}
+
+func CheckTransactionPayload(txn *types.Transaction) error {
+	payload, err := types.Unpack(txn.UnsignedTx.Payload)
+	if err != nil {
+		return err
+	}
+
+	switch txn.UnsignedTx.Payload.Type {
+	case types.CoinbaseType:
+		pld := payload.(*types.Coinbase)
+		if len(pld.Sender) != 20 && len(pld.Recipient) != 20 {
+			return errors.New("length of programhash error")
+		}
+
+		if BytesToUint160(pld.Sender) != EmptyUint160 {
+			return errors.New("Sender error")
+		}
+
+		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
+			return errors.New("The precision of amount is incorrect.")
+		}
+
+		if Fixed64(pld.Amount) != Fixed64(config.DefaultMiningReward*StorageFactor) {
+			return errors.New("Coinbase reward error.")
+		}
+	case types.TransferAssetType:
+		pld := payload.(*types.TransferAsset)
+		if len(pld.Sender) != 20 && len(pld.Recipient) != 20 {
+			return errors.New("length of programhash error")
+		}
+
+		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
+			return errors.New("The precision of amount is incorrect.")
+		}
+
+		if pld.Amount < 0 {
+			return errors.New("transfer amount error.")
+		}
+	case types.CommitType:
+	case types.RegisterNameType:
+		pld := payload.(*types.RegisterName)
+		match, err := regexp.MatchString("([a-z]{8,12})", pld.Name)
+		if err != nil {
+			return err
+		}
+		if !match {
+			return errors.New(fmt.Sprintf("name %s should only contain a-z and have length 8-12", pld.Name))
+		}
+	case types.DeleteNameType:
+	case types.SubscribeType:
+		pld := payload.(*types.Subscribe)
+		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, pld.Topic, pld.Bucket)
+		if err != nil {
+			return err
+		}
+		if subscribed {
+			return errors.New(fmt.Sprintf("subscriber %s already subscribed to %s", pld.SubscriberString(), pld.Topic))
+		}
+
+		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
+		if subscriptionCount >= SubscriptionsLimit {
+			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", pld.Topic, subscriptionCount))
+		}
+	default:
+		return errors.New("[txValidator],invalidate transaction payload type.")
+	}
+	return nil
+}
+
+// VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
+func VerifyTransactionWithLedger(txn *types.Transaction) error {
+	if DefaultLedger.Store.IsDoubleSpend(txn) {
+		return errors.New("[VerifyTransactionWithLedger] IsDoubleSpend check faild.")
+	}
+
+	if DefaultLedger.Store.IsTxHashDuplicate(txn.Hash()) {
+		return errors.New("[VerifyTransactionWithLedger] duplicate transaction check faild.")
+	}
+
+	//TODO GetProgramHashes
+	addr, _ := ToCodeHash(txn.Programs[0].Code)
+	nonce := DefaultLedger.Store.GetNonce(addr)
+	if txn.UnsignedTx.Payload.Type != types.CoinbaseType && nonce != txn.UnsignedTx.Nonce {
+		return errors.New("[VerifyTransactionWithLedger] txn nonce error.")
+	}
+
+	payload, err := types.Unpack(txn.UnsignedTx.Payload)
+	if err != nil {
+		return err
+	}
+
+	switch txn.UnsignedTx.Payload.Type {
+	case types.CoinbaseType:
+	case types.TransferAssetType:
+		pld := payload.(*types.TransferAsset)
+		balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Sender))
+		if int64(balance) < pld.Amount {
+			return errors.New("not sufficient funds")
+		}
+	case types.CommitType:
+	case types.RegisterNameType:
+		pld := payload.(*types.RegisterName)
+		name, err := DefaultLedger.Store.GetName(pld.Registrant)
+		if name != nil {
+			return errors.New(fmt.Sprintf("pubKey %+v already has registered name %s", pld.Registrant, *name))
+		}
+		if err != leveldb.ErrNotFound {
+			return err
+		}
+
+		registrant, err := DefaultLedger.Store.GetRegistrant(pld.Name)
+		if registrant != nil {
+			return errors.New(fmt.Sprintf("name %s is already registered for pubKey %+v", pld.Name, registrant))
+		}
+		if err != leveldb.ErrNotFound {
+			return err
+		}
+	case types.DeleteNameType:
+		pld := payload.(*types.DeleteName)
+		name, err := DefaultLedger.Store.GetName(pld.Registrant)
+		if err != leveldb.ErrNotFound {
+			return err
+		}
+		if *name != pld.Name {
+			return errors.New(fmt.Sprintf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant))
+		} else if name == nil {
+			return errors.New(fmt.Sprintf("no name registered for pubKey %+v", pld.Registrant))
+		}
+	case types.SubscribeType:
+		pld := payload.(*types.Subscribe)
+		bucket := pld.Bucket
+		if bucket > BucketsLimit {
+			return errors.New(fmt.Sprintf("topic bucket %d can't be bigger than %d", bucket, BucketsLimit))
+		}
+
+		duration := pld.Duration
+		if duration > MaxSubscriptionDuration {
+			return errors.New(fmt.Sprintf("subscription duration %d can't be bigger than %d", duration, MaxSubscriptionDuration))
+		}
+
+		topic := pld.Topic
+		match, err := regexp.MatchString("(^[a-z][a-z0-9-_.~+%]{2,254}$)", topic)
+		if err != nil {
+			return err
+		}
+		if !match {
+			return errors.New(fmt.Sprintf("topic %s should only contain a-z and have length 8-12", topic))
+		}
+
+		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, topic, bucket)
+		if err != nil {
+			return err
+		}
+		if subscribed {
+			return errors.New(fmt.Sprintf("subscriber %s already subscribed to %s", pld.SubscriberString(), topic))
+		}
+
+		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
+		if subscriptionCount >= SubscriptionsLimit {
+			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", topic, subscriptionCount))
+		}
+	default:
+		return errors.New("[txValidator],invalidate transaction payload type.")
+	}
+	return nil
 }
 
 type Iterator interface {
 	Iterate(handler func(item *types.Transaction) ErrCode) ErrCode
-}
-
-// VerifyTransaction verifys received single transaction
-func VerifyTransaction(Tx *types.Transaction) ErrCode {
-	if err := CheckAssetPrecision(Tx); err != nil {
-		log.Warning("[VerifyTransaction],", err)
-		return ErrAssetPrecision
-	}
-
-	if err := CheckTransactionBalance(Tx); err != nil {
-		log.Warning("[VerifyTransaction],", err)
-		return ErrTransactionBalance
-	}
-
-	if err := CheckTransactionContracts(Tx); err != nil {
-		log.Warning("[VerifyTransaction],", err)
-		return ErrTransactionContracts
-	}
-
-	if err := CheckTransactionPayload(Tx); err != nil {
-		log.Warning("[VerifyTransaction],", err)
-		if err, ok := err.(ErrCode); ok {
-			return err
-		}
-		return ErrTransactionPayload
-	}
-
-	return ErrNoError
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
@@ -161,164 +349,4 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 
 	return ErrNoError
 	//})
-}
-
-// VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
-func VerifyTransactionWithLedger(Tx *types.Transaction) ErrCode {
-	if IsDoubleSpend(Tx) {
-		log.Info("[VerifyTransactionWithLedger] IsDoubleSpend check faild.")
-		return ErrDoubleSpend
-	}
-	if exist := Store.IsTxHashDuplicate(Tx.Hash()); exist {
-		log.Info("[VerifyTransactionWithLedger] duplicate transaction check faild.")
-		return ErrTxHashDuplicate
-	}
-	return ErrNoError
-}
-
-func IsDoubleSpend(tx *types.Transaction) bool {
-	return Store.IsDoubleSpend(tx)
-}
-
-func CheckAssetPrecision(Tx *types.Transaction) error {
-	// fee
-	if checkAmountPrecise(Fixed64(Tx.UnsignedTx.Fee), 8) {
-		return errors.New("The precision of fee is incorrect.")
-	}
-
-	return nil
-}
-
-func CheckTransactionBalance(txn *types.Transaction) error {
-	if txn.UnsignedTx.Fee < 0 {
-		return errors.New("tx fee error.")
-	}
-
-	return nil
-}
-
-func CheckTransactionContracts(Tx *types.Transaction) error {
-	flag, err := signature.VerifySignableData(Tx)
-	if flag && err == nil {
-		return nil
-	} else {
-		return err
-	}
-}
-
-func checkAmountPrecise(amount Fixed64, precision byte) bool {
-	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
-}
-
-func CheckTransactionPayload(txn *types.Transaction) error {
-	payload, err := types.Unpack(txn.UnsignedTx.Payload)
-	if err != nil {
-		return err
-	}
-
-	switch txn.UnsignedTx.Payload.Type {
-	case types.CoinbaseType:
-		pld := payload.(*types.Coinbase)
-		if len(pld.Sender) != 20 && len(pld.Recipient) != 20 {
-			return errors.New("length of programhash error")
-		}
-
-		if BytesToUint160(pld.Sender) != EmptyUint160 {
-			return errors.New("Sender error")
-		}
-
-		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
-			return errors.New("The precision of amount is incorrect.")
-		}
-
-		if Fixed64(pld.Amount) != Fixed64(config.DefaultMiningReward*StorageFactor) {
-			return errors.New("Coinbase reward error.")
-		}
-	case types.TransferAssetType:
-		pld := payload.(*types.TransferAsset)
-		if len(pld.Sender) != 20 && len(pld.Recipient) != 20 {
-			return errors.New("length of programhash error")
-		}
-
-		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
-			return errors.New("The precision of amount is incorrect.")
-		}
-
-		if pld.Amount < 0 {
-			return errors.New("transfer amount error.")
-		}
-	case types.CommitType:
-	case types.RegisterNameType:
-		pld := payload.(*types.RegisterName)
-		match, err := regexp.MatchString("([a-z]{8,12})", pld.Name)
-		if err != nil {
-			return err
-		}
-		if !match {
-			return errors.New(fmt.Sprintf("name %s should only contain a-z and have length 8-12", pld.Name))
-		}
-
-		name, err := Store.GetName(pld.Registrant)
-		if name != nil {
-			return errors.New(fmt.Sprintf("pubKey %+v already has registered name %s", pld.Registrant, *name))
-		}
-		if err != leveldb.ErrNotFound {
-			return err
-		}
-
-		registrant, err := Store.GetRegistrant(pld.Name)
-		if registrant != nil {
-			return errors.New(fmt.Sprintf("name %s is already registered for pubKey %+v", pld.Name, registrant))
-		}
-		if err != leveldb.ErrNotFound {
-			return err
-		}
-	case types.DeleteNameType:
-		pld := payload.(*types.DeleteName)
-		name, err := Store.GetName(pld.Registrant)
-		if err != leveldb.ErrNotFound {
-			return err
-		}
-		if *name != pld.Name {
-			return errors.New(fmt.Sprintf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant))
-		} else if name == nil {
-			return errors.New(fmt.Sprintf("no name registered for pubKey %+v", pld.Registrant))
-		}
-	case types.SubscribeType:
-		pld := payload.(*types.Subscribe)
-		bucket := pld.Bucket
-		if bucket > BucketsLimit {
-			return errors.New(fmt.Sprintf("topic bucket %d can't be bigger than %d", bucket, BucketsLimit))
-		}
-
-		duration := pld.Duration
-		if duration > MaxSubscriptionDuration {
-			return errors.New(fmt.Sprintf("subscription duration %d can't be bigger than %d", duration, MaxSubscriptionDuration))
-		}
-
-		topic := pld.Topic
-		match, err := regexp.MatchString("(^[a-z][a-z0-9-_.~+%]{2,254}$)", topic)
-		if err != nil {
-			return err
-		}
-		if !match {
-			return errors.New(fmt.Sprintf("topic %s should only contain a-z and have length 8-12", topic))
-		}
-
-		subscribed, err := Store.IsSubscribed(pld.Subscriber, pld.Identifier, topic, bucket)
-		if err != nil {
-			return err
-		}
-		if subscribed {
-			return errors.New(fmt.Sprintf("subscriber %s already subscribed to %s", pld.SubscriberString(), topic))
-		}
-
-		subscriptionCount := Store.GetSubscribersCount(topic, bucket)
-		if subscriptionCount >= SubscriptionsLimit {
-			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", topic, subscriptionCount))
-		}
-	default:
-		return errors.New("[txValidator],invalidate transaction payload type.")
-	}
-	return nil
 }
