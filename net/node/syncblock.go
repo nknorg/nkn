@@ -461,7 +461,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		return err
 	}
 
-	err = blockchain.DefaultLedger.Store.AddHeaders(headers)
+	err = blockchain.DefaultLedger.Blockchain.AddHeaders(headers)
 	if err != nil {
 		return err
 	}

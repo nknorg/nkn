@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"sort"
 	"sync"
 
 	"github.com/nknorg/nkn/blockchain"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -395,53 +393,10 @@ func (cs *ChainStore) GetHeight() uint32 {
 	return cs.currentBlockHeight
 }
 
-func (cs *ChainStore) verifyHeader(header *types.Header) bool {
-	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
-	prevHeader, err := cs.getHeaderWithCache(prevHash)
-	if err != nil || prevHeader == nil {
-		log.Error("[verifyHeader] failed, not found prevHeader.")
-		return false
-	}
-
-	if prevHeader.UnsignedHeader.Height+1 != header.UnsignedHeader.Height {
-		log.Error("[verifyHeader] failed, prevHeader.Height + 1 != header.Height")
-		return false
-	}
-
-	if prevHeader.UnsignedHeader.Timestamp >= header.UnsignedHeader.Timestamp {
-		log.Error("[verifyHeader] failed, prevHeader.Timestamp >= header.Timestamp")
-		return false
-	}
-
-	flag, err := signature.VerifySignableData(header)
-	if flag == false || err != nil {
-		log.Error("[verifyHeader] failed, VerifySignableData failed.")
-		log.Error(err)
-		return false
-	}
-
-	return true
-}
-
-func (cs *ChainStore) AddHeaders(headers []*types.Header) error {
-	sort.Slice(headers, func(i, j int) bool {
-		return headers[i].UnsignedHeader.Height < headers[j].UnsignedHeader.Height
-	})
-
-	for i := 0; i < len(headers); i++ {
-		//if headers[i].Height != cs.GetHeaderHeight()+1 {
-		//	return errors.New("header height error.")
-		//}
-
-		//if !cs.verifyHeader(headers[i]) {
-		//	return errors.New("header verify error.")
-		//}
-
-		cs.headerCache.AddHeaderToCache(headers[i])
-	}
+func (cs *ChainStore) AddHeader(header *types.Header) error {
+	cs.headerCache.AddHeaderToCache(header)
 
 	return nil
-
 }
 
 func (cs *ChainStore) GetHeaderHeight() uint32 {
@@ -463,6 +418,10 @@ func (cs *ChainStore) GetHeaderHashByHeight(height uint32) Uint256 {
 	defer cs.mu.RUnlock()
 
 	return cs.headerCache.GetCachedHeaderHashByHeight(height)
+}
+
+func (cs *ChainStore) GetHeaderWithCache(hash Uint256) (*types.Header, error) {
+	return cs.headerCache.GetCachedHeader(hash)
 }
 
 func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*types.Header, error) {
