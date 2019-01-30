@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/pb"
@@ -34,6 +35,7 @@ func (remoteNode *RemoteNode) MarshalJSON() ([]byte, error) {
 
 	out["height"] = remoteNode.GetHeight()
 	out["isOutbound"] = remoteNode.nnetNode.IsOutbound
+	out["roundTripTime"] = remoteNode.nnetNode.GetRoundTripTime() / time.Millisecond
 
 	return json.Marshal(out)
 }
