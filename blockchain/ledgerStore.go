@@ -2,12 +2,13 @@ package blockchain
 
 import (
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/db"
 	"github.com/nknorg/nkn/types"
 )
 
 // ILedgerStore provides func with store package.
 type ILedgerStore interface {
-	SaveBlock(b *types.Block, ledger *Ledger, fastAdd bool) error
+	SaveBlock(b *types.Block, fastAdd bool) error
 	GetBlock(hash Uint256) (*types.Block, error)
 	GetBlockByHeight(height uint32) (*types.Block, error)
 	//BlockInCache(hash Uint256) bool
@@ -35,6 +36,8 @@ type ILedgerStore interface {
 	GetSubscribers(topic string) []string
 	GetSubscribersCount(topic string) int
 
+	GetDatabase() db.IStore
+	GetCurrentBlockStateRoot() Uint256
 	GetStateRootHash() Uint256
 	GetBalance(addr Uint160) Fixed64
 	GetNonce(addr Uint160) uint64

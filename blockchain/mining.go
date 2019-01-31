@@ -55,7 +55,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 		return nil, err
 	}
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
-	curStateHash := DefaultLedger.Store.GetStateRootHash()
+	curStateHash := GenerateStateRoot(txnList)
 	header := &types.Header{
 		BlockHeader: types.BlockHeader{
 			UnsignedHeader: &types.UnsignedHeader{
