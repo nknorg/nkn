@@ -8,9 +8,12 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/types"
+	"github.com/nknorg/nkn/util/log"
 )
 
 func (cs *ChainStore) Rollback(b *types.Block) error {
+	log.Warning("start rollback.")
+
 	if err := cs.st.NewBatch(); err != nil {
 		return err
 	}
@@ -36,6 +39,14 @@ func (cs *ChainStore) Rollback(b *types.Block) error {
 	}
 
 	if err := cs.rollbackPubSub(b); err != nil {
+		return err
+	}
+
+	if err := cs.rollbackStates(b); err != nil {
+		return err
+	}
+
+	if err := cs.rollbackHeaderCache(b); err != nil {
 		return err
 	}
 
@@ -99,5 +110,25 @@ func (cs *ChainStore) rollbackPubSub(b *types.Block) error {
 		}
 	}
 
+	return nil
+}
+
+func (cs *ChainStore) rollbackStates(b *types.Block) error {
+	//TODO add err statements
+	prevHash, _ := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
+	prevHead, _ := cs.GetHeader(prevHash)
+	root, _ := common.Uint256ParseFromBytes(prevHead.UnsignedHeader.StateRoot)
+	cs.States, _ = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+
+	err := cs.st.BatchPut(currentStateTrie(), root.ToArray())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) rollbackHeaderCache(b *types.Block) error {
+	cs.headerCache.RollbackHeader(b.Header)
 	return nil
 }
