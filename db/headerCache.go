@@ -82,6 +82,27 @@ func (hc *HeaderCache) GetCachedHeaderHashByHeight(height uint32) common.Uint256
 	return hc.headerIndex[height]
 }
 
+func (hc *HeaderCache) RollbackHeader(h *types.Header) {
+	hc.mu.Lock()
+	defer hc.mu.Unlock()
+
+	if hc.currentCacheHeight == 0 {
+		return
+	}
+
+	if hc.currentCacheHeight < h.UnsignedHeader.Height {
+		return
+	}
+	for i := hc.currentCacheHeight; i >= h.UnsignedHeader.Height; i-- {
+		//TODO check if exsit
+		hash := hc.headerIndex[i]
+		delete(hc.headerIndex, i)
+		delete(hc.headerCache, hash)
+
+		hc.currentCacheHeight = i - 1
+	}
+}
+
 func (hc *HeaderCache) Dump() {
 	fmt.Println("headerIndex:")
 	for height, hash := range hc.headerIndex {
