@@ -58,7 +58,7 @@ func (input *TxnInput) Equal(ui2 *TxnInput) bool {
 		return false
 	}
 
-	if input.ReferTxOutputIndex != input.ReferTxOutputIndex {
+	if input.ReferTxOutputIndex != ui2.ReferTxOutputIndex {
 		return false
 	}
 
