@@ -121,6 +121,9 @@ func (sdb *StateDB) GetNonce(addr common.Uint160) uint64 {
 	return account.GetNonce()
 }
 
+func (sdb *StateDB) SetAccount(addr common.Uint160, acc *account) {
+	sdb.setAccount(addr, acc)
+}
 func (sdb *StateDB) setAccount(addr common.Uint160, acc *account) {
 	sdb.accounts[addr] = acc
 }

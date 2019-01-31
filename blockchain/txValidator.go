@@ -15,12 +15,6 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-const (
-	SubscriptionsLimit      = 1000
-	BucketsLimit            = 1000
-	MaxSubscriptionDuration = 65535
-)
-
 // VerifyTransaction verifys received single transaction
 func VerifyTransaction(txn *types.Transaction) error {
 	if err := CheckTransactionFee(txn); err != nil {
@@ -143,7 +137,7 @@ func CheckTransactionPayload(txn *types.Transaction) error {
 		}
 
 		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
-		if subscriptionCount >= SubscriptionsLimit {
+		if subscriptionCount >= types.SubscriptionsLimit {
 			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", pld.Topic, subscriptionCount))
 		}
 	default:
@@ -217,13 +211,13 @@ func VerifyTransactionWithLedger(txn *types.Transaction) error {
 	case types.SubscribeType:
 		pld := payload.(*types.Subscribe)
 		bucket := pld.Bucket
-		if bucket > BucketsLimit {
-			return errors.New(fmt.Sprintf("topic bucket %d can't be bigger than %d", bucket, BucketsLimit))
+		if bucket > types.BucketsLimit {
+			return errors.New(fmt.Sprintf("topic bucket %d can't be bigger than %d", bucket, types.BucketsLimit))
 		}
 
 		duration := pld.Duration
-		if duration > MaxSubscriptionDuration {
-			return errors.New(fmt.Sprintf("subscription duration %d can't be bigger than %d", duration, MaxSubscriptionDuration))
+		if duration > types.MaxSubscriptionDuration {
+			return errors.New(fmt.Sprintf("subscription duration %d can't be bigger than %d", duration, types.MaxSubscriptionDuration))
 		}
 
 		topic := pld.Topic
@@ -244,7 +238,7 @@ func VerifyTransactionWithLedger(txn *types.Transaction) error {
 		}
 
 		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
-		if subscriptionCount >= SubscriptionsLimit {
+		if subscriptionCount >= types.SubscriptionsLimit {
 			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", topic, subscriptionCount))
 		}
 	default:
@@ -333,7 +327,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 			if _, ok := subscriptionCount[topic]; !ok {
 				subscriptionCount[topic] = DefaultLedger.Store.GetSubscribersCount(topic, subscribePayload.Bucket)
 			}
-			if subscriptionCount[topic] >= SubscriptionsLimit {
+			if subscriptionCount[topic] >= types.SubscriptionsLimit {
 				log.Warning("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
 				return ErrSubscriptionLimit
 			}

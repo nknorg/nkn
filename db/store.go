@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/nknorg/nkn/blockchain"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -26,7 +24,7 @@ type ChainStore struct {
 	currentBlockHeight uint32
 }
 
-func NewLedgerStore() (blockchain.ILedgerStore, error) {
+func NewLedgerStore() (*ChainStore, error) {
 	st, err := NewLevelDBStore("Chain")
 	if err != nil {
 		return nil, err
@@ -267,22 +265,19 @@ func (cs *ChainStore) persist(b *types.Block) error {
 			}
 		}
 
+		pl, err := types.Unpack(txn.UnsignedTx.Payload)
+		if err != nil {
+			return err
+		}
+
 		switch txn.UnsignedTx.Payload.Type {
 		case types.CoinbaseType:
-			pl, err := types.Unpack(txn.UnsignedTx.Payload)
-			if err != nil {
-				return err
-			}
 			coinbase := pl.(*types.Coinbase)
 			acc := cs.States.GetOrNewAccount(BytesToUint160(coinbase.Recipient))
 			amount := acc.GetBalance()
 			acc.SetBalance(amount + Fixed64(coinbase.Amount))
 			cs.States.setAccount(BytesToUint160(coinbase.Recipient), acc)
 		case types.TransferAssetType:
-			pl, err := types.Unpack(txn.UnsignedTx.Payload)
-			if err != nil {
-				return err
-			}
 			transfer := pl.(*types.TransferAsset)
 			accSender := cs.States.GetOrNewAccount(BytesToUint160(transfer.Sender))
 			amountSender := accSender.GetBalance()
@@ -294,30 +289,18 @@ func (cs *ChainStore) persist(b *types.Block) error {
 			accRecipient.SetBalance(amountRecipient + Fixed64(transfer.Amount))
 			cs.States.setAccount(BytesToUint160(transfer.Recipient), accRecipient)
 		case types.RegisterNameType:
-			pl, err := types.Unpack(txn.UnsignedTx.Payload)
-			if err != nil {
-				return err
-			}
 			registerNamePayload := pl.(*types.RegisterName)
 			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
 			if err != nil {
 				return err
 			}
 		case types.DeleteNameType:
-			pl, err := types.Unpack(txn.UnsignedTx.Payload)
-			if err != nil {
-				return err
-			}
 			deleteNamePayload := pl.(*types.DeleteName)
 			err = cs.DeleteName(deleteNamePayload.Registrant)
 			if err != nil {
 				return err
 			}
 		case types.SubscribeType:
-			pl, err := types.Unpack(txn.UnsignedTx.Payload)
-			if err != nil {
-				return err
-			}
 			subscribePayload := pl.(*types.Subscribe)
 			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.UnsignedHeader.Height)
 			if err != nil {
@@ -341,6 +324,12 @@ func (cs *ChainStore) persist(b *types.Block) error {
 		return err
 	}
 
+	headerRoot, _ := Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
+	if ok := root.CompareTo(headerRoot); ok != 0 {
+		//TODO clean states accounts
+		return fmt.Errorf("state root not equal:%v, %v", root, headerRoot)
+	}
+
 	err = cs.st.BatchPut(currentStateTrie(), root.ToArray())
 	if err != nil {
 		return err
@@ -356,7 +345,7 @@ func (cs *ChainStore) persist(b *types.Block) error {
 	return cs.st.BatchCommit()
 }
 
-func (cs *ChainStore) SaveBlock(b *types.Block, ledger *blockchain.Ledger, fastAdd bool) error {
+func (cs *ChainStore) SaveBlock(b *types.Block, fastAdd bool) error {
 	if err := cs.persist(b); err != nil {
 		log.Error("error to persist block:", err.Error())
 		return err
@@ -371,11 +360,6 @@ func (cs *ChainStore) SaveBlock(b *types.Block, ledger *blockchain.Ledger, fastA
 		cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - 3)
 	}
 	cs.headerCache.AddHeaderToCache(b.Header)
-
-	ledger.Blockchain.BlockHeight = cs.GetHeight()
-	ledger.Blockchain.BCEvents.Notify(events.EventBlockPersistCompleted, b)
-
-	log.Infof("# current block height: %d, block hash: %x", cs.currentBlockHeight, cs.currentBlockHash.ToArrayReverse())
 
 	return nil
 }
