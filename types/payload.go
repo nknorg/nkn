@@ -7,6 +7,12 @@ import (
 	"github.com/nknorg/nkn/util/address"
 )
 
+const (
+	SubscriptionsLimit      = 1000
+	BucketsLimit            = 1000
+	MaxSubscriptionDuration = 65535
+)
+
 type IPayload interface {
 	Marshal() (dAtA []byte, err error)
 	Unmarshal(dAtA []byte) error
