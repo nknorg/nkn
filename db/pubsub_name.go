@@ -3,8 +3,8 @@ package db
 import (
 	"bytes"
 
-	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/address"
 )
 
@@ -216,10 +216,11 @@ func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
 	return subscribers
 }
 
+//TODO
 func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
-	for i := uint32(0); i < blockchain.BucketsLimit; i++ {
+	for i := uint32(0); i < types.BucketsLimit; i++ {
 		count := cs.GetSubscribersCount(topic, i)
-		if count < blockchain.SubscriptionsLimit {
+		if count < types.SubscriptionsLimit {
 			return int(i)
 		}
 	}

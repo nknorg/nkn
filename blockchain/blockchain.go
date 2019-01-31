@@ -34,6 +34,8 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore) (*Blockchain, error) {
 	if err != nil {
 		return nil, err
 	}
+	root := GenesisStateRoot(store, genesisBlock.Transactions)
+	genesisBlock.Header.UnsignedHeader.StateRoot = root.ToArray()
 	genesisBlock.RebuildMerkleRoot()
 	genesisBlock.Hash()
 
@@ -68,11 +70,15 @@ func (bc *Blockchain) GetHeader(hash Uint256) (*types.Header, error) {
 }
 
 func (bc *Blockchain) SaveBlock(block *types.Block, fastAdd bool) error {
-	err := DefaultLedger.Store.SaveBlock(block, DefaultLedger, fastAdd)
+	err := DefaultLedger.Store.SaveBlock(block, fastAdd)
 	if err != nil {
 		log.Warning("Save Block failure , ", err)
 		return err
 	}
+
+	bc.BlockHeight = block.Header.UnsignedHeader.Height
+	bc.BCEvents.Notify(events.EventBlockPersistCompleted, block)
+	log.Infof("# current block height: %d, block hash: %x", bc.BlockHeight, block.Hash())
 
 	return nil
 }
