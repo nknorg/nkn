@@ -73,7 +73,9 @@ func assetAction(c *cli.Context) error {
 	case c.Bool("issue"):
 		resp, err = client.Call(Address(), "issueasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "address": parseAddress(c), "value": value})
 	case c.Bool("transfer"):
-		myWallet, err := vault.OpenWallet(vault.WalletFileName, getPassword("tt"))
+		walletName := c.String("wallet")
+		passwd := c.String("password")
+		myWallet, err := vault.OpenWallet(walletName, getPassword(passwd))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
