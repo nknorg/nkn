@@ -10,7 +10,7 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/contract"
 	"github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/net/node"
+	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/types"
