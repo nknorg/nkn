@@ -13,7 +13,7 @@ import (
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -36,7 +36,7 @@ func NewRelayService(wallet vault.Wallet, localNode *LocalNode) *RelayService {
 }
 
 // NewRelayMessage creates a RELAY message
-func NewRelayMessage(srcAddr string, destID, payload []byte, sigChain *por.SigChain, maxHoldingSeconds uint32) (*pb.UnsignedMessage, error) {
+func NewRelayMessage(srcAddr string, destID, payload []byte, sigChain *pb.SigChain, maxHoldingSeconds uint32) (*pb.UnsignedMessage, error) {
 	msgBody := &pb.Relay{
 		SrcAddr:           srcAddr,
 		DestId:            destID,
@@ -174,7 +174,7 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 		srcPubkey,
 		destPubkey,
 		signature,
-		por.ECDSA,
+		pb.ECDSA,
 	)
 	if err != nil {
 		return err
@@ -198,13 +198,13 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 	return nil
 }
 
-func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*types.Transaction, error) {
+func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
 	}
 	//TODO modify nonce
-	txn, err := types.NewCommitTransaction(sigChain, account.ProgramHash, 0)
+	txn, err := NewCommitTransaction(sigChain, account.ProgramHash, 0)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package por
+package pb
 
 func rightShiftBytes(b []byte, n int) {
 	for k := 0; k < n; k++ {

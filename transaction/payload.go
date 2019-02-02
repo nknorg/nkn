@@ -1,10 +1,10 @@
-package types
+package transaction
 
 import (
 	"errors"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/util/address"
+	. "github.com/nknorg/nkn/pb"
 )
 
 const (
@@ -95,8 +95,4 @@ func NewSubscribe(subscriber []byte, id, topic string, bucket, duration uint32, 
 		Duration:   duration,
 		Meta:       meta,
 	}
-}
-
-func (s *Subscribe) SubscriberString() string {
-	return address.MakeAddressString(s.Subscriber, s.Identifier)
 }

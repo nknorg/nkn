@@ -36,7 +36,7 @@ type OutboundMessage struct {
 func (m *OutboundMessage) Reset()      { *m = OutboundMessage{} }
 func (*OutboundMessage) ProtoMessage() {}
 func (*OutboundMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_clientmessage_30a1957f28ca9b83, []int{0}
+	return fileDescriptor_clientmessage_0732c7d9ed5a2325, []int{0}
 }
 func (m *OutboundMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -101,7 +101,7 @@ type InboundMessage struct {
 func (m *InboundMessage) Reset()      { *m = InboundMessage{} }
 func (*InboundMessage) ProtoMessage() {}
 func (*InboundMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_clientmessage_30a1957f28ca9b83, []int{1}
+	return fileDescriptor_clientmessage_0732c7d9ed5a2325, []int{1}
 }
 func (m *InboundMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -900,10 +900,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("pb/clientmessage.proto", fileDescriptor_clientmessage_30a1957f28ca9b83)
+	proto.RegisterFile("pb/clientmessage.proto", fileDescriptor_clientmessage_0732c7d9ed5a2325)
 }
 
-var fileDescriptor_clientmessage_30a1957f28ca9b83 = []byte{
+var fileDescriptor_clientmessage_0732c7d9ed5a2325 = []byte{
 	// 282 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2b, 0x48, 0xd2, 0x4f,
 	0xce, 0xc9, 0x4c, 0xcd, 0x2b, 0xc9, 0x4d, 0x2d, 0x2e, 0x4e, 0x4c, 0x4f, 0xd5, 0x2b, 0x28, 0xca,

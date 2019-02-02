@@ -7,8 +7,9 @@ import (
 	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -16,9 +17,9 @@ const (
 	ExclusivedSigchainHeight = 3
 )
 
-type TransactionMap map[common.Uint256]*types.Transaction
+type TransactionMap map[common.Uint256]*Transaction
 
-func (iterable TransactionMap) Iterate(handler func(item *types.Transaction) ErrCode) ErrCode {
+func (iterable TransactionMap) Iterate(handler func(item *Transaction) ErrCode) ErrCode {
 	for _, item := range iterable {
 		result := handler(item)
 		if result != ErrNoError {
@@ -31,18 +32,18 @@ func (iterable TransactionMap) Iterate(handler func(item *types.Transaction) Err
 
 type TxnPool struct {
 	sync.RWMutex
-	txnList map[common.Uint256]*types.Transaction // transaction which have been verified will put into this map
+	txnList map[common.Uint256]*Transaction // transaction which have been verified will put into this map
 }
 
 func NewTxnPool() *TxnPool {
 	return &TxnPool{
-		txnList: make(map[common.Uint256]*types.Transaction),
+		txnList: make(map[common.Uint256]*Transaction),
 	}
 }
 
 //append transaction to txnpool when check ok.
 //1.check transaction. 2.check with ledger(db) 3.check with pool
-func (tp *TxnPool) AppendTxnPool(txn *types.Transaction) ErrCode {
+func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	//verify transaction with Concurrency
 	if err := blockchain.VerifyTransaction(txn); err != nil {
 		log.Info("Transaction verification failed", txn.Hash(), err)
@@ -55,7 +56,7 @@ func (tp *TxnPool) AppendTxnPool(txn *types.Transaction) ErrCode {
 	}
 
 	// get signature chain from commit transaction then add it to POR server
-	if txn.UnsignedTx.Payload.Type == types.CommitType {
+	if txn.UnsignedTx.Payload.Type == pb.CommitType {
 		added, err := por.GetPorServer().AddSigChainFromTx(txn, blockchain.DefaultLedger.Store.GetHeight())
 		if err != nil {
 			log.Infof("Add sigchain from transaction error: %v", err)
@@ -82,7 +83,7 @@ func (tp *TxnPool) AppendTxnPool(txn *types.Transaction) ErrCode {
 	return ErrNoError
 }
 
-func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*types.Transaction, error) {
+func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*Transaction, error) {
 	tp.RLock()
 	defer tp.RUnlock()
 
@@ -92,7 +93,7 @@ func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*types.Transaction
 	}
 
 	i := 0
-	txns := make(map[common.Uint256]*types.Transaction, n)
+	txns := make(map[common.Uint256]*Transaction, n)
 
 	//TODO sort transaction list
 	for hash, txn := range tp.txnList {
@@ -107,23 +108,23 @@ func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*types.Transaction
 }
 
 //clean the trasaction Pool with committed block.
-func (tp *TxnPool) CleanSubmittedTransactions(txns []*types.Transaction) error {
+func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
 	tp.cleanTransactionList(txns)
 	return nil
 }
 
 //get the transaction by hash
-func (tp *TxnPool) GetTransaction(hash common.Uint256) *types.Transaction {
+func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {
 	tp.RLock()
 	defer tp.RUnlock()
 	return tp.txnList[hash]
 }
 
-func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*types.Transaction {
+func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
 	tp.RLock()
 	defer tp.RUnlock()
 
-	txns := make(map[common.Uint256]*types.Transaction, len(tp.txnList))
+	txns := make(map[common.Uint256]*Transaction, len(tp.txnList))
 	for hash, txn := range tp.txnList {
 		txns[hash] = txn
 	}
@@ -132,11 +133,11 @@ func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*types.Transaction {
 }
 
 // clean the trasaction Pool with committed transactions.
-func (tp *TxnPool) cleanTransactionList(txns []*types.Transaction) error {
+func (tp *TxnPool) cleanTransactionList(txns []*Transaction) error {
 	cleaned := 0
 	txnsNum := len(txns)
 	for _, txn := range txns {
-		if txn.UnsignedTx.Payload.Type == types.CoinbaseType {
+		if txn.UnsignedTx.Payload.Type == pb.CoinbaseType {
 			txnsNum = txnsNum - 1
 			continue
 		}
@@ -149,7 +150,7 @@ func (tp *TxnPool) cleanTransactionList(txns []*types.Transaction) error {
 	return nil
 }
 
-func (tp *TxnPool) addtxnList(txn *types.Transaction) bool {
+func (tp *TxnPool) addtxnList(txn *Transaction) bool {
 	tp.Lock()
 	defer tp.Unlock()
 	txnHash := txn.Hash()
@@ -160,7 +161,7 @@ func (tp *TxnPool) addtxnList(txn *types.Transaction) bool {
 	return true
 }
 
-func (tp *TxnPool) deltxnList(tx *types.Transaction) bool {
+func (tp *TxnPool) deltxnList(tx *Transaction) bool {
 	tp.Lock()
 	defer tp.Unlock()
 	txHash := tx.Hash()

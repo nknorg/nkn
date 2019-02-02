@@ -3,25 +3,26 @@ package blockchain
 import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/db"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/pb"
+	. "github.com/nknorg/nkn/transaction"
 )
 
-func spendTransaction(states *db.StateDB, tx *types.Transaction) error {
-	pl, err := types.Unpack(tx.UnsignedTx.Payload)
+func spendTransaction(states *db.StateDB, tx *Transaction) error {
+	pl, err := Unpack(tx.UnsignedTx.Payload)
 	if err != nil {
 		return err
 	}
 
 	switch tx.UnsignedTx.Payload.Type {
-	case types.CoinbaseType:
-		coinbase := pl.(*types.Coinbase)
+	case CoinbaseType:
+		coinbase := pl.(*Coinbase)
 		acc := states.GetOrNewAccount(common.BytesToUint160(coinbase.Recipient))
 		amount := acc.GetBalance()
 		acc.SetBalance(amount + common.Fixed64(coinbase.Amount))
 		states.SetAccount(common.BytesToUint160(coinbase.Recipient), acc)
 
-	case types.TransferAssetType:
-		transfer := pl.(*types.TransferAsset)
+	case TransferAssetType:
+		transfer := pl.(*TransferAsset)
 		accSender := states.GetOrNewAccount(common.BytesToUint160(transfer.Sender))
 		amountSender := accSender.GetBalance()
 		accSender.SetBalance(amountSender - common.Fixed64(transfer.Amount))
@@ -39,7 +40,7 @@ func spendTransaction(states *db.StateDB, tx *types.Transaction) error {
 	return nil
 }
 
-func GenerateStateRoot(txs []*types.Transaction) common.Uint256 {
+func GenerateStateRoot(txs []*Transaction) common.Uint256 {
 
 	root := DefaultLedger.Store.GetCurrentBlockStateRoot()
 	states, _ := db.NewStateDB(root, db.NewTrieStore(DefaultLedger.Store.GetDatabase()))
@@ -51,7 +52,7 @@ func GenerateStateRoot(txs []*types.Transaction) common.Uint256 {
 	return states.IntermediateRoot(true)
 }
 
-func GenesisStateRoot(store ILedgerStore, txs []*types.Transaction) common.Uint256 {
+func GenesisStateRoot(store ILedgerStore, txs []*Transaction) common.Uint256 {
 	root := common.EmptyUint256
 	states, _ := db.NewStateDB(root, db.NewTrieStore(store.GetDatabase()))
 

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package pb;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "pb/payload.proto";
+import "pb/program.proto";
+
+option (gogoproto.gostring_all) = true;
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.stringer_all) =  true;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+option (gogoproto.testgen_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.populate_all) = true;
+
+
+message UnsignedTx {
+	Payload   Payload    = 1;
+	uint64    Nonce      = 2;
+	int64     Fee        = 3;
+	bytes     Attributes = 4;
+}
+
+
+message MsgTx {
+    UnsignedTx          UnsignedTx = 1;
+    repeated Program    Programs   = 2;
+}
+
