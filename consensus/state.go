@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/blockchain"
+	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
