@@ -17,7 +17,7 @@ import (
 	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/api/websocket"
 	"github.com/nknorg/nkn/blockchain"
-	"github.com/nknorg/nkn/consensus/moca"
+	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/db"
 	"github.com/nknorg/nkn/net/node"

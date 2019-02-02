@@ -7,7 +7,7 @@ import (
 
 	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/consensus/moca/election"
+	"github.com/nknorg/nkn/consensus/election"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/types"
