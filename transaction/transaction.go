@@ -1,4 +1,4 @@
-package types
+package transaction
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
+	. "github.com/nknorg/nkn/pb"
 )
 
 func NewMsgTx(payload *Payload, nonce uint64, fee Fixed64, attrs []byte) *MsgTx {

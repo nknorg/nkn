@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 )
 
@@ -218,9 +218,9 @@ func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
 
 //TODO
 func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
-	for i := uint32(0); i < types.BucketsLimit; i++ {
+	for i := uint32(0); i < BucketsLimit; i++ {
 		count := cs.GetSubscribersCount(topic, i)
-		if count < types.SubscriptionsLimit {
+		if count < SubscriptionsLimit {
 			return int(i)
 		}
 	}

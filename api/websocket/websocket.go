@@ -6,12 +6,12 @@ import (
 
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket/server"
+	. "github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/blockchain"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/types"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 )
@@ -86,7 +86,7 @@ func PushBlock(v interface{}) {
 		return
 	}
 	resp := common.ResponsePack(common.SUCCESS)
-	if block, ok := v.(*types.Block); ok {
+	if block, ok := v.(*Block); ok {
 		if pushRawBlockFlag {
 			w := bytes.NewBuffer(nil)
 			block.Serialize(w)
@@ -107,7 +107,7 @@ func PushBlockTransactions(v interface{}) {
 		return
 	}
 	resp := common.ResponsePack(common.SUCCESS)
-	if block, ok := v.(*types.Block); ok {
+	if block, ok := v.(*Block); ok {
 		if pushBlockTxsFlag {
 			resp["Result"] = common.GetBlockTransactions(block)
 		}
@@ -121,7 +121,7 @@ func PushSigChainBlockHash(v interface{}) {
 		return
 	}
 	resp := common.ResponsePack(common.SUCCESS)
-	if block, ok := v.(*types.Block); ok {
+	if block, ok := v.(*Block); ok {
 		resp["Action"] = "updateSigChainBlockHash"
 		//resp["Result"] = common.GetBlockInfo(block).BlockData.PrevBlockHash
 		resp["Result"] = BytesToHexString(block.Header.UnsignedHeader.PrevBlockHash)

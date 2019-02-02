@@ -1,5 +1,5 @@
 syntax = "proto3";
-package por;
+package pb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
