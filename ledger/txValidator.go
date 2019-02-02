@@ -9,11 +9,11 @@ import (
 	. "github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/errors"
 	. "github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/signature"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/vm/signature"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 

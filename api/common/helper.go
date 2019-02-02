@@ -2,9 +2,9 @@ package common
 
 import (
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/contract"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nkn/vm/contract"
 )
 
 func MakeTransferTransaction(wallet vault.Wallet, receipt Uint160, nonce uint64, value, fee Fixed64) (*Transaction, error) {
