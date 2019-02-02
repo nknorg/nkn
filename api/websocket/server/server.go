@@ -17,7 +17,7 @@ import (
 	. "github.com/nknorg/nkn/api/websocket/session"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/net/node"
+	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"

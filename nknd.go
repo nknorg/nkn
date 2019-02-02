@@ -21,7 +21,7 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/db"
 	"github.com/nknorg/nkn/gateway/httpproxy"
-	"github.com/nknorg/nkn/net/node"
+	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"

@@ -9,7 +9,7 @@ import (
 	"github.com/nknorg/nkn/blockchain"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/net/node"
+	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/types"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
