@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/blockchain"
+	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/contract"
 	nknErrors "github.com/nknorg/nkn/errors"
