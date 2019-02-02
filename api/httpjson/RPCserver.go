@@ -12,7 +12,7 @@ import (
 
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/net/node"
+	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
