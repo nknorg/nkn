@@ -6,17 +6,17 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/contract"
 	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nkn/vm/contract"
 )
 
 type RelayService struct {
