@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/nknorg/nkn/blockchain"
+	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/pb"

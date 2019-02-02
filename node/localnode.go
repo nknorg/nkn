@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/blockchain"
-	"github.com/nknorg/nkn/blockchain/pool"
+	"github.com/nknorg/nkn/ledger"
+	"github.com/nknorg/nkn/ledger/pool"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/address"

@@ -2,8 +2,8 @@ package blockchain
 
 import (
 	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/ledger/db"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/db"
 	. "github.com/nknorg/nkn/transaction"
 )
 

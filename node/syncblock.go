@@ -8,7 +8,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/blockchain"
+	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/node/consequential"
 	"github.com/nknorg/nkn/pb"

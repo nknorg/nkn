@@ -6,7 +6,7 @@ import (
 	"time"
 
 	. "github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/blockchain"
+	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/election"
 	"github.com/nknorg/nkn/node"

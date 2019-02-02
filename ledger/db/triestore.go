@@ -1,8 +1,8 @@
 package db
 
 import (
+	"github.com/nknorg/nkn/ledger/trie"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/trie"
 )
 
 const (
