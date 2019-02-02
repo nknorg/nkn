@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/contract"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/vm/contract"
 )
 
 type Account struct {

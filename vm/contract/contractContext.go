@@ -9,8 +9,8 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	_ "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/pb"
-	sig "github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/util/log"
+	sig "github.com/nknorg/nkn/vm/signature"
 )
 
 type ContractContext struct {
