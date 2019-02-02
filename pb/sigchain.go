@@ -1,4 +1,4 @@
-package por
+package pb
 
 import (
 	"bytes"
@@ -13,7 +13,6 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/vault"
 )
 
 // for the first relay node
@@ -110,9 +109,9 @@ func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash, srcID, srcPu
 }
 
 // first relay node starts a new signature chain which consists of meta data and the first element.
-func NewSigChain(srcAccount *vault.Account, dataSize uint32, dataHash, blockHash, srcID,
+func NewSigChain(srcPubKey *crypto.PubKey, srcPrivKey []byte, dataSize uint32, dataHash, blockHash, srcID,
 	destPubkey, nextPubkey []byte, mining bool) (*SigChain, error) {
-	srcPubkey, err := srcAccount.PubKey().EncodePoint(true)
+	srcPubkey, err := srcPubKey.EncodePoint(true)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +149,7 @@ func NewSigChain(srcAccount *vault.Account, dataSize uint32, dataHash, blockHash
 	}
 
 	hash := sha256.Sum256(buff.Bytes())
-	signature, err := crypto.Sign(srcAccount.PrivKey(), hash[:])
+	signature, err := crypto.Sign(srcPrivKey, hash[:])
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +197,7 @@ func (sc *SigChain) AddLastSignature(signature []byte) error {
 }
 
 // Sign new created signature chain with local wallet.
-func (sc *SigChain) Sign(addr, nextPubkey []byte, mining bool, signer *vault.Account) error {
+func (sc *SigChain) Sign(addr, nextPubkey []byte, mining bool, signerPubKey *crypto.PubKey, signerPrivKey []byte) error {
 	sigNum := sc.Length()
 	if sigNum < 1 {
 		return errors.New("there are not enough signatures")
@@ -222,7 +221,7 @@ func (sc *SigChain) Sign(addr, nextPubkey []byte, mining bool, signer *vault.Acc
 		return errors.New("the next pubkey is wrong")
 	}
 
-	if !crypto.Equal(signer.PubKey(), nxPk) {
+	if !crypto.Equal(signerPubKey, nxPk) {
 		return errors.New("signer is not the right one")
 	}
 
@@ -232,7 +231,7 @@ func (sc *SigChain) Sign(addr, nextPubkey []byte, mining bool, signer *vault.Acc
 		return err
 	}
 
-	signature, err := crypto.Sign(signer.PrivKey(), digest)
+	signature, err := crypto.Sign(signerPrivKey, digest)
 	if err != nil {
 		log.Error("Compute signature error:", err)
 		return err

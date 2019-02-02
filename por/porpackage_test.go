@@ -24,7 +24,7 @@ func TestPorPackage(t *testing.T) {
 	var srcID []byte
 	dataHash := common.Uint256{}
 	blockHash := common.Uint256{}
-	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], srcID, toPk, relPk, true)
+	sc, err := NewSigChain(from.PubKey(), from.PrivKey(), 1, dataHash[:], blockHash[:], srcID, toPk, relPk, true)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
@@ -79,7 +79,7 @@ func TestPorPackage(t *testing.T) {
 	ppkg2 := new(PorPackage)
 	proto.Unmarshal(buf, ppkg2)
 
-	if ppkg.CompareTo(ppkg2) != 0 {
+	if bytes.Compare(ppkg.SigHash, ppkg2.SigHash) != 0 {
 		t.Error("[TestPorPackage] Serialize test failed")
 	}
 }

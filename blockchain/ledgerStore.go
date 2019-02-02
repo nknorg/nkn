@@ -1,29 +1,30 @@
 package blockchain
 
 import (
+	. "github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/db"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/transaction"
 )
 
 // ILedgerStore provides func with store package.
 type ILedgerStore interface {
-	SaveBlock(b *types.Block, fastAdd bool) error
-	GetBlock(hash Uint256) (*types.Block, error)
-	GetBlockByHeight(height uint32) (*types.Block, error)
+	SaveBlock(b *Block, fastAdd bool) error
+	GetBlock(hash Uint256) (*Block, error)
+	GetBlockByHeight(height uint32) (*Block, error)
 	//BlockInCache(hash Uint256) bool
 	GetBlockHash(height uint32) (Uint256, error)
 	//GetBlockHistory(startHeight, blockNum uint32) map[uint32]Uint256
 	//CheckBlockHistory(history map[uint32]Uint256) (uint32, bool)
 	//GetVotingWeight(hash Uint160) (int, error)
 
-	IsDoubleSpend(tx *types.Transaction) bool
+	IsDoubleSpend(tx *Transaction) bool
 
-	AddHeader(header *types.Header) error
-	GetHeader(hash Uint256) (*types.Header, error)
-	GetHeaderByHeight(height uint32) (*types.Header, error)
+	AddHeader(header *Header) error
+	GetHeader(hash Uint256) (*Header, error)
+	GetHeaderByHeight(height uint32) (*Header, error)
 
-	GetTransaction(hash Uint256) (*types.Transaction, error)
+	GetTransaction(hash Uint256) (*Transaction, error)
 
 	//SaveAsset(assetid Uint256, asset *Asset) error
 	//GetAsset(hash Uint256) (*Asset, error)
@@ -52,9 +53,9 @@ type ILedgerStore interface {
 	GetHeightByBlockHash(hash Uint256) (uint32, error)
 	GetHeaderHashByHeight(height uint32) Uint256
 
-	GetHeaderWithCache(hash Uint256) (*types.Header, error)
+	GetHeaderWithCache(hash Uint256) (*Header, error)
 
-	InitLedgerStoreWithGenesisBlock(genesisblock *types.Block) (uint32, error)
+	InitLedgerStoreWithGenesisBlock(genesisblock *Block) (uint32, error)
 
 	//GetQuantityIssued(assetid Uint256) (Fixed64, error)
 	//GetUnspent(txid Uint256, index uint16) (*tx.TxnOutput, error)
@@ -67,6 +68,6 @@ type ILedgerStore interface {
 
 	IsTxHashDuplicate(txhash Uint256) bool
 	IsBlockInStore(hash Uint256) bool
-	Rollback(b *types.Block) error
+	Rollback(b *Block) error
 	Close()
 }

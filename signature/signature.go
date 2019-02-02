@@ -3,12 +3,12 @@ package signature
 import (
 	"bytes"
 	"crypto/sha256"
+	"fmt"
 	"io"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/types"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/vm/interfaces"
 )
 
@@ -16,15 +16,15 @@ import (
 type SignableData interface {
 	interfaces.ICodeContainer
 	GetProgramHashes() ([]common.Uint160, error)
-	SetPrograms([]*types.Program)
-	GetPrograms() []*types.Program
+	SetPrograms([]*pb.Program)
+	GetPrograms() []*pb.Program
 	SerializeUnsigned(io.Writer) error
 }
 
 func SignBySigner(data SignableData, signer Signer) ([]byte, error) {
 	rtx, err := Sign(data, signer.PrivKey())
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Signature],SignBySigner failed.")
+		return nil, fmt.Errorf("[Signature],SignBySigner failed:%v", err)
 	}
 	return rtx, nil
 }
@@ -43,7 +43,7 @@ func GetHashForSigning(data SignableData) []byte {
 func Sign(data SignableData, prikey []byte) ([]byte, error) {
 	signature, err := crypto.Sign(prikey, GetHashData(data))
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Signature],Sign failed.")
+		return nil, fmt.Errorf("[Signature],Sign failed:%v", err)
 	}
 	return signature, nil
 }

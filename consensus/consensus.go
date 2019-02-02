@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
+	. "github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/election"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -27,7 +27,7 @@ type Consensus struct {
 	txnCollector        *blockchain.TxnCollector
 
 	proposalLock   sync.RWMutex
-	proposalChan   chan *types.Block
+	proposalChan   chan *Block
 	expectedHeight uint32
 
 	nextConsensusHeightLock sync.Mutex
@@ -45,7 +45,7 @@ func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus
 		localNode:           localNode,
 		elections:           common.NewGoCache(cacheExpiration, cacheCleanupInterval),
 		proposals:           common.NewGoCache(cacheExpiration, cacheCleanupInterval),
-		proposalChan:        make(chan *types.Block, proposalChanLen),
+		proposalChan:        make(chan *Block, proposalChanLen),
 		requestProposalChan: make(chan *requestProposalInfo, requestProposalChanLen),
 		mining:              blockchain.NewBuiltinMining(account, txnCollector),
 		txnCollector:        txnCollector,
@@ -206,7 +206,7 @@ func (consensus *Consensus) setExpectedHeight(expectedHeight uint32) {
 		}
 
 		consensus.expectedHeight = expectedHeight
-		consensus.proposalChan = make(chan *types.Block, proposalChanLen)
+		consensus.proposalChan = make(chan *Block, proposalChanLen)
 	}
 	consensus.proposalLock.Unlock()
 }
@@ -252,7 +252,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		return fmt.Errorf("Block %s not found in local cache", electedBlockHash.ToHexString())
 	}
 
-	block, ok := value.(*types.Block)
+	block, ok := value.(*Block)
 	if !ok {
 		return fmt.Errorf("Convert block %s from proposal cache error", electedBlockHash.ToHexString())
 	}

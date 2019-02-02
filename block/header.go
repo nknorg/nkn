@@ -1,4 +1,4 @@
-package types
+package block
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/errors"
+	. "github.com/nknorg/nkn/pb"
 )
 
 type Header struct {

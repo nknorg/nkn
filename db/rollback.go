@@ -5,13 +5,15 @@ import (
 	"encoding/binary"
 	"errors"
 
+	. "github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/pb"
+	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 )
 
-func (cs *ChainStore) Rollback(b *types.Block) error {
+func (cs *ChainStore) Rollback(b *Block) error {
 	log.Warning("start rollback.")
 
 	if err := cs.st.NewBatch(); err != nil {
@@ -57,12 +59,12 @@ func (cs *ChainStore) Rollback(b *types.Block) error {
 	return nil
 }
 
-func (cs *ChainStore) rollbackHeader(b *types.Block) error {
+func (cs *ChainStore) rollbackHeader(b *Block) error {
 	blockHash := b.Hash()
 	return cs.st.BatchDelete(append([]byte{byte(DATA_Header)}, blockHash[:]...))
 }
 
-func (cs *ChainStore) rollbackTransaction(b *types.Block) error {
+func (cs *ChainStore) rollbackTransaction(b *Block) error {
 	for _, txn := range b.Transactions {
 		txHash := txn.Hash()
 		if err := cs.st.BatchDelete(append([]byte{byte(DATA_Transaction)}, txHash[:]...)); err != nil {
@@ -73,13 +75,13 @@ func (cs *ChainStore) rollbackTransaction(b *types.Block) error {
 	return nil
 }
 
-func (cs *ChainStore) rollbackBlockHash(b *types.Block) error {
+func (cs *ChainStore) rollbackBlockHash(b *Block) error {
 	height := make([]byte, 4)
 	binary.LittleEndian.PutUint32(height[:], b.Header.UnsignedHeader.Height)
 	return cs.st.BatchDelete(append([]byte{byte(DATA_BlockHash)}, height...))
 }
 
-func (cs *ChainStore) rollbackCurrentBlockHash(b *types.Block) error {
+func (cs *ChainStore) rollbackCurrentBlockHash(b *Block) error {
 	value := new(bytes.Buffer)
 	prevHash, _ := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
 	if _, err := prevHash.Serialize(value); err != nil {
@@ -92,17 +94,17 @@ func (cs *ChainStore) rollbackCurrentBlockHash(b *types.Block) error {
 	return cs.st.BatchPut([]byte{byte(SYS_CurrentBlock)}, value.Bytes())
 }
 
-func (cs *ChainStore) rollbackPubSub(b *types.Block) error {
+func (cs *ChainStore) rollbackPubSub(b *Block) error {
 	height := b.Header.UnsignedHeader.Height
 
 	for _, txn := range b.Transactions {
-		if txn.UnsignedTx.Payload.Type == types.SubscribeType {
-			pl, err := types.Unpack(txn.UnsignedTx.Payload)
+		if txn.UnsignedTx.Payload.Type == SubscribeType {
+			pl, err := Unpack(txn.UnsignedTx.Payload)
 			if err != nil {
 				return err
 			}
 
-			subscribePayload := pl.(*types.Subscribe)
+			subscribePayload := pl.(*Subscribe)
 			err = cs.Unsubscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Duration, height)
 			if err != nil {
 				return err
@@ -113,7 +115,7 @@ func (cs *ChainStore) rollbackPubSub(b *types.Block) error {
 	return nil
 }
 
-func (cs *ChainStore) rollbackStates(b *types.Block) error {
+func (cs *ChainStore) rollbackStates(b *Block) error {
 	//TODO add err statements
 	prevHash, _ := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
 	prevHead, _ := cs.GetHeader(prevHash)
@@ -128,7 +130,7 @@ func (cs *ChainStore) rollbackStates(b *types.Block) error {
 	return nil
 }
 
-func (cs *ChainStore) rollbackHeaderCache(b *types.Block) error {
+func (cs *ChainStore) rollbackHeaderCache(b *Block) error {
 	cs.headerCache.RollbackHeader(b.Header)
 	return nil
 }

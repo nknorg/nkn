@@ -8,8 +8,8 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	_ "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/pb"
 	sig "github.com/nknorg/nkn/signature"
-	"github.com/nknorg/nkn/types"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -188,11 +188,11 @@ func (ctx *ContractContext) GetIndex(programHash Uint160) int {
 	return -1
 }
 
-func (ctx *ContractContext) GetPrograms() []*types.Program {
+func (ctx *ContractContext) GetPrograms() []*pb.Program {
 	if !ctx.IsCompleted() {
 		return nil
 	}
-	programs := make([]*types.Program, len(ctx.Parameters))
+	programs := make([]*pb.Program, len(ctx.Parameters))
 
 	for i := 0; i < len(ctx.Codes); i++ {
 		sb := NewProgramBuilder()
@@ -204,7 +204,7 @@ func (ctx *ContractContext) GetPrograms() []*types.Program {
 				sb.PushData(parameter)
 			}
 		}
-		programs[i] = &types.Program{
+		programs[i] = &pb.Program{
 			Code:      ctx.Codes[i],
 			Parameter: sb.ToArray(),
 		}

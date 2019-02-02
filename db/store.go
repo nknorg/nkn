@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"sync"
 
+	. "github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/pb"
+	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -16,7 +18,7 @@ type ChainStore struct {
 	st IStore
 
 	mu          sync.RWMutex
-	blockCache  map[Uint256]*types.Block
+	blockCache  map[Uint256]*Block
 	headerCache *HeaderCache
 	States      *StateDB
 
@@ -32,7 +34,7 @@ func NewLedgerStore() (*ChainStore, error) {
 
 	chain := &ChainStore{
 		st:                 st,
-		blockCache:         map[Uint256]*types.Block{},
+		blockCache:         map[Uint256]*Block{},
 		headerCache:        NewHeaderCache(),
 		currentBlockHeight: 0,
 		currentBlockHash:   EmptyUint256,
@@ -56,7 +58,7 @@ func (cs *ChainStore) ResetDB() error {
 	return cs.st.BatchCommit()
 }
 
-func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *types.Block) (uint32, error) {
+func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block) (uint32, error) {
 	version, err := cs.st.Get(versionKey())
 	if err != nil {
 		version = []byte{0x00}
@@ -122,7 +124,7 @@ func (cs *ChainStore) GetBlockHash(height uint32) (Uint256, error) {
 	return Uint256ParseFromBytes(blockHash)
 }
 
-func (cs *ChainStore) GetBlockByHeight(height uint32) (*types.Block, error) {
+func (cs *ChainStore) GetBlockByHeight(height uint32) (*Block, error) {
 	hash, err := cs.GetBlockHash(height)
 	if err != nil {
 		return nil, err
@@ -131,13 +133,13 @@ func (cs *ChainStore) GetBlockByHeight(height uint32) (*types.Block, error) {
 	return cs.GetBlock(hash)
 }
 
-func (cs *ChainStore) GetHeader(hash Uint256) (*types.Header, error) {
+func (cs *ChainStore) GetHeader(hash Uint256) (*Header, error) {
 	data, err := cs.st.Get(headerKey(hash))
 	if err != nil {
 		return nil, err
 	}
 
-	h := new(types.Header)
+	h := new(Header)
 	err = h.Deserialize(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
@@ -146,7 +148,7 @@ func (cs *ChainStore) GetHeader(hash Uint256) (*types.Header, error) {
 	return h, nil
 }
 
-func (cs *ChainStore) GetHeaderByHeight(height uint32) (*types.Header, error) {
+func (cs *ChainStore) GetHeaderByHeight(height uint32) (*Header, error) {
 	hash, err := cs.GetBlockHash(height)
 	if err != nil {
 		return nil, err
@@ -155,7 +157,7 @@ func (cs *ChainStore) GetHeaderByHeight(height uint32) (*types.Header, error) {
 	return cs.GetHeader(hash)
 }
 
-func (cs *ChainStore) GetTransaction(hash Uint256) (*types.Transaction, error) {
+func (cs *ChainStore) GetTransaction(hash Uint256) (*Transaction, error) {
 	t, _, err := cs.getTx(hash)
 	if err != nil {
 		return nil, err
@@ -164,7 +166,7 @@ func (cs *ChainStore) GetTransaction(hash Uint256) (*types.Transaction, error) {
 	return t, nil
 }
 
-func (cs *ChainStore) getTx(hash Uint256) (*types.Transaction, uint32, error) {
+func (cs *ChainStore) getTx(hash Uint256) (*Transaction, uint32, error) {
 	value, err := cs.st.Get(transactionKey(hash))
 	if err != nil {
 		return nil, 0, err
@@ -176,7 +178,7 @@ func (cs *ChainStore) getTx(hash Uint256) (*types.Transaction, uint32, error) {
 		return nil, 0, err
 	}
 
-	var txn types.Transaction
+	var txn Transaction
 	if err := txn.Deserialize(r); err != nil {
 		return nil, height, err
 	}
@@ -184,13 +186,13 @@ func (cs *ChainStore) getTx(hash Uint256) (*types.Transaction, uint32, error) {
 	return &txn, height, nil
 }
 
-func (cs *ChainStore) GetBlock(hash Uint256) (*types.Block, error) {
+func (cs *ChainStore) GetBlock(hash Uint256) (*Block, error) {
 	bHash, err := cs.st.Get(headerKey(hash))
 	if err != nil {
 		return nil, err
 	}
 
-	b := new(types.Block)
+	b := new(Block)
 	if err = b.FromTrimmedData(bytes.NewReader(bHash)); err != nil {
 		return nil, err
 	}
@@ -226,7 +228,7 @@ func (cs *ChainStore) IsBlockInStore(hash Uint256) bool {
 	return true
 }
 
-func (cs *ChainStore) persist(b *types.Block) error {
+func (cs *ChainStore) persist(b *Block) error {
 	cs.st.NewBatch()
 
 	headerHash := b.Hash()
@@ -256,7 +258,7 @@ func (cs *ChainStore) persist(b *types.Block) error {
 		}
 
 		//TODO if need New?
-		if txn.UnsignedTx.Payload.Type != types.CoinbaseType {
+		if txn.UnsignedTx.Payload.Type != CoinbaseType {
 			pg, _ := ToCodeHash(txn.Programs[0].Code)
 			nonce := cs.States.GetNonce(pg)
 			err := cs.States.SetNonce(pg, nonce+1)
@@ -265,20 +267,20 @@ func (cs *ChainStore) persist(b *types.Block) error {
 			}
 		}
 
-		pl, err := types.Unpack(txn.UnsignedTx.Payload)
+		pl, err := Unpack(txn.UnsignedTx.Payload)
 		if err != nil {
 			return err
 		}
 
 		switch txn.UnsignedTx.Payload.Type {
-		case types.CoinbaseType:
-			coinbase := pl.(*types.Coinbase)
+		case CoinbaseType:
+			coinbase := pl.(*Coinbase)
 			acc := cs.States.GetOrNewAccount(BytesToUint160(coinbase.Recipient))
 			amount := acc.GetBalance()
 			acc.SetBalance(amount + Fixed64(coinbase.Amount))
 			cs.States.setAccount(BytesToUint160(coinbase.Recipient), acc)
-		case types.TransferAssetType:
-			transfer := pl.(*types.TransferAsset)
+		case TransferAssetType:
+			transfer := pl.(*TransferAsset)
 			accSender := cs.States.GetOrNewAccount(BytesToUint160(transfer.Sender))
 			amountSender := accSender.GetBalance()
 			accSender.SetBalance(amountSender - Fixed64(transfer.Amount))
@@ -288,20 +290,20 @@ func (cs *ChainStore) persist(b *types.Block) error {
 			amountRecipient := accRecipient.GetBalance()
 			accRecipient.SetBalance(amountRecipient + Fixed64(transfer.Amount))
 			cs.States.setAccount(BytesToUint160(transfer.Recipient), accRecipient)
-		case types.RegisterNameType:
-			registerNamePayload := pl.(*types.RegisterName)
+		case RegisterNameType:
+			registerNamePayload := pl.(*RegisterName)
 			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
 			if err != nil {
 				return err
 			}
-		case types.DeleteNameType:
-			deleteNamePayload := pl.(*types.DeleteName)
+		case DeleteNameType:
+			deleteNamePayload := pl.(*DeleteName)
 			err = cs.DeleteName(deleteNamePayload.Registrant)
 			if err != nil {
 				return err
 			}
-		case types.SubscribeType:
-			subscribePayload := pl.(*types.Subscribe)
+		case SubscribeType:
+			subscribePayload := pl.(*Subscribe)
 			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Duration, b.Header.UnsignedHeader.Height)
 			if err != nil {
 				return err
@@ -344,7 +346,7 @@ func (cs *ChainStore) persist(b *types.Block) error {
 	return cs.st.BatchCommit()
 }
 
-func (cs *ChainStore) SaveBlock(b *types.Block, fastAdd bool) error {
+func (cs *ChainStore) SaveBlock(b *Block, fastAdd bool) error {
 	if err := cs.persist(b); err != nil {
 		log.Error("error to persist block:", err.Error())
 		return err
@@ -377,7 +379,7 @@ func (cs *ChainStore) GetHeight() uint32 {
 	return cs.currentBlockHeight
 }
 
-func (cs *ChainStore) AddHeader(header *types.Header) error {
+func (cs *ChainStore) AddHeader(header *Header) error {
 	cs.headerCache.AddHeaderToCache(header)
 
 	return nil
@@ -404,15 +406,15 @@ func (cs *ChainStore) GetHeaderHashByHeight(height uint32) Uint256 {
 	return cs.headerCache.GetCachedHeaderHashByHeight(height)
 }
 
-func (cs *ChainStore) GetHeaderWithCache(hash Uint256) (*types.Header, error) {
+func (cs *ChainStore) GetHeaderWithCache(hash Uint256) (*Header, error) {
 	return cs.headerCache.GetCachedHeader(hash)
 }
 
-func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*types.Header, error) {
+func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*Header, error) {
 	return cs.headerCache.GetCachedHeader(hash)
 }
 
-func (cs *ChainStore) IsDoubleSpend(tx *types.Transaction) bool {
+func (cs *ChainStore) IsDoubleSpend(tx *Transaction) bool {
 	return false
 }
 

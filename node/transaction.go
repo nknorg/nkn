@@ -5,15 +5,16 @@ import (
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
+	. "github.com/nknorg/nkn/block"
 	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
 // NewTransactionsMessage creates a TRANSACTIONS message
-func NewTransactionsMessage(transactions []*types.Transaction) (*pb.UnsignedMessage, error) {
+func NewTransactionsMessage(transactions []*Transaction) (*pb.UnsignedMessage, error) {
 	transactionsBytes := make([][]byte, len(transactions), len(transactions))
 	for i, transaction := range transactions {
 		b := new(bytes.Buffer)
@@ -54,7 +55,7 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 	}
 
 	for _, txnBytes := range msgBody.Transactions {
-		txn := &types.Transaction{}
+		txn := &Transaction{}
 		err = txn.Deserialize(bytes.NewReader(txnBytes))
 		if err != nil {
 			log.Warningf("Deserialize transaction error: %v", err)
@@ -81,8 +82,8 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 
 // BroadcastTransaction broadcast a transaction to the network using
 // TRANSACTIONS message
-func (localNode *LocalNode) BroadcastTransaction(txn *types.Transaction) error {
-	msg, err := NewTransactionsMessage([]*types.Transaction{txn})
+func (localNode *LocalNode) BroadcastTransaction(txn *Transaction) error {
+	msg, err := NewTransactionsMessage([]*Transaction{txn})
 	if err != nil {
 		return err
 	}
@@ -92,7 +93,7 @@ func (localNode *LocalNode) BroadcastTransaction(txn *types.Transaction) error {
 		return err
 	}
 
-	if txn.UnsignedTx.Payload.Type == types.CommitType {
+	if txn.UnsignedTx.Payload.Type == pb.CommitType {
 		_, err = localNode.nnet.SendBytesBroadcastAsync(buf, nnetpb.BROADCAST_PUSH)
 	} else {
 		_, err = localNode.nnet.SendBytesBroadcastAsync(buf, nnetpb.BROADCAST_TREE)
@@ -107,7 +108,7 @@ func (localNode *LocalNode) BroadcastTransaction(txn *types.Transaction) error {
 }
 
 func (localNode *LocalNode) cleanupTransactions(v interface{}) {
-	if block, ok := v.(*types.Block); ok {
+	if block, ok := v.(*Block); ok {
 		localNode.TxnPool.CleanSubmittedTransactions(block.Transactions)
 	}
 }

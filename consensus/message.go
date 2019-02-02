@@ -4,11 +4,11 @@ import (
 	"bytes"
 
 	"github.com/gogo/protobuf/proto"
+	. "github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/types"
 )
 
 // NewVoteMessage creates a VOTE message
@@ -73,7 +73,7 @@ func NewRequestBlockProposalMessage(blockHash common.Uint256) (*pb.UnsignedMessa
 
 // NewRequestBlockProposalReply creates a REQUEST_BLOCK_PROPOSAL_REPLY message
 // in respond to REQUEST_BLOCK_PROPOSAL message to send a block
-func NewRequestBlockProposalReply(block *types.Block) (*pb.UnsignedMessage, error) {
+func NewRequestBlockProposalReply(block *Block) (*pb.UnsignedMessage, error) {
 	var buf []byte
 	if block != nil {
 		b := new(bytes.Buffer)
@@ -211,7 +211,7 @@ func (consensus *Consensus) requestBlockProposalMessageHandler(remoteMessage *no
 		return replyBuf, false, nil
 	}
 
-	block, ok := value.(*types.Block)
+	block, ok := value.(*Block)
 	if !ok {
 		return replyBuf, false, nil
 	}

@@ -7,7 +7,8 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/pb"
+	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -68,7 +69,7 @@ func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte, mining bool) error {
 		return errors.New("it's not the right signer")
 	}
 
-	err = sc.Sign(ps.id, nextPubkey, mining, ps.account)
+	err = sc.Sign(ps.id, nextPubkey, mining, ps.account.PubKey(), ps.account.PrivKey())
 	if err != nil {
 		log.Error("Signature chain signing error:", err)
 		return err
@@ -87,7 +88,7 @@ func (ps *PorServer) Verify(sc *SigChain) error {
 
 func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common.Uint256, srcID,
 	destPubkey, nextPubkey []byte, mining bool) (*SigChain, error) {
-	return NewSigChain(ps.account, dataSize, dataHash[:], blockHash[:], srcID, destPubkey, nextPubkey, mining)
+	return NewSigChain(ps.account.PubKey(), ps.account.PrivKey(), dataSize, dataHash[:], blockHash[:], srcID, destPubkey, nextPubkey, mining)
 }
 
 func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcID,
@@ -207,7 +208,7 @@ func (ps *PorServer) GetTxnHashBySigChainHeight(height uint32) ([]common.Uint256
 	return txnHashes, nil
 }
 
-func (ps *PorServer) AddSigChainFromTx(txn *types.Transaction) (bool, error) {
+func (ps *PorServer) AddSigChainFromTx(txn *Transaction) (bool, error) {
 	porpkg, err := NewPorPackage(txn)
 	if err != nil {
 		return false, err

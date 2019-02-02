@@ -27,7 +27,7 @@ func TestSigChain(t *testing.T) {
 	var srcID []byte
 	dataHash := common.Uint256{1, 2, 3}
 	blockHash := common.Uint256{4, 5, 6}
-	sc, err := NewSigChain(from, 1, dataHash[:], blockHash[:], srcID, toPk, relay1Pk, true)
+	sc, err := NewSigChain(from.PubKey(), from, PrivKey(), 1, dataHash[:], blockHash[:], srcID, toPk, relay1Pk, true)
 	if err != nil || sc.Verify() != nil {
 		t.Error("[TestSigChain] 'from' create new SigChain in error")
 	}
