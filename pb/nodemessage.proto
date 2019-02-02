@@ -3,7 +3,7 @@ syntax = "proto3";
 package pb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "github.com/nknorg/nkn/por/sigchain.proto";
+import "pb/sigchain.proto";
 import "pb/node.proto";
 
 option (gogoproto.gostring_all) = true;
@@ -160,7 +160,7 @@ message Relay {
   string src_addr = 1;
   bytes dest_id = 2;
   bytes payload = 3;
-  por.SigChain sig_chain = 4;
+  SigChain sig_chain = 4;
   uint32 max_holding_seconds = 5;
 }
 

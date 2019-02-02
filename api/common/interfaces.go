@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 
 	"github.com/gogo/protobuf/proto"
+	. "github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/blockchain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/contract"
 	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -156,7 +156,7 @@ func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]
 //	}
 //}
 
-func GetBlockTransactions(block *types.Block) interface{} {
+func GetBlockTransactions(block *Block) interface{} {
 	trans := make([]string, len(block.Transactions))
 	for i := 0; i < len(block.Transactions); i++ {
 		h := block.Transactions[i].Hash()
@@ -299,7 +299,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		if err != nil {
 			return respPacking(nil, INVALID_PARAMS)
 		}
-		var txn types.Transaction
+		var txn Transaction
 		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
 			return respPacking(nil, INVALID_TRANSACTION)
 		}
@@ -442,15 +442,15 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 	if localNode.GetSyncState() == pb.PersistFinished {
 		mining = true
 	}
-	sigChain, err := por.NewSigChain(account, 1, dataHash[:], blockHash[:], srcID,
+	sigChain, err := pb.NewSigChain(account.PubKey(), account.PrivKey(), 1, dataHash[:], blockHash[:], srcID,
 		encodedPublickKey, encodedPublickKey, mining)
 	if err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	if err := sigChain.Sign(srcID, encodedPublickKey, mining, account); err != nil {
+	if err := sigChain.Sign(srcID, encodedPublickKey, mining, account.PubKey(), account.PrivKey()); err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
-	if err := sigChain.Sign(srcID, encodedPublickKey, mining, account); err != nil {
+	if err := sigChain.Sign(srcID, encodedPublickKey, mining, account.PubKey(), account.PrivKey()); err != nil {
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 	buf, err := proto.Marshal(sigChain)
@@ -538,7 +538,7 @@ func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interf
 	return respPacking(ret, SUCCESS)
 }
 
-func VerifyAndSendTx(localNode *node.LocalNode, txn *types.Transaction) errors.ErrCode {
+func VerifyAndSendTx(localNode *node.LocalNode, txn *Transaction) errors.ErrCode {
 	if errCode := localNode.AppendTxnPool(txn); errCode != errors.ErrNoError {
 		log.Warningf("Can NOT add the transaction to TxnPool: %v", errCode)
 		return errCode

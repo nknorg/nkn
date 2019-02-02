@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/pb"
+	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -75,7 +76,7 @@ func (ps *PorServer) Sign(sc *SigChain, nextPubkey []byte, mining bool) error {
 		return errors.New("it's not the right signer")
 	}
 
-	err = sc.Sign(ps.id, nextPubkey, mining, ps.account)
+	err = sc.Sign(ps.id, nextPubkey, mining, ps.account.PubKey(), ps.account.PrivKey())
 	if err != nil {
 		log.Error("Signature chain signing error:", err)
 		return err
@@ -94,7 +95,7 @@ func (ps *PorServer) Verify(sc *SigChain) error {
 
 func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common.Uint256, srcID,
 	destPubkey, nextPubkey []byte, mining bool) (*SigChain, error) {
-	return NewSigChain(ps.account, dataSize, dataHash[:], blockHash[:], srcID, destPubkey, nextPubkey, mining)
+	return NewSigChain(ps.account.PubKey(), ps.account.PrivKey(), dataSize, dataHash[:], blockHash[:], srcID, destPubkey, nextPubkey, mining)
 }
 
 func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcID,
@@ -158,13 +159,13 @@ func (ps *PorServer) GetMiningSigChainTxnHash(height uint32) (common.Uint256, er
 	return common.Uint256ParseFromBytes(porPackage.TxHash)
 }
 
-func (ps *PorServer) GetMiningSigChainTxn(txnHash common.Uint256) (*types.Transaction, error) {
+func (ps *PorServer) GetMiningSigChainTxn(txnHash common.Uint256) (*Transaction, error) {
 	v, ok := ps.sigChainTxnCache.Get(txnHash[:])
 	if !ok {
 		return nil, fmt.Errorf("sigchain txn %s not found", txnHash.ToHexString())
 	}
 
-	txn, ok := v.(*types.Transaction)
+	txn, ok := v.(*Transaction)
 	if !ok {
 		return nil, fmt.Errorf("convert to sigchain txn %s error", txnHash.ToHexString())
 	}
@@ -172,7 +173,7 @@ func (ps *PorServer) GetMiningSigChainTxn(txnHash common.Uint256) (*types.Transa
 	return txn, nil
 }
 
-func (ps *PorServer) AddSigChainFromTx(txn *types.Transaction, currentHeight uint32) (bool, error) {
+func (ps *PorServer) AddSigChainFromTx(txn *Transaction, currentHeight uint32) (bool, error) {
 	porPkg, err := NewPorPackage(txn)
 	if err != nil {
 		return false, err

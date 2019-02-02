@@ -3,7 +3,7 @@ package blockchain
 import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/types"
+	. "github.com/nknorg/nkn/transaction"
 )
 
 const (
@@ -12,10 +12,10 @@ const (
 
 // Transaction pool should be a concrete entity of this interface
 type TxnSource interface {
-	GetTxnByCount(num int) (map[Uint256]*types.Transaction, error)
-	GetTransaction(hash Uint256) *types.Transaction
-	AppendTxnPool(txn *types.Transaction) errors.ErrCode
-	CleanSubmittedTransactions(txns []*types.Transaction) error
+	GetTxnByCount(num int) (map[Uint256]*Transaction, error)
+	GetTransaction(hash Uint256) *Transaction
+	AppendTxnPool(txn *Transaction) errors.ErrCode
+	CleanSubmittedTransactions(txns []*Transaction) error
 }
 
 // TxnCollector collects transactions from transaction pool
@@ -40,18 +40,18 @@ func NewTxnCollector(source TxnSource, num int) *TxnCollector {
 	}
 }
 
-func (tc *TxnCollector) Collect() (map[Uint256]*types.Transaction, error) {
+func (tc *TxnCollector) Collect() (map[Uint256]*Transaction, error) {
 	return tc.TxnSource.GetTxnByCount(tc.TxnNum)
 }
 
-func (tc *TxnCollector) GetTransaction(hash Uint256) *types.Transaction {
+func (tc *TxnCollector) GetTransaction(hash Uint256) *Transaction {
 	return tc.TxnSource.GetTransaction(hash)
 }
 
-func (tc *TxnCollector) Append(txn *types.Transaction) errors.ErrCode {
+func (tc *TxnCollector) Append(txn *Transaction) errors.ErrCode {
 	return tc.TxnSource.AppendTxnPool(txn)
 }
 
-func (tc *TxnCollector) Cleanup(txns []*types.Transaction) error {
+func (tc *TxnCollector) Cleanup(txns []*Transaction) error {
 	return tc.TxnSource.CleanSubmittedTransactions(txns)
 }
