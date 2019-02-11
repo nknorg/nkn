@@ -171,7 +171,7 @@ func (consensus *Consensus) loadOrCreateElection(key []byte) (*election.Election
 	config := &election.Config{
 		Duration:                    electionDuration,
 		MinVotingInterval:           minVotingInterval,
-		ChangeVoteMinAbsoluteWeight: uint32(changeVoteMinRelativeWeight*float32(totalWeight) + 1),
+		ChangeVoteMinRelativeWeight: changeVoteMinRelativeWeight,
 		ConsensusMinAbsoluteWeight:  uint32(consensusMinRelativeWeight*float32(totalWeight) + 1),
 	}
 
