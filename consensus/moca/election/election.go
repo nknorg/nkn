@@ -189,6 +189,8 @@ func (election *Election) NeighborVoteCount() int {
 // updateVote updates self vote and write vote into txVoteChan if self vote
 // changes with throttle.
 func (election *Election) updateVote() {
+	time.Sleep(election.MinVotingInterval)
+
 	for {
 		<-election.voteReceived
 
