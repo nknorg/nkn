@@ -15,6 +15,10 @@ import (
 	"github.com/nknorg/nkn/vault"
 )
 
+const (
+	persistBlockDelay = 300 * time.Millisecond
+)
+
 // Consensus is the Majority vOte Cellular Automata (MOCA) consensus layer
 type Consensus struct {
 	account             *vault.Account
@@ -107,6 +111,9 @@ func (consensus *Consensus) startConsensus() {
 			consensus.setExpectedHeight(consensusHeight)
 			continue
 		}
+
+		// FIXME: use sync save block api
+		time.Sleep(persistBlockDelay)
 
 		consensus.setAcceptedHeight(consensusHeight)
 	}
@@ -320,7 +327,7 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 	height := startHeight
 	for height <= consensus.GetAcceptedHeight() {
 		// FIXME: use sync save block api
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(persistBlockDelay)
 
 		value, ok := consensus.elections.Get(heightToKey(height))
 		if !ok || value == nil {
