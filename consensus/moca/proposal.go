@@ -298,6 +298,11 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		return nil, err
 	}
 
+	receivedBlockHash := block.Header.Hash()
+	if receivedBlockHash != blockHash {
+		return nil, fmt.Errorf("Received block hash %s is different from requested hash %s", receivedBlockHash.ToHexString(), blockHash.ToHexString())
+	}
+
 	return block, nil
 }
 
