@@ -28,7 +28,7 @@ import (
 // TODO: move sigAlgo to config.json
 const (
 	sigAlgo                    = ECDSA
-	bitShiftPerSigChainElement = 2
+	bitShiftPerSigChainElement = 4
 )
 
 func (sce *SigChainElem) SerializationUnsigned(w io.Writer) error {
