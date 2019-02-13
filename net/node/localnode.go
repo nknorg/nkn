@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/core/ledger"
@@ -44,7 +45,8 @@ type LocalNode struct {
 
 	sync.RWMutex
 	syncOnce          *sync.Once
-	relayMessageCount uint64 // count how many messages node has relayed since start
+	relayMessageCount uint64    // count how many messages node has relayed since start
+	startTime         time.Time // Time of localNode init
 }
 
 func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
@@ -61,6 +63,7 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 	}
 
 	out["height"] = localNode.GetHeight()
+	out["uptime"] = time.Since(localNode.startTime).Truncate(time.Second).String()
 	out["version"] = config.Version
 	out["relayMessageCount"] = localNode.GetRelayMessageCount()
 
@@ -98,6 +101,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		hashCache:           NewHashCache(),
 		messageHandlerStore: newMessageHandlerStore(),
 		nnet:                nn,
+		startTime:           time.Now(),
 	}
 
 	localNode.relayer = NewRelayService(wallet, localNode)
