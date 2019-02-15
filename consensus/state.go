@@ -21,7 +21,7 @@ func (consensus *Consensus) startGettingNeighborConsensusState() {
 		case <-getNeighborConsensusStateTimer.C:
 			majorityConsensusHeight := consensus.getNeighborsMajorityConsensusHeight()
 			localConsensusHeight := consensus.GetExpectedHeight()
-			localLedgerHeight := blockchain.DefaultLedger.Store.GetHeight()
+			localLedgerHeight := ledger.DefaultLedger.Store.GetHeight()
 
 			if localConsensusHeight > majorityConsensusHeight {
 				break
