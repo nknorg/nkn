@@ -1,4 +1,4 @@
-package blockchain
+package ledger
 
 import (
 	"errors"
