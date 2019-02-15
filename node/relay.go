@@ -161,11 +161,11 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 		return err
 	}
 
-	height := blockchain.DefaultLedger.Store.GetHeight() - por.SigChainBlockHeightOffset
+	height := ledger.DefaultLedger.Store.GetHeight() - por.SigChainBlockHeightOffset
 	if height < 0 {
 		height = 0
 	}
-	blockHash := blockchain.DefaultLedger.Store.GetHeaderHashByHeight(height)
+	blockHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(height)
 	sigChain, err := por.GetPorServer().CreateSigChainForClient(
 		uint32(len(payload)),
 		&payloadHash256,

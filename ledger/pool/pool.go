@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
@@ -45,19 +45,19 @@ func NewTxnPool() *TxnPool {
 //1.check transaction. 2.check with ledger(db) 3.check with pool
 func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	//verify transaction with Concurrency
-	if err := blockchain.VerifyTransaction(txn); err != nil {
+	if err := ledger.VerifyTransaction(txn); err != nil {
 		log.Info("Transaction verification failed", txn.Hash(), err)
 		return ErrNoCode
 	}
 
-	if err := blockchain.VerifyTransactionWithLedger(txn); err != nil {
+	if err := ledger.VerifyTransactionWithLedger(txn); err != nil {
 		log.Info("Transaction verification with ledger failed", txn.Hash(), err)
 		return ErrNoCode
 	}
 
 	// get signature chain from commit transaction then add it to POR server
 	if txn.UnsignedTx.Payload.Type == pb.CommitType {
-		added, err := por.GetPorServer().AddSigChainFromTx(txn, blockchain.DefaultLedger.Store.GetHeight())
+		added, err := por.GetPorServer().AddSigChainFromTx(txn, ledger.DefaultLedger.Store.GetHeight())
 		if err != nil {
 			log.Infof("Add sigchain from transaction error: %v", err)
 			return ErrerCode(NewDetailErr(err, ErrNoCode, err.Error()))
@@ -71,7 +71,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	//add the transaction to process scope
 	if tp.addtxnList(txn) {
 		// Check duplicate UTXO reference after append successful
-		if errCode := blockchain.VerifyTransactionWithBlock(TransactionMap(tp.txnList)); errCode != ErrNoError {
+		if errCode := ledger.VerifyTransactionWithBlock(TransactionMap(tp.txnList)); errCode != ErrNoError {
 			log.Info("Transaction verification with block failed", txn.Hash())
 			tp.deltxnList(txn) // Revert previous append action
 			return errCode
