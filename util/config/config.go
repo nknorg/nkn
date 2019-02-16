@@ -164,19 +164,19 @@ func (config *Configuration) addPortMapping(nat gonat.NAT) error {
 		return err
 	}
 
-	externalPort, internalPort, err := nat.AddPortMapping(transport.GetNetwork(), int(config.NodePort), int(config.NodePort), "nkn", 10*time.Second)
+	externalPort, internalPort, err := nat.AddPortMapping(transport.GetNetwork(), int(config.NodePort), int(config.NodePort), "nkn", 10)
 	if err != nil {
 		return err
 	}
 	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 
-	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpWsPort), int(config.HttpWsPort), "nkn", 10*time.Second)
+	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpWsPort), int(config.HttpWsPort), "nkn", 10)
 	if err != nil {
 		return err
 	}
 	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 
-	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpJsonPort), int(config.HttpJsonPort), "nkn", 10*time.Second)
+	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpJsonPort), int(config.HttpJsonPort), "nkn", 10)
 	if err != nil {
 		return err
 	}
