@@ -11,6 +11,7 @@ import (
 
 // startProposing starts the proposing routing
 func (consensus *Consensus) startProposing() {
+	var lastProposedHeight uint32
 	proposingTimer := time.NewTimer(proposingStartDelay)
 	for {
 		select {
@@ -18,7 +19,7 @@ func (consensus *Consensus) startProposing() {
 			currentHeight := ledger.DefaultLedger.Store.GetHeight()
 			expectedHeight := consensus.GetExpectedHeight()
 			timestamp := time.Now().Unix()
-			if expectedHeight == currentHeight+1 && consensus.isBlockProposer(currentHeight, timestamp) {
+			if expectedHeight > lastProposedHeight && expectedHeight == currentHeight+1 && consensus.isBlockProposer(currentHeight, timestamp) {
 				log.Infof("I am the block proposer at height %d", expectedHeight)
 
 				block, err := consensus.proposeBlock(expectedHeight, timestamp)
@@ -36,6 +37,7 @@ func (consensus *Consensus) startProposing() {
 					break
 				}
 
+				lastProposedHeight = expectedHeight
 				time.Sleep(electionStartDelay)
 			}
 		}
