@@ -6,8 +6,8 @@ import (
 	"time"
 
 	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nnet/log"
 )
@@ -19,8 +19,8 @@ const (
 )
 
 func (localNode *LocalNode) maybeRollback(neighbors []*RemoteNode) (bool, error) {
-	currentHeight := ledger.DefaultLedger.Store.GetHeight()
-	currentHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
+	currentHeight := chain.DefaultLedger.Store.GetHeight()
+	currentHash := chain.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
 
 	majorityBlockHash := localNode.getNeighborsMajorityBlockHashByHeight(currentHeight, neighbors)
 	if majorityBlockHash == common.EmptyUint256 {
@@ -50,16 +50,16 @@ func (localNode *LocalNode) maybeRollback(neighbors []*RemoteNode) (bool, error)
 		return false, fmt.Errorf("get neighbors majority block hash at rollback height failed")
 	}
 
-	if majorityBlockHash != ledger.DefaultLedger.Store.GetHeaderHashByHeight(rollbackToHeight) {
+	if majorityBlockHash != chain.DefaultLedger.Store.GetHeaderHashByHeight(rollbackToHeight) {
 		return false, fmt.Errorf("local ledger has forked for more than %d blocks", config.MaxRollbackBlocks)
 	}
 
 	for rollbackHeight := currentHeight; rollbackHeight > rollbackToHeight; rollbackHeight-- {
-		block, err := ledger.DefaultLedger.Store.GetBlockByHeight(rollbackHeight)
+		block, err := chain.DefaultLedger.Store.GetBlockByHeight(rollbackHeight)
 		if err != nil {
 			return false, fmt.Errorf("get block at height %d error: %v", rollbackHeight, err)
 		}
-		err = ledger.DefaultLedger.Store.Rollback(block)
+		err = chain.DefaultLedger.Store.Rollback(block)
 		if err != nil {
 			return false, fmt.Errorf("ledger rollback error: %v", err)
 		}

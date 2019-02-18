@@ -6,10 +6,10 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
@@ -161,11 +161,11 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 		return err
 	}
 
-	height := ledger.DefaultLedger.Store.GetHeight() - por.SigChainBlockHeightOffset
+	height := chain.DefaultLedger.Store.GetHeight() - por.SigChainBlockHeightOffset
 	if height < 0 {
 		height = 0
 	}
-	blockHash := ledger.DefaultLedger.Store.GetHeaderHashByHeight(height)
+	blockHash := chain.DefaultLedger.Store.GetHeaderHashByHeight(height)
 	sigChain, err := por.GetPorServer().CreateSigChainForClient(
 		uint32(len(payload)),
 		&payloadHash256,
