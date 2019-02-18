@@ -27,7 +27,7 @@ type ChainStore struct {
 }
 
 func NewLedgerStore() (*ChainStore, error) {
-	st, err := NewLevelDBStore("Chain")
+	st, err := NewLevelDBStore("ChainDB")
 	if err != nil {
 		return nil, err
 	}
