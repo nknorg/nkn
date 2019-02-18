@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
@@ -32,18 +32,18 @@ func NewTxPool() *TxnPool2 {
 }
 
 func (tp *TxnPool2) AppendTxnPool(txn *Transaction) error {
-	if err := ledger.VerifyTransaction(txn); err != nil {
+	if err := chain.VerifyTransaction(txn); err != nil {
 		log.Info("Transaction verification failed", txn.Hash(), err)
 		return err
 	}
-	if err := ledger.VerifyTransactionWithLedger(txn); err != nil {
+	if err := chain.VerifyTransactionWithLedger(txn); err != nil {
 		log.Info("Transaction verification with ledger failed", txn.Hash(), err)
 		return err
 	}
 
 	// get signature chain from commit transaction then add it to POR server
 	if txn.UnsignedTx.Payload.Type == pb.CommitType {
-		added, err := por.GetPorServer().AddSigChainFromTx(txn)
+		added, err := por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func (tp *TxnPool2) AppendTxnPool(txn *Transaction) error {
 		}
 	} else {
 		// compare with DB
-		preNonce := ledger.DefaultLedger.Store.GetNonce(sender)
+		preNonce := chain.DefaultLedger.Store.GetNonce(sender)
 		if txn.UnsignedTx.Nonce == preNonce+1 {
 			//TODO process sender Orphans
 			return list.Push(txn)

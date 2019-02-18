@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/nknorg/nkn/ledger/trie"
+	"github.com/nknorg/nkn/chain/trie"
 	. "github.com/nknorg/nkn/common"
 )
 

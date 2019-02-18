@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/nknorg/nkn/chain"
+	"github.com/nknorg/nkn/chain/pool"
 	"github.com/nknorg/nkn/events"
-	"github.com/nknorg/nkn/ledger"
-	"github.com/nknorg/nkn/ledger/pool"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
@@ -115,7 +115,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	localNode.eventQueue.init()
 
-	ledger.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, localNode.cleanupTransactions)
+	chain.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, localNode.cleanupTransactions)
 
 	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady(func(remoteNode *nnetnode.RemoteNode) bool {
 		err := localNode.validateRemoteNode(remoteNode)
@@ -224,7 +224,7 @@ func (localNode *LocalNode) GetTxnPool() *pool.TxnPool {
 }
 
 func (localNode *LocalNode) GetHeight() uint32 {
-	return ledger.DefaultLedger.Store.GetHeight()
+	return chain.DefaultLedger.Store.GetHeight()
 }
 
 func (localNode *LocalNode) SetSyncState(s pb.SyncState) {
