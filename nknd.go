@@ -16,10 +16,10 @@ import (
 	"github.com/nknorg/nkn/api/httpjson"
 	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/api/websocket"
+	"github.com/nknorg/nkn/chain"
+	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/ledger"
-	"github.com/nknorg/nkn/ledger/db"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/address"
@@ -56,15 +56,15 @@ func InitLedger(account *vault.Account) error {
 	if err != nil {
 		return err
 	}
-	blockChain, err := ledger.NewBlockchainWithGenesisBlock(store)
+	blockChain, err := chain.NewBlockchainWithGenesisBlock(store)
 	if err != nil {
 		return err
 	}
-	ledger.DefaultLedger = &ledger.Ledger{
+	chain.DefaultLedger = &chain.Ledger{
 		Blockchain: blockChain,
 		Store:      store,
 	}
-	por.Store = ledger.DefaultLedger.Store
+	por.Store = chain.DefaultLedger.Store
 
 	return nil
 }
@@ -161,10 +161,10 @@ func nknMain(c *cli.Context) error {
 	// initialize ledger
 	err = InitLedger(account)
 	if err != nil {
-		return fmt.Errorf("ledger initialization error: %v", err)
+		return fmt.Errorf("chain.initialization error: %v", err)
 	}
-	// if InitLedger return err, ledger.DefaultLedger is uninitialized.
-	defer ledger.DefaultLedger.Store.Close()
+	// if InitLedger return err, chain.DefaultLedger is uninitialized.
+	defer chain.DefaultLedger.Store.Close()
 
 	err = por.InitPorServer(account, id)
 	if err != nil {
