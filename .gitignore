@@ -9,7 +9,6 @@ idea/
 *.rej
 Log
 vendor/*
-Chain/*
 nknd
 nknc
 cscope*

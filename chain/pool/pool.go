@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/errors"
-	"github.com/nknorg/nkn/ledger"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
@@ -46,11 +46,11 @@ func NewTxnPool() *TxnPool {
 //1.check transaction. 2.check with ledger(db) 3.check with pool
 func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	//verify transaction with Concurrency
-	if err := ledger.VerifyTransaction(txn); err != nil {
+	if err := chain.VerifyTransaction(txn); err != nil {
 		log.Info("Transaction verification failed", txn.Hash(), err)
 		return ErrNoCode
 	}
-	if err := ledger.VerifyTransactionWithLedger(txn); err != nil {
+	if err := chain.VerifyTransactionWithLedger(txn); err != nil {
 		log.Info("Transaction verification with ledger failed", txn.Hash(), err)
 		return ErrNoCode
 	}
@@ -69,7 +69,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 	//add the transaction to process scope
 	if tp.addtxnList(txn) {
 		// Check duplicate UTXO reference after append successful
-		if errCode := ledger.VerifyTransactionWithBlock(TransactionMap(tp.txnList)); errCode != ErrNoError {
+		if errCode := chain.VerifyTransactionWithBlock(TransactionMap(tp.txnList)); errCode != ErrNoError {
 			log.Info("Transaction verification with block failed", txn.Hash())
 			tp.deltxnList(txn) // Revert previous append action
 			return errCode
@@ -91,7 +91,7 @@ func (tp *TxnPool) GetTxnByCount(num int, winningHash common.Uint256) (map[commo
 	}
 
 	// get transactions which should not be packaged
-	exclusivedHashes, err := por.GetPorServer().GetTxnHashBySigChainHeight(ledger.DefaultLedger.Store.GetHeight() +
+	exclusivedHashes, err := por.GetPorServer().GetTxnHashBySigChainHeight(chain.DefaultLedger.Store.GetHeight() +
 		ExclusivedSigchainHeight)
 	if err != nil {
 		log.Error("collect transaction error: ", err)

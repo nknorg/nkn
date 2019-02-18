@@ -5,7 +5,7 @@ import (
 	"time"
 
 	. "github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/ledger"
+	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
 )
@@ -16,7 +16,7 @@ func (consensus *Consensus) startProposing() {
 	for {
 		select {
 		case <-proposingTimer.C:
-			currentHeight := ledger.DefaultLedger.Store.GetHeight()
+			currentHeight := chain.DefaultLedger.Store.GetHeight()
 			expectedHeight := consensus.GetExpectedHeight()
 			timestamp := time.Now().Unix()
 			if expectedHeight == currentHeight+1 && consensus.isBlockProposer(currentHeight, timestamp) {
@@ -47,7 +47,7 @@ func (consensus *Consensus) startProposing() {
 // isBlockProposer returns if local node is the block proposer of block height+1
 // at a given timestamp
 func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool {
-	nextPublicKey, nextChordID, _, err := ledger.GetNextBlockSigner(height, timestamp)
+	nextPublicKey, nextChordID, _, err := chain.GetNextBlockSigner(height, timestamp)
 	if err != nil {
 		log.Errorf("Get next block signer error: %v", err)
 		return false
@@ -72,7 +72,7 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 
 // proposeBlock proposes a new block at give height and timestamp
 func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*Block, error) {
-	winnerHash, winnerType, err := ledger.GetWinner(height)
+	winnerHash, winnerType, err := chain.GetWinner(height)
 	if err != nil {
 		return nil, err
 	}
