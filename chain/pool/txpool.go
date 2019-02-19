@@ -6,6 +6,7 @@ import (
 
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
+	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
@@ -16,22 +17,34 @@ const (
 	DefaultCap = 1024
 )
 
-type TxnPool2 struct {
+type TxnPool struct {
 	mu      sync.Mutex
 	TxLists map[common.Uint160]*NonceSortedTxs
 	ListCap int
 	Orphans map[common.Uint256]*Transaction // Orphans limit?
 }
 
-func NewTxPool() *TxnPool2 {
-	return &TxnPool2{
+func NewTxPool() *TxnPool {
+	return &TxnPool{
 		TxLists: make(map[common.Uint160]*NonceSortedTxs),
 		ListCap: DefaultCap,
 		Orphans: make(map[common.Uint256]*Transaction),
 	}
 }
 
-func (tp *TxnPool2) AppendTxnPool(txn *Transaction) error {
+func (tp *TxnPool) processTx(txn *Transaction) error {
+}
+
+func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
+	if err := tp.appendTxnPool(txn); err != nil {
+		return ErrNoCode
+	}
+
+	tp.Dump()
+	return ErrNoError
+}
+
+func (tp *TxnPool) appendTxnPool(txn *Transaction) error {
 	if err := chain.VerifyTransaction(txn); err != nil {
 		log.Info("Transaction verification failed", txn.Hash(), err)
 		return err
@@ -55,6 +68,8 @@ func (tp *TxnPool2) AppendTxnPool(txn *Transaction) error {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 	//TODO 1. process all Orphens
+	for hash, tx := range tp.Orphans {
+	}
 
 	// 2. process txn
 	hash := txn.Hash()
@@ -89,8 +104,8 @@ func (tp *TxnPool2) AppendTxnPool(txn *Transaction) error {
 		}
 	} else {
 		// compare with DB
-		preNonce := chain.DefaultLedger.Store.GetNonce(sender)
-		if txn.UnsignedTx.Nonce == preNonce+1 {
+		expectNonce := chain.DefaultLedger.Store.GetNonce(sender)
+		if txn.UnsignedTx.Nonce == expectNonce {
 			//TODO process sender Orphans
 			return list.Push(txn)
 		}
@@ -106,11 +121,11 @@ func (tp *TxnPool2) AppendTxnPool(txn *Transaction) error {
 	return nil
 }
 
-func (tp *TxnPool2) GetAllTransactions() map[common.Uint256]*Transaction {
+func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
 	//TODO
 	return nil
 }
-func (tp *TxnPool2) GetTransaction(hash common.Uint256) *Transaction {
+func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
@@ -127,7 +142,7 @@ func (tp *TxnPool2) GetTransaction(hash common.Uint256) *Transaction {
 	return nil
 }
 
-func (tp *TxnPool2) GetTxsFromPool() []*Transaction {
+func (tp *TxnPool) getTxsFromPool() []*Transaction {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 	txs := make([]*Transaction, 0)
@@ -140,18 +155,22 @@ func (tp *TxnPool2) GetTxsFromPool() []*Transaction {
 	return txs
 }
 
-func (tp *TxnPool2) CleanSubmittedTransactions(txns []*Transaction) error {
+func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
 	// clean submitted txs
 	for _, txn := range txns {
+		if txn.UnsignedTx.Payload.Type == pb.CoinbaseType {
+			continue
+		}
 		sender, _ := common.ToCodeHash(txn.Programs[0].Code)
-		nonce := txn.UnsignedTx.Nonce
+		txNonce := txn.UnsignedTx.Nonce
 
 		if list, ok := tp.TxLists[sender]; ok {
-			if _, err := list.Get(nonce); err == nil {
-				for i := 0; uint64(i) <= nonce-list.getNonce(list.idx[0]); i++ {
+			if _, err := list.Get(txNonce); err == nil {
+				nonce := list.getNonce(list.idx[0])
+				for i := 0; uint64(i) <= txNonce-nonce; i++ {
 					list.Pop()
 				}
 			}
@@ -161,4 +180,26 @@ func (tp *TxnPool2) CleanSubmittedTransactions(txns []*Transaction) error {
 	// TODO clean invalid txs
 
 	return nil
+}
+
+func (tp *TxnPool) GetTxnByCount(num int, hash common.Uint256) (map[common.Uint256]*Transaction, error) {
+	txmap := make(map[common.Uint256]*Transaction)
+	txs := tp.getTxsFromPool()
+	for _, tx := range txs {
+		txmap[tx.Hash()] = tx
+	}
+
+	return txmap, nil
+}
+
+func (tp *TxnPool) Dump() {
+	tp.mu.Lock()
+	defer tp.mu.Unlock()
+
+	for addr, list := range tp.TxLists {
+		address, _ := addr.ToAddress()
+		log.Error("-------", address, list.Len())
+	}
+	log.Error("-------", tp.ListCap)
+	log.Error("-------", tp.Orphans, len(tp.Orphans))
 }

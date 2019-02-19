@@ -2,6 +2,7 @@ package pool
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/nknorg/nkn/common"
@@ -40,9 +41,9 @@ func (nst *NonceSortedTxs) Push(tx *Transaction) error {
 	defer nst.mu.Unlock()
 
 	//TODO compare with DB
-	if nst.Empty() && nst.txs[nst.idx[nst.Len()-1]].UnsignedTx.Nonce+1 != tx.UnsignedTx.Nonce {
-		return errors.New("nonce is not continuous")
-	}
+	//if nst.Empty() && nst.txs[nst.idx[nst.Len()-1]].UnsignedTx.Nonce+1 != tx.UnsignedTx.Nonce {
+	//	return errors.New("nonce is not continuous")
+	//}
 
 	hash := tx.Hash()
 	nst.idx = append(nst.idx, hash)
@@ -58,6 +59,8 @@ func (nst *NonceSortedTxs) Pop() (*Transaction, error) {
 	if nst.Empty() {
 		return nil, errors.New("Empty")
 	}
+
+	fmt.Println("=========", len(nst.idx), len(nst.txs))
 
 	hash := nst.idx[0]
 	tx := nst.txs[hash]
