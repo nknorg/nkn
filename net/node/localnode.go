@@ -63,7 +63,7 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 	}
 
 	out["height"] = localNode.GetHeight()
-	out["uptime"] = time.Since(localNode.startTime).Truncate(time.Second).String()
+	out["uptime"] = time.Since(localNode.startTime).Truncate(time.Second).Seconds()
 	out["version"] = config.Version
 	out["relayMessageCount"] = localNode.GetRelayMessageCount()
 
