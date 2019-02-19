@@ -13,13 +13,17 @@ import (
 	"github.com/urfave/cli"
 )
 
-func showAccountInfo(wallet vault.Wallet) {
+func showAccountInfo(wallet vault.Wallet, verbose bool) {
+	const format = "%-34s  %s\n"
 	account, _ := wallet.GetDefaultAccount()
-	fmt.Println("Address\t\t\t\t Public Key")
-	fmt.Println("-------\t\t\t\t ----------")
+	fmt.Printf(format, "Address", "Public Key")
+	fmt.Printf(format, "-------", "----------")
 	address, _ := account.ProgramHash.ToAddress()
 	publicKey, _ := account.PublicKey.EncodePoint(true)
-	fmt.Printf("%s %s\n", address, BytesToHexString(publicKey))
+	fmt.Printf(format, address, BytesToHexString(publicKey))
+	if verbose {
+		fmt.Printf("\nPrivate Key\n-----------\n%s\n", BytesToHexString(account.PrivateKey))
+	}
 }
 
 func getPassword(passwd string) []byte {
@@ -80,7 +84,7 @@ func walletAction(c *cli.Context) error {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
-			showAccountInfo(wallet)
+			showAccountInfo(wallet, false)
 		}
 		return nil
 	}
@@ -96,9 +100,13 @@ func walletAction(c *cli.Context) error {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
+			var vbs bool
 			switch item {
+			case "verbose":
+				vbs = true
+				fallthrough
 			case "account":
-				showAccountInfo(wallet)
+				showAccountInfo(wallet, vbs)
 			case "balance":
 				account, _ := wallet.GetDefaultAccount()
 				address, _ := account.ProgramHash.ToAddress()
