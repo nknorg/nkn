@@ -96,7 +96,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	localNode := &LocalNode{
 		Node:                node,
 		account:             account,
-		TxnPool:             pool.NewTxnPool(),
+		TxnPool:             pool.NewTxPool(),
 		quit:                make(chan bool, 1),
 		hashCache:           NewHashCache(),
 		messageHandlerStore: newMessageHandlerStore(),

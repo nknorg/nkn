@@ -159,14 +159,14 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 	}
 
 	//TODO GetProgramHashes
-	if txn.UnsignedTx.Payload.Type != CoinbaseType &&
-		txn.UnsignedTx.Payload.Type != CommitType {
-		addr, _ := ToCodeHash(txn.Programs[0].Code)
-		nonce := DefaultLedger.Store.GetNonce(addr)
-		if nonce != txn.UnsignedTx.Nonce {
-			return errors.New("[VerifyTransactionWithLedger] txn nonce error.")
-		}
-	}
+	//if txn.UnsignedTx.Payload.Type != CoinbaseType &&
+	//	txn.UnsignedTx.Payload.Type != CommitType {
+	//	addr, _ := ToCodeHash(txn.Programs[0].Code)
+	//	nonce := DefaultLedger.Store.GetNonce(addr)
+	//	if nonce != txn.UnsignedTx.Nonce {
+	//		return errors.New("[VerifyTransactionWithLedger] txn nonce error.")
+	//	}
+	//}
 
 	payload, err := Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
