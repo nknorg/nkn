@@ -46,11 +46,11 @@ func NewConSequential(config *Config) (*ConSequential, error) {
 		Config:            config,
 		unstartedJobChan:  make(chan uint32, config.JobBufSize),
 		failedJobChan:     make(chan uint32, config.JobBufSize),
-		stopChans:         make([]chan struct{}, config.JobBufSize, config.JobBufSize),
+		stopChans:         make([]chan struct{}, config.WorkerPoolSize, config.WorkerPoolSize),
 		jobResultBuf:      make([]interface{}, config.JobBufSize, config.JobBufSize),
 		ringBufStartJobID: config.StartJobID,
 	}
-	for i := uint32(0); i < config.JobBufSize; i++ {
+	for i := uint32(0); i < config.WorkerPoolSize; i++ {
 		cs.stopChans[i] = make(chan struct{}, 1)
 	}
 	return cs, nil
@@ -110,7 +110,10 @@ func (cs *ConSequential) shiftRingBuf() {
 
 	if !cs.isJobIDInRange(cs.ringBufStartJobID) {
 		for _, c := range cs.stopChans {
-			c <- struct{}{}
+			select {
+			case c <- struct{}{}:
+			default:
+			}
 		}
 	}
 }
