@@ -11,28 +11,38 @@ import (
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nnet/log"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 const (
-	DefaultCap = 1024
+	DefaultCap               = 1024
+	ExclusivedSigchainHeight = 3
 )
 
+var (
+	errDuplicatedTx          = errors.New("duplicate transaction check faild")
+	errDoubleSpend           = errors.New("IsDoubleSpend check faild")
+	errTxnType               = errors.New("invalidate transaction payload type")
+	errNonceTooLow           = errors.New("nonce is too low")
+	errDuplicateName         = errors.New("Duplicate NameService operation in one block")
+	errNoNameRegistered      = errors.New("name already has not be registered")
+	errDuplicateSubscription = errors.New("Duplicate subscription in one block")
+	errSubscriptionLimit     = errors.New("Subscription limit exceeded in one block")
+)
+
+// TxnPool is a list of txns that need to by add to ledger sent by user.
 type TxnPool struct {
-	mu      sync.Mutex
-	TxLists map[common.Uint160]*NonceSortedTxs
-	ListCap int
-	Orphans map[common.Uint256]*Transaction // Orphans limit?
+	mu          sync.RWMutex
+	TxLists     map[common.Uint160]*NonceSortedTxs // NonceSortedTxs instance to store user's account.
+	SigChainTxs map[common.Uint256]*Transaction    // tx with sigchain type.
+
 }
 
 func NewTxPool() *TxnPool {
 	return &TxnPool{
-		TxLists: make(map[common.Uint160]*NonceSortedTxs),
-		ListCap: DefaultCap,
-		Orphans: make(map[common.Uint256]*Transaction),
+		TxLists:     make(map[common.Uint160]*NonceSortedTxs),
+		SigChainTxs: make(map[common.Uint256]*Transaction),
 	}
-}
-
-func (tp *TxnPool) processTx(txn *Transaction) error {
 }
 
 func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
@@ -40,94 +50,115 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
 		return ErrNoCode
 	}
 
-	tp.Dump()
+	//	tp.Dump()
 	return ErrNoError
 }
 
 func (tp *TxnPool) appendTxnPool(txn *Transaction) error {
-	if err := chain.VerifyTransaction(txn); err != nil {
-		log.Info("Transaction verification failed", txn.Hash(), err)
-		return err
+	//1. process all Orphens
+	for _, list := range tp.TxLists {
+		list.ProcessOrphans(tp.processTx)
 	}
-	if err := chain.VerifyTransactionWithLedger(txn); err != nil {
-		log.Info("Transaction verification with ledger failed", txn.Hash(), err)
+
+	// 2. verify txn with ledger
+	if err := tp.verifyTransactionWithLedger(txn); err != nil {
 		return err
 	}
 
-	// get signature chain from commit transaction then add it to POR server
-	if txn.UnsignedTx.Payload.Type == pb.CommitType {
-		added, err := por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
-		if err != nil {
-			return err
-		}
-		if !added {
-			return nil
-		}
+	// 3. process txn
+	if err := tp.processTx(txn); err != nil {
+		return err
 	}
 
+	return nil
+}
+
+func (tp *TxnPool) processTx(txn *Transaction) error {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
-	//TODO 1. process all Orphens
-	for hash, tx := range tp.Orphans {
+
+	if txn.UnsignedTx.Payload.Type == pb.CommitType {
+		tp.SigChainTxs[txn.Hash()] = txn
+		return nil
 	}
 
-	// 2. process txn
 	hash := txn.Hash()
 	sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 
+	//1. check if the sender is exsit.
 	if _, ok := tp.TxLists[sender]; !ok {
-		tp.TxLists[sender] = NewNonceSortedTxs()
+		tp.TxLists[sender] = NewNonceSortedTxs(sender, DefaultCap)
 	}
 
+	//2. check if the txn is exsit.
 	list := tp.TxLists[sender]
 	if list.ExistTx(hash) {
-		return errors.New("exist")
+		log.Error("1")
+		return errDuplicatedTx
 	}
 
-	//replace
-	if _, err := list.Get(txn.UnsignedTx.Nonce); err == nil {
-		return list.Add(txn)
+	//check balance
+	if txn.UnsignedTx.Payload.Type == pb.TransferAssetType {
+		pl, err := Unpack(txn.UnsignedTx.Payload)
+		if err != nil {
+			return err
+		}
+		ta := pl.(*pb.TransferAsset)
+
+		amount := chain.DefaultLedger.Store.GetBalance(sender)
+		allInList := list.Totality() + common.Fixed64(ta.Amount)
+
+		if amount < allInList {
+			return errors.New("not sufficient funds")
+		}
 	}
 
 	if !list.Empty() {
-		if list.Len() >= tp.ListCap {
+		//replace old tx that has same nonce.
+		if _, err := list.Get(txn.UnsignedTx.Nonce); err == nil {
+			log.Warning("replace old tx")
+			//TODO need more fee
+			return list.Add(txn)
+		}
+
+		if list.Full() {
 			return errors.New("full")
 		}
 
 		preNonce, _ := list.GetLatestNonce()
 
-		//TODO a new function is needed to append tx.
 		// check total account in it
 		if txn.UnsignedTx.Nonce == preNonce+1 {
-			//TODO process sender Orphans
 			return list.Push(txn)
 		}
 	} else {
 		// compare with DB
 		expectNonce := chain.DefaultLedger.Store.GetNonce(sender)
 		if txn.UnsignedTx.Nonce == expectNonce {
-			//TODO process sender Orphans
 			return list.Push(txn)
 		}
 	}
 
 	// 3. add to orphans
-	if _, ok := tp.Orphans[hash]; ok {
-		return errors.New("Exist")
+	if list.GetOrphanTxn(hash) != nil {
+		log.Error("2")
+		return errDuplicatedTx
 	}
 
-	tp.Orphans[hash] = txn
+	list.AddOrphanTxn(txn)
 
 	return nil
+
 }
 
 func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
 	//TODO
 	return nil
 }
+
 func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {
-	tp.mu.Lock()
-	defer tp.mu.Unlock()
+	tp.mu.RLock()
+	defer tp.mu.RUnlock()
 
 	for _, list := range tp.TxLists {
 		if list.ExistTx(hash) {
@@ -135,16 +166,12 @@ func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {
 		}
 	}
 
-	if _, ok := tp.Orphans[hash]; ok {
-		return tp.Orphans[hash]
-	}
-
 	return nil
 }
 
 func (tp *TxnPool) getTxsFromPool() []*Transaction {
-	tp.mu.Lock()
-	defer tp.mu.Unlock()
+	tp.mu.RLock()
+	defer tp.mu.RUnlock()
 	txs := make([]*Transaction, 0)
 	for _, list := range tp.TxLists {
 		if tx, err := list.Seek(); err == nil {
@@ -156,34 +183,53 @@ func (tp *TxnPool) getTxsFromPool() []*Transaction {
 }
 
 func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
+	log.Error("???????????????", 0)
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
+	log.Error("???????????????", 1)
 	// clean submitted txs
 	for _, txn := range txns {
-		if txn.UnsignedTx.Payload.Type == pb.CoinbaseType {
+		if txn.UnsignedTx.Payload.Type == pb.CoinbaseType ||
+			txn.UnsignedTx.Payload.Type == pb.CommitType {
 			continue
 		}
+
+		log.Error("???????????????", 2)
 		sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 		txNonce := txn.UnsignedTx.Nonce
 
 		if list, ok := tp.TxLists[sender]; ok {
+
+			log.Error("???????????????", 3.1)
 			if _, err := list.Get(txNonce); err == nil {
+				log.Error("???????????????", 3.2)
 				nonce := list.getNonce(list.idx[0])
+				log.Error("???????????????", 3.3)
 				for i := 0; uint64(i) <= txNonce-nonce; i++ {
 					list.Pop()
 				}
+
+				log.Error("???????????????", 3.4)
+				// clean invalid txs
+				list.CleanOrphans([]*Transaction{txn})
 			}
+			log.Error("???????????????", 3.5)
 		}
+
 	}
 
-	// TODO clean invalid txs
+	log.Error("???????????????", 2)
+	// clean sigchaintxs
+	tp.SigChainTxs = make(map[common.Uint256]*Transaction)
 
+	log.Error("???????????????", 3)
 	return nil
 }
 
-func (tp *TxnPool) GetTxnByCount(num int, hash common.Uint256) (map[common.Uint256]*Transaction, error) {
+func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*Transaction, error) {
 	txmap := make(map[common.Uint256]*Transaction)
+
 	txs := tp.getTxsFromPool()
 	for _, tx := range txs {
 		txmap[tx.Hash()] = tx
@@ -193,13 +239,120 @@ func (tp *TxnPool) GetTxnByCount(num int, hash common.Uint256) (map[common.Uint2
 }
 
 func (tp *TxnPool) Dump() {
-	tp.mu.Lock()
-	defer tp.mu.Unlock()
+	tp.mu.RLock()
+	defer tp.mu.RUnlock()
 
-	for addr, list := range tp.TxLists {
-		address, _ := addr.ToAddress()
-		log.Error("-------", address, list.Len())
+	for _, list := range tp.TxLists {
+		list.Dump()
 	}
-	log.Error("-------", tp.ListCap)
-	log.Error("-------", tp.Orphans, len(tp.Orphans))
+
+	log.Error("SigChainTxs:")
+	for h, _ := range tp.SigChainTxs {
+		log.Error(h.ToHexString())
+	}
+}
+
+func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
+	if err := chain.VerifyTransaction(txn); err != nil {
+		return err
+	}
+
+	if chain.DefaultLedger.Store.IsDoubleSpend(txn) {
+		return errDoubleSpend
+	}
+
+	if chain.DefaultLedger.Store.IsTxHashDuplicate(txn.Hash()) {
+		log.Error("3")
+		return errDuplicatedTx
+	}
+
+	// get signature chain from commit transaction then add it to POR server
+	if txn.UnsignedTx.Payload.Type == pb.CommitType {
+		added, err := por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
+		if err != nil {
+			return err
+		}
+		if !added {
+			log.Error("4")
+			return errDuplicatedTx
+		}
+	}
+
+	sender, _ := common.ToCodeHash(txn.Programs[0].Code)
+	addr, _ := sender.ToAddress()
+	log.Error("sender:", sender, addr)
+	nonce := chain.DefaultLedger.Store.GetNonce(sender)
+
+	payload, err := Unpack(txn.UnsignedTx.Payload)
+	if err != nil {
+		return err
+	}
+
+	switch txn.UnsignedTx.Payload.Type {
+	case pb.CoinbaseType:
+		return errTxnType
+	case pb.CommitType:
+	case pb.TransferAssetType:
+		log.Error("nonce", txn.UnsignedTx.Nonce, nonce)
+		if txn.UnsignedTx.Nonce < nonce {
+			return errNonceTooLow
+		}
+	case pb.RegisterNameType:
+		if txn.UnsignedTx.Nonce < nonce {
+			return errNonceTooLow
+		}
+
+		pld := payload.(*pb.RegisterName)
+		name, err := chain.DefaultLedger.Store.GetName(pld.Registrant)
+		if name != nil {
+			return errDuplicateName
+		}
+		if err != leveldb.ErrNotFound {
+			return err
+		}
+
+		registrant, err := chain.DefaultLedger.Store.GetRegistrant(pld.Name)
+		if registrant != nil {
+			return errNoNameRegistered
+		}
+		if err != leveldb.ErrNotFound {
+			return err
+		}
+	case pb.DeleteNameType:
+		if txn.UnsignedTx.Nonce < nonce {
+			return errNonceTooLow
+		}
+
+		pld := payload.(*pb.DeleteName)
+		name, err := chain.DefaultLedger.Store.GetName(pld.Registrant)
+		if err != leveldb.ErrNotFound {
+			return err
+		}
+		if name == nil {
+			return errNoNameRegistered
+		}
+	case pb.SubscribeType:
+		if txn.UnsignedTx.Nonce < nonce {
+			return errNonceTooLow
+		}
+
+		pld := payload.(*pb.Subscribe)
+		subscribed, err := chain.DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, pld.Topic, pld.Bucket)
+		if err != nil {
+			return err
+		}
+		if subscribed {
+			return errDuplicateSubscription
+		}
+
+		subscriptionCount := chain.DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
+		if subscriptionCount >= SubscriptionsLimit {
+			return errSubscriptionLimit
+		}
+
+	default:
+		return errTxnType
+	}
+
+	return nil
 }
