@@ -53,7 +53,8 @@ func NewStore(fullPath string) (*WalletStore, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, name := path.Split(fullPath)
+
+	name := fullPath
 	err = ioutil.WriteFile(name, jsonBlob, 0666)
 	if err != nil {
 		return nil, err
@@ -112,9 +113,9 @@ func (s *WalletStore) write(data []byte) error {
 	}
 	if err == nil {
 		if runtime.GOOS == "windows" {
-			err = exec.Command("cmd", "/c", "move", "/Y", f.Name(), name).Run()
+			err = exec.Command("cmd", "/c", "move", "/Y", f.Name(), s.Path).Run()
 		} else {
-			err = exec.Command("mv", "-f", f.Name(), name).Run()
+			err = exec.Command("mv", "-f", f.Name(), s.Path).Run()
 		}
 	}
 	if err != nil {
