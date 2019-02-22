@@ -93,7 +93,6 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 	//2. check if the txn is exsit.
 	list := tp.TxLists[sender]
 	if list.ExistTx(hash) {
-		log.Error("1")
 		return errDuplicatedTx
 	}
 
@@ -141,7 +140,6 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 
 	// 3. add to orphans
 	if list.GetOrphanTxn(hash) != nil {
-		log.Error("2")
 		return errDuplicatedTx
 	}
 
@@ -183,11 +181,9 @@ func (tp *TxnPool) getTxsFromPool() []*Transaction {
 }
 
 func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
-	log.Error("???????????????", 0)
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
-	log.Error("???????????????", 1)
 	// clean submitted txs
 	for _, txn := range txns {
 		if txn.UnsignedTx.Payload.Type == pb.CoinbaseType ||
@@ -195,35 +191,27 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
 			continue
 		}
 
-		log.Error("???????????????", 2)
 		sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 		txNonce := txn.UnsignedTx.Nonce
 
 		if list, ok := tp.TxLists[sender]; ok {
 
-			log.Error("???????????????", 3.1)
 			if _, err := list.Get(txNonce); err == nil {
-				log.Error("???????????????", 3.2)
 				nonce := list.getNonce(list.idx[0])
-				log.Error("???????????????", 3.3)
 				for i := 0; uint64(i) <= txNonce-nonce; i++ {
 					list.Pop()
 				}
 
-				log.Error("???????????????", 3.4)
 				// clean invalid txs
 				list.CleanOrphans([]*Transaction{txn})
 			}
-			log.Error("???????????????", 3.5)
 		}
 
 	}
 
-	log.Error("???????????????", 2)
 	// clean sigchaintxs
 	tp.SigChainTxs = make(map[common.Uint256]*Transaction)
 
-	log.Error("???????????????", 3)
 	return nil
 }
 
@@ -262,7 +250,6 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 	}
 
 	if chain.DefaultLedger.Store.IsTxHashDuplicate(txn.Hash()) {
-		log.Error("3")
 		return errDuplicatedTx
 	}
 
@@ -273,14 +260,11 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 			return err
 		}
 		if !added {
-			log.Error("4")
 			return errDuplicatedTx
 		}
 	}
 
 	sender, _ := common.ToCodeHash(txn.Programs[0].Code)
-	addr, _ := sender.ToAddress()
-	log.Error("sender:", sender, addr)
 	nonce := chain.DefaultLedger.Store.GetNonce(sender)
 
 	payload, err := Unpack(txn.UnsignedTx.Payload)
@@ -293,7 +277,6 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 		return errTxnType
 	case pb.CommitType:
 	case pb.TransferAssetType:
-		log.Error("nonce", txn.UnsignedTx.Nonce, nonce)
 		if txn.UnsignedTx.Nonce < nonce {
 			return errNonceTooLow
 		}
