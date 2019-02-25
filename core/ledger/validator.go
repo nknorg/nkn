@@ -115,13 +115,10 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 	if timeSinceLastBlock >= proposerChangeTime {
 		winnerType = BlockSigner
 
-		// This is a temporary solution
-		proposerBlockHeight := 0
-		// index := timeSinceLastBlock / proposerChangeTime
-		// proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - index
-		// if proposerBlockHeight < 0 {
-		// proposerBlockHeight = 0
-		// }
+		proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - timeSinceLastBlock/proposerChangeTime
+		if proposerBlockHeight < 0 {
+			proposerBlockHeight = 0
+		}
 
 		proposerBlockHash, err := DefaultLedger.Store.GetBlockHash(uint32(proposerBlockHeight))
 		if err != nil {
@@ -142,12 +139,12 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			if err != nil {
 				return nil, nil, 0, err
 			}
-			payload, ok := txn.Payload.(*payload.Commit)
+			pld, ok := txn.Payload.(*payload.Commit)
 			if !ok {
 				return nil, nil, 0, errors.New("invalid transaction type")
 			}
 			sigchain := &por.SigChain{}
-			proto.Unmarshal(payload.SigChain, sigchain)
+			proto.Unmarshal(pld.SigChain, sigchain)
 			publicKey, chordID, err = sigchain.GetMiner()
 			if err != nil {
 				return nil, nil, 0, err
