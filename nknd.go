@@ -235,7 +235,7 @@ func nknMain(c *cli.Context) error {
 
 	go func() {
 		for {
-			time.Sleep(config.ConsensusTime)
+			time.Sleep(config.ConsensusDuration)
 			if log.CheckIfNeedNewFile() {
 				log.ClosePrintLog()
 				log.Init(log.Path, os.Stdout)

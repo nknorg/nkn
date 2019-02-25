@@ -105,16 +105,19 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 		return nil, nil, 0, fmt.Errorf("timestamp %d is earlier than previous block timestamp %d", timestamp, header.Timestamp)
 	}
 
-	// calculate time difference
 	timeSinceLastBlock := timestamp - header.Timestamp
-	timeSlot := int64(config.ProposerChangeTime / time.Second)
+	proposerChangeTime := int64(config.ConsensusTimeout.Seconds())
 
-	if timeSinceLastBlock >= timeSlot {
+	if proposerChangeTime-timeSinceLastBlock%proposerChangeTime <= int64(config.ConsensusDuration.Seconds()) {
+		return nil, nil, 0, nil
+	}
+
+	if timeSinceLastBlock >= proposerChangeTime {
 		winnerType = BlockSigner
 
 		// This is a temporary solution
 		proposerBlockHeight := 0
-		// index := timeSinceLastBlock / timeSlot
+		// index := timeSinceLastBlock / proposerChangeTime
 		// proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - index
 		// if proposerBlockHeight < 0 {
 		// proposerBlockHeight = 0

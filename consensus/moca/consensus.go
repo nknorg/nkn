@@ -11,6 +11,7 @@ import (
 	"github.com/nknorg/nkn/core/transaction"
 	"github.com/nknorg/nkn/net/node"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
@@ -43,7 +44,7 @@ type Consensus struct {
 
 // NewConsensus creates a MOCA consensus
 func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus, error) {
-	txnCollector := transaction.NewTxnCollector(localNode.GetTxnPool(), maxNumTxnPerBlock)
+	txnCollector := transaction.NewTxnCollector(localNode.GetTxnPool(), config.MaxNumTxnPerBlock)
 	consensus := &Consensus{
 		account:             account,
 		localNode:           localNode,
