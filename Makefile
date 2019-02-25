@@ -27,6 +27,8 @@ all: vendor ## Build binaries for all available architectures
 	make crossbuild GOOS=linux GOARCH=386
 	make crossbuild GOOS=linux GOARCH=arm64
 	make crossbuild GOOS=linux GOARCH=amd64
+	make crossbuild GOOS=linux GOARCH=mips
+	make crossbuild GOOS=linux GOARCH=mipsle
 	make crossbuild GOOS=darwin GOARCH=amd64
 	make crossbuild GOOS=darwin GOARCH=386
 	make crossbuild GOOS=windows GOARCH=amd64
