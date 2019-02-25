@@ -7,14 +7,13 @@ import (
 )
 
 const (
-	maxNumTxnPerBlock           = 20480
-	electionStartDelay          = 10 * time.Second
-	electionDuration            = 10 * time.Second
+	electionStartDelay          = config.ConsensusDuration / 2
+	electionDuration            = config.ConsensusDuration / 2
 	minVotingInterval           = 500 * time.Millisecond
 	proposingInterval           = 500 * time.Millisecond
 	cacheExpiration             = 3600 * time.Second
 	cacheCleanupInterval        = 600 * time.Second
-	proposingStartDelay         = config.ProposerChangeTime + time.Second
+	proposingStartDelay         = config.ConsensusTimeout + time.Second
 	getConsensusStateInterval   = 30 * time.Second
 	getConsensusStateRetries    = 3
 	getConsensusStateRetryDelay = 3 * time.Second
