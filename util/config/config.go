@@ -23,8 +23,9 @@ const (
 )
 
 const (
-	ConsensusTime       = 18 * time.Second
-	ProposerChangeTime  = time.Minute
+	MaxNumTxnPerBlock   = 4096
+	ConsensusDuration   = 20 * time.Second
+	ConsensusTimeout    = time.Minute
 	DefaultMiningReward = 15
 	MinNumSuccessors    = 8
 	NodeIDBytes         = 32
