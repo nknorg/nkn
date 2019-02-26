@@ -10,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/core/ledger"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/net/node"
+	"github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 )
@@ -30,18 +31,21 @@ func NewServer(localNode *node.LocalNode, w vault.Wallet) *server.WsServer {
 }
 
 func SendBlock2WSclient(v interface{}) {
-	go func() {
-		PushSigChainBlockHash(v)
-	}()
-	if Parameters.HttpWsPort != 0 && pushBlockFlag {
+	n, err := GetServer().GetNetNode()
+	if err == nil && n.GetSyncState() == pb.PersistFinished {
 		go func() {
-			PushBlock(v)
+			PushSigChainBlockHash(v)
 		}()
-	}
-	if Parameters.HttpWsPort != 0 && pushBlockTxsFlag {
-		go func() {
-			PushBlockTransactions(v)
-		}()
+		if Parameters.HttpWsPort != 0 && pushBlockFlag {
+			go func() {
+				PushBlock(v)
+			}()
+		}
+		if Parameters.HttpWsPort != 0 && pushBlockTxsFlag {
+			go func() {
+				PushBlockTransactions(v)
+			}()
+		}
 	}
 }
 
