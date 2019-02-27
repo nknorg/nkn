@@ -36,6 +36,7 @@ var (
 	Version       string
 	SkipCheckPort bool
 	SkipNAT       bool
+	nat           gonat.NAT
 	Parameters    = &Configuration{
 		Version:      1,
 		Transport:    "tcp",
@@ -53,6 +54,7 @@ var (
 		RPCReadTimeout:            5,
 		RPCWriteTimeout:           10,
 		KeepAliveTimeout:          15,
+		NATPortMappingTimeout:     365 * 86400,
 	}
 )
 
@@ -84,9 +86,10 @@ type Configuration struct {
 	SyncBatchWindowSize       uint32        `json:"SyncBatchWindowSize"`
 	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
 	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
-	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`
-	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`
-	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`
+	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`        // in seconds
+	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`       // in seconds
+	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`      // in seconds
+	NATPortMappingTimeout     time.Duration `json:"NATPortMappingTimeout"` // in seconds
 }
 
 func Init() error {
@@ -111,23 +114,9 @@ func Init() error {
 		Parameters.incrementPort()
 	}
 
-	if Parameters.NAT && !SkipNAT {
-		log.Println("Discovering NAT gateway...")
-
-		nat, err := gonat.DiscoverGateway()
-		if err == nil {
-			log.Printf("Found %s gateway", nat.Type())
-
-			err = Parameters.addPortMapping(nat)
-			if err != nil {
-				log.Printf("Error adding port mapping. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.")
-				return err
-			}
-		} else {
-			log.Printf("No NAT gateway detected, skip automatic port forwading. You need to set up port forwarding and firewall yourself.")
-		}
-	} else {
-		log.Printf("Skip automatic port forwading. You need to set up port forwarding and firewall yourself.")
+	if err := Parameters.SetupPortMapping(); err != nil {
+		log.Printf("Error adding port mapping. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.")
+		return err
 	}
 
 	if Parameters.Hostname == "" {
@@ -159,30 +148,79 @@ func Init() error {
 	return nil
 }
 
-func (config *Configuration) addPortMapping(nat gonat.NAT) error {
-	transport, err := transport.NewTransport(config.Transport)
-	if err != nil {
-		return err
+func (config *Configuration) SetupPortMapping() error {
+	if config.NAT && !SkipNAT {
+		log.Println("Discovering NAT gateway...")
+
+		var err error
+		nat, err = gonat.DiscoverGateway()
+		if err != nil {
+			log.Printf("No NAT gateway detected, skip automatic port forwading. You need to set up port forwarding and firewall yourself.")
+			return nil
+		}
+
+		log.Printf("Found %s gateway", nat.Type())
+
+		transport, err := transport.NewTransport(config.Transport)
+		if err != nil {
+			return err
+		}
+
+		externalPort, internalPort, err := nat.AddPortMapping(transport.GetNetwork(), int(config.NodePort), int(config.NodePort), "nkn", config.NATPortMappingTimeout*time.Second)
+		if err != nil {
+			return err
+		}
+		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
+		externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpWsPort), int(config.HttpWsPort), "nkn", config.NATPortMappingTimeout*time.Second)
+		if err != nil {
+			return err
+		}
+		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
+		externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpJsonPort), int(config.HttpJsonPort), "nkn", config.NATPortMappingTimeout*time.Second)
+		if err != nil {
+			return err
+		}
+		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+	} else {
+		log.Printf("Skip automatic port forwading. You need to set up port forwarding and firewall yourself.")
 	}
 
-	externalPort, internalPort, err := nat.AddPortMapping(transport.GetNetwork(), int(config.NodePort), int(config.NodePort), "nkn", 10*time.Second)
-	if err != nil {
-		return err
-	}
-	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+	return nil
+}
 
-	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpWsPort), int(config.HttpWsPort), "nkn", 10*time.Second)
-	if err != nil {
-		return err
-	}
-	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+func (config *Configuration) CleanPortMapping() error {
+	if config.NAT && !SkipNAT {
+		if nat == nil {
+			return fmt.Errorf("NAT gateway has not been discoverred yet")
+		}
 
-	externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpJsonPort), int(config.HttpJsonPort), "nkn", 10*time.Second)
-	if err != nil {
-		return err
-	}
-	log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+		log.Println("Removing added port mapping...")
 
+		transport, err := transport.NewTransport(config.Transport)
+		if err != nil {
+			return err
+		}
+
+		err = nat.DeletePortMapping(transport.GetNetwork(), int(config.NodePort))
+		if err != nil {
+			return err
+		}
+		log.Printf("Removed port mapping at external port %d", config.NodePort)
+
+		err = nat.DeletePortMapping(transport.GetNetwork(), int(config.HttpWsPort))
+		if err != nil {
+			return err
+		}
+		log.Printf("Removed port mapping at external port %d", config.HttpWsPort)
+
+		err = nat.DeletePortMapping(transport.GetNetwork(), int(config.HttpJsonPort))
+		if err != nil {
+			return err
+		}
+		log.Printf("Removed port mapping at external port %d", config.HttpJsonPort)
+	}
 	return nil
 }
 
