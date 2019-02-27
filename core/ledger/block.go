@@ -236,14 +236,14 @@ func (b *Block) RebuildMerkleRoot() error {
 
 }
 
-func (bd *Block) SerializeUnsigned(w io.Writer) error {
-	return bd.Header.SerializeUnsigned(w)
+func (b *Block) SerializeUnsigned(w io.Writer) error {
+	return b.Header.SerializeUnsigned(w)
 }
 
-func (bd *Block) MarshalJson() ([]byte, error) {
+func (b *Block) MarshalJson() ([]byte, error) {
 	var blockInfo BlocksInfo
 
-	info, err := bd.Header.MarshalJson()
+	info, err := b.Header.MarshalJson()
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (bd *Block) MarshalJson() ([]byte, error) {
 		return nil, err
 	}
 
-	for _, v := range bd.Transactions {
+	for _, v := range b.Transactions {
 		info, err := v.MarshalJson()
 		if err != nil {
 			return nil, err
@@ -265,8 +265,8 @@ func (bd *Block) MarshalJson() ([]byte, error) {
 		blockInfo.Transactions = append(blockInfo.Transactions, &t)
 	}
 
-	if bd.hash != nil {
-		blockInfo.Hash = BytesToHexString(bd.hash.ToArrayReverse())
+	if b.hash != nil {
+		blockInfo.Hash = BytesToHexString(b.hash.ToArrayReverse())
 	}
 
 	data, err := json.Marshal(blockInfo)
@@ -276,7 +276,7 @@ func (bd *Block) MarshalJson() ([]byte, error) {
 	return data, nil
 }
 
-func (bd *Block) UnmarshalJson(data []byte) error {
+func (b *Block) UnmarshalJson(data []byte) error {
 	blockInfo := new(BlocksInfo)
 	var err error
 	if err = json.Unmarshal(data, &blockInfo); err != nil {
@@ -289,7 +289,7 @@ func (bd *Block) UnmarshalJson(data []byte) error {
 	}
 	var header Header
 	err = header.UnmarshalJson(info)
-	bd.Header = &header
+	b.Header = &header
 
 	for _, v := range blockInfo.Transactions {
 		info, err := json.Marshal(v)
@@ -301,7 +301,7 @@ func (bd *Block) UnmarshalJson(data []byte) error {
 		if err != nil {
 			return err
 		}
-		bd.Transactions = append(bd.Transactions, &txn)
+		b.Transactions = append(b.Transactions, &txn)
 	}
 
 	if blockInfo.Hash != "" {
@@ -313,7 +313,7 @@ func (bd *Block) UnmarshalJson(data []byte) error {
 		if err != nil {
 			return err
 		}
-		bd.hash = &hash
+		b.hash = &hash
 	}
 
 	return nil

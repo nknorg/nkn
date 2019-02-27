@@ -34,9 +34,9 @@ func SignBySigner(data SignableData, signer Signer) ([]byte, error) {
 }
 
 func GetHashData(data SignableData) []byte {
-	b_buf := new(bytes.Buffer)
-	data.SerializeUnsigned(b_buf)
-	return b_buf.Bytes()
+	buf := new(bytes.Buffer)
+	data.SerializeUnsigned(buf)
+	return buf.Bytes()
 }
 
 func GetHashForSigning(data SignableData) []byte {
