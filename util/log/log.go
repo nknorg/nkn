@@ -239,14 +239,12 @@ func Errorf(format string, a ...interface{}) {
 func FileOpen(path string) (*os.File, error) {
 	if fi, err := os.Stat(path); err == nil {
 		if !fi.IsDir() {
-			return nil, fmt.Errorf("open %s: not a directory", path)
+			return nil, fmt.Errorf("%s is not a directory", path)
 		}
-	} else if os.IsNotExist(err) {
+	} else {
 		if err := os.MkdirAll(path, 0766); err != nil {
 			return nil, err
 		}
-	} else {
-		return nil, err
 	}
 
 	var currenttime string = time.Now().Format("2006-01-02_15.04.05")
@@ -270,7 +268,7 @@ func Init(a ...interface{}) {
 			case string:
 				logFile, err = FileOpen(o.(string))
 				if err != nil {
-					fmt.Println("error: open log file failed")
+					fmt.Printf("open log file %v failed: %v", o, err)
 					os.Exit(1)
 				}
 				writers = append(writers, logFile)
