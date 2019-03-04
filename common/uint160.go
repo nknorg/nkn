@@ -9,8 +9,6 @@ import (
 	"io"
 	"math/big"
 
-	. "github.com/nknorg/nkn/errors"
-
 	"github.com/itchyny/base58-go"
 )
 
@@ -107,7 +105,7 @@ func (f *Uint160) ToAddress() (string, error) {
 
 func Uint160ParseFromBytes(f []byte) (Uint160, error) {
 	if len(f) != UINT160SIZE {
-		return EmptyUint160, NewDetailErr(errors.New("[Common]: Uint160ParseFromBytes err, len != 20"), ErrNoCode, "")
+		return EmptyUint160, errors.New("[Common]: Uint160ParseFromBytes err, len != 20")
 	}
 
 	var hash [UINT160SIZE]uint8

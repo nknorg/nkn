@@ -8,7 +8,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/vm"
 )
 
@@ -16,19 +15,19 @@ import (
 func CreateSignatureContract(ownerPubKey *crypto.PubKey) (*Contract, error) {
 	temp, err := ownerPubKey.EncodePoint(true)
 	if err != nil {
-		return nil, fmt.Errorf("%v\n%s", "[Contract],CreateSignatureContract failed.")
+		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
 	}
 	signatureRedeemScript, err := CreateSignatureRedeemScript(ownerPubKey)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Contract],CreateSignatureContract failed.")
+		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
 	}
 	hash, err := ToCodeHash(temp)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Contract],CreateSignatureContract failed.")
+		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
 	}
 	signatureRedeemScriptHashToCodeHash, err := ToCodeHash(signatureRedeemScript)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Contract],CreateSignatureContract failed.")
+		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
 	}
 	return &Contract{
 		Code:            signatureRedeemScript,
@@ -41,7 +40,7 @@ func CreateSignatureContract(ownerPubKey *crypto.PubKey) (*Contract, error) {
 func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
 	temp, err := pubkey.EncodePoint(true)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Contract],CreateSignatureRedeemScript failed.")
+		return nil, fmt.Errorf("[Contract],CreateSignatureRedeemScript failed: %v", err)
 	}
 	return CreateSignatureRedeemScriptWithEncodedPublicKey(temp)
 }
@@ -62,11 +61,11 @@ func CreateMultiSigContract(publicKeyHash Uint160, m int, publicKeys []*crypto.P
 	}
 	MultiSigRedeemScript, err := CreateMultiSigRedeemScript(m, publicKeys)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Contract],CreateSignatureRedeemScript failed.")
+		return nil, fmt.Errorf("[Contract],CreateSignatureRedeemScript failed: %v", err)
 	}
 	signatureRedeemScriptHashToCodeHash, err := ToCodeHash(MultiSigRedeemScript)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Contract],CreateSignatureContract failed.")
+		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
 	}
 	return &Contract{
 		Code:            MultiSigRedeemScript,
@@ -90,7 +89,7 @@ func CreateMultiSigRedeemScript(m int, pubkeys []*crypto.PubKey) ([]byte, error)
 	for _, pubkey := range pubkeys {
 		temp, err := pubkey.EncodePoint(true)
 		if err != nil {
-			return nil, NewDetailErr(err, ErrNoCode, "[Contract],CreateSignatureContract failed.")
+			return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
 		}
 		sb.PushData(temp)
 	}

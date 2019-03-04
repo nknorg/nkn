@@ -5,9 +5,8 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"math/big"
-
-	. "github.com/nknorg/nkn/errors"
 )
 
 const (
@@ -223,7 +222,7 @@ func deCompress(yTilde int, xValue []byte, curve *elliptic.CurveParams) (*PubKey
 
 	yValue := curveSqrt(ySqare, curve)
 	if nil == yValue {
-		return nil, NewDetailErr(errors.New("Invalid point compression"), ErrNoCode, "")
+		return nil, errors.New("Invalid point compression")
 	}
 
 	yCoord := big.NewInt(0)
@@ -237,7 +236,7 @@ func deCompress(yTilde int, xValue []byte, curve *elliptic.CurveParams) (*PubKey
 
 func DecodePoint(encodeData []byte) (*PubKey, error) {
 	if nil == encodeData {
-		return nil, NewDetailErr(errors.New("The encodeData cann't be nil"), ErrNoCode, "")
+		return nil, errors.New("The encodeData cann't be nil")
 	}
 
 	switch encodeData[0] {
@@ -252,7 +251,7 @@ func DecodePoint(encodeData []byte) (*PubKey, error) {
 		pubKey, err := deCompress(yTilde, encodeData[FLAGLEN:FLAGLEN+XORYVALUELEN],
 			&algSet.EccParams)
 		if nil != err {
-			return nil, NewDetailErr(err, ErrNoCode, "Invalid point encoding")
+			return nil, fmt.Errorf("Invalid point encoding: (%v)", err)
 		}
 		return pubKey, nil
 
@@ -265,7 +264,7 @@ func DecodePoint(encodeData []byte) (*PubKey, error) {
 		return &PubKey{pubKeyX, pubKeyY}, nil
 
 	default:
-		return nil, NewDetailErr(errors.New("The encodeData format is error"), ErrNoCode, "")
+		return nil, errors.New("The encodeData format is error")
 	}
 }
 

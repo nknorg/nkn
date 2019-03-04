@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/api/common"
-	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -126,10 +125,10 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 					},
 					"id": id,
 				}
-				if details, ok := response["details"].(errors.ErrCode); ok {
+				if details, ok := response["details"].(common.ErrCode); ok {
 					result["details"] = map[string]interface{}{
 						"code":    details,
-						"message": details.Error(),
+						"message": common.ErrMessage[details],
 					}
 				}
 				data, err = json.Marshal(result)

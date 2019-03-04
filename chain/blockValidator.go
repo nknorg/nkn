@@ -10,7 +10,6 @@ import (
 	. "github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/errors"
 	. "github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
@@ -32,15 +31,15 @@ type VBlock struct {
 
 type TransactionArray []*Transaction
 
-func (iterable TransactionArray) Iterate(handler func(item *Transaction) ErrCode) ErrCode {
+func (iterable TransactionArray) Iterate(handler func(item *Transaction) error) error {
 	for _, item := range iterable {
 		result := handler(item)
-		if result != ErrNoError {
+		if result != nil {
 			return result
 		}
 	}
 
-	return ErrNoError
+	return nil
 }
 
 func TransactionCheck(block *Block) error {
@@ -61,8 +60,8 @@ func TransactionCheck(block *Block) error {
 			return fmt.Errorf("transaction history check failed: %v", err)
 		}
 	}
-	if errCode := VerifyTransactionWithBlock(TransactionArray(block.Transactions)); errCode != ErrNoError {
-		return errors.New("transaction block check failed")
+	if err := VerifyTransactionWithBlock(TransactionArray(block.Transactions)); err != nil {
+		return fmt.Errorf("Transaction block check failed: %v", err)
 	}
 
 	return nil

@@ -10,8 +10,6 @@ import (
 	"math/rand"
 	"os"
 
-	. "github.com/nknorg/nkn/errors"
-
 	"github.com/golang/crypto/ripemd160"
 )
 
@@ -25,7 +23,7 @@ func ToCodeHash(code []byte) (Uint160, error) {
 
 	hash, err := Uint160ParseFromBytes(f)
 	if err != nil {
-		return Uint160{}, NewDetailErr(errors.New("[Common] , ToCodeHash err."), ErrNoCode, "")
+		return Uint160{}, errors.New("ToCodehash parse uint160 error")
 	}
 	return hash, nil
 }
@@ -123,11 +121,11 @@ func CompareHeight(blockHeight uint32, heights []uint32) bool {
 
 func GetUint16Array(source []byte) ([]uint16, error) {
 	if source == nil {
-		return nil, NewDetailErr(errors.New("[Common] , GetUint16Array err, source = nil"), ErrNoCode, "")
+		return nil, errors.New("[Common] , GetUint16Array err, source = nil")
 	}
 
 	if len(source)%2 != 0 {
-		return nil, NewDetailErr(errors.New("[Common] , GetUint16Array err, length of source is odd."), ErrNoCode, "")
+		return nil, errors.New("[Common] , GetUint16Array err, length of source is odd.")
 	}
 
 	dst := make([]uint16, len(source)/2)

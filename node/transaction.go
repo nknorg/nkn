@@ -2,11 +2,12 @@ package node
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/block"
-	nknErrors "github.com/nknorg/nkn/errors"
+	"github.com/nknorg/nkn/chain/pool"
 	"github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
@@ -70,11 +71,11 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 		}
 
 		errCode := localNode.AppendTxnPool(txn)
-		if errCode == nknErrors.ErrNonOptimalSigChain || errCode == nknErrors.ErrDuplicatedTx {
+		if errCode == pool.ErrNonOptimalSigChain || errCode == pool.ErrDuplicatedTx {
 			hasValidTxn = true
 			continue
 		}
-		if errCode != nknErrors.ErrNoError {
+		if errCode != nil {
 			log.Warningf("Verify transaction failed with %v when append to txn pool", errCode)
 			continue
 		}
@@ -88,7 +89,8 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 	}
 
 	if !shouldPropagate {
-		return nil, false, nknErrors.ErrDoNotPropagate
+		log.Error("Error Do not propagate")
+		return nil, false, errors.New("Error Do Not Propagate")
 	}
 
 	return nil, false, nil
