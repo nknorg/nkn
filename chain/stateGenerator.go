@@ -1,8 +1,8 @@
 package chain
 
 import (
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/chain/db"
+	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 )

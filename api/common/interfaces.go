@@ -9,7 +9,6 @@ import (
 	. "github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
@@ -305,7 +304,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		}
 
 		hash = txn.Hash()
-		if errCode := VerifyAndSendTx(localNode, &txn); errCode != errors.ErrNoError {
+		if errCode := VerifyAndSendTx(localNode, &txn); errCode != ErrNoError {
 			return respPackingDetails(nil, INVALID_TRANSACTION, errCode)
 		}
 	} else {
@@ -400,7 +399,7 @@ func commitPor(s Serverer, params map[string]interface{}) map[string]interface{}
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -459,7 +458,7 @@ func sigchaintest(s Serverer, params map[string]interface{}) map[string]interfac
 		return respPacking(nil, INTERNAL_ERROR)
 	}
 
-	if errCode := VerifyAndSendTx(localNode, txn); errCode != errors.ErrNoError {
+	if errCode := VerifyAndSendTx(localNode, txn); errCode != ErrNoError {
 		return respPacking(nil, INVALID_TRANSACTION)
 	}
 
@@ -538,16 +537,16 @@ func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interf
 	return respPacking(ret, SUCCESS)
 }
 
-func VerifyAndSendTx(localNode *node.LocalNode, txn *Transaction) errors.ErrCode {
-	if errCode := localNode.AppendTxnPool(txn); errCode != errors.ErrNoError {
-		log.Warningf("Can NOT add the transaction to TxnPool: %v", errCode)
-		return errCode
+func VerifyAndSendTx(localNode *node.LocalNode, txn *Transaction) ErrCode {
+	if err := localNode.AppendTxnPool(txn); err != nil {
+		log.Warningf("Can NOT add the transaction to TxnPool: %v", err)
+		return ErrAppendTxnPool
 	}
 	if err := localNode.BroadcastTransaction(txn); err != nil {
 		log.Errorf("Broadcast Tx Error: %v", err)
-		return errors.ErrXmitFail
+		return ErrXmitFail
 	}
-	return errors.ErrNoError
+	return ErrNoError
 }
 
 // getAddressByName get address by name

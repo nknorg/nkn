@@ -2,7 +2,6 @@ package chain
 
 import (
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/errors"
 	. "github.com/nknorg/nkn/transaction"
 )
 
@@ -14,7 +13,7 @@ const (
 type TxnSource interface {
 	GetTxnByCount(num int) (map[Uint256]*Transaction, error)
 	GetTransaction(hash Uint256) *Transaction
-	AppendTxnPool(txn *Transaction) errors.ErrCode
+	AppendTxnPool(txn *Transaction) error
 	CleanSubmittedTransactions(txns []*Transaction) error
 }
 
@@ -48,7 +47,7 @@ func (tc *TxnCollector) GetTransaction(hash Uint256) *Transaction {
 	return tc.TxnSource.GetTransaction(hash)
 }
 
-func (tc *TxnCollector) Append(txn *Transaction) errors.ErrCode {
+func (tc *TxnCollector) Append(txn *Transaction) error {
 	return tc.TxnSource.AppendTxnPool(txn)
 }
 

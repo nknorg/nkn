@@ -3,11 +3,9 @@ package por
 import (
 	"bytes"
 	"errors"
-	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
-	nknerrors "github.com/nknorg/nkn/errors"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 )
@@ -85,8 +83,7 @@ func NewPorPackage(txn *Transaction) (*PorPackage, error) {
 		}
 	}
 	if !found {
-		err := errors.New("no miner node in signature chain")
-		return nil, nknerrors.NewDetailErr(err, nknerrors.ErrNoCode, err.Error())
+		return nil, errors.New("No miner node in signature chain")
 	}
 
 	blockHash, err := Uint256ParseFromBytes(sigChain.BlockHash)
@@ -95,7 +92,7 @@ func NewPorPackage(txn *Transaction) (*PorPackage, error) {
 	}
 
 	if blockHash == EmptyUint256 {
-		return nil, fmt.Errorf("block hash in sigchain is empty")
+		return nil, errors.New("block hash in sigchain is empty")
 	}
 
 	height, err := Store.GetHeightByBlockHash(blockHash)
