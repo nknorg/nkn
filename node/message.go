@@ -8,7 +8,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/crypto"
-	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
@@ -213,9 +212,6 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				var reply []byte
 				reply, err = localNode.receiveMessage(senderNode, unsignedMsg)
 				if err != nil {
-					if err != nknErrors.ErrDoNotPropagate {
-						log.Errorf("Error handling message: %v", err)
-					}
 					return nil, nil, nil, false
 				}
 

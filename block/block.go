@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/errors"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
@@ -30,7 +30,7 @@ func (b *Block) Serialize(w io.Writer) error {
 	b.Header.Serialize(w)
 	err := serialization.WriteUint32(w, uint32(len(b.Transactions)))
 	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Block item Transactions length serialization failed.")
+		return fmt.Errorf("Block item Transactions length serialization failed: %v", err)
 	}
 
 	for _, transaction := range b.Transactions {
@@ -63,7 +63,7 @@ func (b *Block) Deserialize(r io.Reader) error {
 
 	root, err := crypto.ComputeRoot(tharray)
 	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Block Deserialize merkleTree compute failed")
+		return fmt.Errorf("Block Deserialize merkleTree compute failed: %v", err)
 	}
 	b.Header.UnsignedHeader.TransactionsRoot = root.ToArray()
 
@@ -78,7 +78,7 @@ func (b *Block) Trim(w io.Writer) error {
 	b.Header.Serialize(w)
 	err := serialization.WriteUint32(w, uint32(len(b.Transactions)))
 	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Block item Transactions length serialization failed.")
+		return fmt.Errorf("Block item Transactions length serialization failed: %v", err)
 	}
 	for _, transaction := range b.Transactions {
 		temp := *transaction
@@ -112,7 +112,7 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 
 	root, err := crypto.ComputeRoot(tharray)
 	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "Block Deserialize merkleTree compute failed")
+		return fmt.Errorf("Block Deserialize merkleTree compute failed: %v", err)
 	}
 	b.Header.UnsignedHeader.TransactionsRoot = root.ToArray()
 
@@ -225,7 +225,7 @@ func (b *Block) RebuildMerkleRoot() error {
 	}
 	hash, err := crypto.ComputeRoot(transactionHashes)
 	if err != nil {
-		return NewDetailErr(err, ErrNoCode, "[Block] , RebuildMerkleRoot ComputeRoot failed.")
+		return fmt.Errorf("[Block] , RebuildMerkleRoot ComputeRoot failed: %v", err)
 	}
 	b.Header.UnsignedHeader.TransactionsRoot = hash.ToArray()
 	return nil

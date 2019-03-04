@@ -7,12 +7,10 @@ import (
 	"regexp"
 
 	. "github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/errors"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vm/signature"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -143,7 +141,7 @@ func CheckTransactionPayload(txn *Transaction) error {
 			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", pld.Topic, subscriptionCount))
 		}
 	default:
-		return errors.New("[txValidator],invalidate transaction payload type.")
+		return errors.New("[txValidator],invalidate transaction payload type")
 	}
 	return nil
 }
@@ -151,11 +149,11 @@ func CheckTransactionPayload(txn *Transaction) error {
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
 func VerifyTransactionWithLedger(txn *Transaction) error {
 	if DefaultLedger.Store.IsDoubleSpend(txn) {
-		return errors.New("[VerifyTransactionWithLedger] IsDoubleSpend check faild.")
+		return errors.New("[VerifyTransactionWithLedger] IsDoubleSpend check faild")
 	}
 
 	if DefaultLedger.Store.IsTxHashDuplicate(txn.Hash()) {
-		return errors.New("[VerifyTransactionWithLedger] duplicate transaction check faild.")
+		return errors.New("[VerifyTransactionWithLedger] duplicate transaction check faild")
 	}
 
 	//TODO GetProgramHashes
@@ -164,13 +162,13 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 		addr, _ := ToCodeHash(txn.Programs[0].Code)
 		nonce := DefaultLedger.Store.GetNonce(addr)
 		if nonce != txn.UnsignedTx.Nonce {
-			return errors.New("[VerifyTransactionWithLedger] txn nonce error.")
+			return errors.New("[VerifyTransactionWithLedger] txn nonce error")
 		}
 	}
 
 	payload, err := Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
-		return err
+		return errors.New("Unpack transactiion's paylaod error")
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
@@ -236,12 +234,12 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 			return err
 		}
 		if subscribed {
-			return errors.New(fmt.Sprintf("subscriber %s already subscribed to %s", SubscriberString(pld), topic))
+			return fmt.Errorf("subscriber %s already subscribed to %s", SubscriberString(pld), topic)
 		}
 
 		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
 		if subscriptionCount >= SubscriptionsLimit {
-			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", topic, subscriptionCount))
+			return fmt.Errorf("subscribtion count to %s can't be more than %d", topic, subscriptionCount)
 		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")
@@ -250,11 +248,11 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 }
 
 type Iterator interface {
-	Iterate(handler func(item *Transaction) ErrCode) ErrCode
+	Iterate(handler func(item *Transaction) error) error
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
+func VerifyTransactionWithBlock(iterator Iterator) error {
 	//initial
 	txnlist := make(map[Uint256]struct{}, 0)
 	registeredNames := make(map[string]struct{}, 0)
@@ -266,11 +264,10 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 	subscriptionCount := make(map[string]int, 0)
 
 	//start check
-	return iterator.Iterate(func(txn *Transaction) ErrCode {
+	return iterator.Iterate(func(txn *Transaction) error {
 		//1.check weather have duplicate transaction.
 		if _, exist := txnlist[txn.Hash()]; exist {
-			log.Warning("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
-			return ErrDuplicatedTx
+			return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
 		} else {
 			txnlist[txn.Hash()] = struct{}{}
 		}
@@ -280,15 +277,14 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 		//3.check issue amount
 		payload, err := Unpack(txn.UnsignedTx.Payload)
 		if err != nil {
-			return ErrDuplicatedTx
+			return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
 		}
 
 		switch txn.UnsignedTx.Payload.Type {
 		case CoinbaseType:
 			coinbase := payload.(*Coinbase)
 			if Fixed64(coinbase.Amount) != Fixed64(config.DefaultMiningReward*StorageFactor) {
-				log.Warning("Mining reward incorrectly.")
-				return ErrMineReward
+				return errors.New("Mining reward incorrectly.")
 			}
 
 		case RegisterNameType:
@@ -296,15 +292,13 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 
 			name := namePayload.Name
 			if _, ok := registeredNames[name]; ok {
-				log.Warning("[VerifyTransactionWithBlock], duplicate name exist in block.")
-				return ErrDuplicateName
+				return errors.New("[VerifyTransactionWithBlock], duplicate name exist in block.")
 			}
 			registeredNames[name] = struct{}{}
 
 			registrant := BytesToHexString(namePayload.Registrant)
 			if _, ok := nameRegistrants[registrant]; ok {
-				log.Warning("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
-				return ErrDuplicateName
+				return errors.New("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
 			}
 			nameRegistrants[registrant] = struct{}{}
 		case DeleteNameType:
@@ -312,8 +306,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 
 			registrant := BytesToHexString(namePayload.Registrant)
 			if _, ok := nameRegistrants[registrant]; ok {
-				log.Warning("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
-				return ErrDuplicateName
+				return errors.New("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
 			}
 			nameRegistrants[registrant] = struct{}{}
 		case SubscribeType:
@@ -321,8 +314,7 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 			topic := subscribePayload.Topic
 			key := subscription{topic, SubscriberString(subscribePayload)}
 			if _, ok := subscriptions[key]; ok {
-				log.Warning("[VerifyTransactionWithBlock], duplicate subscription exist in block.")
-				return ErrDuplicateSubscription
+				return errors.New("[VerifyTransactionWithBlock], duplicate subscription exist in block")
 			}
 			subscriptions[key] = struct{}{}
 
@@ -330,13 +322,12 @@ func VerifyTransactionWithBlock(iterator Iterator) ErrCode {
 				subscriptionCount[topic] = DefaultLedger.Store.GetSubscribersCount(topic, subscribePayload.Bucket)
 			}
 			if subscriptionCount[topic] >= SubscriptionsLimit {
-				log.Warning("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
-				return ErrSubscriptionLimit
+				return errors.New("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
 			}
 			subscriptionCount[topic]++
 		}
 
-		return ErrNoError
+		return nil
 	})
 
 }
