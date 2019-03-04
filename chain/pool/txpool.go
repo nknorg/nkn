@@ -6,7 +6,6 @@ import (
 
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
@@ -20,14 +19,15 @@ const (
 )
 
 var (
-	errDuplicatedTx          = errors.New("duplicate transaction check faild")
-	errDoubleSpend           = errors.New("IsDoubleSpend check faild")
-	errTxnType               = errors.New("invalidate transaction payload type")
-	errNonceTooLow           = errors.New("nonce is too low")
-	errDuplicateName         = errors.New("Duplicate NameService operation in one block")
-	errNoNameRegistered      = errors.New("name already has not be registered")
-	errDuplicateSubscription = errors.New("Duplicate subscription in one block")
-	errSubscriptionLimit     = errors.New("Subscription limit exceeded in one block")
+	ErrDuplicatedTx          = errors.New("duplicate transaction check faild")
+	ErrDoubleSpend           = errors.New("IsDoubleSpend check faild")
+	ErrTxnType               = errors.New("invalidate transaction payload type")
+	ErrNonceTooLow           = errors.New("nonce is too low")
+	ErrDuplicateName         = errors.New("Duplicate NameService operation in one block")
+	ErrNoNameRegistered      = errors.New("name already has not be registered")
+	ErrDuplicateSubscription = errors.New("Duplicate subscription in one block")
+	ErrSubscriptionLimit     = errors.New("Subscription limit exceeded in one block")
+	ErrNonOptimalSigChain    = errors.New("This SigChain is NOT optimal choice")
 )
 
 // TxnPool is a list of txns that need to by add to ledger sent by user.
@@ -45,16 +45,7 @@ func NewTxPool() *TxnPool {
 	}
 }
 
-func (tp *TxnPool) AppendTxnPool(txn *Transaction) ErrCode {
-	if err := tp.appendTxnPool(txn); err != nil {
-		return ErrNoCode
-	}
-
-	//	tp.Dump()
-	return ErrNoError
-}
-
-func (tp *TxnPool) appendTxnPool(txn *Transaction) error {
+func (tp *TxnPool) AppendTxnPool(txn *Transaction) error {
 	//1. process all Orphens
 	for _, list := range tp.TxLists {
 		list.ProcessOrphans(tp.processTx)
@@ -71,6 +62,7 @@ func (tp *TxnPool) appendTxnPool(txn *Transaction) error {
 	}
 
 	return nil
+	//	tp.Dump()
 }
 
 func (tp *TxnPool) processTx(txn *Transaction) error {
@@ -93,7 +85,7 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 	//2. check if the txn is exsit.
 	list := tp.TxLists[sender]
 	if list.ExistTx(hash) {
-		return errDuplicatedTx
+		return ErrDuplicatedTx
 	}
 
 	//check balance
@@ -140,7 +132,7 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 
 	// 3. add to orphans
 	if list.GetOrphanTxn(hash) != nil {
-		return errDuplicatedTx
+		return ErrDuplicatedTx
 	}
 
 	list.AddOrphanTxn(txn)
@@ -246,11 +238,11 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 	}
 
 	if chain.DefaultLedger.Store.IsDoubleSpend(txn) {
-		return errDoubleSpend
+		return ErrDoubleSpend
 	}
 
 	if chain.DefaultLedger.Store.IsTxHashDuplicate(txn.Hash()) {
-		return errDuplicatedTx
+		return ErrDuplicatedTx
 	}
 
 	// get signature chain from commit transaction then add it to POR server
@@ -260,7 +252,7 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 			return err
 		}
 		if !added {
-			return errDuplicatedTx
+			return ErrDuplicatedTx
 		}
 	}
 
@@ -274,21 +266,21 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.CoinbaseType:
-		return errTxnType
+		return ErrTxnType
 	case pb.CommitType:
 	case pb.TransferAssetType:
 		if txn.UnsignedTx.Nonce < nonce {
-			return errNonceTooLow
+			return ErrNonceTooLow
 		}
 	case pb.RegisterNameType:
 		if txn.UnsignedTx.Nonce < nonce {
-			return errNonceTooLow
+			return ErrNonceTooLow
 		}
 
 		pld := payload.(*pb.RegisterName)
 		name, err := chain.DefaultLedger.Store.GetName(pld.Registrant)
 		if name != nil {
-			return errDuplicateName
+			return ErrDuplicateName
 		}
 		if err != leveldb.ErrNotFound {
 			return err
@@ -296,14 +288,14 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 
 		registrant, err := chain.DefaultLedger.Store.GetRegistrant(pld.Name)
 		if registrant != nil {
-			return errNoNameRegistered
+			return ErrNoNameRegistered
 		}
 		if err != leveldb.ErrNotFound {
 			return err
 		}
 	case pb.DeleteNameType:
 		if txn.UnsignedTx.Nonce < nonce {
-			return errNonceTooLow
+			return ErrNonceTooLow
 		}
 
 		pld := payload.(*pb.DeleteName)
@@ -312,11 +304,11 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 			return err
 		}
 		if name == nil {
-			return errNoNameRegistered
+			return ErrNoNameRegistered
 		}
 	case pb.SubscribeType:
 		if txn.UnsignedTx.Nonce < nonce {
-			return errNonceTooLow
+			return ErrNonceTooLow
 		}
 
 		pld := payload.(*pb.Subscribe)
@@ -325,16 +317,16 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 			return err
 		}
 		if subscribed {
-			return errDuplicateSubscription
+			return ErrDuplicateSubscription
 		}
 
 		subscriptionCount := chain.DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
 		if subscriptionCount >= SubscriptionsLimit {
-			return errSubscriptionLimit
+			return ErrSubscriptionLimit
 		}
 
 	default:
-		return errTxnType
+		return ErrTxnType
 	}
 
 	return nil

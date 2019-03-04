@@ -7,7 +7,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	_ "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
 	sig "github.com/nknorg/nkn/vm/signature"

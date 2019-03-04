@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	. "github.com/nknorg/nkn/errors"
 	. "github.com/nknorg/nkn/pb"
 )
 
@@ -66,7 +66,7 @@ func (h *Header) GetProgramHashes() ([]Uint160, error) {
 	pg := *h.Program
 	outputHashes, err := ToCodeHash(pg.Code)
 	if err != nil {
-		return nil, NewDetailErr(err, ErrNoCode, "[Header], GetProgramHashes failed.")
+		return nil, fmt.Errorf("[Header], GetProgramHashes failed: %v", err)
 	}
 	programHashes = append(programHashes, outputHashes)
 	return programHashes, nil

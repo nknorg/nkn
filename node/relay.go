@@ -7,8 +7,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/chain"
+	"github.com/nknorg/nkn/chain/pool"
 	"github.com/nknorg/nkn/common"
-	nknErrors "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/events"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
@@ -118,10 +118,10 @@ func (rs *RelayService) receiveClientSignedSigChain(v interface{}) error {
 	}
 
 	errCode := rs.localNode.AppendTxnPool(txn)
-	if errCode == nknErrors.ErrNonOptimalSigChain {
+	if errCode == pool.ErrNonOptimalSigChain {
 		return nil
 	}
-	if errCode != nknErrors.ErrNoError {
+	if errCode != nil {
 		return errCode
 	}
 

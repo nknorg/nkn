@@ -2,10 +2,10 @@ package signature
 
 import (
 	"errors"
+	"fmt"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/errors"
 	"github.com/nknorg/nkn/vm"
 	"github.com/nknorg/nkn/vm/interfaces"
 )
@@ -38,20 +38,20 @@ func VerifySignableData(signableData SignableData) (bool, error) {
 		err := se.Execute()
 
 		if err != nil {
-			return false, NewDetailErr(err, ErrNoCode, "")
+			return false, err
 		}
 
 		if se.GetState() != vm.HALT {
-			return false, NewDetailErr(errors.New("[VM] Finish State not equal to HALT."), ErrNoCode, "")
+			return false, errors.New("[VM] Finish State not equal to HALT.")
 		}
 
 		if se.GetEvaluationStack().Count() != 1 {
-			return false, NewDetailErr(errors.New("[VM] Execute Engine Stack Count Error."), ErrNoCode, "")
+			return false, errors.New("[VM] Execute Engine Stack Count Error.")
 		}
 
 		flag := se.GetExecuteResult()
 		if !flag {
-			return false, NewDetailErr(errors.New("[VM] Check Sig FALSE."), ErrNoCode, "")
+			return false, errors.New("[VM] Check Sig FALSE.")
 		}
 	}
 
@@ -61,7 +61,7 @@ func VerifySignableData(signableData SignableData) (bool, error) {
 func VerifySignature(signableData SignableData, pubkey *crypto.PubKey, signature []byte) (bool, error) {
 	err := crypto.Verify(*pubkey, GetHashData(signableData), signature)
 	if err != nil {
-		return false, NewDetailErr(err, ErrNoCode, "[Validation], VerifySignature failed.")
+		return false, fmt.Errorf("[Validation], VerifySignature failed: %v", err)
 	} else {
 		return true, nil
 	}
