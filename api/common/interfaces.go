@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"math"
+	"net"
+	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
@@ -1154,6 +1156,32 @@ func getTopicBucketsCount(s Serverer, params map[string]interface{}) map[string]
 	return respPacking(count, SUCCESS)
 }
 
+// getMyExtIP get RPC client's external IP
+// params: ["address":<address>]
+// return: {"result":<result>, "error":<errcode>}
+func getMyExtIP(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	addr, ok := params["RemoteAddr"].(string)
+	if !ok || len(addr) == 0 {
+		log.Errorf("Invalid params: [%v, %v]", ok, addr)
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		if strings.LastIndexByte(addr, ':') >= 0 {
+			log.Errorf("getMyExtIP met invalid params %v: %v", addr, err)
+			return respPacking(nil, INVALID_PARAMS)
+		}
+		host = addr // addr just only host, without port
+	}
+	ret := map[string]interface{}{"RemoteAddr": host}
+	return respPacking(ret, SUCCESS)
+}
+
 // findSuccessorAddrs find the successors of a key
 // params: ["address":<address>]
 // return: {"result":<result>, "error":<errcode>}
@@ -1254,6 +1282,7 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getsubscribers":               {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
 	"getfirstavailabletopicbucket": {Handler: getFirstAvailableTopicBucket, AccessCtrl: BIT_JSONRPC},
 	"gettopicbucketscount":         {Handler: getTopicBucketsCount, AccessCtrl: BIT_JSONRPC},
+	"getmyextip":                   {Handler: getMyExtIP, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddr":            {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddrs":           {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},
 }
