@@ -1,7 +1,6 @@
 package node
 
 import (
-	"bytes"
 	"fmt"
 	"sync"
 	"time"
@@ -50,13 +49,12 @@ func NewGetBlockHeadersMessage(startHeight, endHeight uint32) (*pb.UnsignedMessa
 // to GET_BLOCK_HEADERS message
 func NewGetBlockHeadersReply(headers []*Header) (*pb.UnsignedMessage, error) {
 	headersBytes := make([][]byte, len(headers), len(headers))
+	var err error
 	for i, header := range headers {
-		b := new(bytes.Buffer)
-		err := header.Serialize(b)
+		headersBytes[i], err = header.Marshal()
 		if err != nil {
 			return nil, err
 		}
-		headersBytes[i] = b.Bytes()
 	}
 
 	msgBody := &pb.GetBlockHeadersReply{
@@ -100,13 +98,12 @@ func NewGetBlocksMessage(startHeight, endHeight uint32) (*pb.UnsignedMessage, er
 // message
 func NewGetBlocksReply(blocks []*Block) (*pb.UnsignedMessage, error) {
 	blocksBytes := make([][]byte, len(blocks), len(blocks))
+	var err error
 	for i, block := range blocks {
-		b := new(bytes.Buffer)
-		err := block.Serialize(b)
+		blocksBytes[i], err = block.Marshal()
 		if err != nil {
 			return nil, err
 		}
-		blocksBytes[i] = b.Bytes()
 	}
 
 	msgBody := &pb.GetBlocksReply{
@@ -259,7 +256,7 @@ func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]
 	headers := make([]*Header, len(replyMsg.BlockHeaders), len(replyMsg.BlockHeaders))
 	for i := range replyMsg.BlockHeaders {
 		headers[i] = &Header{}
-		err = headers[i].Deserialize(bytes.NewReader(replyMsg.BlockHeaders[i]))
+		err = headers[i].Unmarshal(replyMsg.BlockHeaders[i])
 		if err != nil {
 			return nil, err
 		}
@@ -303,7 +300,7 @@ func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*Block
 	blocks := make([]*Block, len(replyMsg.Blocks), len(replyMsg.Blocks))
 	for i := range replyMsg.Blocks {
 		blocks[i] = &Block{}
-		err = blocks[i].Deserialize(bytes.NewReader(replyMsg.Blocks[i]))
+		err = blocks[i].Unmarshal(replyMsg.Blocks[i])
 		if err != nil {
 			return nil, err
 		}

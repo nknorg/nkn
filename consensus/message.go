@@ -1,8 +1,6 @@
 package moca
 
 import (
-	"bytes"
-
 	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
@@ -75,20 +73,19 @@ func NewRequestBlockProposalMessage(blockHash common.Uint256) (*pb.UnsignedMessa
 // in respond to REQUEST_BLOCK_PROPOSAL message to send a block
 func NewRequestBlockProposalReply(block *Block) (*pb.UnsignedMessage, error) {
 	var buf []byte
+	var err error
 	if block != nil {
-		b := new(bytes.Buffer)
-		err := block.Serialize(b)
+		buf, err = block.Marshal()
 		if err != nil {
 			return nil, err
 		}
-		buf = b.Bytes()
 	}
 
 	msgBody := &pb.RequestBlockProposalReply{
 		Block: buf,
 	}
 
-	buf, err := proto.Marshal(msgBody)
+	buf, err = proto.Marshal(msgBody)
 	if err != nil {
 		return nil, err
 	}

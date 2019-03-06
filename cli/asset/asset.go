@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -85,9 +84,8 @@ func assetAction(c *cli.Context) error {
 
 		nonce := c.Uint64("nonce")
 		txn, _ := MakeTransferTransaction(myWallet, receipt, nonce, amount, 0)
-		buff := bytes.NewBuffer(nil)
-		txn.Serialize(buff)
-		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff.Bytes())})
+		buff, _ := txn.Marshal()
+		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	case c.Bool("prepaid"):
 		rates := c.String("rates")
 		if rates == "" {
