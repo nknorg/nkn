@@ -51,7 +51,7 @@ var SyncState_value = map[string]int32{
 }
 
 func (SyncState) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_node_cfbb661efc0650a7, []int{0}
+	return fileDescriptor_node_c60ea7ff00206b46, []int{0}
 }
 
 type NodeData struct {
@@ -64,7 +64,7 @@ type NodeData struct {
 func (m *NodeData) Reset()      { *m = NodeData{} }
 func (*NodeData) ProtoMessage() {}
 func (*NodeData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_node_cfbb661efc0650a7, []int{0}
+	return fileDescriptor_node_c60ea7ff00206b46, []int{0}
 }
 func (m *NodeData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -620,9 +620,9 @@ var (
 	ErrIntOverflowNode   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/node.proto", fileDescriptor_node_cfbb661efc0650a7) }
+func init() { proto.RegisterFile("pb/node.proto", fileDescriptor_node_c60ea7ff00206b46) }
 
-var fileDescriptor_node_cfbb661efc0650a7 = []byte{
+var fileDescriptor_node_c60ea7ff00206b46 = []byte{
 	// 327 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x3c, 0x8e, 0xbf, 0x4e, 0x2a, 0x41,
 	0x14, 0xc6, 0xf7, 0x40, 0xee, 0xcd, 0x65, 0x60, 0x61, 0x33, 0xb7, 0x21, 0x26, 0x9e, 0x10, 0x12,

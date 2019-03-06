@@ -1,7 +1,6 @@
 package block
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +13,7 @@ import (
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/vm/signature"
 )
 
 const BlockVersion uint32 = 0
@@ -26,47 +26,34 @@ type Block struct {
 	hash *Uint256
 }
 
-func (b *Block) Serialize(w io.Writer) error {
-	b.Header.Serialize(w)
-	err := serialization.WriteUint32(w, uint32(len(b.Transactions)))
-	if err != nil {
-		return fmt.Errorf("Block item Transactions length serialization failed: %v", err)
+func (b *Block) Marshal() (dAtA []byte, err error) {
+	msgBlock := &MsgBlock{
+		Header: &b.Header.BlockHeader,
 	}
 
-	for _, transaction := range b.Transactions {
-		transaction.Serialize(w)
+	for _, txn := range b.Transactions {
+		msgBlock.Transactions = append(msgBlock.Transactions, &txn.MsgTx)
 	}
+
+	return msgBlock.Marshal()
+}
+
+func (b *Block) Unmarshal(dAtA []byte) error {
+	var msgBlock MsgBlock
+	msgBlock.Unmarshal(dAtA)
+	b.Header = &Header{BlockHeader: *msgBlock.Header}
+	for _, txn := range msgBlock.Transactions {
+		b.Transactions = append(b.Transactions, &Transaction{MsgTx: *txn})
+	}
+
+	return nil
+}
+
+func (b *Block) Serialize(w io.Writer) error {
 	return nil
 }
 
 func (b *Block) Deserialize(r io.Reader) error {
-	if b.Header == nil {
-		b.Header = new(Header)
-	}
-	b.Header.Deserialize(r)
-
-	//Transactions
-	var i uint32
-	Len, err := serialization.ReadUint32(r)
-	if err != nil {
-		return err
-	}
-	var txhash Uint256
-	var tharray []Uint256
-	for i = 0; i < Len; i++ {
-		transaction := new(Transaction)
-		transaction.Deserialize(r)
-		txhash = transaction.Hash()
-		b.Transactions = append(b.Transactions, transaction)
-		tharray = append(tharray, txhash)
-	}
-
-	root, err := crypto.ComputeRoot(tharray)
-	if err != nil {
-		return fmt.Errorf("Block Deserialize merkleTree compute failed: %v", err)
-	}
-	b.Header.UnsignedHeader.TransactionsRoot = root.ToArray()
-
 	return nil
 }
 
@@ -75,7 +62,8 @@ func (b *Block) GetSigner() ([]byte, []byte, error) {
 }
 
 func (b *Block) Trim(w io.Writer) error {
-	b.Header.Serialize(w)
+	dt, _ := b.Header.Marshal()
+	serialization.WriteVarBytes(w, dt)
 	err := serialization.WriteUint32(w, uint32(len(b.Transactions)))
 	if err != nil {
 		return fmt.Errorf("Block item Transactions length serialization failed: %v", err)
@@ -92,7 +80,9 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 	if b.Header == nil {
 		b.Header = new(Header)
 	}
-	b.Header.Deserialize(r)
+
+	dt, _ := serialization.ReadVarBytes(r)
+	b.Header.Unmarshal(dt)
 
 	//Transactions
 	var i uint32
@@ -120,15 +110,12 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 }
 
 func (b *Block) GetMessage() []byte {
-	b_buf := new(bytes.Buffer)
-	b.SerializeUnsigned(b_buf)
-	return b_buf.Bytes()
+	return signature.GetHashData(b)
 }
 
 func (b *Block) ToArray() []byte {
-	bf := new(bytes.Buffer)
-	b.Serialize(bf)
-	return bf.Bytes()
+	dt, _ := b.Marshal()
+	return dt
 }
 
 func (b *Block) GetProgramHashes() ([]Uint160, error) {

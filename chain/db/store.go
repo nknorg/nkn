@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"sync"
@@ -140,7 +141,8 @@ func (cs *ChainStore) GetHeader(hash Uint256) (*Header, error) {
 	}
 
 	h := new(Header)
-	err = h.Deserialize(bytes.NewReader(data))
+	dt, _ := serialization.ReadVarBytes(bytes.NewReader(data))
+	err = h.Unmarshal(dt)
 	if err != nil {
 		return nil, err
 	}
@@ -172,14 +174,10 @@ func (cs *ChainStore) getTx(hash Uint256) (*Transaction, uint32, error) {
 		return nil, 0, err
 	}
 
-	r := bytes.NewReader(value)
-	height, err := serialization.ReadUint32(r)
-	if err != nil {
-		return nil, 0, err
-	}
-
+	height := binary.LittleEndian.Uint32(value)
+	value = value[4:]
 	var txn Transaction
-	if err := txn.Deserialize(r); err != nil {
+	if err := txn.Unmarshal(value); err != nil {
 		return nil, height, err
 	}
 
@@ -249,11 +247,12 @@ func (cs *ChainStore) persist(b *Block) error {
 
 	//batch put transactions
 	for _, txn := range b.Transactions {
-		w := bytes.NewBuffer(nil)
-		serialization.WriteUint32(w, b.Header.UnsignedHeader.Height)
-		txn.Serialize(w)
+		buffer := make([]byte, 4)
+		binary.LittleEndian.PutUint32(buffer[:], b.Header.UnsignedHeader.Height)
+		dt, _ := txn.Marshal()
+		buffer = append(buffer, dt...)
 
-		if err := cs.st.BatchPut(transactionKey(txn.Hash()), w.Bytes()); err != nil {
+		if err := cs.st.BatchPut(transactionKey(txn.Hash()), buffer); err != nil {
 			return err
 		}
 

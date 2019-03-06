@@ -1,7 +1,6 @@
 package block
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/vm/signature"
 )
 
 type Header struct {
@@ -17,47 +17,52 @@ type Header struct {
 	hash Uint256
 }
 
+func (h *Header) Marshal() (dAtA []byte, err error) {
+	return h.BlockHeader.Marshal()
+}
+
+func (h *Header) Unmarshal(dAtA []byte) error {
+	return h.BlockHeader.Unmarshal(dAtA)
+}
+
 //Serialize the blockheader
 func (h *Header) Serialize(w io.Writer) error {
-	data, err := h.Marshal()
-	if err != nil {
-		return err
-	}
+	return nil
+}
 
-	err = serialization.WriteVarBytes(w, data)
-	return err
+func (h *Header) Deserialize(r io.Reader) error {
+	return nil
 }
 
 //Serialize the blockheader data without program
 func (h *Header) SerializeUnsigned(w io.Writer) error {
-	data, err := h.UnsignedHeader.Marshal()
-	if err != nil {
-		return err
-	}
+	serialization.WriteUint32(w, h.UnsignedHeader.Version)
+	serialization.WriteVarBytes(w, h.UnsignedHeader.PrevBlockHash)
+	serialization.WriteVarBytes(w, h.UnsignedHeader.TransactionsRoot)
+	serialization.WriteVarBytes(w, h.UnsignedHeader.StateRoot)
+	serialization.WriteUint64(w, uint64(h.UnsignedHeader.Timestamp))
+	serialization.WriteUint32(w, h.UnsignedHeader.Height)
+	serialization.WriteUint32(w, uint32(h.UnsignedHeader.WinnerType))
+	serialization.WriteVarBytes(w, h.UnsignedHeader.Signer)
+	serialization.WriteVarBytes(w, h.UnsignedHeader.ChordID)
 
-	err = serialization.WriteVarBytes(w, data)
-	return err
-}
-
-func (h *Header) Deserialize(r io.Reader) error {
-	data, err := serialization.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
-
-	err = h.Unmarshal(data)
-	return err
-
+	return nil
 }
 
 func (h *Header) DeserializeUnsigned(r io.Reader) error {
-	data, err := serialization.ReadVarBytes(r)
-	if err != nil {
-		return err
-	}
+	h.UnsignedHeader.Version, _ = serialization.ReadUint32(r)
+	h.UnsignedHeader.PrevBlockHash, _ = serialization.ReadVarBytes(r)
+	h.UnsignedHeader.TransactionsRoot, _ = serialization.ReadVarBytes(r)
+	h.UnsignedHeader.StateRoot, _ = serialization.ReadVarBytes(r)
+	timestamp, _ := serialization.ReadUint64(r)
+	h.UnsignedHeader.Timestamp = int64(timestamp)
+	h.UnsignedHeader.Height, _ = serialization.ReadUint32(r)
+	winnerType, _ := serialization.ReadUint32(r)
+	h.UnsignedHeader.WinnerType = WinnerType(winnerType)
+	h.UnsignedHeader.Signer, _ = serialization.ReadVarBytes(r)
+	h.UnsignedHeader.ChordID, _ = serialization.ReadVarBytes(r)
 
-	err = h.UnsignedHeader.Unmarshal(data)
-	return err
+	return nil
 }
 
 func (h *Header) GetProgramHashes() ([]Uint160, error) {
@@ -85,7 +90,7 @@ func (h *Header) GetPrograms() []*Program {
 }
 
 func (h *Header) Hash() Uint256 {
-	d := h.GetMessage()
+	d := signature.GetHashData(h)
 	temp := sha256.Sum256([]byte(d))
 	f := sha256.Sum256(temp[:])
 	hash := Uint256(f)
@@ -93,15 +98,12 @@ func (h *Header) Hash() Uint256 {
 }
 
 func (h *Header) GetMessage() []byte {
-	b_buf := new(bytes.Buffer)
-	h.SerializeUnsigned(b_buf)
-	return b_buf.Bytes()
+	return signature.GetHashData(h)
 }
 
 func (h *Header) ToArray() []byte {
-	b := new(bytes.Buffer)
-	h.Serialize(b)
-	return b.Bytes()
+	dt, _ := h.Marshal()
+	return dt
 }
 
 func (h *Header) MarshalJson() ([]byte, error) {
