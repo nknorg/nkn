@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"io"
@@ -9,6 +8,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/vm/signature"
 )
 
 func NewMsgTx(payload *Payload, nonce uint64, fee Fixed64, attrs []byte) *MsgTx {
@@ -31,29 +31,40 @@ type Transaction struct {
 	hash *Uint256
 }
 
+func (tx *Transaction) Marshal() (dAtA []byte, err error) {
+	return tx.MsgTx.Marshal()
+}
+
+func (tx *Transaction) Unmarshal(dAtA []byte) error {
+	return tx.MsgTx.Unmarshal(dAtA)
+}
+
 //Serialize the Transaction
 func (tx *Transaction) Serialize(w io.Writer) error {
-	data, err := tx.Marshal()
-	if err != nil {
-		return err
-	}
-
-	err = serialization.WriteVarBytes(w, data)
-	return err
+	return nil
 }
 
 //Serialize the Transaction data without contracts
 func (tx *Transaction) SerializeUnsigned(w io.Writer) error {
-	data, err := tx.UnsignedTx.Marshal()
+	if err := tx.UnsignedTx.Payload.Serialize(w); err != nil {
+		return err
+	}
+
+	err := serialization.WriteUint64(w, uint64(tx.UnsignedTx.Nonce))
 	if err != nil {
 		return err
 	}
 
-	err = serialization.WriteVarBytes(w, data)
-	return err
+	err = serialization.WriteUint64(w, uint64(tx.UnsignedTx.Fee))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //deserialize the Transaction
+//TODO
 func (tx *Transaction) Deserialize(r io.Reader) error {
 	data, err := serialization.ReadVarBytes(r)
 	if err != nil {
@@ -65,13 +76,23 @@ func (tx *Transaction) Deserialize(r io.Reader) error {
 }
 
 func (tx *Transaction) DeserializeUnsigned(r io.Reader) error {
-	data, err := serialization.ReadVarBytes(r)
+	err := tx.UnsignedTx.Payload.Deserialize(r)
 	if err != nil {
 		return err
 	}
 
-	err = tx.UnsignedTx.Unmarshal(data)
-	return err
+	tx.UnsignedTx.Nonce, err = serialization.ReadUint64(r)
+	if err != nil {
+		return err
+	}
+
+	fee, err := serialization.ReadUint64(r)
+	if err != nil {
+		return err
+	}
+	tx.UnsignedTx.Fee = int64(fee)
+
+	return nil
 }
 
 func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
@@ -103,20 +124,17 @@ func (tx *Transaction) GetPrograms() []*Program {
 }
 
 func (tx *Transaction) GetMessage() []byte {
-	b_buf := new(bytes.Buffer)
-	tx.SerializeUnsigned(b_buf)
-	return b_buf.Bytes()
+	return signature.GetHashData(tx)
 }
 
 func (tx *Transaction) ToArray() []byte {
-	b := new(bytes.Buffer)
-	tx.Serialize(b)
-	return b.Bytes()
+	dt, _ := tx.Marshal()
+	return dt
 }
 
 func (tx *Transaction) Hash() Uint256 {
 	if tx.hash == nil {
-		d := tx.GetMessage()
+		d := signature.GetHashData(tx)
 		temp := sha256.Sum256([]byte(d))
 		f := Uint256(sha256.Sum256(temp[:]))
 		tx.hash = &f

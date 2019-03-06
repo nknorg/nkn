@@ -3,11 +3,24 @@ syntax = "proto3";
 package pb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-//import "header.proto";
-//import "transaction.proto";
+import "pb/header.proto";
+import "pb/transaction.proto";
+
+
+//option (gogoproto.gostring_all) = true;
+//option (gogoproto.goproto_stringer_all) = false;
+//option (gogoproto.stringer_all) =  true;
+//option (gogoproto.marshaler_all) = true;
+//option (gogoproto.sizer_all) = true;
+//option (gogoproto.unmarshaler_all) = true;
 //
-//message Block {
-//	BlockHeader     Header                 = 1;
-//	repeated MsgTx  Transactions           = 2;
-//}
+//option (gogoproto.testgen_all) = true;
+//option (gogoproto.equal_all) = true;
+//option (gogoproto.populate_all) = true;
+
+
+message MsgBlock {
+	BlockHeader     Header                 = 1;
+    repeated MsgTx  Transactions           = 2;
+}
 

@@ -299,7 +299,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 			return respPacking(nil, INVALID_PARAMS)
 		}
 		var txn Transaction
-		if err := txn.Deserialize(bytes.NewReader(hex)); err != nil {
+		if err := txn.Unmarshal(hex); err != nil {
 			return respPacking(nil, INVALID_TRANSACTION)
 		}
 
