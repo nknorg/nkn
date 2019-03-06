@@ -1,7 +1,6 @@
 package node
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 
@@ -17,13 +16,13 @@ import (
 // NewTransactionsMessage creates a TRANSACTIONS message
 func NewTransactionsMessage(transactions []*Transaction) (*pb.UnsignedMessage, error) {
 	transactionsBytes := make([][]byte, len(transactions), len(transactions))
+	var err error
 	for i, transaction := range transactions {
-		b := new(bytes.Buffer)
-		err := transaction.Serialize(b)
+		transactionsBytes[i], err = transaction.Marshal()
 		if err != nil {
 			return nil, err
 		}
-		transactionsBytes[i] = b.Bytes()
+
 	}
 
 	msgBody := &pb.Transactions{
@@ -59,7 +58,7 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 	shouldPropagate := false
 	for _, txnBytes := range msgBody.Transactions {
 		txn := &Transaction{}
-		err = txn.Deserialize(bytes.NewReader(txnBytes))
+		err = txn.Unmarshal(txnBytes)
 		if err != nil {
 			log.Warningf("Deserialize transaction error: %v", err)
 			continue

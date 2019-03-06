@@ -1,7 +1,6 @@
 package moca
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"math"
@@ -301,7 +300,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 	}
 
 	block := &Block{}
-	err = block.Deserialize(bytes.NewReader(replyMsg.Block))
+	err = block.Unmarshal(replyMsg.Block)
 	if err != nil {
 		return nil, err
 	}

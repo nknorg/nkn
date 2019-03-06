@@ -1,7 +1,6 @@
 package websocket
 
 import (
-	"bytes"
 	"encoding/json"
 
 	"github.com/nknorg/nkn/api/common"
@@ -88,9 +87,8 @@ func PushBlock(v interface{}) {
 	resp := common.ResponsePack(common.SUCCESS)
 	if block, ok := v.(*Block); ok {
 		if pushRawBlockFlag {
-			w := bytes.NewBuffer(nil)
-			block.Serialize(w)
-			resp["Result"] = BytesToHexString(w.Bytes())
+			dt, _ := block.Marshal()
+			resp["Result"] = BytesToHexString(dt)
 		} else {
 			info, _ := block.MarshalJson()
 			var x interface{}
