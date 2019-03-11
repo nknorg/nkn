@@ -1,7 +1,6 @@
 package vault
 
 import (
-	"errors"
 	"fmt"
 
 	. "github.com/nknorg/nkn/common"
@@ -30,10 +29,10 @@ func NewAccount() (*Account, error) {
 }
 
 func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
-	privKeyLen := len(privateKey)
-	if privKeyLen != 32 {
-		return nil, errors.New("invalid private key length")
-	}
+	//privKeyLen := len(privateKey)
+	//if privKeyLen != 32 {
+	//	return nil, errors.New("invalid private key length")
+	//}
 	pubKey := crypto.NewPubKey(privateKey)
 	redeemHash, err := contract.CreateRedeemHash(pubKey)
 	if err != nil {
