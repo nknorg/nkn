@@ -295,6 +295,7 @@ func GetWallet() Wallet {
 	}
 	c, err := OpenWallet(WalletFileName, passwd)
 	if err != nil {
+		log.Error(err)
 		return nil
 	}
 	return c
