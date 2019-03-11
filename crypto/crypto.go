@@ -6,14 +6,17 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"strings"
 
 	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto/ed25519"
 	"github.com/nknorg/nkn/crypto/p256r1"
 	"github.com/nknorg/nkn/crypto/util"
 )
 
 const (
-	P256R1 = 0
+	P256R1  = 0
+	ED25519 = 1
 )
 
 //It can be P256R1
@@ -33,6 +36,14 @@ func SetAlg(algChoice string) {
 	// TODO add switch statements
 	AlgChoice = P256R1
 	p256r1.Init(&algSet)
+	if strings.Compare("ED25519", algChoice) == 0 {
+		AlgChoice = ED25519
+		ed25519.Init(&algSet)
+	} else {
+		AlgChoice = P256R1
+		p256r1.Init(&algSet)
+	}
+
 	return
 }
 
@@ -43,19 +54,30 @@ func GenKeyPair() ([]byte, PubKey, error) {
 	var Y *big.Int
 	var err error
 
-	privateD, X, Y, err = p256r1.GenKeyPair(&algSet)
+	if ED25519 == AlgChoice {
+		privateD, X, Y, err = ed25519.GenKeyPair(&algSet)
+	} else {
+		privateD, X, Y, err = p256r1.GenKeyPair(&algSet)
+	}
 
 	if nil != err {
 		return nil, *mPubKey, err
 	}
 
-	privkey := make([]byte, util.PRIVATEKEYLEN)
-	copy(privkey[util.PRIVATEKEYLEN-len(privateD):], privateD)
+	if ED25519 == AlgChoice {
+		privkey := privateD
+		mPubKey.X = new(big.Int).Set(X)
+		mPubKey.Y = new(big.Int).Set(Y)
+		return privkey, *mPubKey, nil
+	} else {
+		privkey := make([]byte, util.PRIVATEKEYLEN)
+		copy(privkey[util.PRIVATEKEYLEN-len(privateD):], privateD)
 
-	mPubKey.X = new(big.Int).Set(X)
-	mPubKey.Y = new(big.Int).Set(Y)
+		mPubKey.X = new(big.Int).Set(X)
+		mPubKey.Y = new(big.Int).Set(Y)
+		return privkey, *mPubKey, nil
+	}
 
-	return privkey, *mPubKey, nil
 }
 
 func Sign(privateKey []byte, data []byte) ([]byte, error) {
@@ -63,7 +85,12 @@ func Sign(privateKey []byte, data []byte) ([]byte, error) {
 	var s *big.Int
 	var err error
 
-	r, s, err = p256r1.Sign(&algSet, privateKey, data)
+	if ED25519 == AlgChoice {
+		r, s, err = ed25519.Sign(&algSet, privateKey, data)
+	} else {
+		r, s, err = p256r1.Sign(&algSet, privateKey, data)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +113,10 @@ func Verify(publicKey PubKey, data []byte, signature []byte) error {
 
 	r := new(big.Int).SetBytes(signature[:len/2])
 	s := new(big.Int).SetBytes(signature[len/2:])
+
+	if ED25519 == AlgChoice {
+		return ed25519.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
+	}
 
 	return p256r1.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
 }
