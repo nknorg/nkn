@@ -237,7 +237,7 @@ func deCompress(yTilde int, xValue []byte, curve *elliptic.CurveParams) (*PubKey
 }
 
 func DecodePoint(encodeData []byte) (*PubKey, error) {
-	if AlgChoice == ED25519 {
+	if AlgChoice == Ed25519 {
 		return &PubKey{X: new(big.Int).SetBytes(encodeData[1:]), Y: big.NewInt(0)}, nil
 	} else {
 		if nil == encodeData {
@@ -275,7 +275,7 @@ func DecodePoint(encodeData []byte) (*PubKey, error) {
 }
 
 func (e *PubKey) EncodePoint(isCommpressed bool) ([]byte, error) {
-	if AlgChoice == ED25519 {
+	if AlgChoice == Ed25519 {
 		encodedData := make([]byte, COMPRESSEDLEN)
 		copy(encodedData[1:], e.X.Bytes())
 		encodedData[0] = 0x04
@@ -315,7 +315,7 @@ func (e *PubKey) EncodePoint(isCommpressed bool) ([]byte, error) {
 }
 
 func NewPubKey(priKey []byte) *PubKey {
-	if AlgChoice == ED25519 {
+	if AlgChoice == Ed25519 {
 		X := ed25519.NewKeyFromPrivkey(priKey)
 		return &PubKey{X: X, Y: big.NewInt(0)}
 	} else {
