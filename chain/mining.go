@@ -38,6 +38,8 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	coinbase := bm.CreateCoinbaseTransaction()
 	txnList = append(txnList, coinbase)
 	txnHashList = append(txnHashList, coinbase.Hash())
+	totalTxsSize := coinbase.GetSize()
+	txCount := 1
 
 	if winnerType == TxnSigner {
 		miningSigChainTxn, err := por.GetPorServer().GetMiningSigChainTxn(winningHash)
@@ -46,13 +48,26 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 		}
 		txnList = append(txnList, miningSigChainTxn)
 		txnHashList = append(txnHashList, miningSigChainTxn.Hash())
+		totalTxsSize = totalTxsSize + miningSigChainTxn.GetSize()
+		txCount++
 	}
 
 	txns, err := bm.txnCollector.Collect()
 	if err != nil {
 		return nil, err
 	}
+
 	for txnHash, txn := range txns {
+		totalTxsSize = totalTxsSize + txn.GetSize()
+		if totalTxsSize > config.MaxBlockSize {
+			break
+		}
+
+		txCount++
+		if txCount >= config.MaxNumTxnPerBlock {
+			break
+		}
+
 		if !DefaultLedger.Store.IsTxHashDuplicate(txnHash) {
 			txnList = append(txnList, txn)
 			txnHashList = append(txnHashList, txnHash)
