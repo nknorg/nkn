@@ -47,7 +47,7 @@ func init() {
 	log.Init(log.Path, log.Stdout)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().UnixNano())
-	crypto.SetAlg(config.Parameters.EncryptAlg)
+	crypto.SetAlg(config.EncryptAlg)
 }
 
 func InitLedger(account *vault.Account) error {

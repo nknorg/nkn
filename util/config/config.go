@@ -30,6 +30,7 @@ const (
 	MinNumSuccessors    = 8
 	NodeIDBytes         = 32
 	MaxRollbackBlocks   = 1
+	EncryptAlg          = "Ed25519"
 )
 
 var (
@@ -74,7 +75,6 @@ type Configuration struct {
 	KeyPath                   string        `json:"KeyPath"`
 	CAPath                    string        `json:"CAPath"`
 	GenBlockTime              uint          `json:"GenBlockTime"`
-	EncryptAlg                string        `json:"EncryptAlg"`
 	MaxLogSize                int64         `json:"MaxLogSize"`
 	MaxTxInBlock              int           `json:"MaxTransactionInBlock"`
 	MaxHdrSyncReqs            int           `json:"MaxConcurrentSyncHeaderReqs"`

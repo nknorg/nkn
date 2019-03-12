@@ -11,7 +11,7 @@ import (
 
 func init() {
 	log.Init()
-	crypto.SetAlg(config.Parameters.EncryptAlg)
+	crypto.SetAlg(config.EncryptAlg)
 	//seed transaction nonce
 	rand.Seed(time.Now().UnixNano())
 }
