@@ -17,6 +17,10 @@ import (
 
 // VerifyTransaction verifys received single transaction
 func VerifyTransaction(txn *Transaction) error {
+	if err := CheckTransactionSize(txn); err != nil {
+		return fmt.Errorf("[VerifyTransaction],%v\n", err)
+	}
+
 	if err := CheckTransactionFee(txn); err != nil {
 		return fmt.Errorf("[VerifyTransaction],%v\n", err)
 	}
@@ -35,6 +39,15 @@ func VerifyTransaction(txn *Transaction) error {
 
 	if err := CheckTransactionPayload(txn); err != nil {
 		return fmt.Errorf("[VerifyTransaction],%v\n", err)
+	}
+
+	return nil
+}
+
+func CheckTransactionSize(txn *Transaction) error {
+	size := txn.GetSize()
+	if size <= 0 || size > config.MaxBlockSize {
+		return fmt.Errorf("Invalid transaction size: %d bytes", size)
 	}
 
 	return nil
