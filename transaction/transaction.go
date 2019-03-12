@@ -95,6 +95,11 @@ func (tx *Transaction) DeserializeUnsigned(r io.Reader) error {
 	return nil
 }
 
+func (tx *Transaction) GetSize() int {
+	marshaledTx, _ := tx.Marshal()
+	return len(marshaledTx)
+}
+
 func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	hashes := []Uint160{}
 
