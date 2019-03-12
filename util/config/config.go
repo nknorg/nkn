@@ -24,6 +24,7 @@ const (
 
 const (
 	MaxNumTxnPerBlock   = 4096
+	MaxBlockSize        = 1 * 1024 * 1024
 	ConsensusDuration   = 20 * time.Second
 	ConsensusTimeout    = time.Minute
 	DefaultMiningReward = 15
@@ -76,7 +77,6 @@ type Configuration struct {
 	CAPath                    string        `json:"CAPath"`
 	GenBlockTime              uint          `json:"GenBlockTime"`
 	MaxLogSize                int64         `json:"MaxLogSize"`
-	MaxTxInBlock              int           `json:"MaxTransactionInBlock"`
 	MaxHdrSyncReqs            int           `json:"MaxConcurrentSyncHeaderReqs"`
 	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
 	Hostname                  string        `json:"Hostname"`

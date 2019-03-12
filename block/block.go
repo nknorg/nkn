@@ -57,6 +57,15 @@ func (b *Block) Deserialize(r io.Reader) error {
 	return nil
 }
 
+func (b *Block) GetTxsSize() int {
+	txnSize := 0
+	for _, txn := range b.Transactions {
+		txnSize += txn.GetSize()
+	}
+
+	return txnSize
+}
+
 func (b *Block) GetSigner() ([]byte, []byte, error) {
 	return b.Header.UnsignedHeader.Signer, b.Header.UnsignedHeader.ChordID, nil
 }

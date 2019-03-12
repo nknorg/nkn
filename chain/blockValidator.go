@@ -46,6 +46,16 @@ func TransactionCheck(block *Block) error {
 	if block.Transactions == nil {
 		return errors.New("empty block")
 	}
+	numTxn := len(block.Transactions)
+	if numTxn > config.MaxNumTxnPerBlock {
+		return errors.New("block contains too many transactions")
+	}
+
+	blockSize := block.GetTxsSize()
+	if blockSize > config.MaxBlockSize {
+		return errors.New("serialized block is too big")
+	}
+
 	if block.Transactions[0].UnsignedTx.Payload.Type != CoinbaseType {
 		return errors.New("first transaction in block is not Coinbase")
 	}
