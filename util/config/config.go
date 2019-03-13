@@ -24,7 +24,7 @@ const (
 
 const (
 	MaxNumTxnPerBlock   = 4096
-	MaxBlockSize        = 1 * 1024 * 1024
+	MaxBlockSize        = 1 * 1024 * 1024 // The Max of block size is 1 MB.
 	ConsensusDuration   = 20 * time.Second
 	ConsensusTimeout    = time.Minute
 	DefaultMiningReward = 15
@@ -79,6 +79,7 @@ type Configuration struct {
 	MaxLogSize                int64         `json:"MaxLogSize"`
 	MaxHdrSyncReqs            int           `json:"MaxConcurrentSyncHeaderReqs"`
 	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
+	MinTxnFee                 int64         `json:"MinTxnFee"`
 	Hostname                  string        `json:"Hostname"`
 	Transport                 string        `json:"Transport"`
 	NAT                       bool          `json:"NAT"`
