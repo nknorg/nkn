@@ -58,13 +58,18 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	}
 
 	for txnHash, txn := range txns {
+		if txn.UnsignedTx.Fee < int64(config.Parameters.MinTxnFee) {
+			log.Warning("transaction fee is too low")
+			continue
+		}
+
 		totalTxsSize = totalTxsSize + txn.GetSize()
 		if totalTxsSize > config.MaxBlockSize {
 			break
 		}
 
 		txCount++
-		if txCount >= config.MaxNumTxnPerBlock {
+		if txCount > config.MaxNumTxnPerBlock {
 			break
 		}
 

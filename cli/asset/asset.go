@@ -82,8 +82,16 @@ func assetAction(c *cli.Context) error {
 		receipt := parseAddress(c)
 		amount, _ := StringToFixed64(value)
 
+		var txnFee Fixed64
+		fee := c.String("fee")
+		if fee == "" {
+			txnFee = Fixed64(0)
+		} else {
+			txnFee, _ = StringToFixed64(fee)
+		}
+
 		nonce := c.Uint64("nonce")
-		txn, _ := MakeTransferTransaction(myWallet, receipt, nonce, amount, 0)
+		txn, _ := MakeTransferTransaction(myWallet, receipt, nonce, amount, txnFee)
 		buff, _ := txn.Marshal()
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	case c.Bool("prepaid"):
@@ -159,6 +167,11 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "value, v",
 				Usage: "asset amount",
+				Value: "",
+			},
+			cli.StringFlag{
+				Name:  "fee, f",
+				Usage: "transaction fee",
 				Value: "",
 			},
 			cli.StringFlag{
