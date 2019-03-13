@@ -17,7 +17,7 @@ func NewTransferAssetTransaction(sender, recipient Uint160, nonce uint64, value,
 		return nil, err
 	}
 
-	tx := NewMsgTx(pl, nonce, 0, util.RandomBytes(TransactionNonceLength))
+	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
 		MsgTx: *tx,
