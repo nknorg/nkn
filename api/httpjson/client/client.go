@@ -77,3 +77,28 @@ func FindSuccessorAddrs(remote string, key []byte) ([]string, error) {
 
 	return ret.Result, nil
 }
+
+func GetMyExtIP(remote string, ip []byte) (string, error) {
+	resp, err := Call(remote, "getmyextip", 0, map[string]interface{}{
+		"RemoteAddr": ip,
+	})
+	if err != nil {
+		return "", err
+	}
+	log.Printf("GetMyExtIP got resp: %v from %s\n", string(resp), remote)
+
+	var ret struct {
+		Result struct{ RemoteAddr string } `json:"result"`
+		Err    map[string]interface{}      `json:"error"`
+	}
+	if err := json.Unmarshal(resp, &ret); err != nil {
+		log.Println(err)
+		return "", err
+	}
+	if len(ret.Err) != 0 { // resp.error NOT empty
+		return "", fmt.Errorf("GetMyExtIP(%s) resp error: %v", remote, string(resp))
+	}
+	log.Printf("From %s got myself ExtIP: %s\n", remote, string(resp))
+
+	return ret.Result.RemoteAddr, nil
+}
