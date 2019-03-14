@@ -15,7 +15,6 @@ import (
 	gonat "github.com/nknorg/go-nat"
 	"github.com/nknorg/go-portscanner"
 	"github.com/nknorg/nnet/transport"
-	"github.com/rdegges/go-ipify"
 )
 
 const (
@@ -117,27 +116,6 @@ func Init() error {
 	if err := Parameters.SetupPortMapping(); err != nil {
 		log.Printf("Error adding port mapping. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.")
 		return err
-	}
-
-	if Parameters.Hostname == "" {
-		log.Println("Getting my IP address...")
-		ip, err := ipify.GetIp()
-		if err != nil {
-			return err
-		}
-		log.Printf("My IP address is %s", ip)
-
-		Parameters.Hostname = ip
-
-		// if !SkipCheckPort {
-		// 	ok, err := Parameters.CheckPorts(ip)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	if !ok {
-		// 		return errors.New("Some ports are not open. Please make sure you set up port forwarding or firewall correctly")
-		// 	}
-		// }
 	}
 
 	err := check(Parameters)

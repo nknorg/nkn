@@ -106,6 +106,22 @@ func JoinNet(nn *nnet.NNet) error {
 	return errors.New("Failed to join the network.")
 }
 
+// AskMyID request to seeds randomly, in order to obtain self's externIP and corresponding chordID
+func AskMyID(seeds []string) (string, error) {
+	rand.Shuffle(len(seeds), func(i int, j int) {
+		seeds[i], seeds[j] = seeds[j], seeds[i]
+	})
+
+	for _, seed := range seeds {
+		addr, err := client.GetMyExtIP(seed, []byte{})
+		if err == nil {
+			return addr, err
+		}
+		log.Warningf("Ask my ID from %s met error: %v", seed, err)
+	}
+	return "", errors.New("Tried all seeds but can't got my external IP and nknID")
+}
+
 func nknMain(c *cli.Context) error {
 	log.Info("Node version: ", config.Version)
 	signalChan := make(chan os.Signal, 1)
@@ -117,6 +133,15 @@ func nknMain(c *cli.Context) error {
 	log.Log.SetDebugLevel(config.Parameters.LogLevel) // Update LogLevel after config.json loaded
 
 	defer config.Parameters.CleanPortMapping()
+
+	if config.Parameters.Hostname == "" {
+		log.Info("Getting my IP address...")
+		extIP, err := AskMyID(config.Parameters.SeedList)
+		if err != nil {
+			return err
+		}
+		config.Parameters.Hostname = extIP
+	}
 
 	// Get local account
 	wallet := vault.GetWallet()
@@ -142,7 +167,6 @@ func nknMain(c *cli.Context) error {
 	}
 
 	id := address.GenChordID(fmt.Sprintf("%s:%d", config.Parameters.Hostname, config.Parameters.NodePort))
-
 	nn, err := nnet.NewNNet(id, conf)
 	if err != nil {
 		return err
@@ -171,7 +195,7 @@ func nknMain(c *cli.Context) error {
 
 	err = por.InitPorServer(account, id)
 	if err != nil {
-		return errors.New("PorServer initialization error")
+		return fmt.Errorf("PorServer initialization error with: %v", err)
 	}
 
 	localNode, err := node.NewLocalNode(wallet, nn)
