@@ -26,6 +26,18 @@ type Block struct {
 	hash *Uint256
 }
 
+func (b *Block) ToMsgBlock() *MsgBlock {
+	msgBlock := &MsgBlock{
+		Header: &b.Header.BlockHeader,
+	}
+
+	for _, txn := range b.Transactions {
+		msgBlock.Transactions = append(msgBlock.Transactions, &txn.MsgTx)
+	}
+
+	return msgBlock
+}
+
 func (b *Block) Marshal() (dAtA []byte, err error) {
 	msgBlock := &MsgBlock{
 		Header: &b.Header.BlockHeader,
@@ -232,10 +244,31 @@ func (b *Block) SerializeUnsigned(w io.Writer) error {
 	return b.Header.SerializeUnsigned(w)
 }
 
-func (bd *Block) MarshalJson() ([]byte, error) {
-	return json.Marshal(bd)
-}
+func (b *Block) GetInfo() ([]byte, error) {
+	type blockInfo struct {
+		Header       interface{}
+		Transactions []interface{}
+	}
 
-func (bd *Block) UnmarshalJson(data []byte) error {
-	return json.Unmarshal(data, bd)
+	var unmarshaledHeader interface{}
+	headerInfo, _ := b.Header.GetInfo()
+	json.Unmarshal(headerInfo, &unmarshaledHeader)
+	info := &blockInfo{
+		Header:       unmarshaledHeader,
+		Transactions: make([]interface{}, 0),
+	}
+
+	for _, v := range b.Transactions {
+		var unmarshaledTxn interface{}
+		txnInfo, _ := v.GetInfo()
+		json.Unmarshal(txnInfo, &unmarshaledTxn)
+		info.Transactions = append(info.Transactions, unmarshaledTxn)
+	}
+
+	marshaledInfo, err := json.Marshal(info)
+	if err != nil {
+		return nil, err
+	}
+
+	return marshaledInfo, nil
 }

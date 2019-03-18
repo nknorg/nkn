@@ -172,10 +172,43 @@ func (a byProgramHashes) Less(i, j int) bool {
 	}
 }
 
-func (tx *Transaction) MarshalJson() ([]byte, error) {
-	return json.Marshal(tx)
-}
+func (tx *Transaction) GetInfo() ([]byte, error) {
+	type programInfo struct {
+		Code      string `json:"code"`
+		Parameter string `json:"parameter"`
+	}
+	type txnInfo struct {
+		TxType      string        `json:"txType"`
+		PayloadData string        `json:"payloadData"`
+		Nonce       uint64        `json:"nonce"`
+		Fee         int64         `json:"fee"`
+		Attributes  string        `json:"attributes"`
+		Programs    []programInfo `json:"programs"`
+		Hash        string        `json:"hash"`
+	}
 
-func (tx *Transaction) UnmarshalJson(data []byte) error {
-	return json.Unmarshal(data, tx)
+	tx.Hash()
+	info := &txnInfo{
+		TxType:      tx.UnsignedTx.Payload.GetType().String(),
+		PayloadData: BytesToHexString(tx.UnsignedTx.Payload.GetData()),
+		Nonce:       tx.UnsignedTx.Nonce,
+		Fee:         tx.UnsignedTx.Fee,
+		Attributes:  BytesToHexString(tx.UnsignedTx.Attributes),
+		Programs:    make([]programInfo, 0),
+		Hash:        tx.hash.ToHexString(),
+	}
+
+	for _, v := range tx.Programs {
+		pgInfo := &programInfo{}
+		pgInfo.Code = BytesToHexString(v.Code)
+		pgInfo.Parameter = BytesToHexString(v.Parameter)
+		info.Programs = append(info.Programs, *pgInfo)
+	}
+
+	marshaledInfo, err := json.Marshal(info)
+	if err != nil {
+		return nil, err
+	}
+	return marshaledInfo, nil
+
 }
