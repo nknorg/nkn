@@ -90,7 +90,7 @@ func PushBlock(v interface{}) {
 			dt, _ := block.Marshal()
 			resp["Result"] = BytesToHexString(dt)
 		} else {
-			info, _ := block.MarshalJson()
+			info, _ := block.GetInfo()
 			var x interface{}
 			json.Unmarshal(info, &x)
 			resp["Result"] = x

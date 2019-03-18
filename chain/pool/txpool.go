@@ -142,8 +142,17 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 }
 
 func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
-	//TODO
-	return nil
+	txns := make(map[common.Uint256]*Transaction)
+	for _, list := range tp.TxLists {
+		for hash, txn := range list.txs {
+			txns[hash] = txn
+		}
+		for hash, txn := range list.orphans {
+			txns[hash] = txn
+		}
+	}
+
+	return txns
 }
 
 func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {

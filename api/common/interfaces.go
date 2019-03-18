@@ -97,10 +97,9 @@ func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} 
 	if err != nil {
 		return respPacking(nil, UNKNOWN_BLOCK)
 	}
-	block.Hash()
 
 	var b interface{}
-	info, _ := block.MarshalJson()
+	info, _ := block.GetInfo()
 	json.Unmarshal(info, &b)
 
 	return respPacking(b, SUCCESS)
@@ -227,7 +226,7 @@ func getRawMemPool(s Serverer, params map[string]interface{}) map[string]interfa
 	txs := []interface{}{}
 	txpool := localNode.GetTxnPool()
 	for _, t := range txpool.GetAllTransactions() {
-		info, err := t.MarshalJson()
+		info, err := t.GetInfo()
 		if err != nil {
 			return respPacking(nil, INTERNAL_ERROR)
 		}
@@ -270,7 +269,7 @@ func getTransaction(s Serverer, params map[string]interface{}) map[string]interf
 
 		tx.Hash()
 		var tran interface{}
-		info, _ := tx.MarshalJson()
+		info, _ := tx.GetInfo()
 		json.Unmarshal(info, &tran)
 
 		return respPacking(tran, SUCCESS)

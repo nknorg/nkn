@@ -106,10 +106,55 @@ func (h *Header) ToArray() []byte {
 	return dt
 }
 
-func (h *Header) MarshalJson() ([]byte, error) {
-	return json.Marshal(h)
-}
+func (h *Header) GetInfo() ([]byte, error) {
+	type programInfo struct {
+		Code      string `json:"code"`
+		Parameter string `json:"parameter"`
+	}
 
-func (h *Header) UnmarshalJson(data []byte) error {
-	return json.Unmarshal(data, h)
+	type headerInfo struct {
+		Version          uint32      `json:"version"`
+		PrevBlockHash    string      `json:"prevBlockHash"`
+		TransactionsRoot string      `json:"transactionsRoot"`
+		StateRoot        string      `json:"stateRoot"`
+		Timestamp        int64       `json:"timestamp"`
+		Height           uint32      `json:"height"`
+		ConsensusData    uint64      `json:"consensusData"`
+		NextBookKeeper   string      `json:"nextBookKeeper"`
+		WinnerHash       string      `json:"winnerHash"`
+		WinnerType       string      `json:"winnerType"`
+		Signer           string      `json:"signer"`
+		ChordID          string      `json:"chordID"`
+		Signature        string      `json:"signature"`
+		Program          programInfo `json:"program"`
+		Hash             string      `json:"hash"`
+	}
+
+	h.Hash()
+	info := &headerInfo{
+		Version:          h.UnsignedHeader.Version,
+		PrevBlockHash:    BytesToHexString(h.UnsignedHeader.PrevBlockHash),
+		TransactionsRoot: BytesToHexString(h.UnsignedHeader.TransactionsRoot),
+		StateRoot:        BytesToHexString(h.UnsignedHeader.StateRoot),
+		Timestamp:        h.UnsignedHeader.Timestamp,
+		Height:           h.UnsignedHeader.Height,
+		ConsensusData:    h.UnsignedHeader.ConsensusData,
+		NextBookKeeper:   BytesToHexString(h.UnsignedHeader.NextBookKeeper),
+		WinnerHash:       BytesToHexString(h.UnsignedHeader.WinnerHash),
+		WinnerType:       h.UnsignedHeader.WinnerType.String(),
+		Signer:           BytesToHexString(h.UnsignedHeader.Signer),
+		ChordID:          BytesToHexString(h.UnsignedHeader.ChordID),
+		Signature:        BytesToHexString(h.Signature),
+		Program: programInfo{
+			Code:      BytesToHexString(h.Program.Code),
+			Parameter: BytesToHexString(h.Program.Parameter),
+		},
+		Hash: h.hash.ToHexString(),
+	}
+
+	marshaledInfo, err := json.Marshal(info)
+	if err != nil {
+		return nil, err
+	}
+	return marshaledInfo, nil
 }
