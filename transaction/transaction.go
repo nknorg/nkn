@@ -104,6 +104,14 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	hashes := []Uint160{}
 
 	switch tx.UnsignedTx.Payload.Type {
+	case CommitType:
+		payload, err := Unpack(tx.UnsignedTx.Payload)
+		if err != nil {
+			return nil, err
+		}
+
+		sender := payload.(*Commit).Submitter
+		hashes = append(hashes, BytesToUint160(sender))
 	case TransferAssetType:
 		payload, err := Unpack(tx.UnsignedTx.Payload)
 		if err != nil {

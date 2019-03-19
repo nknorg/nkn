@@ -257,7 +257,7 @@ func (cs *ChainStore) persist(b *Block) error {
 		}
 
 		//TODO if need New?
-		if txn.UnsignedTx.Payload.Type != CoinbaseType {
+		if txn.UnsignedTx.Payload.Type != CoinbaseType && txn.UnsignedTx.Payload.Type != CommitType {
 			pg, _ := ToCodeHash(txn.Programs[0].Code)
 			nonce := cs.States.GetNonce(pg)
 			err := cs.States.SetNonce(pg, nonce+1)
