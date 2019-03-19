@@ -130,7 +130,7 @@ func (h *Header) GetInfo() ([]byte, error) {
 		Hash             string      `json:"hash"`
 	}
 
-	h.Hash()
+	hash := h.Hash()
 	info := &headerInfo{
 		Version:          h.UnsignedHeader.Version,
 		PrevBlockHash:    BytesToHexString(h.UnsignedHeader.PrevBlockHash),
@@ -149,7 +149,7 @@ func (h *Header) GetInfo() ([]byte, error) {
 			Code:      BytesToHexString(h.Program.Code),
 			Parameter: BytesToHexString(h.Program.Parameter),
 		},
-		Hash: h.hash.ToHexString(),
+		Hash: hash.ToHexString(),
 	}
 
 	marshaledInfo, err := json.Marshal(info)
