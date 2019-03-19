@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"strconv"
@@ -80,7 +79,7 @@ func WalletPassword(passwd string) []byte {
 func parsePort() uint16 {
 	file, err := ioutil.ReadFile(DefaultConfigFile)
 	if err != nil {
-		log.Printf("Config file error: %v, use default parameters.", err)
+		fmt.Printf("Config file error: %v, use default parameters.", err)
 		return 0
 	}
 	// Remove the UTF-8 Byte Order Mark
@@ -89,7 +88,7 @@ func parsePort() uint16 {
 	config := config.Configuration{}
 	err = json.Unmarshal(file, &config)
 	if err != nil {
-		log.Printf("Unmarshal config file error: %v, use default parameters.", err)
+		fmt.Printf("Unmarshal config file error: %v, use default parameters.", err)
 		return 0
 	}
 

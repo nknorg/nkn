@@ -6,12 +6,9 @@ import (
 
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
 )
 
 func init() {
-	log.Init()
-	crypto.SetAlg(config.EncryptAlg)
-	//seed transaction nonce
-	rand.Seed(time.Now().UnixNano())
+	crypto.SetAlg(config.EncryptAlg) // select signature algorithm
+	rand.Seed(time.Now().UnixNano()) // seed transaction nonce
 }
