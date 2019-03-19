@@ -9,7 +9,6 @@ import (
 	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
 
@@ -19,25 +18,6 @@ import (
 const (
 	RANDBYTELEN = 4
 )
-
-func parseAssetName(c *cli.Context) string {
-	name := c.String("name")
-	if name == "" {
-		name = "TEST-" + BytesToHexString(util.RandomBytes(RANDBYTELEN))
-	}
-
-	return name
-}
-
-func parseAssetID(c *cli.Context) string {
-	asset := c.String("asset")
-	if asset == "" {
-		fmt.Println("missing flag [--asset]")
-		os.Exit(1)
-	}
-
-	return asset
-}
 
 func parseAddress(c *cli.Context) Uint160 {
 	if address := c.String("to"); address != "" {
@@ -67,10 +47,6 @@ func assetAction(c *cli.Context) error {
 	var err error
 	var resp []byte
 	switch {
-	case c.Bool("reg"):
-		resp, err = client.Call(Address(), "registasset", 0, map[string]interface{}{"name": parseAssetName(c), "value": value})
-	case c.Bool("issue"):
-		resp, err = client.Call(Address(), "issueasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "address": parseAddress(c), "value": value})
 	case c.Bool("transfer"):
 		walletName := c.String("wallet")
 		passwd := c.String("password")
@@ -94,15 +70,6 @@ func assetAction(c *cli.Context) error {
 		txn, _ := MakeTransferTransaction(myWallet, receipt, nonce, amount, txnFee)
 		buff, _ := txn.Marshal()
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
-	case c.Bool("prepaid"):
-		rates := c.String("rates")
-		if rates == "" {
-			fmt.Println("rates is required with [--rates]")
-			return nil
-		}
-		resp, err = client.Call(Address(), "prepaidasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "value": value, "rates": rates})
-	case c.Bool("withdraw"):
-		resp, err = client.Call(Address(), "withdrawasset", 0, map[string]interface{}{"assetid": parseAssetID(c), "value": value})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -124,24 +91,8 @@ func NewCommand() *cli.Command {
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
-				Name:  "reg, r",
-				Usage: "regist a new kind of asset",
-			},
-			cli.BoolFlag{
-				Name:  "issue, i",
-				Usage: "issue asset that has been registered",
-			},
-			cli.BoolFlag{
 				Name:  "transfer, t",
 				Usage: "transfer asset",
-			},
-			cli.BoolFlag{
-				Name:  "prepaid",
-				Usage: "prepaid asset",
-			},
-			cli.BoolFlag{
-				Name:  "withdraw",
-				Usage: "withdraw asset",
 			},
 			cli.StringFlag{
 				Name:  "wallet, w",
@@ -151,14 +102,6 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "password, p",
 				Usage: "wallet password",
-			},
-			cli.StringFlag{
-				Name:  "asset, a",
-				Usage: "uniq id for asset",
-			},
-			cli.StringFlag{
-				Name:  "name",
-				Usage: "asset name",
 			},
 			cli.StringFlag{
 				Name:  "to",
@@ -173,10 +116,6 @@ func NewCommand() *cli.Command {
 				Name:  "fee, f",
 				Usage: "transaction fee",
 				Value: "",
-			},
-			cli.StringFlag{
-				Name:  "rates",
-				Usage: "rates",
 			},
 			cli.Uint64Flag{
 				Name:  "nonce",
