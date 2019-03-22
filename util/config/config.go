@@ -46,6 +46,7 @@ var (
 		HttpWsPort:   30002,
 		HttpJsonPort: 30003,
 		NAT:          true,
+		MiningDebug:  true,
 		LogLevel:     1,
 		SeedList: []string{
 			"http://127.0.0.1:30003",
@@ -83,6 +84,7 @@ type Configuration struct {
 	Hostname                  string        `json:"Hostname"`
 	Transport                 string        `json:"Transport"`
 	NAT                       bool          `json:"NAT"`
+	MiningDebug               bool          `json:"MiningDebug"`
 	BeneficiaryAddr           string        `json:"BeneficiaryAddr"`
 	SyncBatchWindowSize       uint32        `json:"SyncBatchWindowSize"`
 	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
