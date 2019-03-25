@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -68,7 +69,7 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 	out["version"] = config.Version
 	out["relayMessageCount"] = localNode.GetRelayMessageCount()
 	if config.Parameters.MiningDebug {
-		out["proposalSubmitted"] = localNode.proposalSubmitted
+		out["proposalSubmitted"] = localNode.GetProposalSubmitted()
 		out["currTimeStamp"] = time.Now().Unix()
 	}
 
@@ -213,11 +214,11 @@ func (localNode *LocalNode) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) 
 }
 
 func (localNode *LocalNode) GetProposalSubmitted() uint32 {
-	return localNode.proposalSubmitted
+	return atomic.LoadUint32(&localNode.proposalSubmitted)
 }
 
 func (localNode *LocalNode) IncrementProposalSubmitted() {
-	localNode.proposalSubmitted++
+	atomic.AddUint32(&localNode.proposalSubmitted, 1)
 }
 
 func (localNode *LocalNode) GetRelayMessageCount() uint64 {
