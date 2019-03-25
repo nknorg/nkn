@@ -25,6 +25,8 @@ func infoAction(c *cli.Context) (err error) {
 	ring := c.Bool("ring")
 	state := c.Bool("state")
 	version := c.Bool("nodeversion")
+	balance := c.String("balance")
+	nonce := c.String("nonce")
 
 	var resp []byte
 	var output [][]byte
@@ -118,6 +120,25 @@ func infoAction(c *cli.Context) (err error) {
 		output = append(output, resp)
 
 	}
+
+	if balance != "" {
+		resp, err := client.Call(Address(), "getbalancebyaddr", 0, map[string]interface{}{"address": balance})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
+		output = append(output, resp)
+	}
+
+	if nonce != "" {
+		resp, err := client.Call(Address(), "getnoncebyaddr", 0, map[string]interface{}{"address": nonce})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
+		output = append(output, resp)
+	}
+
 	for _, v := range output {
 		FormatOutput(v)
 	}
@@ -172,6 +193,14 @@ func NewCommand() *cli.Command {
 			cli.BoolFlag{
 				Name:  "nodeversion, v",
 				Usage: "version of connected remote node",
+			},
+			cli.StringFlag{
+				Name:  "balance",
+				Usage: "balance of a address",
+			},
+			cli.StringFlag{
+				Name:  "nonce",
+				Usage: "nonce of a address",
 			},
 		},
 		Action: infoAction,
