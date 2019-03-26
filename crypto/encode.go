@@ -237,13 +237,13 @@ func deCompress(yTilde int, xValue []byte, curve *elliptic.CurveParams) (*PubKey
 }
 
 func DecodePoint(encodeData []byte) (*PubKey, error) {
+	if len(encodeData) == 0 {
+		return nil, errors.New("The encodeData cann't be nil")
+	}
+
 	if AlgChoice == Ed25519 {
 		return &PubKey{X: new(big.Int).SetBytes(encodeData[1:]), Y: big.NewInt(0)}, nil
 	} else {
-		if nil == encodeData {
-			return nil, errors.New("The encodeData cann't be nil")
-		}
-
 		switch encodeData[0] {
 		case 0x00:
 			return &PubKey{nil, nil}, nil

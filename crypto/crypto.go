@@ -144,6 +144,23 @@ func (e *PubKey) Deserialize(r io.Reader) error {
 	return nil
 }
 
+func CheckPrivateKey(privkey []byte) error {
+	switch AlgChoice {
+	case P256R1:
+		if len(privkey) != p256r1.GetPrivateKeySize() {
+			return fmt.Errorf("the length of ECDSA privatekey is not %d", p256r1.GetPrivateKeySize())
+		}
+	case Ed25519:
+		if len(privkey) != ed25519.GetPrivateKeySize() {
+			return fmt.Errorf("the length of Ed25519 privatekey is not %d", ed25519.GetPrivateKeySize())
+		}
+	default:
+		panic("unsupported algorithm type")
+	}
+
+	return nil
+}
+
 type PubKeySlice []*PubKey
 
 func (p PubKeySlice) Len() int { return len(p) }
