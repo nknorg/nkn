@@ -11,6 +11,11 @@ import (
 	"github.com/nknorg/nkn/crypto/util"
 )
 
+const (
+	PrivateKeySize = 32
+	SignatureSize  = 64
+)
+
 func Init(algSet *util.CryptoAlgSet) {
 	algSet.Curve = elliptic.P256()
 	algSet.EccParams = *(algSet.Curve.Params())
@@ -60,4 +65,8 @@ func Verify(algSet *util.CryptoAlgSet, X *big.Int, Y *big.Int, data []byte, r, s
 	} else {
 		return errors.New("[Validation], Verify failed.")
 	}
+}
+
+func GetPrivateKeySize() int {
+	return PrivateKeySize
 }

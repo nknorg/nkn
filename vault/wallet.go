@@ -123,6 +123,12 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if err := crypto.CheckPrivateKey(privateKey); err != nil {
+		log.Error("open wallet error", err)
+		os.Exit(1)
+	}
+
 	account, err := NewAccountWithPrivatekey(privateKey)
 	if err != nil {
 		return nil, err
