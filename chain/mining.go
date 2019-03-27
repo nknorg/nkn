@@ -41,7 +41,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	totalTxsSize := coinbase.GetSize()
 	txCount := 1
 
-	if winnerType == TxnSigner {
+	if winnerType == TXN_SIGNER {
 		miningSigChainTxn, err := por.GetPorServer().GetMiningSigChainTxn(winningHash)
 		if err != nil {
 			return nil, err
@@ -102,7 +102,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 				WinnerHash:       winningHash.ToArray(),
 				WinnerType:       winnerType,
 				Signer:           encodedPubKey,
-				ChordID:          chordID,
+				ChordId:          chordID,
 			},
 			Signature: nil,
 			Program: &Program{
