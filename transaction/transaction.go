@@ -39,11 +39,6 @@ func (tx *Transaction) Unmarshal(dAtA []byte) error {
 	return tx.MsgTx.Unmarshal(dAtA)
 }
 
-//Serialize the Transaction
-func (tx *Transaction) Serialize(w io.Writer) error {
-	return nil
-}
-
 //Serialize the Transaction data without contracts
 func (tx *Transaction) SerializeUnsigned(w io.Writer) error {
 	if err := tx.UnsignedTx.Payload.Serialize(w); err != nil {
@@ -60,19 +55,12 @@ func (tx *Transaction) SerializeUnsigned(w io.Writer) error {
 		return err
 	}
 
-	return nil
-}
-
-//deserialize the Transaction
-//TODO
-func (tx *Transaction) Deserialize(r io.Reader) error {
-	data, err := serialization.ReadVarBytes(r)
+	err = serialization.WriteVarBytes(w, tx.UnsignedTx.Attributes)
 	if err != nil {
 		return err
 	}
 
-	err = tx.Unmarshal(data)
-	return err
+	return nil
 }
 
 func (tx *Transaction) DeserializeUnsigned(r io.Reader) error {
@@ -91,6 +79,12 @@ func (tx *Transaction) DeserializeUnsigned(r io.Reader) error {
 		return err
 	}
 	tx.UnsignedTx.Fee = int64(fee)
+
+	val, err := serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+	tx.UnsignedTx.Attributes = val
 
 	return nil
 }
