@@ -79,7 +79,7 @@ func (b *Block) GetTxsSize() int {
 }
 
 func (b *Block) GetSigner() ([]byte, []byte, error) {
-	return b.Header.UnsignedHeader.Signer, b.Header.UnsignedHeader.ChordID, nil
+	return b.Header.UnsignedHeader.Signer, b.Header.UnsignedHeader.ChordId, nil
 }
 
 func (b *Block) Trim(w io.Writer) error {

@@ -18,29 +18,29 @@ option (gogoproto.populate_all) = true;
 
 
 enum WinnerType {
-	GenesisSigner  = 0;
-	TxnSigner      = 1;
-	BlockSigner    = 2;
+	GENESIS_SIGNER  = 0;
+	TXN_SIGNER      = 1;
+	BLOCK_SIGNER    = 2;
 }
 
 message UnsignedHeader {
-	uint32     Version            = 1; 
-	bytes      PrevBlockHash      = 2;
-	bytes      TransactionsRoot   = 3;
-	bytes      StateRoot          = 4;
-	int64      Timestamp          = 5;
-	uint32     Height             = 6;
-	uint64     ConsensusData      = 7;
-	bytes      NextBookKeeper     = 8;
-	bytes      WinnerHash         = 9;
-	WinnerType WinnerType         = 10;
-	bytes      Signer             = 11;
-	bytes      ChordID            = 12;
+	uint32     version            = 1; 
+	bytes      prev_block_hash      = 2;
+	bytes      transactions_root   = 3;
+	bytes      state_root          = 4;
+	int64      timestamp          = 5;
+	uint32     height             = 6;
+	uint64     consensus_data      = 7;
+	bytes      next_book_keeper     = 8;
+	bytes      winner_hash         = 9;
+	WinnerType winner_type         = 10;
+	bytes      signer             = 11;
+	bytes      chord_id            = 12;
 }
 
 message BlockHeader {
-    UnsignedHeader UnsignedHeader     = 1;
-	bytes          Signature          = 2;
-    Program        Program            = 3;
+    UnsignedHeader unsigned_header     = 1;
+	bytes          signature          = 2;
+    Program        program            = 3;
 }
 
