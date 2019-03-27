@@ -431,10 +431,18 @@ func (sc *SigChain) GetMiner() ([]byte, []byte, error) {
 		log.Error(err)
 		return nil, nil, err
 	}
-	newIndex := big.NewInt(0)
+
+	scSig, err := sc.GetSignature()
+	if err != nil {
+		return nil, nil, err
+	}
+	sigHashArray := sha256.Sum256(scSig)
+	sigHash := sigHashArray[:]
+
 	x := big.NewInt(0)
-	x.SetBytes(sc.BlockHash)
+	x.SetBytes(sigHash)
 	y := big.NewInt(elemLen)
+	newIndex := big.NewInt(0)
 	newIndex.Mod(x, y)
 
 	originalIndex := minerElems[newIndex.Int64()].index

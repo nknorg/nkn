@@ -98,17 +98,12 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 				ConsensusData:    rand.Uint64(),
 				TransactionsRoot: txnRoot.ToArray(),
 				StateRoot:        curStateHash.ToArray(),
-				NextBookKeeper:   common.EmptyUint160.ToArray(),
 				WinnerHash:       winningHash.ToArray(),
 				WinnerType:       winnerType,
 				Signer:           encodedPubKey,
 				ChordId:          chordID,
 			},
 			Signature: nil,
-			Program: &Program{
-				Code:      []byte{0x00},
-				Parameter: []byte{0x00},
-			},
 		},
 	}
 
