@@ -44,7 +44,7 @@ func (h *Header) SerializeUnsigned(w io.Writer) error {
 	serialization.WriteUint32(w, h.UnsignedHeader.Height)
 	serialization.WriteUint32(w, uint32(h.UnsignedHeader.WinnerType))
 	serialization.WriteVarBytes(w, h.UnsignedHeader.Signer)
-	serialization.WriteVarBytes(w, h.UnsignedHeader.ChordID)
+	serialization.WriteVarBytes(w, h.UnsignedHeader.ChordId)
 
 	return nil
 }
@@ -60,7 +60,7 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 	winnerType, _ := serialization.ReadUint32(r)
 	h.UnsignedHeader.WinnerType = WinnerType(winnerType)
 	h.UnsignedHeader.Signer, _ = serialization.ReadVarBytes(r)
-	h.UnsignedHeader.ChordID, _ = serialization.ReadVarBytes(r)
+	h.UnsignedHeader.ChordId, _ = serialization.ReadVarBytes(r)
 
 	return nil
 }
@@ -124,7 +124,7 @@ func (h *Header) GetInfo() ([]byte, error) {
 		WinnerHash       string      `json:"winnerHash"`
 		WinnerType       string      `json:"winnerType"`
 		Signer           string      `json:"signer"`
-		ChordID          string      `json:"chordID"`
+		ChordId          string      `json:"chordId"`
 		Signature        string      `json:"signature"`
 		Program          programInfo `json:"program"`
 		Hash             string      `json:"hash"`
@@ -143,7 +143,7 @@ func (h *Header) GetInfo() ([]byte, error) {
 		WinnerHash:       BytesToHexString(h.UnsignedHeader.WinnerHash),
 		WinnerType:       h.UnsignedHeader.WinnerType.String(),
 		Signer:           BytesToHexString(h.UnsignedHeader.Signer),
-		ChordID:          BytesToHexString(h.UnsignedHeader.ChordID),
+		ChordId:          BytesToHexString(h.UnsignedHeader.ChordId),
 		Signature:        BytesToHexString(h.Signature),
 		Program: programInfo{
 			Code:      BytesToHexString(h.Program.Code),

@@ -19,15 +19,15 @@ option (gogoproto.populate_all) = true;
 
 
 message UnsignedTx {
-	Payload   Payload    = 1;
-	uint64    Nonce      = 2;
-	int64     Fee        = 3;
-	bytes     Attributes = 4;
+	Payload   payload    = 1;
+	uint64    nonce      = 2;
+	int64     fee        = 3;
+	bytes     attributes = 4;
 }
 
 
 message MsgTx {
-    UnsignedTx          UnsignedTx = 1;
-    repeated Program    Programs   = 2;
+    UnsignedTx          unsigned_tx = 1;
+    repeated Program    programs   = 2;
 }
 
