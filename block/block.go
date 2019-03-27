@@ -246,16 +246,20 @@ func (b *Block) SerializeUnsigned(w io.Writer) error {
 
 func (b *Block) GetInfo() ([]byte, error) {
 	type blockInfo struct {
-		Header       interface{}
-		Transactions []interface{}
+		Header       interface{}   `json:"header"`
+		Transactions []interface{} `json:"transactions"`
+		Hash         string        `json:"hash"`
 	}
 
 	var unmarshaledHeader interface{}
 	headerInfo, _ := b.Header.GetInfo()
 	json.Unmarshal(headerInfo, &unmarshaledHeader)
+
+	b.Hash()
 	info := &blockInfo{
 		Header:       unmarshaledHeader,
 		Transactions: make([]interface{}, 0),
+		Hash:         b.hash.ToHexString(),
 	}
 
 	for _, v := range b.Transactions {
