@@ -9,6 +9,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/vm/contract"
 	"github.com/nknorg/nkn/vm/signature"
 )
 
@@ -23,15 +24,6 @@ func (h *Header) Marshal() (dAtA []byte, err error) {
 
 func (h *Header) Unmarshal(dAtA []byte) error {
 	return h.BlockHeader.Unmarshal(dAtA)
-}
-
-//Serialize the blockheader
-func (h *Header) Serialize(w io.Writer) error {
-	return nil
-}
-
-func (h *Header) Deserialize(r io.Reader) error {
-	return nil
 }
 
 //Serialize the blockheader data without program
@@ -68,8 +60,8 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 func (h *Header) GetProgramHashes() ([]Uint160, error) {
 	programHashes := []Uint160{}
 
-	pg := *h.Program
-	outputHashes, err := ToCodeHash(pg.Code)
+	script, _ := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(h.UnsignedHeader.Signer)
+	outputHashes, err := ToCodeHash(script)
 	if err != nil {
 		return nil, fmt.Errorf("[Header], GetProgramHashes failed: %v", err)
 	}
@@ -78,15 +70,11 @@ func (h *Header) GetProgramHashes() ([]Uint160, error) {
 }
 
 func (h *Header) SetPrograms(programs []*Program) {
-	if len(programs) != 1 {
-		return
-	}
-
-	h.Program = programs[0]
+	return
 }
 
 func (h *Header) GetPrograms() []*Program {
-	return []*Program{h.Program}
+	return nil
 }
 
 func (h *Header) Hash() Uint256 {
@@ -107,27 +95,20 @@ func (h *Header) ToArray() []byte {
 }
 
 func (h *Header) GetInfo() ([]byte, error) {
-	type programInfo struct {
-		Code      string `json:"code"`
-		Parameter string `json:"parameter"`
-	}
-
 	type headerInfo struct {
-		Version          uint32      `json:"version"`
-		PrevBlockHash    string      `json:"prevBlockHash"`
-		TransactionsRoot string      `json:"transactionsRoot"`
-		StateRoot        string      `json:"stateRoot"`
-		Timestamp        int64       `json:"timestamp"`
-		Height           uint32      `json:"height"`
-		ConsensusData    uint64      `json:"consensusData"`
-		NextBookKeeper   string      `json:"nextBookKeeper"`
-		WinnerHash       string      `json:"winnerHash"`
-		WinnerType       string      `json:"winnerType"`
-		Signer           string      `json:"signer"`
-		ChordId          string      `json:"chordId"`
-		Signature        string      `json:"signature"`
-		Program          programInfo `json:"program"`
-		Hash             string      `json:"hash"`
+		Version          uint32 `json:"version"`
+		PrevBlockHash    string `json:"prevBlockHash"`
+		TransactionsRoot string `json:"transactionsRoot"`
+		StateRoot        string `json:"stateRoot"`
+		Timestamp        int64  `json:"timestamp"`
+		Height           uint32 `json:"height"`
+		ConsensusData    uint64 `json:"consensusData"`
+		WinnerHash       string `json:"winnerHash"`
+		WinnerType       string `json:"winnerType"`
+		Signer           string `json:"signer"`
+		ChordId          string `json:"chordId"`
+		Signature        string `json:"signature"`
+		Hash             string `json:"hash"`
 	}
 
 	hash := h.Hash()
@@ -139,17 +120,12 @@ func (h *Header) GetInfo() ([]byte, error) {
 		Timestamp:        h.UnsignedHeader.Timestamp,
 		Height:           h.UnsignedHeader.Height,
 		ConsensusData:    h.UnsignedHeader.ConsensusData,
-		NextBookKeeper:   BytesToHexString(h.UnsignedHeader.NextBookKeeper),
 		WinnerHash:       BytesToHexString(h.UnsignedHeader.WinnerHash),
 		WinnerType:       h.UnsignedHeader.WinnerType.String(),
 		Signer:           BytesToHexString(h.UnsignedHeader.Signer),
 		ChordId:          BytesToHexString(h.UnsignedHeader.ChordId),
 		Signature:        BytesToHexString(h.Signature),
-		Program: programInfo{
-			Code:      BytesToHexString(h.Program.Code),
-			Parameter: BytesToHexString(h.Program.Parameter),
-		},
-		Hash: hash.ToHexString(),
+		Hash:             hash.ToHexString(),
 	}
 
 	marshaledInfo, err := json.Marshal(info)

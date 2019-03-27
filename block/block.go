@@ -186,14 +186,9 @@ func GenesisBlockInit() (*Block, error) {
 				PrevBlockHash: EmptyUint256.ToArray(),
 				Timestamp:     time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix(),
 
-				Height:         uint32(0),
-				ConsensusData:  GenesisNonce,
-				NextBookKeeper: EmptyUint160.ToArray(),
-				Signer:         genesisBlockProposer,
-			},
-			Program: &Program{
-				Code:      []byte{0x00},
-				Parameter: []byte{0x00},
+				Height:        uint32(0),
+				ConsensusData: GenesisNonce,
+				Signer:        genesisBlockProposer,
 			},
 		},
 	}

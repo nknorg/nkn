@@ -24,23 +24,21 @@ enum WinnerType {
 }
 
 message UnsignedHeader {
-	uint32     version            = 1; 
-	bytes      prev_block_hash      = 2;
+	uint32     version             = 1;
+	bytes      prev_block_hash     = 2;
 	bytes      transactions_root   = 3;
 	bytes      state_root          = 4;
-	int64      timestamp          = 5;
-	uint32     height             = 6;
+	int64      timestamp           = 5;
+	uint32     height              = 6;
 	uint64     consensus_data      = 7;
-	bytes      next_book_keeper     = 8;
-	bytes      winner_hash         = 9;
-	WinnerType winner_type         = 10;
-	bytes      signer             = 11;
-	bytes      chord_id            = 12;
+	bytes      winner_hash         = 8;
+	WinnerType winner_type         = 9;
+	bytes      signer              = 10;
+	bytes      chord_id            = 11;
 }
 
 message BlockHeader {
-    UnsignedHeader unsigned_header     = 1;
+	UnsignedHeader unsigned_header    = 1;
 	bytes          signature          = 2;
-    Program        program            = 3;
 }
 
