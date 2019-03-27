@@ -28,3 +28,4 @@ message NodeData {
   uint32 json_rpc_port = 3;
   uint32 protocol_version = 5;
 }
+
