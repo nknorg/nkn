@@ -12,6 +12,7 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -65,7 +66,8 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block) (uint
 		version = []byte{0x00}
 	}
 
-	if version[0] == 0x01 {
+	log.Info("database Version:", config.DBVersion)
+	if version[0] == config.DBVersion {
 		if !cs.IsBlockInStore(genesisBlock.Hash()) {
 			return 0, errors.New("genesisBlock is NOT in BlockStore.")
 		}

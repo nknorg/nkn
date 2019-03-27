@@ -32,6 +32,7 @@ const (
 	NodeIDBytes         = 32
 	MaxRollbackBlocks   = 1
 	EncryptAlg          = "Ed25519"
+	DBVersion           = 0x02
 )
 
 var (
