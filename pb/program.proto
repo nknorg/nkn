@@ -18,7 +18,7 @@ option (gogoproto.populate_all) = true;
 
 
 message Program {
-	bytes      Code       = 1;
-	bytes      Parameter  = 2;
+	bytes      code       = 1;
+	bytes      parameter  = 2;
 }
 
