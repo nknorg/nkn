@@ -10,6 +10,6 @@ import "pb/transaction.proto";
 
 message MsgBlock {
 	BlockHeader     header                 = 1;
-    repeated MsgTx  transactions           = 2;
+	repeated MsgTx  transactions           = 2;
 }
 
