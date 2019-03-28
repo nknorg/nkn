@@ -33,8 +33,6 @@ func GenKeyPair(algSet *util.CryptoAlgSet) ([]byte, *big.Int, *big.Int, error) {
 }
 
 func Sign(algSet *util.CryptoAlgSet, priKey []byte, data []byte) (*big.Int, *big.Int, error) {
-	digest := util.Hash(data)
-
 	privateKey := new(ecdsa.PrivateKey)
 	privateKey.Curve = algSet.Curve
 	privateKey.D = big.NewInt(0)
@@ -43,7 +41,7 @@ func Sign(algSet *util.CryptoAlgSet, priKey []byte, data []byte) (*big.Int, *big
 	r := big.NewInt(0)
 	s := big.NewInt(0)
 
-	r, s, err := ecdsa.Sign(rand.Reader, privateKey, digest[:])
+	r, s, err := ecdsa.Sign(rand.Reader, privateKey, data)
 	if err != nil {
 		fmt.Printf("Sign error\n")
 		return nil, nil, err
@@ -52,15 +50,13 @@ func Sign(algSet *util.CryptoAlgSet, priKey []byte, data []byte) (*big.Int, *big
 }
 
 func Verify(algSet *util.CryptoAlgSet, X *big.Int, Y *big.Int, data []byte, r, s *big.Int) error {
-	digest := util.Hash(data)
-
 	pub := new(ecdsa.PublicKey)
 	pub.Curve = algSet.Curve
 
 	pub.X = new(big.Int).Set(X)
 	pub.Y = new(big.Int).Set(Y)
 
-	if ecdsa.Verify(pub, digest[:], r, s) {
+	if ecdsa.Verify(pub, data, r, s) {
 		return nil
 	} else {
 		return errors.New("[Validation], Verify failed.")
