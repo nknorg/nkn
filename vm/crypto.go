@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"crypto/sha256"
 	"errors"
 
 	"github.com/nknorg/nkn/common"
@@ -25,7 +26,8 @@ func (c *ECDsaCrypto) VerifySignature(message []byte, signature []byte, pubkey [
 		return false, errors.New("[ECDsaCrypto], crypto.DecodePoint failed.")
 	}
 
-	err = crypto.Verify(*pk, message, signature)
+	digest := sha256.Sum256(message)
+	err = crypto.Verify(*pk, digest[:], signature)
 	if err != nil {
 		return false, errors.New("[ECDsaCrypto], VerifySignature failed.")
 	}
