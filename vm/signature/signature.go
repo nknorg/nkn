@@ -41,7 +41,7 @@ func GetHashForSigning(data SignableData) []byte {
 }
 
 func Sign(data SignableData, prikey []byte) ([]byte, error) {
-	signature, err := crypto.Sign(prikey, GetHashData(data))
+	signature, err := crypto.Sign(prikey, GetHashForSigning(data))
 	if err != nil {
 		return nil, fmt.Errorf("[Signature],Sign failed:%v", err)
 	}
