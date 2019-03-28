@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	TestNetVersionNum = 12
+	TestNetVersionNum = 0
 )
 
 var (
@@ -288,7 +288,7 @@ type testNetVer struct {
 
 func GetRemoteVersionNum() (int, error) {
 	var myClient = &http.Client{Timeout: 10 * time.Second}
-	r, err := myClient.Get("http://testnet.nkn.org/nkn.runtime.version")
+	r, err := myClient.Get("http://testnet.nkn.org/devnet.runtime.version")
 	if err != nil {
 		return 0, err
 	}
