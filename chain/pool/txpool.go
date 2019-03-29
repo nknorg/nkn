@@ -50,6 +50,9 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) error {
 	for _, list := range tp.TxLists {
 		list.ProcessOrphans(tp.processTx)
 	}
+	for _, list := range tp.TxLists {
+		list.CleanOrphans(nil)
+	}
 
 	// 2. verify txn with ledger
 	if err := tp.verifyTransactionWithLedger(txn); err != nil {
@@ -61,8 +64,17 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) error {
 		return err
 	}
 
+	// 3. process orphans
+	for _, list := range tp.TxLists {
+		list.ProcessOrphans(tp.processTx)
+	}
+	for _, list := range tp.TxLists {
+		list.CleanOrphans(nil)
+	}
+
+	tp.Dump()
+
 	return nil
-	//	tp.Dump()
 }
 
 func (tp *TxnPool) processTx(txn *Transaction) error {
@@ -224,6 +236,7 @@ func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*Transaction, erro
 		txmap[tx.Hash()] = tx
 	}
 
+	tp.Dump()
 	return txmap, nil
 }
 
