@@ -20,7 +20,7 @@ const (
 
 func (localNode *LocalNode) maybeRollback(neighbors []*RemoteNode) (bool, error) {
 	currentHeight := chain.DefaultLedger.Store.GetHeight()
-	currentHash := chain.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
+	currentHash, _ := chain.DefaultLedger.Store.GetBlockHash(currentHeight)
 
 	majorityBlockHash := localNode.getNeighborsMajorityBlockHashByHeight(currentHeight, neighbors)
 	if majorityBlockHash == common.EmptyUint256 {
@@ -50,7 +50,8 @@ func (localNode *LocalNode) maybeRollback(neighbors []*RemoteNode) (bool, error)
 		return false, fmt.Errorf("get neighbors majority block hash at rollback height failed")
 	}
 
-	if majorityBlockHash != chain.DefaultLedger.Store.GetHeaderHashByHeight(rollbackToHeight) {
+	rollbackHash, _ := chain.DefaultLedger.Store.GetBlockHash(rollbackToHeight)
+	if majorityBlockHash != rollbackHash {
 		return false, fmt.Errorf("local ledger has forked for more than %d blocks", config.MaxRollbackBlocks)
 	}
 
