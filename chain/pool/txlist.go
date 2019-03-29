@@ -2,6 +2,7 @@ package pool
 
 import (
 	"errors"
+	"sort"
 	"sync"
 
 	"github.com/nknorg/nkn/chain"
@@ -15,6 +16,18 @@ var (
 	ErrNonceSortedTxsEmpty = errors.New("Empty NonceSortedTxs")
 	ErrNonceOutofRange     = errors.New("nonce is not in range")
 )
+
+type sortTxnsByNonce []*Transaction
+
+func (s sortTxnsByNonce) Len() int      { return len(s) }
+func (s sortTxnsByNonce) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s sortTxnsByNonce) Less(i, j int) bool {
+	if s[i].UnsignedTx.Nonce > s[j].UnsignedTx.Nonce {
+		return false
+	} else {
+		return true
+	}
+}
 
 // NonceSortedTxs store the txns that can be add into blockchain.
 // The txns are sorted by nonce in Increasing order.
@@ -201,23 +214,40 @@ func (nst *NonceSortedTxs) GetOrphanTxn(hash common.Uint256) *Transaction {
 }
 
 func (nst *NonceSortedTxs) AddOrphanTxn(txn *Transaction) error {
+	for hash, orphan := range nst.orphans {
+		if txn.UnsignedTx.Nonce == orphan.UnsignedTx.Nonce {
+			delete(nst.orphans, hash)
+		}
+	}
+
 	nst.orphans[txn.Hash()] = txn
 
 	return nil
 }
 
 func (nst *NonceSortedTxs) ProcessOrphans(handle func(tx *Transaction) error) error {
+	orphanList := make([]*Transaction, 0)
 	for _, orphan := range nst.orphans {
-		handle(orphan)
+		orphanList = append(orphanList, orphan)
+	}
+
+	sort.Sort(sortTxnsByNonce(orphanList))
+
+	for _, txn := range orphanList {
+		handle(txn)
 	}
 
 	return nil
 }
 
 func (nst *NonceSortedTxs) CleanOrphans(txs []*Transaction) {
-	nonce, err := nst.GetLatestNonce()
-	if err != nil {
-		nonce = chain.DefaultLedger.Store.GetNonce(nst.account)
+	nonce := int64(0)
+
+	if n, err := nst.GetLatestNonce(); err != nil {
+		n = chain.DefaultLedger.Store.GetNonce(nst.account)
+		nonce = int64(n) - 1
+	} else {
+		nonce = int64(n)
 	}
 
 	for _, txn := range txs {
@@ -228,8 +258,9 @@ func (nst *NonceSortedTxs) CleanOrphans(txs []*Transaction) {
 	}
 
 	for hash, orphan := range nst.orphans {
-		if orphan.UnsignedTx.Nonce <= nonce {
+		if int64(orphan.UnsignedTx.Nonce) <= nonce {
 			delete(nst.orphans, hash)
+			continue
 		}
 
 		if _, ok := nst.txs[hash]; ok {
