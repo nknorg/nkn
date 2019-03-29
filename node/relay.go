@@ -174,7 +174,7 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 		srcPubkey,
 		destPubkey,
 		signature,
-		pb.ECDSA,
+		pb.ED25519,
 	)
 	if err != nil {
 		return err

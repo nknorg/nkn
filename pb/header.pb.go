@@ -48,7 +48,7 @@ var WinnerType_value = map[string]int32{
 }
 
 func (WinnerType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_header_c1b05b6bee120f74, []int{0}
+	return fileDescriptor_header_05b3a4ea195d9874, []int{0}
 }
 
 type UnsignedHeader struct {
@@ -68,7 +68,7 @@ type UnsignedHeader struct {
 func (m *UnsignedHeader) Reset()      { *m = UnsignedHeader{} }
 func (*UnsignedHeader) ProtoMessage() {}
 func (*UnsignedHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_header_c1b05b6bee120f74, []int{0}
+	return fileDescriptor_header_05b3a4ea195d9874, []int{0}
 }
 func (m *UnsignedHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -182,7 +182,7 @@ type BlockHeader struct {
 func (m *BlockHeader) Reset()      { *m = BlockHeader{} }
 func (*BlockHeader) ProtoMessage() {}
 func (*BlockHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_header_c1b05b6bee120f74, []int{1}
+	return fileDescriptor_header_05b3a4ea195d9874, []int{1}
 }
 func (m *BlockHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1280,9 +1280,9 @@ var (
 	ErrIntOverflowHeader   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/header.proto", fileDescriptor_header_c1b05b6bee120f74) }
+func init() { proto.RegisterFile("pb/header.proto", fileDescriptor_header_05b3a4ea195d9874) }
 
-var fileDescriptor_header_c1b05b6bee120f74 = []byte{
+var fileDescriptor_header_05b3a4ea195d9874 = []byte{
 	// 493 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x92, 0x41, 0x6f, 0xd3, 0x3e,
 	0x18, 0xc6, 0xe3, 0x76, 0xff, 0x76, 0x7d, 0xbb, 0xa6, 0xfd, 0xfb, 0x80, 0xcc, 0x34, 0x4c, 0x34,
