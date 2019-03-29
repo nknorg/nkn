@@ -32,7 +32,7 @@ type MsgBlock struct {
 func (m *MsgBlock) Reset()      { *m = MsgBlock{} }
 func (*MsgBlock) ProtoMessage() {}
 func (*MsgBlock) Descriptor() ([]byte, []int) {
-	return fileDescriptor_block_a88dd752967d224e, []int{0}
+	return fileDescriptor_block_849567a56eab28a7, []int{0}
 }
 func (m *MsgBlock) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -452,9 +452,9 @@ var (
 	ErrIntOverflowBlock   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/block.proto", fileDescriptor_block_a88dd752967d224e) }
+func init() { proto.RegisterFile("pb/block.proto", fileDescriptor_block_849567a56eab28a7) }
 
-var fileDescriptor_block_a88dd752967d224e = []byte{
+var fileDescriptor_block_849567a56eab28a7 = []byte{
 	// 227 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2b, 0x48, 0xd2, 0x4f,
 	0xca, 0xc9, 0x4f, 0xce, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x2a, 0x48, 0x92, 0xd2,
