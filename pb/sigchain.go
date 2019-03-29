@@ -26,7 +26,7 @@ import (
 
 // TODO: move sigAlgo to config.json
 const (
-	sigAlgo                    = ECDSA
+	sigAlgo                    = ED25519
 	bitShiftPerSigChainElement = 4
 )
 
