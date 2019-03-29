@@ -98,7 +98,7 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block) (uint
 		}
 
 		// put version to db
-		if err = cs.st.Put(versionKey(), []byte{0x01}); err != nil {
+		if err = cs.st.Put(versionKey(), []byte{config.DBVersion}); err != nil {
 			return 0, err
 		}
 
