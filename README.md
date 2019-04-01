@@ -1,3 +1,8 @@
+**Note: The master branch is frozen at version 0.8.x to maintain compatibility
+with the public testnet. See [balance-dev
+branch](https://github.com/nknorg/nkn/tree/balance-dev) for latest code.
+Version 0.9.x will be released in separate branches named v0.9.x.**
+
 [![Go Report Card](https://nkn.org/badge/nkn.svg)](https://goreportcard.com/report/github.com/nknorg/nkn)
 [![Build Status](https://travis-ci.org/nknorg/nkn.svg?branch=master)](https://travis-ci.org/nknorg/nkn)
 
