@@ -72,7 +72,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) error {
 		list.CleanOrphans(nil)
 	}
 
-	tp.Dump()
+	//tp.Dump()
 
 	return nil
 }
@@ -236,7 +236,7 @@ func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*Transaction, erro
 		txmap[tx.Hash()] = tx
 	}
 
-	tp.Dump()
+	//tp.Dump()
 	return txmap, nil
 }
 
@@ -250,7 +250,7 @@ func (tp *TxnPool) Dump() {
 
 	log.Error("SigChainTxs:")
 	for h, _ := range tp.SigChainTxs {
-		log.Error(h.ToHexString())
+		log.Info(h.ToHexString())
 	}
 }
 
