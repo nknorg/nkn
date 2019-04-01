@@ -275,20 +275,20 @@ func (nst *NonceSortedTxs) Dump() {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
 	addr, _ := nst.account.ToAddress()
-	log.Error("account:", addr)
-	log.Error("txs:", len(nst.txs))
+	log.Info("account:", addr)
+	log.Info("txs:", len(nst.txs))
 	for h, tx := range nst.txs {
-		log.Error(h.ToHexString(), ":", tx.UnsignedTx.Nonce)
+		log.Info(h.ToHexString(), ":", tx.UnsignedTx.Nonce)
 	}
-	log.Error("idx:", len(nst.idx))
+	log.Info("idx:", len(nst.idx))
 	for _, h := range nst.idx {
-		log.Error(h.ToHexString())
+		log.Info(h.ToHexString())
 	}
-	log.Error("orphans:", len(nst.orphans))
+	log.Info("orphans:", len(nst.orphans))
 	for h, tx := range nst.orphans {
-		log.Error(h.ToHexString(), ":", tx.UnsignedTx.Nonce)
+		log.Info(h.ToHexString(), ":", tx.UnsignedTx.Nonce)
 	}
-	log.Error("cap:", nst.cap)
+	log.Info("cap:", nst.cap)
 }
 
 //type FeeSortedTxns []*Transaction
