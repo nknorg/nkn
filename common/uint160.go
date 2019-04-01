@@ -88,9 +88,9 @@ func (f *Uint160) Deserialize(r io.Reader) error {
 
 func IsValidHexAddr(s []byte) bool {
 	if len(s) == HEXADDRLEN && new(big.Int).SetBytes(s[:PREFIXLEN]).Uint64() == FOOLPROOFPREFIX {
-		sha := sha256.Sum256(s[:1+UINT160SIZE])
+		sha := sha256.Sum256(s[:PREFIXLEN+UINT160SIZE])
 		chkSum := sha256.Sum256(sha[:])
-		return bytes.Compare(s[1+UINT160SIZE:], chkSum[:SHA256CHKSUM]) == 0
+		return bytes.Compare(s[PREFIXLEN+UINT160SIZE:], chkSum[:SHA256CHKSUM]) == 0
 	}
 	return false
 }
@@ -139,7 +139,7 @@ func ToScriptHash(address string) (Uint160, error) {
 		return EmptyUint160, fmt.Errorf("address[%s] decode %x not a valid address", address, hex)
 	}
 
-	return Uint160ParseFromBytes(hex[1 : 1+UINT160SIZE])
+	return Uint160ParseFromBytes(hex[PREFIXLEN : PREFIXLEN+UINT160SIZE])
 }
 
 func (u *Uint160) SetBytes(b []byte) {
