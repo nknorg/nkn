@@ -1,11 +1,15 @@
 package name
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 
+	. "github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
+	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/vault"
 
 	"github.com/urfave/cli"
 )
@@ -16,7 +20,24 @@ func nameAction(c *cli.Context) error {
 		return nil
 	}
 
-	var err error
+	walletName := c.String("wallet")
+	passwd := c.String("password")
+	myWallet, err := vault.OpenWallet(walletName, GetPassword(passwd))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	var txnFee Fixed64
+	fee := c.String("fee")
+	if fee == "" {
+		txnFee = Fixed64(0)
+	} else {
+		txnFee, _ = StringToFixed64(fee)
+	}
+
+	nonce := c.Uint64("nonce")
+
 	var resp []byte
 	switch {
 	case c.Bool("reg"):
@@ -25,14 +46,19 @@ func nameAction(c *cli.Context) error {
 			fmt.Println("name is required with [--name]")
 			return nil
 		}
-		resp, err = client.Call(Address(), "registername", 0, map[string]interface{}{"name": name})
+		txn, _ := MakeRegisterNameTransaction(myWallet, name, nonce, txnFee)
+		buff, _ := txn.Marshal()
+		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	case c.Bool("del"):
 		name := c.String("name")
 		if name == "" {
 			fmt.Println("name is required with [--name]")
 			return nil
 		}
-		resp, err = client.Call(Address(), "deletename", 0, map[string]interface{}{"name": name})
+
+		txn, _ := MakeDeleteNameTransaction(myWallet, name, nonce, txnFee)
+		buff, _ := txn.Marshal()
+		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -64,6 +90,24 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "name",
 				Usage: "name",
+			},
+			cli.StringFlag{
+				Name:  "wallet, w",
+				Usage: "wallet name",
+				Value: vault.WalletFileName,
+			},
+			cli.StringFlag{
+				Name:  "password, p",
+				Usage: "wallet password",
+			},
+			cli.StringFlag{
+				Name:  "fee, f",
+				Usage: "transaction fee",
+				Value: "",
+			},
+			cli.Uint64Flag{
+				Name:  "nonce",
+				Usage: "nonce",
 			},
 		},
 		Action: nameAction,
