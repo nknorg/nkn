@@ -45,7 +45,7 @@ func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte, nonce uint64) (
 	return txn, nil
 }
 
-func MakeRegisterNameTransaction(wallet vault.Wallet, name string, nonce uint64) (*Transaction, error) {
+func MakeRegisterNameTransaction(wallet vault.Wallet, name string, nonce uint64, fee Fixed64) (*Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func MakeRegisterNameTransaction(wallet vault.Wallet, name string, nonce uint64)
 	if err != nil {
 		return nil, err
 	}
-	txn, err := NewRegisterNameTransaction(registrant, name, nonce)
+	txn, err := NewRegisterNameTransaction(registrant, name, nonce, fee)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func MakeRegisterNameTransaction(wallet vault.Wallet, name string, nonce uint64)
 	return txn, nil
 }
 
-func MakeDeleteNameTransaction(wallet vault.Wallet, name string, nonce uint64) (*Transaction, error) {
+func MakeDeleteNameTransaction(wallet vault.Wallet, name string, nonce uint64, fee Fixed64) (*Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func MakeDeleteNameTransaction(wallet vault.Wallet, name string, nonce uint64) (
 	if err != nil {
 		return nil, err
 	}
-	txn, err := NewDeleteNameTransaction(registrant, name, nonce)
+	txn, err := NewDeleteNameTransaction(registrant, name, nonce, fee)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func MakeDeleteNameTransaction(wallet vault.Wallet, name string, nonce uint64) (
 	return txn, nil
 }
 
-func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic string, bucket uint32, duration uint32, meta string, nonce uint64) (*Transaction, error) {
+func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic string, bucket uint32, duration uint32, meta string, nonce uint64, fee Fixed64) (*Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic stri
 	if err != nil {
 		return nil, err
 	}
-	txn, err := NewSubscribeTransaction(subscriber, identifier, topic, bucket, duration, meta, nonce)
+	txn, err := NewSubscribeTransaction(subscriber, identifier, topic, bucket, duration, meta, nonce, fee)
 	if err != nil {
 		return nil, err
 	}
