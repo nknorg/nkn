@@ -38,42 +38,42 @@ func NewCommitTransaction(sigChain []byte, submitter Uint160, nonce uint64) (*Tr
 	}, nil
 }
 
-func NewRegisterNameTransaction(registrant []byte, name string, nonce uint64) (*Transaction, error) {
+func NewRegisterNameTransaction(registrant []byte, name string, nonce uint64, fee Fixed64) (*Transaction, error) {
 	payload := NewRegisterName(registrant, name)
 	pl, err := Pack(RegisterNameType, payload)
 	if err != nil {
 		return nil, err
 	}
 
-	tx := NewMsgTx(pl, nonce, 0, util.RandomBytes(TransactionNonceLength))
+	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
 		MsgTx: *tx,
 	}, nil
 }
 
-func NewDeleteNameTransaction(registrant []byte, name string, nonce uint64) (*Transaction, error) {
+func NewDeleteNameTransaction(registrant []byte, name string, nonce uint64, fee Fixed64) (*Transaction, error) {
 	payload := NewDeleteName(registrant, name)
 	pl, err := Pack(DeleteNameType, payload)
 	if err != nil {
 		return nil, err
 	}
 
-	tx := NewMsgTx(pl, nonce, 0, util.RandomBytes(TransactionNonceLength))
+	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
 		MsgTx: *tx,
 	}, nil
 }
 
-func NewSubscribeTransaction(subscriber []byte, identifier string, topic string, bucket uint32, duration uint32, meta string, nonce uint64) (*Transaction, error) {
+func NewSubscribeTransaction(subscriber []byte, identifier string, topic string, bucket uint32, duration uint32, meta string, nonce uint64, fee Fixed64) (*Transaction, error) {
 	payload := NewSubscribe(subscriber, identifier, topic, bucket, duration, meta)
 	pl, err := Pack(SubscribeType, payload)
 	if err != nil {
 		return nil, err
 	}
 
-	tx := NewMsgTx(pl, nonce, 0, util.RandomBytes(TransactionNonceLength))
+	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
 		MsgTx: *tx,

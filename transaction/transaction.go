@@ -3,11 +3,14 @@ package transaction
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"io"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/vm/contract"
 	"github.com/nknorg/nkn/vm/signature"
 )
 
@@ -97,26 +100,54 @@ func (tx *Transaction) GetSize() int {
 func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	hashes := []Uint160{}
 
+	payload, err := Unpack(tx.UnsignedTx.Payload)
+	if err != nil {
+		return nil, err
+	}
+
 	switch tx.UnsignedTx.Payload.Type {
 	case CommitType:
-		payload, err := Unpack(tx.UnsignedTx.Payload)
-		if err != nil {
-			return nil, err
-		}
-
 		sender := payload.(*Commit).Submitter
 		hashes = append(hashes, BytesToUint160(sender))
 	case TransferAssetType:
-		payload, err := Unpack(tx.UnsignedTx.Payload)
+		sender := payload.(*TransferAsset).Sender
+		hashes = append(hashes, BytesToUint160(sender))
+	case CoinbaseType:
+	case RegisterNameType:
+		pubkey := payload.(*RegisterName).Registrant
+		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
 		if err != nil {
 			return nil, err
 		}
-
-		sender := payload.(*TransferAsset).Sender
-		hashes = append(hashes, BytesToUint160(sender))
+		programhash, err := contract.CreateRedeemHash(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, programhash)
+	case DeleteNameType:
+		pubkey := payload.(*DeleteName).Registrant
+		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
+		if err != nil {
+			return nil, err
+		}
+		programhash, err := contract.CreateRedeemHash(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, programhash)
+	case SubscribeType:
+		pubkey := payload.(*Subscribe).Subscriber
+		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
+		if err != nil {
+			return nil, err
+		}
+		programhash, err := contract.CreateRedeemHash(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, programhash)
 	default:
-		//hash, _ := ToCodeHash(tx.Program[0].Code)
-		//hashes = append(hashes, hash)
+		return nil, errors.New("unsupport transaction type")
 	}
 
 	return hashes, nil
