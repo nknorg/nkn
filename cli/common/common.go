@@ -94,3 +94,18 @@ func parsePort() uint16 {
 
 	return config.HttpJsonPort
 }
+
+func GetPassword(passwd string) []byte {
+	var tmp []byte
+	var err error
+	if passwd != "" {
+		tmp = []byte(passwd)
+	} else {
+		tmp, err = password.GetPassword()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+	return tmp
+}
