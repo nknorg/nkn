@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"bytes"
 	"errors"
 	"sync"
 
@@ -23,8 +24,9 @@ var (
 	ErrDoubleSpend           = errors.New("IsDoubleSpend check faild")
 	ErrTxnType               = errors.New("invalidate transaction payload type")
 	ErrNonceTooLow           = errors.New("nonce is too low")
-	ErrDuplicateName         = errors.New("Duplicate NameService operation in one block")
-	ErrNoNameRegistered      = errors.New("name already has not be registered")
+	ErrDuplicateName         = errors.New("name already has be registered")
+	ErrDuplicateRegistrant   = errors.New("Registrant already has registered name")
+	ErrNoNameRegistered      = errors.New("no name has not be registered")
 	ErrDuplicateSubscription = errors.New("Duplicate subscription in one block")
 	ErrSubscriptionLimit     = errors.New("Subscription limit exceeded in one block")
 	ErrNonOptimalSigChain    = errors.New("This SigChain is NOT optimal choice")
@@ -100,19 +102,78 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 		return ErrDuplicatedTx
 	}
 
-	//check balance
-	if txn.UnsignedTx.Payload.Type == pb.TransferAssetType {
-		pl, err := Unpack(txn.UnsignedTx.Payload)
-		if err != nil {
-			return err
-		}
+	pl, err := Unpack(txn.UnsignedTx.Payload)
+	if err != nil {
+		return err
+	}
+	switch txn.UnsignedTx.Payload.Type {
+	case pb.TransferAssetType:
 		ta := pl.(*pb.TransferAsset)
-
 		amount := chain.DefaultLedger.Store.GetBalance(sender)
 		allInList := list.Totality() + common.Fixed64(ta.Amount)
 
 		if amount < allInList {
 			return errors.New("not sufficient funds")
+		}
+	case pb.RegisterNameType:
+		rn := pl.(*pb.RegisterName)
+		for _, tx := range list.txs {
+			if tx.UnsignedTx.Payload.Type != pb.RegisterNameType {
+				continue
+			}
+			pld, err := Unpack(tx.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+			payloadRn := pld.(*pb.RegisterName)
+			//TODO need compare nonce?
+			if bytes.Equal(payloadRn.Registrant, rn.Registrant) {
+				return ErrDuplicateRegistrant
+			}
+
+			if payloadRn.Name == rn.Name {
+				log.Error(payloadRn.Name, rn.Name)
+				return ErrDuplicateName
+			}
+		}
+	case pb.DeleteNameType:
+		rn := pl.(*pb.DeleteName)
+		for _, tx := range list.txs {
+			if tx.UnsignedTx.Payload.Type != pb.DeleteNameType {
+				continue
+			}
+			pld, err := Unpack(tx.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+			payloadRn := pld.(*pb.DeleteName)
+			if bytes.Equal(payloadRn.Registrant, rn.Registrant) {
+				return ErrDuplicateRegistrant
+			}
+
+			if payloadRn.Name == rn.Name {
+				log.Error(payloadRn.Name, rn.Name)
+				return ErrDuplicateName
+			}
+		}
+	case pb.SubscribeType:
+		rn := pl.(*pb.Subscribe)
+		for _, tx := range list.txs {
+			if tx.UnsignedTx.Payload.Type != pb.SubscribeType {
+				continue
+			}
+			pld, err := Unpack(tx.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+			payloadRn := pld.(*pb.Subscribe)
+			if bytes.Equal(payloadRn.Subscriber, rn.Subscriber) &&
+				payloadRn.Identifier == rn.Identifier &&
+				payloadRn.Topic == rn.Topic &&
+				payloadRn.Bucket == rn.Bucket {
+				return ErrDuplicateSubscription
+			}
+
 		}
 	}
 
@@ -248,7 +309,7 @@ func (tp *TxnPool) Dump() {
 		list.Dump()
 	}
 
-	log.Error("SigChainTxs:")
+	log.Info("SigChainTxs:")
 	for h, _ := range tp.SigChainTxs {
 		log.Info(h.ToHexString())
 	}
@@ -302,7 +363,7 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 		pld := payload.(*pb.RegisterName)
 		name, err := chain.DefaultLedger.Store.GetName(pld.Registrant)
 		if name != nil {
-			return ErrDuplicateName
+			return ErrDuplicateRegistrant
 		}
 		if err != leveldb.ErrNotFound {
 			return err
@@ -310,7 +371,7 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 
 		registrant, err := chain.DefaultLedger.Store.GetRegistrant(pld.Name)
 		if registrant != nil {
-			return ErrNoNameRegistered
+			return ErrDuplicateRegistrant
 		}
 		if err != leveldb.ErrNotFound {
 			return err

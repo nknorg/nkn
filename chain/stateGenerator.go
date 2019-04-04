@@ -34,7 +34,16 @@ func spendTransaction(states *db.StateDB, tx *Transaction) error {
 		amountRecipient := accRecipient.GetBalance()
 		accRecipient.SetBalance(amountRecipient + common.Fixed64(transfer.Amount))
 		states.SetAccount(common.BytesToUint160(transfer.Recipient), accRecipient)
-
+	case RegisterNameType:
+		fallthrough
+	case DeleteNameType:
+		fallthrough
+	case SubscribeType:
+		pg, _ := common.ToCodeHash(tx.Programs[0].Code)
+		accSender := states.GetOrNewAccount(pg)
+		nonceSender := accSender.GetNonce()
+		accSender.SetNonce(nonceSender + 1)
+		states.SetAccount(pg, accSender)
 	}
 
 	return nil

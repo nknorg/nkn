@@ -314,6 +314,35 @@ func (e *PubKey) EncodePoint(isCommpressed bool) ([]byte, error) {
 	}
 }
 
+func NewPubKeyFromBytes(pubkey []byte) (*PubKey, error) {
+	if AlgChoice == Ed25519 {
+		ed25519PubkeySize := ed25519.GetPublicKeySize()
+		switch len(pubkey) {
+		case COMPRESSEDLEN:
+			return DecodePoint(pubkey)
+		case ed25519PubkeySize:
+			publicKeyX := new(big.Int).SetBytes(pubkey)
+			return &PubKey{X: publicKeyX, Y: big.NewInt(0)}, nil
+		default:
+			return nil, errors.New("the size of ed25519 pubkey is incorrect")
+		}
+	} else {
+		switch len(pubkey) {
+		case COMPRESSEDLEN:
+			fallthrough
+		case NOCOMPRESSEDLEN:
+			return DecodePoint(pubkey)
+		case XORYVALUELEN * 2:
+			publicKeyX := new(big.Int).SetBytes(pubkey[:XORYVALUELEN])
+			publicKeyY := new(big.Int).SetBytes(pubkey[XORYVALUELEN:])
+			return &PubKey{X: publicKeyX, Y: publicKeyY}, nil
+		default:
+			return nil, errors.New("the size of ecdsa pubkey is incorrect")
+		}
+
+	}
+}
+
 func NewPubKey(priKey []byte) *PubKey {
 	if AlgChoice == Ed25519 {
 		X := ed25519.NewKeyFromPrivkey(priKey)
