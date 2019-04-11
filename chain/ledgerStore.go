@@ -67,6 +67,7 @@ type ILedgerStore interface {
 	//GetPrepaidInfo(programHash Uint160) (*Fixed64, *Fixed64, error)
 
 	//GetAssets() map[Uint256]*Asset
+	GetDonation() (*db.Donation, error)
 
 	IsTxHashDuplicate(txhash Uint256) bool
 	IsBlockInStore(hash Uint256) bool

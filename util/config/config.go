@@ -14,6 +14,7 @@ import (
 
 	gonat "github.com/nknorg/go-nat"
 	"github.com/nknorg/go-portscanner"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nnet/transport"
 )
 
@@ -22,16 +23,26 @@ const (
 )
 
 const (
-	MaxNumTxnPerBlock   = 4096
-	MaxBlockSize        = 1 * 1024 * 1024 // The Max of block size is 1 MB.
-	ConsensusDuration   = 20 * time.Second
-	ConsensusTimeout    = time.Minute
-	DefaultMiningReward = 15
-	MinNumSuccessors    = 8
-	NodeIDBytes         = 32
-	MaxRollbackBlocks   = 1
-	EncryptAlg          = "Ed25519"
-	DBVersion           = 0x02
+	MaxNumTxnPerBlock            = 4096
+	MaxBlockSize                 = 1 * 1024 * 1024 // The Max of block size is 1 MB.
+	ConsensusDuration            = 20 * time.Second
+	ConsensusTimeout             = time.Minute
+	DefaultMiningReward          = 15
+	MinNumSuccessors             = 8
+	NodeIDBytes                  = 32
+	MaxRollbackBlocks            = 1
+	EncryptAlg                   = "Ed25519"
+	DBVersion                    = 0x02
+	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
+	InitialIssueAmount           = 700000000 * common.StorageFactor
+	TotalMiningRewards           = 300000000 * common.StorageFactor
+	TotalRewardDuration          = uint32(25)
+	InitialReward                = 18000000 * common.StorageFactor
+	RewardAdjustInterval         = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
+	ReductionAmount              = 500000 * common.StorageFactor
+	DonationAddress              = "NKNaaaaaaaaaaaaaaaaaaaaaaaaaaaeJ6gxa"
+	DonationAdjustDividendFactor = 1
+	DonationAdjustDivisorFactor  = 2
 )
 
 var (

@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"sync"
 
 	. "github.com/nknorg/nkn/block"
@@ -258,7 +259,6 @@ func (cs *ChainStore) persist(b *Block) error {
 			return err
 		}
 
-		//TODO if need New?
 		if txn.UnsignedTx.Payload.Type != CoinbaseType && txn.UnsignedTx.Payload.Type != CommitType {
 			pg, _ := ToCodeHash(txn.Programs[0].Code)
 			acc := cs.States.GetOrNewAccount(pg)
@@ -275,6 +275,17 @@ func (cs *ChainStore) persist(b *Block) error {
 		switch txn.UnsignedTx.Payload.Type {
 		case CoinbaseType:
 			coinbase := pl.(*Coinbase)
+			if b.Header.UnsignedHeader.Height != 0 {
+				accSender := cs.States.GetOrNewAccount(BytesToUint160(coinbase.Sender))
+				amountSender := accSender.GetBalance()
+				donation, err := cs.GetDonation()
+				if err != nil {
+					return err
+				}
+				accSender.SetBalance(amountSender - donation.Amount)
+				cs.States.SetAccount(BytesToUint160(coinbase.Sender), accSender)
+			}
+
 			acc := cs.States.GetOrNewAccount(BytesToUint160(coinbase.Recipient))
 			amount := acc.GetBalance()
 			acc.SetBalance(amount + Fixed64(coinbase.Amount))
@@ -335,6 +346,24 @@ func (cs *ChainStore) persist(b *Block) error {
 	err = cs.st.BatchPut(currentStateTrie(), root.ToArray())
 	if err != nil {
 		return err
+	}
+
+	// batch put donation
+	if b.Header.UnsignedHeader.Height%uint32(config.RewardAdjustInterval) == 0 {
+		donation, err := cs.CalcNextDonation(b.Header.UnsignedHeader.Height)
+		if err != nil {
+			return err
+		}
+
+		w := bytes.NewBuffer(nil)
+		err = donation.Serialize(w)
+		if err != nil {
+			return err
+		}
+
+		if err := cs.st.BatchPut(donationKey(b.Header.UnsignedHeader.Height), w.Bytes()); err != nil {
+			return err
+		}
 	}
 
 	//batch put currentblockhash
@@ -453,4 +482,87 @@ func (cs *ChainStore) GetBalance(addr Uint160) Fixed64 {
 
 func (cs *ChainStore) GetNonce(addr Uint160) uint64 {
 	return cs.States.GetNonce(addr)
+}
+
+type Donation struct {
+	Height uint32
+	Amount Fixed64
+}
+
+func NewDonation(height uint32, amount Fixed64) *Donation {
+	return &Donation{
+		Height: height,
+		Amount: amount,
+	}
+}
+
+func (d *Donation) Serialize(w io.Writer) error {
+	err := serialization.WriteUint32(w, d.Height)
+	if err != nil {
+		return err
+	}
+
+	err = d.Amount.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Donation) Deserialize(r io.Reader) error {
+	var err error
+	d.Height, err = serialization.ReadUint32(r)
+	if err != nil {
+		return err
+	}
+
+	err = d.Amount.Deserialize(r)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) GetDonation() (*Donation, error) {
+	currentDonationHeight := cs.currentBlockHeight / uint32(config.RewardAdjustInterval) * uint32(config.RewardAdjustInterval)
+	data, err := cs.st.Get(donationKey(currentDonationHeight))
+	if err != nil {
+		return nil, err
+	}
+
+	r := bytes.NewReader(data)
+	donation := new(Donation)
+	err = donation.Deserialize(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return donation, nil
+}
+
+func (cs *ChainStore) CalcNextDonation(height uint32) (*Donation, error) {
+	if height == 0 {
+		return NewDonation(0, 0), nil
+	}
+
+	lastDonation, err := cs.GetDonation()
+	if err != nil {
+		return nil, err
+	}
+
+	if lastDonation.Height+uint32(config.RewardAdjustInterval) != height {
+		return nil, errors.New("invalid height to update donation")
+	}
+
+	donationAddress, _ := ToScriptHash(config.DonationAddress)
+	account := cs.States.GetOrNewAccount(donationAddress)
+	amount := account.GetBalance()
+	donation := amount * config.DonationAdjustDividendFactor / config.DonationAdjustDivisorFactor
+	donationPerBlock := int64(donation) / int64(config.RewardAdjustInterval)
+
+	d := NewDonation(height, Fixed64(donationPerBlock))
+
+	return d, nil
 }
