@@ -1,11 +1,13 @@
 package chain
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math"
 	"regexp"
 
+	"github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
@@ -104,21 +106,23 @@ func CheckTransactionPayload(txn *Transaction) error {
 			return errors.New("length of programhash error")
 		}
 
-		if BytesToUint160(pld.Sender) != EmptyUint160 {
+		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+		if BytesToUint160(pld.Sender) != donationProgramhash {
 			return errors.New("Sender error")
 		}
 
 		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
 			return errors.New("The precision of amount is incorrect.")
 		}
-
-		if Fixed64(pld.Amount) != Fixed64(config.DefaultMiningReward*StorageFactor) {
-			return errors.New("Coinbase reward error.")
-		}
 	case TransferAssetType:
 		pld := payload.(*TransferAsset)
 		if len(pld.Sender) != 20 && len(pld.Recipient) != 20 {
 			return errors.New("length of programhash error")
+		}
+
+		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+		if bytes.Equal(pld.Sender, donationProgramhash[:]) {
+			return errors.New("illegal transaction sender")
 		}
 
 		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
@@ -186,6 +190,16 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 
 	switch txn.UnsignedTx.Payload.Type {
 	case CoinbaseType:
+		donation, err := DefaultLedger.Store.GetDonation()
+		if err != nil {
+			return err
+		}
+
+		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+		amount := DefaultLedger.Store.GetBalance(donationProgramhash)
+		if amount < donation.Amount {
+			return errors.New("not sufficient funds in doation account")
+		}
 	case TransferAssetType:
 		pld := payload.(*TransferAsset)
 		balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Sender))
@@ -265,7 +279,7 @@ type Iterator interface {
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func VerifyTransactionWithBlock(iterator Iterator) error {
+func VerifyTransactionWithBlock(iterator Iterator, header *block.Header) error {
 	//initial
 	txnlist := make(map[Uint256]struct{}, 0)
 	registeredNames := make(map[string]struct{}, 0)
@@ -296,10 +310,13 @@ func VerifyTransactionWithBlock(iterator Iterator) error {
 		switch txn.UnsignedTx.Payload.Type {
 		case CoinbaseType:
 			coinbase := payload.(*Coinbase)
-			if Fixed64(coinbase.Amount) != Fixed64(config.DefaultMiningReward*StorageFactor) {
+			donation, err := DefaultLedger.Store.GetDonation()
+			if err != nil {
+				return err
+			}
+			if Fixed64(coinbase.Amount) != GetRewardByHeight(header.UnsignedHeader.Height)+donation.Amount {
 				return errors.New("Mining reward incorrectly.")
 			}
-
 		case RegisterNameType:
 			namePayload := payload.(*RegisterName)
 

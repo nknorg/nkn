@@ -22,6 +22,7 @@ const (
 	//SYSTEM
 	SYS_CurrentBlock DataEntryPrefix = 0x40
 	SYS_ExpireKey    DataEntryPrefix = 0x41
+	SYS_Donations    DataEntryPrefix = 0x42
 
 	// NAME
 	NS_Registrant DataEntryPrefix = 0x50
@@ -44,6 +45,12 @@ func versionKey() []byte {
 
 func currentBlockHashKey() []byte {
 	return paddingKey(SYS_CurrentBlock, nil)
+}
+
+func donationKey(height uint32) []byte {
+	heightBuffer := make([]byte, 4)
+	binary.LittleEndian.PutUint32(heightBuffer[:], height)
+	return paddingKey(SYS_Donations, heightBuffer)
 }
 
 func currentStateTrie() []byte {

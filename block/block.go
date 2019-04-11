@@ -193,8 +193,8 @@ func GenesisBlockInit() (*Block, error) {
 		},
 	}
 
-	rewardAddress, _ := ToScriptHash("NKNU6H1TEckb3yMaSpmyyAbShh7g7GL7xipJ")
-	payload := NewCoinbase(EmptyUint160, rewardAddress, Fixed64(config.DefaultMiningReward*StorageFactor))
+	rewardAddress, _ := ToScriptHash(config.InitialIssueAddress)
+	payload := NewCoinbase(EmptyUint160, rewardAddress, Fixed64(config.InitialIssueAmount))
 	pl, err := Pack(CoinbaseType, payload)
 	if err != nil {
 		return nil, err

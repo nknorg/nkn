@@ -10,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -37,6 +38,10 @@ func (cs *ChainStore) Rollback(b *Block) error {
 	}
 
 	if err := cs.rollbackCurrentBlockHash(b); err != nil {
+		return err
+	}
+
+	if err := cs.rollbackDonation(b); err != nil {
 		return err
 	}
 
@@ -171,5 +176,14 @@ func (cs *ChainStore) rollbackStates(b *Block) error {
 
 func (cs *ChainStore) rollbackHeaderCache(b *Block) error {
 	cs.headerCache.RollbackHeader(b.Header)
+	return nil
+}
+
+func (cs *ChainStore) rollbackDonation(b *Block) error {
+	if b.Header.UnsignedHeader.Height%uint32(config.RewardAdjustInterval) != 0 {
+		return nil
+	}
+
+	cs.st.BatchDelete(donationKey(b.Header.UnsignedHeader.Height))
 	return nil
 }
