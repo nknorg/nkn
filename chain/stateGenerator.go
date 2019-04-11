@@ -7,7 +7,7 @@ import (
 	. "github.com/nknorg/nkn/transaction"
 )
 
-func spendTransaction(states *db.StateDB, tx *Transaction) error {
+func spendTransaction(states *db.StateDB, tx *Transaction, genesis bool) error {
 	pl, err := Unpack(tx.UnsignedTx.Payload)
 	if err != nil {
 		return err
@@ -16,6 +16,17 @@ func spendTransaction(states *db.StateDB, tx *Transaction) error {
 	switch tx.UnsignedTx.Payload.Type {
 	case CoinbaseType:
 		coinbase := pl.(*Coinbase)
+		if !genesis {
+			accSender := states.GetOrNewAccount(common.BytesToUint160(coinbase.Sender))
+			amountSender := accSender.GetBalance()
+			donation, err := DefaultLedger.Store.GetDonation()
+			if err != nil {
+				return err
+			}
+			accSender.SetBalance(amountSender - donation.Amount)
+			states.SetAccount(common.BytesToUint160(coinbase.Sender), accSender)
+		}
+
 		acc := states.GetOrNewAccount(common.BytesToUint160(coinbase.Recipient))
 		amount := acc.GetBalance()
 		acc.SetBalance(amount + common.Fixed64(coinbase.Amount))
@@ -55,7 +66,7 @@ func GenerateStateRoot(txs []*Transaction) common.Uint256 {
 	states, _ := db.NewStateDB(root, db.NewTrieStore(DefaultLedger.Store.GetDatabase()))
 
 	for _, tx := range txs {
-		spendTransaction(states, tx)
+		spendTransaction(states, tx, false)
 	}
 
 	return states.IntermediateRoot(true)
@@ -66,7 +77,7 @@ func GenesisStateRoot(store ILedgerStore, txs []*Transaction) common.Uint256 {
 	states, _ := db.NewStateDB(root, db.NewTrieStore(store.GetDatabase()))
 
 	for _, tx := range txs {
-		spendTransaction(states, tx)
+		spendTransaction(states, tx, true)
 	}
 
 	return states.IntermediateRoot(true)

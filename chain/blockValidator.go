@@ -70,7 +70,7 @@ func TransactionCheck(block *Block) error {
 			return fmt.Errorf("transaction history check failed: %v", err)
 		}
 	}
-	if err := VerifyTransactionWithBlock(TransactionArray(block.Transactions)); err != nil {
+	if err := VerifyTransactionWithBlock(TransactionArray(block.Transactions), block.Header); err != nil {
 		return fmt.Errorf("Transaction block check failed: %v", err)
 	}
 

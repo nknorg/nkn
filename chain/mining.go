@@ -35,7 +35,12 @@ func NewBuiltinMining(account *vault.Account, txnCollector *TxnCollector) *Built
 func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType WinnerType, timestamp int64) (*Block, error) {
 	var txnList []*Transaction
 	var txnHashList []common.Uint256
-	coinbase := bm.CreateCoinbaseTransaction()
+
+	donation, err := DefaultLedger.Store.GetDonation()
+	if err != nil {
+		return nil, err
+	}
+	coinbase := bm.CreateCoinbaseTransaction(GetRewardByHeight(height) + donation.Amount)
 	txnList = append(txnList, coinbase)
 	txnHashList = append(txnHashList, coinbase.Hash())
 	totalTxsSize := coinbase.GetSize()
@@ -122,7 +127,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	return block, nil
 }
 
-func (bm *BuiltinMining) CreateCoinbaseTransaction() *Transaction {
+func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *Transaction {
 	// Transfer the reward to the beneficiary
 	redeemHash := bm.account.ProgramHash
 	if config.Parameters.BeneficiaryAddr != "" {
@@ -134,7 +139,8 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction() *Transaction {
 		}
 	}
 
-	payload := NewCoinbase(common.EmptyUint160, redeemHash, common.Fixed64(config.DefaultMiningReward*common.StorageFactor))
+	donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
+	payload := NewCoinbase(donationProgramhash, redeemHash, reward)
 	pl, err := Pack(CoinbaseType, payload)
 	if err != nil {
 		return nil
