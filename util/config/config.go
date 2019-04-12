@@ -38,9 +38,9 @@ const (
 	InitialIssueAmount           = 700000000 * common.StorageFactor
 	TotalMiningRewards           = 300000000 * common.StorageFactor
 	TotalRewardDuration          = uint32(25)
-	InitialReward                = 18000000 * common.StorageFactor
+	InitialReward                = common.Fixed64(18000000 * common.StorageFactor)
 	RewardAdjustInterval         = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
-	ReductionAmount              = 500000 * common.StorageFactor
+	ReductionAmount              = common.Fixed64(500000 * common.StorageFactor)
 	DonationAddress              = "NKNaaaaaaaaaaaaaaaaaaaaaaaaaaaeJ6gxa"
 	DonationAdjustDividendFactor = 1
 	DonationAdjustDivisorFactor  = 2
