@@ -11,7 +11,7 @@ var (
 
 func init() {
 	for i := uint32(0); i < config.TotalRewardDuration; i++ {
-		MiningRewards[i] = common.Fixed64(config.InitialReward - config.ReductionAmount*int(i))
+		MiningRewards[i] = common.Fixed64(config.InitialReward - config.ReductionAmount*common.Fixed64(i))
 	}
 }
 
