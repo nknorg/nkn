@@ -243,6 +243,7 @@ func (b *Block) GetInfo() ([]byte, error) {
 	type blockInfo struct {
 		Header       interface{}   `json:"header"`
 		Transactions []interface{} `json:"transactions"`
+		Size         int           `json:"size"`
 		Hash         string        `json:"hash"`
 	}
 
@@ -254,6 +255,7 @@ func (b *Block) GetInfo() ([]byte, error) {
 	info := &blockInfo{
 		Header:       unmarshaledHeader,
 		Transactions: make([]interface{}, 0),
+		Size:         b.ToMsgBlock().Size(),
 		Hash:         b.hash.ToHexString(),
 	}
 
