@@ -253,7 +253,7 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 			return err
 		}
 		if !match {
-			return errors.New(fmt.Sprintf("topic %s should only contain a-z and have length 8-12", topic))
+			return errors.New(fmt.Sprintf("topic %s should start with a-z, contain a-z0-9-_.~+%% and have length 3-255", topic))
 		}
 
 		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, topic, bucket)
