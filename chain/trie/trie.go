@@ -107,7 +107,7 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 }
 
 func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
-	log.Infof("=====insert node type : %v,%v\n", reflect.TypeOf(n), common.BytesToHexString(key))
+	//log.Infof("=====insert node type : %v,%v\n", reflect.TypeOf(n), common.BytesToHexString(key))
 	if len(key) == 0 {
 		return value, nil
 	}

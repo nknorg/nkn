@@ -5,11 +5,13 @@ import (
 	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nnet/log"
 )
 
 func spendTransaction(states *db.StateDB, tx *Transaction, genesis bool) error {
 	pl, err := Unpack(tx.UnsignedTx.Payload)
 	if err != nil {
+		log.Error("unpack payload error", err)
 		return err
 	}
 
@@ -21,6 +23,7 @@ func spendTransaction(states *db.StateDB, tx *Transaction, genesis bool) error {
 			amountSender := accSender.GetBalance()
 			donation, err := DefaultLedger.Store.GetDonation()
 			if err != nil {
+				log.Error("get donation from store err", err)
 				return err
 			}
 			accSender.SetBalance(amountSender - donation.Amount)
