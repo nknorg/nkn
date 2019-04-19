@@ -179,7 +179,7 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 		addr, _ := ToCodeHash(txn.Programs[0].Code)
 		nonce := DefaultLedger.Store.GetNonce(addr)
 		if nonce != txn.UnsignedTx.Nonce {
-			return errors.New("[VerifyTransactionWithLedger] txn nonce error")
+			return fmt.Errorf("[VerifyTransactionWithLedger] txn nonce error, expected: %v, Get: %v", nonce, txn.UnsignedTx.Nonce)
 		}
 	}
 

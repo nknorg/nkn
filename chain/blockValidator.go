@@ -74,6 +74,13 @@ func TransactionCheck(block *Block) error {
 		return fmt.Errorf("Transaction block check failed: %v", err)
 	}
 
+	//state root check
+	root := GenerateStateRoot(block.Transactions)
+	headerRoot, _ := Uint256ParseFromBytes(block.Header.UnsignedHeader.StateRoot)
+	if ok := root.CompareTo(headerRoot); ok != 0 {
+		return fmt.Errorf("[TransactionCheck]state root not equal:%v, %v", root, headerRoot)
+	}
+
 	return nil
 }
 
