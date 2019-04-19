@@ -234,6 +234,11 @@ func (cs *ChainStore) persist(b *Block) error {
 
 	headerHash := b.Hash()
 
+	states, err := NewStateDB(cs.GetCurrentBlockStateRoot(), NewTrieStore(cs.GetDatabase()))
+	if err != nil {
+		return err
+	}
+
 	//batch put header
 	headerBuffer := bytes.NewBuffer(nil)
 	b.Trim(headerBuffer)
@@ -261,10 +266,10 @@ func (cs *ChainStore) persist(b *Block) error {
 
 		if txn.UnsignedTx.Payload.Type != CoinbaseType && txn.UnsignedTx.Payload.Type != CommitType {
 			pg, _ := ToCodeHash(txn.Programs[0].Code)
-			acc := cs.States.GetOrNewAccount(pg)
+			acc := states.GetOrNewAccount(pg)
 			nonce := acc.GetNonce()
 			acc.SetNonce(nonce + 1)
-			cs.States.SetAccount(pg, acc)
+			states.SetAccount(pg, acc)
 		}
 
 		pl, err := Unpack(txn.UnsignedTx.Payload)
@@ -276,31 +281,31 @@ func (cs *ChainStore) persist(b *Block) error {
 		case CoinbaseType:
 			coinbase := pl.(*Coinbase)
 			if b.Header.UnsignedHeader.Height != 0 {
-				accSender := cs.States.GetOrNewAccount(BytesToUint160(coinbase.Sender))
+				accSender := states.GetOrNewAccount(BytesToUint160(coinbase.Sender))
 				amountSender := accSender.GetBalance()
 				donation, err := cs.GetDonation()
 				if err != nil {
 					return err
 				}
 				accSender.SetBalance(amountSender - donation.Amount)
-				cs.States.SetAccount(BytesToUint160(coinbase.Sender), accSender)
+				states.SetAccount(BytesToUint160(coinbase.Sender), accSender)
 			}
 
-			acc := cs.States.GetOrNewAccount(BytesToUint160(coinbase.Recipient))
+			acc := states.GetOrNewAccount(BytesToUint160(coinbase.Recipient))
 			amount := acc.GetBalance()
 			acc.SetBalance(amount + Fixed64(coinbase.Amount))
-			cs.States.setAccount(BytesToUint160(coinbase.Recipient), acc)
+			states.setAccount(BytesToUint160(coinbase.Recipient), acc)
 		case TransferAssetType:
 			transfer := pl.(*TransferAsset)
-			accSender := cs.States.GetOrNewAccount(BytesToUint160(transfer.Sender))
+			accSender := states.GetOrNewAccount(BytesToUint160(transfer.Sender))
 			amountSender := accSender.GetBalance()
 			accSender.SetBalance(amountSender - Fixed64(transfer.Amount))
-			cs.States.setAccount(BytesToUint160(transfer.Sender), accSender)
+			states.setAccount(BytesToUint160(transfer.Sender), accSender)
 
-			accRecipient := cs.States.GetOrNewAccount(BytesToUint160(transfer.Recipient))
+			accRecipient := states.GetOrNewAccount(BytesToUint160(transfer.Recipient))
 			amountRecipient := accRecipient.GetBalance()
 			accRecipient.SetBalance(amountRecipient + Fixed64(transfer.Amount))
-			cs.States.setAccount(BytesToUint160(transfer.Recipient), accRecipient)
+			states.setAccount(BytesToUint160(transfer.Recipient), accRecipient)
 		case RegisterNameType:
 			registerNamePayload := pl.(*RegisterName)
 			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
@@ -332,7 +337,7 @@ func (cs *ChainStore) persist(b *Block) error {
 	}
 
 	//StateRoot
-	root, err := cs.States.CommitTo(true)
+	root, err := states.CommitTo(true)
 	if err != nil {
 		return err
 	}
@@ -373,7 +378,14 @@ func (cs *ChainStore) persist(b *Block) error {
 		return err
 	}
 
-	return cs.st.BatchCommit()
+	err = cs.st.BatchCommit()
+	if err != nil {
+		return err
+	}
+
+	cs.States = states
+
+	return nil
 }
 
 func (cs *ChainStore) SaveBlock(b *Block, fastAdd bool) error {
