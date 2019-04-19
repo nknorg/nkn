@@ -344,8 +344,8 @@ func (cs *ChainStore) persist(b *Block) error {
 
 	headerRoot, _ := Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
 	if ok := root.CompareTo(headerRoot); ok != 0 {
-		//TODO clean states accounts
-		return fmt.Errorf("state root not equal:%v, %v", root, headerRoot)
+		log.Error("dump trimed block:", headerBuffer)
+		return fmt.Errorf("state root not equal:%v, %v", root.ToHexString(), headerRoot.ToHexString())
 	}
 
 	err = cs.st.BatchPut(currentStateTrie(), root.ToArray())
