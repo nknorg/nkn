@@ -32,7 +32,7 @@ const (
 	NodeIDBytes                  = 32
 	MaxRollbackBlocks            = 1
 	EncryptAlg                   = "Ed25519"
-	DBVersion                    = 0x03
+	DBVersion                    = 0x04
 	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
 	InitialIssueAmount           = 700000000 * common.StorageFactor
 	TotalMiningRewards           = 300000000 * common.StorageFactor
