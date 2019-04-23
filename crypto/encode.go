@@ -277,7 +277,8 @@ func DecodePoint(encodeData []byte) (*PubKey, error) {
 func (e *PubKey) EncodePoint(isCommpressed bool) ([]byte, error) {
 	if AlgChoice == Ed25519 {
 		encodedData := make([]byte, COMPRESSEDLEN)
-		copy(encodedData[1:], e.X.Bytes())
+		xBytes := e.X.Bytes()
+		copy(encodedData[COMPRESSEDLEN-len(xBytes):COMPRESSEDLEN], xBytes)
 		encodedData[0] = 0x04
 		return encodedData, nil
 	} else {
