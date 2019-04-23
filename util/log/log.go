@@ -100,7 +100,7 @@ func New(out io.Writer, prefix string, flag, level int, file *os.File) *Logger {
 }
 
 func (l *Logger) SetDebugLevel(level int) error {
-	if level > maxLevelLog || level < 0 {
+	if level >= maxLevelLog || level < 0 {
 		return errors.New("Invalid Debug Level")
 	}
 
