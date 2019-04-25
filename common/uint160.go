@@ -142,11 +142,12 @@ func ToScriptHash(address string) (Uint160, error) {
 	return Uint160ParseFromBytes(hex[PREFIXLEN : PREFIXLEN+UINT160SIZE])
 }
 
-func (u *Uint160) SetBytes(b []byte) {
+func (u *Uint160) SetBytes(b []byte) *Uint160 {
 	if len(b) > len(u) {
 		b = b[len(b)-UINT160SIZE:]
 	}
 	copy(u[UINT160SIZE-len(b):], b)
+	return u
 }
 
 func BytesToUint160(b []byte) Uint160 {
