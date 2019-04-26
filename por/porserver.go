@@ -99,14 +99,14 @@ func (ps *PorServer) CreateSigChain(dataSize uint32, dataHash, blockHash *common
 }
 
 func (ps *PorServer) CreateSigChainForClient(dataSize uint32, dataHash, blockHash *common.Uint256, srcID,
-	srcPubkey, destPubkey, signature []byte, sigAlgo SigAlgo) (*SigChain, error) {
+	srcPubkey, destPubkey, signature, proof []byte, sigAlgo SigAlgo) (*SigChain, error) {
 	pubKey, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
 		log.Error("Get account public key error:", err)
 		return nil, err
 	}
 	sigChain, err := NewSigChainWithSignature(dataSize, dataHash[:], blockHash[:],
-		srcID, srcPubkey, destPubkey, pubKey, signature, sigAlgo, false)
+		srcID, srcPubkey, destPubkey, pubKey, signature, proof, sigAlgo, false)
 	if err != nil {
 		log.Error("New signature chain with signature error:", err)
 		return nil, err

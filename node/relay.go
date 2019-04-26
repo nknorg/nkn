@@ -144,7 +144,7 @@ func (localNode *LocalNode) startRelayer() {
 	localNode.relayer.Start()
 }
 
-func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error {
+func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, signature, proof []byte, maxHoldingSeconds uint32) error {
 	srcID, srcPubkey, err := address.ParseClientAddress(srcAddr)
 	if err != nil {
 		return err
@@ -174,7 +174,8 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 		srcPubkey,
 		destPubkey,
 		signature,
-		pb.ED25519,
+		proof,
+		pb.VRF,
 	)
 	if err != nil {
 		return err
