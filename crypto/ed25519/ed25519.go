@@ -81,7 +81,11 @@ func GetSignatureSize() int {
 	return ed25519.SignatureSize
 }
 
-func GenerateVrf(privKey []byte, data []byte) (dataVrf []byte, proof []byte) {
+func GenerateVrf(privKey []byte, data []byte) (dataVrf []byte, proof []byte, err error) {
+	if len(privKey) != ed25519.PrivateKeySize {
+		err = errors.New("bad length of privKey")
+		return
+	}
 	sk := vrf.PrivateKey(privKey)
 	dataVrf, proof = sk.Prove(data)
 	return
