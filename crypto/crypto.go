@@ -116,9 +116,9 @@ func Verify(publicKey PubKey, data []byte, signature []byte) error {
 	return p256r1.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
 }
 
-func GenerateVrf(privateKey []byte, data []byte) (vrf []byte, proof []byte) {
+func GenerateVrf(privateKey []byte, data []byte) (vrf []byte, proof []byte, err error) {
 	if Ed25519 == AlgChoice {
-		vrf, proof = ed25519.GenerateVrf(privateKey, data)
+		vrf, proof, err = ed25519.GenerateVrf(privateKey, data)
 	} else {
 		panic("unsupported algorithm type")
 	}
