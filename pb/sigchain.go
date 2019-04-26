@@ -156,7 +156,11 @@ func NewSigChain(srcPubKey *crypto.PubKey, srcPrivKey []byte, dataSize uint32, d
 	}
 
 	hash := sha256.Sum256(buff.Bytes())
-	signature, proof := crypto.GenerateVrf(srcPrivKey, hash[:])
+	signature, proof, err := crypto.GenerateVrf(srcPrivKey, hash[:])
+	if err != nil {
+		return nil, err
+	}
+
 	sc.Elems[0].Signature = signature
 	sc.Elems[0].Proof = proof
 
@@ -238,7 +242,10 @@ func (sc *SigChain) Sign(addr, nextPubkey []byte, mining bool, signerPubKey *cry
 		return err
 	}
 
-	signature, proof := crypto.GenerateVrf(signerPrivKey, digest)
+	signature, proof, err := crypto.GenerateVrf(signerPrivKey, digest)
+	if err != nil {
+		return err
+	}
 
 	err = sc.AddLastSignature(signature, proof)
 	if err != nil {
