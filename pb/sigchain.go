@@ -26,7 +26,7 @@ import (
 
 // TODO: move sigAlgo to config.json
 const (
-	sigAlgo                    = ED25519
+	sigAlgo                    = VRF
 	bitShiftPerSigChainElement = 4
 )
 
@@ -94,7 +94,7 @@ func (sc *SigChain) SerializationMetadata(w io.Writer) error {
 }
 
 func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash, srcID, srcPubkey, destPubkey, nextPubkey,
-	signature []byte, algo SigAlgo, mining bool) (*SigChain, error) {
+	signature, proof []byte, algo SigAlgo, mining bool) (*SigChain, error) {
 	sc := &SigChain{
 		DataSize:   dataSize,
 		DataHash:   dataHash,
@@ -107,6 +107,7 @@ func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash, srcID, srcPu
 				NextPubkey: nextPubkey,
 				SigAlgo:    algo,
 				Signature:  signature,
+				Proof:      proof,
 				Mining:     mining,
 			},
 		},
@@ -155,11 +156,9 @@ func NewSigChain(srcPubKey *crypto.PubKey, srcPrivKey []byte, dataSize uint32, d
 	}
 
 	hash := sha256.Sum256(buff.Bytes())
-	signature, err := crypto.Sign(srcPrivKey, hash[:])
-	if err != nil {
-		return nil, err
-	}
+	signature, proof := crypto.GenerateVrf(srcPrivKey, hash[:])
 	sc.Elems[0].Signature = signature
+	sc.Elems[0].Proof = proof
 
 	return sc, nil
 }
@@ -171,6 +170,7 @@ func NewSigChainElem(addr, nextPubkey []byte, mining bool) *SigChainElem {
 		NextPubkey: nextPubkey,
 		Mining:     mining,
 		Signature:  nil,
+		Proof:      nil,
 	}
 }
 
@@ -190,7 +190,7 @@ func (sc *SigChain) ExtendElement(addr, nextPubkey []byte, mining bool) ([]byte,
 	return hash[:], nil
 }
 
-func (sc *SigChain) AddLastSignature(signature []byte) error {
+func (sc *SigChain) AddLastSignature(signature, proof []byte) error {
 	lastElem, err := sc.lastSigElem()
 	if err != nil {
 		return err
@@ -199,6 +199,7 @@ func (sc *SigChain) AddLastSignature(signature []byte) error {
 		return errors.New("Last signature is already set")
 	}
 	lastElem.Signature = signature
+	lastElem.Proof = proof
 	return nil
 }
 
@@ -237,13 +238,9 @@ func (sc *SigChain) Sign(addr, nextPubkey []byte, mining bool, signerPubKey *cry
 		return err
 	}
 
-	signature, err := crypto.Sign(signerPrivKey, digest)
-	if err != nil {
-		log.Error("Compute signature error:", err)
-		return err
-	}
+	signature, proof := crypto.GenerateVrf(signerPrivKey, digest)
 
-	err = sc.AddLastSignature(signature)
+	err = sc.AddLastSignature(signature, proof)
 	if err != nil {
 		log.Error("Add last signature error:", err)
 		return err
@@ -272,10 +269,10 @@ func (sc *SigChain) Verify() error {
 			buff := bytes.NewBuffer(prevSig)
 			e.SerializationUnsigned(buff)
 			currHash := sha256.Sum256(buff.Bytes())
-			err = crypto.Verify(*ePk, currHash[:], e.Signature)
-			if err != nil {
-				log.Error("Verify signature error:", err)
-				return err
+			ok := crypto.VerifyVrf(*ePk, currHash[:], e.Signature, e.Proof)
+			if !ok {
+				log.Error("Verify signature error")
+				return errors.New("Verify signature error")
 			}
 		}
 
