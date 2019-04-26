@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/nknorg/nkn/crypto/ed25519/vrf"
 	"github.com/nknorg/nkn/crypto/util"
 
 	"golang.org/x/crypto/ed25519"
@@ -69,4 +70,20 @@ func GetPrivateKeySize() int {
 
 func GetSignatureSize() int {
 	return ed25519.SignatureSize
+}
+
+func GenerateVrf(privKey []byte, data []byte) (dataVrf []byte, proof []byte) {
+	sk := vrf.PrivateKey(privKey)
+	dataVrf, proof = sk.Prove(data)
+	return
+}
+
+func VerifyVrf(X *big.Int, Y *big.Int, data, dataVrf, proof []byte) bool {
+	publicKey := X.Bytes()
+	pubKey := [ed25519.PublicKeySize]byte{}
+	copy(pubKey[ed25519.PublicKeySize-len(publicKey):], publicKey)
+
+	pk := vrf.PublicKey(pubKey[:])
+
+	return pk.Verify(data, dataVrf, proof)
 }
