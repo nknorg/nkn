@@ -15,24 +15,26 @@ option (gogoproto.equal_all) = true;
 option (gogoproto.populate_all) = true;
 
 enum SigAlgo {
-  ECDSA = 0;
-  ED25519 = 1;
+  ECDSA       = 0;
+  ED25519     = 1;
+  VRF         = 2;
 }
 
 message SigChainElem {
-  bytes Addr = 1;
-  bytes NextPubkey = 2;
-  bool Mining = 3;
-  SigAlgo SigAlgo = 4;
-  bytes Signature = 5;
+  bytes addr                = 1;
+  bytes next_pubkey         = 2;
+  bool mining               = 3;
+  SigAlgo sig_algo          = 4;
+  bytes signature           = 5;
+  bytes proof               = 6;
 }
 
 message SigChain {
-  uint32 Nonce = 1;
-  uint32 DataSize = 2;
-  bytes DataHash = 3;
-  bytes BlockHash = 4;
-  bytes SrcPubkey = 5;
-  bytes DestPubkey = 6;
-  repeated SigChainElem Elems = 7;
+  uint32 nonce                = 1;
+  uint32 data_size            = 2;
+  bytes data_hash             = 3;
+  bytes block_hash            = 4;
+  bytes src_pubkey            = 5;
+  bytes dest_pubkey           = 6;
+  repeated SigChainElem elems = 7;
 }
