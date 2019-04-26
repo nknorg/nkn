@@ -32,10 +32,11 @@ func (ws *WsServer) sendOutboundRelayMessage(srcAddrStrPtr *string, msg *pb.Outb
 	}
 
 	var signature []byte
+	var proof []byte
 	for _, dest := range append(msg.Dests, msg.Dest) {
 		dest = ResolveDest(dest)
 
-		err := ws.localNode.SendRelayMessage(*srcAddrStrPtr, dest, msg.Payload, signature, msg.MaxHoldingSeconds)
+		err := ws.localNode.SendRelayMessage(*srcAddrStrPtr, dest, msg.Payload, signature, proof, msg.MaxHoldingSeconds)
 		if err != nil {
 			log.Error("Send relay message error:", err)
 		}
