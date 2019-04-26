@@ -116,6 +116,24 @@ func Verify(publicKey PubKey, data []byte, signature []byte) error {
 	return p256r1.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
 }
 
+func GenerateVrf(privateKey []byte, data []byte) (vrf []byte, proof []byte) {
+	if Ed25519 == AlgChoice {
+		vrf, proof = ed25519.GenerateVrf(privateKey, data)
+	} else {
+		panic("unsupported algorithm type")
+	}
+
+	return
+}
+
+func VerifyVrf(publicKey PubKey, data, vrf, proof []byte) bool {
+	if Ed25519 == AlgChoice {
+		return ed25519.VerifyVrf(publicKey.X, publicKey.Y, data, vrf, proof)
+	} else {
+		panic("unsupported algorithm type")
+	}
+}
+
 func (e *PubKey) Serialize(w io.Writer) error {
 	if err := serialization.WriteVarBytes(w, e.X.Bytes()); err != nil {
 		return err
