@@ -532,7 +532,8 @@ func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interf
 	value := chain.DefaultLedger.Store.GetNonce(pg)
 
 	ret := map[string]interface{}{
-		"nonce": value,
+		"nonce":         value,
+		"currentHeight": chain.DefaultLedger.Store.GetHeight(),
 	}
 
 	return respPacking(ret, SUCCESS)
