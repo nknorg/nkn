@@ -194,7 +194,8 @@ func GenesisBlockInit() (*Block, error) {
 	}
 
 	rewardAddress, _ := ToScriptHash(config.InitialIssueAddress)
-	payload := NewCoinbase(EmptyUint160, rewardAddress, Fixed64(config.InitialIssueAmount))
+	donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+	payload := NewCoinbase(donationProgramhash, rewardAddress, Fixed64(config.InitialIssueAmount))
 	pl, err := Pack(CoinbaseType, payload)
 	if err != nil {
 		return nil, err

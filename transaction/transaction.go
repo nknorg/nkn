@@ -113,6 +113,8 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		sender := payload.(*TransferAsset).Sender
 		hashes = append(hashes, BytesToUint160(sender))
 	case CoinbaseType:
+		sender := payload.(*Coinbase).Sender
+		hashes = append(hashes, BytesToUint160(sender))
 	case RegisterNameType:
 		pubkey := payload.(*RegisterName).Registrant
 		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
