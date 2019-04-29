@@ -264,12 +264,12 @@ func (cs *ChainStore) persist(b *Block) error {
 			return err
 		}
 
-		if txn.UnsignedTx.Payload.Type != CoinbaseType && txn.UnsignedTx.Payload.Type != CommitType {
-			pg, _ := ToCodeHash(txn.Programs[0].Code)
-			acc := states.GetOrNewAccount(pg)
+		if txn.UnsignedTx.Payload.Type != CommitType {
+			pg, _ := txn.GetProgramHashes()
+			acc := states.GetOrNewAccount(pg[0])
 			nonce := acc.GetNonce()
 			acc.SetNonce(nonce + 1)
-			states.SetAccount(pg, acc)
+			states.SetAccount(pg[0], acc)
 		}
 
 		pl, err := Unpack(txn.UnsignedTx.Payload)
@@ -344,7 +344,6 @@ func (cs *ChainStore) persist(b *Block) error {
 
 	headerRoot, _ := Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
 	if ok := root.CompareTo(headerRoot); ok != 0 {
-		log.Error("dump trimed block:", headerBuffer)
 		return fmt.Errorf("state root not equal:%v, %v", root.ToHexString(), headerRoot.ToHexString())
 	}
 
