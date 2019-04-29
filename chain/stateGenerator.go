@@ -18,8 +18,8 @@ func spendTransaction(states *db.StateDB, tx *Transaction, genesis bool) error {
 	switch tx.UnsignedTx.Payload.Type {
 	case CoinbaseType:
 		coinbase := pl.(*Coinbase)
+		accSender := states.GetOrNewAccount(common.BytesToUint160(coinbase.Sender))
 		if !genesis {
-			accSender := states.GetOrNewAccount(common.BytesToUint160(coinbase.Sender))
 			amountSender := accSender.GetBalance()
 			donation, err := DefaultLedger.Store.GetDonation()
 			if err != nil {
@@ -27,8 +27,10 @@ func spendTransaction(states *db.StateDB, tx *Transaction, genesis bool) error {
 				return err
 			}
 			accSender.SetBalance(amountSender - donation.Amount)
-			states.SetAccount(common.BytesToUint160(coinbase.Sender), accSender)
 		}
+		nonceSender := accSender.GetNonce()
+		accSender.SetNonce(nonceSender + 1)
+		states.SetAccount(common.BytesToUint160(coinbase.Sender), accSender)
 
 		acc := states.GetOrNewAccount(common.BytesToUint160(coinbase.Recipient))
 		amount := acc.GetBalance()

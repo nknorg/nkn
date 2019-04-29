@@ -81,6 +81,10 @@ func CheckTransactionAttribute(txn *Transaction) error {
 }
 
 func CheckTransactionContracts(txn *Transaction) error {
+	if txn.UnsignedTx.Payload.Type == CoinbaseType {
+		return nil
+	}
+
 	flag, err := signature.VerifySignableData(txn)
 	if flag && err == nil {
 		return nil

@@ -146,7 +146,8 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *Trans
 		return nil
 	}
 
-	txn := NewMsgTx(pl, rand.Uint64(), 0, util.RandomBytes(TransactionNonceLength))
+	nonce := DefaultLedger.Store.GetNonce(donationProgramhash)
+	txn := NewMsgTx(pl, nonce, 0, util.RandomBytes(TransactionNonceLength))
 	trans := &Transaction{
 		MsgTx: *txn,
 	}
