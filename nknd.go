@@ -279,7 +279,7 @@ func TestNetVersion(timer *time.Timer) {
 		case <-timer.C:
 			verNum, err := GetRemoteVersionNum()
 			if err != nil {
-				log.Warning("Get the remote version number error")
+				log.Warningf("Get the remote version number error: %v", err)
 				timer.Reset(30 * time.Minute)
 				break
 			}

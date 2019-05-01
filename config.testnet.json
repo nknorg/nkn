@@ -7,5 +7,6 @@
     "http://devnet-seed-0003.nkn.org:30003",
     "http://devnet-seed-0004.nkn.org:30003"
   ],
-  "GenesisBlockProposer": "040149c42944eea91f094c16538eff0449d4d1e236f31c8c706b2e40e98402984c"
+  "GenesisBlockProposer": "040149c42944eea91f094c16538eff0449d4d1e236f31c8c706b2e40e98402984c",
+  "BeneficiaryAddr": ""
 }
