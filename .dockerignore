@@ -6,9 +6,10 @@
 
 Log
 vendor
-Chain
+ChainDB
 nknd
 nknc
 build/
 wallet.dat
 config.json
+Dockerfile
