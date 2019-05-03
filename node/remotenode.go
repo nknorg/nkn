@@ -2,7 +2,6 @@ package node
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -45,10 +44,6 @@ func NewRemoteNode(localNode *LocalNode, nnetNode *nnetnode.RemoteNode) (*Remote
 	err := proto.Unmarshal(nnetNode.Node.Data, nodeData)
 	if err != nil {
 		return nil, err
-	}
-
-	if nodeData.ProtocolVersion < minCompatibleProtocolVersion || nodeData.ProtocolVersion > maxCompatibleProtocolVersion {
-		return nil, fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol verison %d", nodeData.ProtocolVersion, protocolVersion)
 	}
 
 	node, err := NewNode(nnetNode.Node.Node, nodeData)
