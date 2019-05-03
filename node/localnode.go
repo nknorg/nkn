@@ -123,34 +123,34 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	chain.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, localNode.cleanupTransactions)
 
-	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady(func(remoteNode *nnetnode.RemoteNode) bool {
+	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady{func(remoteNode *nnetnode.RemoteNode) bool {
 		err := localNode.validateRemoteNode(remoteNode)
 		if err != nil {
 			remoteNode.Stop(err)
 			return false
 		}
 		return true
-	}))
+	}, 1000})
 
-	nn.MustApplyMiddleware(chord.NeighborAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
+	nn.MustApplyMiddleware(chord.NeighborAdded{func(remoteNode *nnetnode.RemoteNode, index int) bool {
 		err := localNode.maybeAddRemoteNode(remoteNode)
 		if err != nil {
 			remoteNode.Stop(err)
 			return false
 		}
 		return true
-	}))
+	}, 0})
 
-	nn.MustApplyMiddleware(chord.NeighborRemoved(func(remoteNode *nnetnode.RemoteNode) bool {
+	nn.MustApplyMiddleware(chord.NeighborRemoved{func(remoteNode *nnetnode.RemoteNode) bool {
 		nbr := localNode.getNbrByNNetNode(remoteNode)
 		if nbr != nil {
 			localNode.DelNbrNode(nbr.GetID())
 		}
 
 		return true
-	}))
+	}, 0})
 
-	nn.MustApplyMiddleware(routing.RemoteMessageRouted(localNode.remoteMessageRouted))
+	nn.MustApplyMiddleware(routing.RemoteMessageRouted{localNode.remoteMessageRouted, 0})
 
 	return localNode, nil
 }
@@ -163,6 +163,16 @@ func (localNode *LocalNode) Start() error {
 }
 
 func (localNode *LocalNode) validateRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+	nodeData := &pb.NodeData{}
+	err := proto.Unmarshal(remoteNode.Node.Data, nodeData)
+	if err != nil {
+		return err
+	}
+
+	if nodeData.ProtocolVersion < minCompatibleProtocolVersion || nodeData.ProtocolVersion > maxCompatibleProtocolVersion {
+		return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol verison %d", nodeData.ProtocolVersion, protocolVersion)
+	}
+
 	addr, err := url.Parse(remoteNode.GetAddr())
 	if err != nil {
 		return err

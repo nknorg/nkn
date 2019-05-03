@@ -145,13 +145,13 @@ func nknMain(c *cli.Context) error {
 		return err
 	}
 
-	nn.MustApplyMiddleware(overlay.NetworkStopped(func(network overlay.Network) bool {
+	nn.MustApplyMiddleware(overlay.NetworkStopped{func(network overlay.Network) bool {
 		select {
 		case signalChan <- os.Interrupt:
 		default:
 		}
 		return true
-	}))
+	}, 0})
 
 	if len(seedStr) > 0 {
 		// Support input mutil seeds which split by ","
@@ -187,12 +187,12 @@ func nknMain(c *cli.Context) error {
 	// start websocket server
 	ws := websocket.NewServer(localNode, wallet)
 
-	nn.MustApplyMiddleware(chord.SuccessorAdded(func(remoteNode *nnetnode.RemoteNode, index int) bool {
+	nn.MustApplyMiddleware(chord.SuccessorAdded{func(remoteNode *nnetnode.RemoteNode, index int) bool {
 		if index == 0 {
 			ws.NotifyWrongClients()
 		}
 		return true
-	}))
+	}, 0})
 
 	err = nn.Start(createMode)
 	if err != nil {
