@@ -75,6 +75,22 @@ func GenKeyPair() ([]byte, PubKey, error) {
 
 }
 
+func GetPrivateKeyFromSeed(seed []byte) []byte {
+	if Ed25519 == AlgChoice {
+		return ed25519.GetPrivateKeyFromSeed(seed)
+	} else {
+		panic("unsupported function")
+	}
+}
+
+func GetSeedFromPrivateKey(priKey []byte) []byte {
+	if Ed25519 == AlgChoice {
+		return ed25519.GetSeedFromPrivateKey(priKey)
+	} else {
+		panic("unsupported function")
+	}
+}
+
 func Sign(privateKey []byte, data []byte) ([]byte, error) {
 	var r *big.Int
 	var s *big.Int
