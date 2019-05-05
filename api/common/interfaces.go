@@ -523,16 +523,29 @@ func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interf
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
+	localNode, err := s.GetNetNode()
+	if err != nil {
+		return respPacking(nil, INTERNAL_ERROR)
+	}
+
 	addr, ok := params["address"].(string)
 	if !ok {
 		return respPacking(nil, INVALID_PARAMS)
 	}
 
 	pg, _ := common.ToScriptHash(addr)
-	value := chain.DefaultLedger.Store.GetNonce(pg)
+	persistNonce := chain.DefaultLedger.Store.GetNonce(pg)
+
+	txpool := localNode.GetTxnPool()
+	txPoolNonce, err := txpool.GetNonceByTxnPool(pg)
+	if err != nil {
+		log.Warning(err)
+		txPoolNonce = persistNonce
+	}
 
 	ret := map[string]interface{}{
-		"nonce":         value,
+		"nonce":         persistNonce,
+		"nonceInTxPool": txPoolNonce,
 		"currentHeight": chain.DefaultLedger.Store.GetHeight(),
 	}
 
