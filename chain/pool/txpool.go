@@ -301,6 +301,21 @@ func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*Transaction, erro
 	return txmap, nil
 }
 
+func (tp *TxnPool) GetNonceByTxnPool(addr common.Uint160) (uint64, error) {
+	if _, ok := tp.TxLists[addr]; !ok {
+		return 0, errors.New("no transactions in transaction pool")
+	}
+
+	list := tp.TxLists[addr]
+	pendingNonce, err := list.GetLatestNonce()
+	if err != nil {
+		return 0, err
+	}
+	expectedNonce := pendingNonce + 1
+
+	return expectedNonce, nil
+}
+
 func (tp *TxnPool) Dump() {
 	tp.mu.RLock()
 	defer tp.mu.RUnlock()
