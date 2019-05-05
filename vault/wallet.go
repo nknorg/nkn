@@ -94,6 +94,10 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 		return nil, err
 	}
 
+	if store.Data.Version != WalletStoreVersion {
+		return nil, fmt.Errorf("invalid wallet version.should be %s", WalletStoreVersion)
+	}
+
 	passwordKey := crypto.ToAesKey(password)
 	passwordKeyHash, err := HexStringToBytes(store.Data.PasswordHash)
 	if err != nil {
@@ -115,15 +119,16 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 		return nil, err
 	}
 
-	encryptedPrivateKey, err := HexStringToBytes(store.Data.AccountData.PrivateKeyEncrypted)
+	encryptedSeed, err := HexStringToBytes(store.Data.AccountData.SeedEncrypted)
 	if err != nil {
 		return nil, err
 	}
-	privateKey, err := crypto.AesDecrypt(encryptedPrivateKey, masterKey, iv)
+	seed, err := crypto.AesDecrypt(encryptedSeed, masterKey, iv)
 	if err != nil {
 		return nil, err
 	}
 
+	privateKey := crypto.GetPrivateKeyFromSeed(seed)
 	if err := crypto.CheckPrivateKey(privateKey); err != nil {
 		log.Error("open wallet error", err)
 		os.Exit(1)
@@ -177,7 +182,9 @@ func (w *WalletImpl) CreateAccount(privateKey []byte) error {
 	if err != nil {
 		return err
 	}
-	encryptedPrivateKey, err := crypto.AesEncrypt(account.PrivateKey, w.masterKey, w.iv)
+
+	seed := crypto.GetSeedFromPrivateKey(account.PrivateKey)
+	encryptedSeed, err := crypto.AesEncrypt(seed, w.masterKey, w.iv)
 	if err != nil {
 		return err
 	}
@@ -185,7 +192,7 @@ func (w *WalletImpl) CreateAccount(privateKey []byte) error {
 	if err != nil {
 		return err
 	}
-	err = w.SaveAccountData(account.ProgramHash.ToArray(), encryptedPrivateKey, contract.ToArray())
+	err = w.SaveAccountData(account.ProgramHash.ToArray(), encryptedSeed, contract.ToArray())
 	if err != nil {
 		return err
 	}
