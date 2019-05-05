@@ -25,10 +25,10 @@ type HeaderData struct {
 }
 
 type AccountData struct {
-	Address             string
-	ProgramHash         string
-	PrivateKeyEncrypted string
-	ContractData        string
+	Address       string
+	ProgramHash   string
+	SeedEncrypted string
+	ContractData  string
 }
 
 type WalletData struct {
@@ -125,7 +125,7 @@ func (s *WalletStore) write(data []byte) error {
 	return err
 }
 
-func (s *WalletStore) SaveAccountData(programHash []byte, encryptedPrivateKey []byte, contract []byte) error {
+func (s *WalletStore) SaveAccountData(programHash []byte, encryptedSeed []byte, contract []byte) error {
 	oldBlob, err := s.read()
 	if err != nil {
 		return err
@@ -142,10 +142,10 @@ func (s *WalletStore) SaveAccountData(programHash []byte, encryptedPrivateKey []
 		return err
 	}
 	s.Data.AccountData = AccountData{
-		Address:             addr,
-		ProgramHash:         BytesToHexString(programHash),
-		PrivateKeyEncrypted: BytesToHexString(encryptedPrivateKey),
-		ContractData:        BytesToHexString(contract),
+		Address:       addr,
+		ProgramHash:   BytesToHexString(programHash),
+		SeedEncrypted: BytesToHexString(encryptedSeed),
+		ContractData:  BytesToHexString(contract),
 	}
 	newBlob, err := json.Marshal(s.Data)
 	if err != nil {
