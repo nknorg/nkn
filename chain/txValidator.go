@@ -157,6 +157,28 @@ func CheckTransactionPayload(txn *Transaction) error {
 		if subscriptionCount >= SubscriptionsLimit {
 			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", pld.Topic, subscriptionCount))
 		}
+	case UnidirectionalPaymentChannelType:
+		pld := payload.(*UnidirectionalPaymentChannel)
+		if len(pld.ChannelId) > 32 {
+			return errors.New("length of channelId error")
+		}
+
+		if len(pld.Sender) != 20 && len(pld.Recipient) != 20 {
+			return errors.New("length of programhash error")
+		}
+
+		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+		if bytes.Equal(pld.Sender, donationProgramhash[:]) {
+			return errors.New("illegal transaction sender")
+		}
+
+		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
+			return errors.New("The precision of amount is incorrect.")
+		}
+
+		if pld.Amount < 0 {
+			return errors.New("transfer amount error.")
+		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type")
 	}
@@ -175,7 +197,8 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 
 	//TODO GetProgramHashes
 	if txn.UnsignedTx.Payload.Type != CoinbaseType &&
-		txn.UnsignedTx.Payload.Type != CommitType {
+		txn.UnsignedTx.Payload.Type != CommitType &&
+		txn.UnsignedTx.Payload.Type != UnidirectionalPaymentChannelType {
 		addr, _ := ToCodeHash(txn.Programs[0].Code)
 		nonce := DefaultLedger.Store.GetNonce(addr)
 		if nonce != txn.UnsignedTx.Nonce {
@@ -268,6 +291,20 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 		if subscriptionCount >= SubscriptionsLimit {
 			return fmt.Errorf("subscribtion count to %s can't be more than %d", topic, subscriptionCount)
 		}
+	case UnidirectionalPaymentChannelType:
+		pld := payload.(*UnidirectionalPaymentChannel)
+		balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Sender))
+		channelBalance := DefaultLedger.Store.GetUnidirectionalPaymentChannelBalance(
+			BytesToUint160(pld.Recipient),
+			pld.ChannelId,
+		)
+		balanceToClaim := pld.Amount - int64(channelBalance)
+		if balanceToClaim <= 0 {
+			return errors.New("invalid amount")
+		}
+		if int64(balance) < balanceToClaim {
+			return errors.New("not sufficient funds")
+		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")
 	}
@@ -289,6 +326,9 @@ func VerifyTransactionWithBlock(iterator Iterator, header *block.Header) error {
 	subscriptions := make(map[subscription]struct{}, 0)
 
 	subscriptionCount := make(map[string]int, 0)
+
+	type channel struct{ recipient, channelId string }
+	channels := make(map[channel]struct{}, 0)
 
 	//start check
 	return iterator.Iterate(func(txn *Transaction) error {
@@ -355,6 +395,13 @@ func VerifyTransactionWithBlock(iterator Iterator, header *block.Header) error {
 				return errors.New("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
 			}
 			subscriptionCount[topic]++
+		case UnidirectionalPaymentChannelType:
+			channelPayload := payload.(*UnidirectionalPaymentChannel)
+			key := channel{string(channelPayload.Recipient), string(channelPayload.ChannelId)}
+			if _, ok := channels[key]; ok {
+				return errors.New("[VerifyTransactionWithBlock], duplicate payment channel exist in block")
+			}
+			channels[key] = struct{}{}
 		}
 
 		return nil

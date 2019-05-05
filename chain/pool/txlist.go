@@ -199,6 +199,15 @@ func (nst *NonceSortedTxs) Totality() common.Fixed64 {
 			transfer := pl.(*pb.TransferAsset)
 			amount += common.Fixed64(transfer.Amount)
 		}
+		if tx.UnsignedTx.Payload.Type == pb.UnidirectionalPaymentChannelType {
+			pl, _ := Unpack(tx.UnsignedTx.Payload)
+			channel := pl.(*pb.UnidirectionalPaymentChannel)
+			channelBalance := chain.DefaultLedger.Store.GetUnidirectionalPaymentChannelBalance(
+				common.BytesToUint160(channel.Recipient),
+				channel.ChannelId,
+			)
+			amount += common.Fixed64(channel.Amount) - channelBalance
+		}
 		//TODO add fee
 	}
 

@@ -20,16 +20,17 @@ const (
 )
 
 var (
-	ErrDuplicatedTx          = errors.New("duplicate transaction check faild")
-	ErrDoubleSpend           = errors.New("IsDoubleSpend check faild")
-	ErrTxnType               = errors.New("invalidate transaction payload type")
-	ErrNonceTooLow           = errors.New("nonce is too low")
-	ErrDuplicateName         = errors.New("name has be registered already")
-	ErrDuplicateRegistrant   = errors.New("Registrant has already registered this name")
-	ErrNoNameRegistered      = errors.New("name has not be registered yet")
-	ErrDuplicateSubscription = errors.New("Duplicate subscription in one block")
-	ErrSubscriptionLimit     = errors.New("Subscription limit exceeded in one block")
-	ErrNonOptimalSigChain    = errors.New("This SigChain is NOT optimal choice")
+	ErrDuplicatedTx            = errors.New("duplicate transaction check faild")
+	ErrDoubleSpend             = errors.New("IsDoubleSpend check faild")
+	ErrTxnType                 = errors.New("invalidate transaction payload type")
+	ErrNonceTooLow             = errors.New("nonce is too low")
+	ErrDuplicateName           = errors.New("name has be registered already")
+	ErrDuplicateRegistrant     = errors.New("Registrant has already registered this name")
+	ErrNoNameRegistered        = errors.New("name has not be registered yet")
+	ErrDuplicateSubscription   = errors.New("Duplicate subscription in one block")
+	ErrSubscriptionLimit       = errors.New("Subscription limit exceeded in one block")
+	ErrNonOptimalSigChain      = errors.New("This SigChain is NOT optimal choice")
+	ErrDuplicatePaymentChannel = errors.New("Duplicate payment channel claim in one block")
 )
 
 // TxnPool is a list of txns that need to by add to ledger sent by user.
@@ -175,6 +176,30 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 			}
 
 		}
+	case pb.UnidirectionalPaymentChannelType:
+		upc := pl.(*pb.UnidirectionalPaymentChannel)
+
+		for _, tx := range list.txs {
+			if tx.UnsignedTx.Payload.Type != pb.UnidirectionalPaymentChannelType {
+				continue
+			}
+			pld, err := Unpack(tx.UnsignedTx.Payload)
+			if err != nil {
+				return err
+			}
+			payloadUpc := pld.(*pb.UnidirectionalPaymentChannel)
+			if bytes.Equal(payloadUpc.Recipient, upc.Recipient) &&
+				bytes.Equal(payloadUpc.ChannelId, upc.ChannelId) {
+				return ErrDuplicatePaymentChannel
+			}
+		}
+
+		amount := chain.DefaultLedger.Store.GetBalance(sender)
+		allInList := list.Totality() + common.Fixed64(upc.Amount)
+
+		if amount < allInList {
+			return errors.New("not sufficient funds")
+		}
 	}
 
 	if !list.Empty() {
@@ -261,7 +286,8 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
 	// clean submitted txs
 	for _, txn := range txns {
 		if txn.UnsignedTx.Payload.Type == pb.CoinbaseType ||
-			txn.UnsignedTx.Payload.Type == pb.CommitType {
+			txn.UnsignedTx.Payload.Type == pb.CommitType ||
+			txn.UnsignedTx.Payload.Type == pb.UnidirectionalPaymentChannelType {
 			continue
 		}
 
@@ -407,7 +433,7 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 		if subscriptionCount >= SubscriptionsLimit {
 			return ErrSubscriptionLimit
 		}
-
+	case pb.UnidirectionalPaymentChannelType:
 	default:
 		return ErrTxnType
 	}

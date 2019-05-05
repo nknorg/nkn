@@ -10,12 +10,13 @@ import (
 )
 
 type account struct {
-	nonce   uint64
-	balance common.Fixed64
+	nonce                         uint64
+	balance                       common.Fixed64
+	unidirectionalPaymentChannels map[string]common.Fixed64
 }
 
 func NewAccount(n uint64, b common.Fixed64) *account {
-	return &account{nonce: n, balance: b}
+	return &account{nonce: n, balance: b, unidirectionalPaymentChannels: make(map[string]common.Fixed64)}
 }
 
 func (acc *account) Serialize(w io.Writer) error {
@@ -25,6 +26,22 @@ func (acc *account) Serialize(w io.Writer) error {
 
 	if err := acc.balance.Serialize(w); err != nil {
 		return fmt.Errorf("account balance Serialize error: %v", err)
+	}
+
+	length := uint64(len(acc.unidirectionalPaymentChannels))
+	err := serialization.WriteVarUint(w, length)
+	if err != nil {
+		return fmt.Errorf("account balance Serialize error: %v", err)
+	}
+	for k, v := range acc.unidirectionalPaymentChannels {
+		err = serialization.WriteVarString(w, k)
+		if err != nil {
+			return fmt.Errorf("account balance Serialize error: %v", err)
+		}
+		err = v.Serialize(w)
+		if err != nil {
+			return fmt.Errorf("account balance Serialize error: %v", err)
+		}
 	}
 
 	return nil
@@ -37,11 +54,35 @@ func (acc *account) Deserialize(r io.Reader) error {
 
 	nonce, err := serialization.ReadVarUint(r, 0)
 	if err != nil {
-		return fmt.Errorf("Deserialize error:%v", err)
+		return fmt.Errorf("account balance Deserialize error: %v", err)
 	}
 
 	acc.nonce = nonce
-	return acc.balance.Deserialize(r)
+	err = acc.balance.Deserialize(r)
+	if err != nil {
+		return err
+	}
+
+	length, err := serialization.ReadVarUint(r, 0)
+	if err != nil {
+		return fmt.Errorf("account balance Deserialize error: %v", err)
+	}
+	unidirectionalPaymentChannels := make(map[string]common.Fixed64, length)
+	for i := uint64(0); i < length; i++ {
+		k, err := serialization.ReadVarString(r)
+		if err != nil {
+			return fmt.Errorf("account balance Deserialize error: %v", err)
+		}
+		var v common.Fixed64
+		err = v.Deserialize(r)
+		if err != nil {
+			return fmt.Errorf("account balance Deserialize error: %v", err)
+		}
+		unidirectionalPaymentChannels[k] = v
+	}
+	acc.unidirectionalPaymentChannels = unidirectionalPaymentChannels
+
+	return nil
 }
 
 func (acc *account) GetNonce() uint64 {
@@ -52,6 +93,10 @@ func (acc *account) GetBalance() common.Fixed64 {
 	return acc.balance
 }
 
+func (acc *account) GetUnidirectionalPaymentChannelBalance(channelId []byte) common.Fixed64 {
+	return acc.unidirectionalPaymentChannels[string(channelId)]
+}
+
 func (acc *account) SetNonce(nonce uint64) {
 	acc.nonce = nonce
 }
@@ -60,8 +105,12 @@ func (acc *account) SetBalance(balance common.Fixed64) {
 	acc.balance = balance
 }
 
+func (acc *account) SetUnidirectionalPaymentChannelBalance(channelId []byte, balance common.Fixed64) {
+	acc.unidirectionalPaymentChannels[string(channelId)] = balance
+}
+
 func (acc *account) Empty() bool {
-	return acc.nonce == 0 && acc.balance == 0
+	return acc.nonce == 0 && acc.balance == 0 && len(acc.unidirectionalPaymentChannels) == 0
 }
 
 type StateDB struct {
@@ -96,7 +145,7 @@ func (sdb *StateDB) getAccount(addr common.Uint160) (*account, error) {
 	buff := bytes.NewBuffer(enc)
 	data := new(account)
 	if err := data.Deserialize(buff); err != nil {
-		return nil, fmt.Errorf("[getAccount]Failed to decode state object", "addr", addr, "err", err)
+		return nil, fmt.Errorf("[getAccount]Failed to decode state object addr %v err %v", addr, err)
 	}
 
 	sdb.setAccount(addr, data)
@@ -119,6 +168,14 @@ func (sdb *StateDB) GetNonce(addr common.Uint160) uint64 {
 	}
 
 	return account.GetNonce()
+}
+
+func (sdb *StateDB) GetUnidirectionalPaymentChannelBalance(addr common.Uint160, channelId []byte) common.Fixed64 {
+	account, err := sdb.getAccount(addr)
+	if err != nil {
+		return common.Fixed64(0)
+	}
+	return account.GetUnidirectionalPaymentChannelBalance(channelId)
 }
 
 func (sdb *StateDB) SetAccount(addr common.Uint160, acc *account) {

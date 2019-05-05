@@ -18,13 +18,14 @@ option (gogoproto.populate_all) = true;
 
 
 enum PayloadType {
-	CoinbaseType       = 0;
-	TransferAssetType  = 1;
-	CommitType         = 2;
-	RegisterNameType   = 3;
-	TransferNameType   = 4;
-	DeleteNameType     = 5;
-	SubscribeType      = 6;
+	CoinbaseType                     = 0;
+	TransferAssetType                = 1;
+	CommitType                       = 2;
+	RegisterNameType                 = 3;
+	TransferNameType                 = 4;
+	DeleteNameType                   = 5;
+	SubscribeType                    = 6;
+	UnidirectionalPaymentChannelType = 7;
 }
 
 message Payload {
@@ -68,6 +69,9 @@ message TransferAsset {
 	int64 amount    = 3;
 }
 
-
-
-
+message UnidirectionalPaymentChannel {
+	bytes channelId = 1;
+	bytes sender    = 2;
+	bytes recipient = 3;
+	int64 amount    = 4;
+}

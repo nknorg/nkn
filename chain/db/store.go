@@ -264,7 +264,7 @@ func (cs *ChainStore) persist(b *Block) error {
 			return err
 		}
 
-		if txn.UnsignedTx.Payload.Type != CoinbaseType && txn.UnsignedTx.Payload.Type != CommitType {
+		if txn.UnsignedTx.Payload.Type != CoinbaseType && txn.UnsignedTx.Payload.Type != CommitType && txn.UnsignedTx.Payload.Type != UnidirectionalPaymentChannelType {
 			pg, _ := ToCodeHash(txn.Programs[0].Code)
 			acc := states.GetOrNewAccount(pg)
 			nonce := acc.GetNonce()
@@ -324,7 +324,21 @@ func (cs *ChainStore) persist(b *Block) error {
 			if err != nil {
 				return err
 			}
+		case UnidirectionalPaymentChannelType:
+			transfer := pl.(*UnidirectionalPaymentChannel)
 
+			accRecipient := states.GetOrNewAccount(BytesToUint160(transfer.Recipient))
+			amountRecipient := accRecipient.GetBalance()
+			amountChannel := accRecipient.GetUnidirectionalPaymentChannelBalance(transfer.ChannelId)
+			remainingAmount := Fixed64(transfer.Amount) - amountChannel
+			accRecipient.SetBalance(amountRecipient + remainingAmount)
+			accRecipient.SetUnidirectionalPaymentChannelBalance(transfer.ChannelId, Fixed64(transfer.Amount))
+			states.SetAccount(BytesToUint160(transfer.Recipient), accRecipient)
+
+			accSender := states.GetOrNewAccount(BytesToUint160(transfer.Sender))
+			amountSender := accSender.GetBalance()
+			accSender.SetBalance(amountSender - remainingAmount)
+			states.SetAccount(BytesToUint160(transfer.Sender), accSender)
 		}
 	}
 
@@ -494,6 +508,10 @@ func (cs *ChainStore) GetBalance(addr Uint160) Fixed64 {
 
 func (cs *ChainStore) GetNonce(addr Uint160) uint64 {
 	return cs.States.GetNonce(addr)
+}
+
+func (cs *ChainStore) GetUnidirectionalPaymentChannelBalance(addr Uint160, channelId []byte) Fixed64 {
+	return cs.States.GetUnidirectionalPaymentChannelBalance(addr, channelId)
 }
 
 type Donation struct {

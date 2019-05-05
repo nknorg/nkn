@@ -79,3 +79,17 @@ func NewSubscribeTransaction(subscriber []byte, identifier string, topic string,
 		MsgTx: *tx,
 	}, nil
 }
+
+func NewUnidirectionalPaymentChannelTransaction(channelId []byte, sender, recipient Uint160, nonce uint64, value, fee Fixed64) (*Transaction, error) {
+	payload := NewUnidirectionalPaymentChannel(channelId, sender, recipient, value)
+	pl, err := Pack(UnidirectionalPaymentChannelType, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
+
+	return &Transaction{
+		MsgTx: *tx,
+	}, nil
+}

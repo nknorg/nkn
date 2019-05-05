@@ -146,6 +146,9 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
+	case UnidirectionalPaymentChannelType:
+		sender := payload.(*UnidirectionalPaymentChannel).Sender
+		hashes = append(hashes, BytesToUint160(sender))
 	default:
 		return nil, errors.New("unsupport transaction type")
 	}

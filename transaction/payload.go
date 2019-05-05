@@ -41,6 +41,8 @@ func Unpack(payload *Payload) (IPayload, error) {
 		pl = new(DeleteName)
 	case SubscribeType:
 		pl = new(Subscribe)
+	case UnidirectionalPaymentChannelType:
+		pl = new(UnidirectionalPaymentChannel)
 	default:
 		return nil, errors.New("invalid payload type.")
 
@@ -94,5 +96,14 @@ func NewSubscribe(subscriber []byte, id, topic string, bucket, duration uint32, 
 		Bucket:     bucket,
 		Duration:   duration,
 		Meta:       meta,
+	}
+}
+
+func NewUnidirectionalPaymentChannel(channelId []byte, sender, recipient common.Uint160, amount common.Fixed64) IPayload {
+	return &UnidirectionalPaymentChannel{
+		ChannelId: channelId,
+		Sender:    sender.ToArray(),
+		Recipient: recipient.ToArray(),
+		Amount:    int64(amount),
 	}
 }

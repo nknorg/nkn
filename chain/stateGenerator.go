@@ -58,6 +58,21 @@ func spendTransaction(states *db.StateDB, tx *Transaction, genesis bool) error {
 		nonceSender := accSender.GetNonce()
 		accSender.SetNonce(nonceSender + 1)
 		states.SetAccount(pg, accSender)
+	case UnidirectionalPaymentChannelType:
+		transfer := pl.(*UnidirectionalPaymentChannel)
+
+		accRecipient := states.GetOrNewAccount(common.BytesToUint160(transfer.Recipient))
+		amountRecipient := accRecipient.GetBalance()
+		amountChannel := accRecipient.GetUnidirectionalPaymentChannelBalance(transfer.ChannelId)
+		remainingAmount := common.Fixed64(transfer.Amount) - amountChannel
+		accRecipient.SetBalance(amountRecipient + remainingAmount)
+		accRecipient.SetUnidirectionalPaymentChannelBalance(transfer.ChannelId, common.Fixed64(transfer.Amount))
+		states.SetAccount(common.BytesToUint160(transfer.Recipient), accRecipient)
+
+		accSender := states.GetOrNewAccount(common.BytesToUint160(transfer.Sender))
+		amountSender := accSender.GetBalance()
+		accSender.SetBalance(amountSender - remainingAmount)
+		states.SetAccount(common.BytesToUint160(transfer.Sender), accSender)
 	}
 
 	return nil
