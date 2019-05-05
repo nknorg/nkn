@@ -59,6 +59,15 @@ func NewKeyFromPrivkey(privKey []byte) *big.Int {
 	return pubKey
 }
 
+func GetSeedFromPrivateKey(priKey []byte) []byte {
+	privateKey := ed25519.PrivateKey(priKey)
+	return privateKey.Seed()
+}
+
+func GetPrivateKeyFromSeed(seed []byte) []byte {
+	return ed25519.NewKeyFromSeed(seed)
+}
+
 func GetPublicKeySize() int {
 	return ed25519.PublicKeySize
 }
