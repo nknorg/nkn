@@ -112,6 +112,8 @@ imports:
   version: f48db19e7a48fe347571d6bfc52a7585a53c5315
 - name: github.com/xtaci/smux
   version: 3752dae3e12b585d3c5fc03ba0bfaf9a2f19a19a
+- name: github.com/bitly/go-simplejson
+  version: 9db4a59bd4d803ae0c173a7d8a538e056cd59d57
 - name: golang.org/x/crypto
   version: cbcb750295291b33242907a04be40e80801d0cfc
   subpackages:
