@@ -10,6 +10,7 @@
 > owned by the community.
 
 Official website: [https://nkn.org/](https://nkn.org/)
+Technical discussion: [https://forum.nkn.org/](https://forum.nkn.org/)
 
 Note: This is a **node** version of the NKN protocol, which relays data for
 clients and earn mining rewards. For **client** implementation which can send
