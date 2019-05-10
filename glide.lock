@@ -1,5 +1,5 @@
 hash: 8560b3563e7b15a9e0ab39f71dd6da2e29ce7ed4aca35c97d11ac9ac3c75b0b7
-updated: 2019-05-03T01:03:12.971009-07:00
+updated: 2019-05-10T04:31:45.912278-07:00
 imports:
 - name: github.com/gogo/protobuf
   version: 636bf0302bc95575d69441b25a2603156ffdddf1
@@ -11,7 +11,7 @@ imports:
   - sortkeys
   - types
 - name: github.com/golang/crypto
-  version: a29dc8fdc73485234dbef99ebedb95d2eced08de
+  version: cbcb750295291b33242907a04be40e80801d0cfc
   subpackages:
   - ripemd160
   - ssh/terminal
@@ -25,6 +25,8 @@ imports:
   version: c2e93f3ae59f2904160ceaab466009f965df46d6
 - name: github.com/gorilla/websocket
   version: 66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d
+- name: github.com/hashicorp/yamux
+  version: 2f1d1f20f75d5404f53b9edf6b53ed5505508675
 - name: github.com/huin/goupnp
   version: 656e61dfadd241c7cbdd22a023fa81ecb6860ea8
   subpackages:
@@ -55,7 +57,7 @@ imports:
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: a4522dc35d57f6171ffe26212b2db7d5dfa0e3c6
+  version: f7cb95c446e14df20e561cc1396ca486b83834ce
   subpackages:
   - cache
   - common
@@ -63,6 +65,7 @@ imports:
   - log
   - message
   - middleware
+  - multiplexer
   - node
   - overlay
   - overlay/chord
@@ -108,9 +111,9 @@ imports:
 - name: github.com/xtaci/kcp-go
   version: f48db19e7a48fe347571d6bfc52a7585a53c5315
 - name: github.com/xtaci/smux
-  version: 401b0da0596a2d1eb2d94aae5fa16973d6f50962
+  version: 3752dae3e12b585d3c5fc03ba0bfaf9a2f19a19a
 - name: golang.org/x/crypto
-  version: a29dc8fdc73485234dbef99ebedb95d2eced08de
+  version: cbcb750295291b33242907a04be40e80801d0cfc
   subpackages:
   - blowfish
   - cast5
@@ -124,7 +127,7 @@ imports:
   - twofish
   - xtea
 - name: golang.org/x/net
-  version: 7f726cade0ab7c929c16ce0b5b25bd201e25f39f
+  version: a4d6f7feada510cc50e69a37b484cb0fdc6b7876
   repo: https://github.com/golang/net
   vcs: git
   subpackages:
@@ -136,7 +139,7 @@ imports:
   - internal/socket
   - ipv4
 - name: golang.org/x/sys
-  version: a43fa875dd822b81eb6d2ad538bc1f4caba169bd
+  version: a5b02f93d862f065920dd6a40dddc66b60d0dec4
   repo: https://github.com/golang/sys
   vcs: git
   subpackages:
