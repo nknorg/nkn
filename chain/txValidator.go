@@ -177,16 +177,6 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 		return errors.New("[VerifyTransactionWithLedger] duplicate transaction check faild")
 	}
 
-	//TODO GetProgramHashes
-	if txn.UnsignedTx.Payload.Type != CoinbaseType &&
-		txn.UnsignedTx.Payload.Type != CommitType {
-		addr, _ := ToCodeHash(txn.Programs[0].Code)
-		nonce := DefaultLedger.Store.GetNonce(addr)
-		if nonce != txn.UnsignedTx.Nonce {
-			return fmt.Errorf("[VerifyTransactionWithLedger] txn nonce error, expected: %v, Get: %v", nonce, txn.UnsignedTx.Nonce)
-		}
-	}
-
 	payload, err := Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
 		return errors.New("Unpack transactiion's paylaod error")
@@ -302,8 +292,6 @@ func VerifyTransactionWithBlock(iterator Iterator, header *block.Header) error {
 		} else {
 			txnlist[txn.Hash()] = struct{}{}
 		}
-
-		//TODO check nonce duplicate
 
 		//3.check issue amount
 		payload, err := Unpack(txn.UnsignedTx.Payload)
