@@ -59,6 +59,8 @@ func TransactionCheck(block *Block) error {
 	if block.Transactions[0].UnsignedTx.Payload.Type != CoinbaseType {
 		return errors.New("first transaction in block is not Coinbase")
 	}
+
+	nonces := make(map[Uint160]uint64, 0)
 	for i, txn := range block.Transactions {
 		if i != 0 && txn.UnsignedTx.Payload.Type == CoinbaseType {
 			return errors.New("Coinbase transaction order is incorrect")
@@ -69,6 +71,25 @@ func TransactionCheck(block *Block) error {
 		if err := VerifyTransactionWithLedger(txn); err != nil {
 			return fmt.Errorf("transaction history check failed: %v", err)
 		}
+
+		if txn.UnsignedTx.Payload.Type != CoinbaseType && txn.UnsignedTx.Payload.Type != CommitType {
+			addr, err := ToCodeHash(txn.Programs[0].Code)
+			if err != nil {
+				return err
+			}
+
+			if _, ok := nonces[addr]; !ok {
+				nonce := DefaultLedger.Store.GetNonce(addr)
+				nonces[addr] = nonce
+			}
+
+			if nonces[addr] != txn.UnsignedTx.Nonce {
+				return fmt.Errorf("txn nonce error, expected: %v, Get: %v", nonces[addr], txn.UnsignedTx.Nonce)
+			}
+
+			nonces[addr] += 1
+		}
+
 	}
 	if err := VerifyTransactionWithBlock(TransactionArray(block.Transactions), block.Header); err != nil {
 		return fmt.Errorf("Transaction block check failed: %v", err)
