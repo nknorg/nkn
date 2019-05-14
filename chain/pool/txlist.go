@@ -165,6 +165,15 @@ func (nst *NonceSortedTxs) Get(nonce uint64) (*Transaction, error) {
 	return nst.txs[hash], nil
 }
 
+func (nst *NonceSortedTxs) GetAllTransactions() []*Transaction {
+	txns := make([]*Transaction, 0)
+	for _, txnHash := range nst.idx {
+		txns = append(txns, nst.txs[txnHash])
+	}
+
+	return txns
+}
+
 func (nst *NonceSortedTxs) GetLatestNonce() (uint64, error) {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
