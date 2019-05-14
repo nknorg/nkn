@@ -262,6 +262,25 @@ func (tp *TxnPool) getTxsFromPool() []*Transaction {
 	return txs
 }
 
+func (tp *TxnPool) GetAllTransactionLists() map[common.Uint160][]*Transaction {
+	txs := make(map[common.Uint160][]*Transaction)
+
+	tp.TxLists.Range(func(k, v interface{}) bool {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			if addr, ok := k.(common.Uint160); ok {
+				txnList := list.GetAllTransactions()
+				if len(txnList) != 0 {
+					txs[addr] = txnList
+				}
+			}
+		}
+
+		return true
+	})
+
+	return txs
+}
+
 func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
 	// clean submitted txs
 	for _, txn := range txns {
