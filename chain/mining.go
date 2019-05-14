@@ -57,14 +57,20 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 		txCount++
 	}
 
-	txns, err := bm.txnCollector.Collect()
+	txnCollection, err := bm.txnCollector.Collect()
 	if err != nil {
 		return nil, err
 	}
 
-	for txnHash, txn := range txns {
+	for {
+		txn := txnCollection.Peek()
+		if txn == nil {
+			break
+		}
+
 		if txn.UnsignedTx.Fee < int64(config.Parameters.MinTxnFee) {
 			log.Warning("transaction fee is too low")
+			txnCollection.Pop()
 			continue
 		}
 
@@ -78,11 +84,20 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 			break
 		}
 
-		if !DefaultLedger.Store.IsTxHashDuplicate(txnHash) {
-			txnList = append(txnList, txn)
-			txnHashList = append(txnHashList, txnHash)
+		txnHash := txn.Hash()
+		if DefaultLedger.Store.IsTxHashDuplicate(txnHash) {
+			log.Warning("it's a duplicate transaction")
+			txnCollection.Pop()
+			continue
+		}
+
+		txnList = append(txnList, txn)
+		txnHashList = append(txnHashList, txnHash)
+		if err := txnCollection.Update(); err != nil {
+			txnCollection.Pop()
 		}
 	}
+
 	txnRoot, err := crypto.ComputeRoot(txnHashList)
 	if err != nil {
 		return nil, err
