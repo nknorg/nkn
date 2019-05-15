@@ -8,6 +8,7 @@ import (
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/util"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
 )
@@ -36,7 +37,7 @@ func (consensus *Consensus) startGettingNeighborConsensusState() {
 				}
 			}
 		}
-		timer.ResetTimer(getNeighborConsensusStateTimer, randDuration(getConsensusStateInterval, 1.0/6.0))
+		timer.ResetTimer(getNeighborConsensusStateTimer, util.RandDuration(getConsensusStateInterval, 1.0/6.0))
 	}
 }
 

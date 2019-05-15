@@ -2,27 +2,18 @@ package pb
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/sha256"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"math/big"
 
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nnet/overlay/chord"
 )
-
-// for the first relay node
-// 1. NewSigChain : create a new Signature Chain and sign
-//
-// for the next relay node
-// 1. Sign: sign the element created in Sign
 
 // TODO: move sigAlgo to config.json
 const (
@@ -60,11 +51,6 @@ func (sc *SigChain) SerializationMetadata(w io.Writer) error {
 		return err
 	}
 
-	err = serialization.WriteVarBytes(w, sc.DataHash)
-	if err != nil {
-		return err
-	}
-
 	err = serialization.WriteVarBytes(w, sc.BlockHash)
 	if err != nil {
 		return err
@@ -93,11 +79,10 @@ func (sc *SigChain) SerializationMetadata(w io.Writer) error {
 	return nil
 }
 
-func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash, srcID, srcPubkey, destPubkey, nextPubkey,
-	signature, proof []byte, algo SigAlgo, mining bool) (*SigChain, error) {
+func NewSigChainWithSignature(dataSize uint32, blockHash, srcID, srcPubkey, destPubkey, nextPubkey,
+	signature []byte, algo SigAlgo, mining bool) (*SigChain, error) {
 	sc := &SigChain{
 		DataSize:   dataSize,
-		DataHash:   dataHash,
 		BlockHash:  blockHash,
 		SrcPubkey:  srcPubkey,
 		DestPubkey: destPubkey,
@@ -107,7 +92,8 @@ func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash, srcID, srcPu
 				NextPubkey: nextPubkey,
 				SigAlgo:    algo,
 				Signature:  signature,
-				Proof:      proof,
+				Vrf:        nil,
+				Proof:      nil,
 				Mining:     mining,
 			},
 		},
@@ -115,145 +101,31 @@ func NewSigChainWithSignature(dataSize uint32, dataHash, blockHash, srcID, srcPu
 	return sc, nil
 }
 
-// first relay node starts a new signature chain which consists of meta data and the first element.
-func NewSigChain(srcPubKey *crypto.PubKey, srcPrivKey []byte, dataSize uint32, dataHash, blockHash, srcID,
-	destPubkey, nextPubkey []byte, mining bool) (*SigChain, error) {
-	srcPubkey, err := srcPubKey.EncodePoint(true)
-	if err != nil {
-		return nil, err
-	}
-
-	sc := &SigChain{
-		DataSize:   dataSize,
-		DataHash:   dataHash,
-		BlockHash:  blockHash,
-		SrcPubkey:  srcPubkey,
-		DestPubkey: destPubkey,
-		Elems: []*SigChainElem{
-			{
-				Addr:       srcID,
-				SigAlgo:    sigAlgo,
-				NextPubkey: nextPubkey,
-				Mining:     mining,
-			},
-		},
-	}
-
-	b := make([]byte, 4)
-	_, err = rand.Read(b)
-	if err != nil {
-		return nil, err
-	}
-	sc.Nonce = binary.LittleEndian.Uint32(b)
-
-	buff := bytes.NewBuffer(nil)
-	if err := sc.SerializationMetadata(buff); err != nil {
-		return nil, err
-	}
-	elem := sc.Elems[0]
-	if err := elem.SerializationUnsigned(buff); err != nil {
-		return nil, err
-	}
-
-	hash := sha256.Sum256(buff.Bytes())
-	signature, proof, err := crypto.GenerateVrf(srcPrivKey, hash[:])
-	if err != nil {
-		return nil, err
-	}
-
-	sc.Elems[0].Signature = signature
-	sc.Elems[0].Proof = proof
-
-	return sc, nil
-}
-
-func NewSigChainElem(addr, nextPubkey []byte, mining bool) *SigChainElem {
+func NewSigChainElem(addr, nextPubkey, signature, vrf, proof []byte, mining bool) *SigChainElem {
 	return &SigChainElem{
 		Addr:       addr,
 		SigAlgo:    sigAlgo,
 		NextPubkey: nextPubkey,
+		Signature:  signature,
+		Vrf:        vrf,
+		Proof:      proof,
 		Mining:     mining,
-		Signature:  nil,
-		Proof:      nil,
 	}
 }
 
-func (sc *SigChain) ExtendElement(addr, nextPubkey []byte, mining bool) ([]byte, error) {
-	elem := NewSigChainElem(addr, nextPubkey, mining)
-	lastElem, err := sc.lastSigElem()
+func ComputeSignature(secret, lastSignature, addr, nextPubkey []byte, mining bool) ([]byte, error) {
+	elem := NewSigChainElem(addr, nextPubkey, nil, nil, nil, mining)
+	buff := bytes.NewBuffer(lastSignature)
+	err := elem.SerializationUnsigned(buff)
 	if err != nil {
 		return nil, err
 	}
-	buff := bytes.NewBuffer(lastElem.Signature)
-	err = elem.SerializationUnsigned(buff)
+	_, err = buff.Write(secret)
 	if err != nil {
 		return nil, err
 	}
 	hash := sha256.Sum256(buff.Bytes())
-	sc.Elems = append(sc.Elems, elem)
 	return hash[:], nil
-}
-
-func (sc *SigChain) AddLastSignature(signature, proof []byte) error {
-	lastElem, err := sc.lastSigElem()
-	if err != nil {
-		return err
-	}
-	if lastElem.Signature != nil {
-		return errors.New("Last signature is already set")
-	}
-	lastElem.Signature = signature
-	lastElem.Proof = proof
-	return nil
-}
-
-// Sign new created signature chain with local wallet.
-func (sc *SigChain) Sign(addr, nextPubkey []byte, mining bool, signerPubKey *crypto.PubKey, signerPrivKey []byte) error {
-	sigNum := sc.Length()
-	if sigNum < 1 {
-		return errors.New("there are not enough signatures")
-	}
-
-	if err := sc.Verify(); err != nil {
-		log.Error("Signature chain verification error:", err)
-		return err
-	}
-
-	pk, err := sc.nextSigner()
-	if err != nil {
-		log.Error("Get next signer error:", err)
-		return err
-	}
-
-	//TODO decode nextpk or encode signer pubkey
-	nxPk, err := crypto.DecodePoint(pk)
-	if err != nil {
-		log.Error("Next publick key decoding error:", err)
-		return errors.New("the next pubkey is wrong")
-	}
-
-	if !crypto.Equal(signerPubKey, nxPk) {
-		return errors.New("signer is not the right one")
-	}
-
-	digest, err := sc.ExtendElement(addr, nextPubkey, mining)
-	if err != nil {
-		log.Error("Signature chain extent element error:", err)
-		return err
-	}
-
-	signature, proof, err := crypto.GenerateVrf(signerPrivKey, digest)
-	if err != nil {
-		return err
-	}
-
-	err = sc.AddLastSignature(signature, proof)
-	if err != nil {
-		log.Error("Add last signature error:", err)
-		return err
-	}
-
-	return nil
 }
 
 // Verify returns result of signature chain verification.
@@ -265,25 +137,32 @@ func (sc *SigChain) Verify() error {
 	for i, e := range sc.Elems {
 		ePk, err := crypto.DecodePoint(prevNextPubkey)
 		if err != nil {
-			log.Error("Decode public key error:", err)
-			return errors.New("the pubkey of e is wrong")
+			return fmt.Errorf("invalid pubkey: %v", err)
 		}
 
 		// verify each element signature
 		// skip first and last element for now, will remove this once client
 		// side signature is ready
 		if i > 0 && !(sc.IsFinal() && i == sc.Length()-1) {
-			buff := bytes.NewBuffer(prevSig)
-			e.SerializationUnsigned(buff)
-			currHash := sha256.Sum256(buff.Bytes())
-			ok := crypto.VerifyVrf(*ePk, currHash[:], e.Signature, e.Proof)
+			expectedSignature, err := ComputeSignature(e.Vrf, prevSig, e.Addr, e.NextPubkey, e.Mining)
+			if err != nil {
+				return fmt.Errorf("compute signature error: %v", err)
+			}
+
+			if !bytes.Equal(e.Signature, expectedSignature) {
+				return fmt.Errorf("signature %x is different from expected value %x", e.Signature, expectedSignature)
+			}
+
+			ok := crypto.VerifyVrf(*ePk, sc.BlockHash, e.Vrf, e.Proof)
 			if !ok {
-				log.Error("Verify signature error")
-				return errors.New("Verify signature error")
+				return fmt.Errorf("invalid vrf or proof")
 			}
 		}
 
 		prevNextPubkey = e.NextPubkey
+		if e.NextPubkey == nil && i == sc.Length()-2 {
+			prevNextPubkey = sc.DestPubkey
+		}
 		prevSig = e.Signature
 	}
 
@@ -292,7 +171,7 @@ func (sc *SigChain) Verify() error {
 
 func (sc *SigChain) VerifyPath() error {
 	if !sc.IsFinal() {
-		return fmt.Errorf("signature chain")
+		return fmt.Errorf("signature chain is not final")
 	}
 
 	if len(sc.Elems) < 3 {
@@ -312,16 +191,6 @@ func (sc *SigChain) VerifyPath() error {
 	}
 
 	return nil
-}
-
-// Path returns signer path in signature chain.
-func (sc *SigChain) Path() [][]byte {
-	publicKeys := [][]byte{sc.SrcPubkey}
-	for _, e := range sc.Elems {
-		publicKeys = append(publicKeys, e.NextPubkey)
-	}
-
-	return publicKeys
 }
 
 // Length returns element num in current signature chain
@@ -361,22 +230,28 @@ func (sc *SigChain) finalSigElem() (*SigChainElem, error) {
 }
 
 func (sc *SigChain) IsFinal() bool {
-	if len(sc.Elems) < 2 || !common.IsEqualBytes(sc.DestPubkey, sc.Elems[len(sc.Elems)-2].NextPubkey) {
+	if sc.Length() < 3 {
 		return false
 	}
-	return true
+	pk := sc.Elems[len(sc.Elems)-2].NextPubkey
+	return pk == nil || bytes.Equal(pk, sc.DestPubkey)
 }
 
 func (sc *SigChain) getElemByPubkey(pubkey []byte) (*SigChainElem, int, error) {
 	if sc == nil || len(sc.Elems) == 0 {
 		return nil, 0, errors.New("nil signature chain")
 	}
-	if common.IsEqualBytes(sc.SrcPubkey, pubkey) {
+
+	if bytes.Equal(sc.SrcPubkey, pubkey) {
 		return sc.Elems[0], 0, nil
 	}
 
+	if sc.IsFinal() && bytes.Equal(pubkey, sc.DestPubkey) {
+		return sc.Elems[sc.Length()-1], sc.Length() - 1, nil
+	}
+
 	for i, elem := range sc.Elems {
-		if common.IsEqualBytes(elem.NextPubkey, pubkey) {
+		if i < sc.Length()-1 && bytes.Equal(elem.NextPubkey, pubkey) {
 			return sc.Elems[i+1], i + 1, nil
 		}
 	}
@@ -397,14 +272,6 @@ func (sc *SigChain) GetSignerIndex(pubkey []byte) (int, error) {
 	return idx, err
 }
 
-func (sc *SigChain) GetLastPubkey() ([]byte, error) {
-	e, err := sc.lastSigElem()
-	if err != nil {
-		return nil, err
-	}
-	return e.NextPubkey, nil
-}
-
 func (sc *SigChain) GetMiner() ([]byte, []byte, error) {
 	if !sc.IsFinal() {
 		return nil, nil, errors.New("not final")
@@ -421,7 +288,7 @@ func (sc *SigChain) GetMiner() ([]byte, []byte, error) {
 	}
 	var minerElems []*SigChainElemInfo
 	for i, e := range sc.Elems {
-		if e.Mining == true {
+		if i > 0 && i < sc.Length()-1 && e.Mining == true {
 			t := &SigChainElemInfo{
 				index: i,
 				elem:  e,
@@ -474,38 +341,18 @@ func (sc *SigChain) GetSignature() ([]byte, error) {
 	return sce.Signature, nil
 }
 
+func ComputeSignatureHash(signature []byte, sigChainLen int) []byte {
+	sigHashArray := sha256.Sum256(signature)
+	sigHash := sigHashArray[:]
+	rightShiftBytes(sigHash, bitShiftPerSigChainElement*sigChainLen)
+	return sigHash
+}
+
 func (sc *SigChain) SignatureHash() ([]byte, error) {
 	signature, err := sc.GetSignature()
 	if err != nil {
 		return nil, err
 	}
-	sigHashArray := sha256.Sum256(signature)
-	sigHash := sigHashArray[:]
-	rightShiftBytes(sigHash, bitShiftPerSigChainElement*sc.Length())
-	return sigHash, nil
-}
-
-func (sc *SigChain) GetOwner() ([]byte, error) {
-	if sc.IsFinal() {
-		if pk, err := sc.GetLastPubkey(); err != nil {
-			return []byte{}, err
-		} else {
-			return pk, nil
-		}
-	}
-
-	return []byte{}, errors.New("no owner")
-
-}
-
-func (sc *SigChain) DumpInfo() {
-	log.Info("dataSize: ", sc.DataSize)
-	log.Info("dataHash: ", sc.DataHash)
-	log.Info("srcPubkey: ", common.BytesToHexString(sc.SrcPubkey))
-	log.Info("dstPubkey: ", common.BytesToHexString(sc.DestPubkey))
-
-	for i, e := range sc.Elems {
-		log.Info("nextPubkey[%d]: %s\n", i, common.BytesToHexString(e.NextPubkey))
-		log.Info("signature[%d]: %s\n", i, common.BytesToHexString(e.Signature))
-	}
+	signatureHash := ComputeSignatureHash(signature, sc.Length())
+	return signatureHash, nil
 }

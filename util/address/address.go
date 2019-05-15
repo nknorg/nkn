@@ -56,8 +56,9 @@ func MakeAddressString(pubKey []byte, identifier string) string {
 	return result.String()
 }
 
-// ParseClientAddress parse an address string to Chord address and public key
-func ParseClientAddress(addrStr string) ([]byte, []byte, error) {
+// ParseClientAddress parse an address string to Chord address, public key, and
+// identifier
+func ParseClientAddress(addrStr string) ([]byte, []byte, string, error) {
 	clientID := sha256.Sum256([]byte(addrStr))
 
 	substrings := strings.Split(addrStr, ".")
@@ -65,10 +66,18 @@ func ParseClientAddress(addrStr string) ([]byte, []byte, error) {
 	pubKey, err := hex.DecodeString(pubKeyStr)
 	if err != nil {
 		log.Error("Invalid public key string converting to hex")
-		return nil, nil, err
+		return nil, nil, "", err
 	}
 
-	return clientID[:], pubKey, nil
+	identifier := strings.Join(substrings[:len(substrings)-1], ".")
+
+	return clientID[:], pubKey, identifier, nil
+}
+
+// AssembleClientAddress returns the client address string from identifier and
+// pubkey
+func AssembleClientAddress(identifier string, pubkey []byte) string {
+	return identifier + "." + hex.EncodeToString(pubkey)
 }
 
 // ShouldRejectAddr returns if remoteAddr should be rejected by localAddr
