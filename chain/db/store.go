@@ -253,6 +253,11 @@ func (cs *ChainStore) persist(b *Block) error {
 		return err
 	}
 
+	var totalFee Fixed64
+	for _, txn := range b.Transactions {
+		totalFee += Fixed64(txn.UnsignedTx.Fee)
+	}
+
 	//batch put transactions
 	for _, txn := range b.Transactions {
 		buffer := make([]byte, 4)
@@ -264,14 +269,6 @@ func (cs *ChainStore) persist(b *Block) error {
 			return err
 		}
 
-		if txn.UnsignedTx.Payload.Type != CommitType {
-			pg, _ := txn.GetProgramHashes()
-			acc := states.GetOrNewAccount(pg[0])
-			nonce := acc.GetNonce()
-			acc.SetNonce(nonce + 1)
-			states.SetAccount(pg[0], acc)
-		}
-
 		pl, err := Unpack(txn.UnsignedTx.Payload)
 		if err != nil {
 			return err
@@ -280,27 +277,31 @@ func (cs *ChainStore) persist(b *Block) error {
 		switch txn.UnsignedTx.Payload.Type {
 		case CoinbaseType:
 			coinbase := pl.(*Coinbase)
+			accSender := states.GetOrNewAccount(BytesToUint160(coinbase.Sender))
 			if b.Header.UnsignedHeader.Height != 0 {
-				accSender := states.GetOrNewAccount(BytesToUint160(coinbase.Sender))
 				amountSender := accSender.GetBalance()
 				donation, err := cs.GetDonation()
 				if err != nil {
 					return err
 				}
 				accSender.SetBalance(amountSender - donation.Amount)
-				states.SetAccount(BytesToUint160(coinbase.Sender), accSender)
 			}
+			nonce := accSender.GetNonce()
+			accSender.SetNonce(nonce + 1)
+			states.SetAccount(BytesToUint160(coinbase.Sender), accSender)
 
 			acc := states.GetOrNewAccount(BytesToUint160(coinbase.Recipient))
 			amount := acc.GetBalance()
-			acc.SetBalance(amount + Fixed64(coinbase.Amount))
+			acc.SetBalance(amount + Fixed64(coinbase.Amount) + totalFee)
 			states.setAccount(BytesToUint160(coinbase.Recipient), acc)
 		case TransferAssetType:
 			transfer := pl.(*TransferAsset)
 			accSender := states.GetOrNewAccount(BytesToUint160(transfer.Sender))
 			amountSender := accSender.GetBalance()
-			accSender.SetBalance(amountSender - Fixed64(transfer.Amount))
-			states.setAccount(BytesToUint160(transfer.Sender), accSender)
+			accSender.SetBalance(amountSender - Fixed64(transfer.Amount) - Fixed64(txn.UnsignedTx.Fee))
+			nonce := accSender.GetNonce()
+			accSender.SetNonce(nonce + 1)
+			states.SetAccount(BytesToUint160(transfer.Sender), accSender)
 
 			accRecipient := states.GetOrNewAccount(BytesToUint160(transfer.Recipient))
 			amountRecipient := accRecipient.GetBalance()
@@ -308,18 +309,48 @@ func (cs *ChainStore) persist(b *Block) error {
 			states.setAccount(BytesToUint160(transfer.Recipient), accRecipient)
 		case RegisterNameType:
 			registerNamePayload := pl.(*RegisterName)
+			pg, err := txn.GetProgramHashes()
+			if err != nil {
+				return err
+			}
+			accSender := states.GetOrNewAccount(pg[0])
+			amountSender := accSender.GetBalance()
+			accSender.SetBalance(amountSender - Fixed64(txn.UnsignedTx.Fee))
+			nonce := accSender.GetNonce()
+			accSender.SetNonce(nonce + 1)
+			states.SetAccount(pg[0], accSender)
 			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
 			if err != nil {
 				return err
 			}
 		case DeleteNameType:
 			deleteNamePayload := pl.(*DeleteName)
+			pg, err := txn.GetProgramHashes()
+			if err != nil {
+				return err
+			}
+			accSender := states.GetOrNewAccount(pg[0])
+			amountSender := accSender.GetBalance()
+			accSender.SetBalance(amountSender - Fixed64(txn.UnsignedTx.Fee))
+			nonce := accSender.GetNonce()
+			accSender.SetNonce(nonce + 1)
+			states.SetAccount(pg[0], accSender)
 			err = cs.DeleteName(deleteNamePayload.Registrant)
 			if err != nil {
 				return err
 			}
 		case SubscribeType:
 			subscribePayload := pl.(*Subscribe)
+			pg, err := txn.GetProgramHashes()
+			if err != nil {
+				return err
+			}
+			accSender := states.GetOrNewAccount(pg[0])
+			amountSender := accSender.GetBalance()
+			accSender.SetBalance(amountSender - Fixed64(txn.UnsignedTx.Fee))
+			nonce := accSender.GetNonce()
+			accSender.SetNonce(nonce + 1)
+			states.SetAccount(pg[0], accSender)
 			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.UnsignedHeader.Height)
 			if err != nil {
 				return err
