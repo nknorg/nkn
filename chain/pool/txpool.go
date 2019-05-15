@@ -109,14 +109,15 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 	if err != nil {
 		return err
 	}
+
+	amount := chain.DefaultLedger.Store.GetBalance(sender)
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.TransferAssetType:
 		ta := pl.(*pb.TransferAsset)
-		amount := chain.DefaultLedger.Store.GetBalance(sender)
-		allInList := list.Totality() + common.Fixed64(ta.Amount)
+		allInList := list.Totality() + common.Fixed64(ta.Amount) + common.Fixed64(txn.UnsignedTx.Fee)
 
 		if amount < allInList {
-			return errors.New("not sufficient funds")
+			return errors.New("TransferAsset: not sufficient funds")
 		}
 	case pb.RegisterNameType:
 		rn := pl.(*pb.RegisterName)
@@ -138,6 +139,12 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 				log.Error(payloadRn.Name, rn.Name)
 				return ErrDuplicateName
 			}
+
+		}
+
+		allInList := list.Totality() + common.Fixed64(txn.UnsignedTx.Fee)
+		if amount < allInList {
+			return errors.New("RegisterName: not sufficient funds")
 		}
 	case pb.DeleteNameType:
 		rn := pl.(*pb.DeleteName)
@@ -159,6 +166,11 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 				return ErrDuplicateName
 			}
 		}
+
+		allInList := list.Totality() + common.Fixed64(txn.UnsignedTx.Fee)
+		if amount < allInList {
+			return errors.New("DeleteName: not sufficient funds")
+		}
 	case pb.SubscribeType:
 		rn := pl.(*pb.Subscribe)
 		for _, tx := range list.txs {
@@ -177,6 +189,11 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 				return ErrDuplicateSubscription
 			}
 
+		}
+
+		allInList := list.Totality() + common.Fixed64(txn.UnsignedTx.Fee)
+		if amount < allInList {
+			return errors.New("Subscribe: not sufficient funds")
 		}
 	}
 

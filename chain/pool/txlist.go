@@ -208,7 +208,8 @@ func (nst *NonceSortedTxs) Totality() common.Fixed64 {
 			transfer := pl.(*pb.TransferAsset)
 			amount += common.Fixed64(transfer.Amount)
 		}
-		//TODO add fee
+
+		amount += common.Fixed64(tx.UnsignedTx.Fee)
 	}
 
 	return amount
