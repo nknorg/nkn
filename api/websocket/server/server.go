@@ -16,7 +16,7 @@ import (
 	"github.com/nknorg/nkn/api/websocket/messagebuffer"
 	. "github.com/nknorg/nkn/api/websocket/session"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/address"
@@ -88,7 +88,7 @@ func (ws *WsServer) Start() error {
 		}
 	}
 
-	ws.localNode.GetEvent("relay").Subscribe(events.EventSendInboundMessageToClient, ws.sendInboundRelayMessageToClient)
+	event.Queue.Subscribe(event.SendInboundMessageToClient, ws.sendInboundRelayMessageToClient)
 
 	var done = make(chan bool)
 	go ws.checkSessionsTimeout(done)
@@ -127,7 +127,7 @@ func (ws *WsServer) registryMethod() {
 		if !ok {
 			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
-		clientID, pubKey, err := address.ParseClientAddress(addrStr)
+		clientID, pubKey, _, err := address.ParseClientAddress(addrStr)
 		if err != nil {
 			log.Error("Parse client address error:", err)
 			return common.RespPacking(nil, common.INVALID_PARAMS)

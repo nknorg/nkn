@@ -44,6 +44,7 @@ const (
 	GET_BLOCKS_REPLY                    MessageType = 10
 	RELAY                               MessageType = 11
 	TRANSACTIONS                        MessageType = 12
+	BACKTRACK_SIGNATURE_CHAIN           MessageType = 13
 )
 
 var MessageType_name = map[int32]string{
@@ -60,25 +61,27 @@ var MessageType_name = map[int32]string{
 	10: "GET_BLOCKS_REPLY",
 	11: "RELAY",
 	12: "TRANSACTIONS",
+	13: "BACKTRACK_SIGNATURE_CHAIN",
 }
 var MessageType_value = map[string]int32{
 	"MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE": 0,
-	"VOTE":                                1,
-	"I_HAVE_BLOCK_PROPOSAL":               2,
-	"REQUEST_BLOCK_PROPOSAL":              3,
-	"REQUEST_BLOCK_PROPOSAL_REPLY":        4,
-	"GET_CONSENSUS_STATE":                 5,
-	"GET_CONSENSUS_STATE_REPLY":           6,
-	"GET_BLOCK_HEADERS":                   7,
-	"GET_BLOCK_HEADERS_REPLY":             8,
-	"GET_BLOCKS":                          9,
-	"GET_BLOCKS_REPLY":                    10,
-	"RELAY":                               11,
-	"TRANSACTIONS":                        12,
+	"VOTE":                         1,
+	"I_HAVE_BLOCK_PROPOSAL":        2,
+	"REQUEST_BLOCK_PROPOSAL":       3,
+	"REQUEST_BLOCK_PROPOSAL_REPLY": 4,
+	"GET_CONSENSUS_STATE":          5,
+	"GET_CONSENSUS_STATE_REPLY":    6,
+	"GET_BLOCK_HEADERS":            7,
+	"GET_BLOCK_HEADERS_REPLY":      8,
+	"GET_BLOCKS":                   9,
+	"GET_BLOCKS_REPLY":             10,
+	"RELAY":                        11,
+	"TRANSACTIONS":                 12,
+	"BACKTRACK_SIGNATURE_CHAIN":    13,
 }
 
 func (MessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{0}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{0}
 }
 
 // Message type that can be signed message
@@ -118,7 +121,7 @@ var AllowedSignedMessageType_value = map[string]int32{
 }
 
 func (AllowedSignedMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{1}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{1}
 }
 
 // Message type that can be unsigned message
@@ -126,12 +129,13 @@ func (AllowedSignedMessageType) EnumDescriptor() ([]byte, []int) {
 type AllowedUnsignedMessageType int32
 
 const (
-	ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE  AllowedUnsignedMessageType = 0
-	ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY     AllowedUnsignedMessageType = 4
-	ALLOW_UNSIGNED_GET_BLOCK_HEADERS_REPLY AllowedUnsignedMessageType = 8
-	ALLOW_UNSIGNED_GET_BLOCKS_REPLY        AllowedUnsignedMessageType = 10
-	ALLOW_UNSIGNED_RELAY                   AllowedUnsignedMessageType = 11
-	ALLOW_UNSIGNED_TRANSACTIONS            AllowedUnsignedMessageType = 12
+	ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE    AllowedUnsignedMessageType = 0
+	ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY       AllowedUnsignedMessageType = 4
+	ALLOW_UNSIGNED_GET_BLOCK_HEADERS_REPLY   AllowedUnsignedMessageType = 8
+	ALLOW_UNSIGNED_GET_BLOCKS_REPLY          AllowedUnsignedMessageType = 10
+	ALLOW_UNSIGNED_RELAY                     AllowedUnsignedMessageType = 11
+	ALLOW_UNSIGNED_TRANSACTIONS              AllowedUnsignedMessageType = 12
+	ALLOW_UNSIGNED_BACKTRACK_SIGNATURE_CHAIN AllowedUnsignedMessageType = 13
 )
 
 var AllowedUnsignedMessageType_name = map[int32]string{
@@ -141,18 +145,20 @@ var AllowedUnsignedMessageType_name = map[int32]string{
 	10: "ALLOW_UNSIGNED_GET_BLOCKS_REPLY",
 	11: "ALLOW_UNSIGNED_RELAY",
 	12: "ALLOW_UNSIGNED_TRANSACTIONS",
+	13: "ALLOW_UNSIGNED_BACKTRACK_SIGNATURE_CHAIN",
 }
 var AllowedUnsignedMessageType_value = map[string]int32{
-	"ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE":  0,
-	"ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY":     4,
-	"ALLOW_UNSIGNED_GET_BLOCK_HEADERS_REPLY": 8,
-	"ALLOW_UNSIGNED_GET_BLOCKS_REPLY":        10,
-	"ALLOW_UNSIGNED_RELAY":                   11,
-	"ALLOW_UNSIGNED_TRANSACTIONS":            12,
+	"ALLOW_UNSIGNED_PLACEHOLDER_DO_NOT_USE":    0,
+	"ALLOW_UNSIGNED_REQUEST_BLOCK_REPLY":       4,
+	"ALLOW_UNSIGNED_GET_BLOCK_HEADERS_REPLY":   8,
+	"ALLOW_UNSIGNED_GET_BLOCKS_REPLY":          10,
+	"ALLOW_UNSIGNED_RELAY":                     11,
+	"ALLOW_UNSIGNED_TRANSACTIONS":              12,
+	"ALLOW_UNSIGNED_BACKTRACK_SIGNATURE_CHAIN": 13,
 }
 
 func (AllowedUnsignedMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{2}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{2}
 }
 
 // Message type that can be sent as direct message
@@ -171,6 +177,7 @@ const (
 	ALLOW_DIRECT_GET_BLOCK_HEADERS_REPLY   AllowedDirectMessageType = 8
 	ALLOW_DIRECT_GET_BLOCKS                AllowedDirectMessageType = 9
 	ALLOW_DIRECT_GET_BLOCKS_REPLY          AllowedDirectMessageType = 10
+	ALLOW_DIRECT_BACKTRACK_SIGNATURE_CHAIN AllowedDirectMessageType = 13
 )
 
 var AllowedDirectMessageType_name = map[int32]string{
@@ -185,6 +192,7 @@ var AllowedDirectMessageType_name = map[int32]string{
 	8:  "ALLOW_DIRECT_GET_BLOCK_HEADERS_REPLY",
 	9:  "ALLOW_DIRECT_GET_BLOCKS",
 	10: "ALLOW_DIRECT_GET_BLOCKS_REPLY",
+	13: "ALLOW_DIRECT_BACKTRACK_SIGNATURE_CHAIN",
 }
 var AllowedDirectMessageType_value = map[string]int32{
 	"ALLOW_DIRECT_PLACEHOLDER_DO_NOT_USE":    0,
@@ -198,10 +206,11 @@ var AllowedDirectMessageType_value = map[string]int32{
 	"ALLOW_DIRECT_GET_BLOCK_HEADERS_REPLY":   8,
 	"ALLOW_DIRECT_GET_BLOCKS":                9,
 	"ALLOW_DIRECT_GET_BLOCKS_REPLY":          10,
+	"ALLOW_DIRECT_BACKTRACK_SIGNATURE_CHAIN": 13,
 }
 
 func (AllowedDirectMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{3}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{3}
 }
 
 // Message type that can be sent as relay message
@@ -223,7 +232,7 @@ var AllowedRelayMessageType_value = map[string]int32{
 }
 
 func (AllowedRelayMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{4}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{4}
 }
 
 // Message type that can be sent as broadcast_push message
@@ -245,7 +254,7 @@ var AllowedBroadcastPushMessageType_value = map[string]int32{
 }
 
 func (AllowedBroadcastPushMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{5}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{5}
 }
 
 // Message type that can be sent as broadcast_pull message
@@ -264,7 +273,7 @@ var AllowedBroadcastPullMessageType_value = map[string]int32{
 }
 
 func (AllowedBroadcastPullMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{6}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{6}
 }
 
 // Message type that can be sent as broadcast_tree message
@@ -286,7 +295,7 @@ var AllowedBroadcastTreeMessageType_value = map[string]int32{
 }
 
 func (AllowedBroadcastTreeMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{7}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{7}
 }
 
 type UnsignedMessage struct {
@@ -297,7 +306,7 @@ type UnsignedMessage struct {
 func (m *UnsignedMessage) Reset()      { *m = UnsignedMessage{} }
 func (*UnsignedMessage) ProtoMessage() {}
 func (*UnsignedMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{0}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{0}
 }
 func (m *UnsignedMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -348,7 +357,7 @@ type SignedMessage struct {
 func (m *SignedMessage) Reset()      { *m = SignedMessage{} }
 func (*SignedMessage) ProtoMessage() {}
 func (*SignedMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{1}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{1}
 }
 func (m *SignedMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -399,7 +408,7 @@ type Vote struct {
 func (m *Vote) Reset()      { *m = Vote{} }
 func (*Vote) ProtoMessage() {}
 func (*Vote) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{2}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{2}
 }
 func (m *Vote) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -450,7 +459,7 @@ type IHaveBlockProposal struct {
 func (m *IHaveBlockProposal) Reset()      { *m = IHaveBlockProposal{} }
 func (*IHaveBlockProposal) ProtoMessage() {}
 func (*IHaveBlockProposal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{3}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{3}
 }
 func (m *IHaveBlockProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -500,7 +509,7 @@ type RequestBlockProposal struct {
 func (m *RequestBlockProposal) Reset()      { *m = RequestBlockProposal{} }
 func (*RequestBlockProposal) ProtoMessage() {}
 func (*RequestBlockProposal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{4}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{4}
 }
 func (m *RequestBlockProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -543,7 +552,7 @@ type RequestBlockProposalReply struct {
 func (m *RequestBlockProposalReply) Reset()      { *m = RequestBlockProposalReply{} }
 func (*RequestBlockProposalReply) ProtoMessage() {}
 func (*RequestBlockProposalReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{5}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{5}
 }
 func (m *RequestBlockProposalReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -585,7 +594,7 @@ type GetConsensusState struct {
 func (m *GetConsensusState) Reset()      { *m = GetConsensusState{} }
 func (*GetConsensusState) ProtoMessage() {}
 func (*GetConsensusState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{6}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{6}
 }
 func (m *GetConsensusState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -624,7 +633,7 @@ type GetConsensusStateReply struct {
 func (m *GetConsensusStateReply) Reset()      { *m = GetConsensusStateReply{} }
 func (*GetConsensusStateReply) ProtoMessage() {}
 func (*GetConsensusStateReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{7}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{7}
 }
 func (m *GetConsensusStateReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -689,7 +698,7 @@ type GetBlockHeaders struct {
 func (m *GetBlockHeaders) Reset()      { *m = GetBlockHeaders{} }
 func (*GetBlockHeaders) ProtoMessage() {}
 func (*GetBlockHeaders) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{8}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{8}
 }
 func (m *GetBlockHeaders) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -739,7 +748,7 @@ type GetBlockHeadersReply struct {
 func (m *GetBlockHeadersReply) Reset()      { *m = GetBlockHeadersReply{} }
 func (*GetBlockHeadersReply) ProtoMessage() {}
 func (*GetBlockHeadersReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{9}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{9}
 }
 func (m *GetBlockHeadersReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -783,7 +792,7 @@ type GetBlocks struct {
 func (m *GetBlocks) Reset()      { *m = GetBlocks{} }
 func (*GetBlocks) ProtoMessage() {}
 func (*GetBlocks) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{10}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{10}
 }
 func (m *GetBlocks) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -833,7 +842,7 @@ type GetBlocksReply struct {
 func (m *GetBlocksReply) Reset()      { *m = GetBlocksReply{} }
 func (*GetBlocksReply) ProtoMessage() {}
 func (*GetBlocksReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{11}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{11}
 }
 func (m *GetBlocksReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -870,17 +879,20 @@ func (m *GetBlocksReply) GetBlocks() [][]byte {
 }
 
 type Relay struct {
-	SrcAddr           string    `protobuf:"bytes,1,opt,name=src_addr,json=srcAddr,proto3" json:"src_addr,omitempty"`
-	DestId            []byte    `protobuf:"bytes,2,opt,name=dest_id,json=destId,proto3" json:"dest_id,omitempty"`
-	Payload           []byte    `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
-	SigChain          *SigChain `protobuf:"bytes,4,opt,name=sig_chain,json=sigChain" json:"sig_chain,omitempty"`
-	MaxHoldingSeconds uint32    `protobuf:"varint,5,opt,name=max_holding_seconds,json=maxHoldingSeconds,proto3" json:"max_holding_seconds,omitempty"`
+	SrcIdentifier     string `protobuf:"bytes,1,opt,name=src_identifier,json=srcIdentifier,proto3" json:"src_identifier,omitempty"`
+	SrcPubkey         []byte `protobuf:"bytes,6,opt,name=src_pubkey,json=srcPubkey,proto3" json:"src_pubkey,omitempty"`
+	DestId            []byte `protobuf:"bytes,2,opt,name=dest_id,json=destId,proto3" json:"dest_id,omitempty"`
+	Payload           []byte `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	MaxHoldingSeconds uint32 `protobuf:"varint,5,opt,name=max_holding_seconds,json=maxHoldingSeconds,proto3" json:"max_holding_seconds,omitempty"`
+	BlockHash         []byte `protobuf:"bytes,7,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	LastSignature     []byte `protobuf:"bytes,8,opt,name=last_signature,json=lastSignature,proto3" json:"last_signature,omitempty"`
+	SigChainLen       uint32 `protobuf:"varint,9,opt,name=sig_chain_len,json=sigChainLen,proto3" json:"sig_chain_len,omitempty"`
 }
 
 func (m *Relay) Reset()      { *m = Relay{} }
 func (*Relay) ProtoMessage() {}
 func (*Relay) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{12}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{12}
 }
 func (m *Relay) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -909,11 +921,18 @@ func (m *Relay) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Relay proto.InternalMessageInfo
 
-func (m *Relay) GetSrcAddr() string {
+func (m *Relay) GetSrcIdentifier() string {
 	if m != nil {
-		return m.SrcAddr
+		return m.SrcIdentifier
 	}
 	return ""
+}
+
+func (m *Relay) GetSrcPubkey() []byte {
+	if m != nil {
+		return m.SrcPubkey
+	}
+	return nil
 }
 
 func (m *Relay) GetDestId() []byte {
@@ -930,16 +949,30 @@ func (m *Relay) GetPayload() []byte {
 	return nil
 }
 
-func (m *Relay) GetSigChain() *SigChain {
+func (m *Relay) GetMaxHoldingSeconds() uint32 {
 	if m != nil {
-		return m.SigChain
+		return m.MaxHoldingSeconds
+	}
+	return 0
+}
+
+func (m *Relay) GetBlockHash() []byte {
+	if m != nil {
+		return m.BlockHash
 	}
 	return nil
 }
 
-func (m *Relay) GetMaxHoldingSeconds() uint32 {
+func (m *Relay) GetLastSignature() []byte {
 	if m != nil {
-		return m.MaxHoldingSeconds
+		return m.LastSignature
+	}
+	return nil
+}
+
+func (m *Relay) GetSigChainLen() uint32 {
+	if m != nil {
+		return m.SigChainLen
 	}
 	return 0
 }
@@ -951,7 +984,7 @@ type Transactions struct {
 func (m *Transactions) Reset()      { *m = Transactions{} }
 func (*Transactions) ProtoMessage() {}
 func (*Transactions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_3f88c9cc26de3053, []int{13}
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{13}
 }
 func (m *Transactions) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -987,6 +1020,57 @@ func (m *Transactions) GetTransactions() [][]byte {
 	return nil
 }
 
+type BacktrackSignatureChain struct {
+	SigChainElems []*SigChainElem `protobuf:"bytes,1,rep,name=sig_chain_elems,json=sigChainElems" json:"sig_chain_elems,omitempty"`
+	PrevSignature []byte          `protobuf:"bytes,2,opt,name=prev_signature,json=prevSignature,proto3" json:"prev_signature,omitempty"`
+}
+
+func (m *BacktrackSignatureChain) Reset()      { *m = BacktrackSignatureChain{} }
+func (*BacktrackSignatureChain) ProtoMessage() {}
+func (*BacktrackSignatureChain) Descriptor() ([]byte, []int) {
+	return fileDescriptor_nodemessage_392baeb675acc376, []int{14}
+}
+func (m *BacktrackSignatureChain) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *BacktrackSignatureChain) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_BacktrackSignatureChain.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *BacktrackSignatureChain) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BacktrackSignatureChain.Merge(dst, src)
+}
+func (m *BacktrackSignatureChain) XXX_Size() int {
+	return m.Size()
+}
+func (m *BacktrackSignatureChain) XXX_DiscardUnknown() {
+	xxx_messageInfo_BacktrackSignatureChain.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BacktrackSignatureChain proto.InternalMessageInfo
+
+func (m *BacktrackSignatureChain) GetSigChainElems() []*SigChainElem {
+	if m != nil {
+		return m.SigChainElems
+	}
+	return nil
+}
+
+func (m *BacktrackSignatureChain) GetPrevSignature() []byte {
+	if m != nil {
+		return m.PrevSignature
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*UnsignedMessage)(nil), "pb.UnsignedMessage")
 	proto.RegisterType((*SignedMessage)(nil), "pb.SignedMessage")
@@ -1002,6 +1086,7 @@ func init() {
 	proto.RegisterType((*GetBlocksReply)(nil), "pb.GetBlocksReply")
 	proto.RegisterType((*Relay)(nil), "pb.Relay")
 	proto.RegisterType((*Transactions)(nil), "pb.Transactions")
+	proto.RegisterType((*BacktrackSignatureChain)(nil), "pb.BacktrackSignatureChain")
 	proto.RegisterEnum("pb.MessageType", MessageType_name, MessageType_value)
 	proto.RegisterEnum("pb.AllowedSignedMessageType", AllowedSignedMessageType_name, AllowedSignedMessageType_value)
 	proto.RegisterEnum("pb.AllowedUnsignedMessageType", AllowedUnsignedMessageType_name, AllowedUnsignedMessageType_value)
@@ -1408,7 +1493,10 @@ func (this *Relay) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.SrcAddr != that1.SrcAddr {
+	if this.SrcIdentifier != that1.SrcIdentifier {
+		return false
+	}
+	if !bytes.Equal(this.SrcPubkey, that1.SrcPubkey) {
 		return false
 	}
 	if !bytes.Equal(this.DestId, that1.DestId) {
@@ -1417,10 +1505,16 @@ func (this *Relay) Equal(that interface{}) bool {
 	if !bytes.Equal(this.Payload, that1.Payload) {
 		return false
 	}
-	if !this.SigChain.Equal(that1.SigChain) {
+	if this.MaxHoldingSeconds != that1.MaxHoldingSeconds {
 		return false
 	}
-	if this.MaxHoldingSeconds != that1.MaxHoldingSeconds {
+	if !bytes.Equal(this.BlockHash, that1.BlockHash) {
+		return false
+	}
+	if !bytes.Equal(this.LastSignature, that1.LastSignature) {
+		return false
+	}
+	if this.SigChainLen != that1.SigChainLen {
 		return false
 	}
 	return true
@@ -1451,6 +1545,38 @@ func (this *Transactions) Equal(that interface{}) bool {
 		if !bytes.Equal(this.Transactions[i], that1.Transactions[i]) {
 			return false
 		}
+	}
+	return true
+}
+func (this *BacktrackSignatureChain) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*BacktrackSignatureChain)
+	if !ok {
+		that2, ok := that.(BacktrackSignatureChain)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.SigChainElems) != len(that1.SigChainElems) {
+		return false
+	}
+	for i := range this.SigChainElems {
+		if !this.SigChainElems[i].Equal(that1.SigChainElems[i]) {
+			return false
+		}
+	}
+	if !bytes.Equal(this.PrevSignature, that1.PrevSignature) {
+		return false
 	}
 	return true
 }
@@ -1586,15 +1712,16 @@ func (this *Relay) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 12)
 	s = append(s, "&pb.Relay{")
-	s = append(s, "SrcAddr: "+fmt.Sprintf("%#v", this.SrcAddr)+",\n")
+	s = append(s, "SrcIdentifier: "+fmt.Sprintf("%#v", this.SrcIdentifier)+",\n")
+	s = append(s, "SrcPubkey: "+fmt.Sprintf("%#v", this.SrcPubkey)+",\n")
 	s = append(s, "DestId: "+fmt.Sprintf("%#v", this.DestId)+",\n")
 	s = append(s, "Payload: "+fmt.Sprintf("%#v", this.Payload)+",\n")
-	if this.SigChain != nil {
-		s = append(s, "SigChain: "+fmt.Sprintf("%#v", this.SigChain)+",\n")
-	}
 	s = append(s, "MaxHoldingSeconds: "+fmt.Sprintf("%#v", this.MaxHoldingSeconds)+",\n")
+	s = append(s, "BlockHash: "+fmt.Sprintf("%#v", this.BlockHash)+",\n")
+	s = append(s, "LastSignature: "+fmt.Sprintf("%#v", this.LastSignature)+",\n")
+	s = append(s, "SigChainLen: "+fmt.Sprintf("%#v", this.SigChainLen)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1605,6 +1732,19 @@ func (this *Transactions) GoString() string {
 	s := make([]string, 0, 5)
 	s = append(s, "&pb.Transactions{")
 	s = append(s, "Transactions: "+fmt.Sprintf("%#v", this.Transactions)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *BacktrackSignatureChain) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&pb.BacktrackSignatureChain{")
+	if this.SigChainElems != nil {
+		s = append(s, "SigChainElems: "+fmt.Sprintf("%#v", this.SigChainElems)+",\n")
+	}
+	s = append(s, "PrevSignature: "+fmt.Sprintf("%#v", this.PrevSignature)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1961,11 +2101,11 @@ func (m *Relay) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.SrcAddr) > 0 {
+	if len(m.SrcIdentifier) > 0 {
 		dAtA[i] = 0xa
 		i++
-		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.SrcAddr)))
-		i += copy(dAtA[i:], m.SrcAddr)
+		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.SrcIdentifier)))
+		i += copy(dAtA[i:], m.SrcIdentifier)
 	}
 	if len(m.DestId) > 0 {
 		dAtA[i] = 0x12
@@ -1979,20 +2119,33 @@ func (m *Relay) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.Payload)))
 		i += copy(dAtA[i:], m.Payload)
 	}
-	if m.SigChain != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintNodemessage(dAtA, i, uint64(m.SigChain.Size()))
-		n1, err := m.SigChain.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
 	if m.MaxHoldingSeconds != 0 {
 		dAtA[i] = 0x28
 		i++
 		i = encodeVarintNodemessage(dAtA, i, uint64(m.MaxHoldingSeconds))
+	}
+	if len(m.SrcPubkey) > 0 {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.SrcPubkey)))
+		i += copy(dAtA[i:], m.SrcPubkey)
+	}
+	if len(m.BlockHash) > 0 {
+		dAtA[i] = 0x3a
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.BlockHash)))
+		i += copy(dAtA[i:], m.BlockHash)
+	}
+	if len(m.LastSignature) > 0 {
+		dAtA[i] = 0x42
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.LastSignature)))
+		i += copy(dAtA[i:], m.LastSignature)
+	}
+	if m.SigChainLen != 0 {
+		dAtA[i] = 0x48
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(m.SigChainLen))
 	}
 	return i, nil
 }
@@ -2023,6 +2176,42 @@ func (m *Transactions) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *BacktrackSignatureChain) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *BacktrackSignatureChain) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.SigChainElems) > 0 {
+		for _, msg := range m.SigChainElems {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintNodemessage(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.PrevSignature) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintNodemessage(dAtA, i, uint64(len(m.PrevSignature)))
+		i += copy(dAtA[i:], m.PrevSignature)
+	}
+	return i, nil
+}
+
 func encodeVarintNodemessage(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -2034,7 +2223,7 @@ func encodeVarintNodemessage(dAtA []byte, offset int, v uint64) int {
 }
 func NewPopulatedUnsignedMessage(r randyNodemessage, easy bool) *UnsignedMessage {
 	this := &UnsignedMessage{}
-	this.MessageType = MessageType([]int32{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}[r.Intn(13)])
+	this.MessageType = MessageType([]int32{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}[r.Intn(14)])
 	v1 := r.Intn(100)
 	this.Message = make([]byte, v1)
 	for i := 0; i < v1; i++ {
@@ -2186,7 +2375,7 @@ func NewPopulatedGetBlocksReply(r randyNodemessage, easy bool) *GetBlocksReply {
 
 func NewPopulatedRelay(r randyNodemessage, easy bool) *Relay {
 	this := &Relay{}
-	this.SrcAddr = string(randStringNodemessage(r))
+	this.SrcIdentifier = string(randStringNodemessage(r))
 	v13 := r.Intn(100)
 	this.DestId = make([]byte, v13)
 	for i := 0; i < v13; i++ {
@@ -2197,10 +2386,23 @@ func NewPopulatedRelay(r randyNodemessage, easy bool) *Relay {
 	for i := 0; i < v14; i++ {
 		this.Payload[i] = byte(r.Intn(256))
 	}
-	if r.Intn(10) != 0 {
-		this.SigChain = NewPopulatedSigChain(r, easy)
-	}
 	this.MaxHoldingSeconds = uint32(r.Uint32())
+	v15 := r.Intn(100)
+	this.SrcPubkey = make([]byte, v15)
+	for i := 0; i < v15; i++ {
+		this.SrcPubkey[i] = byte(r.Intn(256))
+	}
+	v16 := r.Intn(100)
+	this.BlockHash = make([]byte, v16)
+	for i := 0; i < v16; i++ {
+		this.BlockHash[i] = byte(r.Intn(256))
+	}
+	v17 := r.Intn(100)
+	this.LastSignature = make([]byte, v17)
+	for i := 0; i < v17; i++ {
+		this.LastSignature[i] = byte(r.Intn(256))
+	}
+	this.SigChainLen = uint32(r.Uint32())
 	if !easy && r.Intn(10) != 0 {
 	}
 	return this
@@ -2208,14 +2410,33 @@ func NewPopulatedRelay(r randyNodemessage, easy bool) *Relay {
 
 func NewPopulatedTransactions(r randyNodemessage, easy bool) *Transactions {
 	this := &Transactions{}
-	v15 := r.Intn(10)
-	this.Transactions = make([][]byte, v15)
-	for i := 0; i < v15; i++ {
-		v16 := r.Intn(100)
-		this.Transactions[i] = make([]byte, v16)
-		for j := 0; j < v16; j++ {
+	v18 := r.Intn(10)
+	this.Transactions = make([][]byte, v18)
+	for i := 0; i < v18; i++ {
+		v19 := r.Intn(100)
+		this.Transactions[i] = make([]byte, v19)
+		for j := 0; j < v19; j++ {
 			this.Transactions[i][j] = byte(r.Intn(256))
 		}
+	}
+	if !easy && r.Intn(10) != 0 {
+	}
+	return this
+}
+
+func NewPopulatedBacktrackSignatureChain(r randyNodemessage, easy bool) *BacktrackSignatureChain {
+	this := &BacktrackSignatureChain{}
+	if r.Intn(10) != 0 {
+		v20 := r.Intn(5)
+		this.SigChainElems = make([]*SigChainElem, v20)
+		for i := 0; i < v20; i++ {
+			this.SigChainElems[i] = NewPopulatedSigChainElem(r, easy)
+		}
+	}
+	v21 := r.Intn(100)
+	this.PrevSignature = make([]byte, v21)
+	for i := 0; i < v21; i++ {
+		this.PrevSignature[i] = byte(r.Intn(256))
 	}
 	if !easy && r.Intn(10) != 0 {
 	}
@@ -2241,9 +2462,9 @@ func randUTF8RuneNodemessage(r randyNodemessage) rune {
 	return rune(ru + 61)
 }
 func randStringNodemessage(r randyNodemessage) string {
-	v17 := r.Intn(100)
-	tmps := make([]rune, v17)
-	for i := 0; i < v17; i++ {
+	v22 := r.Intn(100)
+	tmps := make([]rune, v22)
+	for i := 0; i < v22; i++ {
 		tmps[i] = randUTF8RuneNodemessage(r)
 	}
 	return string(tmps)
@@ -2265,11 +2486,11 @@ func randFieldNodemessage(dAtA []byte, r randyNodemessage, fieldNumber int, wire
 	switch wire {
 	case 0:
 		dAtA = encodeVarintPopulateNodemessage(dAtA, uint64(key))
-		v18 := r.Int63()
+		v23 := r.Int63()
 		if r.Intn(2) == 0 {
-			v18 *= -1
+			v23 *= -1
 		}
-		dAtA = encodeVarintPopulateNodemessage(dAtA, uint64(v18))
+		dAtA = encodeVarintPopulateNodemessage(dAtA, uint64(v23))
 	case 1:
 		dAtA = encodeVarintPopulateNodemessage(dAtA, uint64(key))
 		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
@@ -2482,7 +2703,7 @@ func (m *Relay) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.SrcAddr)
+	l = len(m.SrcIdentifier)
 	if l > 0 {
 		n += 1 + l + sovNodemessage(uint64(l))
 	}
@@ -2494,12 +2715,23 @@ func (m *Relay) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovNodemessage(uint64(l))
 	}
-	if m.SigChain != nil {
-		l = m.SigChain.Size()
-		n += 1 + l + sovNodemessage(uint64(l))
-	}
 	if m.MaxHoldingSeconds != 0 {
 		n += 1 + sovNodemessage(uint64(m.MaxHoldingSeconds))
+	}
+	l = len(m.SrcPubkey)
+	if l > 0 {
+		n += 1 + l + sovNodemessage(uint64(l))
+	}
+	l = len(m.BlockHash)
+	if l > 0 {
+		n += 1 + l + sovNodemessage(uint64(l))
+	}
+	l = len(m.LastSignature)
+	if l > 0 {
+		n += 1 + l + sovNodemessage(uint64(l))
+	}
+	if m.SigChainLen != 0 {
+		n += 1 + sovNodemessage(uint64(m.SigChainLen))
 	}
 	return n
 }
@@ -2515,6 +2747,25 @@ func (m *Transactions) Size() (n int) {
 			l = len(b)
 			n += 1 + l + sovNodemessage(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *BacktrackSignatureChain) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.SigChainElems) > 0 {
+		for _, e := range m.SigChainElems {
+			l = e.Size()
+			n += 1 + l + sovNodemessage(uint64(l))
+		}
+	}
+	l = len(m.PrevSignature)
+	if l > 0 {
+		n += 1 + l + sovNodemessage(uint64(l))
 	}
 	return n
 }
@@ -2665,11 +2916,14 @@ func (this *Relay) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&Relay{`,
-		`SrcAddr:` + fmt.Sprintf("%v", this.SrcAddr) + `,`,
+		`SrcIdentifier:` + fmt.Sprintf("%v", this.SrcIdentifier) + `,`,
 		`DestId:` + fmt.Sprintf("%v", this.DestId) + `,`,
 		`Payload:` + fmt.Sprintf("%v", this.Payload) + `,`,
-		`SigChain:` + strings.Replace(fmt.Sprintf("%v", this.SigChain), "SigChain", "SigChain", 1) + `,`,
 		`MaxHoldingSeconds:` + fmt.Sprintf("%v", this.MaxHoldingSeconds) + `,`,
+		`SrcPubkey:` + fmt.Sprintf("%v", this.SrcPubkey) + `,`,
+		`BlockHash:` + fmt.Sprintf("%v", this.BlockHash) + `,`,
+		`LastSignature:` + fmt.Sprintf("%v", this.LastSignature) + `,`,
+		`SigChainLen:` + fmt.Sprintf("%v", this.SigChainLen) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2680,6 +2934,17 @@ func (this *Transactions) String() string {
 	}
 	s := strings.Join([]string{`&Transactions{`,
 		`Transactions:` + fmt.Sprintf("%v", this.Transactions) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *BacktrackSignatureChain) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&BacktrackSignatureChain{`,
+		`SigChainElems:` + strings.Replace(fmt.Sprintf("%v", this.SigChainElems), "SigChainElem", "SigChainElem", 1) + `,`,
+		`PrevSignature:` + fmt.Sprintf("%v", this.PrevSignature) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3819,7 +4084,7 @@ func (m *Relay) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SrcAddr", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SrcIdentifier", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3844,7 +4109,7 @@ func (m *Relay) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SrcAddr = string(dAtA[iNdEx:postIndex])
+			m.SrcIdentifier = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -3908,39 +4173,6 @@ func (m *Relay) Unmarshal(dAtA []byte) error {
 				m.Payload = []byte{}
 			}
 			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SigChain", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowNodemessage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthNodemessage
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.SigChain == nil {
-				m.SigChain = &SigChain{}
-			}
-			if err := m.SigChain.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MaxHoldingSeconds", wireType)
@@ -3956,6 +4188,118 @@ func (m *Relay) Unmarshal(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.MaxHoldingSeconds |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SrcPubkey", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SrcPubkey = append(m.SrcPubkey[:0], dAtA[iNdEx:postIndex]...)
+			if m.SrcPubkey == nil {
+				m.SrcPubkey = []byte{}
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlockHash = append(m.BlockHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.BlockHash == nil {
+				m.BlockHash = []byte{}
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastSignature", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LastSignature = append(m.LastSignature[:0], dAtA[iNdEx:postIndex]...)
+			if m.LastSignature == nil {
+				m.LastSignature = []byte{}
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SigChainLen", wireType)
+			}
+			m.SigChainLen = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SigChainLen |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4038,6 +4382,118 @@ func (m *Transactions) Unmarshal(dAtA []byte) error {
 			}
 			m.Transactions = append(m.Transactions, make([]byte, postIndex-iNdEx))
 			copy(m.Transactions[len(m.Transactions)-1], dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipNodemessage(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *BacktrackSignatureChain) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowNodemessage
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BacktrackSignatureChain: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BacktrackSignatureChain: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SigChainElems", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SigChainElems = append(m.SigChainElems, &SigChainElem{})
+			if err := m.SigChainElems[len(m.SigChainElems)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PrevSignature", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowNodemessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthNodemessage
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PrevSignature = append(m.PrevSignature[:0], dAtA[iNdEx:postIndex]...)
+			if m.PrevSignature == nil {
+				m.PrevSignature = []byte{}
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4165,81 +4621,89 @@ var (
 	ErrIntOverflowNodemessage   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/nodemessage.proto", fileDescriptor_nodemessage_3f88c9cc26de3053) }
+func init() { proto.RegisterFile("pb/nodemessage.proto", fileDescriptor_nodemessage_392baeb675acc376) }
 
-var fileDescriptor_nodemessage_3f88c9cc26de3053 = []byte{
-	// 1163 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0x3d, 0x93, 0xda, 0x56,
-	0x17, 0x46, 0xec, 0x27, 0x67, 0xb5, 0x5e, 0x71, 0x8d, 0x77, 0xd9, 0xb5, 0x2d, 0xaf, 0xe5, 0x8f,
-	0x77, 0xcd, 0x9b, 0xec, 0x4e, 0x36, 0x93, 0x2a, 0x49, 0x21, 0x40, 0x03, 0x8c, 0x31, 0x10, 0x49,
-	0x38, 0x71, 0xa5, 0x11, 0xd2, 0x0d, 0x30, 0x61, 0x25, 0xa2, 0x2b, 0x12, 0xd3, 0xe5, 0x27, 0xe4,
-	0x67, 0xa4, 0x4c, 0xba, 0x54, 0x29, 0x52, 0xb9, 0x74, 0xe9, 0x32, 0xcb, 0x36, 0x29, 0x5d, 0x66,
-	0x26, 0x4d, 0x86, 0xab, 0x2b, 0x2d, 0x12, 0x10, 0x9c, 0x4c, 0x3a, 0x9d, 0x73, 0x9e, 0xf3, 0xf5,
-	0x9c, 0x47, 0x02, 0xc8, 0x0d, 0x3b, 0x67, 0x8e, 0x6b, 0xe3, 0x0b, 0x4c, 0x88, 0xd9, 0xc5, 0xa7,
-	0x43, 0xcf, 0xf5, 0x5d, 0x94, 0x1e, 0x76, 0x8e, 0xde, 0xef, 0xf6, 0xfd, 0xde, 0xa8, 0x73, 0x6a,
-	0xb9, 0x17, 0x67, 0x5d, 0xb7, 0xeb, 0x9e, 0xd1, 0x50, 0x67, 0xf4, 0x25, 0xb5, 0xa8, 0x41, 0x9f,
-	0x82, 0x94, 0xa3, 0xec, 0xb0, 0x73, 0x46, 0xfa, 0x5d, 0xab, 0x67, 0xf6, 0x1d, 0xe6, 0xda, 0x65,
-	0xb5, 0x03, 0x53, 0x32, 0x60, 0xaf, 0xed, 0x90, 0x7e, 0xd7, 0xc1, 0xf6, 0xb3, 0xa0, 0x1b, 0x3a,
-	0x07, 0x9e, 0x35, 0x36, 0xfc, 0xf1, 0x10, 0xe7, 0xb9, 0x63, 0xee, 0xe4, 0xc6, 0xf9, 0xde, 0xe9,
-	0xb0, 0x73, 0xca, 0x20, 0xfa, 0x78, 0x88, 0xd5, 0x9d, 0x8b, 0x6b, 0x03, 0xe5, 0x61, 0x8b, 0x99,
-	0xf9, 0xf4, 0x31, 0x77, 0xc2, 0xab, 0xa1, 0x29, 0x55, 0x60, 0x57, 0x8b, 0x95, 0x9f, 0x81, 0x72,
-	0x31, 0x28, 0xba, 0x03, 0x99, 0xe9, 0x24, 0xa6, 0x3f, 0xf2, 0xc2, 0x32, 0xd7, 0x0e, 0xe9, 0x53,
-	0x58, 0x7f, 0xee, 0xfa, 0x18, 0xed, 0xc3, 0x66, 0x0f, 0xf7, 0xbb, 0x3d, 0x9f, 0xa6, 0xef, 0xaa,
-	0xcc, 0x42, 0x77, 0x01, 0x3a, 0x03, 0xd7, 0xfa, 0xca, 0xe8, 0x99, 0xa4, 0x17, 0xa6, 0x53, 0x4f,
-	0xd5, 0x24, 0x3d, 0xe9, 0x29, 0xa0, 0x5a, 0xd5, 0xfc, 0x06, 0x17, 0xa7, 0x9e, 0x96, 0xe7, 0x0e,
-	0x5d, 0x62, 0x0e, 0xfe, 0x6d, 0xb1, 0x8f, 0x20, 0xa7, 0xe2, 0xaf, 0x47, 0x98, 0xf8, 0xf1, 0x72,
-	0xf1, 0x34, 0x2e, 0x99, 0xf6, 0x01, 0x1c, 0x2e, 0x4a, 0x53, 0xf1, 0x70, 0x30, 0x46, 0x39, 0xd8,
-	0xa0, 0x48, 0x96, 0x16, 0x18, 0xd2, 0x4d, 0xc8, 0x56, 0xb0, 0x5f, 0x72, 0x1d, 0x82, 0x1d, 0x32,
-	0x22, 0x9a, 0x6f, 0xfa, 0x58, 0xfa, 0x95, 0x83, 0xfd, 0x39, 0x6f, 0x50, 0xe5, 0x01, 0xec, 0x0e,
-	0xb0, 0xdd, 0xc5, 0x9e, 0x11, 0xdb, 0x8b, 0x0f, 0x9c, 0xd5, 0x60, 0xbb, 0x02, 0x64, 0x19, 0x68,
-	0x6e, 0xc9, 0xbd, 0x20, 0x50, 0x0c, 0x67, 0x46, 0x4f, 0x40, 0xb0, 0xc2, 0x3e, 0x61, 0xcd, 0x35,
-	0x5a, 0x73, 0x2f, 0xf2, 0xb3, 0xb2, 0xef, 0x01, 0x90, 0xb1, 0x63, 0x19, 0x64, 0x3a, 0x4e, 0x7e,
-	0x9d, 0xca, 0x66, 0x77, 0x2a, 0x1b, 0x6d, 0xec, 0x58, 0xc1, 0x8c, 0x19, 0x12, 0x3e, 0x4a, 0x1a,
-	0xec, 0x55, 0x70, 0x40, 0x44, 0x15, 0x9b, 0x36, 0xf6, 0x08, 0xba, 0x0f, 0x3c, 0xf1, 0x4d, 0xcf,
-	0x8f, 0xcf, 0xbe, 0x43, 0x7d, 0xd5, 0xe8, 0x30, 0xd8, 0xb1, 0x43, 0x40, 0x9a, 0x02, 0x32, 0xd8,
-	0xb1, 0x83, 0xb0, 0xf4, 0x31, 0xe4, 0x12, 0x45, 0x23, 0x5a, 0xd8, 0xaa, 0x81, 0x37, 0xcf, 0x1d,
-	0xaf, 0x9d, 0xf0, 0x2a, 0xdf, 0x99, 0x41, 0x4a, 0xcf, 0x20, 0x13, 0x26, 0xff, 0x17, 0xb3, 0x9c,
-	0xc0, 0x8d, 0xa8, 0x5c, 0x30, 0xc5, 0x3e, 0x6c, 0xd2, 0x86, 0x61, 0x7b, 0x66, 0x49, 0x3f, 0x72,
-	0xb0, 0xa1, 0xe2, 0x81, 0x39, 0x46, 0x87, 0xb0, 0x4d, 0x3c, 0xcb, 0x30, 0x6d, 0xdb, 0xa3, 0x1d,
-	0x33, 0xea, 0x16, 0xf1, 0x2c, 0xd9, 0xb6, 0x3d, 0x74, 0x00, 0x5b, 0x36, 0x26, 0xbe, 0xd1, 0xb7,
-	0xd9, 0xa9, 0x36, 0xa7, 0x66, 0xcd, 0x9e, 0xbe, 0x50, 0x43, 0x73, 0x3c, 0x70, 0x4d, 0x9b, 0x1e,
-	0x86, 0x57, 0x43, 0x13, 0x3d, 0xa1, 0x2f, 0x94, 0x41, 0x5f, 0x7f, 0x7a, 0x8f, 0x9d, 0x73, 0x9e,
-	0xde, 0xa3, 0xdf, 0x2d, 0x4d, 0x7d, 0xea, 0x36, 0x61, 0x4f, 0xe8, 0x14, 0x6e, 0x5e, 0x98, 0x2f,
-	0x8d, 0x9e, 0x3b, 0xb0, 0xfb, 0x4e, 0xd7, 0x20, 0xd8, 0x72, 0x1d, 0x9b, 0xe4, 0x37, 0xe8, 0x52,
-	0xd9, 0x0b, 0xf3, 0x65, 0x35, 0x88, 0x68, 0x41, 0x40, 0x3a, 0x07, 0x5e, 0xf7, 0x4c, 0x87, 0x98,
-	0x96, 0xdf, 0x77, 0x1d, 0x82, 0x24, 0xe0, 0xfd, 0x19, 0x3b, 0xe4, 0x77, 0xd6, 0x57, 0x78, 0x95,
-	0x86, 0x9d, 0x99, 0x2f, 0x08, 0xfa, 0x1f, 0x3c, 0x78, 0xa6, 0x68, 0x9a, 0x5c, 0x51, 0x0c, 0xfd,
-	0x45, 0x4b, 0x31, 0x5a, 0x75, 0xb9, 0xa4, 0x54, 0x9b, 0xf5, 0xb2, 0xa2, 0x1a, 0xe5, 0xa6, 0xd1,
-	0x68, 0xea, 0x46, 0x5b, 0x53, 0x84, 0x14, 0xda, 0x86, 0xf5, 0xe7, 0x4d, 0x5d, 0x11, 0x38, 0x74,
-	0x08, 0xb7, 0x6a, 0x46, 0x55, 0x7e, 0xae, 0x18, 0xc5, 0x7a, 0xb3, 0xf4, 0xd4, 0x68, 0xa9, 0xcd,
-	0x56, 0x53, 0x93, 0xeb, 0x42, 0x1a, 0x1d, 0xc1, 0xbe, 0xaa, 0x7c, 0xd6, 0x56, 0x34, 0x3d, 0x19,
-	0x5b, 0x43, 0xc7, 0x70, 0x67, 0x71, 0xcc, 0x50, 0x95, 0x56, 0xfd, 0x85, 0xb0, 0x8e, 0x0e, 0xe0,
-	0x66, 0x45, 0xd1, 0x8d, 0x52, 0xb3, 0xa1, 0x29, 0x0d, 0xad, 0xad, 0x19, 0x9a, 0x2e, 0xeb, 0x8a,
-	0xb0, 0x81, 0xee, 0xc2, 0xe1, 0x82, 0x00, 0xcb, 0xdb, 0x44, 0xb7, 0x20, 0x3b, 0x0d, 0x07, 0x55,
-	0xab, 0x8a, 0x5c, 0x56, 0x54, 0x4d, 0xd8, 0x42, 0xb7, 0xe1, 0x60, 0xce, 0xcd, 0x72, 0xb6, 0xd1,
-	0x0d, 0x80, 0x28, 0xa8, 0x09, 0x19, 0x94, 0x03, 0xe1, 0xda, 0x66, 0x28, 0x40, 0x19, 0xd8, 0x50,
-	0x95, 0xba, 0xfc, 0x42, 0xd8, 0x41, 0x02, 0xf0, 0xba, 0x2a, 0x37, 0x34, 0xb9, 0xa4, 0xd7, 0x9a,
-	0x0d, 0x4d, 0xe0, 0x0b, 0xbf, 0xa4, 0x21, 0x2f, 0x0f, 0x06, 0xee, 0xb7, 0xd8, 0x8e, 0x7d, 0x5d,
-	0x43, 0x5e, 0xe5, 0x7a, 0xbd, 0xf9, 0xb9, 0xa1, 0xd5, 0x2a, 0x0d, 0xa5, 0xbc, 0x9c, 0xd7, 0x5b,
-	0x90, 0x8d, 0x01, 0x19, 0xc9, 0x8f, 0x41, 0x8a, 0xb9, 0x97, 0x31, 0x9e, 0xec, 0xb3, 0x94, 0xfe,
-	0x87, 0x70, 0x1c, 0x03, 0x2e, 0x66, 0xba, 0x00, 0x8f, 0x57, 0xa1, 0x22, 0xda, 0x25, 0x10, 0xe7,
-	0xb0, 0x0b, 0x6e, 0xb0, 0x18, 0xa3, 0x09, 0x99, 0xc2, 0x9f, 0x1c, 0x1c, 0x31, 0x02, 0x13, 0xbf,
-	0x7f, 0x94, 0xc2, 0x27, 0xf0, 0x28, 0xc8, 0x6d, 0x37, 0x56, 0x91, 0x18, 0xb1, 0x15, 0x41, 0xe3,
-	0x3c, 0x84, 0x0a, 0x8b, 0xd6, 0x8b, 0x70, 0xcb, 0x15, 0xf2, 0x00, 0xee, 0x2d, 0xc3, 0x5e, 0x0b,
-	0x24, 0x0f, 0xb9, 0xb9, 0xc6, 0x81, 0x5e, 0xee, 0xc1, 0xed, 0x44, 0x24, 0x21, 0x9f, 0x9f, 0xd6,
-	0x22, 0xf9, 0x94, 0xfb, 0x1e, 0xb6, 0xfc, 0x85, 0xf2, 0x29, 0xd7, 0x54, 0xa5, 0xa4, 0xbf, 0x83,
-	0x7c, 0x18, 0x30, 0x29, 0x1f, 0xe6, 0x5e, 0x29, 0x1f, 0x86, 0x5b, 0x2d, 0x9f, 0x85, 0xc0, 0x90,
-	0xdf, 0x24, 0x6a, 0x85, 0xc8, 0x96, 0xa3, 0xe6, 0x45, 0x36, 0x83, 0x4d, 0x8a, 0xec, 0x04, 0x1e,
-	0xfe, 0x3d, 0x26, 0xba, 0x69, 0x24, 0xc7, 0x24, 0x72, 0xfa, 0x09, 0xb8, 0x0f, 0x77, 0x97, 0x04,
-	0xc3, 0x73, 0x17, 0xbe, 0x80, 0x03, 0x76, 0x32, 0xfa, 0x53, 0x31, 0x7b, 0xb1, 0x88, 0x71, 0x2a,
-	0x80, 0x77, 0x38, 0x58, 0x80, 0x63, 0x72, 0x29, 0x8c, 0xe1, 0x1e, 0xab, 0x5c, 0xf4, 0x5c, 0xd3,
-	0xb6, 0x4c, 0xe2, 0xb7, 0x46, 0xa4, 0x37, 0xdb, 0xe1, 0x0c, 0xfe, 0x1f, 0x64, 0x16, 0xd5, 0xa6,
-	0x5c, 0x2e, 0xc9, 0x9a, 0x6e, 0xb4, 0xda, 0x5a, 0x75, 0x79, 0xab, 0x47, 0x70, 0x7f, 0x61, 0x42,
-	0x42, 0x88, 0xea, 0xa2, 0xd6, 0x83, 0xc1, 0xca, 0xd6, 0xf5, 0xfa, 0xd2, 0xd6, 0x8b, 0xd6, 0xd1,
-	0x3d, 0x8c, 0x57, 0xd4, 0xd4, 0x55, 0x45, 0xf9, 0x47, 0xeb, 0xd0, 0x84, 0xf8, 0x3a, 0xc5, 0x4f,
-	0x5e, 0x5f, 0x8a, 0xa9, 0x37, 0x97, 0x62, 0xea, 0xed, 0xa5, 0xc8, 0xfd, 0x71, 0x29, 0x72, 0xdf,
-	0x4d, 0x44, 0xee, 0x87, 0x89, 0xc8, 0xfd, 0x3c, 0x11, 0xb9, 0x57, 0x13, 0x91, 0x7b, 0x3d, 0x11,
-	0xb9, 0xdf, 0x26, 0x22, 0xf7, 0xfb, 0x44, 0x4c, 0xbd, 0x9d, 0x88, 0xdc, 0xf7, 0x57, 0x62, 0xea,
-	0xf5, 0x95, 0x98, 0x7a, 0x73, 0x25, 0xa6, 0x3a, 0x9b, 0xf4, 0x2f, 0xf9, 0x87, 0x7f, 0x05, 0x00,
-	0x00, 0xff, 0xff, 0x24, 0x08, 0x47, 0xc5, 0xff, 0x0b, 0x00, 0x00,
+var fileDescriptor_nodemessage_392baeb675acc376 = []byte{
+	// 1294 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0x4b, 0x73, 0xdb, 0x54,
+	0x14, 0xb6, 0x9c, 0x57, 0x7d, 0x62, 0x27, 0xca, 0x6d, 0x9a, 0xb8, 0x69, 0xab, 0xa6, 0xea, 0x83,
+	0xd4, 0x94, 0x64, 0x08, 0xc3, 0x0c, 0x33, 0xc0, 0x42, 0xb6, 0x35, 0xb1, 0x27, 0xae, 0x6d, 0x24,
+	0xb9, 0xd0, 0xd5, 0x1d, 0x59, 0xba, 0xb5, 0x35, 0x91, 0x25, 0xa3, 0x2b, 0x97, 0x9a, 0x15, 0x3f,
+	0x81, 0x35, 0xbf, 0x00, 0xfe, 0x01, 0x2b, 0x16, 0xac, 0x58, 0x76, 0xd9, 0x0d, 0x33, 0xc4, 0x5d,
+	0xc0, 0xb2, 0x4b, 0x96, 0x8c, 0x9e, 0xb1, 0x14, 0xbb, 0x2e, 0x0c, 0x3b, 0x9f, 0xef, 0x7c, 0xe7,
+	0xfd, 0x49, 0x4a, 0x60, 0x7b, 0xd8, 0x3d, 0xb2, 0x6c, 0x9d, 0x0c, 0x08, 0xa5, 0x6a, 0x8f, 0x1c,
+	0x0e, 0x1d, 0xdb, 0xb5, 0x51, 0x76, 0xd8, 0xdd, 0xfb, 0xa0, 0x67, 0xb8, 0xfd, 0x51, 0xf7, 0x50,
+	0xb3, 0x07, 0x47, 0x3d, 0xbb, 0x67, 0x1f, 0xf9, 0xae, 0xee, 0xe8, 0x99, 0x6f, 0xf9, 0x86, 0xff,
+	0x2b, 0x08, 0xd9, 0x2b, 0x84, 0x89, 0x42, 0x73, 0x6b, 0xd8, 0x3d, 0xa2, 0x46, 0x4f, 0xeb, 0xab,
+	0x86, 0x15, 0x40, 0x3c, 0x86, 0xcd, 0x8e, 0x45, 0x8d, 0x9e, 0x45, 0xf4, 0xc7, 0x41, 0x35, 0x74,
+	0x0c, 0xf9, 0xb0, 0x30, 0x76, 0xc7, 0x43, 0x52, 0x64, 0xf6, 0x99, 0x83, 0x8d, 0xe3, 0xcd, 0xc3,
+	0x61, 0xf7, 0x30, 0xa4, 0x28, 0xe3, 0x21, 0x91, 0xd6, 0x07, 0x17, 0x06, 0x2a, 0xc2, 0x5a, 0x68,
+	0x16, 0xb3, 0xfb, 0xcc, 0x41, 0x5e, 0x8a, 0x4c, 0xfe, 0x04, 0x0a, 0x72, 0x22, 0xfd, 0x14, 0x95,
+	0x49, 0x50, 0xd1, 0x4d, 0xc8, 0x79, 0x9d, 0xa8, 0xee, 0xc8, 0x89, 0xd2, 0x5c, 0x00, 0xfc, 0xe7,
+	0xb0, 0xfc, 0xc4, 0x76, 0x09, 0xda, 0x81, 0xd5, 0x3e, 0x31, 0x7a, 0x7d, 0xd7, 0x0f, 0x2f, 0x48,
+	0xa1, 0x85, 0x6e, 0x01, 0x74, 0x4d, 0x5b, 0x3b, 0xc3, 0x7d, 0x95, 0xf6, 0xa3, 0x70, 0x1f, 0xa9,
+	0xa9, 0xb4, 0xcf, 0x9f, 0x02, 0xaa, 0xd7, 0xd4, 0xe7, 0xa4, 0xec, 0x21, 0x6d, 0xc7, 0x1e, 0xda,
+	0x54, 0x35, 0xff, 0x6b, 0xb2, 0x8f, 0x61, 0x5b, 0x22, 0x5f, 0x8f, 0x08, 0x75, 0x93, 0xe9, 0x92,
+	0x61, 0x4c, 0x3a, 0xec, 0x43, 0xb8, 0x3e, 0x2b, 0x4c, 0x22, 0x43, 0x73, 0x8c, 0xb6, 0x61, 0xc5,
+	0x67, 0x86, 0x61, 0x81, 0xc1, 0x5f, 0x85, 0xad, 0x13, 0xe2, 0x56, 0x6c, 0x8b, 0x12, 0x8b, 0x8e,
+	0xa8, 0xec, 0xaa, 0x2e, 0xe1, 0x7f, 0x65, 0x60, 0xe7, 0x12, 0x1a, 0x64, 0xb9, 0x0b, 0x05, 0x93,
+	0xe8, 0x3d, 0xe2, 0xe0, 0xc4, 0x5c, 0xf9, 0x00, 0xac, 0x05, 0xd3, 0x95, 0x60, 0x2b, 0x24, 0x5d,
+	0x1a, 0x72, 0x33, 0x70, 0x94, 0xa3, 0x9e, 0xd1, 0x43, 0x60, 0xb5, 0xa8, 0x4e, 0x94, 0x73, 0xc9,
+	0xcf, 0xb9, 0x19, 0xe3, 0x61, 0xda, 0x47, 0x00, 0x74, 0x6c, 0x69, 0x98, 0x7a, 0xed, 0x14, 0x97,
+	0x7d, 0xd9, 0x14, 0x3c, 0xd9, 0xc8, 0x63, 0x4b, 0x0b, 0x7a, 0xcc, 0xd1, 0xe8, 0x27, 0x2f, 0xc3,
+	0xe6, 0x09, 0x09, 0x16, 0x51, 0x23, 0xaa, 0x4e, 0x1c, 0x8a, 0xee, 0x40, 0x9e, 0xba, 0xaa, 0xe3,
+	0x26, 0x7b, 0x5f, 0xf7, 0xb1, 0x5a, 0x7c, 0x18, 0x62, 0xe9, 0x11, 0x21, 0xeb, 0x13, 0x72, 0xc4,
+	0xd2, 0x03, 0x37, 0xff, 0x29, 0x6c, 0xa7, 0x92, 0xc6, 0x6b, 0x09, 0x47, 0x0d, 0xd0, 0x22, 0xb3,
+	0xbf, 0x74, 0x90, 0x97, 0xf2, 0xdd, 0x29, 0x26, 0xff, 0x18, 0x72, 0x51, 0xf0, 0xff, 0xd1, 0xcb,
+	0x01, 0x6c, 0xc4, 0xe9, 0x82, 0x2e, 0x76, 0x60, 0xd5, 0x2f, 0x18, 0x95, 0x0f, 0x2d, 0xfe, 0x87,
+	0x2c, 0xac, 0x48, 0xc4, 0x54, 0xc7, 0xe8, 0x3e, 0x6c, 0x50, 0x47, 0xc3, 0x86, 0x4e, 0x2c, 0xd7,
+	0x78, 0x66, 0x10, 0xc7, 0xaf, 0x9b, 0x93, 0x0a, 0xd4, 0xd1, 0xea, 0x31, 0x88, 0x76, 0x61, 0x4d,
+	0x27, 0xd4, 0xc5, 0x86, 0x1e, 0x9e, 0x6d, 0xd5, 0x33, 0xeb, 0xba, 0xf7, 0x70, 0x0d, 0xd5, 0xb1,
+	0x69, 0xab, 0xba, 0x7f, 0xa4, 0xbc, 0x14, 0x99, 0xe8, 0x10, 0xae, 0x0e, 0xd4, 0x17, 0xb8, 0x6f,
+	0x9b, 0xba, 0x61, 0xf5, 0x30, 0x25, 0x9a, 0x6d, 0xe9, 0xb4, 0xb8, 0xe2, 0x77, 0xbd, 0x35, 0x50,
+	0x5f, 0xd4, 0x02, 0x8f, 0x1c, 0x38, 0xbc, 0xe1, 0xbc, 0x4e, 0x86, 0xa3, 0xee, 0x19, 0x19, 0x17,
+	0x57, 0xc3, 0xa7, 0xd1, 0xd1, 0xda, 0x3e, 0x90, 0x52, 0xfa, 0x5a, 0x4a, 0xe9, 0xde, 0x1c, 0xa6,
+	0x4a, 0x5d, 0x7c, 0xf1, 0x3c, 0x5f, 0xf1, 0x29, 0x05, 0x0f, 0x95, 0x23, 0x10, 0xf1, 0x50, 0xa0,
+	0x46, 0x0f, 0xfb, 0x2f, 0x24, 0x6c, 0x12, 0xab, 0x98, 0x0b, 0xb7, 0x6c, 0xf4, 0x2a, 0x1e, 0xd6,
+	0x20, 0x16, 0x7f, 0x0c, 0x79, 0xc5, 0x51, 0x2d, 0xaa, 0x6a, 0xae, 0x61, 0x5b, 0x14, 0xf1, 0x90,
+	0x77, 0xa7, 0xec, 0xe8, 0x92, 0xd3, 0x18, 0xff, 0x2d, 0xec, 0x96, 0x55, 0xed, 0xcc, 0x75, 0x54,
+	0xed, 0x2c, 0xae, 0xe6, 0x67, 0x44, 0x9f, 0xc0, 0xe6, 0x45, 0x49, 0x62, 0x92, 0x41, 0x90, 0x61,
+	0xfd, 0x98, 0xf5, 0x95, 0x1a, 0x16, 0x16, 0x4d, 0x32, 0x90, 0x0a, 0x74, 0xca, 0xa2, 0xde, 0x4c,
+	0x43, 0x87, 0x3c, 0xc7, 0xe9, 0x77, 0x54, 0xc1, 0x43, 0xe3, 0x2a, 0xa5, 0x3f, 0xb3, 0xb0, 0x3e,
+	0xf5, 0x9e, 0x44, 0xef, 0xc1, 0xdd, 0xc7, 0xa2, 0x2c, 0x0b, 0x27, 0x22, 0x56, 0x9e, 0xb6, 0x45,
+	0xdc, 0x6e, 0x08, 0x15, 0xb1, 0xd6, 0x6a, 0x54, 0x45, 0x09, 0x57, 0x5b, 0xb8, 0xd9, 0x52, 0x70,
+	0x47, 0x16, 0xd9, 0x0c, 0xba, 0x02, 0xcb, 0x4f, 0x5a, 0x8a, 0xc8, 0x32, 0xe8, 0x3a, 0x5c, 0xab,
+	0xe3, 0x9a, 0xf0, 0x44, 0xc4, 0xe5, 0x46, 0xab, 0x72, 0x8a, 0xdb, 0x52, 0xab, 0xdd, 0x92, 0x85,
+	0x06, 0x9b, 0x45, 0x7b, 0xb0, 0x23, 0x89, 0x5f, 0x74, 0x44, 0x59, 0x49, 0xfb, 0x96, 0xd0, 0x3e,
+	0xdc, 0x9c, 0xed, 0xc3, 0x92, 0xd8, 0x6e, 0x3c, 0x65, 0x97, 0xd1, 0x2e, 0x5c, 0x3d, 0x11, 0x15,
+	0x5c, 0x69, 0x35, 0x65, 0xb1, 0x29, 0x77, 0x64, 0x2c, 0x2b, 0x82, 0x22, 0xb2, 0x2b, 0xe8, 0x16,
+	0x5c, 0x9f, 0xe1, 0x08, 0xe3, 0x56, 0xd1, 0x35, 0xd8, 0xf2, 0xdc, 0x41, 0xd6, 0x9a, 0x28, 0x54,
+	0x45, 0x49, 0x66, 0xd7, 0xd0, 0x0d, 0xd8, 0xbd, 0x04, 0x87, 0x31, 0x57, 0xd0, 0x06, 0x40, 0xec,
+	0x94, 0xd9, 0x1c, 0xda, 0x06, 0xf6, 0xc2, 0x0e, 0x59, 0x80, 0x72, 0xb0, 0x22, 0x89, 0x0d, 0xe1,
+	0x29, 0xbb, 0x8e, 0x58, 0xc8, 0x2b, 0x92, 0xd0, 0x94, 0x85, 0x8a, 0x52, 0x6f, 0x35, 0x65, 0x36,
+	0xef, 0x75, 0x55, 0x16, 0x2a, 0xa7, 0x8a, 0x24, 0x54, 0x4e, 0xb1, 0x5c, 0x3f, 0x69, 0x0a, 0x4a,
+	0x47, 0x12, 0x71, 0xa5, 0x26, 0xd4, 0x9b, 0x6c, 0xa1, 0xf4, 0x4b, 0x16, 0x8a, 0x82, 0x69, 0xda,
+	0xdf, 0x10, 0x3d, 0xf1, 0x89, 0x89, 0xd6, 0x2e, 0x34, 0x1a, 0xad, 0x2f, 0xfd, 0x38, 0xb1, 0x3a,
+	0x7f, 0xed, 0xd7, 0x60, 0x2b, 0x41, 0x0c, 0x6f, 0xf0, 0x00, 0xf8, 0x04, 0x3c, 0xef, 0x20, 0xe9,
+	0x3a, 0x73, 0xaf, 0x73, 0x0f, 0xf6, 0x13, 0xc4, 0xd9, 0x87, 0x28, 0xc1, 0x83, 0x45, 0xac, 0xf8,
+	0x2a, 0x3c, 0x70, 0x97, 0xb8, 0x33, 0x4e, 0x34, 0x9b, 0x23, 0xb3, 0xb9, 0xd2, 0x4f, 0x59, 0xd8,
+	0x0b, 0x17, 0x98, 0xfa, 0x23, 0xc0, 0x5f, 0xe1, 0x43, 0xb8, 0x1f, 0xc4, 0x76, 0x9a, 0x8b, 0x96,
+	0x18, 0x6f, 0x2b, 0xa6, 0x26, 0xf7, 0x10, 0x09, 0x30, 0x1e, 0x2f, 0xe6, 0xcd, 0x17, 0xd0, 0x5d,
+	0xb8, 0x3d, 0x8f, 0x7b, 0xa1, 0x9f, 0x22, 0x6c, 0x5f, 0x2a, 0x1c, 0xc8, 0xe9, 0x36, 0xdc, 0x48,
+	0x79, 0x52, 0xea, 0x7a, 0x04, 0x07, 0x29, 0xc2, 0xdb, 0xc4, 0xf6, 0xfb, 0x52, 0x2c, 0xb6, 0xaa,
+	0xe1, 0x10, 0xcd, 0x9d, 0x29, 0xb6, 0x6a, 0x5d, 0x12, 0x2b, 0xca, 0x3b, 0x88, 0x2d, 0x24, 0xa6,
+	0xc5, 0x16, 0xc2, 0x0b, 0xc5, 0x16, 0xf2, 0x16, 0x8b, 0x6d, 0x26, 0x31, 0xba, 0x46, 0x9a, 0xb5,
+	0x40, 0x92, 0xf3, 0x59, 0x97, 0x25, 0x39, 0xc5, 0x4d, 0x4b, 0xf2, 0x00, 0xee, 0xbd, 0x9d, 0x13,
+	0x2b, 0x20, 0x16, 0x6f, 0x9a, 0xe9, 0xbd, 0x4f, 0xee, 0xc0, 0xad, 0x39, 0xce, 0x58, 0x1c, 0xe9,
+	0xce, 0xdf, 0x76, 0xdf, 0xaf, 0x60, 0x37, 0x3c, 0xaf, 0xff, 0x25, 0x9e, 0xbe, 0x6e, 0x7c, 0x1d,
+	0x5f, 0x5a, 0xef, 0x70, 0xdc, 0x80, 0x17, 0x0a, 0xb1, 0x34, 0x86, 0xdb, 0x61, 0xe6, 0xb2, 0x63,
+	0xab, 0xba, 0xa6, 0x52, 0xb7, 0x3d, 0xa2, 0xfd, 0xe9, 0x0a, 0x47, 0xf0, 0x7e, 0x10, 0x59, 0x96,
+	0x5a, 0x42, 0xb5, 0x22, 0xc8, 0x0a, 0x6e, 0x77, 0xe4, 0xda, 0xfc, 0x52, 0xf7, 0xe1, 0xce, 0xcc,
+	0x80, 0xa4, 0xc4, 0x4b, 0xd2, 0xac, 0xd2, 0xa6, 0xb9, 0xb0, 0x74, 0xa3, 0x31, 0xb7, 0xf4, 0xac,
+	0x71, 0x14, 0x87, 0x90, 0x05, 0x39, 0x15, 0x49, 0x14, 0xff, 0xd5, 0x38, 0x7e, 0x40, 0x72, 0x9c,
+	0xf2, 0x67, 0x2f, 0xcf, 0xb9, 0xcc, 0xab, 0x73, 0x2e, 0xf3, 0xe6, 0x9c, 0x63, 0xfe, 0x3e, 0xe7,
+	0x98, 0xef, 0x26, 0x1c, 0xf3, 0xe3, 0x84, 0x63, 0x7e, 0x9e, 0x70, 0xcc, 0x6f, 0x13, 0x8e, 0x79,
+	0x39, 0xe1, 0x98, 0x3f, 0x26, 0x1c, 0xf3, 0xd7, 0x84, 0xcb, 0xbc, 0x99, 0x70, 0xcc, 0xf7, 0xaf,
+	0xb9, 0xcc, 0xcb, 0xd7, 0x5c, 0xe6, 0xd5, 0x6b, 0x2e, 0xd3, 0x5d, 0xf5, 0xff, 0xe3, 0xf9, 0xe8,
+	0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xf2, 0x7b, 0xea, 0xd7, 0x5e, 0x0d, 0x00, 0x00,
 }

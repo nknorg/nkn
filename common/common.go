@@ -56,22 +56,6 @@ func BytesToInt(b []byte) []int {
 	return i
 }
 
-func IsEqualBytes(b1 []byte, b2 []byte) bool {
-	len1 := len(b1)
-	len2 := len(b2)
-	if len1 != len2 {
-		return false
-	}
-
-	for i := 0; i < len1; i++ {
-		if b1[i] != b2[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
 func BytesToHexString(data []byte) string {
 	return hex.EncodeToString(data)
 }

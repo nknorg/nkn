@@ -3,8 +3,8 @@ syntax = "proto3";
 package pb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "pb/sigchain.proto";
 import "pb/node.proto";
+import "pb/sigchain.proto";
 
 option (gogoproto.gostring_all) = true;
 option (gogoproto.goproto_stringer_all) = false;
@@ -31,6 +31,7 @@ enum MessageType {
   GET_BLOCKS_REPLY = 10;
   RELAY = 11;
   TRANSACTIONS = 12;
+  BACKTRACK_SIGNATURE_CHAIN = 13;
 }
 
 // Message type that can be signed message
@@ -55,6 +56,7 @@ enum AllowedUnsignedMessageType {
   ALLOW_UNSIGNED_GET_BLOCKS_REPLY = 10;
   ALLOW_UNSIGNED_RELAY = 11;
   ALLOW_UNSIGNED_TRANSACTIONS = 12;
+  ALLOW_UNSIGNED_BACKTRACK_SIGNATURE_CHAIN = 13;
 }
 
 // Message type that can be sent as direct message
@@ -71,6 +73,7 @@ enum AllowedDirectMessageType {
   ALLOW_DIRECT_GET_BLOCK_HEADERS_REPLY = 8;
   ALLOW_DIRECT_GET_BLOCKS = 9;
   ALLOW_DIRECT_GET_BLOCKS_REPLY = 10;
+  ALLOW_DIRECT_BACKTRACK_SIGNATURE_CHAIN = 13;
 }
 
 // Message type that can be sent as relay message
@@ -157,13 +160,21 @@ message GetBlocksReply {
 }
 
 message Relay {
-  string src_addr = 1;
+  string src_identifier = 1;
+  bytes src_pubkey = 6;
   bytes dest_id = 2;
   bytes payload = 3;
-  SigChain sig_chain = 4;
   uint32 max_holding_seconds = 5;
+  bytes block_hash = 7;
+  bytes last_signature = 8;
+  uint32 sig_chain_len = 9;
 }
 
 message Transactions {
   repeated bytes transactions = 1;
+}
+
+message BacktrackSignatureChain {
+  repeated SigChainElem sig_chain_elems = 1;
+  bytes prev_signature = 2;
 }

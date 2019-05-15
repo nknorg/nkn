@@ -7,12 +7,10 @@ import (
 	"net"
 	"strings"
 
-	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/node"
-	"github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
@@ -408,65 +406,6 @@ func commitPor(s Serverer, params map[string]interface{}) map[string]interface{}
 	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
 }
 
-// sigchaintest send por transaction
-// params: []
-// return: {"result":<result>, "error":<errcode>}
-func sigchaintest(s Serverer, params map[string]interface{}) map[string]interface{} {
-	wallet, err := s.GetWallet()
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-
-	account, err := wallet.GetDefaultAccount()
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	dataHash := common.Uint256{}
-	currentHeight := chain.DefaultLedger.Store.GetHeight()
-	blockHash, err := chain.DefaultLedger.Store.GetBlockHash(currentHeight - 1)
-	if err != nil {
-		return respPacking(nil, UNKNOWN_HASH)
-	}
-
-	localNode, err := s.GetNetNode()
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	srcID := localNode.GetChordID()
-	encodedPublickKey, err := account.PubKey().EncodePoint(true)
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-
-	mining := false
-	if localNode.GetSyncState() == pb.PersistFinished {
-		mining = true
-	}
-	sigChain, err := pb.NewSigChain(account.PubKey(), account.PrivKey(), 1, dataHash[:], blockHash[:], srcID,
-		encodedPublickKey, encodedPublickKey, mining)
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	if err := sigChain.Sign(srcID, encodedPublickKey, mining, account.PubKey(), account.PrivKey()); err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	if err := sigChain.Sign(srcID, encodedPublickKey, mining, account.PubKey(), account.PrivKey()); err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-	buf, err := proto.Marshal(sigChain)
-	txn, err := MakeCommitTransaction(wallet, buf, 0)
-	if err != nil {
-		return respPacking(nil, INTERNAL_ERROR)
-	}
-
-	if errCode := VerifyAndSendTx(localNode, txn); errCode != ErrNoError {
-		return respPacking(nil, INVALID_TRANSACTION)
-	}
-
-	txHash := txn.Hash()
-	return respPacking(common.BytesToHexString(txHash.ToArrayReverse()), SUCCESS)
-}
-
 // getWsAddr get a websocket address
 // params: ["address":<address>]
 // return: {"result":<result>, "error":<errcode>}
@@ -476,7 +415,7 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 	}
 
 	if str, ok := params["address"].(string); ok {
-		clientID, _, err := address.ParseClientAddress(str)
+		clientID, _, _, err := address.ParseClientAddress(str)
 		localNode, err := s.GetNetNode()
 		if err != nil {
 			return respPacking(nil, INTERNAL_ERROR)
@@ -763,7 +702,6 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
 	"setdebuginfo":         {Handler: setDebugInfo},
 	"commitpor":            {Handler: commitPor},
-	"sigchaintest":         {Handler: sigchaintest},
 	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
 	"getnoncebyaddr":       {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
 
