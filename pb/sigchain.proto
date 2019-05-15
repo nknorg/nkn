@@ -24,15 +24,15 @@ message SigChainElem {
   bytes addr                = 1;
   bytes next_pubkey         = 2;
   bool mining               = 3;
+  bytes signature           = 7;
   SigAlgo sig_algo          = 4;
-  bytes signature           = 5;
+  bytes vrf                 = 5;
   bytes proof               = 6;
 }
 
 message SigChain {
   uint32 nonce                = 1;
   uint32 data_size            = 2;
-  bytes data_hash             = 3;
   bytes block_hash            = 4;
   bytes src_pubkey            = 5;
   bytes dest_pubkey           = 6;

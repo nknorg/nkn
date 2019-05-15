@@ -88,8 +88,7 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 	}
 
 	if !shouldPropagate {
-		log.Error("Error Do not propagate")
-		return nil, false, errors.New("Error Do Not Propagate")
+		return nil, false, errors.New("Do Not Propagate")
 	}
 
 	return nil, false, nil

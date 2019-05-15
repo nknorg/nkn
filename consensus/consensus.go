@@ -9,6 +9,7 @@ import (
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/election"
+	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/config"
@@ -265,7 +266,12 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		if syncState == pb.WaitForSyncing {
 			consensus.localNode.SetSyncState(pb.PersistFinished)
 		}
-		return chain.DefaultLedger.Blockchain.AddBlock(block, false)
+		err = chain.DefaultLedger.Blockchain.AddBlock(block, false)
+		if err != nil {
+			return err
+		}
+		event.Queue.Notify(event.NewBlockProduced, block)
+		return nil
 	}
 
 	if syncState == pb.SyncStarted || syncState == pb.SyncFinished {

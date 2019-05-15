@@ -7,6 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -24,7 +25,7 @@ func TestPorPackage(t *testing.T) {
 	var srcID []byte
 	dataHash := common.Uint256{}
 	blockHash := common.Uint256{}
-	sc, err := NewSigChain(from.PubKey(), from.PrivKey(), 1, dataHash[:], blockHash[:], srcID, toPk, relPk, true)
+	sc, err := pb.NewSigChain(from.PubKey(), from.PrivKey(), 1, dataHash[:], blockHash[:], srcID, toPk, relPk, true)
 	if err != nil {
 		t.Error("sigchain created failed")
 	}
@@ -76,7 +77,7 @@ func TestPorPackage(t *testing.T) {
 
 	//Serialize & Deserialize
 	buf, err = proto.Marshal(ppkg)
-	ppkg2 := new(PorPackage)
+	ppkg2 := new(pb.PorPackage)
 	proto.Unmarshal(buf, ppkg2)
 
 	if bytes.Compare(ppkg.SigHash, ppkg2.SigHash) != 0 {

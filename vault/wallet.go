@@ -239,7 +239,7 @@ func (w *WalletImpl) Sign(context *contract.ContractContext) error {
 
 func verifyPasswordKey(passwordKey []byte, passwordHash []byte) bool {
 	keyHash := sha256.Sum256(passwordKey)
-	if !IsEqualBytes(passwordHash, keyHash[:]) {
+	if !bytes.Equal(passwordHash, keyHash[:]) {
 		fmt.Println("error: password wrong")
 		return false
 	}
