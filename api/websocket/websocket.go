@@ -6,11 +6,9 @@ import (
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket/server"
 	. "github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/chain"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/node"
-	"github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 )
@@ -25,27 +23,18 @@ var (
 
 func NewServer(localNode *node.LocalNode, w vault.Wallet) *server.WsServer {
 	//	common.SetNode(n)
-	chain.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, SendBlock2WSclient)
+	event.Queue.Subscribe(event.NewBlockProduced, SendBlock2WSclient)
 	ws = server.InitWsServer(localNode, w)
 	return ws
 }
 
 func SendBlock2WSclient(v interface{}) {
-	n, err := GetServer().GetNetNode()
-	if err == nil && n.GetSyncState() == pb.PersistFinished {
-		go func() {
-			PushSigChainBlockHash(v)
-		}()
-		if Parameters.HttpWsPort != 0 && pushBlockFlag {
-			go func() {
-				PushBlock(v)
-			}()
-		}
-		if Parameters.HttpWsPort != 0 && pushBlockTxsFlag {
-			go func() {
-				PushBlockTransactions(v)
-			}()
-		}
+	go PushSigChainBlockHash(v)
+	if Parameters.HttpWsPort != 0 && pushBlockFlag {
+		go PushBlock(v)
+	}
+	if Parameters.HttpWsPort != 0 && pushBlockTxsFlag {
+		go PushBlockTransactions(v)
 	}
 }
 
@@ -121,7 +110,6 @@ func PushSigChainBlockHash(v interface{}) {
 	resp := common.ResponsePack(common.SUCCESS)
 	if block, ok := v.(*Block); ok {
 		resp["Action"] = "updateSigChainBlockHash"
-		//resp["Result"] = common.GetBlockInfo(block).BlockData.PrevBlockHash
 		resp["Result"] = BytesToHexString(block.Header.UnsignedHeader.PrevBlockHash)
 		ws.PushResult(resp)
 	}

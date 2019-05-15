@@ -14,7 +14,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/chain/pool"
-	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
@@ -39,7 +39,6 @@ type LocalNode struct {
 	relayer       *RelayService  // relay service
 	quit          chan bool      // block syncing channel
 	nbrNodes                     // neighbor nodes
-	eventQueue                   // event queue
 	*pool.TxnPool                // transaction pool of local node
 	*hashCache                   // entity hash cache
 	*messageHandlerStore
@@ -119,9 +118,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	log.Infof("Init node ID to %v", localNode.GetID())
 
-	localNode.eventQueue.init()
-
-	chain.DefaultLedger.Blockchain.BCEvents.Subscribe(events.EventBlockPersistCompleted, localNode.cleanupTransactions)
+	event.Queue.Subscribe(event.BlockPersistCompleted, localNode.cleanupTransactions)
 
 	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady{func(remoteNode *nnetnode.RemoteNode) bool {
 		err := localNode.validateRemoteNode(remoteNode)

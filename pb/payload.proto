@@ -15,8 +15,6 @@ option (gogoproto.testgen_all) = true;
 option (gogoproto.equal_all) = true;
 option (gogoproto.populate_all) = true;
 
-
-
 enum PayloadType {
 	CoinbaseType       = 0;
 	TransferAssetType  = 1;
@@ -57,7 +55,7 @@ message Subscribe {
 	bytes subscriber   = 1;
 	string identifier  = 2;
 	string topic       = 3;
-	uint32 bucket      = 4; 
+	uint32 bucket      = 4;
 	uint32 duration    = 5;
 	string meta        = 6;
 }
@@ -67,7 +65,3 @@ message TransferAsset {
 	bytes recipient = 2;
 	int64 amount    = 3;
 }
-
-
-
-

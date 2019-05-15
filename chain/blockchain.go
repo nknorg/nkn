@@ -7,7 +7,7 @@ import (
 
 	. "github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/events"
+	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -15,7 +15,6 @@ type Blockchain struct {
 	BlockHeight      uint32
 	AssetID          Uint256
 	BlockPersistTime map[Uint256]int64
-	BCEvents         *events.Event
 	mutex            sync.Mutex
 	muTime           sync.Mutex
 }
@@ -25,7 +24,6 @@ func NewBlockchain(height uint32, asset Uint256) *Blockchain {
 		BlockHeight:      height,
 		AssetID:          asset,
 		BlockPersistTime: make(map[Uint256]int64),
-		BCEvents:         events.NewEvent(),
 	}
 }
 
@@ -77,7 +75,7 @@ func (bc *Blockchain) SaveBlock(block *Block, fastAdd bool) error {
 	}
 
 	bc.BlockHeight = block.Header.UnsignedHeader.Height
-	bc.BCEvents.Notify(events.EventBlockPersistCompleted, block)
+	event.Queue.Notify(event.BlockPersistCompleted, block)
 	log.Infof("# current block height: %d, block hash: %x", bc.BlockHeight, block.Hash())
 
 	return nil

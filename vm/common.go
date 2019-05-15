@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/binary"
@@ -293,22 +294,6 @@ func BoolArrayOp(bools []bool, op OpCode) []bool {
 	return bls
 }
 
-func IsEqualBytes(b1 []byte, b2 []byte) bool {
-	len1 := len(b1)
-	len2 := len(b2)
-	if len1 != len2 {
-		return false
-	}
-
-	for i := 0; i < len1; i++ {
-		if b1[i] != b2[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
 func IsEqual(v1 interface{}, v2 interface{}) bool {
 
 	if reflect.TypeOf(v1) != reflect.TypeOf(v2) {
@@ -318,7 +303,7 @@ func IsEqual(v1 interface{}, v2 interface{}) bool {
 	case []byte:
 		switch t2 := v2.(type) {
 		case []byte:
-			return IsEqualBytes(t1, t2)
+			return bytes.Equal(t1, t2)
 		}
 	case int8, int16, int32, int64:
 		if v1 == v2 {

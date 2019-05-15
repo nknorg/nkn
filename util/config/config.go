@@ -28,7 +28,6 @@ const (
 	MaxBlockSize                 = 1 * 1024 * 1024 // The Max of block size is 1 MB.
 	ConsensusDuration            = 20 * time.Second
 	ConsensusTimeout             = time.Minute
-	DefaultMiningReward          = 15
 	MinNumSuccessors             = 8
 	NodeIDBytes                  = 32
 	MaxRollbackBlocks            = 1

@@ -18,9 +18,18 @@ const (
 	// if local block height is n, then n + 3 signature chain is in consensus) +
 	//  1 (since local node height may lower than neighbors at most 1) +
 	//  1 (for fully propagate)
-	SigChainBlockHeightOffset  = 1
-	SigChainMiningHeightOffset = 4
+	SigChainBlockHeightOffset       = 1
+	SigChainMiningHeightOffset      = 4
+	SigChainPropagationHeightOffset = 2
 )
+
+type PorPackage struct {
+	VoteForHeight uint32    `protobuf:"varint,1,opt,name=VoteForHeight,proto3" json:"VoteForHeight,omitempty"`
+	BlockHash     []byte    `protobuf:"bytes,3,opt,name=BlockHash,proto3" json:"BlockHash,omitempty"`
+	TxHash        []byte    `protobuf:"bytes,4,opt,name=TxHash,proto3" json:"TxHash,omitempty"`
+	SigHash       []byte    `protobuf:"bytes,5,opt,name=SigHash,proto3" json:"SigHash,omitempty"`
+	SigChain      *SigChain `protobuf:"bytes,6,opt,name=SigChain" json:"SigChain,omitempty"`
+}
 
 type PorStore interface {
 	GetHeightByBlockHash(hash Uint256) (uint32, error)
@@ -64,17 +73,16 @@ func NewPorPackage(txn *Transaction) (*PorPackage, error) {
 		return nil, err
 	}
 
-	err = sigChain.Verify()
-	if err != nil {
-		return nil, err
-	}
-
 	err = sigChain.VerifyPath()
 	if err != nil {
 		return nil, err
 	}
 
-	//TODO threshold
+	err = sigChain.Verify()
+	if err != nil {
+		return nil, err
+	}
+
 	found := false
 	for _, elem := range sigChain.Elems {
 		if elem.Mining == true {
@@ -100,11 +108,6 @@ func NewPorPackage(txn *Transaction) (*PorPackage, error) {
 		return nil, err
 	}
 
-	owner, err := sigChain.GetOwner()
-	if err != nil {
-		return nil, err
-	}
-
 	txHash := txn.Hash()
 	sigHash, err := sigChain.SignatureHash()
 	if err != nil {
@@ -112,9 +115,8 @@ func NewPorPackage(txn *Transaction) (*PorPackage, error) {
 	}
 	pp := &PorPackage{
 		VoteForHeight: height + SigChainMiningHeightOffset + SigChainBlockHeightOffset,
-		Owner:         owner,
 		BlockHash:     sigChain.BlockHash,
-		TxHash:        txHash[:],
+		TxHash:        txHash.ToArray(),
 		SigHash:       sigHash,
 		SigChain:      sigChain,
 	}
