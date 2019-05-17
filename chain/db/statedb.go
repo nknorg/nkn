@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
@@ -65,10 +66,9 @@ func (acc *account) Empty() bool {
 }
 
 type StateDB struct {
-	db   *cachingDB
-	trie ITrie
-
-	accounts map[common.Uint160]*account
+	db       *cachingDB
+	trie     ITrie
+	accounts sync.Map
 }
 
 func NewStateDB(root common.Uint256, db *cachingDB) (*StateDB, error) {
@@ -77,15 +77,16 @@ func NewStateDB(root common.Uint256, db *cachingDB) (*StateDB, error) {
 		return nil, err
 	}
 	return &StateDB{
-		db:       db,
-		trie:     trie,
-		accounts: make(map[common.Uint160]*account),
+		db:   db,
+		trie: trie,
 	}, nil
 }
 
 func (sdb *StateDB) getAccount(addr common.Uint160) (*account, error) {
-	if obj := sdb.accounts[addr]; obj != nil {
-		return obj, nil
+	if v, ok := sdb.accounts.Load(addr); ok {
+		if acc, ok := v.(*account); ok {
+			return acc, nil
+		}
 	}
 
 	enc, err := sdb.trie.TryGet(addr[:])
@@ -96,7 +97,7 @@ func (sdb *StateDB) getAccount(addr common.Uint160) (*account, error) {
 	buff := bytes.NewBuffer(enc)
 	data := new(account)
 	if err := data.Deserialize(buff); err != nil {
-		return nil, fmt.Errorf("[getAccount]Failed to decode state object", "addr", addr, "err", err)
+		return nil, fmt.Errorf("[getAccount]Failed to decode state object for addr %v: %v", addr, err)
 	}
 
 	sdb.setAccount(addr, data)
@@ -125,7 +126,7 @@ func (sdb *StateDB) SetAccount(addr common.Uint160, acc *account) {
 	sdb.setAccount(addr, acc)
 }
 func (sdb *StateDB) setAccount(addr common.Uint160, acc *account) {
-	sdb.accounts[addr] = acc
+	sdb.accounts.Store(addr, acc)
 }
 
 func (sdb *StateDB) GetOrNewAccount(addr common.Uint160) *account {
@@ -160,18 +161,23 @@ func (sdb *StateDB) deleteAccount(addr common.Uint160, acc *account) error {
 		return err
 	}
 
-	delete(sdb.accounts, addr)
+	sdb.accounts.Delete(addr)
 	return nil
 }
 
 func (sdb *StateDB) Finalise(deleteEmptyObjects bool) {
-	for addr, acc := range sdb.accounts {
-		if deleteEmptyObjects && acc.Empty() {
-			sdb.deleteAccount(addr, acc)
-		} else {
-			sdb.updateAccount(addr, acc)
+	sdb.accounts.Range(func(key, v interface{}) bool {
+		if addr, ok := key.(common.Uint160); ok {
+			if acc, ok := v.(*account); ok {
+				if deleteEmptyObjects && acc.Empty() {
+					sdb.deleteAccount(addr, acc)
+				} else {
+					sdb.updateAccount(addr, acc)
+				}
+			}
 		}
-	}
+		return true
+	})
 }
 
 func (sdb *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Uint256 {
@@ -180,14 +186,19 @@ func (sdb *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Uint256 {
 }
 
 func (sdb *StateDB) CommitTo(deleteEmptyObjects bool) (root common.Uint256, err error) {
-	for addr, acc := range sdb.accounts {
-		if deleteEmptyObjects && acc.Empty() {
-			sdb.deleteAccount(addr, acc)
-		} else {
-			sdb.updateAccount(addr, acc)
+	sdb.accounts.Range(func(key, v interface{}) bool {
+		if addr, ok := key.(common.Uint160); ok {
+			if acc, ok := v.(*account); ok {
+				if deleteEmptyObjects && acc.Empty() {
+					sdb.deleteAccount(addr, acc)
+				} else {
+					sdb.updateAccount(addr, acc)
+				}
+			}
+			sdb.accounts.Delete(addr)
 		}
-		delete(sdb.accounts, addr)
-	}
+		return true
+	})
 
 	root, err = sdb.trie.CommitTo()
 

@@ -34,27 +34,27 @@ var (
 
 // TxnPool is a list of txns that need to by add to ledger sent by user.
 type TxnPool struct {
-	mu          sync.RWMutex
-	TxLists     map[common.Uint160]*NonceSortedTxs // NonceSortedTxs instance to store user's account.
-	SigChainTxs map[common.Uint256]*Transaction    // tx with sigchain type.
-
+	TxLists sync.Map // NonceSortedTxs instance to store user's account.
 }
 
 func NewTxPool() *TxnPool {
-	return &TxnPool{
-		TxLists:     make(map[common.Uint160]*NonceSortedTxs),
-		SigChainTxs: make(map[common.Uint256]*Transaction),
-	}
+	return &TxnPool{}
 }
 
 func (tp *TxnPool) AppendTxnPool(txn *Transaction) error {
-	//1. process all Orphens
-	for _, list := range tp.TxLists {
-		list.ProcessOrphans(tp.processTx)
-	}
-	for _, list := range tp.TxLists {
-		list.CleanOrphans(nil)
-	}
+	// 1. process all Orphens
+	tp.TxLists.Range(func(_, v interface{}) bool {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			list.ProcessOrphans(tp.processTx)
+		}
+		return true
+	})
+	tp.TxLists.Range(func(_, v interface{}) bool {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			list.CleanOrphans(nil)
+		}
+		return true
+	})
 
 	// 2. verify txn with ledger
 	if err := tp.verifyTransactionWithLedger(txn); err != nil {
@@ -67,37 +67,40 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) error {
 	}
 
 	// 3. process orphans
-	for _, list := range tp.TxLists {
-		list.ProcessOrphans(tp.processTx)
-	}
-	for _, list := range tp.TxLists {
-		list.CleanOrphans(nil)
-	}
-
-	//tp.Dump()
+	tp.TxLists.Range(func(_, v interface{}) bool {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			list.ProcessOrphans(tp.processTx)
+		}
+		return true
+	})
+	tp.TxLists.Range(func(_, v interface{}) bool {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			list.CleanOrphans(nil)
+		}
+		return true
+	})
 
 	return nil
 }
 
 func (tp *TxnPool) processTx(txn *Transaction) error {
-	tp.mu.Lock()
-	defer tp.mu.Unlock()
-
-	if txn.UnsignedTx.Payload.Type == pb.CommitType {
-		tp.SigChainTxs[txn.Hash()] = txn
-		return nil
-	}
-
 	hash := txn.Hash()
 	sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 
-	//1. check if the sender is exsit.
-	if _, ok := tp.TxLists[sender]; !ok {
-		tp.TxLists[sender] = NewNonceSortedTxs(sender, DefaultCap)
+	// 1. check if the sender is exsit.
+	if _, ok := tp.TxLists.Load(sender); !ok {
+		tp.TxLists.LoadOrStore(sender, NewNonceSortedTxs(sender, DefaultCap))
 	}
 
-	//2. check if the txn is exsit.
-	list := tp.TxLists[sender]
+	// 2. check if the txn is exsit.
+	v, ok := tp.TxLists.Load(sender)
+	if !ok {
+		return errors.New("get txn list error")
+	}
+	list, ok := v.(*NonceSortedTxs)
+	if !ok {
+		return errors.New("convert to NonceSortedTxs error")
+	}
 	if list.ExistTx(hash) {
 		return ErrDuplicatedTx
 	}
@@ -216,48 +219,50 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 
 func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
 	txns := make(map[common.Uint256]*Transaction)
-	for _, list := range tp.TxLists {
-		for hash, txn := range list.txs {
-			txns[hash] = txn
+	tp.TxLists.Range(func(_, v interface{}) bool {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			for hash, txn := range list.txs {
+				txns[hash] = txn
+			}
+			for hash, txn := range list.orphans {
+				txns[hash] = txn
+			}
 		}
-		for hash, txn := range list.orphans {
-			txns[hash] = txn
-		}
-	}
+		return true
+	})
 
 	return txns
 }
 
 func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {
-	tp.mu.RLock()
-	defer tp.mu.RUnlock()
-
-	for _, list := range tp.TxLists {
-		if list.ExistTx(hash) {
-			return list.txs[hash]
+	var found *Transaction
+	tp.TxLists.Range(func(_, v interface{}) bool {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			if list.ExistTx(hash) {
+				found = list.txs[hash]
+				return false
+			}
 		}
-	}
-
-	return nil
+		return true
+	})
+	return found
 }
 
 func (tp *TxnPool) getTxsFromPool() []*Transaction {
-	tp.mu.RLock()
-	defer tp.mu.RUnlock()
 	txs := make([]*Transaction, 0)
-	for _, list := range tp.TxLists {
-		if tx, err := list.Seek(); err == nil {
-			txs = append(txs, tx)
+	tp.TxLists.Range(func(_, v interface{}) bool {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			if tx, err := list.Seek(); err == nil {
+				txs = append(txs, tx)
+			}
 		}
-	}
+		return true
+	})
 
 	return txs
 }
 
 func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
-	tp.mu.Lock()
-	defer tp.mu.Unlock()
-
 	// clean submitted txs
 	for _, txn := range txns {
 		if txn.UnsignedTx.Payload.Type == pb.CoinbaseType ||
@@ -268,23 +273,20 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
 		sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 		txNonce := txn.UnsignedTx.Nonce
 
-		if list, ok := tp.TxLists[sender]; ok {
+		if v, ok := tp.TxLists.Load(sender); ok {
+			if list, ok := v.(*NonceSortedTxs); ok {
+				if _, err := list.Get(txNonce); err == nil {
+					nonce := list.getNonce(list.idx[0])
+					for i := 0; uint64(i) <= txNonce-nonce; i++ {
+						list.Pop()
+					}
 
-			if _, err := list.Get(txNonce); err == nil {
-				nonce := list.getNonce(list.idx[0])
-				for i := 0; uint64(i) <= txNonce-nonce; i++ {
-					list.Pop()
+					// clean invalid txs
+					list.CleanOrphans([]*Transaction{txn})
 				}
-
-				// clean invalid txs
-				list.CleanOrphans([]*Transaction{txn})
 			}
 		}
-
 	}
-
-	// clean sigchaintxs
-	tp.SigChainTxs = make(map[common.Uint256]*Transaction)
 
 	return nil
 }
@@ -297,16 +299,19 @@ func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*Transaction, erro
 		txmap[tx.Hash()] = tx
 	}
 
-	//tp.Dump()
 	return txmap, nil
 }
 
 func (tp *TxnPool) GetNonceByTxnPool(addr common.Uint160) (uint64, error) {
-	if _, ok := tp.TxLists[addr]; !ok {
+	v, ok := tp.TxLists.Load(addr)
+	if !ok {
 		return 0, errors.New("no transactions in transaction pool")
 	}
+	list, ok := v.(*NonceSortedTxs)
+	if !ok {
+		return 0, errors.New("convert to NonceSortedTxs error")
+	}
 
-	list := tp.TxLists[addr]
 	pendingNonce, err := list.GetLatestNonce()
 	if err != nil {
 		return 0, err
@@ -314,20 +319,6 @@ func (tp *TxnPool) GetNonceByTxnPool(addr common.Uint160) (uint64, error) {
 	expectedNonce := pendingNonce + 1
 
 	return expectedNonce, nil
-}
-
-func (tp *TxnPool) Dump() {
-	tp.mu.RLock()
-	defer tp.mu.RUnlock()
-
-	for _, list := range tp.TxLists {
-		list.Dump()
-	}
-
-	log.Info("SigChainTxs:")
-	for h, _ := range tp.SigChainTxs {
-		log.Info(h.ToHexString())
-	}
 }
 
 func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
