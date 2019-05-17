@@ -30,6 +30,7 @@ const (
 	MinNumSuccessors             = 8
 	NodeIDBytes                  = 32
 	MaxRollbackBlocks            = 1
+	SigChainPropogationTime      = 1
 	EncryptAlg                   = "Ed25519"
 	DBVersion                    = 0x04
 	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
