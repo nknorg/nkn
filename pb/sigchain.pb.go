@@ -31,40 +31,37 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 type SigAlgo int32
 
 const (
-	ECDSA   SigAlgo = 0
-	ED25519 SigAlgo = 1
-	VRF     SigAlgo = 2
+	SIGNATURE SigAlgo = 0
+	VRF       SigAlgo = 1
 )
 
 var SigAlgo_name = map[int32]string{
-	0: "ECDSA",
-	1: "ED25519",
-	2: "VRF",
+	0: "SIGNATURE",
+	1: "VRF",
 }
 var SigAlgo_value = map[string]int32{
-	"ECDSA":   0,
-	"ED25519": 1,
-	"VRF":     2,
+	"SIGNATURE": 0,
+	"VRF":       1,
 }
 
 func (SigAlgo) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_sigchain_8681774448e01790, []int{0}
+	return fileDescriptor_sigchain_6b957b0216d1cad9, []int{0}
 }
 
 type SigChainElem struct {
-	Addr       []byte  `protobuf:"bytes,1,opt,name=addr,proto3" json:"addr,omitempty"`
+	Id         []byte  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	NextPubkey []byte  `protobuf:"bytes,2,opt,name=next_pubkey,json=nextPubkey,proto3" json:"next_pubkey,omitempty"`
 	Mining     bool    `protobuf:"varint,3,opt,name=mining,proto3" json:"mining,omitempty"`
-	Signature  []byte  `protobuf:"bytes,7,opt,name=signature,proto3" json:"signature,omitempty"`
-	SigAlgo    SigAlgo `protobuf:"varint,4,opt,name=sig_algo,json=sigAlgo,proto3,enum=pb.SigAlgo" json:"sig_algo,omitempty"`
-	Vrf        []byte  `protobuf:"bytes,5,opt,name=vrf,proto3" json:"vrf,omitempty"`
-	Proof      []byte  `protobuf:"bytes,6,opt,name=proof,proto3" json:"proof,omitempty"`
+	Signature  []byte  `protobuf:"bytes,4,opt,name=signature,proto3" json:"signature,omitempty"`
+	SigAlgo    SigAlgo `protobuf:"varint,5,opt,name=sig_algo,json=sigAlgo,proto3,enum=pb.SigAlgo" json:"sig_algo,omitempty"`
+	Vrf        []byte  `protobuf:"bytes,6,opt,name=vrf,proto3" json:"vrf,omitempty"`
+	Proof      []byte  `protobuf:"bytes,7,opt,name=proof,proto3" json:"proof,omitempty"`
 }
 
 func (m *SigChainElem) Reset()      { *m = SigChainElem{} }
 func (*SigChainElem) ProtoMessage() {}
 func (*SigChainElem) Descriptor() ([]byte, []int) {
-	return fileDescriptor_sigchain_8681774448e01790, []int{0}
+	return fileDescriptor_sigchain_6b957b0216d1cad9, []int{0}
 }
 func (m *SigChainElem) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -93,9 +90,9 @@ func (m *SigChainElem) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SigChainElem proto.InternalMessageInfo
 
-func (m *SigChainElem) GetAddr() []byte {
+func (m *SigChainElem) GetId() []byte {
 	if m != nil {
-		return m.Addr
+		return m.Id
 	}
 	return nil
 }
@@ -125,7 +122,7 @@ func (m *SigChainElem) GetSigAlgo() SigAlgo {
 	if m != nil {
 		return m.SigAlgo
 	}
-	return ECDSA
+	return SIGNATURE
 }
 
 func (m *SigChainElem) GetVrf() []byte {
@@ -145,16 +142,18 @@ func (m *SigChainElem) GetProof() []byte {
 type SigChain struct {
 	Nonce      uint32          `protobuf:"varint,1,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	DataSize   uint32          `protobuf:"varint,2,opt,name=data_size,json=dataSize,proto3" json:"data_size,omitempty"`
-	BlockHash  []byte          `protobuf:"bytes,4,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	BlockHash  []byte          `protobuf:"bytes,3,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	SrcId      []byte          `protobuf:"bytes,4,opt,name=src_id,json=srcId,proto3" json:"src_id,omitempty"`
 	SrcPubkey  []byte          `protobuf:"bytes,5,opt,name=src_pubkey,json=srcPubkey,proto3" json:"src_pubkey,omitempty"`
-	DestPubkey []byte          `protobuf:"bytes,6,opt,name=dest_pubkey,json=destPubkey,proto3" json:"dest_pubkey,omitempty"`
-	Elems      []*SigChainElem `protobuf:"bytes,7,rep,name=elems" json:"elems,omitempty"`
+	DestId     []byte          `protobuf:"bytes,6,opt,name=dest_id,json=destId,proto3" json:"dest_id,omitempty"`
+	DestPubkey []byte          `protobuf:"bytes,7,opt,name=dest_pubkey,json=destPubkey,proto3" json:"dest_pubkey,omitempty"`
+	Elems      []*SigChainElem `protobuf:"bytes,8,rep,name=elems" json:"elems,omitempty"`
 }
 
 func (m *SigChain) Reset()      { *m = SigChain{} }
 func (*SigChain) ProtoMessage() {}
 func (*SigChain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_sigchain_8681774448e01790, []int{1}
+	return fileDescriptor_sigchain_6b957b0216d1cad9, []int{1}
 }
 func (m *SigChain) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -204,9 +203,23 @@ func (m *SigChain) GetBlockHash() []byte {
 	return nil
 }
 
+func (m *SigChain) GetSrcId() []byte {
+	if m != nil {
+		return m.SrcId
+	}
+	return nil
+}
+
 func (m *SigChain) GetSrcPubkey() []byte {
 	if m != nil {
 		return m.SrcPubkey
+	}
+	return nil
+}
+
+func (m *SigChain) GetDestId() []byte {
+	if m != nil {
+		return m.DestId
 	}
 	return nil
 }
@@ -256,7 +269,7 @@ func (this *SigChainElem) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !bytes.Equal(this.Addr, that1.Addr) {
+	if !bytes.Equal(this.Id, that1.Id) {
 		return false
 	}
 	if !bytes.Equal(this.NextPubkey, that1.NextPubkey) {
@@ -307,7 +320,13 @@ func (this *SigChain) Equal(that interface{}) bool {
 	if !bytes.Equal(this.BlockHash, that1.BlockHash) {
 		return false
 	}
+	if !bytes.Equal(this.SrcId, that1.SrcId) {
+		return false
+	}
 	if !bytes.Equal(this.SrcPubkey, that1.SrcPubkey) {
+		return false
+	}
+	if !bytes.Equal(this.DestId, that1.DestId) {
 		return false
 	}
 	if !bytes.Equal(this.DestPubkey, that1.DestPubkey) {
@@ -329,7 +348,7 @@ func (this *SigChainElem) GoString() string {
 	}
 	s := make([]string, 0, 11)
 	s = append(s, "&pb.SigChainElem{")
-	s = append(s, "Addr: "+fmt.Sprintf("%#v", this.Addr)+",\n")
+	s = append(s, "Id: "+fmt.Sprintf("%#v", this.Id)+",\n")
 	s = append(s, "NextPubkey: "+fmt.Sprintf("%#v", this.NextPubkey)+",\n")
 	s = append(s, "Mining: "+fmt.Sprintf("%#v", this.Mining)+",\n")
 	s = append(s, "Signature: "+fmt.Sprintf("%#v", this.Signature)+",\n")
@@ -343,12 +362,14 @@ func (this *SigChain) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 12)
 	s = append(s, "&pb.SigChain{")
 	s = append(s, "Nonce: "+fmt.Sprintf("%#v", this.Nonce)+",\n")
 	s = append(s, "DataSize: "+fmt.Sprintf("%#v", this.DataSize)+",\n")
 	s = append(s, "BlockHash: "+fmt.Sprintf("%#v", this.BlockHash)+",\n")
+	s = append(s, "SrcId: "+fmt.Sprintf("%#v", this.SrcId)+",\n")
 	s = append(s, "SrcPubkey: "+fmt.Sprintf("%#v", this.SrcPubkey)+",\n")
+	s = append(s, "DestId: "+fmt.Sprintf("%#v", this.DestId)+",\n")
 	s = append(s, "DestPubkey: "+fmt.Sprintf("%#v", this.DestPubkey)+",\n")
 	if this.Elems != nil {
 		s = append(s, "Elems: "+fmt.Sprintf("%#v", this.Elems)+",\n")
@@ -379,11 +400,11 @@ func (m *SigChainElem) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Addr) > 0 {
+	if len(m.Id) > 0 {
 		dAtA[i] = 0xa
 		i++
-		i = encodeVarintSigchain(dAtA, i, uint64(len(m.Addr)))
-		i += copy(dAtA[i:], m.Addr)
+		i = encodeVarintSigchain(dAtA, i, uint64(len(m.Id)))
+		i += copy(dAtA[i:], m.Id)
 	}
 	if len(m.NextPubkey) > 0 {
 		dAtA[i] = 0x12
@@ -401,28 +422,28 @@ func (m *SigChainElem) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i++
 	}
+	if len(m.Signature) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintSigchain(dAtA, i, uint64(len(m.Signature)))
+		i += copy(dAtA[i:], m.Signature)
+	}
 	if m.SigAlgo != 0 {
-		dAtA[i] = 0x20
+		dAtA[i] = 0x28
 		i++
 		i = encodeVarintSigchain(dAtA, i, uint64(m.SigAlgo))
 	}
 	if len(m.Vrf) > 0 {
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x32
 		i++
 		i = encodeVarintSigchain(dAtA, i, uint64(len(m.Vrf)))
 		i += copy(dAtA[i:], m.Vrf)
 	}
 	if len(m.Proof) > 0 {
-		dAtA[i] = 0x32
+		dAtA[i] = 0x3a
 		i++
 		i = encodeVarintSigchain(dAtA, i, uint64(len(m.Proof)))
 		i += copy(dAtA[i:], m.Proof)
-	}
-	if len(m.Signature) > 0 {
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintSigchain(dAtA, i, uint64(len(m.Signature)))
-		i += copy(dAtA[i:], m.Signature)
 	}
 	return i, nil
 }
@@ -453,10 +474,16 @@ func (m *SigChain) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintSigchain(dAtA, i, uint64(m.DataSize))
 	}
 	if len(m.BlockHash) > 0 {
-		dAtA[i] = 0x22
+		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintSigchain(dAtA, i, uint64(len(m.BlockHash)))
 		i += copy(dAtA[i:], m.BlockHash)
+	}
+	if len(m.SrcId) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintSigchain(dAtA, i, uint64(len(m.SrcId)))
+		i += copy(dAtA[i:], m.SrcId)
 	}
 	if len(m.SrcPubkey) > 0 {
 		dAtA[i] = 0x2a
@@ -464,15 +491,21 @@ func (m *SigChain) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintSigchain(dAtA, i, uint64(len(m.SrcPubkey)))
 		i += copy(dAtA[i:], m.SrcPubkey)
 	}
-	if len(m.DestPubkey) > 0 {
+	if len(m.DestId) > 0 {
 		dAtA[i] = 0x32
+		i++
+		i = encodeVarintSigchain(dAtA, i, uint64(len(m.DestId)))
+		i += copy(dAtA[i:], m.DestId)
+	}
+	if len(m.DestPubkey) > 0 {
+		dAtA[i] = 0x3a
 		i++
 		i = encodeVarintSigchain(dAtA, i, uint64(len(m.DestPubkey)))
 		i += copy(dAtA[i:], m.DestPubkey)
 	}
 	if len(m.Elems) > 0 {
 		for _, msg := range m.Elems {
-			dAtA[i] = 0x3a
+			dAtA[i] = 0x42
 			i++
 			i = encodeVarintSigchain(dAtA, i, uint64(msg.Size()))
 			n, err := msg.MarshalTo(dAtA[i:])
@@ -497,9 +530,9 @@ func encodeVarintSigchain(dAtA []byte, offset int, v uint64) int {
 func NewPopulatedSigChainElem(r randySigchain, easy bool) *SigChainElem {
 	this := &SigChainElem{}
 	v1 := r.Intn(100)
-	this.Addr = make([]byte, v1)
+	this.Id = make([]byte, v1)
 	for i := 0; i < v1; i++ {
-		this.Addr[i] = byte(r.Intn(256))
+		this.Id[i] = byte(r.Intn(256))
 	}
 	v2 := r.Intn(100)
 	this.NextPubkey = make([]byte, v2)
@@ -507,21 +540,21 @@ func NewPopulatedSigChainElem(r randySigchain, easy bool) *SigChainElem {
 		this.NextPubkey[i] = byte(r.Intn(256))
 	}
 	this.Mining = bool(bool(r.Intn(2) == 0))
-	this.SigAlgo = SigAlgo([]int32{0, 1, 2}[r.Intn(3)])
 	v3 := r.Intn(100)
-	this.Vrf = make([]byte, v3)
+	this.Signature = make([]byte, v3)
 	for i := 0; i < v3; i++ {
+		this.Signature[i] = byte(r.Intn(256))
+	}
+	this.SigAlgo = SigAlgo([]int32{0, 1}[r.Intn(2)])
+	v4 := r.Intn(100)
+	this.Vrf = make([]byte, v4)
+	for i := 0; i < v4; i++ {
 		this.Vrf[i] = byte(r.Intn(256))
 	}
-	v4 := r.Intn(100)
-	this.Proof = make([]byte, v4)
-	for i := 0; i < v4; i++ {
-		this.Proof[i] = byte(r.Intn(256))
-	}
 	v5 := r.Intn(100)
-	this.Signature = make([]byte, v5)
+	this.Proof = make([]byte, v5)
 	for i := 0; i < v5; i++ {
-		this.Signature[i] = byte(r.Intn(256))
+		this.Proof[i] = byte(r.Intn(256))
 	}
 	if !easy && r.Intn(10) != 0 {
 	}
@@ -538,19 +571,29 @@ func NewPopulatedSigChain(r randySigchain, easy bool) *SigChain {
 		this.BlockHash[i] = byte(r.Intn(256))
 	}
 	v7 := r.Intn(100)
-	this.SrcPubkey = make([]byte, v7)
+	this.SrcId = make([]byte, v7)
 	for i := 0; i < v7; i++ {
-		this.SrcPubkey[i] = byte(r.Intn(256))
+		this.SrcId[i] = byte(r.Intn(256))
 	}
 	v8 := r.Intn(100)
-	this.DestPubkey = make([]byte, v8)
+	this.SrcPubkey = make([]byte, v8)
 	for i := 0; i < v8; i++ {
+		this.SrcPubkey[i] = byte(r.Intn(256))
+	}
+	v9 := r.Intn(100)
+	this.DestId = make([]byte, v9)
+	for i := 0; i < v9; i++ {
+		this.DestId[i] = byte(r.Intn(256))
+	}
+	v10 := r.Intn(100)
+	this.DestPubkey = make([]byte, v10)
+	for i := 0; i < v10; i++ {
 		this.DestPubkey[i] = byte(r.Intn(256))
 	}
 	if r.Intn(10) != 0 {
-		v9 := r.Intn(5)
-		this.Elems = make([]*SigChainElem, v9)
-		for i := 0; i < v9; i++ {
+		v11 := r.Intn(5)
+		this.Elems = make([]*SigChainElem, v11)
+		for i := 0; i < v11; i++ {
 			this.Elems[i] = NewPopulatedSigChainElem(r, easy)
 		}
 	}
@@ -578,9 +621,9 @@ func randUTF8RuneSigchain(r randySigchain) rune {
 	return rune(ru + 61)
 }
 func randStringSigchain(r randySigchain) string {
-	v10 := r.Intn(100)
-	tmps := make([]rune, v10)
-	for i := 0; i < v10; i++ {
+	v12 := r.Intn(100)
+	tmps := make([]rune, v12)
+	for i := 0; i < v12; i++ {
 		tmps[i] = randUTF8RuneSigchain(r)
 	}
 	return string(tmps)
@@ -602,11 +645,11 @@ func randFieldSigchain(dAtA []byte, r randySigchain, fieldNumber int, wire int) 
 	switch wire {
 	case 0:
 		dAtA = encodeVarintPopulateSigchain(dAtA, uint64(key))
-		v11 := r.Int63()
+		v13 := r.Int63()
 		if r.Intn(2) == 0 {
-			v11 *= -1
+			v13 *= -1
 		}
-		dAtA = encodeVarintPopulateSigchain(dAtA, uint64(v11))
+		dAtA = encodeVarintPopulateSigchain(dAtA, uint64(v13))
 	case 1:
 		dAtA = encodeVarintPopulateSigchain(dAtA, uint64(key))
 		dAtA = append(dAtA, byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)), byte(r.Intn(256)))
@@ -637,7 +680,7 @@ func (m *SigChainElem) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Addr)
+	l = len(m.Id)
 	if l > 0 {
 		n += 1 + l + sovSigchain(uint64(l))
 	}
@@ -648,6 +691,10 @@ func (m *SigChainElem) Size() (n int) {
 	if m.Mining {
 		n += 2
 	}
+	l = len(m.Signature)
+	if l > 0 {
+		n += 1 + l + sovSigchain(uint64(l))
+	}
 	if m.SigAlgo != 0 {
 		n += 1 + sovSigchain(uint64(m.SigAlgo))
 	}
@@ -656,10 +703,6 @@ func (m *SigChainElem) Size() (n int) {
 		n += 1 + l + sovSigchain(uint64(l))
 	}
 	l = len(m.Proof)
-	if l > 0 {
-		n += 1 + l + sovSigchain(uint64(l))
-	}
-	l = len(m.Signature)
 	if l > 0 {
 		n += 1 + l + sovSigchain(uint64(l))
 	}
@@ -682,7 +725,15 @@ func (m *SigChain) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovSigchain(uint64(l))
 	}
+	l = len(m.SrcId)
+	if l > 0 {
+		n += 1 + l + sovSigchain(uint64(l))
+	}
 	l = len(m.SrcPubkey)
+	if l > 0 {
+		n += 1 + l + sovSigchain(uint64(l))
+	}
+	l = len(m.DestId)
 	if l > 0 {
 		n += 1 + l + sovSigchain(uint64(l))
 	}
@@ -717,13 +768,13 @@ func (this *SigChainElem) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&SigChainElem{`,
-		`Addr:` + fmt.Sprintf("%v", this.Addr) + `,`,
+		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
 		`NextPubkey:` + fmt.Sprintf("%v", this.NextPubkey) + `,`,
 		`Mining:` + fmt.Sprintf("%v", this.Mining) + `,`,
+		`Signature:` + fmt.Sprintf("%v", this.Signature) + `,`,
 		`SigAlgo:` + fmt.Sprintf("%v", this.SigAlgo) + `,`,
 		`Vrf:` + fmt.Sprintf("%v", this.Vrf) + `,`,
 		`Proof:` + fmt.Sprintf("%v", this.Proof) + `,`,
-		`Signature:` + fmt.Sprintf("%v", this.Signature) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -736,7 +787,9 @@ func (this *SigChain) String() string {
 		`Nonce:` + fmt.Sprintf("%v", this.Nonce) + `,`,
 		`DataSize:` + fmt.Sprintf("%v", this.DataSize) + `,`,
 		`BlockHash:` + fmt.Sprintf("%v", this.BlockHash) + `,`,
+		`SrcId:` + fmt.Sprintf("%v", this.SrcId) + `,`,
 		`SrcPubkey:` + fmt.Sprintf("%v", this.SrcPubkey) + `,`,
+		`DestId:` + fmt.Sprintf("%v", this.DestId) + `,`,
 		`DestPubkey:` + fmt.Sprintf("%v", this.DestPubkey) + `,`,
 		`Elems:` + strings.Replace(fmt.Sprintf("%v", this.Elems), "SigChainElem", "SigChainElem", 1) + `,`,
 		`}`,
@@ -782,7 +835,7 @@ func (m *SigChainElem) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Addr", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -806,9 +859,9 @@ func (m *SigChainElem) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Addr = append(m.Addr[:0], dAtA[iNdEx:postIndex]...)
-			if m.Addr == nil {
-				m.Addr = []byte{}
+			m.Id = append(m.Id[:0], dAtA[iNdEx:postIndex]...)
+			if m.Id == nil {
+				m.Id = []byte{}
 			}
 			iNdEx = postIndex
 		case 2:
@@ -863,6 +916,37 @@ func (m *SigChainElem) Unmarshal(dAtA []byte) error {
 			}
 			m.Mining = bool(v != 0)
 		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Signature", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSigchain
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthSigchain
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Signature = append(m.Signature[:0], dAtA[iNdEx:postIndex]...)
+			if m.Signature == nil {
+				m.Signature = []byte{}
+			}
+			iNdEx = postIndex
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SigAlgo", wireType)
 			}
@@ -881,7 +965,7 @@ func (m *SigChainElem) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 5:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Vrf", wireType)
 			}
@@ -912,7 +996,7 @@ func (m *SigChainElem) Unmarshal(dAtA []byte) error {
 				m.Vrf = []byte{}
 			}
 			iNdEx = postIndex
-		case 6:
+		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Proof", wireType)
 			}
@@ -941,37 +1025,6 @@ func (m *SigChainElem) Unmarshal(dAtA []byte) error {
 			m.Proof = append(m.Proof[:0], dAtA[iNdEx:postIndex]...)
 			if m.Proof == nil {
 				m.Proof = []byte{}
-			}
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Signature", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSigchain
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthSigchain
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Signature = append(m.Signature[:0], dAtA[iNdEx:postIndex]...)
-			if m.Signature == nil {
-				m.Signature = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -1062,7 +1115,7 @@ func (m *SigChain) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BlockHash", wireType)
 			}
@@ -1091,6 +1144,37 @@ func (m *SigChain) Unmarshal(dAtA []byte) error {
 			m.BlockHash = append(m.BlockHash[:0], dAtA[iNdEx:postIndex]...)
 			if m.BlockHash == nil {
 				m.BlockHash = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SrcId", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSigchain
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthSigchain
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SrcId = append(m.SrcId[:0], dAtA[iNdEx:postIndex]...)
+			if m.SrcId == nil {
+				m.SrcId = []byte{}
 			}
 			iNdEx = postIndex
 		case 5:
@@ -1126,6 +1210,37 @@ func (m *SigChain) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestId", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSigchain
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthSigchain
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DestId = append(m.DestId[:0], dAtA[iNdEx:postIndex]...)
+			if m.DestId == nil {
+				m.DestId = []byte{}
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field DestPubkey", wireType)
 			}
 			var byteLen int
@@ -1155,7 +1270,7 @@ func (m *SigChain) Unmarshal(dAtA []byte) error {
 				m.DestPubkey = []byte{}
 			}
 			iNdEx = postIndex
-		case 7:
+		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Elems", wireType)
 			}
@@ -1312,36 +1427,37 @@ var (
 	ErrIntOverflowSigchain   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/sigchain.proto", fileDescriptor_sigchain_8681774448e01790) }
+func init() { proto.RegisterFile("pb/sigchain.proto", fileDescriptor_sigchain_6b957b0216d1cad9) }
 
-var fileDescriptor_sigchain_8681774448e01790 = []byte{
-	// 446 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x44, 0x92, 0x3f, 0x6f, 0xd3, 0x40,
-	0x18, 0xc6, 0xfd, 0x26, 0x75, 0x9c, 0xbc, 0x4e, 0x91, 0x39, 0x21, 0x64, 0xf1, 0xe7, 0x1a, 0x75,
-	0xa8, 0xa2, 0x4a, 0x24, 0x22, 0xa8, 0x03, 0x12, 0x4b, 0x69, 0x83, 0x18, 0x91, 0x23, 0xb1, 0x46,
-	0xb6, 0x73, 0x39, 0x9f, 0xea, 0xf8, 0x2c, 0x9f, 0x83, 0xa0, 0x13, 0x1f, 0x81, 0x8f, 0xc1, 0x47,
-	0xe0, 0x03, 0x30, 0xc0, 0x96, 0xb1, 0x23, 0xb9, 0x2c, 0x8c, 0x1d, 0x19, 0x91, 0xcf, 0x6e, 0xba,
-	0x3d, 0xcf, 0xef, 0xb1, 0x5f, 0xbf, 0xef, 0x23, 0xe3, 0xc3, 0x3c, 0x1a, 0x2b, 0xc1, 0xe3, 0x24,
-	0x14, 0xd9, 0x28, 0x2f, 0x64, 0x29, 0x49, 0x2b, 0x8f, 0x9e, 0xbc, 0xe0, 0xa2, 0x4c, 0xd6, 0xd1,
-	0x28, 0x96, 0xab, 0x31, 0x97, 0x5c, 0x8e, 0x4d, 0x14, 0xad, 0x97, 0xc6, 0x19, 0x63, 0x54, 0xfd,
-	0xca, 0xf1, 0x6f, 0xc0, 0xfe, 0x4c, 0xf0, 0x8b, 0x6a, 0xca, 0x34, 0x65, 0x2b, 0x42, 0xf0, 0x20,
-	0x5c, 0x2c, 0x0a, 0x1f, 0x06, 0x30, 0xec, 0x07, 0x46, 0x93, 0x23, 0x74, 0x33, 0xf6, 0xb9, 0x9c,
-	0xe7, 0xeb, 0xe8, 0x8a, 0x7d, 0xf1, 0x5b, 0x26, 0xc2, 0x0a, 0x7d, 0x30, 0x84, 0x3c, 0xc6, 0xce,
-	0x4a, 0x64, 0x22, 0xe3, 0x7e, 0x7b, 0x00, 0xc3, 0x6e, 0xd0, 0x38, 0x72, 0x82, 0x5d, 0x25, 0xf8,
-	0x3c, 0x4c, 0xb9, 0xf4, 0x0f, 0x06, 0x30, 0x7c, 0x30, 0x71, 0x47, 0x79, 0x34, 0x9a, 0x09, 0x7e,
-	0x9e, 0x72, 0x19, 0x38, 0xaa, 0x16, 0xc4, 0xc3, 0xf6, 0xa7, 0x62, 0xe9, 0xdb, 0x66, 0x70, 0x25,
-	0xc9, 0x23, 0xb4, 0xf3, 0x42, 0xca, 0xa5, 0xdf, 0x31, 0xac, 0x36, 0xe4, 0x19, 0xf6, 0x94, 0xe0,
-	0x59, 0x58, 0xae, 0x0b, 0xe6, 0x3b, 0x26, 0xb9, 0x07, 0xc7, 0x3f, 0x01, 0xbb, 0x77, 0xb7, 0x54,
-	0x03, 0x32, 0x99, 0xc5, 0xcc, 0x1c, 0x72, 0x18, 0xd4, 0x86, 0x3c, 0xc5, 0xde, 0x22, 0x2c, 0xc3,
-	0xb9, 0x12, 0xd7, 0xcc, 0xdc, 0x71, 0x18, 0x74, 0x2b, 0x30, 0x13, 0xd7, 0x8c, 0x3c, 0x47, 0x8c,
-	0x52, 0x19, 0x5f, 0xcd, 0x93, 0x50, 0x25, 0x66, 0xdf, 0x7e, 0xd0, 0x33, 0xe4, 0x7d, 0xa8, 0x92,
-	0x2a, 0x56, 0x45, 0x7c, 0x57, 0x82, 0xdd, 0x7c, 0xbd, 0x88, 0x9b, 0x0e, 0x8e, 0xd0, 0x5d, 0x30,
-	0xb5, 0x2f, 0xa9, 0xde, 0x1b, 0x2b, 0xd4, 0x3c, 0x70, 0x82, 0x36, 0x4b, 0xd9, 0x4a, 0xf9, 0xce,
-	0xa0, 0x3d, 0x74, 0x27, 0x5e, 0xd3, 0xc4, 0xbe, 0xfa, 0xa0, 0x8e, 0x4f, 0x4f, 0xd1, 0x69, 0x0a,
-	0x22, 0x3d, 0xb4, 0xa7, 0x17, 0x97, 0xb3, 0x73, 0xcf, 0x22, 0x2e, 0x3a, 0xd3, 0xcb, 0xc9, 0xd9,
-	0xd9, 0xcb, 0xd7, 0x1e, 0x10, 0x07, 0xdb, 0x1f, 0x83, 0x77, 0x5e, 0xeb, 0xed, 0x9b, 0xcd, 0x96,
-	0x5a, 0x37, 0x5b, 0x6a, 0xdd, 0x6e, 0x29, 0xfc, 0xdb, 0x52, 0xf8, 0xaa, 0x29, 0x7c, 0xd7, 0x14,
-	0x7e, 0x68, 0x0a, 0xbf, 0x34, 0x85, 0x8d, 0xa6, 0xf0, 0x47, 0x53, 0xf8, 0xab, 0xa9, 0x75, 0xab,
-	0x29, 0x7c, 0xdb, 0x51, 0x6b, 0xb3, 0xa3, 0xd6, 0xcd, 0x8e, 0x5a, 0x51, 0xc7, 0xfc, 0x03, 0xaf,
-	0xfe, 0x07, 0x00, 0x00, 0xff, 0xff, 0xe1, 0x1c, 0xe2, 0xbb, 0x4b, 0x02, 0x00, 0x00,
+var fileDescriptor_sigchain_6b957b0216d1cad9 = []byte{
+	// 459 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x44, 0x92, 0xbb, 0x8e, 0xd3, 0x40,
+	0x18, 0x85, 0x3d, 0x09, 0xb1, 0x9d, 0x3f, 0xc9, 0x2a, 0x8c, 0xb8, 0x58, 0x5c, 0x86, 0xb0, 0xc5,
+	0x2a, 0x42, 0x22, 0x91, 0x96, 0x96, 0x66, 0x41, 0x0b, 0xa4, 0x41, 0x68, 0x02, 0xb4, 0x96, 0x2f,
+	0x93, 0xf1, 0x68, 0x1d, 0x8f, 0xe5, 0x71, 0x10, 0x6c, 0xc5, 0x23, 0xf0, 0x18, 0x3c, 0x02, 0x2f,
+	0x80, 0x44, 0x99, 0x72, 0x4b, 0xe2, 0x34, 0x94, 0x5b, 0x50, 0x50, 0xa2, 0x19, 0x0f, 0x6c, 0xf7,
+	0x9f, 0x73, 0x7c, 0x2c, 0x7d, 0xc7, 0x86, 0xeb, 0x65, 0x3c, 0x57, 0x82, 0x27, 0x59, 0x24, 0x8a,
+	0x59, 0x59, 0xc9, 0x5a, 0xe2, 0x4e, 0x19, 0xdf, 0x79, 0xcc, 0x45, 0x9d, 0x6d, 0xe2, 0x59, 0x22,
+	0xd7, 0x73, 0x2e, 0xb9, 0x9c, 0x9b, 0x28, 0xde, 0xac, 0x8c, 0x32, 0xc2, 0x5c, 0x6d, 0xe5, 0xf0,
+	0x3b, 0x82, 0xe1, 0x52, 0xf0, 0xe7, 0xfa, 0x2d, 0xa7, 0x39, 0x5b, 0xe3, 0x03, 0xe8, 0x88, 0x34,
+	0x40, 0x13, 0x34, 0x1d, 0xd2, 0x8e, 0x48, 0xf1, 0x03, 0x18, 0x14, 0xec, 0x63, 0x1d, 0x96, 0x9b,
+	0xf8, 0x8c, 0x7d, 0x0a, 0x3a, 0x26, 0x00, 0x6d, 0xbd, 0x31, 0x0e, 0xbe, 0x05, 0xee, 0x5a, 0x14,
+	0xa2, 0xe0, 0x41, 0x77, 0x82, 0xa6, 0x3e, 0xb5, 0x0a, 0xdf, 0x83, 0xbe, 0x12, 0xbc, 0x88, 0xea,
+	0x4d, 0xc5, 0x82, 0x6b, 0xa6, 0x76, 0x65, 0xe0, 0x23, 0xf0, 0x95, 0xe0, 0x61, 0x94, 0x73, 0x19,
+	0xf4, 0x26, 0x68, 0x7a, 0x70, 0x3c, 0x98, 0x95, 0xf1, 0x6c, 0x29, 0xf8, 0x49, 0xce, 0x25, 0xf5,
+	0x54, 0x7b, 0xe0, 0x31, 0x74, 0x3f, 0x54, 0xab, 0xc0, 0x35, 0x7d, 0x7d, 0xe2, 0x1b, 0xd0, 0x2b,
+	0x2b, 0x29, 0x57, 0x81, 0x67, 0xbc, 0x56, 0x1c, 0xfe, 0x46, 0xe0, 0xff, 0xe3, 0xd0, 0x8f, 0x14,
+	0xb2, 0x48, 0x98, 0xc1, 0x18, 0xd1, 0x56, 0xe0, 0xbb, 0xd0, 0x4f, 0xa3, 0x3a, 0x0a, 0x95, 0x38,
+	0x67, 0x86, 0x63, 0x44, 0x7d, 0x6d, 0x2c, 0xc5, 0x39, 0xc3, 0xf7, 0x01, 0xe2, 0x5c, 0x26, 0x67,
+	0x61, 0x16, 0xa9, 0xcc, 0x90, 0x0c, 0x69, 0xdf, 0x38, 0xaf, 0x22, 0x95, 0xe1, 0x9b, 0xe0, 0xaa,
+	0x2a, 0x09, 0x45, 0x6a, 0x49, 0x7a, 0xaa, 0x4a, 0x16, 0xa9, 0x6e, 0x69, 0xdb, 0x6e, 0xd3, 0xb3,
+	0x90, 0x55, 0x62, 0xa7, 0xb9, 0x0d, 0x5e, 0xca, 0x54, 0xad, 0x6b, 0x2d, 0x80, 0xab, 0xe5, 0xc2,
+	0x8c, 0x6a, 0x02, 0x5b, 0x6c, 0x49, 0x40, 0x5b, 0xb6, 0x79, 0x04, 0x3d, 0x96, 0xb3, 0xb5, 0x0a,
+	0xfc, 0x49, 0x77, 0x3a, 0x38, 0x1e, 0xdb, 0x6d, 0xfe, 0x7f, 0x26, 0xda, 0xc6, 0x8f, 0x1e, 0x82,
+	0x67, 0x27, 0xc3, 0x23, 0xe8, 0x2f, 0x17, 0x2f, 0x5f, 0x9f, 0xbc, 0x7d, 0x47, 0x4f, 0xc7, 0x0e,
+	0xf6, 0xa0, 0xfb, 0x9e, 0xbe, 0x18, 0xa3, 0x67, 0x4f, 0xb7, 0x3b, 0xe2, 0x5c, 0xec, 0x88, 0x73,
+	0xb9, 0x23, 0xe8, 0xcf, 0x8e, 0xa0, 0xcf, 0x0d, 0x41, 0x5f, 0x1b, 0x82, 0xbe, 0x35, 0x04, 0xfd,
+	0x68, 0x08, 0xda, 0x36, 0x04, 0xfd, 0x6c, 0x08, 0xfa, 0xd5, 0x10, 0xe7, 0xb2, 0x21, 0xe8, 0xcb,
+	0x9e, 0x38, 0xdb, 0x3d, 0x71, 0x2e, 0xf6, 0xc4, 0x89, 0x5d, 0xf3, 0x9b, 0x3c, 0xf9, 0x1b, 0x00,
+	0x00, 0xff, 0xff, 0xe3, 0xb3, 0xac, 0xfe, 0x6e, 0x02, 0x00, 0x00,
 }
