@@ -160,32 +160,31 @@ func (ps *PorServer) Sign(relayMessage *pb.Relay, nextPubkey, prevNodeID []byte,
 	return nil
 }
 
-func (ps *PorServer) Verify(sc *pb.SigChain) error {
-	if err := sc.Verify(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (ps *PorServer) CreateSigChainForClient(dataSize uint32, blockHash *common.Uint256, srcID,
-	srcPubkey, destPubkey, signature []byte, sigAlgo pb.SigAlgo) (*pb.SigChain, error) {
+	srcPubkey, destID, destPubkey, signature []byte, sigAlgo pb.SigAlgo) (*pb.SigChain, error) {
 	pubKey, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
 		log.Error("Get account public key error:", err)
 		return nil, err
 	}
-	sigChain, err := pb.NewSigChainWithSignature(dataSize, blockHash[:], srcID, srcPubkey, destPubkey, pubKey, signature, sigAlgo, false)
+	sigChain, err := pb.NewSigChainWithSignature(
+		dataSize,
+		blockHash.ToArray(),
+		srcID,
+		srcPubkey,
+		destID,
+		destPubkey,
+		pubKey,
+		signature,
+		sigAlgo,
+		false,
+	)
 	if err != nil {
 		log.Error("New signature chain with signature error:", err)
 		return nil, err
 	}
 	ps.srcSigChainCache.Add(signature, sigChain)
 	return sigChain, nil
-}
-
-func (ps *PorServer) IsFinal(sc *pb.SigChain) bool {
-	return sc.IsFinal()
 }
 
 func (ps *PorServer) GetSignature(sc *pb.SigChain) ([]byte, error) {

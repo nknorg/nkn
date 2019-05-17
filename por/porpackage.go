@@ -75,11 +75,6 @@ func NewPorPackage(txn *Transaction) (*PorPackage, error) {
 		return nil, err
 	}
 
-	err = sigChain.VerifyPath()
-	if err != nil {
-		return nil, err
-	}
-
 	err = sigChain.Verify()
 	if err != nil {
 		return nil, err
