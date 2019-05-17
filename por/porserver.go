@@ -354,11 +354,10 @@ func (ps *PorServer) FlushSigChain(blockHash []byte) {
 
 	if v, ok := ps.destSigChainElemCache.Get(blockHash); ok {
 		if sce, ok := v.(*destSigChainElem); ok {
-			time.AfterFunc(util.RandDuration(flushSigChainDelay, 0.5), func() {
-				event.Queue.Notify(event.BacktrackSigChain, &BacktrackSigChainInfo{
-					DestSigChainElem: sce.sigChainElem,
-					PrevSignature:    sce.prevSignature,
-				})
+			time.Sleep(util.RandDuration(flushSigChainDelay, 0.5))
+			event.Queue.Notify(event.BacktrackSigChain, &BacktrackSigChainInfo{
+				DestSigChainElem: sce.sigChainElem,
+				PrevSignature:    sce.prevSignature,
 			})
 		}
 	}
