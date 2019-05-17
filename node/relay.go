@@ -36,6 +36,7 @@ func NewRelayService(wallet vault.Wallet, localNode *LocalNode) *RelayService {
 }
 
 func (rs *RelayService) Start() error {
+	event.Queue.Subscribe(event.NewBlockProduced, rs.populateVRFCache)
 	event.Queue.Subscribe(event.NewBlockProduced, rs.flushSigChain)
 	event.Queue.Subscribe(event.BacktrackSigChain, rs.backtrackDestSigChain)
 	rs.localNode.AddMessageHandler(pb.RELAY, rs.relayMessageHandler)
@@ -297,6 +298,16 @@ func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*Transaction, 
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
+}
+
+func (rs *RelayService) populateVRFCache(v interface{}) {
+	block, ok := v.(*block.Block)
+	if !ok {
+		return
+	}
+
+	blockHash := block.Hash()
+	rs.porServer.GetOrComputeVrf(blockHash.ToArray())
 }
 
 func (rs *RelayService) flushSigChain(v interface{}) {
