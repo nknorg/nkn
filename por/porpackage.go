@@ -8,19 +8,21 @@ import (
 	. "github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/util/config"
 )
 
 const (
-	// The height of signature chain which run for block proposer should be (local block height -1 + 5)
-	// -1 means that:
-	//  local block height may heigher than neighbor node at most 1
-	// +5 means that:
-	// if local block height is n, then n + 3 signature chain is in consensus) +
-	//  1 (since local node height may lower than neighbors at most 1) +
-	//  1 (for fully propagate)
-	SigChainBlockHeightOffset       = 1
-	SigChainMiningHeightOffset      = 4
-	SigChainPropagationHeightOffset = 2
+	// Block proposer of block height X needs to be specified in block X-1, so its
+	// candidate sigchains have to be fully propogated before block X-1 is
+	// proposed, i.e. before block X-2 is accepted. In other words, sigchain can
+	// only propogate when block height <= X-3.
+	SigChainPropagationHeightOffset = 3
+	// Block proposer of block height X is chosen from sigchain produced during
+	// block X-SigChainPropagationHeightOffset-SigChainPropogationTime because
+	// sigchain can only propogate when block height <=
+	// X-SigChainPropagationHeightOffset, so it has to start propogating when
+	// block height <= X-SigChainPropagationHeightOffset-SigChainPropogationTime.
+	SigChainMiningHeightOffset = config.SigChainPropogationTime + SigChainPropagationHeightOffset
 )
 
 type PorPackage struct {
@@ -114,7 +116,7 @@ func NewPorPackage(txn *Transaction) (*PorPackage, error) {
 		return nil, err
 	}
 	pp := &PorPackage{
-		VoteForHeight: height + SigChainMiningHeightOffset + SigChainBlockHeightOffset,
+		VoteForHeight: height + SigChainMiningHeightOffset + config.MaxRollbackBlocks,
 		BlockHash:     sigChain.BlockHash,
 		TxHash:        txHash.ToArray(),
 		SigHash:       sigHash,

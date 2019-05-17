@@ -13,6 +13,7 @@ import (
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 	"github.com/nknorg/nkn/vm/contract"
@@ -242,7 +243,7 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 		return err
 	}
 
-	height := chain.DefaultLedger.Store.GetHeight() - por.SigChainBlockHeightOffset
+	height := chain.DefaultLedger.Store.GetHeight() - config.MaxRollbackBlocks
 	if height < 0 {
 		height = 0
 	}
@@ -303,7 +304,7 @@ func (rs *RelayService) flushSigChain(v interface{}) {
 		return
 	}
 
-	height := block.Header.UnsignedHeader.Height - por.SigChainBlockHeightOffset - 1
+	height := block.Header.UnsignedHeader.Height - config.MaxRollbackBlocks - 1
 	if height < 0 {
 		height = 0
 	}
