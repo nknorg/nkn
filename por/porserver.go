@@ -28,6 +28,8 @@ const (
 	srcSigChainCacheCleanupInterval      = 10 * time.Second
 	vrfCacheExpiration                   = (SigChainMiningHeightOffset + SigChainBlockHeightOffset + 5) * config.ConsensusTimeout
 	vrfCacheCleanupInterval              = 10 * time.Second
+	finalizedBlockCacheExpiration        = time.Hour
+	finalizedBlockCacheCleanupInterval   = time.Minute
 	miningPorPackageCacheExpiration      = time.Hour
 	miningPorPackageCacheCleanupInterval = time.Minute
 	destSigChainElemCacheExpiration      = time.Hour
@@ -36,12 +38,13 @@ const (
 )
 
 type PorServer struct {
-	account           *vault.Account
-	id                []byte
-	sigChainTxnCache  common.Cache
-	sigChainElemCache common.Cache
-	srcSigChainCache  common.Cache
-	vrfCache          common.Cache
+	account             *vault.Account
+	id                  []byte
+	sigChainTxnCache    common.Cache
+	sigChainElemCache   common.Cache
+	srcSigChainCache    common.Cache
+	vrfCache            common.Cache
+	finalizedBlockCache common.Cache
 
 	sync.RWMutex
 	miningPorPackageCache common.Cache
@@ -65,9 +68,6 @@ type destSigChainElem struct {
 	sigHash       []byte
 	sigChainElem  *pb.SigChainElem
 	prevSignature []byte
-
-	sync.RWMutex
-	isFinalized bool
 }
 
 type BacktrackSigChainInfo struct {
@@ -85,6 +85,7 @@ func NewPorServer(account *vault.Account, id []byte) *PorServer {
 		sigChainElemCache:     common.NewGoCache(sigChainElemCacheExpiration, sigChainElemCacheCleanupInterval),
 		srcSigChainCache:      common.NewGoCache(srcSigChainCacheExpiration, srcSigChainCacheCleanupInterval),
 		vrfCache:              common.NewGoCache(vrfCacheExpiration, vrfCacheCleanupInterval),
+		finalizedBlockCache:   common.NewGoCache(finalizedBlockCacheExpiration, finalizedBlockCacheCleanupInterval),
 		miningPorPackageCache: common.NewGoCache(miningPorPackageCacheExpiration, miningPorPackageCacheCleanupInterval),
 		destSigChainElemCache: common.NewGoCache(destSigChainElemCacheExpiration, destSigChainElemCacheCleanupInterval),
 	}
@@ -267,13 +268,11 @@ func (ps *PorServer) AddSigChainFromTx(txn *Transaction, currentHeight uint32) (
 }
 
 func (ps *PorServer) ShouldSignDestSigChainElem(blockHash, lastSignature []byte, sigChainLen int) bool {
+	if _, ok := ps.finalizedBlockCache.Get(blockHash); ok {
+		return false
+	}
 	if v, ok := ps.destSigChainElemCache.Get(blockHash); ok {
 		if currentDestSigChainElem, ok := v.(*destSigChainElem); ok {
-			currentDestSigChainElem.RLock()
-			defer currentDestSigChainElem.RUnlock()
-			if currentDestSigChainElem.isFinalized {
-				return false
-			}
 			sigHash := pb.ComputeSignatureHash(lastSignature, sigChainLen)
 			if bytes.Compare(sigHash, currentDestSigChainElem.sigHash) >= 0 {
 				return false
@@ -318,6 +317,10 @@ func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, signature, send
 		return nil, nil, nil, fmt.Errorf("sender pubkey %x is different from expected value %x", senderPubkey, scei.nextPubkey)
 	}
 
+	if _, ok = ps.finalizedBlockCache.Get(scei.blockHash); !ok {
+		return nil, nil, nil, fmt.Errorf("block %x is not finalized yet")
+	}
+
 	vrf, proof, err := ps.GetOrComputeVrf(scei.blockHash)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("get or compute VRF error: %v", err)
@@ -348,11 +351,10 @@ func (ps *PorServer) FlushSigChain(blockHash []byte) {
 	ps.Lock()
 	defer ps.Unlock()
 
+	ps.finalizedBlockCache.Add(blockHash, struct{}{})
+
 	if v, ok := ps.destSigChainElemCache.Get(blockHash); ok {
 		if sce, ok := v.(*destSigChainElem); ok {
-			sce.Lock()
-			sce.isFinalized = true
-			sce.Unlock()
 			time.AfterFunc(util.RandDuration(flushSigChainDelay, 0.5), func() {
 				event.Queue.Notify(event.BacktrackSigChain, &BacktrackSigChainInfo{
 					DestSigChainElem: sce.sigChainElem,
