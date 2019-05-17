@@ -20,7 +20,7 @@ import (
 
 const (
 	TimestampTolerance = 40 * time.Second
-	NumGenesisBlocks   = por.SigChainMiningHeightOffset + por.SigChainBlockHeightOffset - 1
+	NumGenesisBlocks   = por.SigChainMiningHeightOffset + config.MaxRollbackBlocks - 1
 	HeaderVersion      = 1
 )
 

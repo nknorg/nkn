@@ -26,7 +26,7 @@ const (
 	sigChainElemCacheCleanupInterval     = 10 * time.Second
 	srcSigChainCacheExpiration           = 2 * config.ConsensusTimeout
 	srcSigChainCacheCleanupInterval      = 10 * time.Second
-	vrfCacheExpiration                   = (SigChainMiningHeightOffset + SigChainBlockHeightOffset + 5) * config.ConsensusTimeout
+	vrfCacheExpiration                   = (SigChainMiningHeightOffset + config.MaxRollbackBlocks + 5) * config.ConsensusTimeout
 	vrfCacheCleanupInterval              = 10 * time.Second
 	finalizedBlockCacheExpiration        = time.Hour
 	finalizedBlockCacheCleanupInterval   = time.Minute
@@ -240,7 +240,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *Transaction, currentHeight uint32) (
 
 	voteForHeight := porPkg.VoteForHeight
 	if voteForHeight < currentHeight+SigChainPropagationHeightOffset {
-		return false, fmt.Errorf("sigchain vote for height %d is less than %d", voteForHeight, currentHeight+2)
+		return false, fmt.Errorf("sigchain vote for height %d is less than %d", voteForHeight, currentHeight+SigChainPropagationHeightOffset)
 	}
 
 	ps.Lock()
