@@ -87,12 +87,12 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 	hash := txn.Hash()
 	sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 
-	// 1. check if the sender is exsit.
+	// 1. check if the sender exsits.
 	if _, ok := tp.TxLists.Load(sender); !ok {
 		tp.TxLists.LoadOrStore(sender, NewNonceSortedTxs(sender, DefaultCap))
 	}
 
-	// 2. check if the txn is exsit.
+	// 2. check if the txn exsits.
 	v, ok := tp.TxLists.Load(sender)
 	if !ok {
 		return errors.New("get txn list error")
@@ -110,6 +110,9 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 		return err
 	}
 	switch txn.UnsignedTx.Payload.Type {
+	case pb.CommitType:
+		// sigchain txn should not be added to txn pool
+		return nil
 	case pb.TransferAssetType:
 		ta := pl.(*pb.TransferAsset)
 		amount := chain.DefaultLedger.Store.GetBalance(sender)
@@ -214,7 +217,6 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 	list.AddOrphanTxn(txn)
 
 	return nil
-
 }
 
 func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
@@ -334,17 +336,6 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 		return ErrDuplicatedTx
 	}
 
-	// get signature chain from commit transaction then add it to POR server
-	if txn.UnsignedTx.Payload.Type == pb.CommitType {
-		added, err := por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
-		if err != nil {
-			return err
-		}
-		if !added {
-			return ErrDuplicatedTx
-		}
-	}
-
 	sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 	nonce := chain.DefaultLedger.Store.GetNonce(sender)
 
@@ -357,6 +348,13 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 	case pb.CoinbaseType:
 		return ErrTxnType
 	case pb.CommitType:
+		added, err := por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
+		if err != nil {
+			return err
+		}
+		if !added {
+			return ErrNonOptimalSigChain
+		}
 	case pb.TransferAssetType:
 		if txn.UnsignedTx.Nonce < nonce {
 			return ErrNonceTooLow
