@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	TestNetVersionNum = 1
+	TestNetVersionNum = 2
 )
 
 var (
