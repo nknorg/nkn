@@ -17,7 +17,7 @@ import (
 )
 
 type Mining interface {
-	BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType WinnerType, timestamp int64) (*Block, error)
+	BuildBlock(height uint32, chordID []byte, winnerHash common.Uint256, winnerType WinnerType, timestamp int64) (*Block, error)
 }
 
 type BuiltinMining struct {
@@ -32,7 +32,7 @@ func NewBuiltinMining(account *vault.Account, txnCollector *TxnCollector) *Built
 	}
 }
 
-func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash common.Uint256, winnerType WinnerType, timestamp int64) (*Block, error) {
+func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash common.Uint256, winnerType WinnerType, timestamp int64) (*Block, error) {
 	var txnList []*Transaction
 	var txnHashList []common.Uint256
 
@@ -47,14 +47,16 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 	txCount := 1
 
 	if winnerType == TXN_SIGNER {
-		miningSigChainTxn, err := por.GetPorServer().GetMiningSigChainTxn(winningHash)
-		if err != nil {
-			return nil, err
+		if _, err = DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
+			miningSigChainTxn, err := por.GetPorServer().GetMiningSigChainTxn(winnerHash)
+			if err != nil {
+				return nil, err
+			}
+			txnList = append(txnList, miningSigChainTxn)
+			txnHashList = append(txnHashList, miningSigChainTxn.Hash())
+			totalTxsSize = totalTxsSize + miningSigChainTxn.GetSize()
+			txCount++
 		}
-		txnList = append(txnList, miningSigChainTxn)
-		txnHashList = append(txnHashList, miningSigChainTxn.Hash())
-		totalTxsSize = totalTxsSize + miningSigChainTxn.GetSize()
-		txCount++
 	}
 
 	txnCollection, err := bm.txnCollector.Collect()
@@ -118,7 +120,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winningHash c
 				ConsensusData:    rand.Uint64(),
 				TransactionsRoot: txnRoot.ToArray(),
 				StateRoot:        curStateHash.ToArray(),
-				WinnerHash:       winningHash.ToArray(),
+				WinnerHash:       winnerHash.ToArray(),
 				WinnerType:       winnerType,
 				Signer:           encodedPubKey,
 				ChordId:          chordID,

@@ -305,40 +305,37 @@ func TimestampCheck(timestamp int64) error {
 }
 
 func NextBlockProposerCheck(block *Block) error {
-	winnerHash, winnerType, err := GetNextMiningSigChainTxnHash(block.Header.UnsignedHeader.Height)
+	expectedWinnerHash, expectedWinnerType, err := GetNextMiningSigChainTxnHash(block.Header.UnsignedHeader.Height)
 	if err != nil {
 		return err
 	}
 
-	bwhash, _ := Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
-	if winnerHash == EmptyUint256 && bwhash != EmptyUint256 {
-		for _, txn := range block.Transactions {
-			if txn.Hash() == bwhash {
-				_, err = por.NewPorPackage(txn)
-				return err
-			}
-		}
-		return fmt.Errorf("mining sigchain txn %s not found in block", bwhash)
+	winnerType := block.Header.UnsignedHeader.WinnerType
+	winnerHash, err := Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
+	if err != nil {
+		return err
 	}
 
-	if winnerType != block.Header.UnsignedHeader.WinnerType {
-		return fmt.Errorf("Winner type should be %v instead of %v", winnerType, block.Header.UnsignedHeader.WinnerType)
+	if winnerType != expectedWinnerType {
+		return fmt.Errorf("Winner type should be %v instead of %v", expectedWinnerType, winnerType)
 	}
 
-	if winnerHash != bwhash {
-		return fmt.Errorf("Winner hash should be %s instead of %s", winnerHash.ToHexString(), block.Header.UnsignedHeader.WinnerHash)
+	if winnerHash != expectedWinnerHash {
+		return fmt.Errorf("Winner hash should be %s instead of %s", expectedWinnerHash.ToHexString(), winnerHash)
 	}
 
-	if bwhash != EmptyUint256 {
+	if winnerHash != EmptyUint256 {
 		found := false
 		for _, txn := range block.Transactions {
-			if txn.Hash() == bwhash {
+			if txn.Hash() == winnerHash {
 				found = true
 				break
 			}
 		}
 		if !found {
-			return fmt.Errorf("mining sigchain txn %s not found in block", block.Header.UnsignedHeader.WinnerHash)
+			if _, err := DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
+				return fmt.Errorf("mining sigchain txn %s not found in block", winnerHash)
+			}
 		}
 	}
 
