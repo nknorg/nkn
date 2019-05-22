@@ -1,8 +1,6 @@
 package trie
 
 import (
-	"fmt"
-
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -33,7 +31,7 @@ func NewSecure(root common.Uint256, db Database) (*SecureTrie, error) {
 func (t *SecureTrie) Get(key []byte) []byte {
 	res, err := t.TryGet(key)
 	if err != nil {
-		log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
+		log.Errorf("Unhandled trie error: %v", err)
 	}
 	return res
 }
@@ -44,7 +42,7 @@ func (t *SecureTrie) TryGet(key []byte) ([]byte, error) {
 
 func (t *SecureTrie) Update(key, value []byte) {
 	if err := t.TryUpdate(key, value); err != nil {
-		log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
+		log.Errorf("Unhandled trie error: %v", err)
 	}
 }
 
@@ -60,7 +58,7 @@ func (t *SecureTrie) TryUpdate(key, value []byte) error {
 
 func (t *SecureTrie) Delete(key []byte) {
 	if err := t.TryDelete(key); err != nil {
-		log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
+		log.Errorf("Unhandled trie error: %v", err)
 	}
 }
 

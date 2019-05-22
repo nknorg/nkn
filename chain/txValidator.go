@@ -139,27 +139,33 @@ func CheckTransactionPayload(txn *Transaction) error {
 	case CommitType:
 	case RegisterNameType:
 		pld := payload.(*RegisterName)
-		match, err := regexp.MatchString("([a-z]{8,12})", pld.Name)
+		match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)", pld.Name)
 		if err != nil {
 			return err
 		}
 		if !match {
-			return errors.New(fmt.Sprintf("name %s should only contain a-z and have length 8-12", pld.Name))
+			return fmt.Errorf("name %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", pld.Name)
 		}
 	case DeleteNameType:
 	case SubscribeType:
 		pld := payload.(*Subscribe)
-		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, pld.Topic, pld.Bucket)
+		bucket := pld.Bucket
+		if bucket > BucketsLimit {
+			return fmt.Errorf("topic bucket %d can't be bigger than %d", bucket, BucketsLimit)
+		}
+
+		duration := pld.Duration
+		if duration > MaxSubscriptionDuration {
+			return fmt.Errorf("subscription duration %d can't be bigger than %d", duration, MaxSubscriptionDuration)
+		}
+
+		topic := pld.Topic
+		match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)", topic)
 		if err != nil {
 			return err
 		}
-		if subscribed {
-			return errors.New(fmt.Sprintf("subscriber %s already subscribed to %s", SubscriberString(pld), pld.Topic))
-		}
-
-		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
-		if subscriptionCount >= SubscriptionsLimit {
-			return errors.New(fmt.Sprintf("subscribtion count to %s can't be more than %d", pld.Topic, subscriptionCount))
+		if !match {
+			return fmt.Errorf("topic %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", topic)
 		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type")
@@ -205,7 +211,7 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 		pld := payload.(*RegisterName)
 		name, err := DefaultLedger.Store.GetName(pld.Registrant)
 		if name != nil {
-			return errors.New(fmt.Sprintf("pubKey %+v already has registered name %s", pld.Registrant, *name))
+			return fmt.Errorf("pubKey %+v already has registered name %s", pld.Registrant, *name)
 		}
 		if err != leveldb.ErrNotFound {
 			return err
@@ -213,7 +219,7 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 
 		registrant, err := DefaultLedger.Store.GetRegistrant(pld.Name)
 		if registrant != nil {
-			return errors.New(fmt.Sprintf("name %s is already registered for pubKey %+v", pld.Name, registrant))
+			return fmt.Errorf("name %s is already registered for pubKey %+v", pld.Name, registrant)
 		}
 		if err != leveldb.ErrNotFound {
 			return err
@@ -225,42 +231,23 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 			return err
 		}
 		if *name != pld.Name {
-			return errors.New(fmt.Sprintf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant))
+			return fmt.Errorf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant)
 		} else if name == nil {
-			return errors.New(fmt.Sprintf("no name registered for pubKey %+v", pld.Registrant))
+			return fmt.Errorf("no name registered for pubKey %+v", pld.Registrant)
 		}
 	case SubscribeType:
 		pld := payload.(*Subscribe)
-		bucket := pld.Bucket
-		if bucket > BucketsLimit {
-			return errors.New(fmt.Sprintf("topic bucket %d can't be bigger than %d", bucket, BucketsLimit))
-		}
-
-		duration := pld.Duration
-		if duration > MaxSubscriptionDuration {
-			return errors.New(fmt.Sprintf("subscription duration %d can't be bigger than %d", duration, MaxSubscriptionDuration))
-		}
-
-		topic := pld.Topic
-		match, err := regexp.MatchString("(^[a-z][a-z0-9-_.~+%]{2,254}$)", topic)
-		if err != nil {
-			return err
-		}
-		if !match {
-			return errors.New(fmt.Sprintf("topic %s should start with a-z, contain a-z0-9-_.~+%% and have length 3-255", topic))
-		}
-
-		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, topic, bucket)
+		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, pld.Topic, pld.Bucket)
 		if err != nil {
 			return err
 		}
 		if subscribed {
-			return fmt.Errorf("subscriber %s already subscribed to %s", SubscriberString(pld), topic)
+			return fmt.Errorf("subscriber %s already subscribed to %s", SubscriberString(pld), pld.Topic)
 		}
 
-		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
+		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
 		if subscriptionCount >= SubscriptionsLimit {
-			return fmt.Errorf("subscribtion count to %s can't be more than %d", topic, subscriptionCount)
+			return fmt.Errorf("subscribtion count to %s can't be more than %d", pld.Topic, subscriptionCount)
 		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")
