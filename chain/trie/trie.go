@@ -36,7 +36,7 @@ func New(hash common.Uint256, db Database) (*Trie, error) {
 func (t *Trie) Get(key []byte) []byte {
 	res, err := t.TryGet(key)
 	if err != nil {
-		log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
+		log.Errorf("Unhandled trie error: %v", err)
 		return nil
 	}
 	return res
@@ -92,7 +92,7 @@ func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newNode
 
 func (t *Trie) Update(key, value []byte) {
 	if err := t.TryUpdate(key, value); err != nil {
-		log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
+		log.Errorf("Unhandled trie error: %v", err)
 	}
 }
 
@@ -168,7 +168,7 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
 
 func (t *Trie) Delete(key []byte) {
 	if err := t.TryDelete(key); err != nil {
-		log.Error(fmt.Sprintf("Unhandled trie error: %v", err))
+		log.Errorf("Unhandled trie error: %v", err)
 	}
 }
 
