@@ -263,6 +263,8 @@ func (ps *PorServer) AddSigChainFromTx(txn *Transaction, currentHeight uint32) (
 		return false, err
 	}
 
+	log.Debugf("Received better sigchain for height %d with sighash %x", voteForHeight, porPkg.SigHash)
+
 	return true, nil
 }
 
@@ -355,6 +357,7 @@ func (ps *PorServer) FlushSigChain(blockHash []byte) {
 	if v, ok := ps.destSigChainElemCache.Get(blockHash); ok {
 		if sce, ok := v.(*destSigChainElem); ok {
 			time.Sleep(util.RandDuration(flushSigChainDelay, 0.5))
+			log.Infof("Start backtracking sigchain with sighash %x", sce.sigHash)
 			event.Queue.Notify(event.BacktrackSigChain, &BacktrackSigChainInfo{
 				DestSigChainElem: sce.sigChainElem,
 				PrevSignature:    sce.prevSignature,

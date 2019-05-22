@@ -298,7 +298,7 @@ func (w *WalletImpl) GetContract() (*contract.Contract, error) {
 
 func GetWallet() Wallet {
 	if !FileExisted(WalletFileName) {
-		log.Errorf(fmt.Sprintf("No %s detected, please create a wallet by using command line.", WalletFileName))
+		log.Errorf("No %s detected, please create a wallet by using command line.", WalletFileName)
 		os.Exit(1)
 	}
 	passwd, err := password.GetAccountPassword()
