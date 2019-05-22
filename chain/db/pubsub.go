@@ -2,116 +2,17 @@ package db
 
 import (
 	"bytes"
+	"strings"
 
 	"github.com/nknorg/nkn/common/serialization"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 )
 
-func (cs *ChainStore) SaveName(registrant []byte, name string) error {
-	// generate registrant key
-	registrantKey := bytes.NewBuffer(nil)
-	registrantKey.WriteByte(byte(NS_Registrant))
-	serialization.WriteVarBytes(registrantKey, registrant)
-
-	// generate name key
-	nameKey := bytes.NewBuffer(nil)
-	nameKey.WriteByte(byte(NS_Name))
-	serialization.WriteVarString(nameKey, name)
-
-	// PUT VALUE
-	w := bytes.NewBuffer(nil)
-	serialization.WriteVarString(w, name)
-	err := cs.st.BatchPut(registrantKey.Bytes(), w.Bytes())
-	if err != nil {
-		return err
-	}
-
-	w = bytes.NewBuffer(nil)
-	serialization.WriteVarBytes(w, registrant)
-	err = cs.st.BatchPut(nameKey.Bytes(), w.Bytes())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (cs *ChainStore) DeleteName(registrant []byte) error {
-	name, err := cs.GetName(registrant)
-	if err != nil {
-		return err
-	}
-
-	// generate registrant key
-	registrantKey := bytes.NewBuffer(nil)
-	registrantKey.WriteByte(byte(NS_Registrant))
-	serialization.WriteVarBytes(registrantKey, registrant)
-
-	// generate name key
-	nameKey := bytes.NewBuffer(nil)
-	nameKey.WriteByte(byte(NS_Name))
-	serialization.WriteVarString(nameKey, *name)
-
-	// DELETE VALUE
-	err = cs.st.BatchDelete(registrantKey.Bytes())
-	if err != nil {
-		return err
-	}
-	err = cs.st.BatchDelete(nameKey.Bytes())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (cs *ChainStore) GetName(registrant []byte) (*string, error) {
-	// generate key
-	registrantKey := bytes.NewBuffer(nil)
-	registrantKey.WriteByte(byte(NS_Registrant))
-	serialization.WriteVarBytes(registrantKey, registrant)
-
-	data, err := cs.st.Get(registrantKey.Bytes())
-	if err != nil {
-		return nil, err
-	}
-
-	r := bytes.NewReader(data)
-
-	name, err := serialization.ReadVarString(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return &name, nil
-}
-
-func (cs *ChainStore) GetRegistrant(name string) ([]byte, error) {
-	// generate key
-	nameKey := bytes.NewBuffer(nil)
-	nameKey.WriteByte(byte(NS_Name))
-	serialization.WriteVarString(nameKey, name)
-
-	data, err := cs.st.Get(nameKey.Bytes())
-	if err != nil {
-		return nil, err
-	}
-
-	r := bytes.NewReader(data)
-
-	registrant, err := serialization.ReadVarBytes(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return registrant, nil
-}
-
 func generateTopicKey(topic string) []byte {
 	topicKey := bytes.NewBuffer(nil)
 	topicKey.WriteByte(byte(PS_Topic))
-	serialization.WriteVarString(topicKey, topic)
+	serialization.WriteVarString(topicKey, strings.ToLower(topic))
 
 	return topicKey.Bytes()
 }
