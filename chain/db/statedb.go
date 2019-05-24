@@ -37,10 +37,6 @@ func (acc *account) Serialize(w io.Writer) error {
 }
 
 func (acc *account) Deserialize(r io.Reader) error {
-	if acc == nil {
-		acc = new(account)
-	}
-
 	nonce, err := serialization.ReadVarUint(r, 0)
 	if err != nil {
 		return fmt.Errorf("Deserialize nonce error:%v", err)

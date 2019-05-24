@@ -8,6 +8,7 @@ import (
 	"github.com/nknorg/nkn/cli/asset"
 	. "github.com/nknorg/nkn/cli/common"
 	"github.com/nknorg/nkn/cli/debug"
+	"github.com/nknorg/nkn/cli/id"
 	"github.com/nknorg/nkn/cli/info"
 	"github.com/nknorg/nkn/cli/name"
 	"github.com/nknorg/nkn/cli/subscribe"
@@ -37,6 +38,7 @@ func main() {
 		*asset.NewCommand(),
 		*name.NewCommand(),
 		*subscribe.NewCommand(),
+		*id.NewCommand(),
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 	sort.Sort(cli.FlagsByName(app.Flags))

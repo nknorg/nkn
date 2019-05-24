@@ -46,6 +46,7 @@ const (
 	ErrDoNotPropagate        ErrCode = 45019
 	ErrAlreadySubscribed     ErrCode = 45020
 	ErrAppendTxnPool         ErrCode = 45021
+	ErrNullID                ErrCode = 45022
 )
 
 var ErrMessage = map[ErrCode]string{
@@ -79,4 +80,5 @@ var ErrMessage = map[ErrCode]string{
 	ErrStateUpdaterVaild:    "INTERNAL ERROR, ErrStateUpdaterVaild",
 	ErrSummaryAsset:         "INTERNAL ERROR, ErrSummaryAsset",
 	ErrXmitFail:             "INTERNAL ERROR, ErrXmitFail",
+	ErrNullID:               "INTERNAL ERROR, there is no ID in account",
 }
