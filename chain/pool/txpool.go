@@ -3,13 +3,16 @@ package pool
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nnet/log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -28,6 +31,7 @@ var (
 	ErrDuplicateRegistrant   = errors.New("Registrant has already registered this name")
 	ErrNoNameRegistered      = errors.New("name has not be registered yet")
 	ErrDuplicateSubscription = errors.New("Duplicate subscription in one block")
+	ErrDuplicateGenerateID   = errors.New("Duplicate GenerateIDType txn in one block")
 	ErrSubscriptionLimit     = errors.New("Subscription limit exceeded in one block")
 	ErrNonOptimalSigChain    = errors.New("This SigChain is NOT optimal choice")
 )
@@ -197,6 +201,28 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 		allInList := list.Totality() + common.Fixed64(txn.UnsignedTx.Fee)
 		if amount < allInList {
 			return errors.New("Subscribe: not sufficient funds")
+		}
+	case pb.GenerateIDType:
+		pld := pl.(*pb.GenerateID)
+
+		_, err := crypto.NewPubKeyFromBytes(pld.PublicKey)
+		if err != nil {
+			return fmt.Errorf("GenerateID error:", err)
+		}
+
+		for _, tx := range list.txs {
+			if tx.UnsignedTx.Payload.Type == pb.GenerateIDType {
+				return ErrDuplicateGenerateID
+			}
+		}
+
+		if common.Fixed64(pld.RegistrationFee) < common.Fixed64(config.MinGenIDRegistrationFee) {
+			return errors.New("fee is too low than MinGenIDRegistrationFee")
+		}
+
+		allInList := list.Totality() + common.Fixed64(pld.RegistrationFee) + common.Fixed64(txn.UnsignedTx.Fee)
+		if amount < allInList {
+			return errors.New("GenerateID: not sufficient funds")
 		}
 	}
 
@@ -447,7 +473,20 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 		if subscriptionCount >= SubscriptionsLimit {
 			return ErrSubscriptionLimit
 		}
+	case pb.GenerateIDType:
+		if txn.UnsignedTx.Nonce < nonce {
+			return ErrNonceTooLow
+		}
 
+		pld := payload.(*pb.GenerateID)
+		id, err := chain.DefaultLedger.Store.GetID(pld.PublicKey)
+		if err != nil {
+			return err
+		}
+
+		if len(id) != 0 {
+			return errors.New("ID has be registered")
+		}
 	default:
 		return ErrTxnType
 	}
