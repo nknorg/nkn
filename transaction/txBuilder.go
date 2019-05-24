@@ -79,3 +79,17 @@ func NewSubscribeTransaction(subscriber []byte, identifier string, topic string,
 		MsgTx: *tx,
 	}, nil
 }
+
+func NewGenerateIDTransaction(publicKey []byte, regFee Fixed64, nonce uint64, fee Fixed64) (*Transaction, error) {
+	payload := NewGenerateID(publicKey, regFee)
+	pl, err := Pack(GenerateIDType, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
+
+	return &Transaction{
+		MsgTx: *tx,
+	}, nil
+}
