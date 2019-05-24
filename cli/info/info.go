@@ -27,6 +27,7 @@ func infoAction(c *cli.Context) (err error) {
 	version := c.Bool("nodeversion")
 	balance := c.String("balance")
 	nonce := c.String("nonce")
+	id := c.String("id")
 
 	var resp []byte
 	var output [][]byte
@@ -139,6 +140,15 @@ func infoAction(c *cli.Context) (err error) {
 		output = append(output, resp)
 	}
 
+	if id != "" {
+		resp, err := client.Call(Address(), "getid", 0, map[string]interface{}{"publickey": id})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
+		output = append(output, resp)
+	}
+
 	for _, v := range output {
 		FormatOutput(v)
 	}
@@ -201,6 +211,10 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "nonce",
 				Usage: "nonce of a address",
+			},
+			cli.StringFlag{
+				Name:  "id",
+				Usage: "id from publickey",
 			},
 		},
 		Action: infoAction,

@@ -110,3 +110,25 @@ func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic stri
 
 	return txn, nil
 }
+
+func MakeGenerateIDTransaction(wallet vault.Wallet, regFee Fixed64, nonce uint64, txnFee Fixed64) (*Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+	pubkey, err := account.PubKey().EncodePoint(true)
+	if err != nil {
+		return nil, err
+	}
+	txn, err := NewGenerateIDTransaction(pubkey, regFee, nonce, txnFee)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	ctx := contract.NewContractContext(txn)
+	wallet.Sign(ctx)
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
+}
