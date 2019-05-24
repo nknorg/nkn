@@ -1,10 +1,14 @@
 package chain
 
 import (
+	"encoding/binary"
+
 	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nnet/log"
 )
 
@@ -62,15 +66,61 @@ func spendTransaction(states *db.StateDB, tx *Transaction, totalFee common.Fixed
 		nonceSender := accSender.GetNonce()
 		accSender.SetNonce(nonceSender + 1)
 		states.SetAccount(pg, accSender)
+	case GenerateIDType:
+		genID := pl.(*GenerateID)
+		pg, _ := common.ToCodeHash(tx.Programs[0].Code)
+		accSender := states.GetOrNewAccount(pg)
+		amountSender := accSender.GetBalance()
+		accSender.SetBalance(amountSender - common.Fixed64(genID.RegistrationFee) - common.Fixed64(tx.UnsignedTx.Fee))
+		nonceSender := accSender.GetNonce()
+		accSender.SetNonce(nonceSender + 1)
+		accSender.SetID(crypto.Sha256ZeroHash)
+		states.SetAccount(pg, accSender)
+
+		donationAddress, err := common.ToScriptHash(config.DonationAddress)
+		if err != nil {
+			return err
+		}
+		donationAccount := states.GetOrNewAccount(donationAddress)
+		amount := donationAccount.GetBalance()
+		donationAccount.SetBalance(amount + common.Fixed64(genID.RegistrationFee))
+		states.SetAccount(donationAddress, donationAccount)
+
 	}
 
 	return nil
 }
 
-func GenerateStateRoot(txs []*Transaction) common.Uint256 {
+func GenerateStateRoot(txs []*Transaction, height uint32, consensusData uint64) common.Uint256 {
 
 	root := DefaultLedger.Store.GetCurrentBlockStateRoot()
 	states, _ := db.NewStateDB(root, db.NewTrieStore(DefaultLedger.Store.GetDatabase()))
+
+	//process previous block
+	if height > config.GenerateIDBlockDelay {
+		prevBlock, err := DefaultLedger.Store.GetBlockByHeight(height - config.GenerateIDBlockDelay)
+		if err != nil {
+			return common.EmptyUint256
+		}
+
+		for _, txn := range prevBlock.Transactions {
+			if txn.UnsignedTx.Payload.Type == GenerateIDType {
+				consensusDataSlice := make([]byte, 8)
+				binary.LittleEndian.PutUint64(consensusDataSlice, consensusData)
+				txnHash := txn.Hash()
+				data := append(txnHash[:], consensusDataSlice...)
+				id := crypto.Sha256(data)
+
+				pg, err := txn.GetProgramHashes()
+				if err != nil {
+					return common.EmptyUint256
+				}
+				accSender := states.GetOrNewAccount(pg[0])
+				accSender.SetID(id)
+				states.SetAccount(pg[0], accSender)
+			}
+		}
+	}
 
 	var totalFee common.Fixed64
 	for _, tx := range txs {

@@ -9,11 +9,13 @@ import (
 
 	"github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vm/signature"
+	"github.com/ontology/common"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -167,6 +169,17 @@ func CheckTransactionPayload(txn *Transaction) error {
 		if !match {
 			return fmt.Errorf("topic %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", topic)
 		}
+	case GenerateIDType:
+		pld := payload.(*GenerateID)
+		_, err := crypto.NewPubKeyFromBytes(pld.PublicKey)
+		if err != nil {
+			return fmt.Errorf("GenerateID error:", err)
+		}
+
+		if common.Fixed64(pld.RegistrationFee) < common.Fixed64(config.MinGenIDRegistrationFee) {
+			return errors.New("fee is too low than MinGenIDRegistrationFee")
+		}
+
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type")
 	}
@@ -249,6 +262,15 @@ func VerifyTransactionWithLedger(txn *Transaction) error {
 		if subscriptionCount >= SubscriptionsLimit {
 			return fmt.Errorf("subscribtion count to %s can't be more than %d", pld.Topic, subscriptionCount)
 		}
+	case GenerateIDType:
+		pld := payload.(*GenerateID)
+		id, err := DefaultLedger.Store.GetID(pld.PublicKey)
+		if err != nil {
+			return err
+		}
+		if len(id) != 0 {
+			return errors.New("ID has be registered")
+		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")
 	}
@@ -262,9 +284,11 @@ type Iterator interface {
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
 func VerifyTransactionWithBlock(iterator Iterator, header *block.Header) error {
 	//initial
+
 	txnlist := make(map[Uint256]struct{}, 0)
 	registeredNames := make(map[string]struct{}, 0)
 	nameRegistrants := make(map[string]struct{}, 0)
+	generateIDs := make(map[string]struct{}, 0)
 
 	type subscription struct{ topic, subscriber string }
 	subscriptions := make(map[subscription]struct{}, 0)
@@ -334,6 +358,13 @@ func VerifyTransactionWithBlock(iterator Iterator, header *block.Header) error {
 				return errors.New("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
 			}
 			subscriptionCount[topic]++
+		case GenerateIDType:
+			generateIdPayload := payload.(*GenerateID)
+			publicKey := BytesToHexString(generateIdPayload.PublicKey)
+			if _, ok := generateIDs[publicKey]; ok {
+				return errors.New("[VerifyTransactionWithBlock], duplicate GenerateID txns in block.")
+			}
+			generateIDs[publicKey] = struct{}{}
 		}
 
 		return nil

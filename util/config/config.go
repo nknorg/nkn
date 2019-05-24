@@ -44,7 +44,7 @@ const (
 	DonationAddress              = "NKNaaaaaaaaaaaaaaaaaaaaaaaaaaaeJ6gxa"
 	DonationAdjustDividendFactor = 1
 	DonationAdjustDivisorFactor  = 2
-	MinGenerateIDTxnFee          = 0
+	MinGenIDRegistrationFee      = 0
 	GenerateIDBlockDelay         = 1
 )
 

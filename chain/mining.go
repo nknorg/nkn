@@ -108,8 +108,9 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	if err != nil {
 		return nil, err
 	}
+	consensusData := rand.Uint64()
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
-	curStateHash := GenerateStateRoot(txnList)
+	curStateHash := GenerateStateRoot(txnList, height, consensusData)
 	header := &Header{
 		BlockHeader: BlockHeader{
 			UnsignedHeader: &UnsignedHeader{
@@ -117,7 +118,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 				PrevBlockHash:    curBlockHash.ToArray(),
 				Timestamp:        timestamp,
 				Height:           height,
-				ConsensusData:    rand.Uint64(),
+				ConsensusData:    consensusData,
 				TransactionsRoot: txnRoot.ToArray(),
 				StateRoot:        curStateHash.ToArray(),
 				WinnerHash:       winnerHash.ToArray(),
