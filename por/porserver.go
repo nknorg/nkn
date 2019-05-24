@@ -20,20 +20,20 @@ import (
 )
 
 const (
-	sigChainTxnCacheExpiration           = 300 * time.Second
-	sigChainTxnCacheCleanupInterval      = 10 * time.Second
-	sigChainElemCacheExpiration          = 2 * config.ConsensusTimeout
-	sigChainElemCacheCleanupInterval     = 10 * time.Second
-	srcSigChainCacheExpiration           = 2 * config.ConsensusTimeout
-	srcSigChainCacheCleanupInterval      = 10 * time.Second
+	sigChainElemCacheExpiration          = 10 * config.ConsensusTimeout
+	sigChainElemCacheCleanupInterval     = config.ConsensusDuration
+	srcSigChainCacheExpiration           = 10 * config.ConsensusTimeout
+	srcSigChainCacheCleanupInterval      = config.ConsensusDuration
+	destSigChainElemCacheExpiration      = 10 * config.ConsensusTimeout
+	destSigChainElemCacheCleanupInterval = config.ConsensusDuration
+	finalizedBlockCacheExpiration        = 10 * config.ConsensusTimeout
+	finalizedBlockCacheCleanupInterval   = config.ConsensusDuration
+	sigChainTxnCacheExpiration           = 50 * config.ConsensusTimeout
+	sigChainTxnCacheCleanupInterval      = config.ConsensusDuration
+	miningPorPackageCacheExpiration      = 50 * config.ConsensusTimeout
+	miningPorPackageCacheCleanupInterval = config.ConsensusDuration
 	vrfCacheExpiration                   = (SigChainMiningHeightOffset + config.MaxRollbackBlocks + 5) * config.ConsensusTimeout
-	vrfCacheCleanupInterval              = 10 * time.Second
-	finalizedBlockCacheExpiration        = time.Hour
-	finalizedBlockCacheCleanupInterval   = time.Minute
-	miningPorPackageCacheExpiration      = time.Hour
-	miningPorPackageCacheCleanupInterval = time.Minute
-	destSigChainElemCacheExpiration      = time.Hour
-	destSigChainElemCacheCleanupInterval = time.Minute
+	vrfCacheCleanupInterval              = config.ConsensusDuration
 	flushSigChainDelay                   = 500 * time.Millisecond
 )
 
