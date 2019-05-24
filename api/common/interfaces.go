@@ -491,6 +491,40 @@ func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interf
 	return respPacking(ret, SUCCESS)
 }
 
+// getId gets id by publick key
+// params: {"publickey":<publickey>}
+// return: {"result":<result>, "error":<errcode>}
+func getId(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	publicKey, ok := params["publickey"].(string)
+	if !ok {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	pkSlice, err := hex.DecodeString(publicKey)
+	if err != nil {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	id, err := chain.DefaultLedger.Store.GetID(pkSlice)
+	if err != nil {
+		return respPacking(nil, INVALID_PARAMS)
+	}
+
+	if len(id) == 0 || bytes.Equal(id, make([]byte, 32)) {
+		return respPacking(nil, ErrNullID)
+	}
+
+	ret := map[string]interface{}{
+		"id": common.BytesToHexString(id),
+	}
+
+	return respPacking(ret, SUCCESS)
+}
+
 func VerifyAndSendTx(localNode *node.LocalNode, txn *Transaction) ErrCode {
 	if err := localNode.AppendTxnPool(txn); err != nil {
 		log.Warningf("Can NOT add the transaction to TxnPool: %v", err)
@@ -704,6 +738,7 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"commitpor":            {Handler: commitPor},
 	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
 	"getnoncebyaddr":       {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
+	"getid":                {Handler: getId, AccessCtrl: BIT_JSONRPC},
 
 	"getaddressbyname":             {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
 	"getsubscribers":               {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
