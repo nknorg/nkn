@@ -96,7 +96,8 @@ func TransactionCheck(block *Block) error {
 	}
 
 	//state root check
-	root := GenerateStateRoot(block.Transactions)
+	root := GenerateStateRoot(block.Transactions, block.Header.UnsignedHeader.Height, block.Header.UnsignedHeader.ConsensusData)
+
 	headerRoot, _ := Uint256ParseFromBytes(block.Header.UnsignedHeader.StateRoot)
 	if ok := root.CompareTo(headerRoot); ok != 0 {
 		return fmt.Errorf("[TransactionCheck]state root not equal:%v, %v", root, headerRoot)
