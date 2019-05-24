@@ -36,7 +36,7 @@ type UnsignedTx struct {
 func (m *UnsignedTx) Reset()      { *m = UnsignedTx{} }
 func (*UnsignedTx) ProtoMessage() {}
 func (*UnsignedTx) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transaction_5de1ca48c795bb25, []int{0}
+	return fileDescriptor_transaction_d743a4680141eafd, []int{0}
 }
 func (m *UnsignedTx) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -101,7 +101,7 @@ type MsgTx struct {
 func (m *MsgTx) Reset()      { *m = MsgTx{} }
 func (*MsgTx) ProtoMessage() {}
 func (*MsgTx) Descriptor() ([]byte, []int) {
-	return fileDescriptor_transaction_5de1ca48c795bb25, []int{1}
+	return fileDescriptor_transaction_d743a4680141eafd, []int{1}
 }
 func (m *MsgTx) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -911,9 +911,9 @@ var (
 	ErrIntOverflowTransaction   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/transaction.proto", fileDescriptor_transaction_5de1ca48c795bb25) }
+func init() { proto.RegisterFile("pb/transaction.proto", fileDescriptor_transaction_d743a4680141eafd) }
 
-var fileDescriptor_transaction_5de1ca48c795bb25 = []byte{
+var fileDescriptor_transaction_d743a4680141eafd = []byte{
 	// 308 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0x31, 0x4b, 0xc3, 0x40,
 	0x14, 0xc7, 0xf3, 0x9a, 0x56, 0xe5, 0x55, 0xa4, 0x84, 0x0e, 0xa1, 0xc3, 0x23, 0x14, 0xc4, 0x2c,
