@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
@@ -36,10 +38,17 @@ func (rn *ChordRemoteNodeInfo) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
+	nodeData := &pb.NodeData{}
+	err = proto.Unmarshal(rn.Node.Node.Data, nodeData)
+	if err != nil {
+		return nil, err
+	}
+
 	delete(out, "data")
 	out["id"] = hex.EncodeToString(rn.Node.Node.Id)
 	out["isOutbound"] = rn.IsOutbound
 	out["roundTripTime"] = (*nnetnode.RemoteNode)(rn).GetRoundTripTime() / time.Millisecond
+	out["protocolVersion"] = nodeData.ProtocolVersion
 
 	return json.Marshal(out)
 }
