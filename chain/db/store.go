@@ -11,10 +11,12 @@ import (
 	. "github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/vm/contract"
 )
 
 type ChainStore struct {
@@ -258,6 +260,32 @@ func (cs *ChainStore) persist(b *Block) error {
 		totalFee += Fixed64(txn.UnsignedTx.Fee)
 	}
 
+	//process previous block
+	if b.Header.UnsignedHeader.Height > config.GenerateIDBlockDelay {
+		prevBlock, err := cs.GetBlockByHeight(b.Header.UnsignedHeader.Height - config.GenerateIDBlockDelay)
+		if err != nil {
+			return err
+		}
+
+		for _, txn := range prevBlock.Transactions {
+			if txn.UnsignedTx.Payload.Type == GenerateIDType {
+				consensusData := make([]byte, 8)
+				binary.LittleEndian.PutUint64(consensusData, b.Header.UnsignedHeader.ConsensusData)
+				txnHash := txn.Hash()
+				data := append(txnHash[:], consensusData...)
+				id := crypto.Sha256(data)
+
+				pg, err := txn.GetProgramHashes()
+				if err != nil {
+					return err
+				}
+				accSender := states.GetOrNewAccount(pg[0])
+				accSender.SetID(id)
+				states.SetAccount(pg[0], accSender)
+			}
+		}
+	}
+
 	//batch put transactions
 	for _, txn := range b.Transactions {
 		buffer := make([]byte, 4)
@@ -355,7 +383,18 @@ func (cs *ChainStore) persist(b *Block) error {
 			if err != nil {
 				return err
 			}
-
+		case GenerateIDType:
+			pg, err := txn.GetProgramHashes()
+			if err != nil {
+				return err
+			}
+			accSender := states.GetOrNewAccount(pg[0])
+			amountSender := accSender.GetBalance()
+			accSender.SetBalance(amountSender - Fixed64(txn.UnsignedTx.Fee))
+			nonce := accSender.GetNonce()
+			accSender.SetNonce(nonce + 1)
+			accSender.SetID(crypto.Sha256ZeroHash)
+			states.SetAccount(pg[0], accSender)
 		}
 	}
 
@@ -524,6 +563,20 @@ func (cs *ChainStore) GetBalance(addr Uint160) Fixed64 {
 
 func (cs *ChainStore) GetNonce(addr Uint160) uint64 {
 	return cs.States.GetNonce(addr)
+}
+
+func (cs *ChainStore) GetID(publicKey []byte) ([]byte, error) {
+	pubKey, err := crypto.NewPubKeyFromBytes(publicKey)
+	if err != nil {
+		return nil, fmt.Errorf("GetID error:", err)
+	}
+
+	programHash, err := contract.CreateRedeemHash(pubKey)
+	if err != nil {
+		return nil, fmt.Errorf("GetID error:", err)
+	}
+
+	return cs.States.GetID(programHash), nil
 }
 
 type Donation struct {
