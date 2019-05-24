@@ -38,6 +38,8 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Ignoring public import of TransferAsset from pb/payload.proto
 
+// Ignoring public import of GenerateID from pb/payload.proto
+
 // Ignoring public import of PayloadType from pb/payload.proto
 
 // Ignoring public import of Program from pb/program.proto
@@ -50,7 +52,7 @@ type MsgBlock struct {
 func (m *MsgBlock) Reset()      { *m = MsgBlock{} }
 func (*MsgBlock) ProtoMessage() {}
 func (*MsgBlock) Descriptor() ([]byte, []int) {
-	return fileDescriptor_block_50711ccec440b8be, []int{0}
+	return fileDescriptor_block_e5071de26c22229a, []int{0}
 }
 func (m *MsgBlock) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -559,9 +561,9 @@ var (
 	ErrIntOverflowBlock   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/block.proto", fileDescriptor_block_50711ccec440b8be) }
+func init() { proto.RegisterFile("pb/block.proto", fileDescriptor_block_e5071de26c22229a) }
 
-var fileDescriptor_block_50711ccec440b8be = []byte{
+var fileDescriptor_block_e5071de26c22229a = []byte{
 	// 261 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2b, 0x48, 0xd2, 0x4f,
 	0xca, 0xc9, 0x4f, 0xce, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x2a, 0x48, 0x92, 0xd2,

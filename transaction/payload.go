@@ -41,6 +41,8 @@ func Unpack(payload *Payload) (IPayload, error) {
 		pl = new(DeleteName)
 	case SubscribeType:
 		pl = new(Subscribe)
+	case GenerateIDType:
+		pl = new(GenerateID)
 	default:
 		return nil, errors.New("invalid payload type.")
 
@@ -94,5 +96,12 @@ func NewSubscribe(subscriber []byte, id, topic string, bucket, duration uint32, 
 		Bucket:     bucket,
 		Duration:   duration,
 		Meta:       meta,
+	}
+}
+
+func NewGenerateID(publicKey []byte, regFee common.Fixed64) IPayload {
+	return &GenerateID{
+		PublicKey:       publicKey,
+		RegistrationFee: int64(regFee),
 	}
 }
