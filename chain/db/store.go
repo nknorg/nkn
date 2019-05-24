@@ -384,17 +384,28 @@ func (cs *ChainStore) persist(b *Block) error {
 				return err
 			}
 		case GenerateIDType:
+			genIDPayload := pl.(*GenerateID)
 			pg, err := txn.GetProgramHashes()
 			if err != nil {
 				return err
 			}
 			accSender := states.GetOrNewAccount(pg[0])
 			amountSender := accSender.GetBalance()
-			accSender.SetBalance(amountSender - Fixed64(txn.UnsignedTx.Fee))
+			accSender.SetBalance(amountSender - Fixed64(genIDPayload.RegistrationFee) - Fixed64(txn.UnsignedTx.Fee))
 			nonce := accSender.GetNonce()
 			accSender.SetNonce(nonce + 1)
 			accSender.SetID(crypto.Sha256ZeroHash)
 			states.SetAccount(pg[0], accSender)
+
+			donationAddress, err := ToScriptHash(config.DonationAddress)
+			if err != nil {
+				return err
+			}
+			donationAccount := states.GetOrNewAccount(donationAddress)
+			amount := donationAccount.GetBalance()
+			donationAccount.SetBalance(amount + Fixed64(genIDPayload.RegistrationFee))
+			states.SetAccount(donationAddress, donationAccount)
+
 		}
 	}
 
