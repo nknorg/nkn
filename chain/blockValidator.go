@@ -321,7 +321,7 @@ func NextBlockProposerCheck(block *Block) error {
 	}
 
 	if winnerHash != expectedWinnerHash {
-		return fmt.Errorf("Winner hash should be %s instead of %s", expectedWinnerHash.ToHexString(), winnerHash)
+		return fmt.Errorf("Winner hash should be %x instead of %x", expectedWinnerHash, winnerHash)
 	}
 
 	if winnerHash != EmptyUint256 {
