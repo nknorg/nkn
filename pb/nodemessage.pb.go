@@ -65,23 +65,23 @@ var MessageType_name = map[int32]string{
 }
 var MessageType_value = map[string]int32{
 	"MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE": 0,
-	"VOTE":                         1,
-	"I_HAVE_BLOCK_PROPOSAL":        2,
-	"REQUEST_BLOCK_PROPOSAL":       3,
-	"REQUEST_BLOCK_PROPOSAL_REPLY": 4,
-	"GET_CONSENSUS_STATE":          5,
-	"GET_CONSENSUS_STATE_REPLY":    6,
-	"GET_BLOCK_HEADERS":            7,
-	"GET_BLOCK_HEADERS_REPLY":      8,
-	"GET_BLOCKS":                   9,
-	"GET_BLOCKS_REPLY":             10,
-	"RELAY":                        11,
-	"TRANSACTIONS":                 12,
-	"BACKTRACK_SIGNATURE_CHAIN":    13,
+	"VOTE":                                1,
+	"I_HAVE_BLOCK_PROPOSAL":               2,
+	"REQUEST_BLOCK_PROPOSAL":              3,
+	"REQUEST_BLOCK_PROPOSAL_REPLY":        4,
+	"GET_CONSENSUS_STATE":                 5,
+	"GET_CONSENSUS_STATE_REPLY":           6,
+	"GET_BLOCK_HEADERS":                   7,
+	"GET_BLOCK_HEADERS_REPLY":             8,
+	"GET_BLOCKS":                          9,
+	"GET_BLOCKS_REPLY":                    10,
+	"RELAY":                               11,
+	"TRANSACTIONS":                        12,
+	"BACKTRACK_SIGNATURE_CHAIN":           13,
 }
 
 func (MessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{0}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{0}
 }
 
 // Message type that can be signed message
@@ -121,7 +121,7 @@ var AllowedSignedMessageType_value = map[string]int32{
 }
 
 func (AllowedSignedMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{1}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{1}
 }
 
 // Message type that can be unsigned message
@@ -158,7 +158,7 @@ var AllowedUnsignedMessageType_value = map[string]int32{
 }
 
 func (AllowedUnsignedMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{2}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{2}
 }
 
 // Message type that can be sent as direct message
@@ -210,7 +210,7 @@ var AllowedDirectMessageType_value = map[string]int32{
 }
 
 func (AllowedDirectMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{3}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{3}
 }
 
 // Message type that can be sent as relay message
@@ -232,7 +232,7 @@ var AllowedRelayMessageType_value = map[string]int32{
 }
 
 func (AllowedRelayMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{4}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{4}
 }
 
 // Message type that can be sent as broadcast_push message
@@ -254,7 +254,7 @@ var AllowedBroadcastPushMessageType_value = map[string]int32{
 }
 
 func (AllowedBroadcastPushMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{5}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{5}
 }
 
 // Message type that can be sent as broadcast_pull message
@@ -273,7 +273,7 @@ var AllowedBroadcastPullMessageType_value = map[string]int32{
 }
 
 func (AllowedBroadcastPullMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{6}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{6}
 }
 
 // Message type that can be sent as broadcast_tree message
@@ -295,7 +295,7 @@ var AllowedBroadcastTreeMessageType_value = map[string]int32{
 }
 
 func (AllowedBroadcastTreeMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{7}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{7}
 }
 
 type UnsignedMessage struct {
@@ -306,7 +306,7 @@ type UnsignedMessage struct {
 func (m *UnsignedMessage) Reset()      { *m = UnsignedMessage{} }
 func (*UnsignedMessage) ProtoMessage() {}
 func (*UnsignedMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{0}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{0}
 }
 func (m *UnsignedMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -357,7 +357,7 @@ type SignedMessage struct {
 func (m *SignedMessage) Reset()      { *m = SignedMessage{} }
 func (*SignedMessage) ProtoMessage() {}
 func (*SignedMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{1}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{1}
 }
 func (m *SignedMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -408,7 +408,7 @@ type Vote struct {
 func (m *Vote) Reset()      { *m = Vote{} }
 func (*Vote) ProtoMessage() {}
 func (*Vote) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{2}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{2}
 }
 func (m *Vote) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -459,7 +459,7 @@ type IHaveBlockProposal struct {
 func (m *IHaveBlockProposal) Reset()      { *m = IHaveBlockProposal{} }
 func (*IHaveBlockProposal) ProtoMessage() {}
 func (*IHaveBlockProposal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{3}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{3}
 }
 func (m *IHaveBlockProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -509,7 +509,7 @@ type RequestBlockProposal struct {
 func (m *RequestBlockProposal) Reset()      { *m = RequestBlockProposal{} }
 func (*RequestBlockProposal) ProtoMessage() {}
 func (*RequestBlockProposal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{4}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{4}
 }
 func (m *RequestBlockProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -552,7 +552,7 @@ type RequestBlockProposalReply struct {
 func (m *RequestBlockProposalReply) Reset()      { *m = RequestBlockProposalReply{} }
 func (*RequestBlockProposalReply) ProtoMessage() {}
 func (*RequestBlockProposalReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{5}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{5}
 }
 func (m *RequestBlockProposalReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -594,7 +594,7 @@ type GetConsensusState struct {
 func (m *GetConsensusState) Reset()      { *m = GetConsensusState{} }
 func (*GetConsensusState) ProtoMessage() {}
 func (*GetConsensusState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{6}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{6}
 }
 func (m *GetConsensusState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -634,7 +634,7 @@ type GetConsensusStateReply struct {
 func (m *GetConsensusStateReply) Reset()      { *m = GetConsensusStateReply{} }
 func (*GetConsensusStateReply) ProtoMessage() {}
 func (*GetConsensusStateReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{7}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{7}
 }
 func (m *GetConsensusStateReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -706,7 +706,7 @@ type GetBlockHeaders struct {
 func (m *GetBlockHeaders) Reset()      { *m = GetBlockHeaders{} }
 func (*GetBlockHeaders) ProtoMessage() {}
 func (*GetBlockHeaders) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{8}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{8}
 }
 func (m *GetBlockHeaders) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -756,7 +756,7 @@ type GetBlockHeadersReply struct {
 func (m *GetBlockHeadersReply) Reset()      { *m = GetBlockHeadersReply{} }
 func (*GetBlockHeadersReply) ProtoMessage() {}
 func (*GetBlockHeadersReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{9}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{9}
 }
 func (m *GetBlockHeadersReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -800,7 +800,7 @@ type GetBlocks struct {
 func (m *GetBlocks) Reset()      { *m = GetBlocks{} }
 func (*GetBlocks) ProtoMessage() {}
 func (*GetBlocks) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{10}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{10}
 }
 func (m *GetBlocks) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -850,7 +850,7 @@ type GetBlocksReply struct {
 func (m *GetBlocksReply) Reset()      { *m = GetBlocksReply{} }
 func (*GetBlocksReply) ProtoMessage() {}
 func (*GetBlocksReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{11}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{11}
 }
 func (m *GetBlocksReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -900,7 +900,7 @@ type Relay struct {
 func (m *Relay) Reset()      { *m = Relay{} }
 func (*Relay) ProtoMessage() {}
 func (*Relay) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{12}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{12}
 }
 func (m *Relay) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -992,7 +992,7 @@ type Transactions struct {
 func (m *Transactions) Reset()      { *m = Transactions{} }
 func (*Transactions) ProtoMessage() {}
 func (*Transactions) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{13}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{13}
 }
 func (m *Transactions) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1036,7 +1036,7 @@ type BacktrackSignatureChain struct {
 func (m *BacktrackSignatureChain) Reset()      { *m = BacktrackSignatureChain{} }
 func (*BacktrackSignatureChain) ProtoMessage() {}
 func (*BacktrackSignatureChain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_nodemessage_2c1c43dd87e0c9bb, []int{14}
+	return fileDescriptor_nodemessage_ebd4e90302172136, []int{14}
 }
 func (m *BacktrackSignatureChain) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -4662,9 +4662,9 @@ var (
 	ErrIntOverflowNodemessage   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/nodemessage.proto", fileDescriptor_nodemessage_2c1c43dd87e0c9bb) }
+func init() { proto.RegisterFile("pb/nodemessage.proto", fileDescriptor_nodemessage_ebd4e90302172136) }
 
-var fileDescriptor_nodemessage_2c1c43dd87e0c9bb = []byte{
+var fileDescriptor_nodemessage_ebd4e90302172136 = []byte{
 	// 1323 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0x4d, 0x73, 0xdb, 0x54,
 	0x17, 0x8e, 0x9c, 0xaf, 0xfa, 0xc4, 0x4e, 0x94, 0x9b, 0x2f, 0x37, 0x6d, 0xd5, 0x54, 0xfd, 0x78,

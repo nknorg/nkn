@@ -23,6 +23,7 @@ enum PayloadType {
 	TransferNameType   = 4;
 	DeleteNameType     = 5;
 	SubscribeType      = 6;
+	GenerateIDType     = 7;
 }
 
 message Payload {
@@ -64,4 +65,9 @@ message TransferAsset {
 	bytes sender    = 1;
 	bytes recipient = 2;
 	int64 amount    = 3;
+}
+
+message GenerateID {
+	bytes public_key       = 1;
+	int64 registration_fee = 2;
 }

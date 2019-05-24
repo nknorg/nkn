@@ -148,6 +148,17 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
+	case GenerateIDType:
+		pubkey := payload.(*GenerateID).PublicKey
+		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
+		if err != nil {
+			return nil, err
+		}
+		programhash, err := contract.CreateRedeemHash(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, programhash)
 	default:
 		return nil, errors.New("unsupport transaction type")
 	}
