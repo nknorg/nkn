@@ -18,6 +18,8 @@ const (
 	Ed25519 = 1
 )
 
+var Sha256ZeroHash = make([]byte, 32)
+
 //It can be P256R1
 var AlgChoice int
 
