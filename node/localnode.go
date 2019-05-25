@@ -249,8 +249,13 @@ func (localNode *LocalNode) GetHeight() uint32 {
 }
 
 func (localNode *LocalNode) SetSyncState(s pb.SyncState) {
-	localNode.Node.SetSyncState(s)
 	log.Infof("Set sync state to %s", s.String())
+	localNode.Node.SetSyncState(s)
+}
+
+func (localNode *LocalNode) SetMinVerifiableHeight(height uint32) {
+	log.Infof("Set min verifiable height to %d", height)
+	localNode.Node.SetMinVerifiableHeight(height)
 }
 
 func (localNode *LocalNode) GetWsAddr() string {

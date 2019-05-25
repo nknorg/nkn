@@ -17,7 +17,7 @@ func (consensus *Consensus) receiveVote(neighborID string, height uint32, blockH
 		}
 	}
 
-	elc, _, err := consensus.loadOrCreateElection(heightToKey(height))
+	elc, _, err := consensus.loadOrCreateElection(height)
 	if err != nil {
 		return err
 	}
