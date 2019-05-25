@@ -18,15 +18,16 @@ type Node struct {
 	publicKey *crypto.PubKey
 
 	sync.RWMutex
-	syncState pb.SyncState
+	syncState           pb.SyncState
+	minVerifiableHeight uint32
 }
 
-func (node *Node) MarshalJSON() ([]byte, error) {
+func (n *Node) MarshalJSON() ([]byte, error) {
 	var out map[string]interface{}
 
 	marshaler := &jsonpb.Marshaler{}
 
-	s, err := marshaler.MarshalToString(node.Node)
+	s, err := marshaler.MarshalToString(n.Node)
 	if err != nil {
 		return nil, err
 	}
@@ -37,9 +38,9 @@ func (node *Node) MarshalJSON() ([]byte, error) {
 	}
 
 	delete(out, "data")
-	out["id"] = hex.EncodeToString(node.Node.Id)
+	out["id"] = hex.EncodeToString(n.Node.Id)
 
-	s, err = marshaler.MarshalToString(node.NodeData)
+	s, err = marshaler.MarshalToString(n.NodeData)
 	if err != nil {
 		return nil, err
 	}
@@ -49,8 +50,8 @@ func (node *Node) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	out["publicKey"] = hex.EncodeToString(node.NodeData.PublicKey)
-	out["syncState"] = node.GetSyncState().String()
+	out["publicKey"] = hex.EncodeToString(n.NodeData.PublicKey)
+	out["syncState"] = n.GetSyncState().String()
 
 	return json.Marshal(out)
 }
@@ -71,31 +72,43 @@ func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
 	return node, nil
 }
 
-func (node *Node) GetChordID() []byte {
-	return node.Id
+func (n *Node) GetChordID() []byte {
+	return n.Id
 }
 
-func (node *Node) GetID() string {
-	return chordIDToNodeID(node.GetChordID())
+func (n *Node) GetID() string {
+	return chordIDToNodeID(n.GetChordID())
 }
 
-func (node *Node) GetPubKey() *crypto.PubKey {
-	return node.publicKey
+func (n *Node) GetPubKey() *crypto.PubKey {
+	return n.publicKey
 }
 
-func (node *Node) GetHostname() string {
-	address, _ := url.Parse(node.GetAddr())
+func (n *Node) GetHostname() string {
+	address, _ := url.Parse(n.GetAddr())
 	return address.Hostname()
 }
 
-func (node *Node) GetSyncState() pb.SyncState {
-	node.RLock()
-	defer node.RUnlock()
-	return node.syncState
+func (n *Node) GetSyncState() pb.SyncState {
+	n.RLock()
+	defer n.RUnlock()
+	return n.syncState
 }
 
-func (node *Node) SetSyncState(s pb.SyncState) {
-	node.Lock()
-	defer node.Unlock()
-	node.syncState = s
+func (n *Node) SetSyncState(s pb.SyncState) {
+	n.Lock()
+	defer n.Unlock()
+	n.syncState = s
+}
+
+func (n *Node) GetMinVerifiableHeight() uint32 {
+	n.RLock()
+	defer n.RUnlock()
+	return n.minVerifiableHeight
+}
+
+func (n *Node) SetMinVerifiableHeight(height uint32) {
+	n.Lock()
+	defer n.Unlock()
+	n.minVerifiableHeight = height
 }
