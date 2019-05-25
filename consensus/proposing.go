@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"time"
 
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
@@ -74,7 +74,7 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 }
 
 // proposeBlock proposes a new block at give height and timestamp
-func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*Block, error) {
+func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*block.Block, error) {
 	winnerHash, winnerType, err := chain.GetNextMiningSigChainTxnHash(height)
 	if err != nil {
 		return nil, err

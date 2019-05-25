@@ -5,13 +5,14 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/election"
 	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -33,7 +34,7 @@ type Consensus struct {
 	txnCollector        *chain.TxnCollector
 
 	proposalLock   sync.RWMutex
-	proposalChan   chan *Block
+	proposalChan   chan *block.Block
 	expectedHeight uint32
 
 	nextConsensusHeightLock sync.Mutex
@@ -51,7 +52,7 @@ func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus
 		localNode:           localNode,
 		elections:           common.NewGoCache(cacheExpiration, cacheCleanupInterval),
 		proposals:           common.NewGoCache(cacheExpiration, cacheCleanupInterval),
-		proposalChan:        make(chan *Block, proposalChanLen),
+		proposalChan:        make(chan *block.Block, proposalChanLen),
 		requestProposalChan: make(chan *requestProposalInfo, requestProposalChanLen),
 		mining:              chain.NewBuiltinMining(account, txnCollector),
 		txnCollector:        txnCollector,
@@ -155,26 +156,19 @@ func (consensus *Consensus) startElection(height uint32, elc *election.Election)
 
 // loadOrCreateElection loads or create an election with the given key. Returns
 // the election, if the election is loaded, and error.
-func (consensus *Consensus) loadOrCreateElection(key []byte) (*election.Election, bool, error) {
+func (consensus *Consensus) loadOrCreateElection(height uint32) (*election.Election, bool, error) {
+	key := heightToKey(height)
 	if value, ok := consensus.elections.Get(key); ok && value != nil {
 		if elc, ok := value.(*election.Election); ok && elc != nil {
 			return elc, true, nil
 		}
 	}
 
-	consensusNeighbors := consensus.localNode.GetNeighbors(func(rn *node.RemoteNode) bool {
-		return rn.GetSyncState() == pb.PersistFinished
-	})
-	totalWeight := len(consensusNeighbors)
-	if consensus.localNode.GetSyncState() == pb.PersistFinished {
-		totalWeight++
-	}
-
 	config := &election.Config{
 		Duration:                    electionDuration,
 		MinVotingInterval:           minVotingInterval,
 		ChangeVoteMinRelativeWeight: changeVoteMinRelativeWeight,
-		ConsensusMinAbsoluteWeight:  uint32(consensusMinRelativeWeight*float32(totalWeight) + 1),
+		ConsensusMinRelativeWeight:  consensusMinRelativeWeight,
 	}
 
 	elc, err := election.NewElection(config)
@@ -185,7 +179,7 @@ func (consensus *Consensus) loadOrCreateElection(key []byte) (*election.Election
 	err = consensus.elections.Set(key, elc)
 	if err != nil {
 		if value, ok := consensus.elections.Get(key); ok && value != nil {
-			if elc, ok := value.(*election.Election); ok && elc != nil {
+			if elc, ok = value.(*election.Election); ok && elc != nil {
 				return elc, true, nil
 			}
 		}
@@ -215,7 +209,7 @@ func (consensus *Consensus) setExpectedHeight(expectedHeight uint32) {
 		}
 
 		consensus.expectedHeight = expectedHeight
-		consensus.proposalChan = make(chan *Block, proposalChanLen)
+		consensus.proposalChan = make(chan *block.Block, proposalChanLen)
 	}
 	consensus.proposalLock.Unlock()
 }
@@ -280,7 +274,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 
 	log.Infof("Accepted block height: %d, local ledger block height: %d, sync needed.", block.Header.UnsignedHeader.Height, chain.DefaultLedger.Store.GetHeight())
 
-	elc, loaded, err := consensus.loadOrCreateElection(heightToKey(block.Header.UnsignedHeader.Height))
+	elc, loaded, err := consensus.loadOrCreateElection(block.Header.UnsignedHeader.Height)
 	if err != nil {
 		return fmt.Errorf("Error load election: %v", err)
 	}
@@ -322,6 +316,8 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 			consensus.localNode.SetSyncState(pb.WaitForSyncing)
 			return
 		}
+
+		consensus.localNode.SetMinVerifiableHeight(chain.DefaultLedger.Store.GetHeight() + por.SigChainMiningHeightOffset)
 
 		consensus.localNode.SetSyncState(pb.PersistFinished)
 	}()
