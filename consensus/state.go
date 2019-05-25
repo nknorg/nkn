@@ -8,6 +8,7 @@ import (
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
@@ -16,7 +17,15 @@ import (
 // startGettingNeighborConsensusState peroidically checks neighbors' majority
 // consensus height and sets local height if fall behind
 func (consensus *Consensus) startGettingNeighborConsensusState() {
-	getNeighborConsensusStateTimer := time.NewTimer(proposingStartDelay / 2)
+	consensus.localNode.SetMinVerifiableHeight(chain.DefaultLedger.Store.GetHeight() + por.SigChainMiningHeightOffset)
+
+	time.Sleep(proposingStartDelay / 2)
+	if consensus.getNeighborsMajorityConsensusHeight() == 0 {
+		log.Infof("Cannot get neighbors' majority consensus height, assuming network bootstrap")
+		consensus.localNode.SetMinVerifiableHeight(0)
+	}
+
+	getNeighborConsensusStateTimer := time.NewTimer(getConsensusStateInterval)
 	for {
 		select {
 		case <-getNeighborConsensusStateTimer.C:
@@ -31,6 +40,7 @@ func (consensus *Consensus) startGettingNeighborConsensusState() {
 			if localConsensusHeight == 0 || localConsensusHeight+1 < majorityConsensusHeight {
 				if majorityConsensusHeight+1 > localLedgerHeight {
 					consensus.setNextConsensusHeight(majorityConsensusHeight + 1)
+					consensus.localNode.SetMinVerifiableHeight(majorityConsensusHeight + 1 + por.SigChainMiningHeightOffset)
 					if consensus.localNode.GetSyncState() == pb.PersistFinished {
 						consensus.localNode.SetSyncState(pb.WaitForSyncing)
 					}
@@ -66,6 +76,7 @@ func (consensus *Consensus) getNeighborConsensusState(neighbor *node.RemoteNode)
 	}
 
 	neighbor.SetHeight(replyMsg.LedgerHeight)
+	neighbor.SetMinVerifiableHeight(replyMsg.MinVerifiableHeight)
 	neighbor.SetSyncState(replyMsg.SyncState)
 
 	return replyMsg, nil

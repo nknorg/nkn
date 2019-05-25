@@ -135,9 +135,10 @@ message GetConsensusState {
 }
 
 message GetConsensusStateReply {
-  uint32 ledger_height = 1;
   bytes ledger_block_hash = 2;
+  uint32 ledger_height = 1;
   uint32 consensus_height = 3;
+  uint32 min_verifiable_height = 5;
   SyncState sync_state = 4;
 }
 

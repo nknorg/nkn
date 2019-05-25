@@ -2,7 +2,7 @@ package moca
 
 import (
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/node"
@@ -71,7 +71,7 @@ func NewRequestBlockProposalMessage(blockHash common.Uint256) (*pb.UnsignedMessa
 
 // NewRequestBlockProposalReply creates a REQUEST_BLOCK_PROPOSAL_REPLY message
 // in respond to REQUEST_BLOCK_PROPOSAL message to send a block
-func NewRequestBlockProposalReply(block *Block) (*pb.UnsignedMessage, error) {
+func NewRequestBlockProposalReply(block *block.Block) (*pb.UnsignedMessage, error) {
 	var buf []byte
 	var err error
 	if block != nil {
@@ -117,12 +117,13 @@ func NewGetConsensusStateMessage() (*pb.UnsignedMessage, error) {
 
 // NewGetConsensusStateReply creates a GET_CONSENSUS_STATE_REPLY message in
 // respond to GET_CONSENSUS_STATE message
-func NewGetConsensusStateReply(ledgerHeight uint32, ledgerBlockHash common.Uint256, consensusHeight uint32, syncState pb.SyncState) (*pb.UnsignedMessage, error) {
+func NewGetConsensusStateReply(ledgerBlockHash common.Uint256, ledgerHeight, consensusHeight, minVerifiableHeight uint32, syncState pb.SyncState) (*pb.UnsignedMessage, error) {
 	msgBody := &pb.GetConsensusStateReply{
-		LedgerHeight:    ledgerHeight,
-		LedgerBlockHash: ledgerBlockHash[:],
-		ConsensusHeight: consensusHeight,
-		SyncState:       syncState,
+		LedgerBlockHash:     ledgerBlockHash[:],
+		LedgerHeight:        ledgerHeight,
+		ConsensusHeight:     consensusHeight,
+		MinVerifiableHeight: minVerifiableHeight,
+		SyncState:           syncState,
 	}
 
 	buf, err := proto.Marshal(msgBody)
@@ -223,8 +224,9 @@ func (consensus *Consensus) getConsensusStateMessageHandler(remoteMessage *node.
 	ledgerBlockHash := chain.DefaultLedger.Store.GetHeaderHashByHeight(ledgerHeight)
 	consensusHeight := consensus.GetExpectedHeight()
 	syncState := consensus.localNode.GetSyncState()
+	minVerifiableHeight := consensus.localNode.GetMinVerifiableHeight()
 
-	replyMsg, err := NewGetConsensusStateReply(ledgerHeight, ledgerBlockHash, consensusHeight, syncState)
+	replyMsg, err := NewGetConsensusStateReply(ledgerBlockHash, ledgerHeight, consensusHeight, minVerifiableHeight, syncState)
 	if err != nil {
 		return nil, false, err
 	}

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus/election"
@@ -25,18 +25,22 @@ type requestProposalInfo struct {
 }
 
 // getBlockProposal gets a proposal from proposal cache and convert to block
-func (consensus *Consensus) getBlockProposal(blockHash common.Uint256) (*Block, error) {
+func (consensus *Consensus) getBlockProposal(blockHash common.Uint256) (*block.Block, error) {
 	value, ok := consensus.proposals.Get(blockHash.ToArray())
 	if !ok {
 		return nil, fmt.Errorf("Block %s not found in local cache", blockHash.ToHexString())
 	}
 
-	block, ok := value.(*Block)
+	block, ok := value.(*block.Block)
 	if !ok {
 		return nil, fmt.Errorf("Convert block %s from proposal cache error", blockHash.ToHexString())
 	}
 
 	return block, nil
+}
+
+func (consensus *Consensus) canVerifyHeight(height uint32) bool {
+	return chain.CanVerifyHeight(height) && height >= consensus.localNode.GetMinVerifiableHeight()
 }
 
 // waitAndHandleProposal waits for first valid proposal, and continues to handle
@@ -46,20 +50,20 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	electionStartTimer := time.NewTimer(math.MaxInt64)
 	electionStartTimer.Stop()
 	timeoutTimer := time.NewTimer(electionStartDelay)
-	proposals := make(map[common.Uint256]*Block)
+	proposals := make(map[common.Uint256]*block.Block)
 
 	consensus.proposalLock.RLock()
 	consensusHeight := consensus.expectedHeight
 	proposalChan := consensus.proposalChan
 	consensus.proposalLock.RUnlock()
 
-	elc, _, err := consensus.loadOrCreateElection(heightToKey(consensusHeight))
+	elc, _, err := consensus.loadOrCreateElection(consensusHeight)
 	if err != nil {
 		return nil, err
 	}
 
 	for {
-		if chain.CanVerifyHeight(consensusHeight) {
+		if consensus.canVerifyHeight(consensusHeight) {
 			break
 		}
 
@@ -73,7 +77,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 
 		select {
 		case <-timeoutTimer.C:
-			return nil, errors.New("Wait for proposal timeout")
+			return nil, errors.New("Wait for neighbor vote timeout")
 		default:
 			time.Sleep(50 * time.Millisecond)
 		}
@@ -84,7 +88,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 		case proposal := <-proposalChan:
 			blockHash := proposal.Header.Hash()
 
-			if !chain.CanVerifyHeight(consensusHeight) {
+			if !consensus.canVerifyHeight(consensusHeight) {
 				err = consensus.iHaveProposal(consensusHeight, blockHash)
 				if err != nil {
 					log.Errorf("Send I have block message error: %v", err)
@@ -211,7 +215,7 @@ func (consensus *Consensus) startRequestingProposal() {
 }
 
 // receiveProposal is called when a new proposal is received
-func (consensus *Consensus) receiveProposal(block *Block) error {
+func (consensus *Consensus) receiveProposal(block *block.Block) error {
 	blockHash := block.Header.Hash()
 
 	log.Infof("Receive block proposal %s from [%s:%s]", blockHash.ToHexString(), common.BytesToHexString(block.Header.UnsignedHeader.Signer), common.BytesToHexString(block.Header.UnsignedHeader.ChordId))
@@ -273,7 +277,7 @@ func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32
 
 // requestProposal requests a block proposal by block hash from a neighbor using
 // REQUEST_BLOCK_PROPOSAL message
-func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash common.Uint256) (*Block, error) {
+func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash common.Uint256) (*block.Block, error) {
 	msg, err := NewRequestBlockProposalMessage(blockHash)
 	if err != nil {
 		return nil, err
@@ -299,7 +303,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		return nil, nil
 	}
 
-	block := &Block{}
+	block := &block.Block{}
 	err = block.Unmarshal(replyMsg.Block)
 	if err != nil {
 		return nil, err
