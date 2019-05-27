@@ -27,9 +27,9 @@ import (
 )
 
 const (
-	protocolVersion              = 26
-	minCompatibleProtocolVersion = 26
-	maxCompatibleProtocolVersion = 30
+	protocolVersion              = 31
+	minCompatibleProtocolVersion = 31
+	maxCompatibleProtocolVersion = 35
 )
 
 type LocalNode struct {
