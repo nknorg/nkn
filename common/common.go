@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
-	"math/rand"
 	"os"
 
 	"github.com/golang/crypto/ripemd160"
@@ -26,12 +25,6 @@ func ToCodeHash(code []byte) (Uint160, error) {
 		return Uint160{}, errors.New("ToCodehash parse uint160 error")
 	}
 	return hash, nil
-}
-
-func GetNonce() uint64 {
-	// Fixme replace with the real random number generator
-	nonce := uint64(rand.Uint32())<<32 + uint64(rand.Uint32())
-	return nonce
 }
 
 func IntToBytes(n int) []byte {

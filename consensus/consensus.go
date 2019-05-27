@@ -115,9 +115,6 @@ func (consensus *Consensus) startConsensus() {
 			continue
 		}
 
-		// FIXME: use sync save block api
-		time.Sleep(persistBlockDelay)
-
 		consensus.setAcceptedHeight(consensusHeight)
 	}
 }
@@ -330,9 +327,6 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 
 	height := startHeight
 	for height <= consensus.GetAcceptedHeight() {
-		// FIXME: use sync save block api
-		time.Sleep(persistBlockDelay)
-
 		value, ok := consensus.elections.Get(heightToKey(height))
 		if !ok || value == nil {
 			return fmt.Errorf("Election at height %d not found in local cache", height)
