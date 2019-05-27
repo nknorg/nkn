@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	TestNetVersionNum = 3
+	TestNetVersionNum = 4
 )
 
 var (
@@ -100,7 +100,7 @@ func JoinNet(nn *nnet.NNet) error {
 			return nil
 		}
 	}
-	return errors.New("Failed to join the network.")
+	return errors.New("Failed to join the network")
 }
 
 func nknMain(c *cli.Context) error {
