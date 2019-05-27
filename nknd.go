@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	TestNetVersionNum = 3
+	TestNetVersionNum = 4
 )
 
 var (
@@ -101,7 +101,7 @@ func JoinNet(nn *nnet.NNet) error {
 			return nil
 		}
 	}
-	return errors.New("Failed to join the network.")
+	return errors.New("Failed to join the network")
 }
 
 // AskMyIP request to seeds randomly, in order to obtain self's externIP and corresponding chordID
