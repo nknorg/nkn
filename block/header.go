@@ -102,7 +102,7 @@ func (h *Header) GetInfo() ([]byte, error) {
 		StateRoot        string `json:"stateRoot"`
 		Timestamp        int64  `json:"timestamp"`
 		Height           uint32 `json:"height"`
-		ConsensusData    uint64 `json:"consensusData"`
+		RandomBeacon     string `json:"randomBeacon"`
 		WinnerHash       string `json:"winnerHash"`
 		WinnerType       string `json:"winnerType"`
 		Signer           string `json:"signer"`
@@ -119,7 +119,7 @@ func (h *Header) GetInfo() ([]byte, error) {
 		StateRoot:        BytesToHexString(h.UnsignedHeader.StateRoot),
 		Timestamp:        h.UnsignedHeader.Timestamp,
 		Height:           h.UnsignedHeader.Height,
-		ConsensusData:    h.UnsignedHeader.ConsensusData,
+		RandomBeacon:     BytesToHexString(h.UnsignedHeader.RandomBeacon),
 		WinnerHash:       BytesToHexString(h.UnsignedHeader.WinnerHash),
 		WinnerType:       h.UnsignedHeader.WinnerType.String(),
 		Signer:           BytesToHexString(h.UnsignedHeader.Signer),

@@ -45,6 +45,7 @@ const (
 	DonationAdjustDivisorFactor  = 2
 	MinGenIDRegistrationFee      = 0
 	GenerateIDBlockDelay         = 1
+	RandomBeaconLength           = 32
 )
 
 var (
