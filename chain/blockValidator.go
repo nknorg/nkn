@@ -96,7 +96,7 @@ func TransactionCheck(block *Block) error {
 	}
 
 	//state root check
-	root := GenerateStateRoot(block.Transactions, block.Header.UnsignedHeader.Height, block.Header.UnsignedHeader.ConsensusData)
+	root := GenerateStateRoot(block.Transactions, block.Header.UnsignedHeader.Height, block.Header.UnsignedHeader.RandomBeacon)
 
 	headerRoot, _ := Uint256ParseFromBytes(block.Header.UnsignedHeader.StateRoot)
 	if ok := root.CompareTo(headerRoot); ok != 0 {
@@ -279,6 +279,10 @@ func HeaderCheck(header *Header) error {
 	}
 	if prevHeader == nil {
 		return errors.New("cannot get prev header")
+	}
+
+	if len(header.UnsignedHeader.RandomBeacon) != config.RandomBeaconLength {
+		return errors.New("invalid header RandomBeacon")
 	}
 
 	if prevHeader.UnsignedHeader.Timestamp >= header.UnsignedHeader.Timestamp {
