@@ -1,6 +1,7 @@
 package block
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,8 +17,10 @@ import (
 	"github.com/nknorg/nkn/vm/signature"
 )
 
-const BlockVersion uint32 = 0
-const GenesisNonce uint64 = 2083236893
+const (
+	BlockVersion  uint32 = 0
+	GenesisBeacon string = "6c9027722dc37f17739da69baffd6fc8281fe568701d8aa0092eb77549461469"
+)
 
 type Block struct {
 	Header       *Header
@@ -178,6 +181,12 @@ func GenesisBlockInit() (*Block, error) {
 		return nil, errors.New("invalid GenesisBlockProposer configured")
 	}
 	genesisBlockProposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)
+
+	genesisBeacon, err := hex.DecodeString(GenesisBeacon)
+	if err != nil {
+		return nil, err
+	}
+
 	// block header
 	genesisBlockHeader := &Header{
 		BlockHeader: BlockHeader{
@@ -186,9 +195,9 @@ func GenesisBlockInit() (*Block, error) {
 				PrevBlockHash: EmptyUint256.ToArray(),
 				Timestamp:     time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix(),
 
-				Height:        uint32(0),
-				ConsensusData: GenesisNonce,
-				Signer:        genesisBlockProposer,
+				Height:       uint32(0),
+				RandomBeacon: genesisBeacon,
+				Signer:       genesisBlockProposer,
 			},
 		},
 	}

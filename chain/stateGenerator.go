@@ -1,8 +1,6 @@
 package chain
 
 import (
-	"encoding/binary"
-
 	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
@@ -91,7 +89,7 @@ func spendTransaction(states *db.StateDB, tx *Transaction, totalFee common.Fixed
 	return nil
 }
 
-func GenerateStateRoot(txs []*Transaction, height uint32, consensusData uint64) common.Uint256 {
+func GenerateStateRoot(txs []*Transaction, height uint32, randomBeacon []byte) common.Uint256 {
 
 	root := DefaultLedger.Store.GetCurrentBlockStateRoot()
 	states, _ := db.NewStateDB(root, db.NewTrieStore(DefaultLedger.Store.GetDatabase()))
@@ -103,12 +101,13 @@ func GenerateStateRoot(txs []*Transaction, height uint32, consensusData uint64) 
 			return common.EmptyUint256
 		}
 
+		preBlockHash := prevBlock.Hash()
+
 		for _, txn := range prevBlock.Transactions {
 			if txn.UnsignedTx.Payload.Type == GenerateIDType {
-				consensusDataSlice := make([]byte, 8)
-				binary.LittleEndian.PutUint64(consensusDataSlice, consensusData)
 				txnHash := txn.Hash()
-				data := append(txnHash[:], consensusDataSlice...)
+				data := append(preBlockHash[:], txnHash[:]...)
+				data = append(data, randomBeacon...)
 				id := crypto.Sha256(data)
 
 				pg, err := txn.GetProgramHashes()
