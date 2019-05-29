@@ -30,7 +30,7 @@ message UnsignedHeader {
 	bytes      state_root          = 4;
 	int64      timestamp           = 5;
 	uint32     height              = 6;
-	uint64     consensus_data      = 7;
+	bytes      random_beacon       = 7;
 	bytes      winner_hash         = 8;
 	WinnerType winner_type         = 9;
 	bytes      signer              = 10;

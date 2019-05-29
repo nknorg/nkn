@@ -1,8 +1,6 @@
 package chain
 
 import (
-	"math/rand"
-
 	. "github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
@@ -108,9 +106,9 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	if err != nil {
 		return nil, err
 	}
-	consensusData := rand.Uint64()
+	randomBeacon := util.RandomBytes(config.RandomBeaconLength)
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
-	curStateHash := GenerateStateRoot(txnList, height, consensusData)
+	curStateHash := GenerateStateRoot(txnList, height, randomBeacon)
 	header := &Header{
 		BlockHeader: BlockHeader{
 			UnsignedHeader: &UnsignedHeader{
@@ -118,7 +116,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 				PrevBlockHash:    curBlockHash.ToArray(),
 				Timestamp:        timestamp,
 				Height:           height,
-				ConsensusData:    consensusData,
+				RandomBeacon:     randomBeacon,
 				TransactionsRoot: txnRoot.ToArray(),
 				StateRoot:        curStateHash.ToArray(),
 				WinnerHash:       winnerHash.ToArray(),

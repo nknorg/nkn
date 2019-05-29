@@ -267,12 +267,13 @@ func (cs *ChainStore) persist(b *Block) error {
 			return err
 		}
 
+		preBlockHash := prevBlock.Hash()
+
 		for _, txn := range prevBlock.Transactions {
 			if txn.UnsignedTx.Payload.Type == GenerateIDType {
-				consensusData := make([]byte, 8)
-				binary.LittleEndian.PutUint64(consensusData, b.Header.UnsignedHeader.ConsensusData)
 				txnHash := txn.Hash()
-				data := append(txnHash[:], consensusData...)
+				data := append(preBlockHash[:], txnHash[:]...)
+				data = append(data, b.Header.UnsignedHeader.RandomBeacon...)
 				id := crypto.Sha256(data)
 
 				pg, err := txn.GetProgramHashes()
