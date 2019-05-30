@@ -24,6 +24,7 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
 	"github.com/nknorg/nnet/overlay/routing"
+	"github.com/nknorg/nnet/protobuf"
 )
 
 const (
@@ -120,6 +121,15 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	event.Queue.Subscribe(event.BlockPersistCompleted, localNode.cleanupTransactions)
 
+	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{func(n *protobuf.Node) (bool, bool) {
+		err := localNode.shouldConnectToNode(n)
+		if err != nil {
+			log.Infof("stop connect to node because: %v", err)
+			return false, false
+		}
+		return true, true
+	}, 0})
+
 	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady{func(remoteNode *nnetnode.RemoteNode) bool {
 		err := localNode.validateRemoteNode(remoteNode)
 		if err != nil {
@@ -143,7 +153,6 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		if nbr != nil {
 			localNode.DelNbrNode(nbr.GetID())
 		}
-
 		return true
 	}, 0})
 
@@ -159,15 +168,47 @@ func (localNode *LocalNode) Start() error {
 	return nil
 }
 
-func (localNode *LocalNode) validateRemoteNode(remoteNode *nnetnode.RemoteNode) error {
-	nodeData := &pb.NodeData{}
-	err := proto.Unmarshal(remoteNode.Node.Data, nodeData)
+func (localNode *LocalNode) shouldConnectToNode(n *protobuf.Node) error {
+	if n.GetData() != nil {
+		nodeData := &pb.NodeData{}
+		err := proto.Unmarshal(n.Data, nodeData)
+		if err != nil {
+			return err
+		}
+
+		if nodeData.ProtocolVersion < minCompatibleProtocolVersion || nodeData.ProtocolVersion > maxCompatibleProtocolVersion {
+			return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol verison %d", nodeData.ProtocolVersion, protocolVersion)
+		}
+	}
+
+	addr, err := url.Parse(n.GetAddr())
 	if err != nil {
 		return err
 	}
 
-	if nodeData.ProtocolVersion < minCompatibleProtocolVersion || nodeData.ProtocolVersion > maxCompatibleProtocolVersion {
-		return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol verison %d", nodeData.ProtocolVersion, protocolVersion)
+	if n.GetId() != nil && !bytes.Equal(address.GenChordID(addr.Host), n.GetId()) {
+		return fmt.Errorf("Remote node id should be %x instead of %x", address.GenChordID(addr.Host), n.GetId())
+	}
+
+	if address.ShouldRejectAddr(localNode.GetAddr(), n.GetAddr()) {
+		return errors.New("Remote port is different from local port")
+	}
+
+	return nil
+}
+
+func (localNode *LocalNode) validateRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+	if remoteNode.GetId() == nil {
+		return errors.New("Remote node id is nil")
+	}
+
+	if remoteNode.GetData() == nil {
+		return errors.New("Remote node data is nil")
+	}
+
+	err := localNode.shouldConnectToNode(remoteNode.Node.Node)
+	if err != nil {
+		return err
 	}
 
 	addr, err := url.Parse(remoteNode.GetAddr())
@@ -186,14 +227,6 @@ func (localNode *LocalNode) validateRemoteNode(remoteNode *nnetnode.RemoteNode) 
 
 	if remoteNode.IsOutbound && addr.Port() != connPort {
 		return fmt.Errorf("Remote node port %v is different from its connection port %v", addr.Port(), connPort)
-	}
-
-	if !bytes.Equal(address.GenChordID(addr.Host), remoteNode.GetId()) {
-		return fmt.Errorf("Remote node id should be %x instead of %x", address.GenChordID(addr.Host), remoteNode.GetId())
-	}
-
-	if address.ShouldRejectAddr(localNode.GetAddr(), remoteNode.GetAddr()) {
-		return errors.New("Remote port is different from local port")
 	}
 
 	return nil
