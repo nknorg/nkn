@@ -44,7 +44,6 @@ func assetAction(c *cli.Context) error {
 		return nil
 	}
 
-	var err error
 	var resp []byte
 	switch {
 	case c.Bool("transfer"):
@@ -56,28 +55,47 @@ func assetAction(c *cli.Context) error {
 			os.Exit(1)
 		}
 		receipt := parseAddress(c)
-		amount, _ := StringToFixed64(value)
+		amount, err := StringToFixed64(value)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
 
 		var txnFee Fixed64
 		fee := c.String("fee")
 		if fee == "" {
 			txnFee = Fixed64(0)
 		} else {
-			txnFee, _ = StringToFixed64(fee)
+			txnFee, err = StringToFixed64(fee)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				return err
+			}
 		}
 
 		nonce := c.Uint64("nonce")
-		txn, _ := MakeTransferTransaction(myWallet, receipt, nonce, amount, txnFee)
-		buff, _ := txn.Marshal()
+		txn, err := MakeTransferTransaction(myWallet, receipt, nonce, amount, txnFee)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
+
+		buff, err := txn.Marshal()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
+
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
 	}
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
-	}
+
 	FormatOutput(resp)
 
 	return nil
