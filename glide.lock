@@ -1,5 +1,5 @@
 hash: 504bd66b16e0d3546cfc6528b175545a5fb3e7acaf46c70f614e22e5a1e32f7d
-updated: 2019-05-30T15:14:31.20289-07:00
+updated: 2019-05-30T16:12:20.052116-07:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: 9db4a59bd4d803ae0c173a7d8a538e056cd59d57
@@ -59,7 +59,7 @@ imports:
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: 035aa17844a42b564d2730c579f75ca3017f351d
+  version: 87aaa858f2a80c2386c7ceea111d618ebb120495
   subpackages:
   - cache
   - common

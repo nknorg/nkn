@@ -38,7 +38,7 @@ func (consensus *Consensus) vote(height uint32, blockHash common.Uint256) error 
 		return err
 	}
 
-	buf, err := consensus.localNode.SerializeMessage(msg, true)
+	buf, err := consensus.localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return err
 	}

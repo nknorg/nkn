@@ -283,7 +283,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		return nil, err
 	}
 
-	buf, err := consensus.localNode.SerializeMessage(msg, true)
+	buf, err := consensus.localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ func (consensus *Consensus) iHaveProposal(height uint32, blockHash common.Uint25
 		return err
 	}
 
-	buf, err := consensus.localNode.SerializeMessage(msg, true)
+	buf, err := consensus.localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return err
 	}
