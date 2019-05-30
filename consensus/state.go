@@ -59,7 +59,7 @@ func (consensus *Consensus) getNeighborConsensusState(neighbor *node.RemoteNode)
 		return nil, err
 	}
 
-	buf, err := consensus.localNode.SerializeMessage(msg, true)
+	buf, err := consensus.localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return nil, err
 	}
