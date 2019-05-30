@@ -10,25 +10,20 @@ type Serverer interface {
 	GetWallet() (vault.Wallet, error)
 }
 
-func respPacking(result interface{}, errcode ErrCode) map[string]interface{} {
+// Response for json API.
+// errcode: The error code to return to client, see api/common/errcode.go
+// reusltOrData: If the errcode is 0, then data is used as the 'result' of JsonRPC. Otherwise,
+// as a extra error message to 'data' of JsonRPC.
+func respPacking(errcode ErrCode, resultOrData interface{}) map[string]interface{} {
 	resp := map[string]interface{}{
-		"result": result,
-		"error":  errcode,
-	}
-	return resp
-}
-
-func respPackingDetails(result interface{}, errcode ErrCode, details ErrCode) map[string]interface{} {
-	resp := map[string]interface{}{
-		"result":  result,
-		"error":   errcode,
-		"details": details,
+		"error":        errcode,
+		"resultOrData": resultOrData,
 	}
 	return resp
 }
 
 func RespPacking(result interface{}, errcode ErrCode) map[string]interface{} {
-	return respPacking(result, errcode)
+	return respPacking(errcode, result)
 }
 
 func ResponsePack(errCode ErrCode) map[string]interface{} {

@@ -80,5 +80,6 @@ var ErrMessage = map[ErrCode]string{
 	ErrStateUpdaterVaild:    "INTERNAL ERROR, ErrStateUpdaterVaild",
 	ErrSummaryAsset:         "INTERNAL ERROR, ErrSummaryAsset",
 	ErrXmitFail:             "INTERNAL ERROR, ErrXmitFail",
+	ErrAppendTxnPool:        "INTERNAL ERROR, can not append tx to txpool",
 	ErrNullID:               "INTERNAL ERROR, there is no ID in account",
 }
