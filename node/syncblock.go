@@ -233,7 +233,7 @@ func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]
 		return nil, err
 	}
 
-	buf, err := remoteNode.localNode.SerializeMessage(msg, true)
+	buf, err := remoteNode.localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*Block
 		return nil, err
 	}
 
-	buf, err := remoteNode.localNode.SerializeMessage(msg, true)
+	buf, err := remoteNode.localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return nil, err
 	}
