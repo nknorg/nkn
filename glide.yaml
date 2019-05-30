@@ -38,3 +38,6 @@ import:
 - package: github.com/nknorg/nnet
 - package: github.com/xtaci/smux
 - package: github.com/bitly/go-simplejson
+- package: golang.org/x/crypto
+  subpackages:
+  - nacl

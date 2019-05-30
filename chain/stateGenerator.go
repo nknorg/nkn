@@ -7,7 +7,7 @@ import (
 	. "github.com/nknorg/nkn/pb"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nnet/log"
+	"github.com/nknorg/nkn/util/log"
 )
 
 func spendTransaction(states *db.StateDB, tx *Transaction, totalFee common.Fixed64, genesis bool) error {
