@@ -8,6 +8,7 @@ import (
 	"regexp"
 
 	"github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	. "github.com/nknorg/nkn/pb"
@@ -15,7 +16,6 @@ import (
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vm/signature"
-	"github.com/ontology/common"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
