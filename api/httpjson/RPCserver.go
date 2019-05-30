@@ -135,20 +135,15 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 					"error": map[string]interface{}{
 						"code":    -errcode,
 						"message": common.ErrMessage[errcode],
+						"data":    response["resultOrData"],
 					},
 					"id": id,
-				}
-				if details, ok := response["details"].(common.ErrCode); ok {
-					result["details"] = map[string]interface{}{
-						"code":    details,
-						"message": common.ErrMessage[details],
-					}
 				}
 				data, err = json.Marshal(result)
 			} else {
 				data, err = json.Marshal(map[string]interface{}{
 					"jsonrpc": "2.0",
-					"result":  response["result"],
+					"result":  response["resultOrData"],
 					"id":      id,
 				})
 			}
