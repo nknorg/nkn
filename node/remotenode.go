@@ -2,6 +2,7 @@ package node
 
 import (
 	"encoding/json"
+	"errors"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ type RemoteNode struct {
 	*Node
 	localNode *LocalNode
 	nnetNode  *nnetnode.RemoteNode
+	sharedKey *[32]byte
 
 	sync.RWMutex
 	height uint32
@@ -51,10 +53,19 @@ func NewRemoteNode(localNode *LocalNode, nnetNode *nnetnode.RemoteNode) (*Remote
 		return nil, err
 	}
 
+	if len(node.PublicKey) == 0 {
+		return nil, errors.New("nil public key")
+	}
+	sharedKey, err := localNode.computeSharedKey(node.PublicKey[1:])
+	if err != nil {
+		return nil, err
+	}
+
 	remoteNode := &RemoteNode{
 		Node:      node,
 		localNode: localNode,
 		nnetNode:  nnetNode,
+		sharedKey: sharedKey,
 	}
 
 	return remoteNode, nil

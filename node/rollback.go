@@ -9,7 +9,7 @@ import (
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nnet/log"
+	"github.com/nknorg/nkn/util/log"
 )
 
 const (

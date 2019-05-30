@@ -1,5 +1,5 @@
-hash: f51bca4c8f24f380c1f0e029a01e6d69a442c2fbb8dffd1232968667006710a6
-updated: 2019-05-29T19:48:00.633588-07:00
+hash: 504bd66b16e0d3546cfc6528b175545a5fb3e7acaf46c70f614e22e5a1e32f7d
+updated: 2019-05-30T15:14:31.20289-07:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: 9db4a59bd4d803ae0c173a7d8a538e056cd59d57
@@ -13,7 +13,7 @@ imports:
   - sortkeys
   - types
 - name: github.com/golang/crypto
-  version: 22d7a77e9e5f409e934ed268692e56707cd169e5
+  version: 20be4c3c3ed52bfccdb2d59a412ee1a936d175a7
   subpackages:
   - ripemd160
   - ssh/terminal
@@ -59,7 +59,7 @@ imports:
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: 583de1ec8ccf45661b710d3b6d3a4833c57b80e3
+  version: 035aa17844a42b564d2730c579f75ca3017f351d
   subpackages:
   - cache
   - common
@@ -75,6 +75,10 @@ imports:
   - protobuf
   - transport
   - util
+- name: github.com/nknorg/vxeddsa
+  version: 07c00d1c9bf74e54f7a48857dcc53afa4aa16e24
+  subpackages:
+  - extra25519
 - name: github.com/op/go-logging
   version: 970db520ece77730c7e4724c61121037378659d9
 - name: github.com/patrickmn/go-cache
@@ -85,6 +89,10 @@ imports:
   version: 27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7
 - name: github.com/rdegges/go-ipify
   version: 2d94a6a86c4055118cc30fae2aaed47ec01f2210
+- name: github.com/Scratch-net/vxeddsa
+  version: 07c00d1c9bf74e54f7a48857dcc53afa4aa16e24
+  subpackages:
+  - edwards25519
 - name: github.com/syndtr/goleveldb
   version: c3a204f8e96543bb0cc090385c001078f184fc46
   subpackages:
@@ -115,7 +123,7 @@ imports:
 - name: github.com/xtaci/smux
   version: 3752dae3e12b585d3c5fc03ba0bfaf9a2f19a19a
 - name: golang.org/x/crypto
-  version: 22d7a77e9e5f409e934ed268692e56707cd169e5
+  version: 20be4c3c3ed52bfccdb2d59a412ee1a936d175a7
   subpackages:
   - blowfish
   - cast5
@@ -123,7 +131,11 @@ imports:
   - ed25519
   - ed25519/internal/edwards25519
   - internal/subtle
+  - nacl
+  - nacl/box
+  - nacl/secretbox
   - pbkdf2
+  - poly1305
   - salsa20
   - salsa20/salsa
   - tea
@@ -142,10 +154,11 @@ imports:
   - internal/socket
   - ipv4
 - name: golang.org/x/sys
-  version: 6a60838ec2595395fabc7b2e6c2ae9fb5a87722d
+  version: ad28b68e88f12448a1685d038ffea87bbbb34148
   repo: https://github.com/golang/sys
   vcs: git
   subpackages:
+  - cpu
   - unix
   - windows
 - name: golang.org/x/text
@@ -168,8 +181,4 @@ imports:
   - language
   - runes
   - transform
-testImports:
-- name: github.com/NKNetwork/coniks-go
-  version: c87a66492e5b0b4d96d5a4ba66c4605217efe36e
-  subpackages:
-  - crypto/internal/ed25519/edwards25519
+testImports: []

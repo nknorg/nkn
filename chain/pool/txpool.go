@@ -13,7 +13,7 @@ import (
 	"github.com/nknorg/nkn/por"
 	. "github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nnet/log"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 

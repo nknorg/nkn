@@ -156,6 +156,23 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return true
 	}, 0})
 
+	nn.MustApplyMiddleware(nnetnode.MessageEncoded{func(rn *nnetnode.RemoteNode, msg []byte) ([]byte, bool) {
+		return localNode.encryptMessage(msg, rn), true
+	}, 0})
+
+	nn.MustApplyMiddleware(nnetnode.MessageWillDecode{func(rn *nnetnode.RemoteNode, msg []byte) ([]byte, bool) {
+		decrypted, err := localNode.decryptMessage(msg, rn)
+		if err != nil {
+			if localNode.getNbrByNNetNode(rn) != nil {
+				rn.Stop(err)
+			} else {
+				log.Warning(err)
+			}
+			return nil, false
+		}
+		return decrypted, true
+	}, 0})
+
 	nn.MustApplyMiddleware(routing.RemoteMessageRouted{localNode.remoteMessageRouted, 0})
 
 	return localNode, nil
