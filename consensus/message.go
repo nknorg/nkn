@@ -231,7 +231,7 @@ func (consensus *Consensus) getConsensusStateMessageHandler(remoteMessage *node.
 		return nil, false, err
 	}
 
-	replyBuf, err := consensus.localNode.SerializeMessage(replyMsg, true)
+	replyBuf, err := consensus.localNode.SerializeMessage(replyMsg, false)
 	return replyBuf, false, err
 }
 
