@@ -1,6 +1,8 @@
-hash: 8560b3563e7b15a9e0ab39f71dd6da2e29ce7ed4aca35c97d11ac9ac3c75b0b7
-updated: 2019-05-10T04:31:45.912278-07:00
+hash: f51bca4c8f24f380c1f0e029a01e6d69a442c2fbb8dffd1232968667006710a6
+updated: 2019-05-29T19:48:00.633588-07:00
 imports:
+- name: github.com/bitly/go-simplejson
+  version: 9db4a59bd4d803ae0c173a7d8a538e056cd59d57
 - name: github.com/gogo/protobuf
   version: 636bf0302bc95575d69441b25a2603156ffdddf1
   subpackages:
@@ -11,7 +13,7 @@ imports:
   - sortkeys
   - types
 - name: github.com/golang/crypto
-  version: cbcb750295291b33242907a04be40e80801d0cfc
+  version: 22d7a77e9e5f409e934ed268692e56707cd169e5
   subpackages:
   - ripemd160
   - ssh/terminal
@@ -49,7 +51,7 @@ imports:
 - name: github.com/klauspost/cpuid
   version: 05a8198c0f5a27739aec358908d7e12c64ce6eb7
 - name: github.com/klauspost/reedsolomon
-  version: a373324398e4d088b67d6dd6157285b5d4e29642
+  version: 0883d2f0110ebc0d49684b4701e1d528422339c9
 - name: github.com/nknorg/go-nat
   version: 6339479af9cce1e6c4f5efe96c0306fb6149397c
 - name: github.com/nknorg/go-portscanner
@@ -57,7 +59,7 @@ imports:
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: f7cb95c446e14df20e561cc1396ca486b83834ce
+  version: 583de1ec8ccf45661b710d3b6d3a4833c57b80e3
   subpackages:
   - cache
   - common
@@ -112,13 +114,12 @@ imports:
   version: f48db19e7a48fe347571d6bfc52a7585a53c5315
 - name: github.com/xtaci/smux
   version: 3752dae3e12b585d3c5fc03ba0bfaf9a2f19a19a
-- name: github.com/bitly/go-simplejson
-  version: 9db4a59bd4d803ae0c173a7d8a538e056cd59d57
 - name: golang.org/x/crypto
-  version: cbcb750295291b33242907a04be40e80801d0cfc
+  version: 22d7a77e9e5f409e934ed268692e56707cd169e5
   subpackages:
   - blowfish
   - cast5
+  - curve25519
   - ed25519
   - ed25519/internal/edwards25519
   - internal/subtle
@@ -129,7 +130,7 @@ imports:
   - twofish
   - xtea
 - name: golang.org/x/net
-  version: a4d6f7feada510cc50e69a37b484cb0fdc6b7876
+  version: f3200d17e092c607f615320ecaad13d87ad9a2b3
   repo: https://github.com/golang/net
   vcs: git
   subpackages:
@@ -141,7 +142,7 @@ imports:
   - internal/socket
   - ipv4
 - name: golang.org/x/sys
-  version: a5b02f93d862f065920dd6a40dddc66b60d0dec4
+  version: 6a60838ec2595395fabc7b2e6c2ae9fb5a87722d
   repo: https://github.com/golang/sys
   vcs: git
   subpackages:
@@ -167,4 +168,8 @@ imports:
   - language
   - runes
   - transform
-testImports: []
+testImports:
+- name: github.com/NKNetwork/coniks-go
+  version: c87a66492e5b0b4d96d5a4ba66c4605217efe36e
+  subpackages:
+  - crypto/internal/ed25519/edwards25519
