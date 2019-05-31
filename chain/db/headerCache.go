@@ -5,26 +5,26 @@ import (
 	"fmt"
 	"sync"
 
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/common"
 )
 
 type HeaderCache struct {
 	mu                 sync.RWMutex
 	headerIndex        map[uint32]common.Uint256
-	headerCache        map[common.Uint256]Header
+	headerCache        map[common.Uint256]block.Header
 	currentCacheHeight uint32
 }
 
 func NewHeaderCache() *HeaderCache {
 	return &HeaderCache{
 		headerIndex:        map[uint32]common.Uint256{},
-		headerCache:        map[common.Uint256]Header{},
+		headerCache:        map[common.Uint256]block.Header{},
 		currentCacheHeight: 0,
 	}
 }
 
-func (hc *HeaderCache) AddHeaderToCache(header *Header) {
+func (hc *HeaderCache) AddHeaderToCache(header *block.Header) {
 	hc.mu.Lock()
 	hash := header.Hash()
 	hc.headerCache[hash] = *header
@@ -50,7 +50,7 @@ func (hc *HeaderCache) RemoveCachedHeader(stopHeight uint32) {
 	}
 }
 
-func (hc *HeaderCache) GetCachedHeader(hash common.Uint256) (*Header, error) {
+func (hc *HeaderCache) GetCachedHeader(hash common.Uint256) (*block.Header, error) {
 	hc.mu.RLock()
 	defer hc.mu.RUnlock()
 	if header, ok := hc.headerCache[hash]; !ok {
@@ -82,7 +82,7 @@ func (hc *HeaderCache) GetCachedHeaderHashByHeight(height uint32) common.Uint256
 	return hc.headerIndex[height]
 }
 
-func (hc *HeaderCache) RollbackHeader(h *Header) {
+func (hc *HeaderCache) RollbackHeader(h *block.Header) {
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
 

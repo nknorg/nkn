@@ -8,12 +8,12 @@ import (
 	"io"
 	"sync"
 
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/pb"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vm/contract"
@@ -23,7 +23,7 @@ type ChainStore struct {
 	st IStore
 
 	mu          sync.RWMutex
-	blockCache  map[Uint256]*Block
+	blockCache  map[Uint256]*block.Block
 	headerCache *HeaderCache
 	States      *StateDB
 
@@ -39,7 +39,7 @@ func NewLedgerStore() (*ChainStore, error) {
 
 	chain := &ChainStore{
 		st:                 st,
-		blockCache:         map[Uint256]*Block{},
+		blockCache:         map[Uint256]*block.Block{},
 		headerCache:        NewHeaderCache(),
 		currentBlockHeight: 0,
 		currentBlockHash:   EmptyUint256,
@@ -63,7 +63,7 @@ func (cs *ChainStore) ResetDB() error {
 	return cs.st.BatchCommit()
 }
 
-func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *Block) (uint32, error) {
+func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block) (uint32, error) {
 	version, err := cs.st.Get(versionKey())
 	if err != nil {
 		version = []byte{0x00}
@@ -130,7 +130,7 @@ func (cs *ChainStore) GetBlockHash(height uint32) (Uint256, error) {
 	return Uint256ParseFromBytes(blockHash)
 }
 
-func (cs *ChainStore) GetBlockByHeight(height uint32) (*Block, error) {
+func (cs *ChainStore) GetBlockByHeight(height uint32) (*block.Block, error) {
 	hash, err := cs.GetBlockHash(height)
 	if err != nil {
 		return nil, err
@@ -139,13 +139,13 @@ func (cs *ChainStore) GetBlockByHeight(height uint32) (*Block, error) {
 	return cs.GetBlock(hash)
 }
 
-func (cs *ChainStore) GetHeader(hash Uint256) (*Header, error) {
+func (cs *ChainStore) GetHeader(hash Uint256) (*block.Header, error) {
 	data, err := cs.st.Get(headerKey(hash))
 	if err != nil {
 		return nil, err
 	}
 
-	h := new(Header)
+	h := new(block.Header)
 	dt, _ := serialization.ReadVarBytes(bytes.NewReader(data))
 	err = h.Unmarshal(dt)
 	if err != nil {
@@ -155,7 +155,7 @@ func (cs *ChainStore) GetHeader(hash Uint256) (*Header, error) {
 	return h, nil
 }
 
-func (cs *ChainStore) GetHeaderByHeight(height uint32) (*Header, error) {
+func (cs *ChainStore) GetHeaderByHeight(height uint32) (*block.Header, error) {
 	hash, err := cs.GetBlockHash(height)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (cs *ChainStore) GetHeaderByHeight(height uint32) (*Header, error) {
 	return cs.GetHeader(hash)
 }
 
-func (cs *ChainStore) GetTransaction(hash Uint256) (*Transaction, error) {
+func (cs *ChainStore) GetTransaction(hash Uint256) (*transaction.Transaction, error) {
 	t, _, err := cs.getTx(hash)
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func (cs *ChainStore) GetTransaction(hash Uint256) (*Transaction, error) {
 	return t, nil
 }
 
-func (cs *ChainStore) getTx(hash Uint256) (*Transaction, uint32, error) {
+func (cs *ChainStore) getTx(hash Uint256) (*transaction.Transaction, uint32, error) {
 	value, err := cs.st.Get(transactionKey(hash))
 	if err != nil {
 		return nil, 0, err
@@ -181,7 +181,7 @@ func (cs *ChainStore) getTx(hash Uint256) (*Transaction, uint32, error) {
 
 	height := binary.LittleEndian.Uint32(value)
 	value = value[4:]
-	var txn Transaction
+	var txn transaction.Transaction
 	if err := txn.Unmarshal(value); err != nil {
 		return nil, height, err
 	}
@@ -189,13 +189,13 @@ func (cs *ChainStore) getTx(hash Uint256) (*Transaction, uint32, error) {
 	return &txn, height, nil
 }
 
-func (cs *ChainStore) GetBlock(hash Uint256) (*Block, error) {
+func (cs *ChainStore) GetBlock(hash Uint256) (*block.Block, error) {
 	bHash, err := cs.st.Get(headerKey(hash))
 	if err != nil {
 		return nil, err
 	}
 
-	b := new(Block)
+	b := new(block.Block)
 	if err = b.FromTrimmedData(bytes.NewReader(bHash)); err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func (cs *ChainStore) IsBlockInStore(hash Uint256) bool {
 	return true
 }
 
-func (cs *ChainStore) persist(b *Block) error {
+func (cs *ChainStore) persist(b *block.Block) error {
 	cs.st.NewBatch()
 
 	headerHash := b.Hash()
@@ -270,7 +270,7 @@ func (cs *ChainStore) persist(b *Block) error {
 		preBlockHash := prevBlock.Hash()
 
 		for _, txn := range prevBlock.Transactions {
-			if txn.UnsignedTx.Payload.Type == GenerateIDType {
+			if txn.UnsignedTx.Payload.Type == pb.GenerateIDType {
 				txnHash := txn.Hash()
 				data := append(preBlockHash[:], txnHash[:]...)
 				data = append(data, b.Header.UnsignedHeader.RandomBeacon...)
@@ -298,14 +298,14 @@ func (cs *ChainStore) persist(b *Block) error {
 			return err
 		}
 
-		pl, err := Unpack(txn.UnsignedTx.Payload)
+		pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
 		if err != nil {
 			return err
 		}
 
 		switch txn.UnsignedTx.Payload.Type {
-		case CoinbaseType:
-			coinbase := pl.(*Coinbase)
+		case pb.CoinbaseType:
+			coinbase := pl.(*pb.Coinbase)
 			accSender := states.GetOrNewAccount(BytesToUint160(coinbase.Sender))
 			if b.Header.UnsignedHeader.Height != 0 {
 				amountSender := accSender.GetBalance()
@@ -323,8 +323,8 @@ func (cs *ChainStore) persist(b *Block) error {
 			amount := acc.GetBalance()
 			acc.SetBalance(amount + Fixed64(coinbase.Amount) + totalFee)
 			states.setAccount(BytesToUint160(coinbase.Recipient), acc)
-		case TransferAssetType:
-			transfer := pl.(*TransferAsset)
+		case pb.TransferAssetType:
+			transfer := pl.(*pb.TransferAsset)
 			accSender := states.GetOrNewAccount(BytesToUint160(transfer.Sender))
 			amountSender := accSender.GetBalance()
 			accSender.SetBalance(amountSender - Fixed64(transfer.Amount) - Fixed64(txn.UnsignedTx.Fee))
@@ -336,8 +336,8 @@ func (cs *ChainStore) persist(b *Block) error {
 			amountRecipient := accRecipient.GetBalance()
 			accRecipient.SetBalance(amountRecipient + Fixed64(transfer.Amount))
 			states.setAccount(BytesToUint160(transfer.Recipient), accRecipient)
-		case RegisterNameType:
-			registerNamePayload := pl.(*RegisterName)
+		case pb.RegisterNameType:
+			registerNamePayload := pl.(*pb.RegisterName)
 			pg, err := txn.GetProgramHashes()
 			if err != nil {
 				return err
@@ -352,8 +352,8 @@ func (cs *ChainStore) persist(b *Block) error {
 			if err != nil {
 				return err
 			}
-		case DeleteNameType:
-			deleteNamePayload := pl.(*DeleteName)
+		case pb.DeleteNameType:
+			deleteNamePayload := pl.(*pb.DeleteName)
 			pg, err := txn.GetProgramHashes()
 			if err != nil {
 				return err
@@ -368,8 +368,8 @@ func (cs *ChainStore) persist(b *Block) error {
 			if err != nil {
 				return err
 			}
-		case SubscribeType:
-			subscribePayload := pl.(*Subscribe)
+		case pb.SubscribeType:
+			subscribePayload := pl.(*pb.Subscribe)
 			pg, err := txn.GetProgramHashes()
 			if err != nil {
 				return err
@@ -384,8 +384,8 @@ func (cs *ChainStore) persist(b *Block) error {
 			if err != nil {
 				return err
 			}
-		case GenerateIDType:
-			genIDPayload := pl.(*GenerateID)
+		case pb.GenerateIDType:
+			genIDPayload := pl.(*pb.GenerateID)
 			pg, err := txn.GetProgramHashes()
 			if err != nil {
 				return err
@@ -469,7 +469,7 @@ func (cs *ChainStore) persist(b *Block) error {
 	return nil
 }
 
-func (cs *ChainStore) SaveBlock(b *Block, fastAdd bool) error {
+func (cs *ChainStore) SaveBlock(b *block.Block, fastAdd bool) error {
 	if err := cs.persist(b); err != nil {
 		log.Error("error to persist block:", err.Error())
 		return err
@@ -502,7 +502,7 @@ func (cs *ChainStore) GetHeight() uint32 {
 	return cs.currentBlockHeight
 }
 
-func (cs *ChainStore) AddHeader(header *Header) error {
+func (cs *ChainStore) AddHeader(header *block.Header) error {
 	cs.headerCache.AddHeaderToCache(header)
 
 	return nil
@@ -529,15 +529,15 @@ func (cs *ChainStore) GetHeaderHashByHeight(height uint32) Uint256 {
 	return cs.headerCache.GetCachedHeaderHashByHeight(height)
 }
 
-func (cs *ChainStore) GetHeaderWithCache(hash Uint256) (*Header, error) {
+func (cs *ChainStore) GetHeaderWithCache(hash Uint256) (*block.Header, error) {
 	return cs.headerCache.GetCachedHeader(hash)
 }
 
-func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*Header, error) {
+func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*block.Header, error) {
 	return cs.headerCache.GetCachedHeader(hash)
 }
 
-func (cs *ChainStore) IsDoubleSpend(tx *Transaction) bool {
+func (cs *ChainStore) IsDoubleSpend(tx *transaction.Transaction) bool {
 	return false
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/pb"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -17,7 +17,7 @@ var (
 	ErrNonceOutofRange     = errors.New("nonce is not in range")
 )
 
-type sortTxnsByNonce []*Transaction
+type sortTxnsByNonce []*transaction.Transaction
 
 func (s sortTxnsByNonce) Len() int      { return len(s) }
 func (s sortTxnsByNonce) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
@@ -34,19 +34,19 @@ func (s sortTxnsByNonce) Less(i, j int) bool {
 type NonceSortedTxs struct {
 	mu      sync.RWMutex
 	account common.Uint160
-	txs     map[common.Uint256]*Transaction // txns belong to The same address
-	idx     []common.Uint256                // the sequential tx hash list
-	orphans map[common.Uint256]*Transaction // orphan txs cannot be added to ledger currently.
-	cap     int                             // the capacity of the tx hash list
+	txs     map[common.Uint256]*transaction.Transaction // txns belong to The same address
+	idx     []common.Uint256                            // the sequential tx hash list
+	orphans map[common.Uint256]*transaction.Transaction // orphan txs cannot be added to ledger currently.
+	cap     int                                         // the capacity of the tx hash list
 }
 
 // NewNonceSortedTxs return a new NonceSortedTxs instance
 func NewNonceSortedTxs(acc common.Uint160, length int) *NonceSortedTxs {
 	return &NonceSortedTxs{
 		account: acc,
-		txs:     make(map[common.Uint256]*Transaction),
+		txs:     make(map[common.Uint256]*transaction.Transaction),
 		idx:     make([]common.Uint256, 0),
-		orphans: make(map[common.Uint256]*Transaction),
+		orphans: make(map[common.Uint256]*transaction.Transaction),
 		cap:     length,
 	}
 }
@@ -81,7 +81,7 @@ func (nst *NonceSortedTxs) Full() bool {
 	return nst.full()
 }
 
-func (nst *NonceSortedTxs) Push(tx *Transaction) error {
+func (nst *NonceSortedTxs) Push(tx *transaction.Transaction) error {
 	nst.mu.Lock()
 	defer nst.mu.Unlock()
 
@@ -92,7 +92,7 @@ func (nst *NonceSortedTxs) Push(tx *Transaction) error {
 	return nil
 }
 
-func (nst *NonceSortedTxs) Pop() (*Transaction, error) {
+func (nst *NonceSortedTxs) Pop() (*transaction.Transaction, error) {
 	nst.mu.Lock()
 	defer nst.mu.Unlock()
 
@@ -108,7 +108,7 @@ func (nst *NonceSortedTxs) Pop() (*Transaction, error) {
 	return tx, nil
 }
 
-func (nst *NonceSortedTxs) Seek() (*Transaction, error) {
+func (nst *NonceSortedTxs) Seek() (*transaction.Transaction, error) {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
 
@@ -127,7 +127,7 @@ func (nst *NonceSortedTxs) getNonce(hash common.Uint256) uint64 {
 	panic("no such tx in NonceSortedTxs")
 }
 
-func (nst *NonceSortedTxs) Add(tx *Transaction) error {
+func (nst *NonceSortedTxs) Add(tx *transaction.Transaction) error {
 	nst.mu.Lock()
 	defer nst.mu.Unlock()
 
@@ -148,7 +148,7 @@ func (nst *NonceSortedTxs) Add(tx *Transaction) error {
 	return nil
 }
 
-func (nst *NonceSortedTxs) Get(nonce uint64) (*Transaction, error) {
+func (nst *NonceSortedTxs) Get(nonce uint64) (*transaction.Transaction, error) {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
 
@@ -165,8 +165,8 @@ func (nst *NonceSortedTxs) Get(nonce uint64) (*Transaction, error) {
 	return nst.txs[hash], nil
 }
 
-func (nst *NonceSortedTxs) GetAllTransactions() []*Transaction {
-	txns := make([]*Transaction, 0)
+func (nst *NonceSortedTxs) GetAllTransactions() []*transaction.Transaction {
+	txns := make([]*transaction.Transaction, 0)
 	for _, txnHash := range nst.idx {
 		txns = append(txns, nst.txs[txnHash])
 	}
@@ -204,7 +204,7 @@ func (nst *NonceSortedTxs) Totality() common.Fixed64 {
 	var amount common.Fixed64
 	for _, tx := range nst.txs {
 		if tx.UnsignedTx.Payload.Type == pb.TransferAssetType {
-			pl, _ := Unpack(tx.UnsignedTx.Payload)
+			pl, _ := transaction.Unpack(tx.UnsignedTx.Payload)
 			transfer := pl.(*pb.TransferAsset)
 			amount += common.Fixed64(transfer.Amount)
 		}
@@ -215,7 +215,7 @@ func (nst *NonceSortedTxs) Totality() common.Fixed64 {
 	return amount
 }
 
-func (nst *NonceSortedTxs) GetOrphanTxn(hash common.Uint256) *Transaction {
+func (nst *NonceSortedTxs) GetOrphanTxn(hash common.Uint256) *transaction.Transaction {
 	if txn, ok := nst.orphans[hash]; ok {
 		return txn
 	}
@@ -223,7 +223,7 @@ func (nst *NonceSortedTxs) GetOrphanTxn(hash common.Uint256) *Transaction {
 	return nil
 }
 
-func (nst *NonceSortedTxs) AddOrphanTxn(txn *Transaction) error {
+func (nst *NonceSortedTxs) AddOrphanTxn(txn *transaction.Transaction) error {
 	for hash, orphan := range nst.orphans {
 		if txn.UnsignedTx.Nonce == orphan.UnsignedTx.Nonce {
 			delete(nst.orphans, hash)
@@ -235,8 +235,8 @@ func (nst *NonceSortedTxs) AddOrphanTxn(txn *Transaction) error {
 	return nil
 }
 
-func (nst *NonceSortedTxs) ProcessOrphans(handle func(tx *Transaction) error) error {
-	orphanList := make([]*Transaction, 0)
+func (nst *NonceSortedTxs) ProcessOrphans(handle func(tx *transaction.Transaction) error) error {
+	orphanList := make([]*transaction.Transaction, 0)
 	for _, orphan := range nst.orphans {
 		orphanList = append(orphanList, orphan)
 	}
@@ -250,7 +250,7 @@ func (nst *NonceSortedTxs) ProcessOrphans(handle func(tx *Transaction) error) er
 	return nil
 }
 
-func (nst *NonceSortedTxs) CleanOrphans(txs []*Transaction) {
+func (nst *NonceSortedTxs) CleanOrphans(txs []*transaction.Transaction) {
 	nonce := int64(0)
 
 	if n, err := nst.GetLatestNonce(); err != nil {

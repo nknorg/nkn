@@ -4,22 +4,22 @@ import (
 	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/pb"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
 
-func spendTransaction(states *db.StateDB, tx *Transaction, totalFee common.Fixed64, genesis bool) error {
-	pl, err := Unpack(tx.UnsignedTx.Payload)
+func spendTransaction(states *db.StateDB, tx *transaction.Transaction, totalFee common.Fixed64, genesis bool) error {
+	pl, err := transaction.Unpack(tx.UnsignedTx.Payload)
 	if err != nil {
 		log.Error("unpack payload error", err)
 		return err
 	}
 
 	switch tx.UnsignedTx.Payload.Type {
-	case CoinbaseType:
-		coinbase := pl.(*Coinbase)
+	case pb.CoinbaseType:
+		coinbase := pl.(*pb.Coinbase)
 		accSender := states.GetOrNewAccount(common.BytesToUint160(coinbase.Sender))
 		if !genesis {
 			amountSender := accSender.GetBalance()
@@ -39,8 +39,8 @@ func spendTransaction(states *db.StateDB, tx *Transaction, totalFee common.Fixed
 		acc.SetBalance(amount + common.Fixed64(coinbase.Amount) + totalFee)
 		states.SetAccount(common.BytesToUint160(coinbase.Recipient), acc)
 
-	case TransferAssetType:
-		transfer := pl.(*TransferAsset)
+	case pb.TransferAssetType:
+		transfer := pl.(*pb.TransferAsset)
 		accSender := states.GetOrNewAccount(common.BytesToUint160(transfer.Sender))
 		amountSender := accSender.GetBalance()
 		accSender.SetBalance(amountSender - common.Fixed64(transfer.Amount) - common.Fixed64(tx.UnsignedTx.Fee))
@@ -52,11 +52,11 @@ func spendTransaction(states *db.StateDB, tx *Transaction, totalFee common.Fixed
 		amountRecipient := accRecipient.GetBalance()
 		accRecipient.SetBalance(amountRecipient + common.Fixed64(transfer.Amount))
 		states.SetAccount(common.BytesToUint160(transfer.Recipient), accRecipient)
-	case RegisterNameType:
+	case pb.RegisterNameType:
 		fallthrough
-	case DeleteNameType:
+	case pb.DeleteNameType:
 		fallthrough
-	case SubscribeType:
+	case pb.SubscribeType:
 		pg, _ := common.ToCodeHash(tx.Programs[0].Code)
 		accSender := states.GetOrNewAccount(pg)
 		amountSender := accSender.GetBalance()
@@ -64,8 +64,8 @@ func spendTransaction(states *db.StateDB, tx *Transaction, totalFee common.Fixed
 		nonceSender := accSender.GetNonce()
 		accSender.SetNonce(nonceSender + 1)
 		states.SetAccount(pg, accSender)
-	case GenerateIDType:
-		genID := pl.(*GenerateID)
+	case pb.GenerateIDType:
+		genID := pl.(*pb.GenerateID)
 		pg, _ := common.ToCodeHash(tx.Programs[0].Code)
 		accSender := states.GetOrNewAccount(pg)
 		amountSender := accSender.GetBalance()
@@ -89,8 +89,7 @@ func spendTransaction(states *db.StateDB, tx *Transaction, totalFee common.Fixed
 	return nil
 }
 
-func GenerateStateRoot(txs []*Transaction, height uint32, randomBeacon []byte) common.Uint256 {
-
+func GenerateStateRoot(txs []*transaction.Transaction, height uint32, randomBeacon []byte) common.Uint256 {
 	root := DefaultLedger.Store.GetCurrentBlockStateRoot()
 	states, _ := db.NewStateDB(root, db.NewTrieStore(DefaultLedger.Store.GetDatabase()))
 
@@ -104,7 +103,7 @@ func GenerateStateRoot(txs []*Transaction, height uint32, randomBeacon []byte) c
 		preBlockHash := prevBlock.Hash()
 
 		for _, txn := range prevBlock.Transactions {
-			if txn.UnsignedTx.Payload.Type == GenerateIDType {
+			if txn.UnsignedTx.Payload.Type == pb.GenerateIDType {
 				txnHash := txn.Hash()
 				data := append(preBlockHash[:], txnHash[:]...)
 				data = append(data, randomBeacon...)
@@ -133,7 +132,7 @@ func GenerateStateRoot(txs []*Transaction, height uint32, randomBeacon []byte) c
 	return states.IntermediateRoot(true)
 }
 
-func GenesisStateRoot(store ILedgerStore, txs []*Transaction) common.Uint256 {
+func GenesisStateRoot(store ILedgerStore, txs []*transaction.Transaction) common.Uint256 {
 	root := common.EmptyUint256
 	states, _ := db.NewStateDB(root, db.NewTrieStore(store.GetDatabase()))
 

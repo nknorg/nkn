@@ -24,7 +24,7 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
 	"github.com/nknorg/nnet/overlay/routing"
-	"github.com/nknorg/nnet/protobuf"
+	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
 const (
@@ -121,7 +121,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	event.Queue.Subscribe(event.BlockPersistCompleted, localNode.cleanupTransactions)
 
-	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{func(n *protobuf.Node) (bool, bool) {
+	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{func(n *nnetpb.Node) (bool, bool) {
 		err := localNode.shouldConnectToNode(n)
 		if err != nil {
 			log.Infof("stop connect to node because: %v", err)
@@ -185,7 +185,7 @@ func (localNode *LocalNode) Start() error {
 	return nil
 }
 
-func (localNode *LocalNode) shouldConnectToNode(n *protobuf.Node) error {
+func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 	if n.GetData() != nil {
 		nodeData := &pb.NodeData{}
 		err := proto.Unmarshal(n.Data, nodeData)

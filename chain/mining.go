@@ -1,13 +1,13 @@
 package chain
 
 import (
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/crypto/util"
-	. "github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -15,7 +15,7 @@ import (
 )
 
 type Mining interface {
-	BuildBlock(height uint32, chordID []byte, winnerHash common.Uint256, winnerType WinnerType, timestamp int64) (*Block, error)
+	BuildBlock(height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType, timestamp int64) (*block.Block, error)
 }
 
 type BuiltinMining struct {
@@ -30,8 +30,8 @@ func NewBuiltinMining(account *vault.Account, txnCollector *TxnCollector) *Built
 	}
 }
 
-func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash common.Uint256, winnerType WinnerType, timestamp int64) (*Block, error) {
-	var txnList []*Transaction
+func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType, timestamp int64) (*block.Block, error) {
+	var txnList []*transaction.Transaction
 	var txnHashList []common.Uint256
 
 	donation, err := DefaultLedger.Store.GetDonation()
@@ -44,7 +44,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	totalTxsSize := coinbase.GetSize()
 	txCount := 1
 
-	if winnerType == TXN_SIGNER {
+	if winnerType == pb.TXN_SIGNER {
 		if _, err = DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
 			miningSigChainTxn, err := por.GetPorServer().GetMiningSigChainTxn(winnerHash)
 			if err != nil {
@@ -109,9 +109,9 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	randomBeacon := util.RandomBytes(config.RandomBeaconLength)
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
 	curStateHash := GenerateStateRoot(txnList, height, randomBeacon)
-	header := &Header{
-		BlockHeader: BlockHeader{
-			UnsignedHeader: &UnsignedHeader{
+	header := &block.Header{
+		Header: pb.Header{
+			UnsignedHeader: &pb.UnsignedHeader{
 				Version:          HeaderVersion,
 				PrevBlockHash:    curBlockHash.ToArray(),
 				Timestamp:        timestamp,
@@ -135,7 +135,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	}
 	header.Signature = append(header.Signature, sig...)
 
-	block := &Block{
+	block := &block.Block{
 		Header:       header,
 		Transactions: txnList,
 	}
@@ -143,7 +143,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	return block, nil
 }
 
-func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *Transaction {
+func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *transaction.Transaction {
 	// Transfer the reward to the beneficiary
 	redeemHash := bm.account.ProgramHash
 	if config.Parameters.BeneficiaryAddr != "" {
@@ -156,16 +156,16 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *Trans
 	}
 
 	donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
-	payload := NewCoinbase(donationProgramhash, redeemHash, reward)
-	pl, err := Pack(CoinbaseType, payload)
+	payload := transaction.NewCoinbase(donationProgramhash, redeemHash, reward)
+	pl, err := transaction.Pack(pb.CoinbaseType, payload)
 	if err != nil {
 		return nil
 	}
 
 	nonce := DefaultLedger.Store.GetNonce(donationProgramhash)
-	txn := NewMsgTx(pl, nonce, 0, util.RandomBytes(TransactionNonceLength))
-	trans := &Transaction{
-		MsgTx: *txn,
+	txn := transaction.NewMsgTx(pl, nonce, 0, util.RandomBytes(transaction.TransactionNonceLength))
+	trans := &transaction.Transaction{
+		Transaction: *txn,
 	}
 
 	return trans

@@ -75,15 +75,15 @@ func TestUnsignedTxMarshalTo(t *testing.T) {
 	}
 }
 
-func TestMsgTxProto(t *testing.T) {
+func TestTransactionProto(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedMsgTx(popr, false)
+	p := NewPopulatedTransaction(popr, false)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &MsgTx{}
+	msg := &Transaction{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -106,10 +106,10 @@ func TestMsgTxProto(t *testing.T) {
 	}
 }
 
-func TestMsgTxMarshalTo(t *testing.T) {
+func TestTransactionMarshalTo(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedMsgTx(popr, false)
+	p := NewPopulatedTransaction(popr, false)
 	size := p.Size()
 	dAtA := make([]byte, size)
 	for i := range dAtA {
@@ -119,7 +119,7 @@ func TestMsgTxMarshalTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &MsgTx{}
+	msg := &Transaction{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -149,16 +149,16 @@ func TestUnsignedTxJSON(t *testing.T) {
 		t.Fatalf("seed = %d, %#v !Json Equal %#v", seed, msg, p)
 	}
 }
-func TestMsgTxJSON(t *testing.T) {
+func TestTransactionJSON(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedMsgTx(popr, true)
+	p := NewPopulatedTransaction(popr, true)
 	marshaler := github_com_gogo_protobuf_jsonpb.Marshaler{}
 	jsondata, err := marshaler.MarshalToString(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &MsgTx{}
+	msg := &Transaction{}
 	err = github_com_gogo_protobuf_jsonpb.UnmarshalString(jsondata, msg)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
@@ -195,12 +195,12 @@ func TestUnsignedTxProtoCompactText(t *testing.T) {
 	}
 }
 
-func TestMsgTxProtoText(t *testing.T) {
+func TestTransactionProtoText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedMsgTx(popr, true)
+	p := NewPopulatedTransaction(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.MarshalTextString(p)
-	msg := &MsgTx{}
+	msg := &Transaction{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -209,12 +209,12 @@ func TestMsgTxProtoText(t *testing.T) {
 	}
 }
 
-func TestMsgTxProtoCompactText(t *testing.T) {
+func TestTransactionProtoCompactText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedMsgTx(popr, true)
+	p := NewPopulatedTransaction(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.CompactTextString(p)
-	msg := &MsgTx{}
+	msg := &Transaction{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -236,9 +236,9 @@ func TestUnsignedTxGoString(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestMsgTxGoString(t *testing.T) {
+func TestTransactionGoString(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedMsgTx(popr, false)
+	p := NewPopulatedTransaction(popr, false)
 	s1 := p.GoString()
 	s2 := fmt.Sprintf("%#v", p)
 	if s1 != s2 {
@@ -271,10 +271,10 @@ func TestUnsignedTxSize(t *testing.T) {
 	}
 }
 
-func TestMsgTxSize(t *testing.T) {
+func TestTransactionSize(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedMsgTx(popr, true)
+	p := NewPopulatedTransaction(popr, true)
 	size2 := github_com_gogo_protobuf_proto.Size(p)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
@@ -302,9 +302,9 @@ func TestUnsignedTxStringer(t *testing.T) {
 		t.Fatalf("String want %v got %v", s1, s2)
 	}
 }
-func TestMsgTxStringer(t *testing.T) {
+func TestTransactionStringer(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedMsgTx(popr, false)
+	p := NewPopulatedTransaction(popr, false)
 	s1 := p.String()
 	s2 := fmt.Sprintf("%v", p)
 	if s1 != s2 {
