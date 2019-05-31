@@ -5,16 +5,16 @@ import (
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain/pool"
 	"github.com/nknorg/nkn/pb"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
 // NewTransactionsMessage creates a TRANSACTIONS message
-func NewTransactionsMessage(transactions []*Transaction) (*pb.UnsignedMessage, error) {
+func NewTransactionsMessage(transactions []*transaction.Transaction) (*pb.UnsignedMessage, error) {
 	transactionsBytes := make([][]byte, len(transactions), len(transactions))
 	var err error
 	for i, transaction := range transactions {
@@ -57,7 +57,7 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 	hasValidTxn := false
 	shouldPropagate := false
 	for _, txnBytes := range msgBody.Transactions {
-		txn := &Transaction{}
+		txn := &transaction.Transaction{}
 		err = txn.Unmarshal(txnBytes)
 		if err != nil {
 			log.Warningf("Deserialize transaction error: %v", err)
@@ -96,8 +96,8 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 
 // BroadcastTransaction broadcast a transaction to the network using
 // TRANSACTIONS message
-func (localNode *LocalNode) BroadcastTransaction(txn *Transaction) error {
-	msg, err := NewTransactionsMessage([]*Transaction{txn})
+func (localNode *LocalNode) BroadcastTransaction(txn *transaction.Transaction) error {
+	msg, err := NewTransactionsMessage([]*transaction.Transaction{txn})
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (localNode *LocalNode) BroadcastTransaction(txn *Transaction) error {
 }
 
 func (localNode *LocalNode) cleanupTransactions(v interface{}) {
-	if block, ok := v.(*Block); ok {
+	if block, ok := v.(*block.Block); ok {
 		localNode.TxnPool.CleanSubmittedTransactions(block.Transactions)
 	}
 }

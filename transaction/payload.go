@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/pb"
 )
 
 const (
@@ -14,35 +14,35 @@ const (
 )
 
 type IPayload interface {
-	Marshal() (dAtA []byte, err error)
-	Unmarshal(dAtA []byte) error
+	Marshal() (data []byte, err error)
+	Unmarshal(data []byte) error
 }
 
-func Pack(plType PayloadType, payload IPayload) (*Payload, error) {
+func Pack(plType pb.PayloadType, payload IPayload) (*pb.Payload, error) {
 	data, err := payload.Marshal()
-	return &Payload{
+	return &pb.Payload{
 		Type: plType,
 		Data: data,
 	}, err
 }
 
-func Unpack(payload *Payload) (IPayload, error) {
+func Unpack(payload *pb.Payload) (IPayload, error) {
 	var pl IPayload
 	switch payload.Type {
-	case CoinbaseType:
-		pl = new(Coinbase)
-	case TransferAssetType:
-		pl = new(TransferAsset)
-	case CommitType:
-		pl = new(Commit)
-	case RegisterNameType:
-		pl = new(RegisterName)
-	case DeleteNameType:
-		pl = new(DeleteName)
-	case SubscribeType:
-		pl = new(Subscribe)
-	case GenerateIDType:
-		pl = new(GenerateID)
+	case pb.CoinbaseType:
+		pl = new(pb.Coinbase)
+	case pb.TransferAssetType:
+		pl = new(pb.TransferAsset)
+	case pb.CommitType:
+		pl = new(pb.Commit)
+	case pb.RegisterNameType:
+		pl = new(pb.RegisterName)
+	case pb.DeleteNameType:
+		pl = new(pb.DeleteName)
+	case pb.SubscribeType:
+		pl = new(pb.Subscribe)
+	case pb.GenerateIDType:
+		pl = new(pb.GenerateID)
 	default:
 		return nil, errors.New("invalid payload type.")
 
@@ -54,14 +54,14 @@ func Unpack(payload *Payload) (IPayload, error) {
 }
 
 func NewCoinbase(sender, recipient common.Uint160, amount common.Fixed64) IPayload {
-	return &Coinbase{
+	return &pb.Coinbase{
 		Sender:    sender.ToArray(),
 		Recipient: recipient.ToArray(),
 		Amount:    int64(amount),
 	}
 }
 func NewTransferAsset(sender, recipient common.Uint160, amount common.Fixed64) IPayload {
-	return &TransferAsset{
+	return &pb.TransferAsset{
 		Sender:    sender.ToArray(),
 		Recipient: recipient.ToArray(),
 		Amount:    int64(amount),
@@ -69,27 +69,27 @@ func NewTransferAsset(sender, recipient common.Uint160, amount common.Fixed64) I
 }
 
 func NewCommit(sigChain []byte, submitter common.Uint160) IPayload {
-	return &Commit{
+	return &pb.Commit{
 		SigChain:  sigChain,
 		Submitter: submitter.ToArray(),
 	}
 }
 func NewRegisterName(registrant []byte, name string) IPayload {
-	return &RegisterName{
+	return &pb.RegisterName{
 		Registrant: registrant,
 		Name:       name,
 	}
 }
 
 func NewDeleteName(registrant []byte, name string) IPayload {
-	return &DeleteName{
+	return &pb.DeleteName{
 		Registrant: registrant,
 		Name:       name,
 	}
 }
 
 func NewSubscribe(subscriber []byte, id, topic string, bucket, duration uint32, meta string) IPayload {
-	return &Subscribe{
+	return &pb.Subscribe{
 		Subscriber: subscriber,
 		Identifier: id,
 		Topic:      topic,
@@ -100,7 +100,7 @@ func NewSubscribe(subscriber []byte, id, topic string, bucket, duration uint32, 
 }
 
 func NewGenerateID(publicKey []byte, regFee common.Fixed64) IPayload {
-	return &GenerateID{
+	return &pb.GenerateID{
 		PublicKey:       publicKey,
 		RegistrationFee: int64(regFee),
 	}

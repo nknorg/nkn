@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
@@ -107,7 +107,7 @@ func (localNode *LocalNode) getNeighborsMajorityBlockHashByHeight(height uint32,
 		counter := make(map[common.Uint256]int)
 		totalCount := 0
 		allHeaders.Range(func(key, value interface{}) bool {
-			if header, ok := value.(*Header); ok && header != nil {
+			if header, ok := value.(*block.Header); ok && header != nil {
 				counter[header.Hash()]++
 				totalCount++
 			}

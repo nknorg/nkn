@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/vm/errors"
+	"github.com/nknorg/nkn/vm/errors"
 	"github.com/nknorg/nkn/vm/interfaces"
 )
 
@@ -164,7 +164,7 @@ func (e *ExecutionEngine) StepInto() error {
 	e.opCode = opCode
 	e.context = context
 	if !e.checkStackSize() {
-		return ErrOverLimitStack
+		return errors.ErrOverLimitStack
 	}
 	//e.gas -= e.getPrice() * ratio
 	//if e.gas < 0 {
@@ -187,7 +187,7 @@ func (e *ExecutionEngine) StepInto() error {
 
 func (e *ExecutionEngine) ExecuteOp() (VMState, error) {
 	if e.opCode > PUSH16 && e.opCode != RET && e.context.PushOnly {
-		return FAULT, ErrBadValue
+		return FAULT, errors.ErrBadValue
 	}
 
 	if e.opCode >= PUSHBYTES1 && e.opCode <= PUSHBYTES75 {
@@ -197,7 +197,7 @@ func (e *ExecutionEngine) ExecuteOp() (VMState, error) {
 
 	opExec := OpExecList[e.opCode]
 	if opExec.Exec == nil {
-		return FAULT, ErrNotSupportOpCode
+		return FAULT, errors.ErrNotSupportOpCode
 	}
 	if opExec.Validator != nil {
 		if err := opExec.Validator(e); err != nil {

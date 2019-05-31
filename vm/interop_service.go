@@ -2,7 +2,7 @@ package vm
 
 import (
 	"github.com/nknorg/nkn/util/log"
-	. "github.com/nknorg/nkn/vm/errors"
+	"github.com/nknorg/nkn/vm/errors"
 )
 
 type IInteropService interface {
@@ -49,7 +49,7 @@ func (i *InteropService) Invoke(methodName string, engine *ExecutionEngine) (boo
 		log.Error("Invoke MethodName:", methodName)
 		return v(engine)
 	}
-	return false, ErrNotSupportService
+	return false, errors.ErrNotSupportService
 }
 
 func (i *InteropService) GetCodeContainer(engine *ExecutionEngine) (bool, error) {

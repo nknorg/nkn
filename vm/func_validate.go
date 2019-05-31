@@ -4,20 +4,20 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	. "github.com/nknorg/nkn/vm/errors"
+	"github.com/nknorg/nkn/vm/errors"
 	"github.com/nknorg/nkn/vm/types"
 )
 
 func validatorPushData4(e *ExecutionEngine) error {
 	index := e.context.GetInstructionPointer()
 	if index+4 >= len(e.context.Code) {
-		return ErrOverCodeLen
+		return errors.ErrOverCodeLen
 	}
 	bytesBuffer := bytes.NewBuffer(e.context.Code[index : index+4])
 	var l uint32
 	binary.Read(bytesBuffer, binary.LittleEndian, &l)
 	if l > MaxItemSize {
-		return ErrOverMaxItemSize
+		return errors.ErrOverMaxItemSize
 	}
 	return nil
 }
@@ -31,7 +31,7 @@ func validateCall(e *ExecutionEngine) error {
 
 func validateInvocationStack(e *ExecutionEngine) error {
 	if uint32(e.invocationStack.Count()) > MaxStackSize {
-		return ErrOverStackLen
+		return errors.ErrOverStackLen
 	}
 	return nil
 }
@@ -41,25 +41,25 @@ func validateAppCall(e *ExecutionEngine) error {
 		return err
 	}
 	if e.table == nil {
-		return ErrTableIsNil
+		return errors.ErrTableIsNil
 	}
 	return nil
 }
 
 func validateSysCall(e *ExecutionEngine) error {
 	if e.service == nil {
-		return ErrServiceIsNil
+		return errors.ErrServiceIsNil
 	}
 	return nil
 }
 
 func validateOpStack(e *ExecutionEngine) error {
 	if EvaluationStackCount(e) < 1 {
-		return ErrUnderStackLen
+		return errors.ErrUnderStackLen
 	}
 	index := PeekNInt(0, e)
 	if index < 0 {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 
 	return nil
@@ -95,78 +95,78 @@ func validatePick(e *ExecutionEngine) error {
 
 func validateRoll(e *ExecutionEngine) error {
 	if EvaluationStackCount(e) < 1 {
-		return ErrUnderStackLen
+		return errors.ErrUnderStackLen
 	}
 	index := PeekNInt(0, e)
 	if index < 0 {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	return nil
 }
 
 func validateCat(e *ExecutionEngine) error {
 	if EvaluationStackCount(e) < 2 {
-		return ErrUnderStackLen
+		return errors.ErrUnderStackLen
 	}
 	l := len(PeekNByteArray(0, e)) + len(PeekNByteArray(1, e))
 	if uint32(l) > MaxItemSize {
-		return ErrOverMaxItemSize
+		return errors.ErrOverMaxItemSize
 	}
 	return nil
 }
 
 func validateSubStr(e *ExecutionEngine) error {
 	if EvaluationStackCount(e) < 3 {
-		return ErrUnderStackLen
+		return errors.ErrUnderStackLen
 	}
 	count := PeekNInt(0, e)
 	if count < 0 {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	index := PeekNInt(1, e)
 	if index < 0 {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	arr := PeekNByteArray(2, e)
 	if len(arr) < index+count {
-		return ErrOverMaxArraySize
+		return errors.ErrOverMaxArraySize
 	}
 	return nil
 }
 
 func validateLeft(e *ExecutionEngine) error {
 	if EvaluationStackCount(e) < 2 {
-		return ErrUnderStackLen
+		return errors.ErrUnderStackLen
 	}
 	count := PeekNInt(0, e)
 	if count < 0 {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	arr := PeekNByteArray(1, e)
 	if len(arr) < count {
-		return ErrOverMaxArraySize
+		return errors.ErrOverMaxArraySize
 	}
 	return nil
 }
 
 func validateRight(e *ExecutionEngine) error {
 	if EvaluationStackCount(e) < 2 {
-		return ErrUnderStackLen
+		return errors.ErrUnderStackLen
 	}
 	count := PeekNInt(0, e)
 	if count < 0 {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	arr := PeekNByteArray(1, e)
 	if len(arr) < count {
-		return ErrOverMaxArraySize
+		return errors.ErrOverMaxArraySize
 	}
 	return nil
 }
 
 func validatorBigIntComp(e *ExecutionEngine) error {
 	if EvaluationStackCount(e) < 2 {
-		return ErrUnderStackLen
+		return errors.ErrUnderStackLen
 	}
 	return nil
 }
@@ -174,38 +174,38 @@ func validatorBigIntComp(e *ExecutionEngine) error {
 func validatePack(e *ExecutionEngine) error {
 	count := PeekInt(e)
 	if uint32(count) > MaxArraySize {
-		return ErrOverMaxArraySize
+		return errors.ErrOverMaxArraySize
 	}
 	if count > EvaluationStackCount(e) {
-		return ErrOverStackLen
+		return errors.ErrOverStackLen
 	}
 	return nil
 }
 
 func validatePickItem(e *ExecutionEngine) error {
 	if EvaluationStackCount(e) < 2 {
-		return ErrUnderStackLen
+		return errors.ErrUnderStackLen
 	}
 	index := PeekNInt(0, e)
 	if index < 0 {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	item := PeekN(1, e)
 	if item == nil {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	stackItem := item.GetStackItem()
 	if _, ok := stackItem.(*types.Array); !ok {
 		if _, ok := stackItem.(*types.ByteArray); !ok {
-			return ErrNotArray
+			return errors.ErrNotArray
 		} else {
 			if index >= len(stackItem.GetByteArray()) {
-				return ErrOverMaxArraySize
+				return errors.ErrOverMaxArraySize
 			}
 		}
 	} else {
 		if index >= len(stackItem.GetArray()) {
-			return ErrOverMaxArraySize
+			return errors.ErrOverMaxArraySize
 		}
 	}
 
@@ -214,36 +214,36 @@ func validatePickItem(e *ExecutionEngine) error {
 
 func validatorSetItem(e *ExecutionEngine) error {
 	if EvaluationStackCount(e) < 3 {
-		return ErrUnderStackLen
+		return errors.ErrUnderStackLen
 	}
 	newItem := PeekN(0, e)
 	if newItem == nil {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	index := PeekNInt(1, e)
 	if index < 0 {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	arrItem := PeekN(2, e)
 	if arrItem == nil {
-		return ErrBadValue
+		return errors.ErrBadValue
 	}
 	item := arrItem.GetStackItem()
 	if _, ok := item.(*types.Array); !ok {
 		if _, ok := item.(*types.ByteArray); ok {
 			l := len(item.GetByteArray())
 			if index >= l {
-				return ErrOverMaxArraySize
+				return errors.ErrOverMaxArraySize
 			}
 			if len(newItem.GetStackItem().GetByteArray()) == 0 {
-				return ErrBadValue
+				return errors.ErrBadValue
 			}
 		} else {
-			return ErrNotArray
+			return errors.ErrNotArray
 		}
 	} else {
 		if index >= len(item.GetArray()) {
-			return ErrOverMaxArraySize
+			return errors.ErrOverMaxArraySize
 		}
 	}
 	return nil
@@ -252,7 +252,7 @@ func validatorSetItem(e *ExecutionEngine) error {
 func validateNewArray(e *ExecutionEngine) error {
 	count := PeekInt(e)
 	if uint32(count) > MaxArraySize {
-		return ErrOverMaxArraySize
+		return errors.ErrOverMaxArraySize
 	}
 	return nil
 }

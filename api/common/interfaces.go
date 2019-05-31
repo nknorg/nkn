@@ -7,11 +7,11 @@ import (
 	"net"
 	"strings"
 
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/node"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -134,7 +134,7 @@ func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]
 	return respPacking(SUCCESS, chain.DefaultLedger.Store.GetHeight())
 }
 
-func GetBlockTransactions(block *Block) interface{} {
+func GetBlockTransactions(block *block.Block) interface{} {
 	trans := make([]string, len(block.Transactions))
 	for i := 0; i < len(block.Transactions); i++ {
 		h := block.Transactions[i].Hash()
@@ -279,7 +279,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		if err != nil {
 			return respPacking(INVALID_PARAMS, err.Error())
 		}
-		var txn Transaction
+		var txn transaction.Transaction
 		if err := txn.Unmarshal(hex); err != nil {
 			return respPacking(INVALID_TRANSACTION, err.Error())
 		}
@@ -515,7 +515,7 @@ func getId(s Serverer, params map[string]interface{}) map[string]interface{} {
 	return respPacking(SUCCESS, ret)
 }
 
-func VerifyAndSendTx(localNode *node.LocalNode, txn *Transaction) ErrCode {
+func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) ErrCode {
 	if err := localNode.AppendTxnPool(txn); err != nil {
 		log.Warningf("Can NOT add the transaction to TxnPool: %v", err)
 		return ErrAppendTxnPool
