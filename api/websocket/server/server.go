@@ -14,7 +14,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket/messagebuffer"
-	. "github.com/nknorg/nkn/api/websocket/session"
+	"github.com/nknorg/nkn/api/websocket/session"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/node"
@@ -41,7 +41,7 @@ type WsServer struct {
 	Upgrader      websocket.Upgrader
 	listener      net.Listener
 	server        *http.Server
-	SessionList   *SessionList
+	SessionList   *session.SessionList
 	ActionMap     map[string]Handler
 	TxHashMap     map[string]string //key: txHash   value:sessionid
 	localNode     *node.LocalNode
@@ -52,7 +52,7 @@ type WsServer struct {
 func InitWsServer(localNode *node.LocalNode, wallet vault.Wallet) *WsServer {
 	ws := &WsServer{
 		Upgrader:      websocket.Upgrader{},
-		SessionList:   NewSessionList(),
+		SessionList:   session.NewSessionList(),
 		TxHashMap:     make(map[string]string),
 		localNode:     localNode,
 		wallet:        wallet,
@@ -212,8 +212,8 @@ func (ws *WsServer) checkSessionsTimeout(done chan bool) {
 	for {
 		select {
 		case <-ticker.C:
-			var closeList []*Session
-			ws.SessionList.ForEachSession(func(s *Session) {
+			var closeList []*session.Session
+			ws.SessionList.ForEachSession(func(s *session.Session) {
 				if s.SessionTimeoverCheck() {
 					resp := common.ResponsePack(common.SESSION_EXPIRED)
 					ws.respondToSession(s, resp)
@@ -280,7 +280,7 @@ func (ws *WsServer) IsValidMsg(reqMsg map[string]interface{}) bool {
 	return true
 }
 
-func (ws *WsServer) OnDataHandle(curSession *Session, messageType int, bysMsg []byte, r *http.Request) bool {
+func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, bysMsg []byte, r *http.Request) bool {
 	if messageType == websocket.BinaryMessage {
 		msg := &pb.OutboundMessage{}
 		err := proto.Unmarshal(bysMsg, msg)
@@ -354,7 +354,7 @@ func (ws *WsServer) deleteTxHashs(sSessionId string) {
 	}
 }
 
-func (ws *WsServer) respondToSession(session *Session, resp map[string]interface{}) {
+func (ws *WsServer) respondToSession(session *session.Session, resp map[string]interface{}) {
 	resp["Desc"] = common.ErrMessage[resp["Error"].(common.ErrCode)]
 	data, err := json.Marshal(resp)
 	if err != nil {
@@ -397,7 +397,7 @@ func (ws *WsServer) PushResult(resp map[string]interface{}) {
 }
 
 func (ws *WsServer) Broadcast(data []byte) error {
-	ws.SessionList.ForEachSession(func(s *Session) {
+	ws.SessionList.ForEachSession(func(s *session.Session) {
 		s.SendText(data)
 	})
 	return nil
@@ -428,7 +428,7 @@ func (ws *WsServer) initTlsListen() (net.Listener, error) {
 	return listener, nil
 }
 
-func (ws *WsServer) GetClientsById(cliendID []byte) []*Session {
+func (ws *WsServer) GetClientsById(cliendID []byte) []*session.Session {
 	sessions := ws.SessionList.GetSessionsById(hex.EncodeToString(cliendID))
 	return sessions
 }
@@ -442,7 +442,7 @@ func (ws *WsServer) GetWallet() (vault.Wallet, error) {
 }
 
 func (ws *WsServer) NotifyWrongClients() {
-	ws.SessionList.ForEachClient(func(client *Session) {
+	ws.SessionList.ForEachClient(func(client *session.Session) {
 		clientID := client.GetID()
 		if clientID == nil {
 			return

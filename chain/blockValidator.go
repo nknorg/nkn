@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vm/signature"
@@ -25,13 +25,13 @@ const (
 )
 
 type VBlock struct {
-	Block       *Block
+	Block       *block.Block
 	ReceiveTime int64
 }
 
-type TransactionArray []*Transaction
+type TransactionArray []*transaction.Transaction
 
-func (iterable TransactionArray) Iterate(handler func(item *Transaction) error) error {
+func (iterable TransactionArray) Iterate(handler func(item *transaction.Transaction) error) error {
 	for _, item := range iterable {
 		result := handler(item)
 		if result != nil {
@@ -42,7 +42,7 @@ func (iterable TransactionArray) Iterate(handler func(item *Transaction) error) 
 	return nil
 }
 
-func TransactionCheck(block *Block) error {
+func TransactionCheck(block *block.Block) error {
 	if block.Transactions == nil {
 		return errors.New("empty block")
 	}
@@ -56,13 +56,32 @@ func TransactionCheck(block *Block) error {
 		return errors.New("serialized block is too big")
 	}
 
-	if block.Transactions[0].UnsignedTx.Payload.Type != CoinbaseType {
+	if block.Transactions[0].UnsignedTx.Payload.Type != pb.CoinbaseType {
 		return errors.New("first transaction in block is not Coinbase")
+	}
+
+	winnerHash, err := Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
+	if err != nil {
+		return err
+	}
+	if winnerHash != EmptyUint256 {
+		found := false
+		for _, txn := range block.Transactions {
+			if txn.Hash() == winnerHash {
+				found = true
+				break
+			}
+		}
+		if !found {
+			if _, err := DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
+				return fmt.Errorf("mining sigchain txn %s not found in block", winnerHash)
+			}
+		}
 	}
 
 	nonces := make(map[Uint160]uint64, 0)
 	for i, txn := range block.Transactions {
-		if i != 0 && txn.UnsignedTx.Payload.Type == CoinbaseType {
+		if i != 0 && txn.UnsignedTx.Payload.Type == pb.CoinbaseType {
 			return errors.New("Coinbase transaction order is incorrect")
 		}
 		if err := VerifyTransaction(txn); err != nil {
@@ -72,7 +91,7 @@ func TransactionCheck(block *Block) error {
 			return fmt.Errorf("transaction history check failed: %v", err)
 		}
 
-		if txn.UnsignedTx.Payload.Type != CoinbaseType && txn.UnsignedTx.Payload.Type != CommitType {
+		if txn.UnsignedTx.Payload.Type != pb.CoinbaseType && txn.UnsignedTx.Payload.Type != pb.CommitType {
 			addr, err := ToCodeHash(txn.Programs[0].Code)
 			if err != nil {
 				return err
@@ -108,7 +127,7 @@ func TransactionCheck(block *Block) error {
 
 // GetNextBlockSigner gets the next block signer after block height at
 // timestamp. Returns next signer's public key, chord ID, winner type, and error
-func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerType, error) {
+func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.WinnerType, error) {
 	currentHeight := DefaultLedger.Store.GetHeight()
 	if height > currentHeight {
 		return nil, nil, 0, fmt.Errorf("Height %d is higher than current height %d", height, currentHeight)
@@ -124,7 +143,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 	var chordID []byte
 	winnerType := header.UnsignedHeader.WinnerType
 
-	if winnerType == GENESIS_SIGNER {
+	if winnerType == pb.GENESIS_SIGNER {
 		genesisBlockHash, err := DefaultLedger.Store.GetBlockHash(0)
 		if err != nil {
 			return nil, nil, 0, err
@@ -140,7 +159,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 			return nil, nil, 0, err
 		}
 
-		return publicKey, chordID, GENESIS_SIGNER, nil
+		return publicKey, chordID, pb.GENESIS_SIGNER, nil
 	}
 
 	if timestamp <= header.UnsignedHeader.Timestamp {
@@ -155,7 +174,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 	}
 
 	if timeSinceLastBlock >= proposerChangeTime {
-		winnerType = BLOCK_SIGNER
+		winnerType = pb.BLOCK_SIGNER
 
 		proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - timeSinceLastBlock/proposerChangeTime
 		if proposerBlockHeight < 0 {
@@ -176,30 +195,30 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 		}
 	} else {
 		switch winnerType {
-		case TXN_SIGNER:
+		case pb.TXN_SIGNER:
 			whash, _ := Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
 			txn, err := DefaultLedger.Store.GetTransaction(whash)
 			if err != nil {
 				return nil, nil, 0, err
 			}
 
-			if txn.UnsignedTx.Payload.Type != CommitType {
+			if txn.UnsignedTx.Payload.Type != pb.CommitType {
 				return nil, nil, 0, errors.New("invalid transaction type")
 			}
 
-			commit, err := Unpack(txn.UnsignedTx.Payload)
+			commit, err := transaction.Unpack(txn.UnsignedTx.Payload)
 			if err != nil {
 				return nil, nil, 0, errors.New("invalid payload type")
 			}
 
-			payload := commit.(*Commit)
-			sigchain := &SigChain{}
+			payload := commit.(*pb.Commit)
+			sigchain := &pb.SigChain{}
 			proto.Unmarshal(payload.SigChain, sigchain)
 			publicKey, chordID, err = sigchain.GetMiner()
 			if err != nil {
 				return nil, nil, 0, err
 			}
-		case BLOCK_SIGNER:
+		case pb.BLOCK_SIGNER:
 		}
 	}
 
@@ -208,24 +227,24 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, WinnerT
 
 // GetWinner returns the winner hash and winner type of a block height using
 // sigchain from PoR server.
-func GetNextMiningSigChainTxnHash(height uint32) (Uint256, WinnerType, error) {
+func GetNextMiningSigChainTxnHash(height uint32) (Uint256, pb.WinnerType, error) {
 	if height < NumGenesisBlocks {
-		return EmptyUint256, GENESIS_SIGNER, nil
+		return EmptyUint256, pb.GENESIS_SIGNER, nil
 	}
 
 	nextMiningSigChainTxnHash, err := por.GetPorServer().GetMiningSigChainTxnHash(height + 1)
 	if err != nil {
-		return EmptyUint256, TXN_SIGNER, err
+		return EmptyUint256, pb.TXN_SIGNER, err
 	}
 
 	if nextMiningSigChainTxnHash == EmptyUint256 {
-		return EmptyUint256, BLOCK_SIGNER, nil
+		return EmptyUint256, pb.BLOCK_SIGNER, nil
 	}
 
-	return nextMiningSigChainTxnHash, TXN_SIGNER, nil
+	return nextMiningSigChainTxnHash, pb.TXN_SIGNER, nil
 }
 
-func SignerCheck(header *Header) error {
+func SignerCheck(header *block.Header) error {
 	currentHeight := DefaultLedger.Store.GetHeight()
 	publicKey, chordID, _, err := GetNextBlockSigner(currentHeight, header.UnsignedHeader.Timestamp)
 	if err != nil {
@@ -252,7 +271,7 @@ func SignerCheck(header *Header) error {
 	return nil
 }
 
-func HeaderCheck(header *Header) error {
+func HeaderCheck(header *block.Header) error {
 	if header.UnsignedHeader.Height == 0 {
 		return nil
 	}
@@ -289,7 +308,7 @@ func HeaderCheck(header *Header) error {
 		return errors.New("invalid header timestamp")
 	}
 
-	if header.UnsignedHeader.WinnerType == GENESIS_SIGNER && header.UnsignedHeader.Height >= NumGenesisBlocks {
+	if header.UnsignedHeader.WinnerType == pb.GENESIS_SIGNER && header.UnsignedHeader.Height >= NumGenesisBlocks {
 		return errors.New("invalid winning hash type")
 	}
 
@@ -309,14 +328,14 @@ func TimestampCheck(timestamp int64) error {
 	return nil
 }
 
-func NextBlockProposerCheck(block *Block) error {
-	expectedWinnerHash, expectedWinnerType, err := GetNextMiningSigChainTxnHash(block.Header.UnsignedHeader.Height)
+func NextBlockProposerCheck(header *block.Header) error {
+	expectedWinnerHash, expectedWinnerType, err := GetNextMiningSigChainTxnHash(header.UnsignedHeader.Height)
 	if err != nil {
 		return err
 	}
 
-	winnerType := block.Header.UnsignedHeader.WinnerType
-	winnerHash, err := Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
+	winnerType := header.UnsignedHeader.WinnerType
+	winnerHash, err := Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
 	if err != nil {
 		return err
 	}
@@ -329,21 +348,6 @@ func NextBlockProposerCheck(block *Block) error {
 		return fmt.Errorf("Winner hash should be %x instead of %x", expectedWinnerHash, winnerHash)
 	}
 
-	if winnerHash != EmptyUint256 {
-		found := false
-		for _, txn := range block.Transactions {
-			if txn.Hash() == winnerHash {
-				found = true
-				break
-			}
-		}
-		if !found {
-			if _, err := DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
-				return fmt.Errorf("mining sigchain txn %s not found in block", winnerHash)
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -351,7 +355,7 @@ func CanVerifyHeight(height uint32) bool {
 	return height == DefaultLedger.Store.GetHeight()+1
 }
 
-func VerifyHeader(header *Header) bool {
+func VerifyHeader(header *block.Header) bool {
 	if header.UnsignedHeader.Height != DefaultLedger.Store.GetHeaderHeight()+1 {
 		log.Error("[VerifyHeader] failed, header height error.")
 		return false

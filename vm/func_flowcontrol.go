@@ -2,7 +2,7 @@ package vm
 
 import (
 	"github.com/nknorg/nkn/util/log"
-	. "github.com/nknorg/nkn/vm/errors"
+	"github.com/nknorg/nkn/vm/errors"
 )
 
 func opNop(e *ExecutionEngine) (VMState, error) {
@@ -15,7 +15,7 @@ func opJmp(e *ExecutionEngine) (VMState, error) {
 	offset = e.context.GetInstructionPointer() + offset - 3
 
 	if offset > len(e.context.Code) {
-		return FAULT, ErrFault
+		return FAULT, errors.ErrFault
 	}
 	var (
 		fValue = true

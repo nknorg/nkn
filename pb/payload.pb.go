@@ -63,7 +63,7 @@ var PayloadType_value = map[string]int32{
 }
 
 func (PayloadType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_payload_29abaaa3f5e61bba, []int{0}
+	return fileDescriptor_payload_2b6047d027aa91fd, []int{0}
 }
 
 type Payload struct {
@@ -74,7 +74,7 @@ type Payload struct {
 func (m *Payload) Reset()      { *m = Payload{} }
 func (*Payload) ProtoMessage() {}
 func (*Payload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_payload_29abaaa3f5e61bba, []int{0}
+	return fileDescriptor_payload_2b6047d027aa91fd, []int{0}
 }
 func (m *Payload) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -126,7 +126,7 @@ type Coinbase struct {
 func (m *Coinbase) Reset()      { *m = Coinbase{} }
 func (*Coinbase) ProtoMessage() {}
 func (*Coinbase) Descriptor() ([]byte, []int) {
-	return fileDescriptor_payload_29abaaa3f5e61bba, []int{1}
+	return fileDescriptor_payload_2b6047d027aa91fd, []int{1}
 }
 func (m *Coinbase) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -184,7 +184,7 @@ type Commit struct {
 func (m *Commit) Reset()      { *m = Commit{} }
 func (*Commit) ProtoMessage() {}
 func (*Commit) Descriptor() ([]byte, []int) {
-	return fileDescriptor_payload_29abaaa3f5e61bba, []int{2}
+	return fileDescriptor_payload_2b6047d027aa91fd, []int{2}
 }
 func (m *Commit) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -235,7 +235,7 @@ type DeleteName struct {
 func (m *DeleteName) Reset()      { *m = DeleteName{} }
 func (*DeleteName) ProtoMessage() {}
 func (*DeleteName) Descriptor() ([]byte, []int) {
-	return fileDescriptor_payload_29abaaa3f5e61bba, []int{3}
+	return fileDescriptor_payload_2b6047d027aa91fd, []int{3}
 }
 func (m *DeleteName) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -286,7 +286,7 @@ type RegisterName struct {
 func (m *RegisterName) Reset()      { *m = RegisterName{} }
 func (*RegisterName) ProtoMessage() {}
 func (*RegisterName) Descriptor() ([]byte, []int) {
-	return fileDescriptor_payload_29abaaa3f5e61bba, []int{4}
+	return fileDescriptor_payload_2b6047d027aa91fd, []int{4}
 }
 func (m *RegisterName) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -341,7 +341,7 @@ type Subscribe struct {
 func (m *Subscribe) Reset()      { *m = Subscribe{} }
 func (*Subscribe) ProtoMessage() {}
 func (*Subscribe) Descriptor() ([]byte, []int) {
-	return fileDescriptor_payload_29abaaa3f5e61bba, []int{5}
+	return fileDescriptor_payload_2b6047d027aa91fd, []int{5}
 }
 func (m *Subscribe) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -421,7 +421,7 @@ type TransferAsset struct {
 func (m *TransferAsset) Reset()      { *m = TransferAsset{} }
 func (*TransferAsset) ProtoMessage() {}
 func (*TransferAsset) Descriptor() ([]byte, []int) {
-	return fileDescriptor_payload_29abaaa3f5e61bba, []int{6}
+	return fileDescriptor_payload_2b6047d027aa91fd, []int{6}
 }
 func (m *TransferAsset) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -479,7 +479,7 @@ type GenerateID struct {
 func (m *GenerateID) Reset()      { *m = GenerateID{} }
 func (*GenerateID) ProtoMessage() {}
 func (*GenerateID) Descriptor() ([]byte, []int) {
-	return fileDescriptor_payload_29abaaa3f5e61bba, []int{7}
+	return fileDescriptor_payload_2b6047d027aa91fd, []int{7}
 }
 func (m *GenerateID) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2732,9 +2732,9 @@ var (
 	ErrIntOverflowPayload   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/payload.proto", fileDescriptor_payload_29abaaa3f5e61bba) }
+func init() { proto.RegisterFile("pb/payload.proto", fileDescriptor_payload_2b6047d027aa91fd) }
 
-var fileDescriptor_payload_29abaaa3f5e61bba = []byte{
+var fileDescriptor_payload_2b6047d027aa91fd = []byte{
 	// 556 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x93, 0xbf, 0x6f, 0xd3, 0x40,
 	0x14, 0xc7, 0x7d, 0x4d, 0x9a, 0xd6, 0x8f, 0xb4, 0x4d, 0x4f, 0x05, 0x59, 0x15, 0x9c, 0x22, 0xb3,

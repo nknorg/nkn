@@ -1,23 +1,23 @@
 package chain
 
 import (
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain/db"
 	. "github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/transaction"
 )
 
 // ILedgerStore provides func with store package.
 type ILedgerStore interface {
-	SaveBlock(b *Block, fastAdd bool) error
-	GetBlock(hash Uint256) (*Block, error)
-	GetBlockByHeight(height uint32) (*Block, error)
+	SaveBlock(b *block.Block, fastAdd bool) error
+	GetBlock(hash Uint256) (*block.Block, error)
+	GetBlockByHeight(height uint32) (*block.Block, error)
 	GetBlockHash(height uint32) (Uint256, error)
-	IsDoubleSpend(tx *Transaction) bool
-	AddHeader(header *Header) error
-	GetHeader(hash Uint256) (*Header, error)
-	GetHeaderByHeight(height uint32) (*Header, error)
-	GetTransaction(hash Uint256) (*Transaction, error)
+	IsDoubleSpend(tx *transaction.Transaction) bool
+	AddHeader(header *block.Header) error
+	GetHeader(hash Uint256) (*block.Header, error)
+	GetHeaderByHeight(height uint32) (*block.Header, error)
+	GetTransaction(hash Uint256) (*transaction.Transaction, error)
 	SaveName(registrant []byte, name string) error
 	GetName(registrant []byte) (*string, error)
 	GetRegistrant(name string) ([]byte, error)
@@ -38,11 +38,11 @@ type ILedgerStore interface {
 	GetHeight() uint32
 	GetHeightByBlockHash(hash Uint256) (uint32, error)
 	GetHeaderHashByHeight(height uint32) Uint256
-	GetHeaderWithCache(hash Uint256) (*Header, error)
-	InitLedgerStoreWithGenesisBlock(genesisblock *Block) (uint32, error)
+	GetHeaderWithCache(hash Uint256) (*block.Header, error)
+	InitLedgerStoreWithGenesisBlock(genesisblock *block.Block) (uint32, error)
 	GetDonation() (*db.Donation, error)
 	IsTxHashDuplicate(txhash Uint256) bool
 	IsBlockInStore(hash Uint256) bool
-	Rollback(b *Block) error
+	Rollback(b *block.Block) error
 	Close()
 }

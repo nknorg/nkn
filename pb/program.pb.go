@@ -34,7 +34,7 @@ type Program struct {
 func (m *Program) Reset()      { *m = Program{} }
 func (*Program) ProtoMessage() {}
 func (*Program) Descriptor() ([]byte, []int) {
-	return fileDescriptor_program_e7052d7f2158238b, []int{0}
+	return fileDescriptor_program_cae079b88bb673d2, []int{0}
 }
 func (m *Program) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -520,9 +520,9 @@ var (
 	ErrIntOverflowProgram   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/program.proto", fileDescriptor_program_e7052d7f2158238b) }
+func init() { proto.RegisterFile("pb/program.proto", fileDescriptor_program_cae079b88bb673d2) }
 
-var fileDescriptor_program_e7052d7f2158238b = []byte{
+var fileDescriptor_program_cae079b88bb673d2 = []byte{
 	// 190 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x28, 0x48, 0xd2, 0x2f,
 	0x28, 0xca, 0x4f, 0x2f, 0x4a, 0xcc, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x2a, 0x48,

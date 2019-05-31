@@ -29,7 +29,7 @@ func (consensus *Consensus) startProposing() {
 					break
 				}
 
-				blockHash := block.Header.Hash()
+				blockHash := block.Hash()
 				log.Infof("Propose block %s at height %d", blockHash.ToHexString(), expectedHeight)
 				consensus.localNode.IncrementProposalSubmitted()
 

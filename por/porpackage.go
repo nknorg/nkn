@@ -6,8 +6,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/pb"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 )
 
@@ -26,11 +26,11 @@ const (
 )
 
 type PorPackage struct {
-	VoteForHeight uint32    `protobuf:"varint,1,opt,name=VoteForHeight,proto3" json:"VoteForHeight,omitempty"`
-	BlockHash     []byte    `protobuf:"bytes,3,opt,name=BlockHash,proto3" json:"BlockHash,omitempty"`
-	TxHash        []byte    `protobuf:"bytes,4,opt,name=TxHash,proto3" json:"TxHash,omitempty"`
-	SigHash       []byte    `protobuf:"bytes,5,opt,name=SigHash,proto3" json:"SigHash,omitempty"`
-	SigChain      *SigChain `protobuf:"bytes,6,opt,name=SigChain" json:"SigChain,omitempty"`
+	VoteForHeight uint32       `protobuf:"varint,1,opt,name=VoteForHeight,proto3" json:"VoteForHeight,omitempty"`
+	BlockHash     []byte       `protobuf:"bytes,3,opt,name=BlockHash,proto3" json:"BlockHash,omitempty"`
+	TxHash        []byte       `protobuf:"bytes,4,opt,name=TxHash,proto3" json:"TxHash,omitempty"`
+	SigHash       []byte       `protobuf:"bytes,5,opt,name=SigHash,proto3" json:"SigHash,omitempty"`
+	SigChain      *pb.SigChain `protobuf:"bytes,6,opt,name=SigChain" json:"SigChain,omitempty"`
 }
 
 type PorStore interface {
@@ -59,17 +59,17 @@ func (c PorPackages) Less(i, j int) bool {
 	return false
 }
 
-func NewPorPackage(txn *Transaction) (*PorPackage, error) {
-	if txn.UnsignedTx.Payload.Type != CommitType {
+func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
+	if txn.UnsignedTx.Payload.Type != pb.CommitType {
 		return nil, errors.New("Transaction type mismatch")
 	}
-	payload, err := Unpack(txn.UnsignedTx.Payload)
+	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
 		return nil, err
 	}
 
-	rs := payload.(*Commit)
-	sigChain := &SigChain{}
+	rs := payload.(*pb.Commit)
+	sigChain := &pb.SigChain{}
 	err = proto.Unmarshal(rs.SigChain, sigChain)
 	if err != nil {
 		return nil, err

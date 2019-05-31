@@ -11,7 +11,7 @@ import (
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -45,7 +45,7 @@ func NewTxPool() *TxnPool {
 	return &TxnPool{}
 }
 
-func (tp *TxnPool) AppendTxnPool(txn *Transaction) error {
+func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 	// 1. process all Orphens
 	tp.TxLists.Range(func(_, v interface{}) bool {
 		if list, ok := v.(*NonceSortedTxs); ok {
@@ -87,7 +87,7 @@ func (tp *TxnPool) AppendTxnPool(txn *Transaction) error {
 	return nil
 }
 
-func (tp *TxnPool) processTx(txn *Transaction) error {
+func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	hash := txn.Hash()
 	sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 
@@ -109,7 +109,7 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 		return ErrDuplicatedTx
 	}
 
-	pl, err := Unpack(txn.UnsignedTx.Payload)
+	pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 			if tx.UnsignedTx.Payload.Type != pb.RegisterNameType {
 				continue
 			}
-			pld, err := Unpack(tx.UnsignedTx.Payload)
+			pld, err := transaction.Unpack(tx.UnsignedTx.Payload)
 			if err != nil {
 				return err
 			}
@@ -159,7 +159,7 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 			if tx.UnsignedTx.Payload.Type != pb.DeleteNameType {
 				continue
 			}
-			pld, err := Unpack(tx.UnsignedTx.Payload)
+			pld, err := transaction.Unpack(tx.UnsignedTx.Payload)
 			if err != nil {
 				return err
 			}
@@ -184,7 +184,7 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 			if tx.UnsignedTx.Payload.Type != pb.SubscribeType {
 				continue
 			}
-			pld, err := Unpack(tx.UnsignedTx.Payload)
+			pld, err := transaction.Unpack(tx.UnsignedTx.Payload)
 			if err != nil {
 				return err
 			}
@@ -262,8 +262,8 @@ func (tp *TxnPool) processTx(txn *Transaction) error {
 	return nil
 }
 
-func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
-	txns := make(map[common.Uint256]*Transaction)
+func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*transaction.Transaction {
+	txns := make(map[common.Uint256]*transaction.Transaction)
 	tp.TxLists.Range(func(_, v interface{}) bool {
 		if list, ok := v.(*NonceSortedTxs); ok {
 			for hash, txn := range list.txs {
@@ -279,8 +279,8 @@ func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*Transaction {
 	return txns
 }
 
-func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {
-	var found *Transaction
+func (tp *TxnPool) GetTransaction(hash common.Uint256) *transaction.Transaction {
+	var found *transaction.Transaction
 	tp.TxLists.Range(func(_, v interface{}) bool {
 		if list, ok := v.(*NonceSortedTxs); ok {
 			if list.ExistTx(hash) {
@@ -293,8 +293,8 @@ func (tp *TxnPool) GetTransaction(hash common.Uint256) *Transaction {
 	return found
 }
 
-func (tp *TxnPool) getTxsFromPool() []*Transaction {
-	txs := make([]*Transaction, 0)
+func (tp *TxnPool) getTxsFromPool() []*transaction.Transaction {
+	txs := make([]*transaction.Transaction, 0)
 	tp.TxLists.Range(func(_, v interface{}) bool {
 		if list, ok := v.(*NonceSortedTxs); ok {
 			if tx, err := list.Seek(); err == nil {
@@ -307,8 +307,8 @@ func (tp *TxnPool) getTxsFromPool() []*Transaction {
 	return txs
 }
 
-func (tp *TxnPool) GetAllTransactionLists() map[common.Uint160][]*Transaction {
-	txs := make(map[common.Uint160][]*Transaction)
+func (tp *TxnPool) GetAllTransactionLists() map[common.Uint160][]*transaction.Transaction {
+	txs := make(map[common.Uint160][]*transaction.Transaction)
 
 	tp.TxLists.Range(func(k, v interface{}) bool {
 		if list, ok := v.(*NonceSortedTxs); ok {
@@ -326,7 +326,7 @@ func (tp *TxnPool) GetAllTransactionLists() map[common.Uint160][]*Transaction {
 	return txs
 }
 
-func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
+func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) error {
 	// clean submitted txs
 	for _, txn := range txns {
 		if txn.UnsignedTx.Payload.Type == pb.CoinbaseType ||
@@ -346,7 +346,7 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
 					}
 
 					// clean invalid txs
-					list.CleanOrphans([]*Transaction{txn})
+					list.CleanOrphans([]*transaction.Transaction{txn})
 				}
 			}
 		}
@@ -355,8 +355,8 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*Transaction) error {
 	return nil
 }
 
-func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*Transaction, error) {
-	txmap := make(map[common.Uint256]*Transaction)
+func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*transaction.Transaction, error) {
+	txmap := make(map[common.Uint256]*transaction.Transaction)
 
 	txs := tp.getTxsFromPool()
 	for _, tx := range txs {
@@ -385,7 +385,7 @@ func (tp *TxnPool) GetNonceByTxnPool(addr common.Uint160) (uint64, error) {
 	return expectedNonce, nil
 }
 
-func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
+func (tp *TxnPool) verifyTransactionWithLedger(txn *transaction.Transaction) error {
 	if err := chain.VerifyTransaction(txn); err != nil {
 		return err
 	}
@@ -401,7 +401,7 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 	sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 	nonce := chain.DefaultLedger.Store.GetNonce(sender)
 
-	payload, err := Unpack(txn.UnsignedTx.Payload)
+	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
 		return err
 	}
@@ -470,7 +470,7 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *Transaction) error {
 		}
 
 		subscriptionCount := chain.DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
-		if subscriptionCount >= SubscriptionsLimit {
+		if subscriptionCount >= transaction.SubscriptionsLimit {
 			return ErrSubscriptionLimit
 		}
 	case pb.GenerateIDType:
