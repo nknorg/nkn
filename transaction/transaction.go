@@ -9,37 +9,29 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
-	. "github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/vm/contract"
 	"github.com/nknorg/nkn/vm/signature"
 )
 
-func NewMsgTx(payload *Payload, nonce uint64, fee Fixed64, attrs []byte) *MsgTx {
-	unsigned := &UnsignedTx{
+type Transaction struct {
+	pb.Transaction
+	hash *Uint256
+}
+
+func NewMsgTx(payload *pb.Payload, nonce uint64, fee Fixed64, attrs []byte) *pb.Transaction {
+	unsigned := &pb.UnsignedTx{
 		Payload:    payload,
 		Nonce:      nonce,
 		Fee:        int64(fee),
 		Attributes: attrs,
 	}
 
-	tx := &MsgTx{
+	tx := &pb.Transaction{
 		UnsignedTx: unsigned,
 	}
 
 	return tx
-}
-
-type Transaction struct {
-	MsgTx
-	hash *Uint256
-}
-
-func (tx *Transaction) Marshal() (dAtA []byte, err error) {
-	return tx.MsgTx.Marshal()
-}
-
-func (tx *Transaction) Unmarshal(dAtA []byte) error {
-	return tx.MsgTx.Unmarshal(dAtA)
 }
 
 //Serialize the Transaction data without contracts
@@ -106,17 +98,17 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	}
 
 	switch tx.UnsignedTx.Payload.Type {
-	case CommitType:
-		sender := payload.(*Commit).Submitter
+	case pb.CommitType:
+		sender := payload.(*pb.Commit).Submitter
 		hashes = append(hashes, BytesToUint160(sender))
-	case TransferAssetType:
-		sender := payload.(*TransferAsset).Sender
+	case pb.TransferAssetType:
+		sender := payload.(*pb.TransferAsset).Sender
 		hashes = append(hashes, BytesToUint160(sender))
-	case CoinbaseType:
-		sender := payload.(*Coinbase).Sender
+	case pb.CoinbaseType:
+		sender := payload.(*pb.Coinbase).Sender
 		hashes = append(hashes, BytesToUint160(sender))
-	case RegisterNameType:
-		pubkey := payload.(*RegisterName).Registrant
+	case pb.RegisterNameType:
+		pubkey := payload.(*pb.RegisterName).Registrant
 		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
 		if err != nil {
 			return nil, err
@@ -126,8 +118,8 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
-	case DeleteNameType:
-		pubkey := payload.(*DeleteName).Registrant
+	case pb.DeleteNameType:
+		pubkey := payload.(*pb.DeleteName).Registrant
 		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
 		if err != nil {
 			return nil, err
@@ -137,8 +129,8 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
-	case SubscribeType:
-		pubkey := payload.(*Subscribe).Subscriber
+	case pb.SubscribeType:
+		pubkey := payload.(*pb.Subscribe).Subscriber
 		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
 		if err != nil {
 			return nil, err
@@ -148,8 +140,8 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
-	case GenerateIDType:
-		pubkey := payload.(*GenerateID).PublicKey
+	case pb.GenerateIDType:
+		pubkey := payload.(*pb.GenerateID).PublicKey
 		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
 		if err != nil {
 			return nil, err
@@ -166,11 +158,11 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	return hashes, nil
 }
 
-func (tx *Transaction) SetPrograms(programs []*Program) {
+func (tx *Transaction) SetPrograms(programs []*pb.Program) {
 	tx.Programs = programs
 }
 
-func (tx *Transaction) GetPrograms() []*Program {
+func (tx *Transaction) GetPrograms() []*pb.Program {
 	return tx.Programs
 }
 

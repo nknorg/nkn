@@ -3,9 +3,9 @@ package chain
 import (
 	"errors"
 
-	. "github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
-	. "github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/transaction"
 )
 
 var DefaultLedger *Ledger
@@ -16,7 +16,7 @@ type Ledger struct {
 }
 
 // double spend checking for transaction
-func (l *Ledger) IsDoubleSpend(Tx *Transaction) bool {
+func (l *Ledger) IsDoubleSpend(Tx *transaction.Transaction) bool {
 	return DefaultLedger.Store.IsDoubleSpend(Tx)
 }
 
@@ -38,7 +38,7 @@ func GetDefaultLedger() (*Ledger, error) {
 //}
 
 //Get Block With Height.
-func (l *Ledger) GetBlockWithHeight(height uint32) (*Block, error) {
+func (l *Ledger) GetBlockWithHeight(height uint32) (*block.Block, error) {
 	temp, err := l.Store.GetBlockHash(height)
 	if err != nil {
 		return nil, errors.New("[Ledger],GetBlockWithHeight failed with height=" + string(height))
@@ -51,7 +51,7 @@ func (l *Ledger) GetBlockWithHeight(height uint32) (*Block, error) {
 }
 
 //Get block with block hash.
-func (l *Ledger) GetBlockWithHash(hash Uint256) (*Block, error) {
+func (l *Ledger) GetBlockWithHash(hash Uint256) (*block.Block, error) {
 	bk, err := l.Store.GetBlock(hash)
 	if err != nil {
 		return nil, errors.New("[Ledger],GetBlockWithHeight failed with hash=" + hash.ToString())
@@ -65,7 +65,7 @@ func (l *Ledger) BlockInLedger(hash Uint256) bool {
 }
 
 //Get transaction with hash.
-func (l *Ledger) GetTransactionWithHash(hash Uint256) (*Transaction, error) {
+func (l *Ledger) GetTransactionWithHash(hash Uint256) (*transaction.Transaction, error) {
 	tx, err := l.Store.GetTransaction(hash)
 	if err != nil {
 		return nil, errors.New("[Ledger],GetTransactionWithHash failed with hash=" + hash.ToString())

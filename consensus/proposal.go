@@ -86,7 +86,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	for {
 		select {
 		case proposal := <-proposalChan:
-			blockHash := proposal.Header.Hash()
+			blockHash := proposal.Hash()
 
 			if !consensus.canVerifyHeight(consensusHeight) {
 				err = consensus.iHaveProposal(consensusHeight, blockHash)
@@ -131,7 +131,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				acceptProposal = false
 			}
 
-			err = chain.NextBlockProposerCheck(proposal)
+			err = chain.NextBlockProposerCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Proposal fails to pass next block proposal check: %v", err)
 				acceptProposal = false
@@ -198,7 +198,7 @@ func (consensus *Consensus) startRequestingProposal() {
 
 		block, err := consensus.requestProposal(neighbor, requestProposal.blockHash)
 		if err != nil {
-			log.Errorf("Request block error: %v", err)
+			log.Errorf("Request block %s error: %v", requestProposal.blockHash.ToHexString(), err)
 			continue
 		}
 		if block == nil {
@@ -216,7 +216,7 @@ func (consensus *Consensus) startRequestingProposal() {
 
 // receiveProposal is called when a new proposal is received
 func (consensus *Consensus) receiveProposal(block *block.Block) error {
-	blockHash := block.Header.Hash()
+	blockHash := block.Hash()
 
 	log.Infof("Receive block proposal %s from [%s:%s]", blockHash.ToHexString(), common.BytesToHexString(block.Header.UnsignedHeader.Signer), common.BytesToHexString(block.Header.UnsignedHeader.ChordId))
 
@@ -309,7 +309,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		return nil, err
 	}
 
-	receivedBlockHash := block.Header.Hash()
+	receivedBlockHash := block.Hash()
 	if receivedBlockHash != blockHash {
 		return nil, fmt.Errorf("Received block hash %s is different from requested hash %s", receivedBlockHash.ToHexString(), blockHash.ToHexString())
 	}
