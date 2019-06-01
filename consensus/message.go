@@ -72,20 +72,12 @@ func NewRequestBlockProposalMessage(blockHash common.Uint256) (*pb.UnsignedMessa
 // NewRequestBlockProposalReply creates a REQUEST_BLOCK_PROPOSAL_REPLY message
 // in respond to REQUEST_BLOCK_PROPOSAL message to send a block
 func NewRequestBlockProposalReply(block *block.Block) (*pb.UnsignedMessage, error) {
-	var buf []byte
-	var err error
+	msgBody := &pb.RequestBlockProposalReply{}
 	if block != nil {
-		buf, err = block.Marshal()
-		if err != nil {
-			return nil, err
-		}
+		msgBody.Block = block.ToMsgBlock()
 	}
 
-	msgBody := &pb.RequestBlockProposalReply{
-		Block: buf,
-	}
-
-	buf, err = proto.Marshal(msgBody)
+	buf, err := proto.Marshal(msgBody)
 	if err != nil {
 		return nil, err
 	}

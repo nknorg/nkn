@@ -8,6 +8,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
@@ -27,29 +28,36 @@ type Block struct {
 	Transactions []*transaction.Transaction
 }
 
+func (b *Block) FromMsgBlock(msgBlock *pb.Block) {
+	b.Header = &Header{Header: msgBlock.Header}
+	for _, txn := range msgBlock.Transactions {
+		b.Transactions = append(b.Transactions, &transaction.Transaction{Transaction: txn})
+	}
+}
+
 func (b *Block) ToMsgBlock() *pb.Block {
 	msgBlock := &pb.Block{
-		Header: &b.Header.Header,
+		Header: b.Header.Header,
 	}
 
 	for _, txn := range b.Transactions {
-		msgBlock.Transactions = append(msgBlock.Transactions, &txn.Transaction)
+		msgBlock.Transactions = append(msgBlock.Transactions, txn.Transaction)
 	}
 
 	return msgBlock
 }
 
 func (b *Block) Marshal() (data []byte, err error) {
-	return b.ToMsgBlock().Marshal()
+	return proto.Marshal(b.ToMsgBlock())
 }
 
-func (b *Block) Unmarshal(data []byte) error {
-	var msgBlock pb.Block
-	msgBlock.Unmarshal(data)
-	b.Header = &Header{Header: *msgBlock.Header}
-	for _, txn := range msgBlock.Transactions {
-		b.Transactions = append(b.Transactions, &transaction.Transaction{Transaction: *txn})
+func (b *Block) Unmarshal(buf []byte) error {
+	msgBlock := &pb.Block{}
+	err := proto.Unmarshal(buf, msgBlock)
+	if err != nil {
+		return err
 	}
+	b.FromMsgBlock(msgBlock)
 	return nil
 }
 
@@ -166,7 +174,7 @@ func GenesisBlockInit() (*Block, error) {
 
 	// block header
 	genesisBlockHeader := &Header{
-		Header: pb.Header{
+		Header: &pb.Header{
 			UnsignedHeader: &pb.UnsignedHeader{
 				Version:       BlockVersion,
 				PrevBlockHash: EmptyUint256.ToArray(),
@@ -194,7 +202,7 @@ func GenesisBlockInit() (*Block, error) {
 		},
 	}
 	trans := &transaction.Transaction{
-		Transaction: *txn,
+		Transaction: txn,
 	}
 
 	// genesis block

@@ -110,7 +110,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
 	curStateHash := GenerateStateRoot(txnList, height, randomBeacon)
 	header := &block.Header{
-		Header: pb.Header{
+		Header: &pb.Header{
 			UnsignedHeader: &pb.UnsignedHeader{
 				Version:          HeaderVersion,
 				PrevBlockHash:    curBlockHash.ToArray(),
@@ -165,7 +165,7 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *trans
 	nonce := DefaultLedger.Store.GetNonce(donationProgramhash)
 	txn := transaction.NewMsgTx(pl, nonce, 0, util.RandomBytes(transaction.TransactionNonceLength))
 	trans := &transaction.Transaction{
-		Transaction: *txn,
+		Transaction: txn,
 	}
 
 	return trans
