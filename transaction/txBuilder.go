@@ -20,7 +20,7 @@ func NewTransferAssetTransaction(sender, recipient Uint160, nonce uint64, value,
 	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
-		Transaction: *tx,
+		Transaction: tx,
 	}, nil
 }
 
@@ -34,7 +34,7 @@ func NewCommitTransaction(sigChain []byte, submitter Uint160, nonce uint64) (*Tr
 	tx := NewMsgTx(pl, nonce, 0, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
-		Transaction: *tx,
+		Transaction: tx,
 	}, nil
 }
 
@@ -48,7 +48,7 @@ func NewRegisterNameTransaction(registrant []byte, name string, nonce uint64, fe
 	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
-		Transaction: *tx,
+		Transaction: tx,
 	}, nil
 }
 
@@ -62,7 +62,7 @@ func NewDeleteNameTransaction(registrant []byte, name string, nonce uint64, fee 
 	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
-		Transaction: *tx,
+		Transaction: tx,
 	}, nil
 }
 
@@ -76,7 +76,7 @@ func NewSubscribeTransaction(subscriber []byte, identifier string, topic string,
 	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
-		Transaction: *tx,
+		Transaction: tx,
 	}, nil
 }
 

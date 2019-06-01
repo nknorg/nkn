@@ -5,6 +5,8 @@ package pb;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "pb/node.proto";
 import "pb/sigchain.proto";
+import "pb/block.proto";
+import "pb/transaction.proto";
 
 option (gogoproto.gostring_all) = true;
 option (gogoproto.goproto_stringer_all) = false;
@@ -13,9 +15,9 @@ option (gogoproto.marshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 
-option (gogoproto.testgen_all) = true;
-option (gogoproto.equal_all) = true;
-option (gogoproto.populate_all) = true;
+// option (gogoproto.testgen_all) = true;
+// option (gogoproto.equal_all) = true;
+// option (gogoproto.populate_all) = true; // this will cause panic
 
 enum MessageType {
   MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change
@@ -128,7 +130,7 @@ message RequestBlockProposal {
 }
 
 message RequestBlockProposalReply {
-  bytes block = 1;
+  Block block = 1;
 }
 
 message GetConsensusState {
@@ -148,7 +150,7 @@ message GetBlockHeaders {
 }
 
 message GetBlockHeadersReply {
-  repeated bytes block_headers = 1;
+  repeated Header block_headers = 1;
 }
 
 message GetBlocks {
@@ -157,7 +159,7 @@ message GetBlocks {
 }
 
 message GetBlocksReply {
-  repeated bytes blocks = 1;
+  repeated Block blocks = 1;
 }
 
 message Relay {
@@ -174,7 +176,7 @@ message Relay {
 }
 
 message Transactions {
-  repeated bytes transactions = 1;
+  repeated Transaction transactions = 1;
 }
 
 message BacktrackSignatureChain {
