@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 
+	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
@@ -15,8 +16,19 @@ import (
 )
 
 type Transaction struct {
-	pb.Transaction
+	*pb.Transaction
 	hash *Uint256
+}
+
+func (tx *Transaction) Marshal() (buf []byte, err error) {
+	return proto.Marshal(tx.Transaction)
+}
+
+func (tx *Transaction) Unmarshal(buf []byte) error {
+	if tx.Transaction == nil {
+		tx.Transaction = &pb.Transaction{}
+	}
+	return proto.Unmarshal(buf, tx.Transaction)
 }
 
 func NewMsgTx(payload *pb.Payload, nonce uint64, fee Fixed64, attrs []byte) *pb.Transaction {

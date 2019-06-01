@@ -12,14 +12,14 @@ import (
 type HeaderCache struct {
 	mu                 sync.RWMutex
 	headerIndex        map[uint32]common.Uint256
-	headerCache        map[common.Uint256]block.Header
+	headerCache        map[common.Uint256]*block.Header
 	currentCacheHeight uint32
 }
 
 func NewHeaderCache() *HeaderCache {
 	return &HeaderCache{
-		headerIndex:        map[uint32]common.Uint256{},
-		headerCache:        map[common.Uint256]block.Header{},
+		headerIndex:        make(map[uint32]common.Uint256),
+		headerCache:        make(map[common.Uint256]*block.Header),
 		currentCacheHeight: 0,
 	}
 }
@@ -27,7 +27,7 @@ func NewHeaderCache() *HeaderCache {
 func (hc *HeaderCache) AddHeaderToCache(header *block.Header) {
 	hc.mu.Lock()
 	hash := header.Hash()
-	hc.headerCache[hash] = *header
+	hc.headerCache[hash] = header
 	hc.headerIndex[header.UnsignedHeader.Height] = hash
 	if hc.currentCacheHeight < header.UnsignedHeader.Height {
 		hc.currentCacheHeight = header.UnsignedHeader.Height
@@ -56,7 +56,7 @@ func (hc *HeaderCache) GetCachedHeader(hash common.Uint256) (*block.Header, erro
 	if header, ok := hc.headerCache[hash]; !ok {
 		return nil, errors.New("no header in cache")
 	} else {
-		return &header, nil
+		return header, nil
 	}
 }
 

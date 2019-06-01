@@ -15,18 +15,13 @@ import (
 
 // NewTransactionsMessage creates a TRANSACTIONS message
 func NewTransactionsMessage(transactions []*transaction.Transaction) (*pb.UnsignedMessage, error) {
-	transactionsBytes := make([][]byte, len(transactions), len(transactions))
-	var err error
+	msgTransactions := make([]*pb.Transaction, len(transactions))
 	for i, transaction := range transactions {
-		transactionsBytes[i], err = transaction.Marshal()
-		if err != nil {
-			return nil, err
-		}
-
+		msgTransactions[i] = transaction.Transaction
 	}
 
 	msgBody := &pb.Transactions{
-		Transactions: transactionsBytes,
+		Transactions: msgTransactions,
 	}
 
 	buf, err := proto.Marshal(msgBody)
@@ -56,13 +51,8 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 
 	hasValidTxn := false
 	shouldPropagate := false
-	for _, txnBytes := range msgBody.Transactions {
-		txn := &transaction.Transaction{}
-		err = txn.Unmarshal(txnBytes)
-		if err != nil {
-			log.Warningf("Deserialize transaction error: %v", err)
-			continue
-		}
+	for _, msgTxn := range msgBody.Transactions {
+		txn := &transaction.Transaction{Transaction: msgTxn}
 
 		if localNode.ExistHash(txn.Hash()) {
 			hasValidTxn = true

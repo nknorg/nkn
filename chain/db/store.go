@@ -145,7 +145,7 @@ func (cs *ChainStore) GetHeader(hash Uint256) (*block.Header, error) {
 		return nil, err
 	}
 
-	h := new(block.Header)
+	h := &block.Header{}
 	dt, _ := serialization.ReadVarBytes(bytes.NewReader(data))
 	err = h.Unmarshal(dt)
 	if err != nil {
