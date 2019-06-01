@@ -96,13 +96,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				continue
 			}
 
-			err = chain.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp)
-			if err != nil {
-				log.Warningf("Ignore proposal that fails to pass timestamp check: %v", err)
-				continue
-			}
-
-			err := chain.SignerCheck(proposal.Header)
+			err = chain.SignerCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Ignore proposal that fails to pass signer check: %v", err)
 				continue
@@ -125,20 +119,19 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				acceptProposal = false
 			}
 
-			err = chain.HeaderCheck(proposal.Header)
-			if err != nil {
+			// We put timestamp after signer check to make sure everyone with the same
+			// local ledger will make the same choice on whether to start consensus or
+			// not, regardless of local time.
+			if err = chain.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp); err != nil {
+				log.Warningf("Proposal fails to pass timestamp check: %v", err)
+				acceptProposal = false
+			} else if err = chain.HeaderCheck(proposal.Header); err != nil {
 				log.Warningf("Proposal fails to pass header check: %v", err)
 				acceptProposal = false
-			}
-
-			err = chain.NextBlockProposerCheck(proposal.Header)
-			if err != nil {
+			} else if err = chain.NextBlockProposerCheck(proposal.Header); err != nil {
 				log.Warningf("Proposal fails to pass next block proposal check: %v", err)
 				acceptProposal = false
-			}
-
-			err = chain.TransactionCheck(proposal)
-			if err != nil {
+			} else if err = chain.TransactionCheck(proposal); err != nil {
 				log.Warningf("Proposal fails to pass transaction check: %v", err)
 				acceptProposal = false
 			}
@@ -299,22 +292,15 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		return nil, err
 	}
 
-	if len(replyMsg.Block) == 0 {
-		return nil, nil
-	}
+	b := &block.Block{}
+	b.FromMsgBlock(replyMsg.Block)
 
-	block := &block.Block{}
-	err = block.Unmarshal(replyMsg.Block)
-	if err != nil {
-		return nil, err
-	}
-
-	receivedBlockHash := block.Hash()
+	receivedBlockHash := b.Hash()
 	if receivedBlockHash != blockHash {
 		return nil, fmt.Errorf("Received block hash %s is different from requested hash %s", receivedBlockHash.ToHexString(), blockHash.ToHexString())
 	}
 
-	return block, nil
+	return b, nil
 }
 
 // iHaveProposal sends I_HAVE_PROPOSAL message to neighbors informing them node

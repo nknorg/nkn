@@ -48,17 +48,13 @@ func NewGetBlockHeadersMessage(startHeight, endHeight uint32) (*pb.UnsignedMessa
 // NewGetBlockHeadersReply creates a GET_BLOCK_HEADERS_REPLY message in respond
 // to GET_BLOCK_HEADERS message
 func NewGetBlockHeadersReply(headers []*block.Header) (*pb.UnsignedMessage, error) {
-	headersBytes := make([][]byte, len(headers), len(headers))
-	var err error
+	pbHeaders := make([]*pb.Header, len(headers))
 	for i, header := range headers {
-		headersBytes[i], err = header.Marshal()
-		if err != nil {
-			return nil, err
-		}
+		pbHeaders[i] = header.Header
 	}
 
 	msgBody := &pb.GetBlockHeadersReply{
-		BlockHeaders: headersBytes,
+		BlockHeaders: pbHeaders,
 	}
 
 	buf, err := proto.Marshal(msgBody)
@@ -97,17 +93,13 @@ func NewGetBlocksMessage(startHeight, endHeight uint32) (*pb.UnsignedMessage, er
 // NewGetBlocksReply creates a GET_BLOCKS_REPLY message in respond to GET_BLOCKS
 // message
 func NewGetBlocksReply(blocks []*block.Block) (*pb.UnsignedMessage, error) {
-	blocksBytes := make([][]byte, len(blocks), len(blocks))
-	var err error
+	msgBlocks := make([]*pb.Block, len(blocks))
 	for i, block := range blocks {
-		blocksBytes[i], err = block.Marshal()
-		if err != nil {
-			return nil, err
-		}
+		msgBlocks[i] = block.ToMsgBlock()
 	}
 
 	msgBody := &pb.GetBlocksReply{
-		Blocks: blocksBytes,
+		Blocks: msgBlocks,
 	}
 
 	buf, err := proto.Marshal(msgBody)
@@ -253,13 +245,9 @@ func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]
 		return nil, fmt.Errorf("result contains %d instead of %d headers", len(replyMsg.BlockHeaders), endHeight-startHeight+1)
 	}
 
-	headers := make([]*block.Header, len(replyMsg.BlockHeaders), len(replyMsg.BlockHeaders))
-	for i := range replyMsg.BlockHeaders {
-		headers[i] = &block.Header{}
-		err = headers[i].Unmarshal(replyMsg.BlockHeaders[i])
-		if err != nil {
-			return nil, err
-		}
+	headers := make([]*block.Header, len(replyMsg.BlockHeaders))
+	for i, msgHeader := range replyMsg.BlockHeaders {
+		headers[i] = &block.Header{Header: msgHeader}
 	}
 
 	return headers, nil
@@ -297,13 +285,10 @@ func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*block
 		return nil, fmt.Errorf("result contains %d instead of %d blocks", len(replyMsg.Blocks), endHeight-startHeight+1)
 	}
 
-	blocks := make([]*block.Block, len(replyMsg.Blocks), len(replyMsg.Blocks))
-	for i := range replyMsg.Blocks {
+	blocks := make([]*block.Block, len(replyMsg.Blocks))
+	for i, msgBlock := range replyMsg.Blocks {
 		blocks[i] = &block.Block{}
-		err = blocks[i].Unmarshal(replyMsg.Blocks[i])
-		if err != nil {
-			return nil, err
-		}
+		blocks[i].FromMsgBlock(msgBlock)
 	}
 
 	return blocks, nil

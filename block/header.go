@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/pb"
@@ -14,8 +15,19 @@ import (
 )
 
 type Header struct {
-	pb.Header
+	*pb.Header
 	hash *Uint256
+}
+
+func (h *Header) Marshal() (buf []byte, err error) {
+	return proto.Marshal(h.Header)
+}
+
+func (h *Header) Unmarshal(buf []byte) error {
+	if h.Header == nil {
+		h.Header = &pb.Header{}
+	}
+	return proto.Unmarshal(buf, h.Header)
 }
 
 //Serialize the blockheader data without program
