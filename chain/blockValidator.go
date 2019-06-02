@@ -73,10 +73,22 @@ func TransactionCheck(block *block.Block) error {
 			}
 		}
 		if !found {
-			if _, err := DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
+			if _, err = DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
 				return fmt.Errorf("mining sigchain txn %s not found in block", winnerHash)
 			}
 		}
+	}
+
+	txnsHash := make([]Uint256, len(block.Transactions))
+	for i, txn := range block.Transactions {
+		txnsHash[i] = txn.Hash()
+	}
+	txnsRoot, err := crypto.ComputeRoot(txnsHash)
+	if err != nil {
+		return fmt.Errorf("compute txns root error: %v", err)
+	}
+	if !bytes.Equal(txnsRoot.ToArray(), block.Header.UnsignedHeader.TransactionsRoot) {
+		return fmt.Errorf("computed txn root %x is different from txn root in header %x, fall back to request full txn hash", txnsRoot.ToArray(), block.Header.UnsignedHeader.TransactionsRoot)
 	}
 
 	nonces := make(map[Uint160]uint64, 0)
@@ -106,7 +118,7 @@ func TransactionCheck(block *block.Block) error {
 				return fmt.Errorf("txn nonce error, expected: %v, Get: %v", nonces[addr], txn.UnsignedTx.Nonce)
 			}
 
-			nonces[addr] += 1
+			nonces[addr]++
 		}
 
 	}
