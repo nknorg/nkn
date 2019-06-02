@@ -34,6 +34,8 @@ enum MessageType {
   RELAY = 11;
   TRANSACTIONS = 12;
   BACKTRACK_SIGNATURE_CHAIN = 13;
+  REQUEST_PROPOSAL_TRANSACTIONS = 14;
+  REQUEST_PROPOSAL_TRANSACTIONS_REPLY = 15;
 }
 
 // Message type that can be signed message
@@ -59,6 +61,8 @@ enum AllowedUnsignedMessageType {
   ALLOW_UNSIGNED_RELAY = 11;
   ALLOW_UNSIGNED_TRANSACTIONS = 12;
   ALLOW_UNSIGNED_BACKTRACK_SIGNATURE_CHAIN = 13;
+  ALLOW_UNSIGNED_REQUEST_PROPOSAL_TRANSACTIONS = 14;
+  ALLOW_UNSIGNED_REQUEST_PROPOSAL_TRANSACTIONS_REPLY = 15;
 }
 
 // Message type that can be sent as direct message
@@ -76,6 +80,8 @@ enum AllowedDirectMessageType {
   ALLOW_DIRECT_GET_BLOCKS = 9;
   ALLOW_DIRECT_GET_BLOCKS_REPLY = 10;
   ALLOW_DIRECT_BACKTRACK_SIGNATURE_CHAIN = 13;
+  ALLOW_DIRECT_REQUEST_PROPOSAL_TRANSACTIONS = 14;
+  ALLOW_DIRECT_REQUEST_PROPOSAL_TRANSACTIONS_REPLY = 15;
 }
 
 // Message type that can be sent as relay message
@@ -125,12 +131,34 @@ message IHaveBlockProposal {
   bytes block_hash = 2;
 }
 
+enum RequestTransactionType {
+  REQUEST_FULL_TRANSACTION = 0;
+  REQUEST_TRANSACTION_HASH = 1;
+  REQUEST_TRANSACTION_SHORT_HASH = 2;
+}
+
 message RequestBlockProposal {
   bytes block_hash = 1;
+  RequestTransactionType type = 2;
+  bytes short_hash_salt = 3;
+  uint32 short_hash_size = 4;
 }
 
 message RequestBlockProposalReply {
   Block block = 1;
+  repeated bytes transactions_hash = 2;
+}
+
+message RequestProposalTransactions {
+  bytes block_hash = 1;
+  RequestTransactionType type = 2;
+  bytes short_hash_salt = 3;
+  uint32 short_hash_size = 4;
+  repeated bytes transactions_hash = 5;
+}
+
+message RequestProposalTransactionsReply {
+  repeated Transaction transactions = 1;
 }
 
 message GetConsensusState {

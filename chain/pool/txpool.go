@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	DefaultCap               = 1024
-	ExclusivedSigchainHeight = 3
+	DefaultCap = 1024
 )
 
 var (
@@ -38,7 +37,9 @@ var (
 
 // TxnPool is a list of txns that need to by add to ledger sent by user.
 type TxnPool struct {
-	TxLists sync.Map // NonceSortedTxs instance to store user's account.
+	TxLists        sync.Map // NonceSortedTxs instance to store user's account.
+	TxMap          sync.Map
+	TxShortHashMap sync.Map
 }
 
 func NewTxPool() *TxnPool {
@@ -226,6 +227,9 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		}
 	}
 
+	tp.TxMap.Store(txn.Hash(), txn)
+	tp.TxShortHashMap.Store(shortHashToKey(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)), txn)
+
 	if !list.Empty() {
 		//replace old tx that has same nonce.
 		if _, err := list.Get(txn.UnsignedTx.Nonce); err == nil {
@@ -280,6 +284,12 @@ func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*transaction.Transact
 }
 
 func (tp *TxnPool) GetTransaction(hash common.Uint256) *transaction.Transaction {
+	if v, ok := tp.TxMap.Load(hash); ok {
+		if txn, ok := v.(*transaction.Transaction); ok && txn != nil {
+			return txn
+		}
+	}
+
 	var found *transaction.Transaction
 	tp.TxLists.Range(func(_, v interface{}) bool {
 		if list, ok := v.(*NonceSortedTxs); ok {
@@ -291,6 +301,24 @@ func (tp *TxnPool) GetTransaction(hash common.Uint256) *transaction.Transaction 
 		return true
 	})
 	return found
+}
+
+func (tp *TxnPool) GetTxnByHash(hash common.Uint256) *transaction.Transaction {
+	if v, ok := tp.TxMap.Load(hash); ok {
+		if txn, ok := v.(*transaction.Transaction); ok && txn != nil {
+			return txn
+		}
+	}
+	return nil
+}
+
+func (tp *TxnPool) GetTxnByShortHash(shortHash []byte) *transaction.Transaction {
+	if v, ok := tp.TxShortHashMap.Load(shortHashToKey(shortHash)); ok {
+		if txn, ok := v.(*transaction.Transaction); ok && txn != nil {
+			return txn
+		}
+	}
+	return nil
 }
 
 func (tp *TxnPool) getTxsFromPool() []*transaction.Transaction {
@@ -350,6 +378,9 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 				}
 			}
 		}
+
+		tp.TxMap.Delete(txn.Hash())
+		tp.TxShortHashMap.Delete(shortHashToKey(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)))
 	}
 
 	return nil
@@ -492,4 +523,8 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *transaction.Transaction) err
 	}
 
 	return nil
+}
+
+func shortHashToKey(shortHash []byte) string {
+	return string(shortHash)
 }
