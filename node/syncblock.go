@@ -409,20 +409,20 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 			header := batchHeaders[height-batchStartHeight]
 			headerHash := header.Hash()
 			if height == stopHeight && headerHash != stopHash {
-				log.Warningf("End header hash %s is different from stop hash %s", (&headerHash).ToHexString(), stopHash.ToHexString())
+				log.Warningf("End header hash %s is different from stop hash %s", headerHash.ToHexString(), stopHash.ToHexString())
 				return false
 			}
 			if height < stopHeight {
 				nextPrevHash, _ := common.Uint256ParseFromBytes(nextHeader.UnsignedHeader.PrevBlockHash)
 				if nextHeader == nil || headerHash != nextPrevHash {
-					log.Warningf("Header hash %s is different from prev hash in next block %s", (&headerHash).ToHexString(), nextHeader.UnsignedHeader.PrevBlockHash)
+					log.Warningf("Header hash %s is different from prev hash in next block %s", headerHash.ToHexString(), nextPrevHash.ToHexString())
 					return false
 				}
 			}
 
 			prevHash, _ := common.Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
 			if height == startHeight && prevHash != startPrevHash {
-				log.Warningf("Start header prev hash %s is different from start prev hash %s", header.UnsignedHeader.PrevBlockHash, startPrevHash.ToHexString())
+				log.Warningf("Start header prev hash %s is different from start prev hash %s", prevHash.ToHexString(), startPrevHash.ToHexString())
 				return false
 			}
 			headersHash[height-startHeight] = headerHash

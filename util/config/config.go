@@ -15,6 +15,7 @@ import (
 	gonat "github.com/nknorg/go-nat"
 	"github.com/nknorg/go-portscanner"
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nnet/transport"
 	"github.com/rdegges/go-ipify"
 )
@@ -25,7 +26,7 @@ const (
 
 const (
 	MaxNumTxnPerBlock            = 4096
-	MaxBlockSize                 = 1 * 1024 * 1024 // The Max of block size is 1 MB.
+	MaxBlockSize                 = 1 * 1024 * 1024 // in bytes
 	ConsensusDuration            = 20 * time.Second
 	ConsensusTimeout             = time.Minute
 	MinNumSuccessors             = 8
@@ -48,6 +49,10 @@ const (
 	GenerateIDBlockDelay         = 1
 	RandomBeaconLength           = 32
 )
+
+const ShortHashSize = 8
+
+var ShortHashSalt = util.RandomBytes(32)
 
 var (
 	Version       string
