@@ -3,6 +3,7 @@ package moca
 import (
 	"time"
 
+	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/config"
 )
 
@@ -14,7 +15,8 @@ const (
 	cacheExpiration             = 3600 * time.Second
 	cacheCleanupInterval        = 600 * time.Second
 	proposingStartDelay         = config.ConsensusTimeout + time.Second
-	getConsensusStateInterval   = 30 * time.Second
+	proposalPropagationDelay    = time.Second
+	getConsensusStateInterval   = config.ConsensusDuration
 	getConsensusStateRetries    = 3
 	getConsensusStateRetryDelay = 3 * time.Second
 	proposalChanLen             = 100
@@ -22,4 +24,5 @@ const (
 	changeVoteMinRelativeWeight = 0.5
 	consensusMinRelativeWeight  = 2.0 / 3.0
 	syncMinRelativeWeight       = 1.0 / 2.0
+	requestTransactionType      = pb.REQUEST_TRANSACTION_SHORT_HASH
 )
