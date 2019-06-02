@@ -31,7 +31,11 @@ func (consensus *Consensus) startProposing() {
 
 				blockHash := block.Hash()
 				log.Infof("Propose block %s at height %d", blockHash.ToHexString(), expectedHeight)
+
 				consensus.localNode.IncrementProposalSubmitted()
+
+				// Prevent neighbor from receiving proposal before last consensus stops
+				time.Sleep(proposalPropagationDelay)
 
 				err = consensus.receiveProposal(block)
 				if err != nil {
@@ -40,7 +44,6 @@ func (consensus *Consensus) startProposing() {
 				}
 
 				lastProposedHeight = expectedHeight
-				time.Sleep(electionStartDelay)
 			}
 		}
 		timer.ResetTimer(proposingTimer, proposingInterval)

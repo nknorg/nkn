@@ -38,13 +38,14 @@ const (
 )
 
 type PorServer struct {
-	account             *vault.Account
-	id                  []byte
-	sigChainTxnCache    common.Cache
-	sigChainElemCache   common.Cache
-	srcSigChainCache    common.Cache
-	vrfCache            common.Cache
-	finalizedBlockCache common.Cache
+	account                   *vault.Account
+	id                        []byte
+	sigChainTxnCache          common.Cache
+	sigChainTxnShortHashCache common.Cache
+	sigChainElemCache         common.Cache
+	srcSigChainCache          common.Cache
+	vrfCache                  common.Cache
+	finalizedBlockCache       common.Cache
 
 	sync.RWMutex
 	miningPorPackageCache common.Cache
@@ -79,15 +80,16 @@ var porServer *PorServer
 
 func NewPorServer(account *vault.Account, id []byte) *PorServer {
 	ps := &PorServer{
-		account:               account,
-		id:                    id,
-		sigChainTxnCache:      common.NewGoCache(sigChainTxnCacheExpiration, sigChainTxnCacheCleanupInterval),
-		sigChainElemCache:     common.NewGoCache(sigChainElemCacheExpiration, sigChainElemCacheCleanupInterval),
-		srcSigChainCache:      common.NewGoCache(srcSigChainCacheExpiration, srcSigChainCacheCleanupInterval),
-		vrfCache:              common.NewGoCache(vrfCacheExpiration, vrfCacheCleanupInterval),
-		finalizedBlockCache:   common.NewGoCache(finalizedBlockCacheExpiration, finalizedBlockCacheCleanupInterval),
-		miningPorPackageCache: common.NewGoCache(miningPorPackageCacheExpiration, miningPorPackageCacheCleanupInterval),
-		destSigChainElemCache: common.NewGoCache(destSigChainElemCacheExpiration, destSigChainElemCacheCleanupInterval),
+		account:                   account,
+		id:                        id,
+		sigChainTxnCache:          common.NewGoCache(sigChainTxnCacheExpiration, sigChainTxnCacheCleanupInterval),
+		sigChainTxnShortHashCache: common.NewGoCache(sigChainTxnCacheExpiration, sigChainTxnCacheCleanupInterval),
+		sigChainElemCache:         common.NewGoCache(sigChainElemCacheExpiration, sigChainElemCacheCleanupInterval),
+		srcSigChainCache:          common.NewGoCache(srcSigChainCacheExpiration, srcSigChainCacheCleanupInterval),
+		vrfCache:                  common.NewGoCache(vrfCacheExpiration, vrfCacheCleanupInterval),
+		finalizedBlockCache:       common.NewGoCache(finalizedBlockCacheExpiration, finalizedBlockCacheCleanupInterval),
+		miningPorPackageCache:     common.NewGoCache(miningPorPackageCacheExpiration, miningPorPackageCacheCleanupInterval),
+		destSigChainElemCache:     common.NewGoCache(destSigChainElemCacheExpiration, destSigChainElemCacheCleanupInterval),
 	}
 	return ps
 }
@@ -231,6 +233,20 @@ func (ps *PorServer) GetMiningSigChainTxn(txnHash common.Uint256) (*transaction.
 	return txn, nil
 }
 
+func (ps *PorServer) GetMiningSigChainTxnByShortHash(shortHash []byte) (*transaction.Transaction, error) {
+	v, ok := ps.sigChainTxnShortHashCache.Get(shortHash)
+	if !ok {
+		return nil, fmt.Errorf("sigchain txn short hash %x not found", shortHash)
+	}
+
+	txn, ok := v.(*transaction.Transaction)
+	if !ok {
+		return nil, fmt.Errorf("convert to sigchain txn %x error", shortHash)
+	}
+
+	return txn, nil
+}
+
 func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeight uint32) (bool, error) {
 	porPkg, err := NewPorPackage(txn)
 	if err != nil {
@@ -254,6 +270,11 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 	}
 
 	err = ps.sigChainTxnCache.Add(porPkg.TxHash, txn)
+	if err != nil {
+		return false, err
+	}
+
+	err = ps.sigChainTxnShortHashCache.Add(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize), txn)
 	if err != nil {
 		return false, err
 	}

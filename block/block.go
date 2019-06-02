@@ -36,6 +36,10 @@ func (b *Block) FromMsgBlock(msgBlock *pb.Block) {
 }
 
 func (b *Block) ToMsgBlock() *pb.Block {
+	if b == nil {
+		return nil
+	}
+
 	msgBlock := &pb.Block{
 		Header: b.Header.Header,
 	}

@@ -161,11 +161,26 @@ func (consensus *Consensus) loadOrCreateElection(height uint32) (*election.Elect
 		}
 	}
 
+	consensusNeighbors := consensus.localNode.GetNeighbors(func(rn *node.RemoteNode) bool {
+		if rn.GetSyncState() != pb.PersistFinished {
+			return false
+		}
+		// This is for nodes who just finished syncing but cannot verify block yet
+		if rn.GetHeight() < height && height < rn.GetMinVerifiableHeight() {
+			return false
+		}
+		return true
+	})
+	totalWeight := len(consensusNeighbors)
+	if consensus.localNode.GetSyncState() == pb.PersistFinished {
+		totalWeight++
+	}
+
 	config := &election.Config{
 		Duration:                    electionDuration,
 		MinVotingInterval:           minVotingInterval,
 		ChangeVoteMinRelativeWeight: changeVoteMinRelativeWeight,
-		ConsensusMinRelativeWeight:  consensusMinRelativeWeight,
+		ConsensusMinAbsoluteWeight:  uint32(consensusMinRelativeWeight*float32(totalWeight) + 1),
 	}
 
 	elc, err := election.NewElection(config)

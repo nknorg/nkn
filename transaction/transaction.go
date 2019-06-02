@@ -195,7 +195,18 @@ func (tx *Transaction) Hash() Uint256 {
 		tx.hash = &f
 	}
 	return *tx.hash
+}
 
+func HashToShortHash(hash Uint256, salt []byte, size uint32) []byte {
+	shortHash := sha256.Sum256(append(hash[:], salt...))
+	if size > sha256.Size {
+		return shortHash[:]
+	}
+	return shortHash[:size]
+}
+
+func (tx *Transaction) ShortHash(salt []byte, size uint32) []byte {
+	return HashToShortHash(tx.Hash(), salt, size)
 }
 
 func (tx *Transaction) SetHash(hash Uint256) {
