@@ -7,21 +7,21 @@ import (
 )
 
 const (
-	HashCacheExpiration      = 3600 * time.Second
-	HashCacheCleanupInterval = 60 * time.Second
+	hashCacheExpiration      = 3600 * time.Second
+	hashCacheCleanupInterval = 60 * time.Second
 )
 
 type hashCache struct {
-	cache common.Cache
+	common.Cache
 }
 
-func NewHashCache() *hashCache {
+func newHashCache() *hashCache {
 	return &hashCache{
-		cache: common.NewGoCache(HashCacheExpiration, HashCacheCleanupInterval),
+		Cache: common.NewGoCache(hashCacheExpiration, hashCacheCleanupInterval),
 	}
 }
 
 func (hc *hashCache) ExistHash(hash common.Uint256) bool {
-	err := hc.cache.Add(hash.ToArray(), struct{}{})
+	err := hc.Add(hash.ToArray(), struct{}{})
 	return err != nil
 }

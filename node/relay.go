@@ -7,7 +7,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/chain/pool"
 	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
@@ -176,15 +175,15 @@ func (rs *RelayService) broadcastSigChain(sigChain *pb.SigChain) error {
 		return err
 	}
 
-	errCode := rs.localNode.AppendTxnPool(txn)
-	if errCode == pool.ErrNonOptimalSigChain {
+	porPkg, err := por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
+	if err != nil {
+		return err
+	}
+	if porPkg == nil {
 		return nil
 	}
-	if errCode != nil {
-		return errCode
-	}
 
-	err = rs.localNode.BroadcastTransaction(txn)
+	err = rs.localNode.iHaveSignatureChainTransaction(porPkg.VoteForHeight, porPkg.SigHash, nil)
 	if err != nil {
 		return err
 	}

@@ -36,6 +36,9 @@ enum MessageType {
   BACKTRACK_SIGNATURE_CHAIN = 13;
   REQUEST_PROPOSAL_TRANSACTIONS = 14;
   REQUEST_PROPOSAL_TRANSACTIONS_REPLY = 15;
+  I_HAVE_SIGNATURE_CHAIN_TRANSACTION = 16;
+  REQUEST_SIGNATURE_CHAIN_TRANSACTION = 17;
+  REQUEST_SIGNATURE_CHAIN_TRANSACTION_REPLY = 18;
 }
 
 // Message type that can be signed message
@@ -63,6 +66,9 @@ enum AllowedUnsignedMessageType {
   ALLOW_UNSIGNED_BACKTRACK_SIGNATURE_CHAIN = 13;
   ALLOW_UNSIGNED_REQUEST_PROPOSAL_TRANSACTIONS = 14;
   ALLOW_UNSIGNED_REQUEST_PROPOSAL_TRANSACTIONS_REPLY = 15;
+  ALLOW_UNSIGNED_I_HAVE_SIGNATURE_CHAIN_TRANSACTION = 16;
+  ALLOW_UNSIGNED_REQUEST_SIGNATURE_CHAIN_TRANSACTION = 17;
+  ALLOW_UNSIGNED_REQUEST_SIGNATURE_CHAIN_TRANSACTION_REPLY = 18;
 }
 
 // Message type that can be sent as direct message
@@ -82,6 +88,9 @@ enum AllowedDirectMessageType {
   ALLOW_DIRECT_BACKTRACK_SIGNATURE_CHAIN = 13;
   ALLOW_DIRECT_REQUEST_PROPOSAL_TRANSACTIONS = 14;
   ALLOW_DIRECT_REQUEST_PROPOSAL_TRANSACTIONS_REPLY = 15;
+  ALLOW_DIRECT_I_HAVE_SIGNATURE_CHAIN_TRANSACTION = 16;
+  ALLOW_DIRECT_REQUEST_SIGNATURE_CHAIN_TRANSACTION = 17;
+  ALLOW_DIRECT_REQUEST_SIGNATURE_CHAIN_TRANSACTION_REPLY = 18;
 }
 
 // Message type that can be sent as relay message
@@ -210,4 +219,17 @@ message Transactions {
 message BacktrackSignatureChain {
   repeated SigChainElem sig_chain_elems = 1;
   bytes prev_signature = 2;
+}
+
+message IHaveSignatureChainTransaction {
+  uint32 height = 1;
+  bytes signature_hash = 2;
+}
+
+message RequestSignatureChainTransaction {
+  bytes signature_hash = 1;
+}
+
+message RequestSignatureChainTransactionReply {
+  Transaction transaction = 1;
 }
