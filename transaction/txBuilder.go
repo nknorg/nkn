@@ -90,6 +90,6 @@ func NewGenerateIDTransaction(publicKey []byte, regFee Fixed64, nonce uint64, fe
 	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
 
 	return &Transaction{
-		Transaction: *tx,
+		Transaction: tx,
 	}, nil
 }
