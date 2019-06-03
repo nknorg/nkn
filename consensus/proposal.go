@@ -342,7 +342,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		for i := range txnsHash {
 			if txn := consensus.localNode.TxnPool.GetTxnByHash(txnsHash[i]); txn != nil {
 				poolTxns = append(poolTxns, txn)
-			} else if txn, err = por.GetPorServer().GetMiningSigChainTxn(txnsHash[i]); err == nil && txn != nil {
+			} else if txn, err = por.GetPorServer().GetSigChainTxn(txnsHash[i]); err == nil && txn != nil {
 				poolTxns = append(poolTxns, txn)
 			} else {
 				missingTxnsHash = append(missingTxnsHash, txnsHash[i].ToArray())
@@ -352,7 +352,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		for i := range replyMsg.TransactionsHash {
 			if txn := consensus.localNode.TxnPool.GetTxnByShortHash(replyMsg.TransactionsHash[i]); txn != nil {
 				poolTxns = append(poolTxns, txn)
-			} else if txn, err = por.GetPorServer().GetMiningSigChainTxnByShortHash(replyMsg.TransactionsHash[i]); err == nil && txn != nil {
+			} else if txn, err = por.GetPorServer().GetSigChainTxnByShortHash(replyMsg.TransactionsHash[i]); err == nil && txn != nil {
 				poolTxns = append(poolTxns, txn)
 			} else {
 				missingTxnsHash = append(missingTxnsHash, replyMsg.TransactionsHash[i])
@@ -521,6 +521,7 @@ func (consensus *Consensus) iHaveProposal(height uint32, blockHash common.Uint25
 		err = neighbor.SendBytesAsync(buf)
 		if err != nil {
 			log.Errorf("Send vote to neighbor %v error: %v", neighbor, err)
+			continue
 		}
 	}
 

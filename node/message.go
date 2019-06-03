@@ -212,6 +212,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				var reply []byte
 				reply, err = localNode.receiveMessage(senderNode, unsignedMsg)
 				if err != nil {
+					log.Warningf("Error handling msg: %v", err)
 					return nil, nil, nil, false
 				}
 
