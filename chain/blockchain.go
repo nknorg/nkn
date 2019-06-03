@@ -32,7 +32,12 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore) (*Blockchain, error) {
 	if err != nil {
 		return nil, err
 	}
-	root := GenesisStateRoot(store, genesisBlock.Transactions)
+
+	root, err := store.GenerateStateRoot(genesisBlock, false)
+	if err != nil {
+		return nil, err
+	}
+
 	genesisBlock.Header.UnsignedHeader.StateRoot = root.ToArray()
 	genesisBlock.RebuildMerkleRoot()
 	genesisBlock.Hash()
