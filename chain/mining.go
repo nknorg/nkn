@@ -46,7 +46,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 
 	if winnerType == pb.TXN_SIGNER {
 		if _, err = DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
-			miningSigChainTxn, err := por.GetPorServer().GetMiningSigChainTxn(winnerHash)
+			miningSigChainTxn, err := por.GetPorServer().GetSigChainTxn(winnerHash)
 			if err != nil {
 				return nil, err
 			}

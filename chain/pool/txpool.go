@@ -10,7 +10,6 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -32,7 +31,6 @@ var (
 	ErrDuplicateSubscription = errors.New("Duplicate subscription in one block")
 	ErrDuplicateGenerateID   = errors.New("Duplicate GenerateIDType txn in one block")
 	ErrSubscriptionLimit     = errors.New("Subscription limit exceeded in one block")
-	ErrNonOptimalSigChain    = errors.New("This SigChain is NOT optimal choice")
 )
 
 // TxnPool is a list of txns that need to by add to ledger sent by user.
@@ -441,13 +439,7 @@ func (tp *TxnPool) verifyTransactionWithLedger(txn *transaction.Transaction) err
 	case pb.CoinbaseType:
 		return ErrTxnType
 	case pb.CommitType:
-		added, err := por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
-		if err != nil {
-			return err
-		}
-		if !added {
-			return ErrNonOptimalSigChain
-		}
+		return ErrTxnType
 	case pb.TransferAssetType:
 		if txn.UnsignedTx.Nonce < nonce {
 			return ErrNonceTooLow
