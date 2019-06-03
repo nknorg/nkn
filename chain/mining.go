@@ -34,11 +34,11 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	var txnList []*transaction.Transaction
 	var txnHashList []common.Uint256
 
-	donation, err := DefaultLedger.Store.GetDonation()
+	donationAmount, err := DefaultLedger.Store.GetDonation()
 	if err != nil {
 		return nil, err
 	}
-	coinbase := bm.CreateCoinbaseTransaction(GetRewardByHeight(height) + donation.Amount)
+	coinbase := bm.CreateCoinbaseTransaction(GetRewardByHeight(height) + donationAmount)
 	txnList = append(txnList, coinbase)
 	txnHashList = append(txnHashList, coinbase.Hash())
 	totalTxsSize := coinbase.GetSize()
@@ -108,7 +108,6 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	}
 	randomBeacon := util.RandomBytes(config.RandomBeaconLength)
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
-	curStateHash := GenerateStateRoot(txnList, height, randomBeacon)
 	header := &block.Header{
 		Header: &pb.Header{
 			UnsignedHeader: &pb.UnsignedHeader{
@@ -118,7 +117,6 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 				Height:           height,
 				RandomBeacon:     randomBeacon,
 				TransactionsRoot: txnRoot.ToArray(),
-				StateRoot:        curStateHash.ToArray(),
 				WinnerHash:       winnerHash.ToArray(),
 				WinnerType:       winnerType,
 				Signer:           encodedPubKey,
@@ -128,17 +126,24 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 		},
 	}
 
+	block := &block.Block{
+		Header:       header,
+		Transactions: txnList,
+	}
+
+	curStateHash, err := DefaultLedger.Store.GenerateStateRoot(block, false)
+	if err != nil {
+		return nil, err
+	}
+
+	header.UnsignedHeader.StateRoot = curStateHash.ToArray()
+
 	hash := signature.GetHashForSigning(header)
 	sig, err := crypto.Sign(bm.account.PrivateKey, hash)
 	if err != nil {
 		return nil, err
 	}
 	header.Signature = append(header.Signature, sig...)
-
-	block := &block.Block{
-		Header:       header,
-		Transactions: txnList,
-	}
 
 	return block, nil
 }

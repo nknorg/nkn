@@ -203,14 +203,14 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.CoinbaseType:
-		donation, err := DefaultLedger.Store.GetDonation()
+		donationAmount, err := DefaultLedger.Store.GetDonation()
 		if err != nil {
 			return err
 		}
 
 		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
 		amount := DefaultLedger.Store.GetBalance(donationProgramhash)
-		if amount < donation.Amount {
+		if amount < donationAmount {
 			return errors.New("not sufficient funds in doation account")
 		}
 	case pb.TransferAssetType:
@@ -313,11 +313,11 @@ func VerifyTransactionWithBlock(iterator Iterator, header *block.Header) error {
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.CoinbaseType:
 			coinbase := payload.(*pb.Coinbase)
-			donation, err := DefaultLedger.Store.GetDonation()
+			donationAmount, err := DefaultLedger.Store.GetDonation()
 			if err != nil {
 				return err
 			}
-			if Fixed64(coinbase.Amount) != GetRewardByHeight(header.UnsignedHeader.Height)+donation.Amount {
+			if Fixed64(coinbase.Amount) != GetRewardByHeight(header.UnsignedHeader.Height)+donationAmount {
 				return errors.New("Mining reward incorrectly.")
 			}
 		case pb.RegisterNameType:

@@ -2,12 +2,20 @@ package db
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
+)
+
+type Operation int
+
+const (
+	Addition Operation = iota
+	Subtraction
 )
 
 type account struct {
@@ -261,5 +269,39 @@ func (sdb *StateDB) SetID(addr common.Uint160, id []byte) error {
 	}
 
 	account.SetID(id)
+	return nil
+}
+
+func (sdb *StateDB) UpdateBalance(addr common.Uint160, value common.Fixed64, op Operation) error {
+	acc := sdb.GetOrNewAccount(addr)
+	amount := acc.GetBalance()
+
+	switch op {
+	case Addition:
+		acc.SetBalance(amount + value)
+	case Subtraction:
+		if amount < value {
+			return errors.New("UpdateBalance: no sufficient funds")
+		}
+		acc.SetBalance(amount - value)
+	default:
+		return errors.New("UpdateBalance: invalid operation")
+	}
+
+	return nil
+}
+
+func (sdb *StateDB) IncrNonce(addr common.Uint160) error {
+	acc := sdb.GetOrNewAccount(addr)
+	nonce := acc.GetNonce()
+	acc.SetNonce(nonce + 1)
+
+	return nil
+}
+
+func (sdb *StateDB) UpdateID(addr common.Uint160, id []byte) error {
+	acc := sdb.GetOrNewAccount(addr)
+	acc.SetID(id)
+
 	return nil
 }
