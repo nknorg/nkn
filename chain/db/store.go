@@ -78,13 +78,23 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 		if cs.currentBlockHash, cs.currentBlockHeight, err = cs.getCurrentBlockHashFromDB(); err != nil {
 			return 0, err
 		}
-		currentHeader, _ := cs.GetHeader(cs.currentBlockHash)
+		currentHeader, err := cs.GetHeader(cs.currentBlockHash)
+		if err != nil {
+			return 0, err
+		}
 
 		cs.headerCache.AddHeaderToCache(currentHeader)
 
-		root := cs.GetCurrentBlockStateRoot()
-		fmt.Println("---------", root)
-		cs.States, _ = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+		root, err := cs.GetCurrentBlockStateRoot()
+		if err != nil {
+			return 0, nil
+		}
+
+		log.Info("state root:", root.ToHexString())
+		cs.States, err = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+		if err != nil {
+			return 0, err
+		}
 
 		return cs.currentBlockHeight, nil
 
@@ -94,7 +104,10 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 		}
 
 		root := EmptyUint256
-		cs.States, _ = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+		cs.States, err = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+		if err != nil {
+			return 0, err
+		}
 
 		if err := cs.persist(genesisBlock); err != nil {
 			return 0, err
@@ -146,7 +159,11 @@ func (cs *ChainStore) GetHeader(hash Uint256) (*block.Header, error) {
 	}
 
 	h := &block.Header{}
-	dt, _ := serialization.ReadVarBytes(bytes.NewReader(data))
+	dt, err := serialization.ReadVarBytes(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
 	err = h.Unmarshal(dt)
 	if err != nil {
 		return nil, err
@@ -236,11 +253,6 @@ func (cs *ChainStore) persist(b *block.Block) error {
 
 	headerHash := b.Hash()
 
-	states, err := NewStateDB(cs.GetCurrentBlockStateRoot(), NewTrieStore(cs.GetDatabase()))
-	if err != nil {
-		return err
-	}
-
 	//batch put header
 	headerBuffer := bytes.NewBuffer(nil)
 	b.Trim(headerBuffer)
@@ -255,43 +267,15 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		return err
 	}
 
-	var totalFee Fixed64
-	for _, txn := range b.Transactions {
-		totalFee += Fixed64(txn.UnsignedTx.Fee)
-	}
-
-	//process previous block
-	if b.Header.UnsignedHeader.Height > config.GenerateIDBlockDelay {
-		prevBlock, err := cs.GetBlockByHeight(b.Header.UnsignedHeader.Height - config.GenerateIDBlockDelay)
-		if err != nil {
-			return err
-		}
-
-		preBlockHash := prevBlock.Hash()
-
-		for _, txn := range prevBlock.Transactions {
-			if txn.UnsignedTx.Payload.Type == pb.GenerateIDType {
-				txnHash := txn.Hash()
-				data := append(preBlockHash[:], txnHash[:]...)
-				data = append(data, b.Header.UnsignedHeader.RandomBeacon...)
-				id := crypto.Sha256(data)
-
-				pg, err := txn.GetProgramHashes()
-				if err != nil {
-					return err
-				}
-				accSender := states.GetOrNewAccount(pg[0])
-				accSender.SetID(id)
-				states.SetAccount(pg[0], accSender)
-			}
-		}
-	}
-
 	//batch put transactions
 	for _, txn := range b.Transactions {
 		buffer := make([]byte, 4)
 		binary.LittleEndian.PutUint32(buffer[:], b.Header.UnsignedHeader.Height)
-		dt, _ := txn.Marshal()
+		dt, err := txn.Marshal()
+		if err != nil {
+			return err
+		}
+
 		buffer = append(buffer, dt...)
 
 		if err := cs.st.BatchPut(transactionKey(txn.Hash()), buffer); err != nil {
@@ -305,107 +289,28 @@ func (cs *ChainStore) persist(b *block.Block) error {
 
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.CoinbaseType:
-			coinbase := pl.(*pb.Coinbase)
-			accSender := states.GetOrNewAccount(BytesToUint160(coinbase.Sender))
-			if b.Header.UnsignedHeader.Height != 0 {
-				amountSender := accSender.GetBalance()
-				donation, err := cs.GetDonation()
-				if err != nil {
-					return err
-				}
-				accSender.SetBalance(amountSender - donation.Amount)
-			}
-			nonce := accSender.GetNonce()
-			accSender.SetNonce(nonce + 1)
-			states.SetAccount(BytesToUint160(coinbase.Sender), accSender)
-
-			acc := states.GetOrNewAccount(BytesToUint160(coinbase.Recipient))
-			amount := acc.GetBalance()
-			acc.SetBalance(amount + Fixed64(coinbase.Amount) + totalFee)
-			states.setAccount(BytesToUint160(coinbase.Recipient), acc)
 		case pb.TransferAssetType:
-			transfer := pl.(*pb.TransferAsset)
-			accSender := states.GetOrNewAccount(BytesToUint160(transfer.Sender))
-			amountSender := accSender.GetBalance()
-			accSender.SetBalance(amountSender - Fixed64(transfer.Amount) - Fixed64(txn.UnsignedTx.Fee))
-			nonce := accSender.GetNonce()
-			accSender.SetNonce(nonce + 1)
-			states.SetAccount(BytesToUint160(transfer.Sender), accSender)
-
-			accRecipient := states.GetOrNewAccount(BytesToUint160(transfer.Recipient))
-			amountRecipient := accRecipient.GetBalance()
-			accRecipient.SetBalance(amountRecipient + Fixed64(transfer.Amount))
-			states.setAccount(BytesToUint160(transfer.Recipient), accRecipient)
 		case pb.RegisterNameType:
 			registerNamePayload := pl.(*pb.RegisterName)
-			pg, err := txn.GetProgramHashes()
-			if err != nil {
-				return err
-			}
-			accSender := states.GetOrNewAccount(pg[0])
-			amountSender := accSender.GetBalance()
-			accSender.SetBalance(amountSender - Fixed64(txn.UnsignedTx.Fee))
-			nonce := accSender.GetNonce()
-			accSender.SetNonce(nonce + 1)
-			states.SetAccount(pg[0], accSender)
 			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
 			if err != nil {
 				return err
 			}
 		case pb.DeleteNameType:
 			deleteNamePayload := pl.(*pb.DeleteName)
-			pg, err := txn.GetProgramHashes()
-			if err != nil {
-				return err
-			}
-			accSender := states.GetOrNewAccount(pg[0])
-			amountSender := accSender.GetBalance()
-			accSender.SetBalance(amountSender - Fixed64(txn.UnsignedTx.Fee))
-			nonce := accSender.GetNonce()
-			accSender.SetNonce(nonce + 1)
-			states.SetAccount(pg[0], accSender)
 			err = cs.DeleteName(deleteNamePayload.Registrant)
 			if err != nil {
 				return err
 			}
 		case pb.SubscribeType:
 			subscribePayload := pl.(*pb.Subscribe)
-			pg, err := txn.GetProgramHashes()
-			if err != nil {
-				return err
-			}
-			accSender := states.GetOrNewAccount(pg[0])
-			amountSender := accSender.GetBalance()
-			accSender.SetBalance(amountSender - Fixed64(txn.UnsignedTx.Fee))
-			nonce := accSender.GetNonce()
-			accSender.SetNonce(nonce + 1)
-			states.SetAccount(pg[0], accSender)
 			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.UnsignedHeader.Height)
 			if err != nil {
 				return err
 			}
 		case pb.GenerateIDType:
-			genIDPayload := pl.(*pb.GenerateID)
-			pg, err := txn.GetProgramHashes()
-			if err != nil {
-				return err
-			}
-			accSender := states.GetOrNewAccount(pg[0])
-			amountSender := accSender.GetBalance()
-			accSender.SetBalance(amountSender - Fixed64(genIDPayload.RegistrationFee) - Fixed64(txn.UnsignedTx.Fee))
-			nonce := accSender.GetNonce()
-			accSender.SetNonce(nonce + 1)
-			accSender.SetID(crypto.Sha256ZeroHash)
-			states.SetAccount(pg[0], accSender)
-
-			donationAddress, err := ToScriptHash(config.DonationAddress)
-			if err != nil {
-				return err
-			}
-			donationAccount := states.GetOrNewAccount(donationAddress)
-			amount := donationAccount.GetBalance()
-			donationAccount.SetBalance(amount + Fixed64(genIDPayload.RegistrationFee))
-			states.SetAccount(donationAddress, donationAccount)
+		default:
+			return errors.New("unsupported transaction type")
 
 		}
 	}
@@ -419,12 +324,15 @@ func (cs *ChainStore) persist(b *block.Block) error {
 	}
 
 	//StateRoot
-	root, err := states.CommitTo(true)
+	states, root, err := cs.generateStateRoot(b, true)
 	if err != nil {
 		return err
 	}
 
-	headerRoot, _ := Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
+	headerRoot, err := Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
+	if err != nil {
+		return err
+	}
 	if ok := root.CompareTo(headerRoot); ok != 0 {
 		return fmt.Errorf("state root not equal:%v, %v", root.ToHexString(), headerRoot.ToHexString())
 	}
@@ -554,11 +462,22 @@ func (cs *ChainStore) getCurrentBlockHashFromDB() (Uint256, uint32, error) {
 	return blockHash, currentHeight, err
 }
 
-func (cs *ChainStore) GetCurrentBlockStateRoot() Uint256 {
-	currentState, _ := cs.st.Get(currentStateTrie())
-	hash, _ := Uint256ParseFromBytes(currentState)
+func (cs *ChainStore) GetCurrentBlockStateRoot() (Uint256, error) {
+	if cs.currentBlockHeight == 0 {
+		return EmptyUint256, nil
+	}
 
-	return hash
+	currentState, err := cs.st.Get(currentStateTrie())
+	if err != nil {
+		return EmptyUint256, err
+	}
+
+	hash, err := Uint256ParseFromBytes(currentState)
+	if err != nil {
+		return EmptyUint256, err
+	}
+
+	return hash, nil
 }
 
 func (cs *ChainStore) GetDatabase() IStore {
@@ -632,7 +551,15 @@ func (d *Donation) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (cs *ChainStore) GetDonation() (*Donation, error) {
+func (cs *ChainStore) GetDonation() (Fixed64, error) {
+	donation, err := cs.getDonation()
+	if err != nil {
+		return Fixed64(0), err
+	}
+	return donation.Amount, nil
+}
+
+func (cs *ChainStore) getDonation() (*Donation, error) {
 	currentDonationHeight := cs.currentBlockHeight / uint32(config.RewardAdjustInterval) * uint32(config.RewardAdjustInterval)
 	data, err := cs.st.Get(donationKey(currentDonationHeight))
 	if err != nil {
@@ -654,7 +581,7 @@ func (cs *ChainStore) CalcNextDonation(height uint32) (*Donation, error) {
 		return NewDonation(0, 0), nil
 	}
 
-	lastDonation, err := cs.GetDonation()
+	lastDonation, err := cs.getDonation()
 	if err != nil {
 		return nil, err
 	}
@@ -663,7 +590,10 @@ func (cs *ChainStore) CalcNextDonation(height uint32) (*Donation, error) {
 		return nil, errors.New("invalid height to update donation")
 	}
 
-	donationAddress, _ := ToScriptHash(config.DonationAddress)
+	donationAddress, err := ToScriptHash(config.DonationAddress)
+	if err != nil {
+		return nil, err
+	}
 	account := cs.States.GetOrNewAccount(donationAddress)
 	amount := account.GetBalance()
 	donation := amount * config.DonationAdjustDividendFactor / config.DonationAdjustDivisorFactor

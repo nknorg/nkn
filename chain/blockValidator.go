@@ -142,7 +142,10 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 	}
 
 	//state root check
-	root := GenerateStateRoot(block.Transactions, block.Header.UnsignedHeader.Height, block.Header.UnsignedHeader.RandomBeacon)
+	root, err := DefaultLedger.Store.GenerateStateRoot(block, false)
+	if err != nil {
+		return err
+	}
 
 	headerRoot, _ := Uint256ParseFromBytes(block.Header.UnsignedHeader.StateRoot)
 	if ok := root.CompareTo(headerRoot); ok != 0 {

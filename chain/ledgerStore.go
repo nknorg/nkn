@@ -2,7 +2,6 @@ package chain
 
 import (
 	"github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/chain/db"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/transaction"
 )
@@ -27,8 +26,6 @@ type ILedgerStore interface {
 	GetFirstAvailableTopicBucket(topic string) int
 	GetTopicBucketsCount(topic string) uint32
 	GetID(publicKey []byte) ([]byte, error)
-	GetDatabase() db.IStore
-	GetCurrentBlockStateRoot() Uint256
 	GetStateRootHash() Uint256
 	GetBalance(addr Uint160) Fixed64
 	GetNonce(addr Uint160) uint64
@@ -40,9 +37,10 @@ type ILedgerStore interface {
 	GetHeaderHashByHeight(height uint32) Uint256
 	GetHeaderWithCache(hash Uint256) (*block.Header, error)
 	InitLedgerStoreWithGenesisBlock(genesisblock *block.Block) (uint32, error)
-	GetDonation() (*db.Donation, error)
+	GetDonation() (Fixed64, error)
 	IsTxHashDuplicate(txhash Uint256) bool
 	IsBlockInStore(hash Uint256) bool
 	Rollback(b *block.Block) error
+	GenerateStateRoot(b *block.Block, needBeCommitted bool) (Uint256, error)
 	Close()
 }
