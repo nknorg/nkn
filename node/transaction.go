@@ -113,6 +113,12 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 					continue
 				}
 
+				err = chain.VerifyTransaction(txn)
+				if err != nil {
+					log.Warningf("Verify sigchain txn error: %v", err)
+					continue
+				}
+
 				porPkg, err = por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
 				if err != nil {
 					log.Warningf("Add sigchain from txn error: %v", err)
