@@ -59,7 +59,7 @@ func (c PorPackages) Less(i, j int) bool {
 	return false
 }
 
-func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
+func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage, error) {
 	if txn.UnsignedTx.Payload.Type != pb.CommitType {
 		return nil, errors.New("Transaction type mismatch")
 	}
@@ -71,11 +71,6 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	rs := payload.(*pb.Commit)
 	sigChain := &pb.SigChain{}
 	err = proto.Unmarshal(rs.SigChain, sigChain)
-	if err != nil {
-		return nil, err
-	}
-
-	err = sigChain.Verify()
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +105,14 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if shouldVerify {
+		err = sigChain.Verify()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	pp := &PorPackage{
 		VoteForHeight: height + SigChainMiningHeightOffset + config.MaxRollbackBlocks,
 		BlockHash:     sigChain.BlockHash,
