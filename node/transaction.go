@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -9,23 +10,28 @@ import (
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/chain/pool"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
 const (
-	requestTxnChanLen                = 1000
-	requestTxnSaltSize               = 32
-	requestSigChainTxnWorkerPoolSize = 10
+	requestTxnChanLen                   = 1000
+	requestTxnSaltSize                  = 32
+	requestSigChainTxnWorkerPoolSize    = 10
+	requestSigChainCacheExpiration      = 50 * config.ConsensusTimeout
+	requestSigChainCacheCleanupInterval = config.ConsensusDuration
 )
 
 type requestTxnInfo struct {
 	neighborID string
 	hash       []byte
+	height     uint32
 }
 
 type requestTxnChan chan *requestTxnInfo
@@ -61,7 +67,7 @@ func (rt *requestTxn) getChan(hash []byte) requestTxnChan {
 	return rt.chans[idx]
 }
 
-func (rt *requestTxn) receiveSigChainTxnHash(neighborID string, sigHash []byte) error {
+func (rt *requestTxn) receiveSigChainTxnHash(neighborID string, height uint32, sigHash []byte) error {
 	ch := rt.getChan(sigHash)
 	if ch == nil {
 		return errors.New("request txn chan is nil")
@@ -70,6 +76,7 @@ func (rt *requestTxn) receiveSigChainTxnHash(neighborID string, sigHash []byte) 
 	info := &requestTxnInfo{
 		neighborID: neighborID,
 		hash:       sigHash,
+		height:     height,
 	}
 
 	select {
@@ -88,17 +95,27 @@ func (localNode *LocalNode) initTxnHandlers() {
 }
 
 func (localNode *LocalNode) startRequestingSigChainTxn() {
+	requestedHashCache := common.NewGoCache(requestSigChainCacheExpiration, requestSigChainCacheCleanupInterval)
 	for _, ch := range localNode.requestSigChainTxn.chans {
 		go func(ch requestTxnChan) {
 			var info *requestTxnInfo
 			var neighbor *RemoteNode
 			var txn *transaction.Transaction
 			var porPkg *por.PorPackage
+			var ok bool
 			var err error
 			for {
 				info = <-ch
 
+				if _, ok = requestedHashCache.Get(info.hash); ok {
+					continue
+				}
+
 				if txn, err = por.GetPorServer().GetSigChainTxnBySigHash(info.hash); err == nil && txn != nil {
+					continue
+				}
+
+				if !por.GetPorServer().ShouldAddSigChainToCache(chain.DefaultLedger.Store.GetHeight(), info.height, info.hash) {
 					continue
 				}
 
@@ -112,6 +129,8 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 					log.Warningf("Request sigchain txn error: %v", err)
 					continue
 				}
+
+				requestedHashCache.Set(info.hash, struct{}{})
 
 				err = chain.VerifyTransaction(txn)
 				if err != nil {
@@ -284,7 +303,7 @@ func (localNode *LocalNode) iHaveSignatureChainTransactionMessageHandler(remoteM
 		return nil, false, nil
 	}
 
-	err = localNode.requestSigChainTxn.receiveSigChainTxnHash(remoteMessage.Sender.GetID(), msgBody.SignatureHash)
+	err = localNode.requestSigChainTxn.receiveSigChainTxnHash(remoteMessage.Sender.GetID(), msgBody.Height, msgBody.SignatureHash)
 	if err != nil {
 		return nil, false, err
 	}
@@ -406,6 +425,16 @@ func (localNode *LocalNode) requestSignatureChainTransaction(neighbor *RemoteNod
 	}
 
 	txn := &transaction.Transaction{Transaction: replyMsg.Transaction}
+
+	porPkg, err := por.NewPorPackage(txn, false)
+	if err != nil {
+		return nil, fmt.Errorf("create por package from txn error: %v", err)
+	}
+
+	if !bytes.Equal(porPkg.SigHash, sigHash) {
+		return nil, fmt.Errorf("returned sighash %x is different from expected %x", porPkg.SigHash, sigHash)
+	}
+
 	return txn, nil
 }
 
