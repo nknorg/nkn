@@ -401,6 +401,10 @@ func (localNode *LocalNode) requestSignatureChainTransaction(neighbor *RemoteNod
 		return nil, err
 	}
 
+	if replyMsg.Transaction == nil {
+		return nil, errors.New("get nil sigchain transaction response")
+	}
+
 	txn := &transaction.Transaction{Transaction: replyMsg.Transaction}
 	return txn, nil
 }
