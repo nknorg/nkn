@@ -27,12 +27,6 @@ import (
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
-const (
-	protocolVersion              = 31
-	minCompatibleProtocolVersion = 31
-	maxCompatibleProtocolVersion = 35
-)
-
 type LocalNode struct {
 	*Node
 	account            *vault.Account // local node wallet account
@@ -92,7 +86,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		PublicKey:       publicKey,
 		WebsocketPort:   uint32(config.Parameters.HttpWsPort),
 		JsonRpcPort:     uint32(config.Parameters.HttpJsonPort),
-		ProtocolVersion: uint32(protocolVersion),
+		ProtocolVersion: uint32(config.ProtocolVersion),
 	}
 
 	node, err := NewNode(nn.GetLocalNode().Node.Node, nodeData)
@@ -196,8 +190,8 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 			return err
 		}
 
-		if nodeData.ProtocolVersion < minCompatibleProtocolVersion || nodeData.ProtocolVersion > maxCompatibleProtocolVersion {
-			return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol verison %d", nodeData.ProtocolVersion, protocolVersion)
+		if nodeData.ProtocolVersion < config.MinCompatibleProtocolVersion || nodeData.ProtocolVersion > config.MaxCompatibleProtocolVersion {
+			return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol verison %d", nodeData.ProtocolVersion, config.ProtocolVersion)
 		}
 	}
 
