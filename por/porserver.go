@@ -272,7 +272,7 @@ func (ps *PorServer) ShouldAddSigChainToCache(currentHeight, voteForHeight uint3
 }
 
 func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeight uint32) (*PorPackage, error) {
-	porPkg, err := NewPorPackage(txn)
+	porPkg, err := NewPorPackage(txn, false)
 	if err != nil {
 		return nil, err
 	}
@@ -282,6 +282,11 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 
 	if !ps.ShouldAddSigChainToCache(currentHeight, porPkg.VoteForHeight, porPkg.SigHash) {
 		return nil, nil
+	}
+
+	err = porPkg.SigChain.Verify()
+	if err != nil {
+		return nil, err
 	}
 
 	err = ps.sigChainTxnCache.Add(porPkg.TxHash, txn)
