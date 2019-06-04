@@ -86,7 +86,7 @@ func encryptMessage(message []byte, sharedKey *[sharedKeySize]byte) []byte {
 
 func decryptMessage(message []byte, sharedKey *[sharedKeySize]byte) ([]byte, bool, error) {
 	if len(message) < nonceSize {
-		return nil, false, fmt.Errorf("Message should have at least %d bytes", nonceSize)
+		return nil, false, fmt.Errorf("encrypted message should have at least %d bytes", nonceSize)
 	}
 
 	var nonce [nonceSize]byte
