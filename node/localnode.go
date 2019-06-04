@@ -162,7 +162,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 			if localNode.getNbrByNNetNode(rn) != nil {
 				rn.Stop(err)
 			} else {
-				log.Warning(err)
+				log.Warningf("Decrypt message from %v error: %v", rn, err)
 			}
 			return nil, false
 		}
