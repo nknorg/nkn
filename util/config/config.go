@@ -33,7 +33,7 @@ const (
 	MaxRollbackBlocks            = 1
 	SigChainPropogationTime      = 1
 	EncryptAlg                   = "Ed25519"
-	DBVersion                    = 0x07
+	DBVersion                    = 0x08
 	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
 	InitialIssueAmount           = 700000000 * common.StorageFactor
 	TotalMiningRewards           = 300000000 * common.StorageFactor
@@ -47,11 +47,15 @@ const (
 	MinGenIDRegistrationFee      = 0
 	GenerateIDBlockDelay         = 1
 	RandomBeaconLength           = 32
+	ProtocolVersion              = 36
+	MinCompatibleProtocolVersion = 36
+	MaxCompatibleProtocolVersion = 40
 )
 
-const ShortHashSize = 8
-
-var ShortHashSalt = util.RandomBytes(32)
+var (
+	ShortHashSize uint32 = 8
+	ShortHashSalt []byte = util.RandomBytes(32)
+)
 
 var (
 	Version       string
