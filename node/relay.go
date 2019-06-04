@@ -175,6 +175,11 @@ func (rs *RelayService) broadcastSigChain(sigChain *pb.SigChain) error {
 		return err
 	}
 
+	err = chain.VerifyTransaction(txn)
+	if err != nil {
+		return err
+	}
+
 	porPkg, err := por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
 	if err != nil {
 		return err
