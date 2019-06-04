@@ -18,16 +18,15 @@ func VerifySignableData(signableData SignableData) (bool, error) {
 	}
 
 	programs := signableData.GetPrograms()
-	Length := len(hashes)
-	if Length != len(programs) {
-		return false, errors.New("The number of data hashes is different with number of programs.")
+	if len(hashes) != len(programs) {
+		return false, fmt.Errorf("the number of data hashes %d is different with number of programs %d", len(hashes), len(programs))
 	}
 
 	programs = signableData.GetPrograms()
 	for i := 0; i < len(programs); i++ {
 		temp, _ := ToCodeHash(programs[i].Code)
 		if hashes[i] != temp {
-			return false, errors.New("The data hashes is different with corresponding program code.")
+			return false, fmt.Errorf("The data hashes %v is different with corresponding program code %v", hashes[i], temp)
 		}
 		//execute program on VM
 		var cryptos interfaces.ICrypto
