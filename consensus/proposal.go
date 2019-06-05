@@ -114,9 +114,15 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 
 			proposals[blockHash] = proposal
 			if len(proposals) > 2 {
-				log.Warningf("Received more than 2 different proposals, ignoring the rest to prevent spam")
+				log.Warningf("Received more than 2 different proposals, ignoring the rest")
 				continue
 			}
+
+			err = consensus.iHaveProposal(consensusHeight, blockHash)
+			if err != nil {
+				log.Errorf("Send I have block message error: %v", err)
+			}
+
 			if len(proposals) > 1 {
 				log.Warningf("Received multiple different proposals, rejecting all of them")
 				acceptProposal = false
@@ -125,31 +131,32 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			ctx, cancel := context.WithDeadline(context.Background(), deadline)
 			defer cancel()
 
-			// We put timestamp after signer check to make sure everyone with the same
-			// local ledger will make the same choice on whether to start consensus or
-			// not, regardless of local time.
-			if err = chain.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp); err != nil {
-				log.Warningf("Proposal fails to pass timestamp check: %v", err)
-				acceptProposal = false
-			} else if err = chain.HeaderCheck(proposal.Header); err != nil {
-				log.Warningf("Proposal fails to pass header check: %v", err)
-				acceptProposal = false
-			} else if err = chain.NextBlockProposerCheck(proposal.Header); err != nil {
-				log.Warningf("Proposal fails to pass next block proposal check: %v", err)
-				acceptProposal = false
-			} else if err = chain.TransactionCheck(ctx, proposal); err != nil {
-				log.Warningf("Proposal fails to pass transaction check: %v", err)
-				acceptProposal = false
+			if acceptProposal {
+				// We put timestamp after signer check to make sure everyone with the same
+				// local ledger will make the same choice on whether to start consensus or
+				// not, regardless of local time.
+				if err = chain.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp); err != nil {
+					log.Warningf("Proposal fails to pass timestamp check: %v", err)
+					acceptProposal = false
+				} else if err = chain.HeaderCheck(proposal.Header); err != nil {
+					log.Warningf("Proposal fails to pass header check: %v", err)
+					acceptProposal = false
+				} else if err = chain.NextBlockProposerCheck(proposal.Header); err != nil {
+					log.Warningf("Proposal fails to pass next block proposal check: %v", err)
+					acceptProposal = false
+				}
+			}
+
+			if acceptProposal {
+				if err = chain.TransactionCheck(ctx, proposal); err != nil {
+					log.Warningf("Proposal fails to pass transaction check: %v", err)
+					acceptProposal = false
+				}
 			}
 
 			initialVote := common.EmptyUint256
 			if acceptProposal {
 				initialVote = blockHash
-			} else {
-				err = consensus.iHaveProposal(consensusHeight, blockHash)
-				if err != nil {
-					log.Errorf("Send I have block message error: %v", err)
-				}
 			}
 
 			elc.SetInitialVote(initialVote)
