@@ -1,6 +1,8 @@
 package chain
 
 import (
+	"context"
+
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
@@ -15,7 +17,7 @@ import (
 )
 
 type Mining interface {
-	BuildBlock(height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType, timestamp int64) (*block.Block, error)
+	BuildBlock(ctx context.Context, height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType, timestamp int64) (*block.Block, error)
 }
 
 type BuiltinMining struct {
@@ -30,7 +32,7 @@ func NewBuiltinMining(account *vault.Account, txnCollector *TxnCollector) *Built
 	}
 }
 
-func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType, timestamp int64) (*block.Block, error) {
+func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType, timestamp int64) (*block.Block, error) {
 	var txnList []*transaction.Transaction
 	var txnHashList []common.Uint256
 
@@ -46,7 +48,8 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 
 	if winnerType == pb.TXN_SIGNER {
 		if _, err = DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
-			miningSigChainTxn, err := por.GetPorServer().GetSigChainTxn(winnerHash)
+			var miningSigChainTxn *transaction.Transaction
+			miningSigChainTxn, err = por.GetPorServer().GetSigChainTxn(winnerHash)
 			if err != nil {
 				return nil, err
 			}
@@ -63,6 +66,12 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 	}
 
 	for {
+		select {
+		case <-ctx.Done():
+			break
+		default:
+		}
+
 		txn := txnCollection.Peek()
 		if txn == nil {
 			break
@@ -93,7 +102,7 @@ func (bm *BuiltinMining) BuildBlock(height uint32, chordID []byte, winnerHash co
 
 		txnList = append(txnList, txn)
 		txnHashList = append(txnHashList, txnHash)
-		if err := txnCollection.Update(); err != nil {
+		if err = txnCollection.Update(); err != nil {
 			txnCollection.Pop()
 		}
 	}

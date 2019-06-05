@@ -12,6 +12,7 @@ const (
 	electionDuration            = config.ConsensusDuration / 2
 	minVotingInterval           = 500 * time.Millisecond
 	proposingInterval           = 500 * time.Millisecond
+	proposingTimeout            = config.ConsensusDuration / 10
 	cacheExpiration             = 3600 * time.Second
 	cacheCleanupInterval        = 600 * time.Second
 	proposingStartDelay         = config.ConsensusTimeout + time.Second
