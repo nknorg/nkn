@@ -2,6 +2,7 @@ package chain
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -282,7 +283,7 @@ type Iterator interface {
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func VerifyTransactionWithBlock(iterator Iterator, header *block.Header) error {
+func VerifyTransactionWithBlock(ctx context.Context, iterator Iterator, header *block.Header) error {
 	//initial
 
 	txnlist := make(map[Uint256]struct{}, 0)
@@ -297,6 +298,12 @@ func VerifyTransactionWithBlock(iterator Iterator, header *block.Header) error {
 
 	//start check
 	return iterator.Iterate(func(txn *transaction.Transaction) error {
+		select {
+		case <-ctx.Done():
+			return errors.New("context deadline exceeded")
+		default:
+		}
+
 		//1.check weather have duplicate transaction.
 		if _, exist := txnlist[txn.Hash()]; exist {
 			return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
