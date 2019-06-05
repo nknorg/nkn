@@ -2,6 +2,7 @@ package moca
 
 import (
 	"bytes"
+	"context"
 	"time"
 
 	"github.com/nknorg/nkn/block"
@@ -13,6 +14,8 @@ import (
 // startProposing starts the proposing routing
 func (consensus *Consensus) startProposing() {
 	var lastProposedHeight uint32
+	var ctx context.Context
+	var cancel context.CancelFunc
 	proposingTimer := time.NewTimer(proposingStartDelay)
 	for {
 		select {
@@ -23,11 +26,15 @@ func (consensus *Consensus) startProposing() {
 			if expectedHeight > lastProposedHeight && expectedHeight == currentHeight+1 && consensus.isBlockProposer(currentHeight, timestamp) {
 				log.Infof("I am the block proposer at height %d", expectedHeight)
 
-				block, err := consensus.proposeBlock(expectedHeight, timestamp)
+				ctx, cancel = context.WithTimeout(context.Background(), proposingTimeout)
+
+				block, err := consensus.proposeBlock(ctx, expectedHeight, timestamp)
 				if err != nil {
 					log.Errorf("Propose block %d at %v error: %v", expectedHeight, timestamp, err)
 					break
 				}
+
+				cancel()
 
 				blockHash := block.Hash()
 				log.Infof("Propose block %s at height %d", blockHash.ToHexString(), expectedHeight)
@@ -77,11 +84,11 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 }
 
 // proposeBlock proposes a new block at give height and timestamp
-func (consensus *Consensus) proposeBlock(height uint32, timestamp int64) (*block.Block, error) {
+func (consensus *Consensus) proposeBlock(ctx context.Context, height uint32, timestamp int64) (*block.Block, error) {
 	winnerHash, winnerType, err := chain.GetNextMiningSigChainTxnHash(height)
 	if err != nil {
 		return nil, err
 	}
 
-	return consensus.mining.BuildBlock(height, consensus.localNode.GetChordID(), winnerHash, winnerType, timestamp)
+	return consensus.mining.BuildBlock(ctx, height, consensus.localNode.GetChordID(), winnerHash, winnerType, timestamp)
 }

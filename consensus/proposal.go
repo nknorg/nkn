@@ -144,11 +144,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				} else if err = chain.NextBlockProposerCheck(proposal.Header); err != nil {
 					log.Warningf("Proposal fails to pass next block proposal check: %v", err)
 					acceptProposal = false
-				}
-			}
-
-			if acceptProposal {
-				if err = chain.TransactionCheck(ctx, proposal); err != nil {
+				} else if err = chain.TransactionCheck(ctx, proposal); err != nil {
 					log.Warningf("Proposal fails to pass transaction check: %v", err)
 					acceptProposal = false
 				}
