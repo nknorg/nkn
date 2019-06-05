@@ -17,7 +17,8 @@ import (
 
 type Transaction struct {
 	*pb.Transaction
-	hash *Uint256
+	hash                *Uint256
+	isSignatureVerified bool
 }
 
 func (tx *Transaction) Marshal() (buf []byte, err error) {
@@ -213,11 +214,21 @@ func (tx *Transaction) SetHash(hash Uint256) {
 	tx.hash = &hash
 }
 
-func (tx *Transaction) Type() InventoryType {
-	return TRANSACTION
-}
-func (tx *Transaction) Verify() error {
-	//TODO: Verify()
+func (txn *Transaction) VerifySignature() error {
+	if txn.UnsignedTx.Payload.Type == pb.CoinbaseType {
+		return nil
+	}
+
+	if txn.isSignatureVerified {
+		return nil
+	}
+
+	if err := signature.VerifySignableData(txn); err != nil {
+		return err
+	}
+
+	txn.isSignatureVerified = true
+
 	return nil
 }
 

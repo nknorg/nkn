@@ -402,12 +402,5 @@ func VerifyHeader(header *block.Header) bool {
 		return false
 	}
 
-	//	flag, err := signature.VerifySignableData(header)
-	//	if flag == false || err != nil {
-	//		log.Error("[VerifyHeader] failed, VerifySignableData failed.")
-	//		log.Error(err)
-	//		return false
-	//	}
-
 	return true
 }
