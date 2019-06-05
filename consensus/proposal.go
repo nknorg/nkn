@@ -2,6 +2,7 @@ package moca
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -52,6 +53,7 @@ func (consensus *Consensus) canVerifyHeight(height uint32) bool {
 // proposal for electionStartDelay duration.
 func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) {
 	var timerStartOnce sync.Once
+	var deadline time.Time
 	electionStartTimer := time.NewTimer(math.MaxInt64)
 	electionStartTimer.Stop()
 	timeoutTimer := time.NewTimer(electionStartDelay)
@@ -76,6 +78,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			timerStartOnce.Do(func() {
 				timer.StopTimer(timeoutTimer)
 				electionStartTimer.Reset(electionStartDelay)
+				deadline = time.Now().Add(electionStartDelay)
 			})
 			break
 		}
@@ -104,6 +107,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			timerStartOnce.Do(func() {
 				timer.StopTimer(timeoutTimer)
 				electionStartTimer.Reset(electionStartDelay)
+				deadline = time.Now().Add(electionStartDelay)
 			})
 
 			acceptProposal := true
@@ -118,6 +122,9 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				acceptProposal = false
 			}
 
+			ctx, cancel := context.WithDeadline(context.Background(), deadline)
+			defer cancel()
+
 			// We put timestamp after signer check to make sure everyone with the same
 			// local ledger will make the same choice on whether to start consensus or
 			// not, regardless of local time.
@@ -130,7 +137,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			} else if err = chain.NextBlockProposerCheck(proposal.Header); err != nil {
 				log.Warningf("Proposal fails to pass next block proposal check: %v", err)
 				acceptProposal = false
-			} else if err = chain.TransactionCheck(proposal); err != nil {
+			} else if err = chain.TransactionCheck(ctx, proposal); err != nil {
 				log.Warningf("Proposal fails to pass transaction check: %v", err)
 				acceptProposal = false
 			}
@@ -150,6 +157,12 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			err = consensus.vote(consensusHeight, initialVote)
 			if err != nil {
 				log.Errorf("Send initial vote error: %v", err)
+			}
+
+			select {
+			case <-electionStartTimer.C:
+				return elc, nil
+			default:
 			}
 
 		case <-electionStartTimer.C:
