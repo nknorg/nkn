@@ -16,7 +16,6 @@ import (
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/vm/signature"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -38,7 +37,7 @@ func VerifyTransaction(txn *transaction.Transaction) error {
 		return fmt.Errorf("[VerifyTransaction],%v\n", err)
 	}
 
-	if err := CheckTransactionContracts(txn); err != nil {
+	if err := txn.VerifySignature(); err != nil {
 		return fmt.Errorf("[VerifyTransaction],%v\n", err)
 	}
 
@@ -81,19 +80,6 @@ func CheckTransactionAttribute(txn *transaction.Transaction) error {
 		return errors.New("Attributes too long.")
 	}
 	return nil
-}
-
-func CheckTransactionContracts(txn *transaction.Transaction) error {
-	if txn.UnsignedTx.Payload.Type == pb.CoinbaseType {
-		return nil
-	}
-
-	flag, err := signature.VerifySignableData(txn)
-	if flag && err == nil {
-		return nil
-	} else {
-		return err
-	}
 }
 
 func checkAmountPrecise(amount Fixed64, precision byte) bool {

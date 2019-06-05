@@ -157,10 +157,6 @@ func (b *Block) Verify() error {
 	return nil
 }
 
-func (b *Block) Type() InventoryType {
-	return BLOCK
-}
-
 func GenesisBlockInit() (*Block, error) {
 	if config.Parameters.GenesisBlockProposer == "" {
 		return nil, errors.New("GenesisBlockProposer is required in config.json")
