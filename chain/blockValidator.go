@@ -2,6 +2,7 @@ package chain
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -42,7 +43,7 @@ func (iterable TransactionArray) Iterate(handler func(item *transaction.Transact
 	return nil
 }
 
-func TransactionCheck(block *block.Block) error {
+func TransactionCheck(ctx context.Context, block *block.Block) error {
 	if block.Transactions == nil {
 		return errors.New("empty block")
 	}
@@ -60,14 +61,25 @@ func TransactionCheck(block *block.Block) error {
 		return errors.New("first transaction in block is not Coinbase")
 	}
 
+	txnsHash := make([]Uint256, len(block.Transactions))
+	for i, txn := range block.Transactions {
+		select {
+		case <-ctx.Done():
+			return errors.New("context deadline exceeded")
+		default:
+		}
+
+		txnsHash[i] = txn.Hash()
+	}
+
 	winnerHash, err := Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
 	if err != nil {
 		return err
 	}
 	if winnerHash != EmptyUint256 {
 		found := false
-		for _, txn := range block.Transactions {
-			if txn.Hash() == winnerHash {
+		for _, txnHash := range txnsHash {
+			if txnHash == winnerHash {
 				found = true
 				break
 			}
@@ -79,20 +91,22 @@ func TransactionCheck(block *block.Block) error {
 		}
 	}
 
-	txnsHash := make([]Uint256, len(block.Transactions))
-	for i, txn := range block.Transactions {
-		txnsHash[i] = txn.Hash()
-	}
 	txnsRoot, err := crypto.ComputeRoot(txnsHash)
 	if err != nil {
 		return fmt.Errorf("compute txns root error: %v", err)
 	}
 	if !bytes.Equal(txnsRoot.ToArray(), block.Header.UnsignedHeader.TransactionsRoot) {
-		return fmt.Errorf("computed txn root %x is different from txn root in header %x, fall back to request full txn hash", txnsRoot.ToArray(), block.Header.UnsignedHeader.TransactionsRoot)
+		return fmt.Errorf("computed txn root %x is different from txn root in header %x", txnsRoot.ToArray(), block.Header.UnsignedHeader.TransactionsRoot)
 	}
 
 	nonces := make(map[Uint160]uint64, 0)
 	for i, txn := range block.Transactions {
+		select {
+		case <-ctx.Done():
+			return errors.New("context deadline exceeded")
+		default:
+		}
+
 		if i != 0 && txn.UnsignedTx.Payload.Type == pb.CoinbaseType {
 			return errors.New("Coinbase transaction order is incorrect")
 		}
@@ -120,9 +134,8 @@ func TransactionCheck(block *block.Block) error {
 
 			nonces[addr]++
 		}
-
 	}
-	if err := VerifyTransactionWithBlock(TransactionArray(block.Transactions), block.Header); err != nil {
+	if err := VerifyTransactionWithBlock(ctx, TransactionArray(block.Transactions), block.Header); err != nil {
 		return fmt.Errorf("Transaction block check failed: %v", err)
 	}
 
