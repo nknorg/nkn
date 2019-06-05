@@ -18,10 +18,6 @@ import (
 	"github.com/nknorg/nkn/vault"
 )
 
-const (
-	persistBlockDelay = 300 * time.Millisecond
-)
-
 // Consensus is the Majority vOte Cellular Automata (MOCA) consensus layer
 type Consensus struct {
 	account             *vault.Account
