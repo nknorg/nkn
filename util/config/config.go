@@ -51,6 +51,8 @@ const (
 	ProtocolVersion              = 46
 	MinCompatibleProtocolVersion = 46
 	MaxCompatibleProtocolVersion = 50
+	DefaultTxPoolCap             = 32
+	DefaultTxPoolOrphanCap       = 64
 )
 
 var (
