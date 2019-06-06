@@ -198,27 +198,70 @@ func getConnectionCount(s Serverer, params map[string]interface{}) map[string]in
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
 func getRawMemPool(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(INVALID_PARAMS, "length of params is less than 1")
+	}
+
+	action, ok := params["action"].(string)
+	if !ok {
+		return respPacking(INVALID_PARAMS, "action should be a string")
+	}
+
 	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	txs := []interface{}{}
 	txpool := localNode.GetTxnPool()
-	for _, t := range txpool.GetAllTransactions() {
-		info, err := t.GetInfo()
-		if err != nil {
-			return respPacking(INTERNAL_ERROR, err.Error())
+
+	switch action {
+	case "addresslist":
+		programHashes := txpool.GetAddressList()
+		addresses := []interface{}{}
+		for programHash, count := range programHashes {
+			addr, err := programHash.ToAddress()
+			if err != nil {
+				return respPacking(INTERNAL_ERROR, err.Error())
+			}
+
+			info := map[string]interface{}{
+				"address": addr,
+				"txcount": count,
+			}
+			addresses = append(addresses, info)
 		}
-		var x interface{}
-		err = json.Unmarshal(info, &x)
-		if err != nil {
-			return respPacking(INTERNAL_ERROR, err.Error())
+
+		return respPacking(SUCCESS, addresses)
+	case "txnlist":
+		addr, ok := params["address"].(string)
+		if !ok {
+			return respPacking(INVALID_PARAMS, "address should be a string")
 		}
-		txs = append(txs, x)
+
+		programHash, err := common.ToScriptHash(addr)
+		if err != nil {
+			return respPacking(INVALID_PARAMS, err.Error())
+		}
+
+		txs := []interface{}{}
+		for _, txn := range txpool.GetAllTransactions(programHash) {
+			info, err := txn.GetInfo()
+			if err != nil {
+				return respPacking(INTERNAL_ERROR, err.Error())
+			}
+			var x interface{}
+			err = json.Unmarshal(info, &x)
+			if err != nil {
+				return respPacking(INTERNAL_ERROR, err.Error())
+			}
+			txs = append(txs, x)
+		}
+
+		return respPacking(SUCCESS, txs)
+	default:
+		return respPacking(INVALID_PARAMS, "action should be addresslist or txnlist")
 	}
 
-	return respPacking(SUCCESS, txs)
 }
 
 // getTransaction gets the transaction by hash
