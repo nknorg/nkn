@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/nknorg/nkn/chain"
@@ -264,20 +265,36 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	return nil
 }
 
-func (tp *TxnPool) GetAllTransactions() map[common.Uint256]*transaction.Transaction {
-	txns := make(map[common.Uint256]*transaction.Transaction)
-	tp.TxLists.Range(func(_, v interface{}) bool {
-		if list, ok := v.(*NonceSortedTxs); ok {
-			for hash, txn := range list.txs {
-				txns[hash] = txn
-			}
-			for hash, txn := range list.orphans {
-				txns[hash] = txn
+func (tp *TxnPool) GetAddressList() map[common.Uint160]int {
+	programHashes := make(map[common.Uint160]int)
+	tp.TxLists.Range(func(k, v interface{}) bool {
+		if programHash, ok := k.(common.Uint160); ok {
+			if list, ok := v.(*NonceSortedTxs); ok {
+				count := len(list.txs) + len(list.orphans)
+				programHashes[programHash] = count
 			}
 		}
+
 		return true
 	})
 
+	return programHashes
+}
+
+func (tp *TxnPool) GetAllTransactions(programHash common.Uint160) []*transaction.Transaction {
+	txns := make([]*transaction.Transaction, 0)
+	if v, ok := tp.TxLists.Load(programHash); ok {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			for _, txn := range list.txs {
+				txns = append(txns, txn)
+			}
+			for _, txn := range list.orphans {
+				txns = append(txns, txn)
+			}
+		}
+	}
+
+	sort.Sort(sortTxnsByNonce(txns))
 	return txns
 }
 
