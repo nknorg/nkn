@@ -17,10 +17,6 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-const (
-	DefaultCap = 1024
-)
-
 var (
 	ErrDuplicatedTx          = errors.New("duplicate transaction check faild")
 	ErrDoubleSpend           = errors.New("IsDoubleSpend check faild")
@@ -93,7 +89,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 
 	// 1. check if the sender exsits.
 	if _, ok := tp.TxLists.Load(sender); !ok {
-		tp.TxLists.LoadOrStore(sender, NewNonceSortedTxs(sender, DefaultCap))
+		tp.TxLists.LoadOrStore(sender, NewNonceSortedTxs(sender, config.DefaultTxPoolCap, config.DefaultTxPoolOrphanCap))
 	}
 
 	// 2. check if the txn exsits.
@@ -238,7 +234,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		}
 
 		if list.Full() {
-			return errors.New("full")
+			return errors.New("txpool is full")
 		}
 
 		preNonce, _ := list.GetLatestNonce()
@@ -260,7 +256,9 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		return ErrDuplicatedTx
 	}
 
-	list.AddOrphanTxn(txn)
+	if err := list.AddOrphanTxn(txn); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -390,6 +388,7 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 
 					// clean invalid txs
 					list.CleanOrphans([]*transaction.Transaction{txn})
+					list.ProcessOrphans(tp.processTx)
 				}
 			}
 		}

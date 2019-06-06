@@ -32,22 +32,24 @@ func (s sortTxnsByNonce) Less(i, j int) bool {
 // NonceSortedTxs store the txns that can be add into blockchain.
 // The txns are sorted by nonce in Increasing order.
 type NonceSortedTxs struct {
-	mu      sync.RWMutex
-	account common.Uint160
-	txs     map[common.Uint256]*transaction.Transaction // txns belong to The same address
-	idx     []common.Uint256                            // the sequential tx hash list
-	orphans map[common.Uint256]*transaction.Transaction // orphan txs cannot be added to ledger currently.
-	cap     int                                         // the capacity of the tx hash list
+	mu         sync.RWMutex
+	account    common.Uint160
+	txs        map[common.Uint256]*transaction.Transaction // txns belong to The same address
+	idx        []common.Uint256                            // the sequential tx hash list
+	orphans    map[common.Uint256]*transaction.Transaction // orphan txs cannot be added to ledger currently.
+	cap        int                                         // the capacity of the tx hash list
+	orphansCap int                                         // the capacity of the orphan tx hash list
 }
 
 // NewNonceSortedTxs return a new NonceSortedTxs instance
-func NewNonceSortedTxs(acc common.Uint160, length int) *NonceSortedTxs {
+func NewNonceSortedTxs(acc common.Uint160, cap, orphansCap int) *NonceSortedTxs {
 	return &NonceSortedTxs{
-		account: acc,
-		txs:     make(map[common.Uint256]*transaction.Transaction),
-		idx:     make([]common.Uint256, 0),
-		orphans: make(map[common.Uint256]*transaction.Transaction),
-		cap:     length,
+		account:    acc,
+		txs:        make(map[common.Uint256]*transaction.Transaction),
+		idx:        make([]common.Uint256, 0),
+		orphans:    make(map[common.Uint256]*transaction.Transaction),
+		cap:        cap,
+		orphansCap: orphansCap,
 	}
 }
 
@@ -72,7 +74,11 @@ func (nst *NonceSortedTxs) Empty() bool {
 }
 
 func (nst *NonceSortedTxs) full() bool {
-	return nst.len() == nst.cap
+	return nst.len() >= nst.cap
+}
+
+func (nst *NonceSortedTxs) orphansFull() bool {
+	return len(nst.orphans) >= nst.orphansCap
 }
 
 func (nst *NonceSortedTxs) Full() bool {
@@ -224,6 +230,10 @@ func (nst *NonceSortedTxs) GetOrphanTxn(hash common.Uint256) *transaction.Transa
 }
 
 func (nst *NonceSortedTxs) AddOrphanTxn(txn *transaction.Transaction) error {
+	if nst.orphansFull() {
+		return errors.New("orphan list is full")
+	}
+
 	for hash, orphan := range nst.orphans {
 		if txn.UnsignedTx.Nonce == orphan.UnsignedTx.Nonce {
 			delete(nst.orphans, hash)
