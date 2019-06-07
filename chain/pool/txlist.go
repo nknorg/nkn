@@ -7,7 +7,6 @@ import (
 
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -201,24 +200,6 @@ func (nst *NonceSortedTxs) ExistTx(hash common.Uint256) bool {
 	}
 
 	return false
-}
-
-func (nst *NonceSortedTxs) Totality() common.Fixed64 {
-	nst.mu.RLock()
-	defer nst.mu.RUnlock()
-
-	var amount common.Fixed64
-	for _, tx := range nst.txs {
-		if tx.UnsignedTx.Payload.Type == pb.TransferAssetType {
-			pl, _ := transaction.Unpack(tx.UnsignedTx.Payload)
-			transfer := pl.(*pb.TransferAsset)
-			amount += common.Fixed64(transfer.Amount)
-		}
-
-		amount += common.Fixed64(tx.UnsignedTx.Fee)
-	}
-
-	return amount
 }
 
 func (nst *NonceSortedTxs) GetOrphanTxn(hash common.Uint256) *transaction.Transaction {
