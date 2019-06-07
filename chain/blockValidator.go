@@ -99,6 +99,8 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		return fmt.Errorf("computed txn root %x is different from txn root in header %x", txnsRoot.ToArray(), block.Header.UnsignedHeader.TransactionsRoot)
 	}
 
+	bvs := NewBlockValidationState()
+
 	nonces := make(map[Uint160]uint64, 0)
 	for i, txn := range block.Transactions {
 		select {
@@ -112,6 +114,9 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		}
 		if err := VerifyTransaction(txn); err != nil {
 			return fmt.Errorf("transaction sanity check failed: %v", err)
+		}
+		if err := bvs.VerifyTransactionWithBlock(txn, block.Header); err != nil {
+			return fmt.Errorf("transaction block check failed: %v", err)
 		}
 		if err := VerifyTransactionWithLedger(txn); err != nil {
 			return fmt.Errorf("transaction history check failed: %v", err)
@@ -134,9 +139,6 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 
 			nonces[addr]++
 		}
-	}
-	if err := VerifyTransactionWithBlock(ctx, TransactionArray(block.Transactions), block.Header); err != nil {
-		return fmt.Errorf("Transaction block check failed: %v", err)
 	}
 
 	//state root check
