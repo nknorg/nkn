@@ -86,3 +86,7 @@ func (remoteNode *RemoteNode) SetHeight(height uint32) {
 func (remoteNode *RemoteNode) CloseConn() {
 	remoteNode.nnetNode.Stop(nil)
 }
+
+func (remoteNode *RemoteNode) String() string {
+	return remoteNode.nnetNode.String()
+}
