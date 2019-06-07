@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/nknorg/nkn/chain/pool"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
@@ -212,7 +213,9 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				var reply []byte
 				reply, err = localNode.receiveMessage(senderNode, unsignedMsg)
 				if err != nil {
-					log.Warningf("Error handling msg: %v", err)
+					if err != pool.ErrDuplicatedTx {
+						log.Warningf("Error handling msg: %v", err)
+					}
 					return nil, nil, nil, false
 				}
 

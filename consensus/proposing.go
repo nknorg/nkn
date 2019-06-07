@@ -7,23 +7,25 @@ import (
 
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/timer"
 )
 
 // startProposing starts the proposing routing
 func (consensus *Consensus) startProposing() {
-	var lastProposedHeight uint32
+	var currentHeight, expectedHeight, lastProposedHeight uint32
+	var timestamp int64
 	var ctx context.Context
 	var cancel context.CancelFunc
 	proposingTimer := time.NewTimer(proposingStartDelay)
 	for {
 		select {
 		case <-proposingTimer.C:
-			currentHeight := chain.DefaultLedger.Store.GetHeight()
-			expectedHeight := consensus.GetExpectedHeight()
-			timestamp := time.Now().Unix()
-			if expectedHeight > lastProposedHeight && expectedHeight == currentHeight+1 && consensus.isBlockProposer(currentHeight, timestamp) {
+			currentHeight = chain.DefaultLedger.Store.GetHeight()
+			expectedHeight = consensus.GetExpectedHeight()
+			timestamp = time.Now().Unix()
+			if config.Parameters.Mining && expectedHeight > lastProposedHeight && expectedHeight == currentHeight+1 && consensus.isBlockProposer(currentHeight, timestamp) {
 				log.Infof("I am the block proposer at height %d", expectedHeight)
 
 				ctx, cancel = context.WithTimeout(context.Background(), proposingTimeout)
