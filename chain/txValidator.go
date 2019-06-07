@@ -2,14 +2,13 @@ package chain
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"math"
 	"regexp"
+	"sync"
 
 	"github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/common"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
@@ -163,7 +162,7 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 			return fmt.Errorf("GenerateID error:", err)
 		}
 
-		if common.Fixed64(pld.RegistrationFee) < common.Fixed64(config.MinGenIDRegistrationFee) {
+		if Fixed64(pld.RegistrationFee) < Fixed64(config.MinGenIDRegistrationFee) {
 			return errors.New("fee is too low than MinGenIDRegistrationFee")
 		}
 
@@ -188,6 +187,20 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 		return errors.New("Unpack transactiion's paylaod error")
 	}
 
+	checkNonce := func() error {
+		sender, err := ToCodeHash(txn.Programs[0].Code)
+		if err != nil {
+			return err
+		}
+		nonce := DefaultLedger.Store.GetNonce(sender)
+
+		if txn.UnsignedTx.Nonce < nonce {
+			return errors.New("nonce is too low")
+		}
+
+		return nil
+	}
+
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.CoinbaseType:
 		donation, err := DefaultLedger.Store.GetDonation()
@@ -201,6 +214,10 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 			return errors.New("not sufficient funds in doation account")
 		}
 	case pb.TransferAssetType:
+		if err := checkNonce(); err != nil {
+			return err
+		}
+
 		pld := payload.(*pb.TransferAsset)
 		balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Sender))
 		if int64(balance) < pld.Amount {
@@ -208,6 +225,10 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 		}
 	case pb.CommitType:
 	case pb.RegisterNameType:
+		if err := checkNonce(); err != nil {
+			return err
+		}
+
 		pld := payload.(*pb.RegisterName)
 		name, err := DefaultLedger.Store.GetName(pld.Registrant)
 		if name != nil {
@@ -225,24 +246,32 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 			return err
 		}
 	case pb.DeleteNameType:
+		if err := checkNonce(); err != nil {
+			return err
+		}
+
 		pld := payload.(*pb.DeleteName)
 		name, err := DefaultLedger.Store.GetName(pld.Registrant)
 		if err != leveldb.ErrNotFound {
 			return err
 		}
-		if *name != pld.Name {
-			return fmt.Errorf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant)
-		} else if name == nil {
+		if name == nil {
 			return fmt.Errorf("no name registered for pubKey %+v", pld.Registrant)
+		} else if *name != pld.Name {
+			return fmt.Errorf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant)
 		}
 	case pb.SubscribeType:
+		if err := checkNonce(); err != nil {
+			return err
+		}
+
 		pld := payload.(*pb.Subscribe)
 		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, pld.Topic, pld.Bucket)
 		if err != nil {
 			return err
 		}
 		if subscribed {
-			return fmt.Errorf("subscriber %s already subscribed to %s", SubscriberString(pld), pld.Topic)
+			return fmt.Errorf("subscriber %s already subscribed to %s", address.MakeAddressString(pld.Subscriber, pld.Identifier), pld.Topic)
 		}
 
 		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
@@ -250,6 +279,10 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 			return fmt.Errorf("subscribtion count to %s can't be more than %d", pld.Topic, subscriptionCount)
 		}
 	case pb.GenerateIDType:
+		if err := checkNonce(); err != nil {
+			return err
+		}
+
 		pld := payload.(*pb.GenerateID)
 		id, err := DefaultLedger.Store.GetID(pld.PublicKey)
 		if err != nil {
@@ -264,47 +297,64 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 	return nil
 }
 
-type Iterator interface {
-	Iterate(handler func(item *transaction.Transaction) error) error
+type subscription struct {
+	topic      string
+	bucket     uint32
+	subscriber string
+	identifier string
+}
+
+type BlockValidationState struct {
+	sync.Mutex
+	txnlist           map[Uint256]struct{}
+	totalAmount       map[Uint160]Fixed64
+	registeredNames   map[string]struct{}
+	nameRegistrants   map[string]struct{}
+	generateIDs       map[string]struct{}
+	subscriptions     map[subscription]struct{}
+	subscriptionCount map[string]int
+}
+
+func NewBlockValidationState() *BlockValidationState {
+	return &BlockValidationState{
+		txnlist:           make(map[Uint256]struct{}, 0),
+		totalAmount:       make(map[Uint160]Fixed64, 0),
+		registeredNames:   make(map[string]struct{}, 0),
+		nameRegistrants:   make(map[string]struct{}, 0),
+		generateIDs:       make(map[string]struct{}, 0),
+		subscriptions:     make(map[subscription]struct{}, 0),
+		subscriptionCount: make(map[string]int, 0),
+	}
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func VerifyTransactionWithBlock(ctx context.Context, iterator Iterator, header *block.Header) error {
-	//initial
+func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, header *block.Header) error {
+	bvs.Lock()
+	defer bvs.Unlock()
+	//1.check weather have duplicate transaction.
+	if _, exist := bvs.txnlist[txn.Hash()]; exist {
+		return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
+	} else {
+		bvs.txnlist[txn.Hash()] = struct{}{}
+	}
 
-	txnlist := make(map[Uint256]struct{}, 0)
-	registeredNames := make(map[string]struct{}, 0)
-	nameRegistrants := make(map[string]struct{}, 0)
-	generateIDs := make(map[string]struct{}, 0)
+	//3.check issue amount
+	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
+	if err != nil {
+		return errors.New("[VerifyTransactionWithBlock], payload unpack error.")
+	}
 
-	type subscription struct{ topic, subscriber string }
-	subscriptions := make(map[subscription]struct{}, 0)
+	pg, err := txn.GetProgramHashes()
+	if err != nil {
+		return err
+	}
+	sender := pg[0]
+	var amount Fixed64
+	fee := Fixed64(txn.UnsignedTx.Fee)
 
-	subscriptionCount := make(map[string]int, 0)
-
-	//start check
-	return iterator.Iterate(func(txn *transaction.Transaction) error {
-		select {
-		case <-ctx.Done():
-			return errors.New("context deadline exceeded")
-		default:
-		}
-
-		//1.check weather have duplicate transaction.
-		if _, exist := txnlist[txn.Hash()]; exist {
-			return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
-		} else {
-			txnlist[txn.Hash()] = struct{}{}
-		}
-
-		//3.check issue amount
-		payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
-		if err != nil {
-			return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
-		}
-
-		switch txn.UnsignedTx.Payload.Type {
-		case pb.CoinbaseType:
+	switch txn.UnsignedTx.Payload.Type {
+	case pb.CoinbaseType:
+		if header != nil {
 			coinbase := payload.(*pb.Coinbase)
 			donation, err := DefaultLedger.Store.GetDonation()
 			if err != nil {
@@ -313,58 +363,150 @@ func VerifyTransactionWithBlock(ctx context.Context, iterator Iterator, header *
 			if Fixed64(coinbase.Amount) != GetRewardByHeight(header.UnsignedHeader.Height)+donation.Amount {
 				return errors.New("Mining reward incorrectly.")
 			}
+		}
+	case pb.TransferAssetType:
+		transfer := payload.(*pb.TransferAsset)
+		amount = Fixed64(transfer.Amount)
+	case pb.RegisterNameType:
+		namePayload := payload.(*pb.RegisterName)
+
+		name := namePayload.Name
+		if _, ok := bvs.registeredNames[name]; ok {
+			return errors.New("[VerifyTransactionWithBlock], duplicate name exist in block.")
+		}
+		bvs.registeredNames[name] = struct{}{}
+
+		registrant := BytesToHexString(namePayload.Registrant)
+		if _, ok := bvs.nameRegistrants[registrant]; ok {
+			return errors.New("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
+		}
+		bvs.nameRegistrants[registrant] = struct{}{}
+	case pb.DeleteNameType:
+		namePayload := payload.(*pb.DeleteName)
+
+		name := namePayload.Name
+		if _, ok := bvs.registeredNames[name]; ok {
+			return errors.New("[VerifyTransactionWithBlock], duplicate name exist in block.")
+		}
+		bvs.registeredNames[name] = struct{}{}
+
+		registrant := BytesToHexString(namePayload.Registrant)
+		if _, ok := bvs.nameRegistrants[registrant]; ok {
+			return errors.New("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
+		}
+		bvs.nameRegistrants[registrant] = struct{}{}
+	case pb.SubscribeType:
+		subscribePayload := payload.(*pb.Subscribe)
+		topic := subscribePayload.Topic
+		bucket := subscribePayload.Bucket
+		key := subscription{topic, bucket, BytesToHexString(subscribePayload.Subscriber), subscribePayload.Identifier}
+		if _, ok := bvs.subscriptions[key]; ok {
+			return errors.New("[VerifyTransactionWithBlock], duplicate subscription exist in block")
+		}
+		bvs.subscriptions[key] = struct{}{}
+
+		if _, ok := bvs.subscriptionCount[topic]; !ok {
+			bvs.subscriptionCount[topic] = 0
+		}
+		ledgerSubscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
+		if ledgerSubscriptionCount+bvs.subscriptionCount[topic] >= transaction.SubscriptionsLimit {
+			return errors.New("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
+		}
+		bvs.subscriptionCount[topic]++
+	case pb.GenerateIDType:
+		generateIdPayload := payload.(*pb.GenerateID)
+		publicKey := BytesToHexString(generateIdPayload.PublicKey)
+		if _, ok := bvs.generateIDs[publicKey]; ok {
+			return errors.New("[VerifyTransactionWithBlock], duplicate GenerateID txns in block.")
+		}
+		bvs.generateIDs[publicKey] = struct{}{}
+		amount = Fixed64(generateIdPayload.RegistrationFee)
+	}
+
+	if amount > 0 || fee > 0 {
+		balance := DefaultLedger.Store.GetBalance(sender)
+		if _, ok := bvs.totalAmount[sender]; !ok {
+			bvs.totalAmount[sender] = 0
+		}
+		if balance < bvs.totalAmount[sender]+amount+fee {
+			return errors.New("[VerifyTransactionWithBlock], not sufficient funds.")
+		}
+		bvs.totalAmount[sender] += amount + fee
+	}
+
+	return nil
+}
+
+func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.Transaction) error {
+	bvs.Lock()
+	defer bvs.Unlock()
+	for _, txn := range txns {
+		delete(bvs.txnlist, txn.Hash())
+
+		payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
+		if err != nil {
+			return errors.New("[CleanSubmittedTransactions], payload unpack error.")
+		}
+
+		pg, err := txn.GetProgramHashes()
+		if err != nil {
+			return err
+		}
+		sender := pg[0]
+		var amount Fixed64
+		fee := Fixed64(txn.UnsignedTx.Fee)
+
+		switch txn.UnsignedTx.Payload.Type {
+		case pb.TransferAssetType:
+			transfer := payload.(*pb.TransferAsset)
+			amount = Fixed64(transfer.Amount)
 		case pb.RegisterNameType:
 			namePayload := payload.(*pb.RegisterName)
 
 			name := namePayload.Name
-			if _, ok := registeredNames[name]; ok {
-				return errors.New("[VerifyTransactionWithBlock], duplicate name exist in block.")
-			}
-			registeredNames[name] = struct{}{}
+			delete(bvs.registeredNames, name)
 
 			registrant := BytesToHexString(namePayload.Registrant)
-			if _, ok := nameRegistrants[registrant]; ok {
-				return errors.New("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
-			}
-			nameRegistrants[registrant] = struct{}{}
+			delete(bvs.nameRegistrants, registrant)
 		case pb.DeleteNameType:
 			namePayload := payload.(*pb.DeleteName)
 
+			name := namePayload.Name
+			delete(bvs.registeredNames, name)
+
 			registrant := BytesToHexString(namePayload.Registrant)
-			if _, ok := nameRegistrants[registrant]; ok {
-				return errors.New("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
-			}
-			nameRegistrants[registrant] = struct{}{}
+			delete(bvs.nameRegistrants, registrant)
 		case pb.SubscribeType:
 			subscribePayload := payload.(*pb.Subscribe)
 			topic := subscribePayload.Topic
-			key := subscription{topic, SubscriberString(subscribePayload)}
-			if _, ok := subscriptions[key]; ok {
-				return errors.New("[VerifyTransactionWithBlock], duplicate subscription exist in block")
-			}
-			subscriptions[key] = struct{}{}
+			bucket := subscribePayload.Bucket
+			key := subscription{topic, bucket, BytesToHexString(subscribePayload.Subscriber), subscribePayload.Identifier}
+			delete(bvs.subscriptions, key)
 
-			if _, ok := subscriptionCount[topic]; !ok {
-				subscriptionCount[topic] = DefaultLedger.Store.GetSubscribersCount(topic, subscribePayload.Bucket)
+			bvs.subscriptionCount[topic]--
+
+			if bvs.subscriptionCount[topic] == 0 {
+				delete(bvs.subscriptionCount, topic)
 			}
-			if subscriptionCount[topic] >= transaction.SubscriptionsLimit {
-				return errors.New("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
-			}
-			subscriptionCount[topic]++
 		case pb.GenerateIDType:
 			generateIdPayload := payload.(*pb.GenerateID)
+			amount = Fixed64(generateIdPayload.RegistrationFee)
 			publicKey := BytesToHexString(generateIdPayload.PublicKey)
-			if _, ok := generateIDs[publicKey]; ok {
-				return errors.New("[VerifyTransactionWithBlock], duplicate GenerateID txns in block.")
-			}
-			generateIDs[publicKey] = struct{}{}
+			delete(bvs.generateIDs, publicKey)
 		}
 
-		return nil
-	})
+		if amount > 0 || fee > 0 {
+			if _, ok := bvs.totalAmount[sender]; ok && bvs.totalAmount[sender] >= amount+fee {
+				bvs.totalAmount[sender] -= amount + fee
 
-}
+				if bvs.totalAmount[sender] == 0 {
+					delete(bvs.totalAmount, sender)
+				}
+			} else {
+				return errors.New("[CleanSubmittedTransactions], inconsistent block validation state.")
+			}
+		}
+	}
 
-func SubscriberString(s *pb.Subscribe) string {
-	return address.MakeAddressString(s.Subscriber, s.Identifier)
+	return nil
 }
