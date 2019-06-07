@@ -284,7 +284,7 @@ func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMess
 	}
 
 	if !shouldPropagate {
-		return nil, false, errors.New("Do Not Propagate")
+		return nil, false, pool.ErrDuplicatedTx
 	}
 
 	return nil, false, nil

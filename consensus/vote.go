@@ -1,6 +1,8 @@
 package moca
 
 import (
+	"fmt"
+
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
@@ -24,7 +26,7 @@ func (consensus *Consensus) receiveVote(neighborID string, height uint32, blockH
 
 	err = elc.ReceiveVote(neighborID, blockHash)
 	if err != nil {
-		return err
+		return fmt.Errorf("reveive vote at %d for %s error: %v", height, blockHash.ToHexString(), err)
 	}
 
 	return nil
