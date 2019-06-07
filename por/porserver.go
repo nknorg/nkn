@@ -365,7 +365,7 @@ func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, signature, send
 	}
 
 	if _, ok = ps.finalizedBlockCache.Get(scei.blockHash); !ok {
-		return nil, nil, nil, fmt.Errorf("block %x is not finalized yet")
+		return nil, nil, nil, fmt.Errorf("block %x is not finalized yet", scei.blockHash)
 	}
 
 	vrf, proof, err := ps.GetOrComputeVrf(scei.blockHash)

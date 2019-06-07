@@ -223,7 +223,7 @@ func (rs *RelayService) signRelayMessage(relayMessage *pb.Relay, nextHop, prevHo
 		}
 	}
 
-	mining := rs.localNode.GetSyncState() == pb.PersistFinished
+	mining := config.Parameters.Mining && rs.localNode.GetSyncState() == pb.PersistFinished
 
 	var prevNodeID []byte
 	if prevHop != nil {
