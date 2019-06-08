@@ -19,19 +19,22 @@ import (
 func (consensus *Consensus) startGettingNeighborConsensusState() {
 	consensus.localNode.SetMinVerifiableHeight(chain.DefaultLedger.Store.GetHeight() + por.SigChainMiningHeightOffset)
 
-	time.Sleep(proposingStartDelay / 2)
-	if consensus.getNeighborsMajorityConsensusHeight() == 0 {
-		log.Infof("Cannot get neighbors' majority consensus height, assuming network bootstrap")
-		consensus.localNode.SetMinVerifiableHeight(0)
-	}
-
-	getNeighborConsensusStateTimer := time.NewTimer(getConsensusStateInterval)
+	initialized := false
+	getNeighborConsensusStateTimer := time.NewTimer(proposingStartDelay / 2)
 	for {
 		select {
 		case <-getNeighborConsensusStateTimer.C:
 			majorityConsensusHeight := consensus.getNeighborsMajorityConsensusHeight()
 			localConsensusHeight := consensus.GetExpectedHeight()
 			localLedgerHeight := chain.DefaultLedger.Store.GetHeight()
+
+			if !initialized {
+				if majorityConsensusHeight == 0 {
+					log.Infof("Cannot get neighbors' majority consensus height, assuming network bootstrap")
+					consensus.localNode.SetMinVerifiableHeight(0)
+				}
+				initialized = true
+			}
 
 			if localConsensusHeight > majorityConsensusHeight {
 				break
