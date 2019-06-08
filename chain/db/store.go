@@ -289,6 +289,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.CoinbaseType:
+		case pb.CommitType:
 		case pb.TransferAssetType:
 		case pb.RegisterNameType:
 			registerNamePayload := pl.(*pb.RegisterName)
@@ -311,7 +312,6 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		case pb.GenerateIDType:
 		default:
 			return errors.New("unsupported transaction type")
-
 		}
 	}
 

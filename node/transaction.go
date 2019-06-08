@@ -17,6 +17,7 @@ import (
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
+	nnetnode "github.com/nknorg/nnet/node"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
@@ -26,6 +27,9 @@ const (
 	requestSigChainTxnWorkerPoolSize    = 10
 	requestSigChainCacheExpiration      = 50 * config.ConsensusTimeout
 	requestSigChainCacheCleanupInterval = config.ConsensusDuration
+	receiveTxnMsgSaltSize               = 32
+	receiveTxnMsgChanLen                = 10000
+	receiveTxnMsgWorkerPoolSize         = 1
 )
 
 type requestTxnInfo struct {
@@ -38,6 +42,19 @@ type requestTxnChan chan *requestTxnInfo
 
 type requestTxn struct {
 	chans []requestTxnChan
+	salt  []byte
+}
+
+type receiveTxnMsgInfo struct {
+	txnMsg          *pb.Transactions
+	remoteMessage   *nnetnode.RemoteMessage
+	nextRemoteNodes []*nnetnode.RemoteNode
+}
+
+type receiveTxnMsgChan chan *receiveTxnMsgInfo
+
+type receiveTxnMsg struct {
+	chans []receiveTxnMsgChan
 	salt  []byte
 }
 
@@ -88,10 +105,58 @@ func (rt *requestTxn) receiveSigChainTxnHash(neighborID string, height uint32, s
 	return nil
 }
 
+func newReceiveTxnMsg(size int, salt []byte) *receiveTxnMsg {
+	if salt == nil {
+		salt = util.RandomBytes(receiveTxnMsgSaltSize)
+	}
+	chans := make([]receiveTxnMsgChan, size)
+	for i := range chans {
+		chans[i] = make(receiveTxnMsgChan, receiveTxnMsgChanLen)
+	}
+	return &receiveTxnMsg{
+		chans: chans,
+		salt:  salt,
+	}
+}
+
+func (rt *receiveTxnMsg) getChan(hash []byte) receiveTxnMsgChan {
+	if len(rt.chans) == 0 {
+		return nil
+	}
+
+	h := fnv.New32()
+	h.Write(hash)
+	h.Write(rt.salt)
+	idx := h.Sum32() % uint32(len(rt.chans))
+	return rt.chans[idx]
+}
+
+func (rt *receiveTxnMsg) receiveTxnMsg(txnMsg *pb.Transactions, remoteMessage *nnetnode.RemoteMessage, nextRemoteNodes []*nnetnode.RemoteNode) error {
+	ch := rt.getChan(remoteMessage.Msg.MessageId)
+	if ch == nil {
+		return errors.New("receive txn chan is nil")
+	}
+
+	info := &receiveTxnMsgInfo{
+		txnMsg:          txnMsg,
+		remoteMessage:   remoteMessage,
+		nextRemoteNodes: nextRemoteNodes,
+	}
+
+	select {
+	case ch <- info:
+	default:
+		return errors.New("receive txn chan full")
+	}
+
+	return nil
+}
+
 func (localNode *LocalNode) initTxnHandlers() {
-	localNode.AddMessageHandler(pb.TRANSACTIONS, localNode.transactionsMessageHandler)
 	localNode.AddMessageHandler(pb.I_HAVE_SIGNATURE_CHAIN_TRANSACTION, localNode.iHaveSignatureChainTransactionMessageHandler)
 	localNode.AddMessageHandler(pb.REQUEST_SIGNATURE_CHAIN_TRANSACTION, localNode.requestSignatureChainTransactionMessageHandler)
+	localNode.startRequestingSigChainTxn()
+	localNode.startReceivingTxnMsg()
 }
 
 func (localNode *LocalNode) startRequestingSigChainTxn() {
@@ -151,6 +216,38 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 				if err != nil {
 					log.Warningf("Send I have sigchain txn error: %v", err)
 					continue
+				}
+			}
+		}(ch)
+	}
+}
+
+func (localNode *LocalNode) startReceivingTxnMsg() {
+	for _, ch := range localNode.receiveTxnMsg.chans {
+		go func(ch receiveTxnMsgChan) {
+			var info *receiveTxnMsgInfo
+			var remoteNode *nnetnode.RemoteNode
+			var shouldPropagate bool
+			var err error
+			for {
+				info = <-ch
+
+				shouldPropagate, err = localNode.handleTransactionsMessage(info.txnMsg)
+				if err != nil {
+					log.Warningf("Handle transactions msg error: %v", err)
+					continue
+				}
+
+				if !shouldPropagate {
+					continue
+				}
+
+				for _, remoteNode = range info.nextRemoteNodes {
+					_, err = remoteNode.SendMessage(info.remoteMessage.Msg, false, 0)
+					if err != nil {
+						log.Warningf("Sending txn msg to neighbor %v error: %v", remoteNode, err)
+						continue
+					}
 				}
 			}
 		}(ch)
@@ -243,51 +340,32 @@ func NewRequestSignatureChainTransactionReply(transaction *transaction.Transacti
 	return msg, nil
 }
 
-// transactionsMessageHandler handles a TRANSACTIONS message
-func (localNode *LocalNode) transactionsMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
-	msgBody := &pb.Transactions{}
-	err := proto.Unmarshal(remoteMessage.Message, msgBody)
-	if err != nil {
-		return nil, false, err
+// handleTransactionsMessage will stop localNode from relaying msg if ANY of the
+// txn in msg is in cache, ledger, or invalid. This is to prevent attacker from
+// mixing valid and invalid txn in the same message.
+func (localNode *LocalNode) handleTransactionsMessage(txnMsg *pb.Transactions) (bool, error) {
+	if len(txnMsg.Transactions) == 0 {
+		return false, fmt.Errorf("no transactions in message body")
 	}
 
-	if len(msgBody.Transactions) == 0 {
-		return nil, false, fmt.Errorf("no transactions in message body")
-	}
-
-	hasValidTxn := false
-	shouldPropagate := false
-	for _, msgTxn := range msgBody.Transactions {
+	for _, msgTxn := range txnMsg.Transactions {
 		txn := &transaction.Transaction{Transaction: msgTxn}
 
 		if localNode.ExistHash(txn.Hash()) {
-			hasValidTxn = true
-			continue
+			return false, nil
 		}
 
-		errCode := localNode.AppendTxnPool(txn)
-		if errCode == pool.ErrDuplicatedTx {
-			hasValidTxn = true
-			continue
+		err := localNode.AppendTxnPool(txn)
+		if err == pool.ErrDuplicatedTx {
+			return false, nil
 		}
-		if errCode != nil {
-			log.Warningf("Verify transaction failed with %v when append to txn pool", errCode)
-			continue
+		if err != nil {
+			log.Warningf("Verify transaction failed when append to txn pool: %v", err)
+			return false, err
 		}
-
-		hasValidTxn = true
-		shouldPropagate = true
 	}
 
-	if !hasValidTxn {
-		return nil, false, fmt.Errorf("all transactions in msg are invalid")
-	}
-
-	if !shouldPropagate {
-		return nil, false, pool.ErrDuplicatedTx
-	}
-
-	return nil, false, nil
+	return true, nil
 }
 
 // iHaveSignatureChainTransactionMessageHandler handles a

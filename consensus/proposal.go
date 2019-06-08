@@ -78,7 +78,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			timerStartOnce.Do(func() {
 				timer.StopTimer(timeoutTimer)
 				electionStartTimer.Reset(electionStartDelay)
-				deadline = time.Now().Add(electionStartDelay)
+				deadline = time.Now().Add(proposalVerificationTimeout)
 			})
 			break
 		}
@@ -107,7 +107,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			timerStartOnce.Do(func() {
 				timer.StopTimer(timeoutTimer)
 				electionStartTimer.Reset(electionStartDelay)
-				deadline = time.Now().Add(electionStartDelay)
+				deadline = time.Now().Add(proposalVerificationTimeout)
 			})
 
 			acceptProposal := true
