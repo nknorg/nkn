@@ -10,6 +10,7 @@ import (
 const (
 	electionStartDelay          = config.ConsensusDuration / 2
 	electionDuration            = config.ConsensusDuration / 2
+	proposalVerificationTimeout = electionStartDelay * 4 / 5
 	minVotingInterval           = 500 * time.Millisecond
 	proposingInterval           = 500 * time.Millisecond
 	proposingTimeout            = config.ConsensusDuration / 10
