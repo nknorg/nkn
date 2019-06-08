@@ -53,10 +53,6 @@ func (tc *TxnCollector) GetTransaction(hash Uint256) *transaction.Transaction {
 	return tc.TxnSource.GetTransaction(hash)
 }
 
-func (tc *TxnCollector) Append(txn *transaction.Transaction) error {
-	return tc.TxnSource.AppendTxnPool(txn)
-}
-
 func (tc *TxnCollector) Cleanup(txns []*transaction.Transaction) error {
 	return tc.TxnSource.CleanSubmittedTransactions(txns)
 }
