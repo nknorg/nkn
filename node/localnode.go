@@ -34,9 +34,10 @@ type LocalNode struct {
 	relayer            *RelayService  // relay service
 	quit               chan bool      // block syncing channel
 	requestSigChainTxn *requestTxn
+	receiveTxnMsg      *receiveTxnMsg
 	nbrNodes           // neighbor nodes
 	*pool.TxnPool      // transaction pool of local node
-	*hashCache         // entity hash cache
+	*hashCache         // txn hash cache
 	*messageHandlerStore
 
 	sync.RWMutex
@@ -101,6 +102,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		quit:                make(chan bool, 1),
 		hashCache:           newHashCache(),
 		requestSigChainTxn:  newRequestTxn(requestSigChainTxnWorkerPoolSize, nil),
+		receiveTxnMsg:       newReceiveTxnMsg(receiveTxnMsgWorkerPoolSize, nil),
 		messageHandlerStore: newMessageHandlerStore(),
 		nnet:                nn,
 		startTime:           time.Now(),
@@ -178,7 +180,6 @@ func (localNode *LocalNode) Start() error {
 	localNode.startRelayer()
 	localNode.initSyncing()
 	localNode.initTxnHandlers()
-	localNode.startRequestingSigChainTxn()
 	return nil
 }
 

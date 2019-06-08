@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/chain/pool"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/log"
@@ -207,15 +206,29 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 			localNode.IncrementRelayMessageCount()
 		}
 
+		if unsignedMsg.MessageType == pb.TRANSACTIONS && nnetLocalNode != nil {
+			txnMsg := &pb.Transactions{}
+			err = proto.Unmarshal(unsignedMsg.Message, txnMsg)
+			if err != nil {
+				log.Errorf("Unmarshal transactions message error: %v", err)
+				return nil, nil, nil, false
+			}
+
+			err = localNode.receiveTxnMsg.receiveTxnMsg(txnMsg, remoteMessage, remoteNodes)
+			if err != nil {
+				log.Warningf("Error receiving txn msg: %v", err)
+			}
+
+			return nil, nil, nil, false
+		}
+
 		// msg send to local node
 		if nnetLocalNode != nil {
 			if len(remoteMessage.Msg.ReplyToId) == 0 { // non-reply msg
 				var reply []byte
 				reply, err = localNode.receiveMessage(senderNode, unsignedMsg)
 				if err != nil {
-					if err != pool.ErrDuplicatedTx {
-						log.Warningf("Error handling msg: %v", err)
-					}
+					log.Warningf("Error handling msg: %v", err)
 					return nil, nil, nil, false
 				}
 
