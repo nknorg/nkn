@@ -177,13 +177,31 @@ func (election *Election) GetNeighborIDsByVote(vote interface{}) []interface{} {
 }
 
 // NeighborVoteCount counts the number of neighbor votes received.
-func (election *Election) NeighborVoteCount() int {
-	count := 0
+func (election *Election) NeighborVoteCount() uint32 {
+	count := uint32(0)
 	election.neighborVotes.Range(func(key, value interface{}) bool {
 		count++
 		return true
 	})
 	return count
+}
+
+// PrefillNeighborVotes prefills vote for neighborIDs that don't have a vote yet
+func (election *Election) PrefillNeighborVotes(neighborIDs []interface{}, vote interface{}) error {
+	if election.IsStopped() {
+		return errors.New("Election has already stopped")
+	}
+
+	for _, neighborID := range neighborIDs {
+		election.neighborVotes.LoadOrStore(neighborID, vote)
+	}
+
+	select {
+	case election.voteReceived <- struct{}{}:
+	default:
+	}
+
+	return nil
 }
 
 // updateVote updates self vote and write vote into txVoteChan if self vote

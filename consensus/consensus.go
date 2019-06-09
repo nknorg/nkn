@@ -23,11 +23,13 @@ type Consensus struct {
 	account             *vault.Account
 	localNode           *node.LocalNode
 	startOnce           sync.Once
-	elections           common.Cache
 	proposals           common.Cache
 	requestProposalChan chan *requestProposalInfo
 	mining              chain.Mining
 	txnCollector        *chain.TxnCollector
+
+	electionsLock sync.RWMutex
+	elections     common.Cache
 
 	proposalLock   sync.RWMutex
 	proposalChan   chan *block.Block
@@ -87,6 +89,13 @@ func (consensus *Consensus) startConsensus() {
 			continue
 		}
 
+		err = consensus.prefillNeighborVotes(elc, consensusHeight)
+		if err != nil {
+			log.Warningf("Prefill neighbor votes error: %v", err)
+			time.Sleep(50 * time.Millisecond)
+			continue
+		}
+
 		consensus.setExpectedHeight(consensusHeight + 1)
 
 		electedBlockHash, err := consensus.startElection(consensusHeight, elc)
@@ -113,6 +122,23 @@ func (consensus *Consensus) startConsensus() {
 
 		consensus.setAcceptedHeight(consensusHeight)
 	}
+}
+
+func (consensus *Consensus) prefillNeighborVotes(elc *election.Election, height uint32) error {
+	neighbors := consensus.localNode.GetNeighbors(nil)
+	neighborIDs := make([]interface{}, 0, len(neighbors))
+	for _, rn := range neighbors {
+		if rn.GetSyncState() != pb.PersistFinished {
+			continue
+		}
+		// This is for nodes who just finished syncing but cannot verify block yet
+		if rn.GetHeight() < height && height < rn.GetMinVerifiableHeight() {
+			continue
+		}
+		neighborIDs = append(neighborIDs, rn.GetID())
+	}
+
+	return elc.PrefillNeighborVotes(neighborIDs, common.EmptyUint256)
 }
 
 // startElection starts an election, sends out self vote, and returns election
@@ -150,6 +176,9 @@ func (consensus *Consensus) startElection(height uint32, elc *election.Election)
 // loadOrCreateElection loads or create an election with the given key. Returns
 // the election, if the election is loaded, and error.
 func (consensus *Consensus) loadOrCreateElection(height uint32) (*election.Election, bool, error) {
+	consensus.electionsLock.Lock()
+	defer consensus.electionsLock.Unlock()
+
 	key := heightToKey(height)
 	if value, ok := consensus.elections.Get(key); ok && value != nil {
 		if elc, ok := value.(*election.Election); ok && elc != nil {
@@ -157,26 +186,11 @@ func (consensus *Consensus) loadOrCreateElection(height uint32) (*election.Elect
 		}
 	}
 
-	consensusNeighbors := consensus.localNode.GetNeighbors(func(rn *node.RemoteNode) bool {
-		if rn.GetSyncState() != pb.PersistFinished {
-			return false
-		}
-		// This is for nodes who just finished syncing but cannot verify block yet
-		if rn.GetHeight() < height && height < rn.GetMinVerifiableHeight() {
-			return false
-		}
-		return true
-	})
-	totalWeight := len(consensusNeighbors)
-	if consensus.localNode.GetSyncState() == pb.PersistFinished {
-		totalWeight++
-	}
-
 	config := &election.Config{
 		Duration:                    electionDuration,
 		MinVotingInterval:           minVotingInterval,
 		ChangeVoteMinRelativeWeight: changeVoteMinRelativeWeight,
-		ConsensusMinAbsoluteWeight:  uint32(consensusMinRelativeWeight*float32(totalWeight) + 1),
+		ConsensusMinRelativeWeight:  consensusMinRelativeWeight,
 	}
 
 	elc, err := election.NewElection(config)
@@ -186,11 +200,6 @@ func (consensus *Consensus) loadOrCreateElection(height uint32) (*election.Elect
 
 	err = consensus.elections.Set(key, elc)
 	if err != nil {
-		if value, ok := consensus.elections.Get(key); ok && value != nil {
-			if elc, ok = value.(*election.Election); ok && elc != nil {
-				return elc, true, nil
-			}
-		}
 		return nil, false, err
 	}
 
@@ -212,7 +221,9 @@ func (consensus *Consensus) setExpectedHeight(expectedHeight uint32) {
 	if consensus.expectedHeight != expectedHeight {
 		if expectedHeight < consensus.expectedHeight {
 			for height := expectedHeight; height <= consensus.expectedHeight; height++ {
+				consensus.electionsLock.Lock()
 				consensus.elections.Set(heightToKey(height), nil)
+				consensus.electionsLock.Unlock()
 			}
 		}
 
@@ -338,7 +349,9 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 
 	height := startHeight
 	for height <= consensus.GetAcceptedHeight() {
+		consensus.electionsLock.RLock()
 		value, ok := consensus.elections.Get(heightToKey(height))
+		consensus.electionsLock.RUnlock()
 		if !ok || value == nil {
 			return fmt.Errorf("Election at height %d not found in local cache", height)
 		}
