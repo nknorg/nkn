@@ -34,7 +34,7 @@ const (
 	MaxRollbackBlocks            = 1
 	SigChainPropogationTime      = 1
 	EncryptAlg                   = "Ed25519"
-	DBVersion                    = 0x0b
+	DBVersion                    = 0x0c
 	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
 	InitialIssueAmount           = 700000000 * common.StorageFactor
 	TotalMiningRewards           = 300000000 * common.StorageFactor
@@ -48,9 +48,9 @@ const (
 	MinGenIDRegistrationFee      = 0
 	GenerateIDBlockDelay         = 1
 	RandomBeaconLength           = 32
-	ProtocolVersion              = 51
-	MinCompatibleProtocolVersion = 51
-	MaxCompatibleProtocolVersion = 56
+	ProtocolVersion              = 57
+	MinCompatibleProtocolVersion = 57
+	MaxCompatibleProtocolVersion = 60
 	DefaultTxPoolCap             = 32
 	DefaultTxPoolOrphanCap       = 64
 )
