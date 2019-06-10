@@ -19,6 +19,7 @@ const (
 type Config struct {
 	Duration                    time.Duration
 	MinVotingInterval           time.Duration
+	MaxVotingInterval           time.Duration
 	ChangeVoteMinRelativeWeight float32
 	ChangeVoteMinAbsoluteWeight uint32
 	ConsensusMinRelativeWeight  float32
@@ -43,6 +44,10 @@ type Election struct {
 func NewElection(config *Config) (*Election, error) {
 	if config.Duration == 0 {
 		return nil, errors.New("Election duration cannot be empty")
+	}
+
+	if config.MinVotingInterval > config.MaxVotingInterval {
+		return nil, fmt.Errorf("Min voting interval %v is greater than max voting interval %v", config.MinVotingInterval, config.MaxVotingInterval)
 	}
 
 	if config.GetWeight == nil {
@@ -207,10 +212,15 @@ func (election *Election) PrefillNeighborVotes(neighborIDs []interface{}, vote i
 // updateVote updates self vote and write vote into txVoteChan if self vote
 // changes with throttle.
 func (election *Election) updateVote() {
+	votingTimer := time.NewTimer(election.MaxVotingInterval)
+
 	time.Sleep(election.MinVotingInterval)
 
 	for {
-		<-election.voteReceived
+		select {
+		case <-election.voteReceived:
+		case <-votingTimer.C:
+		}
 
 		if election.IsStopped() {
 			close(election.txVoteChan)
@@ -230,6 +240,13 @@ func (election *Election) updateVote() {
 
 				election.txVoteChan <- leadingVote
 
+				if !votingTimer.Stop() {
+					select {
+					case <-votingTimer.C:
+					default:
+					}
+				}
+				votingTimer = time.NewTimer(election.MaxVotingInterval)
 				time.Sleep(election.MinVotingInterval)
 			}
 		}
