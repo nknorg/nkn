@@ -206,7 +206,7 @@ func (tp *TxnPool) GetAddressList() map[common.Uint160]int {
 	return programHashes
 }
 
-func (tp *TxnPool) GetAllTransactions(programHash common.Uint160) []*transaction.Transaction {
+func (tp *TxnPool) GetAllTransactionsBySender(programHash common.Uint160) []*transaction.Transaction {
 	txns := make([]*transaction.Transaction, 0)
 	if v, ok := tp.TxLists.Load(programHash); ok {
 		if list, ok := v.(*NonceSortedTxs); ok {
@@ -287,6 +287,25 @@ func (tp *TxnPool) getTxsFromPool() []*transaction.Transaction {
 	return txs
 }
 
+func (tp *TxnPool) GetAllTransactions() []*transaction.Transaction {
+	txs := make([]*transaction.Transaction, 0)
+
+	tp.TxLists.Range(func(k, v interface{}) bool {
+		if list, ok := v.(*NonceSortedTxs); ok {
+			if _, ok := k.(common.Uint160); ok {
+				txs = append(txs, list.GetAllTransactions()...)
+			}
+		}
+		return true
+	})
+	tp.NanoPayTxs.Range(func(k, v interface{}) bool {
+		txs = append(txs, v.(*transaction.Transaction))
+		return true
+	})
+
+	return txs
+}
+
 func (tp *TxnPool) GetAllTransactionLists() map[common.Uint160][]*transaction.Transaction {
 	txs := make(map[common.Uint160][]*transaction.Transaction)
 
@@ -350,7 +369,13 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 		tp.TxShortHashMap.Delete(shortHashToKey(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)))
 	}
 
-	return tp.blockValidationState.CleanSubmittedTransactions(txns)
+	if err := tp.blockValidationState.CleanSubmittedTransactions(txns); err != nil {
+		if err := tp.blockValidationState.RefreshBlockValidationState(tp.GetAllTransactions()); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (tp *TxnPool) GetTxnByCount(num int) (map[common.Uint256]*transaction.Transaction, error) {
