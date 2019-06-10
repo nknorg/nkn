@@ -511,7 +511,6 @@ func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interf
 	txpool := localNode.GetTxnPool()
 	txPoolNonce, err := txpool.GetNonceByTxnPool(pg)
 	if err != nil {
-		log.Warning(err)
 		txPoolNonce = persistNonce
 	}
 
