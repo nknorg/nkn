@@ -164,6 +164,9 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
+	case pb.NanoPayType:
+		sender := payload.(*pb.NanoPay).Sender
+		hashes = append(hashes, BytesToUint160(sender))
 	default:
 		return nil, errors.New("unsupport transaction type")
 	}
