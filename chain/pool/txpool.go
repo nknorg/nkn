@@ -336,6 +336,8 @@ func (tp *TxnPool) GetAllTransactionLists() map[common.Uint160][]*transaction.Tr
 }
 
 func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) error {
+	txnsInPool := make([]*transaction.Transaction, 0)
+
 	// clean submitted txs
 	for _, txn := range txns {
 		switch txn.UnsignedTx.Payload.Type {
@@ -365,11 +367,14 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 			}
 		}
 
+		if _, ok := tp.TxMap.Load(txn.Hash()); ok {
+			txnsInPool = append(txnsInPool, txn)
+		}
 		tp.TxMap.Delete(txn.Hash())
 		tp.TxShortHashMap.Delete(shortHashToKey(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)))
 	}
 
-	if err := tp.blockValidationState.CleanSubmittedTransactions(txns); err != nil {
+	if err := tp.blockValidationState.CleanSubmittedTransactions(txnsInPool); err != nil {
 		if err := tp.blockValidationState.RefreshBlockValidationState(tp.GetAllTransactions()); err != nil {
 			return err
 		}
