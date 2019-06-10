@@ -244,7 +244,7 @@ func getRawMemPool(s Serverer, params map[string]interface{}) map[string]interfa
 		}
 
 		txs := []interface{}{}
-		for _, txn := range txpool.GetAllTransactions(programHash) {
+		for _, txn := range txpool.GetAllTransactionsBySender(programHash) {
 			info, err := txn.GetInfo()
 			if err != nil {
 				return respPacking(INTERNAL_ERROR, err.Error())
