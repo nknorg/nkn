@@ -44,7 +44,7 @@ type Consensus struct {
 
 // NewConsensus creates a MOCA consensus
 func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus, error) {
-	txnCollector := chain.NewTxnCollector(localNode.GetTxnPool(), config.MaxNumTxnPerBlock)
+	txnCollector := chain.NewTxnCollector(localNode.GetTxnPool(), int(config.Parameters.NumTxnPerBlock))
 	consensus := &Consensus{
 		account:             account,
 		localNode:           localNode,
