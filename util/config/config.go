@@ -34,7 +34,7 @@ const (
 	MaxRollbackBlocks            = 1
 	SigChainPropogationTime      = 1
 	EncryptAlg                   = "Ed25519"
-	DBVersion                    = 0x0c
+	DBVersion                    = 0x0d
 	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
 	InitialIssueAmount           = 700000000 * common.StorageFactor
 	TotalMiningRewards           = 300000000 * common.StorageFactor
@@ -48,9 +48,9 @@ const (
 	MinGenIDRegistrationFee      = 0
 	GenerateIDBlockDelay         = 1
 	RandomBeaconLength           = 32
-	ProtocolVersion              = 57
-	MinCompatibleProtocolVersion = 57
-	MaxCompatibleProtocolVersion = 60
+	ProtocolVersion              = 61
+	MinCompatibleProtocolVersion = 61
+	MaxCompatibleProtocolVersion = 65
 	DefaultTxPoolCap             = 32
 	DefaultTxPoolOrphanCap       = 64
 )
@@ -85,6 +85,7 @@ var (
 		RPCWriteTimeout:           10,
 		KeepAliveTimeout:          15,
 		NATPortMappingTimeout:     365 * 86400,
+		NumTxnPerBlock:            MaxNumTxnPerBlock,
 	}
 )
 
@@ -117,6 +118,7 @@ type Configuration struct {
 	SyncBatchWindowSize       uint32        `json:"SyncBatchWindowSize"`
 	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
 	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
+	NumTxnPerBlock            uint32        `json:"NumTxnPerBlock"`
 	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`        // in seconds
 	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`       // in seconds
 	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`      // in seconds
@@ -258,6 +260,10 @@ func (config *Configuration) CleanPortMapping() error {
 func check(config *Configuration) error {
 	if len(config.SeedList) == 0 {
 		return errors.New("seed list in config file should not be blank")
+	}
+
+	if config.NumTxnPerBlock > MaxNumTxnPerBlock {
+		return fmt.Errorf("NumTxnPerBlock cannot be greater than %d", MaxNumTxnPerBlock)
 	}
 
 	return nil
