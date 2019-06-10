@@ -369,16 +369,20 @@ type BlockValidationState struct {
 }
 
 func NewBlockValidationState() *BlockValidationState {
-	return &BlockValidationState{
-		txnlist:           make(map[Uint256]struct{}, 0),
-		totalAmount:       make(map[Uint160]Fixed64, 0),
-		registeredNames:   make(map[string]struct{}, 0),
-		nameRegistrants:   make(map[string]struct{}, 0),
-		generateIDs:       make(map[string]struct{}, 0),
-		subscriptions:     make(map[subscription]struct{}, 0),
-		subscriptionCount: make(map[string]int, 0),
-		nanoPays:          make(map[nanoPay]struct{}, 0),
-	}
+	bvs := &BlockValidationState{}
+	bvs.initBlockValidationState()
+	return bvs
+}
+
+func (bvs *BlockValidationState) initBlockValidationState() {
+	bvs.txnlist = make(map[Uint256]struct{}, 0)
+	bvs.totalAmount = make(map[Uint160]Fixed64, 0)
+	bvs.registeredNames = make(map[string]struct{}, 0)
+	bvs.nameRegistrants = make(map[string]struct{}, 0)
+	bvs.generateIDs = make(map[string]struct{}, 0)
+	bvs.subscriptions = make(map[subscription]struct{}, 0)
+	bvs.subscriptionCount = make(map[string]int, 0)
+	bvs.nanoPays = make(map[nanoPay]struct{}, 0)
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
@@ -613,6 +617,19 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			} else {
 				return errors.New("[CleanSubmittedTransactions], inconsistent block validation state.")
 			}
+		}
+	}
+
+	return nil
+}
+
+func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction.Transaction) error {
+	bvs.Lock()
+	defer bvs.Unlock()
+	bvs.initBlockValidationState()
+	for _, tx := range txns {
+		if err := bvs.VerifyTransactionWithBlock(tx, nil); err != nil {
+			return err
 		}
 	}
 
