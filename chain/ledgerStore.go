@@ -26,9 +26,9 @@ type ILedgerStore interface {
 	GetFirstAvailableTopicBucket(topic string) int
 	GetTopicBucketsCount(topic string) uint32
 	GetID(publicKey []byte) ([]byte, error)
-	GetStateRootHash() Uint256
 	GetBalance(addr Uint160) Fixed64
 	GetNonce(addr Uint160) uint64
+	GetNanoPay(addr Uint160, recipient Uint160, nonce uint64) (Fixed64, uint32, error)
 	GetCurrentBlockHash() Uint256
 	GetCurrentHeaderHash() Uint256
 	GetHeaderHeight() uint32

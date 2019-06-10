@@ -94,7 +94,7 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.CoinbaseType:
 		pld := payload.(*pb.Coinbase)
-		if len(pld.Sender) != 20 && len(pld.Recipient) != 20 {
+		if len(pld.Sender) != UINT160SIZE && len(pld.Recipient) != UINT160SIZE {
 			return errors.New("length of programhash error")
 		}
 
@@ -108,7 +108,7 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		}
 	case pb.TransferAssetType:
 		pld := payload.(*pb.TransferAsset)
-		if len(pld.Sender) != 20 && len(pld.Recipient) != 20 {
+		if len(pld.Sender) != UINT160SIZE && len(pld.Recipient) != UINT160SIZE {
 			return errors.New("length of programhash error")
 		}
 
@@ -165,7 +165,29 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		if Fixed64(pld.RegistrationFee) < Fixed64(config.MinGenIDRegistrationFee) {
 			return errors.New("fee is too low than MinGenIDRegistrationFee")
 		}
+	case pb.NanoPayType:
+		pld := payload.(*pb.NanoPay)
 
+		if len(pld.Sender) != UINT160SIZE && len(pld.Recipient) != UINT160SIZE {
+			return errors.New("length of programhash error")
+		}
+
+		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+		if bytes.Equal(pld.Sender, donationProgramhash[:]) {
+			return errors.New("illegal transaction sender")
+		}
+
+		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
+			return errors.New("The precision of amount is incorrect.")
+		}
+
+		if pld.Amount < 0 {
+			return errors.New("transfer amount error.")
+		}
+
+		if pld.Duration < transaction.MinNanoPayDuration {
+			return errors.New(fmt.Sprintf("duration can't be lower than %d", transaction.MinNanoPayDuration))
+		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type")
 	}
@@ -173,7 +195,7 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 }
 
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
-func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
+func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Header) error {
 	if DefaultLedger.Store.IsDoubleSpend(txn) {
 		return errors.New("[VerifyTransactionWithLedger] IsDoubleSpend check faild")
 	}
@@ -291,6 +313,30 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 		if len(id) != 0 {
 			return errors.New("ID has be registered")
 		}
+	case pb.NanoPayType:
+		pld := payload.(*pb.NanoPay)
+
+		channelBalance, expiresAt, err := DefaultLedger.Store.GetNanoPay(
+			BytesToUint160(pld.Sender),
+			BytesToUint160(pld.Recipient),
+			pld.Nonce,
+		)
+		if err != nil {
+			return err
+		}
+
+		if header != nil && expiresAt > 0 && expiresAt < header.UnsignedHeader.Height {
+			return errors.New("nano pay expired")
+		}
+
+		balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Sender))
+		balanceToClaim := pld.Amount - int64(channelBalance)
+		if balanceToClaim <= 0 {
+			return errors.New("invalid amount")
+		}
+		if int64(balance) < balanceToClaim {
+			return errors.New("not sufficient funds")
+		}
 	default:
 		return errors.New("[txValidator],invalidate transaction payload type.")
 	}
@@ -304,6 +350,12 @@ type subscription struct {
 	identifier string
 }
 
+type nanoPay struct {
+	sender    string
+	recipient string
+	nonce     uint64
+}
+
 type BlockValidationState struct {
 	sync.Mutex
 	txnlist           map[Uint256]struct{}
@@ -313,6 +365,7 @@ type BlockValidationState struct {
 	generateIDs       map[string]struct{}
 	subscriptions     map[subscription]struct{}
 	subscriptionCount map[string]int
+	nanoPays          map[nanoPay]struct{}
 }
 
 func NewBlockValidationState() *BlockValidationState {
@@ -324,6 +377,7 @@ func NewBlockValidationState() *BlockValidationState {
 		generateIDs:       make(map[string]struct{}, 0),
 		subscriptions:     make(map[subscription]struct{}, 0),
 		subscriptionCount: make(map[string]int, 0),
+		nanoPays:          make(map[nanoPay]struct{}, 0),
 	}
 }
 
@@ -443,6 +497,31 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 				bvs.generateIDs[publicKey] = struct{}{}
 			}
 		}()
+	case pb.NanoPayType:
+		npPayload := payload.(*pb.NanoPay)
+		if npPayload.Height < header.UnsignedHeader.Height {
+			return errors.New("[VerifyTransactionWithBlock], nano pay expired")
+		}
+		key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Nonce}
+		if _, ok := bvs.nanoPays[key]; ok {
+			return errors.New("[VerifyTransactionWithBlock], duplicate payment channel exist in block")
+		}
+
+		channelBalance, _, err := DefaultLedger.Store.GetNanoPay(
+			BytesToUint160(npPayload.Sender),
+			BytesToUint160(npPayload.Recipient),
+			npPayload.Nonce,
+		)
+		if err != nil {
+			return err
+		}
+		amount = Fixed64(npPayload.Amount) - channelBalance
+
+		defer func() {
+			if e == nil {
+				bvs.nanoPays[key] = struct{}{}
+			}
+		}()
 	}
 
 	if amount > 0 || fee > 0 {
@@ -518,6 +597,10 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			amount = Fixed64(generateIdPayload.RegistrationFee)
 			publicKey := BytesToHexString(generateIdPayload.PublicKey)
 			delete(bvs.generateIDs, publicKey)
+		case pb.NanoPayType:
+			npPayload := payload.(*pb.NanoPay)
+			key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Nonce}
+			delete(bvs.nanoPays, key)
 		}
 
 		if amount > 0 || fee > 0 {

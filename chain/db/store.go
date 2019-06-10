@@ -310,6 +310,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 				return err
 			}
 		case pb.GenerateIDType:
+		case pb.NanoPayType:
 		default:
 			return errors.New("unsupported transaction type")
 		}
@@ -484,10 +485,6 @@ func (cs *ChainStore) GetDatabase() IStore {
 	return cs.st
 }
 
-func (cs *ChainStore) GetStateRootHash() Uint256 {
-	return cs.States.IntermediateRoot(false)
-}
-
 func (cs *ChainStore) GetBalance(addr Uint160) Fixed64 {
 	return cs.States.GetBalance(addr)
 }
@@ -499,15 +496,19 @@ func (cs *ChainStore) GetNonce(addr Uint160) uint64 {
 func (cs *ChainStore) GetID(publicKey []byte) ([]byte, error) {
 	pubKey, err := crypto.NewPubKeyFromBytes(publicKey)
 	if err != nil {
-		return nil, fmt.Errorf("GetID error:", err)
+		return nil, fmt.Errorf("GetID error: %v", err)
 	}
 
 	programHash, err := contract.CreateRedeemHash(pubKey)
 	if err != nil {
-		return nil, fmt.Errorf("GetID error:", err)
+		return nil, fmt.Errorf("GetID error: %v", err)
 	}
 
 	return cs.States.GetID(programHash), nil
+}
+
+func (cs *ChainStore) GetNanoPay(addr Uint160, recipient Uint160, nonce uint64) (Fixed64, uint32, error) {
+	return cs.States.GetNanoPay(addr, recipient, nonce)
 }
 
 type Donation struct {
