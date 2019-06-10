@@ -118,11 +118,15 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		if err := bvs.VerifyTransactionWithBlock(txn, block.Header); err != nil {
 			return fmt.Errorf("transaction block check failed: %v", err)
 		}
-		if err := VerifyTransactionWithLedger(txn); err != nil {
+		if err := VerifyTransactionWithLedger(txn, block.Header); err != nil {
 			return fmt.Errorf("transaction history check failed: %v", err)
 		}
 
-		if txn.UnsignedTx.Payload.Type != pb.CoinbaseType && txn.UnsignedTx.Payload.Type != pb.CommitType {
+		switch txn.UnsignedTx.Payload.Type {
+		case pb.CoinbaseType:
+		case pb.CommitType:
+		case pb.NanoPayType:
+		default:
 			addr, err := ToCodeHash(txn.Programs[0].Code)
 			if err != nil {
 				return err

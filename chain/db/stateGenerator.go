@@ -73,6 +73,26 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		}
 		states.UpdateBalance(donationAddress, Fixed64(genID.RegistrationFee), Addition)
 
+	case pb.NanoPayType:
+		nanoPay := pl.(*pb.NanoPay)
+		pg, err := txn.GetProgramHashes()
+		if err != nil {
+			return err
+		}
+
+		addrRecipient := BytesToUint160(nanoPay.Recipient)
+		nanoPayBalance, _, err := states.GetNanoPay(pg[0], addrRecipient, nanoPay.Nonce)
+		if err != nil {
+			return err
+		}
+		claimAmount := Fixed64(nanoPay.Amount) - nanoPayBalance
+		if err := states.UpdateBalance(pg[0], claimAmount, Subtraction); err != nil {
+			return err
+		}
+		if err := states.UpdateBalance(addrRecipient, claimAmount, Addition); err != nil {
+			return err
+		}
+		states.SetNanoPay(pg[0], addrRecipient, nanoPay.Nonce, Fixed64(nanoPay.Amount), nanoPay.Height+nanoPay.Duration)
 	}
 
 	return nil
@@ -136,16 +156,18 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, needBeCommitted bool) (*
 		for _, txn := range b.Transactions {
 			cs.spendTransaction(states, txn, totalFee, false)
 		}
+
+		states.CleanupNanoPay(b.Header.UnsignedHeader.Height)
 	}
 
 	var root Uint256
 	if needBeCommitted {
-		root, err = states.CommitTo(true)
+		root, err = states.Finalize(true)
 		if err != nil {
 			return nil, EmptyUint256, err
 		}
 	} else {
-		root = states.IntermediateRoot(true)
+		root = states.IntermediateRoot()
 	}
 
 	return states, root, nil
