@@ -132,3 +132,23 @@ func MakeGenerateIDTransaction(wallet vault.Wallet, regFee Fixed64, nonce uint64
 
 	return txn, nil
 }
+
+func MakeNanoPayTransaction(wallet vault.Wallet, recipient Uint160, nonce uint64, amount Fixed64, height, duration uint32) (*transaction.Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// construct transaction
+	txn, err := transaction.NewNanoPayTransaction(account.ProgramHash, recipient, nonce, amount, height, duration)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	ctx := contract.NewContractContext(txn)
+	wallet.Sign(ctx)
+	txn.SetPrograms(ctx.GetPrograms())
+
+	return txn, nil
+}
