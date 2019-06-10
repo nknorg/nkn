@@ -30,6 +30,20 @@ func NewTxPool() *TxnPool {
 }
 
 func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
+	sender, err := txn.GetProgramHashes()
+	if err != nil {
+		return err
+	}
+
+	list, err := tp.getOrNewList(sender[0])
+	if err != nil {
+		return err
+	}
+
+	if _, err := list.Get(txn.UnsignedTx.Nonce); err != nil && list.Full() {
+		return errors.New("txpool full, too many transaction in txpool")
+	}
+
 	// 1. process all Orphens
 	tp.TxLists.Range(func(_, v interface{}) bool {
 		if list, ok := v.(*NonceSortedTxs); ok {
@@ -76,29 +90,42 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 	return nil
 }
 
-func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
-	hash := txn.Hash()
-	sender, _ := common.ToCodeHash(txn.Programs[0].Code)
-
-	// 1. check if the sender exsits.
-	if _, ok := tp.TxLists.Load(sender); !ok {
-		tp.TxLists.LoadOrStore(sender, NewNonceSortedTxs(sender, config.DefaultTxPoolCap, config.DefaultTxPoolOrphanCap))
+func (tp *TxnPool) getOrNewList(owner common.Uint160) (*NonceSortedTxs, error) {
+	// check if the owner exsits.
+	if _, ok := tp.TxLists.Load(owner); !ok {
+		tp.TxLists.LoadOrStore(owner, NewNonceSortedTxs(owner, config.Parameters.TxPoolCap, config.Parameters.TxPoolOrphanCap))
 	}
 
 	// 2. check if the txn exsits.
-	v, ok := tp.TxLists.Load(sender)
+	v, ok := tp.TxLists.Load(owner)
 	if !ok {
-		return errors.New("get txn list error")
+		return nil, errors.New("get txn list error")
 	}
 	list, ok := v.(*NonceSortedTxs)
 	if !ok {
-		return errors.New("convert to NonceSortedTxs error")
+		return nil, errors.New("convert to NonceSortedTxs error")
 	}
+
+	return list, nil
+}
+
+func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
+	hash := txn.Hash()
+	sender, err := txn.GetProgramHashes()
+	if err != nil {
+		return err
+	}
+
+	list, err := tp.getOrNewList(sender[0])
+	if err != nil {
+		return err
+	}
+
 	if list.ExistTx(hash) {
 		return ErrDuplicatedTx
 	}
 
-	_, err := transaction.Unpack(txn.UnsignedTx.Payload)
+	_, err = transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
 		return err
 	}
@@ -124,7 +151,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		}
 	} else {
 		// compare with DB
-		expectNonce := chain.DefaultLedger.Store.GetNonce(sender)
+		expectNonce := chain.DefaultLedger.Store.GetNonce(sender[0])
 		if txn.UnsignedTx.Nonce == expectNonce {
 			isOrphan = false
 		}

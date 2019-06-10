@@ -85,6 +85,8 @@ var (
 		KeepAliveTimeout:          15,
 		NATPortMappingTimeout:     365 * 86400,
 		NumTxnPerBlock:            MaxNumTxnPerBlock,
+		TxPoolCap:                 DefaultTxPoolCap,
+		TxPoolOrphanCap:           DefaultTxPoolOrphanCap,
 	}
 )
 
@@ -118,6 +120,8 @@ type Configuration struct {
 	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
 	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
 	NumTxnPerBlock            uint32        `json:"NumTxnPerBlock"`
+	TxPoolCap                 int           `json:"TxPoolCap"`
+	TxPoolOrphanCap           int           `json:"TxPoolOrphanCap"`
 	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`        // in seconds
 	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`       // in seconds
 	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`      // in seconds
