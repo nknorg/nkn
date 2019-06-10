@@ -89,7 +89,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 		}
 
 		txCount++
-		if txCount > config.MaxNumTxnPerBlock {
+		if txCount > int(config.Parameters.NumTxnPerBlock) {
 			break
 		}
 
