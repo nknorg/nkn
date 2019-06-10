@@ -159,7 +159,7 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		pld := payload.(*pb.GenerateID)
 		_, err := crypto.NewPubKeyFromBytes(pld.PublicKey)
 		if err != nil {
-			return fmt.Errorf("GenerateID error:", err)
+			return fmt.Errorf("GenerateID error: %v", err)
 		}
 
 		if Fixed64(pld.RegistrationFee) < Fixed64(config.MinGenIDRegistrationFee) {
@@ -328,14 +328,18 @@ func NewBlockValidationState() *BlockValidationState {
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, header *block.Header) error {
+func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, header *block.Header) (e error) {
 	bvs.Lock()
 	defer bvs.Unlock()
 	//1.check weather have duplicate transaction.
 	if _, exist := bvs.txnlist[txn.Hash()]; exist {
 		return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
 	} else {
-		bvs.txnlist[txn.Hash()] = struct{}{}
+		defer func() {
+			if e == nil {
+				bvs.txnlist[txn.Hash()] = struct{}{}
+			}
+		}()
 	}
 
 	//3.check issue amount
@@ -374,13 +378,18 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		if _, ok := bvs.registeredNames[name]; ok {
 			return errors.New("[VerifyTransactionWithBlock], duplicate name exist in block.")
 		}
-		bvs.registeredNames[name] = struct{}{}
 
 		registrant := BytesToHexString(namePayload.Registrant)
 		if _, ok := bvs.nameRegistrants[registrant]; ok {
 			return errors.New("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
 		}
-		bvs.nameRegistrants[registrant] = struct{}{}
+
+		defer func() {
+			if e == nil {
+				bvs.registeredNames[name] = struct{}{}
+				bvs.nameRegistrants[registrant] = struct{}{}
+			}
+		}()
 	case pb.DeleteNameType:
 		namePayload := payload.(*pb.DeleteName)
 
@@ -388,13 +397,18 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		if _, ok := bvs.registeredNames[name]; ok {
 			return errors.New("[VerifyTransactionWithBlock], duplicate name exist in block.")
 		}
-		bvs.registeredNames[name] = struct{}{}
 
 		registrant := BytesToHexString(namePayload.Registrant)
 		if _, ok := bvs.nameRegistrants[registrant]; ok {
 			return errors.New("[VerifyTransactionWithBlock], duplicate registrant exist in block.")
 		}
-		bvs.nameRegistrants[registrant] = struct{}{}
+
+		defer func() {
+			if e == nil {
+				bvs.registeredNames[name] = struct{}{}
+				bvs.nameRegistrants[registrant] = struct{}{}
+			}
+		}()
 	case pb.SubscribeType:
 		subscribePayload := payload.(*pb.Subscribe)
 		topic := subscribePayload.Topic
@@ -403,35 +417,46 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		if _, ok := bvs.subscriptions[key]; ok {
 			return errors.New("[VerifyTransactionWithBlock], duplicate subscription exist in block")
 		}
-		bvs.subscriptions[key] = struct{}{}
 
-		if _, ok := bvs.subscriptionCount[topic]; !ok {
-			bvs.subscriptionCount[topic] = 0
-		}
+		subscriptionCount := bvs.subscriptionCount[topic]
 		ledgerSubscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
-		if ledgerSubscriptionCount+bvs.subscriptionCount[topic] >= transaction.SubscriptionsLimit {
+		if ledgerSubscriptionCount+subscriptionCount >= transaction.SubscriptionsLimit {
 			return errors.New("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
 		}
-		bvs.subscriptionCount[topic]++
+
+		defer func() {
+			if e == nil {
+				bvs.subscriptions[key] = struct{}{}
+				bvs.subscriptionCount[topic] = subscriptionCount + 1
+			}
+		}()
 	case pb.GenerateIDType:
 		generateIdPayload := payload.(*pb.GenerateID)
+		amount = Fixed64(generateIdPayload.RegistrationFee)
 		publicKey := BytesToHexString(generateIdPayload.PublicKey)
 		if _, ok := bvs.generateIDs[publicKey]; ok {
 			return errors.New("[VerifyTransactionWithBlock], duplicate GenerateID txns in block.")
 		}
-		bvs.generateIDs[publicKey] = struct{}{}
-		amount = Fixed64(generateIdPayload.RegistrationFee)
+
+		defer func() {
+			if e == nil {
+				bvs.generateIDs[publicKey] = struct{}{}
+			}
+		}()
 	}
 
 	if amount > 0 || fee > 0 {
 		balance := DefaultLedger.Store.GetBalance(sender)
-		if _, ok := bvs.totalAmount[sender]; !ok {
-			bvs.totalAmount[sender] = 0
-		}
-		if balance < bvs.totalAmount[sender]+amount+fee {
+		totalAmount := bvs.totalAmount[sender]
+		if balance < totalAmount+amount+fee {
 			return errors.New("[VerifyTransactionWithBlock], not sufficient funds.")
 		}
-		bvs.totalAmount[sender] += amount + fee
+
+		defer func() {
+			if e == nil {
+				bvs.totalAmount[sender] = totalAmount + amount + fee
+			}
+		}()
 	}
 
 	return nil
