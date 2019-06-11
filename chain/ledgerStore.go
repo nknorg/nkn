@@ -41,6 +41,6 @@ type ILedgerStore interface {
 	IsTxHashDuplicate(txhash Uint256) bool
 	IsBlockInStore(hash Uint256) bool
 	Rollback(b *block.Block) error
-	GenerateStateRoot(b *block.Block, needBeCommitted bool) (Uint256, error)
+	GenerateStateRoot(b *block.Block, genesisBlockInitialized, needBeCommitted bool) (Uint256, error)
 	Close()
 }

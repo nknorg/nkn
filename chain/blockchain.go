@@ -33,7 +33,7 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore) (*Blockchain, error) {
 		return nil, err
 	}
 
-	root, err := store.GenerateStateRoot(genesisBlock, false)
+	root, err := store.GenerateStateRoot(genesisBlock, false, false)
 	if err != nil {
 		return nil, err
 	}
