@@ -14,6 +14,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/chain/pool"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/address"
@@ -194,15 +195,17 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 		if nodeData.ProtocolVersion < config.MinCompatibleProtocolVersion || nodeData.ProtocolVersion > config.MaxCompatibleProtocolVersion {
 			return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol verison %d", nodeData.ProtocolVersion, config.ProtocolVersion)
 		}
-	}
 
-	addr, err := url.Parse(n.GetAddr())
-	if err != nil {
-		return err
-	}
-
-	if n.GetId() != nil && !bytes.Equal(address.GenChordID(addr.Host), n.GetId()) {
-		return fmt.Errorf("Remote node id should be %x instead of %x", address.GenChordID(addr.Host), n.GetId())
+		id, err := chain.DefaultLedger.Store.GetID(nodeData.PublicKey)
+		if err != nil || len(id) == 0 || bytes.Equal(id, crypto.Sha256ZeroHash) {
+			if localNode.GetSyncState() == pb.PersistFinished {
+				return fmt.Errorf("Remote node id can not be found in local ledger: err-%v, id-%v", err, id)
+			}
+		} else {
+			if !bytes.Equal(id, n.GetId()) {
+				return fmt.Errorf("Remote node id should be %x instead of %x", id, n.GetId())
+			}
+		}
 	}
 
 	if address.ShouldRejectAddr(localNode.GetAddr(), n.GetAddr()) {
@@ -299,6 +302,10 @@ func (localNode *LocalNode) GetHeight() uint32 {
 func (localNode *LocalNode) SetSyncState(s pb.SyncState) {
 	log.Infof("Set sync state to %s", s.String())
 	localNode.Node.SetSyncState(s)
+}
+
+func (localNode *LocalNode) GetSyncState() pb.SyncState {
+	return localNode.Node.GetSyncState()
 }
 
 func (localNode *LocalNode) SetMinVerifiableHeight(height uint32) {

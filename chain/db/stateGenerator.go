@@ -7,6 +7,7 @@ import (
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/vm/contract"
 	"github.com/nknorg/nnet/log"
 )
 
@@ -120,6 +121,23 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 
 	//process previous block
 	height := b.Header.UnsignedHeader.Height
+	if height == 0 {
+		id := ComputeID(EmptyUint256, EmptyUint256, b.Header.UnsignedHeader.RandomBeacon)
+
+		pk, err := crypto.NewPubKeyFromBytes(b.Header.UnsignedHeader.Signer)
+		if err != nil {
+			return nil, EmptyUint256, err
+		}
+		contract, err := contract.CreateSignatureContract(pk)
+		if err != nil {
+			return nil, EmptyUint256, err
+		}
+
+		if err := states.UpdateID(contract.ProgramHash, id); err != nil {
+			return nil, EmptyUint256, err
+		}
+	}
+
 	if height > config.GenerateIDBlockDelay {
 		prevBlock, err := cs.GetBlockByHeight(height - config.GenerateIDBlockDelay)
 		if err != nil {
@@ -130,17 +148,16 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 
 		for _, txn := range prevBlock.Transactions {
 			if txn.UnsignedTx.Payload.Type == pb.GenerateIDType {
-				txnHash := txn.Hash()
-				data := append(preBlockHash[:], txnHash[:]...)
-				data = append(data, b.Header.UnsignedHeader.RandomBeacon...)
-				id := crypto.Sha256(data)
+				id := ComputeID(preBlockHash, txn.Hash(), b.Header.UnsignedHeader.RandomBeacon)
 
 				pg, err := txn.GetProgramHashes()
 				if err != nil {
 					return nil, EmptyUint256, err
 				}
 
-				states.UpdateID(pg[0], id)
+				if err := states.UpdateID(pg[0], id); err != nil {
+					return nil, EmptyUint256, err
+				}
 
 			}
 		}
@@ -181,4 +198,11 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 	}
 
 	return states, root, nil
+}
+
+func ComputeID(preBlockHash, txnHash Uint256, randomBeacon []byte) []byte {
+	data := append(preBlockHash[:], txnHash[:]...)
+	data = append(data, randomBeacon...)
+	id := crypto.Sha256(data)
+	return id
 }
