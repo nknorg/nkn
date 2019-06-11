@@ -46,6 +46,7 @@ const (
 	ErrAlreadySubscribed     ErrCode = 45020
 	ErrAppendTxnPool         ErrCode = 45021
 	ErrNullID                ErrCode = 45022
+	ErrZeroID                ErrCode = 45023
 )
 
 var ErrMessage = map[ErrCode]string{
@@ -68,6 +69,7 @@ var ErrMessage = map[ErrCode]string{
 	INTERNAL_ERROR:          "INTERNAL ERROR",
 	SMARTCODE_ERROR:         "SMARTCODE EXEC ERROR",
 	WRONG_NODE:              "WRONG NODE TO CONNECT",
+	ErrDuplicatedTx:         "INTERNAL ERROR, Duplicate transaction",
 	ErrDuplicateInput:       "INTERNAL ERROR, ErrDuplicateInput",
 	ErrAssetPrecision:       "INTERNAL ERROR, ErrAssetPrecision",
 	ErrTransactionBalance:   "INTERNAL ERROR, ErrTransactionBalance",
@@ -81,4 +83,5 @@ var ErrMessage = map[ErrCode]string{
 	ErrXmitFail:             "INTERNAL ERROR, ErrXmitFail",
 	ErrAppendTxnPool:        "INTERNAL ERROR, can not append tx to txpool",
 	ErrNullID:               "INTERNAL ERROR, there is no ID in account",
+	ErrZeroID:               "INTERNAL ERROR, it's zero ID in account",
 }

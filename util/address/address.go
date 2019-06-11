@@ -38,13 +38,6 @@ func IsPrivateIP(ip net.IP) bool {
 	return false
 }
 
-// GenChordID generates an ID for the node
-func GenChordID(host string) []byte {
-	hash := sha256.New()
-	hash.Write([]byte(host))
-	return hash.Sum(nil)
-}
-
 func MakeAddressString(pubKey []byte, identifier string) string {
 	var result strings.Builder
 	if identifier != "" {
