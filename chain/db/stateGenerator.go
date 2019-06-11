@@ -98,16 +98,20 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 	return nil
 }
 
-func (cs *ChainStore) GenerateStateRoot(b *block.Block, needBeCommitted bool) (Uint256, error) {
-	_, root, err := cs.generateStateRoot(b, needBeCommitted)
+func (cs *ChainStore) GenerateStateRoot(b *block.Block, genesisBlockInitialized, needBeCommitted bool) (Uint256, error) {
+	_, root, err := cs.generateStateRoot(b, genesisBlockInitialized, needBeCommitted)
 
 	return root, err
 }
 
-func (cs *ChainStore) generateStateRoot(b *block.Block, needBeCommitted bool) (*StateDB, Uint256, error) {
-	stateRoot, err := cs.GetCurrentBlockStateRoot()
-	if err != nil {
-		return nil, EmptyUint256, err
+func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized, needBeCommitted bool) (*StateDB, Uint256, error) {
+	stateRoot := EmptyUint256
+	if genesisBlockInitialized {
+		var err error
+		stateRoot, err = cs.GetCurrentBlockStateRoot()
+		if err != nil {
+			return nil, EmptyUint256, err
+		}
 	}
 	states, err := NewStateDB(stateRoot, NewTrieStore(cs.GetDatabase()))
 	if err != nil {
