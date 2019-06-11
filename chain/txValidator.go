@@ -18,6 +18,11 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
+var (
+	ErrIDRegistered           = errors.New("ID has be registered")
+	ErrDuplicateGenerateIDTxn = errors.New("[VerifyTransactionWithBlock], duplicate GenerateID txns")
+)
+
 // VerifyTransaction verifys received single transaction
 func VerifyTransaction(txn *transaction.Transaction) error {
 	if err := CheckTransactionSize(txn); err != nil {
@@ -311,7 +316,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 			return err
 		}
 		if len(id) != 0 {
-			return errors.New("ID has be registered")
+			return ErrIDRegistered
 		}
 	case pb.NanoPayType:
 		pld := payload.(*pb.NanoPay)
@@ -493,7 +498,7 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		amount = Fixed64(generateIdPayload.RegistrationFee)
 		publicKey := BytesToHexString(generateIdPayload.PublicKey)
 		if _, ok := bvs.generateIDs[publicKey]; ok {
-			return errors.New("[VerifyTransactionWithBlock], duplicate GenerateID txns in block.")
+			return ErrDuplicateGenerateIDTxn
 		}
 
 		defer func() {

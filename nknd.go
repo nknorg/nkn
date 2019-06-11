@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,16 +15,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/httpjson"
 	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/api/websocket"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/chain/db"
+	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
@@ -138,7 +141,20 @@ func nknMain(c *cli.Context) error {
 		return err
 	}
 
-	id := address.GenChordID(fmt.Sprintf("%s:%d", config.Parameters.Hostname, config.Parameters.NodePort))
+	// initialize ledger
+	err = InitLedger(account)
+	if err != nil {
+		return fmt.Errorf("chain.initialization error: %v", err)
+	}
+	// if InitLedger return err, chain.DefaultLedger is uninitialized.
+	defer chain.DefaultLedger.Store.Close()
+
+	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, 0)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	log.Info("current chord ID: ", BytesToHexString(id))
 
 	nn, err := nnet.NewNNet(id, conf)
 	if err != nil {
@@ -157,14 +173,6 @@ func nknMain(c *cli.Context) error {
 		// Support input mutil seeds which split by ","
 		config.Parameters.SeedList = strings.Split(seedStr, ",")
 	}
-
-	// initialize ledger
-	err = InitLedger(account)
-	if err != nil {
-		return fmt.Errorf("chain.initialization error: %v", err)
-	}
-	// if InitLedger return err, chain.DefaultLedger is uninitialized.
-	defer chain.DefaultLedger.Store.Close()
 
 	err = por.InitPorServer(account, id)
 	if err != nil {
@@ -343,4 +351,116 @@ func main() {
 		log.Errorf("%v", err)
 		os.Exit(1)
 	}
+}
+
+func GetID(seeds []string, publickey []byte) ([]byte, error) {
+	id, err := chain.DefaultLedger.Store.GetID(publickey)
+	if err == nil && len(id) != 0 {
+		return id, nil
+	}
+
+	log.Infof("get ID from localnode faild, no ID in ledger: %v", err)
+
+	rand.Shuffle(len(seeds), func(i int, j int) {
+		seeds[i], seeds[j] = seeds[j], seeds[i]
+	})
+
+	for _, seed := range seeds {
+		id, err := client.GetID(seed, publickey)
+		if err == nil && len(id) == config.NodeIDBytes {
+			return id, nil
+		}
+
+		log.Warningf("get ID from %s met error: %v", seed, err)
+	}
+
+	return nil, errors.New("get ID failed")
+}
+
+func CreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) error {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return err
+	}
+
+	addr, err := account.ProgramHash.ToAddress()
+	if err != nil {
+		return err
+	}
+
+	rand.Shuffle(len(seeds), func(i int, j int) {
+		seeds[i], seeds[j] = seeds[j], seeds[i]
+	})
+
+	for _, seed := range seeds {
+		nonce, err := client.GetNonceByAddr(seed, addr)
+		if err != nil {
+			log.Warningf("get nonce from %s met error: %v", seed, err)
+			continue
+		}
+
+		txn, err := common.MakeGenerateIDTransaction(wallet, regFee, nonce, 0)
+		if err != nil {
+			return err
+		}
+
+		buff, err := txn.Marshal()
+		if err != nil {
+			return err
+		}
+
+		_, err = client.CreateID(seed, hex.EncodeToString(buff))
+		if err != nil {
+			log.Warningf("create ID from %s met error: %v", seed, err)
+			continue
+		}
+
+		return nil
+	}
+
+	return errors.New("create ID failed")
+}
+
+func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) ([]byte, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+	pkEncoded, err := account.PubKey().EncodePoint(true)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := GetID(seeds, pkEncoded)
+	if err != nil {
+		if err := CreateID(seeds, wallet, regFee); err != nil {
+			return nil, err
+		}
+	} else {
+		if !bytes.Equal(id, crypto.Sha256ZeroHash) {
+			return id, nil
+		}
+	}
+
+	timer := time.NewTimer(2 * config.ConsensusDuration)
+	timeout := time.After(5 * config.ConsensusTimeout)
+	defer timer.Stop()
+
+out:
+	for {
+		select {
+		case <-timer.C:
+			timer.Reset(config.ConsensusDuration)
+			log.Warningf("try to get ID from local ledger and remoteNode...")
+			if id, err := GetID(seeds, pkEncoded); err == nil {
+				if !bytes.Equal(id, crypto.Sha256ZeroHash) {
+					return id, nil
+				}
+			}
+		case <-timeout:
+			break out
+		}
+	}
+
+	return nil, errors.New("timeout to get ID")
 }

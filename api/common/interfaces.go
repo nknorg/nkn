@@ -10,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
@@ -328,8 +329,8 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		}
 
 		hash = txn.Hash()
-		if errCode := VerifyAndSendTx(localNode, &txn); errCode != ErrNoError {
-			return respPacking(errCode, nil)
+		if errCode, err := VerifyAndSendTx(localNode, &txn); errCode != ErrNoError {
+			return respPacking(errCode, err.Error())
 		}
 	} else {
 		return respPacking(INVALID_PARAMS, err.Error())
@@ -422,8 +423,8 @@ func commitPor(s Serverer, params map[string]interface{}) map[string]interface{}
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	if errCode := VerifyAndSendTx(localNode, txn); errCode != ErrNoError {
-		return respPacking(errCode, nil)
+	if errCode, err := VerifyAndSendTx(localNode, txn); errCode != ErrNoError {
+		return respPacking(errCode, err.Error())
 	}
 
 	txHash := txn.Hash()
@@ -546,8 +547,12 @@ func getId(s Serverer, params map[string]interface{}) map[string]interface{} {
 		return respPacking(INVALID_PARAMS, err.Error())
 	}
 
-	if len(id) == 0 || bytes.Equal(id, make([]byte, 32)) {
+	if len(id) == 0 {
 		return respPacking(ErrNullID, nil)
+	}
+
+	if bytes.Equal(id, crypto.Sha256ZeroHash) {
+		return respPacking(ErrZeroID, nil)
 	}
 
 	ret := map[string]interface{}{
@@ -557,16 +562,22 @@ func getId(s Serverer, params map[string]interface{}) map[string]interface{} {
 	return respPacking(SUCCESS, ret)
 }
 
-func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) ErrCode {
+func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) (ErrCode, error) {
 	if err := localNode.AppendTxnPool(txn); err != nil {
 		log.Warningf("Can NOT add the transaction to TxnPool: %v", err)
-		return ErrAppendTxnPool
+
+		if err == chain.ErrIDRegistered || err == chain.ErrDuplicateGenerateIDTxn {
+			return ErrDuplicatedTx, err
+		}
+
+		return ErrAppendTxnPool, err
 	}
 	if err := localNode.BroadcastTransaction(txn); err != nil {
 		log.Errorf("Broadcast Tx Error: %v", err)
-		return ErrXmitFail
+		return ErrXmitFail, err
 	}
-	return ErrNoError
+
+	return ErrNoError, nil
 }
 
 // getAddressByName get address by name
