@@ -325,7 +325,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 	}
 
 	//StateRoot
-	states, root, err := cs.generateStateRoot(b, true)
+	states, root, err := cs.generateStateRoot(b, b.Header.UnsignedHeader.Height != 0, true)
 	if err != nil {
 		return err
 	}
@@ -464,10 +464,6 @@ func (cs *ChainStore) getCurrentBlockHashFromDB() (Uint256, uint32, error) {
 }
 
 func (cs *ChainStore) GetCurrentBlockStateRoot() (Uint256, error) {
-	if cs.currentBlockHeight == 0 {
-		return EmptyUint256, nil
-	}
-
 	currentState, err := cs.st.Get(currentStateTrie())
 	if err != nil {
 		return EmptyUint256, err
