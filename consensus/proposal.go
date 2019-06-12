@@ -331,14 +331,28 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 	}
 
 	var txnsRoot common.Uint256
-	txnsHash := make([]common.Uint256, len(replyMsg.TransactionsHash))
 	poolTxns := make([]*transaction.Transaction, 0, len(replyMsg.TransactionsHash))
 	missingTxnsHash := make([][]byte, 0, len(replyMsg.TransactionsHash))
 
 	switch requestType {
 	case pb.REQUEST_FULL_TRANSACTION:
+		txnsHash := make([]common.Uint256, len(b.Transactions))
+		for i, txn := range b.Transactions {
+			txnsHash[i] = txn.Hash()
+		}
+
+		txnsRoot, err = crypto.ComputeRoot(txnsHash)
+		if err != nil {
+			return nil, err
+		}
+
+		if !bytes.Equal(txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot) {
+			return nil, fmt.Errorf("Computed txn root %x is different from txn root in header %x", txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot)
+		}
+
 		return b, nil
 	case pb.REQUEST_TRANSACTION_HASH:
+		txnsHash := make([]common.Uint256, len(replyMsg.TransactionsHash))
 		for i, txnHashBytes := range replyMsg.TransactionsHash {
 			txnsHash[i], err = common.Uint256ParseFromBytes(txnHashBytes)
 			if err != nil {
@@ -391,6 +405,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 	}
 
 	if requestType == pb.REQUEST_TRANSACTION_SHORT_HASH {
+		txnsHash := make([]common.Uint256, len(replyMsg.TransactionsHash))
 		for i, txn := range mergedTxns {
 			txnsHash[i] = txn.Hash()
 		}
