@@ -72,8 +72,11 @@ func (consensus *Consensus) Start() {
 
 // startConsensus starts the voting routine
 func (consensus *Consensus) startConsensus() {
+	var excludedProposers [][]byte
 	for {
-		consensus.maybeUpdateConsensusHeight()
+		if consensus.maybeUpdateConsensusHeight() {
+			excludedProposers = nil
+		}
 
 		consensusHeight := consensus.GetExpectedHeight()
 
@@ -82,7 +85,7 @@ func (consensus *Consensus) startConsensus() {
 			continue
 		}
 
-		elc, err := consensus.waitAndHandleProposal()
+		elc, lastProposals, err := consensus.waitAndHandleProposal(excludedProposers)
 		if err != nil {
 			log.Warningf("Handle proposal error: %v", err)
 			time.Sleep(50 * time.Millisecond)
@@ -99,19 +102,26 @@ func (consensus *Consensus) startConsensus() {
 		consensus.setExpectedHeight(consensusHeight + 1)
 
 		electedBlockHash, err := consensus.startElection(consensusHeight, elc)
-		if err != nil {
-			log.Errorf("Election error: %v", err)
-			consensus.setExpectedHeight(consensusHeight)
-			continue
-		}
+		if err != nil || electedBlockHash == common.EmptyUint256 {
+			if err != nil {
+				log.Errorf("Election error: %v", err)
+			}
 
-		if electedBlockHash == common.EmptyUint256 {
 			log.Warningf("Reject block at height %d", consensusHeight)
+
+			if len(lastProposals) > 0 {
+				for _, proposal := range lastProposals {
+					excludedProposers = append(excludedProposers, proposal.Header.UnsignedHeader.Signer)
+				}
+			}
+
 			consensus.setExpectedHeight(consensusHeight)
 			continue
 		}
 
 		log.Infof("Accept block %s at height %d", electedBlockHash.ToHexString(), consensusHeight)
+
+		excludedProposers = nil
 
 		err = consensus.saveAcceptedBlock(electedBlockHash)
 		if err != nil {
@@ -262,13 +272,15 @@ func (consensus *Consensus) setAcceptedHeight(height uint32) {
 
 // maybeUpdateConsensusHeight change expectedHeight to nextConsensusHeight if
 // nextConsensusHeight is not zero.
-func (consensus *Consensus) maybeUpdateConsensusHeight() {
+func (consensus *Consensus) maybeUpdateConsensusHeight() bool {
 	consensus.nextConsensusHeightLock.Lock()
+	defer consensus.nextConsensusHeightLock.Unlock()
 	if consensus.nextConsensusHeight > 0 {
 		consensus.setExpectedHeight(consensus.nextConsensusHeight)
 		consensus.nextConsensusHeight = 0
+		return true
 	}
-	consensus.nextConsensusHeightLock.Unlock()
+	return false
 }
 
 func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) error {

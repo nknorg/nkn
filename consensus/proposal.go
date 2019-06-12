@@ -51,7 +51,7 @@ func (consensus *Consensus) canVerifyHeight(height uint32) bool {
 
 // waitAndHandleProposal waits for first valid proposal, and continues to handle
 // proposal for electionStartDelay duration.
-func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) {
+func (consensus *Consensus) waitAndHandleProposal(excludedProposers [][]byte) (*election.Election, map[common.Uint256]*block.Block, error) {
 	var timerStartOnce sync.Once
 	var deadline time.Time
 	electionStartTimer := time.NewTimer(math.MaxInt64)
@@ -66,7 +66,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 
 	elc, _, err := consensus.loadOrCreateElection(consensusHeight)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for {
@@ -85,7 +85,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 
 		select {
 		case <-timeoutTimer.C:
-			return nil, errors.New("Wait for neighbor vote timeout")
+			return nil, nil, errors.New("Wait for neighbor vote timeout")
 		default:
 			time.Sleep(50 * time.Millisecond)
 		}
@@ -94,6 +94,17 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	for {
 		select {
 		case proposal := <-proposalChan:
+			found := false
+			for _, excludedProposer := range excludedProposers {
+				if bytes.Equal(proposal.Header.UnsignedHeader.Signer, excludedProposer) {
+					found = true
+					break
+				}
+			}
+			if found {
+				continue
+			}
+
 			blockHash := proposal.Hash()
 
 			if !consensus.canVerifyHeight(consensusHeight) {
@@ -158,15 +169,15 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 
 			select {
 			case <-electionStartTimer.C:
-				return elc, nil
+				return elc, proposals, nil
 			default:
 			}
 
 		case <-electionStartTimer.C:
-			return elc, nil
+			return elc, proposals, nil
 
 		case <-timeoutTimer.C:
-			return nil, errors.New("Wait for proposal timeout")
+			return nil, nil, errors.New("Wait for proposal timeout")
 		}
 	}
 }
@@ -217,27 +228,27 @@ func (consensus *Consensus) startRequestingProposal() {
 }
 
 // receiveProposal is called when a new proposal is received
-func (consensus *Consensus) receiveProposal(block *block.Block) error {
-	blockHash := block.Hash()
+func (consensus *Consensus) receiveProposal(b *block.Block) error {
+	blockHash := b.Hash()
 
-	log.Infof("Receive block proposal %s from [%s:%s]", blockHash.ToHexString(), common.BytesToHexString(block.Header.UnsignedHeader.Signer), common.BytesToHexString(block.Header.UnsignedHeader.ChordId))
+	log.Infof("Receive block proposal %s from [%s:%s]", blockHash.ToHexString(), common.BytesToHexString(b.Header.UnsignedHeader.Signer), common.BytesToHexString(b.Header.UnsignedHeader.ChordId))
 
 	consensus.proposalLock.RLock()
 	defer consensus.proposalLock.RUnlock()
 
-	receivedHeight := block.Header.UnsignedHeader.Height
+	receivedHeight := b.Header.UnsignedHeader.Height
 	expectedHeight := consensus.expectedHeight
 	if receivedHeight != expectedHeight {
 		return fmt.Errorf("Receive invalid proposal height %d instead of %d", receivedHeight, expectedHeight)
 	}
 
 	select {
-	case consensus.proposalChan <- block:
+	case consensus.proposalChan <- b:
 	default:
 		return errors.New("Prososal chan full, discarding proposal")
 	}
 
-	consensus.proposals.Set(blockHash.ToArray(), block)
+	consensus.proposals.Set(blockHash.ToArray(), b)
 
 	return nil
 }
@@ -311,6 +322,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 	b := &block.Block{}
 	b.FromMsgBlock(replyMsg.Block)
 
+	// block hash check needs to be before any proposals.Set() to prevent forged block taking place of real block
 	receivedBlockHash := b.Hash()
 	if receivedBlockHash != blockHash {
 		return nil, fmt.Errorf("Received block hash %s is different from requested hash %s", receivedBlockHash.ToHexString(), blockHash.ToHexString())
@@ -324,10 +336,12 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		// We put timestamp check here to prevent proposal with invalid timestamp to
 		// be propagated
 		if err = chain.TimestampCheck(b.Header); err != nil {
+			// block is invalid, do not try to fetch again
 			consensus.proposals.Set(blockHash.ToArray(), b)
 			return nil, fmt.Errorf("Proposal fails to pass timestamp check: %v", err)
 		}
 		if err = chain.SignerCheck(b.Header); err != nil {
+			// block is invalid, do not try to fetch again
 			consensus.proposals.Set(blockHash.ToArray(), b)
 			return nil, fmt.Errorf("Proposal fails to pass signer check: %v", err)
 		}
