@@ -92,7 +92,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				continue
 			}
 
-			err = ledger.TimestampCheck(proposal.Header.Timestamp)
+			err = ledger.TimestampCheck(proposal.Header)
 			if err != nil {
 				log.Warningf("Ignore proposal that fails to pass timestamp check: %v", err)
 				continue
