@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	TimestampTolerance = 40 * time.Second
+	TimestampTolerance = config.ConsensusDuration
 	NumGenesisBlocks   = por.SigChainMiningHeightOffset + config.MaxRollbackBlocks - 1
 	HeaderVersion      = 1
 )
@@ -321,7 +321,10 @@ func HeaderCheck(header *block.Header) error {
 	}
 
 	currentHash := DefaultLedger.Store.GetCurrentBlockHash()
-	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+	prevHash, err := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+	if err != nil {
+		return err
+	}
 	if prevHash != currentHash {
 		return errors.New("invalid prev header")
 	}
@@ -349,14 +352,19 @@ func HeaderCheck(header *block.Header) error {
 	return nil
 }
 
-func TimestampCheck(timestamp int64) error {
-	t := time.Unix(timestamp, 0) // Handle negative
+func TimestampCheck(header *block.Header) error {
+	prevHeader, err := DefaultLedger.Store.GetHeaderByHeight(header.UnsignedHeader.Height - 1)
+	if err != nil {
+		return err
+	}
+
+	t := time.Unix(header.UnsignedHeader.Timestamp, 0) // Handle negative
 	now := time.Now()
-	earliest := now.Add(-TimestampTolerance)
+	earliest := time.Unix(prevHeader.UnsignedHeader.Timestamp, 0)
 	latest := now.Add(TimestampTolerance)
 
-	if t.Before(earliest) || t.After(latest) {
-		return fmt.Errorf("timestamp %d exceed my tolerance [%d, %d]", timestamp, earliest.Unix(), latest.Unix())
+	if t.Before(earliest) || t.Equal(earliest) || t.After(latest) {
+		return fmt.Errorf("timestamp %d exceed my tolerance [%d, %d]", t.Unix(), earliest.Unix(), latest.Unix())
 	}
 
 	return nil
