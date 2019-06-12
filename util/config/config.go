@@ -28,7 +28,7 @@ const (
 	DefaultMiningReward = 15
 	MinNumSuccessors    = 8
 	NodeIDBytes         = 32
-	MaxRollbackBlocks   = 1
+	MaxRollbackBlocks   = 50
 )
 
 var (
