@@ -5,12 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/transaction"
@@ -20,10 +22,14 @@ import (
 )
 
 const (
-	TimestampTolerance = 40 * time.Second
-	NumGenesisBlocks   = por.SigChainMiningHeightOffset + config.MaxRollbackBlocks - 1
-	HeaderVersion      = 1
+	TimestampTolerance         = config.ConsensusDuration / 2
+	TimestampToleranceVariance = config.ConsensusDuration / 10
+	ProposingTimeTolerance     = config.ConsensusDuration / 2
+	NumGenesisBlocks           = por.SigChainMiningHeightOffset + config.MaxRollbackBlocks - 1
+	HeaderVersion              = 1
 )
+
+var timestampToleranceSalt []byte = util.RandomBytes(32)
 
 type VBlock struct {
 	Block       *block.Block
@@ -203,11 +209,11 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 	timeSinceLastBlock := timestamp - header.UnsignedHeader.Timestamp
 	proposerChangeTime := int64(config.ConsensusTimeout.Seconds())
 
-	if proposerChangeTime-timeSinceLastBlock%proposerChangeTime <= int64(config.ConsensusDuration.Seconds()) {
-		return nil, nil, 0, nil
-	}
-
 	if timeSinceLastBlock >= proposerChangeTime {
+		if timeSinceLastBlock%proposerChangeTime > int64(ProposingTimeTolerance.Seconds()) {
+			return nil, nil, 0, nil
+		}
+
 		winnerType = pb.BLOCK_SIGNER
 
 		proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - timeSinceLastBlock/proposerChangeTime
@@ -228,6 +234,10 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 			return nil, nil, 0, err
 		}
 	} else {
+		if timeSinceLastBlock < int64(config.ConsensusDuration.Seconds()) || timeSinceLastBlock > int64(config.ConsensusDuration.Seconds())+int64(ProposingTimeTolerance.Seconds()) {
+			return nil, nil, 0, nil
+		}
+
 		switch winnerType {
 		case pb.TXN_SIGNER:
 			whash, _ := Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
@@ -321,7 +331,10 @@ func HeaderCheck(header *block.Header) error {
 	}
 
 	currentHash := DefaultLedger.Store.GetCurrentBlockHash()
-	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+	prevHash, err := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+	if err != nil {
+		return err
+	}
 	if prevHash != currentHash {
 		return errors.New("invalid prev header")
 	}
@@ -349,14 +362,33 @@ func HeaderCheck(header *block.Header) error {
 	return nil
 }
 
-func TimestampCheck(timestamp int64) error {
-	t := time.Unix(timestamp, 0) // Handle negative
+func TimestampCheck(header *block.Header) error {
+	prevHeader, err := DefaultLedger.Store.GetHeaderByHeight(header.UnsignedHeader.Height - 1)
+	if err != nil {
+		return err
+	}
+
+	t := time.Unix(header.UnsignedHeader.Timestamp, 0) // Handle negative
+
+	prevBlockTimestamp := time.Unix(prevHeader.UnsignedHeader.Timestamp, 0)
+	if !t.After(prevBlockTimestamp) {
+		return fmt.Errorf("block timestamp %d is not later than previous block timestamp %d", t.Unix(), prevBlockTimestamp.Unix())
+	}
+
 	now := time.Now()
 	earliest := now.Add(-TimestampTolerance)
 	latest := now.Add(TimestampTolerance)
 
+	h := fnv.New64()
+	blockHash := header.Hash()
+	h.Write(blockHash.ToArray())
+	h.Write(timestampToleranceSalt)
+	offsetSec := int64(h.Sum64()%uint64(2*TimestampToleranceVariance.Seconds())) - int64(TimestampToleranceVariance.Seconds())
+	offset := time.Duration(offsetSec) * time.Second
+	earliest = earliest.Add(offset)
+
 	if t.Before(earliest) || t.After(latest) {
-		return fmt.Errorf("timestamp %d exceed my tolerance [%d, %d]", timestamp, earliest.Unix(), latest.Unix())
+		return fmt.Errorf("block timestamp %d exceed my tolerance [%d, %d]", t.Unix(), earliest.Unix(), latest.Unix())
 	}
 
 	return nil

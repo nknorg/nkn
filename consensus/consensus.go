@@ -170,7 +170,7 @@ func (consensus *Consensus) startElection(height uint32, elc *election.Election)
 		return common.EmptyUint256, fmt.Errorf("Convert election result to block hash error")
 	}
 
-	log.Infof("Elected block hash %s got %d/%d votes", electedBlockHash.ToHexString(), len(elc.GetNeighborIDsByVote(electedBlockHash)), elc.NeighborVoteCount())
+	log.Infof("Elected block hash %s got %d/%d neighbor votes", electedBlockHash.ToHexString(), len(elc.GetNeighborIDsByVote(electedBlockHash)), elc.NeighborVoteCount())
 
 	return electedBlockHash, nil
 }
