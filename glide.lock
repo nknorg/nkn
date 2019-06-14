@@ -1,5 +1,5 @@
 hash: 504bd66b16e0d3546cfc6528b175545a5fb3e7acaf46c70f614e22e5a1e32f7d
-updated: 2019-05-30T16:12:20.052116-07:00
+updated: 2019-06-11T12:26:50.749111-07:00
 imports:
 - name: github.com/bitly/go-simplejson
   version: 9db4a59bd4d803ae0c173a7d8a538e056cd59d57
@@ -13,7 +13,7 @@ imports:
   - sortkeys
   - types
 - name: github.com/golang/crypto
-  version: 20be4c3c3ed52bfccdb2d59a412ee1a936d175a7
+  version: 5c40567a22f818bd14a1ea7245dad9f8ef0691aa
   subpackages:
   - ripemd160
   - ssh/terminal
@@ -52,14 +52,16 @@ imports:
   version: 05a8198c0f5a27739aec358908d7e12c64ce6eb7
 - name: github.com/klauspost/reedsolomon
   version: 0883d2f0110ebc0d49684b4701e1d528422339c9
+- name: github.com/koron/go-ssdp
+  version: 4a0ed625a78b6858dc8d3a55fb7728968b712122
 - name: github.com/nknorg/go-nat
-  version: 6339479af9cce1e6c4f5efe96c0306fb6149397c
+  version: 1022c7b6d4cc1785547125feb13bb7d0639bf233
 - name: github.com/nknorg/go-portscanner
   version: 8493ef01db79ae14a973300a38600c7400e265d8
 - name: github.com/nknorg/gopass
   version: 9ddc09fe41c891b7987acd1bf75f9067a56c17f5
 - name: github.com/nknorg/nnet
-  version: 87aaa858f2a80c2386c7ceea111d618ebb120495
+  version: 72ee4bffd9035fee1c6085c56e689cbcaede79df
   subpackages:
   - cache
   - common
@@ -123,7 +125,7 @@ imports:
 - name: github.com/xtaci/smux
   version: 3752dae3e12b585d3c5fc03ba0bfaf9a2f19a19a
 - name: golang.org/x/crypto
-  version: 20be4c3c3ed52bfccdb2d59a412ee1a936d175a7
+  version: 5c40567a22f818bd14a1ea7245dad9f8ef0691aa
   subpackages:
   - blowfish
   - cast5
@@ -142,7 +144,7 @@ imports:
   - twofish
   - xtea
 - name: golang.org/x/net
-  version: f3200d17e092c607f615320ecaad13d87ad9a2b3
+  version: 3f473d35a33aa6fdd203e306dc439b797820e3f1
   repo: https://github.com/golang/net
   vcs: git
   subpackages:
@@ -154,7 +156,7 @@ imports:
   - internal/socket
   - ipv4
 - name: golang.org/x/sys
-  version: ad28b68e88f12448a1685d038ffea87bbbb34148
+  version: 93c9922d18aeb82498a065f07aec7ad7fa60dfb7
   repo: https://github.com/golang/sys
   vcs: git
   subpackages:
