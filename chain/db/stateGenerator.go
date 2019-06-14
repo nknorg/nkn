@@ -152,13 +152,19 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 	}
 
 	if height == 0 { //genesisBlock
-		cs.spendTransaction(states, b.Transactions[0], totalFee, true)
+		if err := cs.spendTransaction(states, b.Transactions[0], totalFee, true); err != nil {
+			return nil, EmptyUint256, err
+		}
 		for _, txn := range b.Transactions[1:] {
-			cs.spendTransaction(states, txn, 0, false)
+			if err := cs.spendTransaction(states, txn, 0, false); err != nil {
+				return nil, EmptyUint256, err
+			}
 		}
 	} else {
 		for _, txn := range b.Transactions {
-			cs.spendTransaction(states, txn, totalFee, false)
+			if err := cs.spendTransaction(states, txn, totalFee, false); err != nil {
+				return nil, EmptyUint256, err
+			}
 		}
 
 		states.CleanupNanoPay(b.Header.UnsignedHeader.Height)
