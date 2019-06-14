@@ -297,8 +297,14 @@ func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*transaction.T
 	}
 
 	// sign transaction contract
-	ctx := contract.NewContractContext(txn)
-	wallet.Sign(ctx)
+	ctx, err := contract.NewContractContext(txn)
+	if err != nil {
+		return nil, err
+	}
+	err = wallet.Sign(ctx)
+	if err != nil {
+		return nil, err
+	}
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
