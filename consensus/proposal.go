@@ -132,13 +132,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			defer cancel()
 
 			if acceptProposal {
-				// We put timestamp after signer check to make sure everyone with the same
-				// local ledger will make the same choice on whether to start consensus or
-				// not, regardless of local time.
-				if err = chain.TimestampCheck(proposal.Header.UnsignedHeader.Timestamp); err != nil {
-					log.Warningf("Proposal fails to pass timestamp check: %v", err)
-					acceptProposal = false
-				} else if err = chain.HeaderCheck(proposal.Header); err != nil {
+				if err = chain.HeaderCheck(proposal.Header); err != nil {
 					log.Warningf("Proposal fails to pass header check: %v", err)
 					acceptProposal = false
 				} else if err = chain.NextBlockProposerCheck(proposal.Header); err != nil {
@@ -204,7 +198,7 @@ func (consensus *Consensus) startRequestingProposal() {
 
 		log.Infof("Request block %s from neighbor %v", requestProposal.blockHash.ToHexString(), neighbor.GetID())
 
-		block, err := consensus.requestProposal(neighbor, requestProposal.blockHash, requestTransactionType)
+		block, err := consensus.requestProposal(neighbor, requestProposal.blockHash, requestProposal.height, requestTransactionType)
 		if err != nil {
 			log.Errorf("Request block %s error: %v", requestProposal.blockHash.ToHexString(), err)
 			continue
@@ -226,7 +220,7 @@ func (consensus *Consensus) startRequestingProposal() {
 func (consensus *Consensus) receiveProposal(block *block.Block) error {
 	blockHash := block.Hash()
 
-	log.Infof("Receive block proposal %s from [%s:%s]", blockHash.ToHexString(), common.BytesToHexString(block.Header.UnsignedHeader.Signer), common.BytesToHexString(block.Header.UnsignedHeader.ChordId))
+	log.Infof("Receive block proposal %s (%d txn, %d bytes) by %x", blockHash.ToHexString(), len(block.Transactions), block.GetTxsSize(), block.Header.UnsignedHeader.Signer)
 
 	consensus.proposalLock.RLock()
 	defer consensus.proposalLock.RUnlock()
@@ -285,7 +279,7 @@ func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32
 
 // requestProposal requests a block proposal by block hash from a neighbor using
 // REQUEST_BLOCK_PROPOSAL message
-func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash common.Uint256, requestType pb.RequestTransactionType) (*block.Block, error) {
+func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash common.Uint256, height uint32, requestType pb.RequestTransactionType) (*block.Block, error) {
 	var shortHashSalt []byte
 	var shortHashSize uint32
 	if requestType == pb.REQUEST_TRANSACTION_SHORT_HASH {
@@ -317,14 +311,23 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 	b := &block.Block{}
 	b.FromMsgBlock(replyMsg.Block)
 
+	if b.Header.UnsignedHeader.Height != height {
+		return nil, fmt.Errorf("Received block height %d is different from expected height %d", b.Header.UnsignedHeader.Height, height)
+	}
+
 	receivedBlockHash := b.Hash()
 	if receivedBlockHash != blockHash {
 		return nil, fmt.Errorf("Received block hash %s is different from requested hash %s", receivedBlockHash.ToHexString(), blockHash.ToHexString())
 	}
 
 	if consensus.canVerifyHeight(b.Header.UnsignedHeader.Height) {
-		err = chain.SignerCheck(b.Header)
-		if err != nil {
+		// We put timestamp check here to prevent proposal with invalid timestamp to
+		// be propagated
+		if err = chain.TimestampCheck(b.Header); err != nil {
+			consensus.proposals.Set(blockHash.ToArray(), b)
+			return nil, fmt.Errorf("Proposal fails to pass timestamp check: %v", err)
+		}
+		if err = chain.SignerCheck(b.Header); err != nil {
 			consensus.proposals.Set(blockHash.ToArray(), b)
 			return nil, fmt.Errorf("Proposal fails to pass signer check: %v", err)
 		}
@@ -417,7 +420,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 
 		if !bytes.Equal(txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot) {
 			log.Warningf("Computed txn root %x is different from txn root in header %x, fall back to request full txn hash.", txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot)
-			return consensus.requestProposal(neighbor, blockHash, pb.REQUEST_TRANSACTION_HASH)
+			return consensus.requestProposal(neighbor, blockHash, height, pb.REQUEST_TRANSACTION_HASH)
 		}
 	}
 
