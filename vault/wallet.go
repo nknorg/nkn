@@ -139,10 +139,10 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 		return nil, err
 	}
 
-	rawdata, _ := HexStringToBytes(store.Data.ContractData)
-	r := bytes.NewReader(rawdata)
-	ct := new(contract.Contract)
-	ct.Deserialize(r)
+	ct, err := contract.CreateSignatureContract(account.PubKey())
+	if err != nil {
+		return nil, err
+	}
 
 	return &WalletImpl{
 		path:        path,

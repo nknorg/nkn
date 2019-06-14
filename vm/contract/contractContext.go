@@ -24,8 +24,12 @@ type ContractContext struct {
 	tempParaIndex int
 }
 
-func NewContractContext(data sig.SignableData) *ContractContext {
-	programHashes, _ := data.GetProgramHashes() //TODO: check error
+func NewContractContext(data sig.SignableData) (*ContractContext, error) {
+	programHashes, err := data.GetProgramHashes()
+	if err != nil {
+		return nil, err
+	}
+
 	hashLen := len(programHashes)
 	return &ContractContext{
 		Data:            data,
@@ -34,7 +38,7 @@ func NewContractContext(data sig.SignableData) *ContractContext {
 		Parameters:      make([][][]byte, hashLen),
 		MultiPubkeyPara: make([][]PubkeyParameter, hashLen),
 		tempParaIndex:   0,
-	}
+	}, nil
 }
 
 func (ctx *ContractContext) Add(contract *Contract, index int, parameter []byte) error {

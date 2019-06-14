@@ -20,8 +20,14 @@ func MakeTransferTransaction(wallet vault.Wallet, receipt Uint160, nonce uint64,
 	}
 
 	// sign transaction contract
-	ctx := contract.NewContractContext(txn)
-	wallet.Sign(ctx)
+	ctx, err := contract.NewContractContext(txn)
+	if err != nil {
+		return nil, err
+	}
+	err = wallet.Sign(ctx)
+	if err != nil {
+		return nil, err
+	}
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
@@ -38,8 +44,14 @@ func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte, nonce uint64) (
 	}
 
 	// sign transaction contract
-	ctx := contract.NewContractContext(txn)
-	wallet.Sign(ctx)
+	ctx, err := contract.NewContractContext(txn)
+	if err != nil {
+		return nil, err
+	}
+	err = wallet.Sign(ctx)
+	if err != nil {
+		return nil, err
+	}
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
@@ -60,8 +72,14 @@ func MakeRegisterNameTransaction(wallet vault.Wallet, name string, nonce uint64,
 	}
 
 	// sign transaction contract
-	ctx := contract.NewContractContext(txn)
-	wallet.Sign(ctx)
+	ctx, err := contract.NewContractContext(txn)
+	if err != nil {
+		return nil, err
+	}
+	err = wallet.Sign(ctx)
+	if err != nil {
+		return nil, err
+	}
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
@@ -82,8 +100,14 @@ func MakeDeleteNameTransaction(wallet vault.Wallet, name string, nonce uint64, f
 	}
 
 	// sign transaction contract
-	ctx := contract.NewContractContext(txn)
-	wallet.Sign(ctx)
+	ctx, err := contract.NewContractContext(txn)
+	if err != nil {
+		return nil, err
+	}
+	err = wallet.Sign(ctx)
+	if err != nil {
+		return nil, err
+	}
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
@@ -104,8 +128,14 @@ func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic stri
 	}
 
 	// sign transaction contract
-	ctx := contract.NewContractContext(txn)
-	wallet.Sign(ctx)
+	ctx, err := contract.NewContractContext(txn)
+	if err != nil {
+		return nil, err
+	}
+	err = wallet.Sign(ctx)
+	if err != nil {
+		return nil, err
+	}
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
@@ -126,8 +156,14 @@ func MakeGenerateIDTransaction(wallet vault.Wallet, regFee Fixed64, nonce uint64
 	}
 
 	// sign transaction contract
-	ctx := contract.NewContractContext(txn)
-	wallet.Sign(ctx)
+	ctx, err := contract.NewContractContext(txn)
+	if err != nil {
+		return nil, err
+	}
+	err = wallet.Sign(ctx)
+	if err != nil {
+		return nil, err
+	}
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
@@ -146,8 +182,14 @@ func MakeNanoPayTransaction(wallet vault.Wallet, recipient Uint160, nonce uint64
 	}
 
 	// sign transaction contract
-	ctx := contract.NewContractContext(txn)
-	wallet.Sign(ctx)
+	ctx, err := contract.NewContractContext(txn)
+	if err != nil {
+		return nil, err
+	}
+	err = wallet.Sign(ctx)
+	if err != nil {
+		return nil, err
+	}
 	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
