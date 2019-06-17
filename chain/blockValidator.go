@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	TimestampTolerance         = config.ConsensusDuration / 2
-	TimestampToleranceVariance = config.ConsensusDuration / 10
+	TimestampToleranceFuture   = config.ConsensusDuration / 4
+	TimestampTolerancePast     = config.ConsensusDuration / 2
+	TimestampToleranceVariance = config.ConsensusDuration / 6
 	ProposingTimeTolerance     = config.ConsensusDuration / 2
 	NumGenesisBlocks           = por.SigChainMiningHeightOffset + config.MaxRollbackBlocks - 1
 	HeaderVersion              = 1
@@ -362,7 +363,7 @@ func HeaderCheck(header *block.Header) error {
 	return nil
 }
 
-func TimestampCheck(header *block.Header) error {
+func TimestampCheck(header *block.Header, soft bool) error {
 	prevHeader, err := DefaultLedger.Store.GetHeaderByHeight(header.UnsignedHeader.Height - 1)
 	if err != nil {
 		return err
@@ -376,16 +377,20 @@ func TimestampCheck(header *block.Header) error {
 	}
 
 	now := time.Now()
-	earliest := now.Add(-TimestampTolerance)
-	latest := now.Add(TimestampTolerance)
+	earliest := now.Add(-TimestampTolerancePast)
+	latest := now.Add(TimestampToleranceFuture)
 
-	h := fnv.New64()
-	blockHash := header.Hash()
-	h.Write(blockHash.ToArray())
-	h.Write(timestampToleranceSalt)
-	offsetSec := int64(h.Sum64()%uint64(2*TimestampToleranceVariance.Seconds())) - int64(TimestampToleranceVariance.Seconds())
-	offset := time.Duration(offsetSec) * time.Second
-	earliest = earliest.Add(offset)
+	if soft {
+		h := fnv.New64()
+		blockHash := header.Hash()
+		h.Write(blockHash.ToArray())
+		h.Write(timestampToleranceSalt)
+		offsetSec := int64(h.Sum64()%uint64(2*TimestampToleranceVariance.Seconds()+1)) - int64(TimestampToleranceVariance.Seconds())
+		offset := time.Duration(offsetSec) * time.Second
+		earliest = earliest.Add(offset)
+	} else {
+		earliest = earliest.Add(-TimestampToleranceVariance)
+	}
 
 	if t.Before(earliest) || t.After(latest) {
 		return fmt.Errorf("block timestamp %d exceed my tolerance [%d, %d]", t.Unix(), earliest.Unix(), latest.Unix())
