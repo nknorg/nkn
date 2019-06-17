@@ -45,20 +45,6 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 		return errors.New("txpool full, too many transaction in txpool")
 	}
 
-	// 1. process all Orphens
-	tp.TxLists.Range(func(_, v interface{}) bool {
-		if list, ok := v.(*NonceSortedTxs); ok {
-			list.ProcessOrphans(tp.processTx)
-		}
-		return true
-	})
-	tp.TxLists.Range(func(_, v interface{}) bool {
-		if list, ok := v.(*NonceSortedTxs); ok {
-			list.CleanOrphans(nil)
-		}
-		return true
-	})
-
 	// 2. verify txn
 	if err := chain.VerifyTransaction(txn); err != nil {
 		return err
@@ -74,27 +60,13 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 		return err
 	}
 
-	// 5. process orphans
-	tp.TxLists.Range(func(_, v interface{}) bool {
-		if list, ok := v.(*NonceSortedTxs); ok {
-			list.ProcessOrphans(tp.processTx)
-		}
-		return true
-	})
-	tp.TxLists.Range(func(_, v interface{}) bool {
-		if list, ok := v.(*NonceSortedTxs); ok {
-			list.CleanOrphans(nil)
-		}
-		return true
-	})
-
 	return nil
 }
 
 func (tp *TxnPool) getOrNewList(owner common.Uint160) (*NonceSortedTxs, error) {
 	// check if the owner exsits.
 	if _, ok := tp.TxLists.Load(owner); !ok {
-		tp.TxLists.LoadOrStore(owner, NewNonceSortedTxs(owner, config.Parameters.TxPoolCap, config.Parameters.TxPoolOrphanCap))
+		tp.TxLists.LoadOrStore(owner, NewNonceSortedTxs(owner, config.Parameters.TxPoolCap))
 	}
 
 	// 2. check if the txn exsits.
@@ -138,50 +110,44 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	case pb.NanoPayType:
 		tp.NanoPayTxs.Store(txn.Hash(), txn)
 	default:
-		isOrphan := true
-		replace := false
-		if !list.Empty() {
-			//replace old tx that has same nonce.
-			if _, err := list.Get(txn.UnsignedTx.Nonce); err == nil {
-				log.Warning("replace old tx")
-				//TODO need more fee
-				isOrphan = false
-				replace = true
-			} else if list.Full() {
-				return errors.New("txpool is full")
-			} else if preNonce, _ := list.GetLatestNonce(); txn.UnsignedTx.Nonce == preNonce+1 {
-				isOrphan = false
-			}
-		} else {
-			// compare with DB
-			expectNonce := chain.DefaultLedger.Store.GetNonce(sender[0])
-			if txn.UnsignedTx.Nonce == expectNonce {
-				isOrphan = false
-			}
-		}
-
-		if !isOrphan {
+		if _, err := list.Get(txn.UnsignedTx.Nonce); err == nil {
+			log.Warning("replace old tx")
 			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
 				return err
 			}
-
-			if replace {
-				if err := list.Add(txn); err != nil {
-					return err
-				}
-			} else {
-				if err := list.Push(txn); err != nil {
-					return err
-				}
-			}
-		} else {
-			if list.GetOrphanTxn(hash) != nil {
-				return ErrDuplicatedTx
-			}
-			if err := list.AddOrphanTxn(txn); err != nil {
+			if err := list.Add(txn); err != nil {
 				return err
 			}
+
+			return nil
 		}
+
+		if list.Full() {
+			return errors.New("txpool is full")
+		}
+
+		var expectNonce uint64
+		if preNonce, err := list.GetLatestNonce(); err != nil {
+			if err != ErrNonceSortedTxsEmpty {
+				return errors.New("can not get nonce from txlist")
+			}
+
+			expectNonce = chain.DefaultLedger.Store.GetNonce(sender[0])
+		} else {
+			expectNonce = preNonce + 1
+		}
+
+		if txn.UnsignedTx.Nonce != expectNonce {
+			return errors.New("the nonce is not continuous")
+		}
+
+		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
+			return err
+		}
+		if err := list.Push(txn); err != nil {
+			return err
+		}
+
 	}
 
 	tp.TxMap.Store(txn.Hash(), txn)
@@ -195,8 +161,9 @@ func (tp *TxnPool) GetAddressList() map[common.Uint160]int {
 	tp.TxLists.Range(func(k, v interface{}) bool {
 		if programHash, ok := k.(common.Uint160); ok {
 			if list, ok := v.(*NonceSortedTxs); ok {
-				count := len(list.txs) + len(list.orphans)
-				programHashes[programHash] = count
+				if listSize := list.Len(); listSize != 0 {
+					programHashes[programHash] = listSize
+				}
 			}
 		}
 
@@ -211,9 +178,6 @@ func (tp *TxnPool) GetAllTransactionsBySender(programHash common.Uint160) []*tra
 	if v, ok := tp.TxLists.Load(programHash); ok {
 		if list, ok := v.(*NonceSortedTxs); ok {
 			for _, txn := range list.txs {
-				txns = append(txns, txn)
-			}
-			for _, txn := range list.orphans {
 				txns = append(txns, txn)
 			}
 		}
@@ -358,10 +322,6 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 						for i := 0; uint64(i) <= txNonce-nonce; i++ {
 							list.Pop()
 						}
-
-						// clean invalid txs
-						list.CleanOrphans([]*transaction.Transaction{txn})
-						list.ProcessOrphans(tp.processTx)
 					}
 				}
 			}
