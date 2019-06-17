@@ -2,10 +2,8 @@ package pool
 
 import (
 	"errors"
-	"sort"
 	"sync"
 
-	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/log"
@@ -31,24 +29,20 @@ func (s sortTxnsByNonce) Less(i, j int) bool {
 // NonceSortedTxs store the txns that can be add into blockchain.
 // The txns are sorted by nonce in Increasing order.
 type NonceSortedTxs struct {
-	mu         sync.RWMutex
-	account    common.Uint160
-	txs        map[common.Uint256]*transaction.Transaction // txns belong to The same address
-	idx        []common.Uint256                            // the sequential tx hash list
-	orphans    map[common.Uint256]*transaction.Transaction // orphan txs cannot be added to ledger currently.
-	cap        int                                         // the capacity of the tx hash list
-	orphansCap int                                         // the capacity of the orphan tx hash list
+	mu      sync.RWMutex
+	account common.Uint160
+	txs     map[common.Uint256]*transaction.Transaction // txns belong to The same address
+	idx     []common.Uint256                            // the sequential tx hash list
+	cap     int                                         // the capacity of the tx hash list
 }
 
 // NewNonceSortedTxs return a new NonceSortedTxs instance
-func NewNonceSortedTxs(acc common.Uint160, cap, orphansCap int) *NonceSortedTxs {
+func NewNonceSortedTxs(acc common.Uint160, cap int) *NonceSortedTxs {
 	return &NonceSortedTxs{
-		account:    acc,
-		txs:        make(map[common.Uint256]*transaction.Transaction),
-		idx:        make([]common.Uint256, 0),
-		orphans:    make(map[common.Uint256]*transaction.Transaction),
-		cap:        cap,
-		orphansCap: orphansCap,
+		account: acc,
+		txs:     make(map[common.Uint256]*transaction.Transaction),
+		idx:     make([]common.Uint256, 0),
+		cap:     cap,
 	}
 }
 
@@ -74,10 +68,6 @@ func (nst *NonceSortedTxs) Empty() bool {
 
 func (nst *NonceSortedTxs) full() bool {
 	return nst.len() >= nst.cap
-}
-
-func (nst *NonceSortedTxs) orphansFull() bool {
-	return len(nst.orphans) >= nst.orphansCap
 }
 
 func (nst *NonceSortedTxs) Full() bool {
@@ -202,76 +192,6 @@ func (nst *NonceSortedTxs) ExistTx(hash common.Uint256) bool {
 	return false
 }
 
-func (nst *NonceSortedTxs) GetOrphanTxn(hash common.Uint256) *transaction.Transaction {
-	if txn, ok := nst.orphans[hash]; ok {
-		return txn
-	}
-
-	return nil
-}
-
-func (nst *NonceSortedTxs) AddOrphanTxn(txn *transaction.Transaction) error {
-	if nst.orphansFull() {
-		return errors.New("orphan list is full")
-	}
-
-	for hash, orphan := range nst.orphans {
-		if txn.UnsignedTx.Nonce == orphan.UnsignedTx.Nonce {
-			delete(nst.orphans, hash)
-		}
-	}
-
-	nst.orphans[txn.Hash()] = txn
-
-	return nil
-}
-
-func (nst *NonceSortedTxs) ProcessOrphans(handle func(tx *transaction.Transaction) error) error {
-	orphanList := make([]*transaction.Transaction, 0)
-	for _, orphan := range nst.orphans {
-		orphanList = append(orphanList, orphan)
-	}
-
-	sort.Sort(sortTxnsByNonce(orphanList))
-
-	for _, txn := range orphanList {
-		handle(txn)
-	}
-
-	return nil
-}
-
-func (nst *NonceSortedTxs) CleanOrphans(txs []*transaction.Transaction) {
-	nonce := int64(0)
-
-	if n, err := nst.GetLatestNonce(); err != nil {
-		n = chain.DefaultLedger.Store.GetNonce(nst.account)
-		nonce = int64(n) - 1
-	} else {
-		nonce = int64(n)
-	}
-
-	for _, txn := range txs {
-		hash := txn.Hash()
-		if _, ok := nst.orphans[hash]; ok {
-			delete(nst.orphans, hash)
-		}
-	}
-
-	for hash, orphan := range nst.orphans {
-		if int64(orphan.UnsignedTx.Nonce) <= nonce {
-			delete(nst.orphans, hash)
-			continue
-		}
-
-		if _, ok := nst.txs[hash]; ok {
-			delete(nst.orphans, hash)
-		}
-	}
-
-	//clean for payload type
-}
-
 func (nst *NonceSortedTxs) Dump() {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
@@ -284,10 +204,6 @@ func (nst *NonceSortedTxs) Dump() {
 	log.Info("idx:", len(nst.idx))
 	for _, h := range nst.idx {
 		log.Info(h.ToHexString())
-	}
-	log.Info("orphans:", len(nst.orphans))
-	for h, tx := range nst.orphans {
-		log.Info(h.ToHexString(), ":", tx.UnsignedTx.Nonce)
 	}
 	log.Info("cap:", nst.cap)
 }
