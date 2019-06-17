@@ -48,9 +48,9 @@ const (
 	MinGenIDRegistrationFee      = 0
 	GenerateIDBlockDelay         = 1
 	RandomBeaconLength           = 32
-	ProtocolVersion              = 66
-	MinCompatibleProtocolVersion = 66
-	MaxCompatibleProtocolVersion = 70
+	ProtocolVersion              = 71
+	MinCompatibleProtocolVersion = 71
+	MaxCompatibleProtocolVersion = 75
 	DefaultTxPoolCap             = 32
 	DefaultTxPoolOrphanCap       = 64
 )
