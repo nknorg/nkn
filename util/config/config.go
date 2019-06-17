@@ -51,7 +51,6 @@ const (
 	MinCompatibleProtocolVersion = 71
 	MaxCompatibleProtocolVersion = 75
 	DefaultTxPoolCap             = 32
-	DefaultTxPoolOrphanCap       = 64
 )
 
 var (
@@ -86,7 +85,6 @@ var (
 		NATPortMappingTimeout:     365 * 86400,
 		NumTxnPerBlock:            MaxNumTxnPerBlock,
 		TxPoolCap:                 DefaultTxPoolCap,
-		TxPoolOrphanCap:           DefaultTxPoolOrphanCap,
 	}
 )
 
@@ -121,7 +119,6 @@ type Configuration struct {
 	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
 	NumTxnPerBlock            uint32        `json:"NumTxnPerBlock"`
 	TxPoolCap                 int           `json:"TxPoolCap"`
-	TxPoolOrphanCap           int           `json:"TxPoolOrphanCap"`
 	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`        // in seconds
 	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`       // in seconds
 	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`      // in seconds
