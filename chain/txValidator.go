@@ -394,6 +394,10 @@ func (bvs *BlockValidationState) initBlockValidationState() {
 func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, header *block.Header) (e error) {
 	bvs.Lock()
 	defer bvs.Unlock()
+	return bvs.verifyTransactionWithBlock(txn, header)
+}
+
+func (bvs *BlockValidationState) verifyTransactionWithBlock(txn *transaction.Transaction, header *block.Header) (e error) {
 	//1.check weather have duplicate transaction.
 	if _, exist := bvs.txnlist[txn.Hash()]; exist {
 		return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
@@ -633,7 +637,7 @@ func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction
 	defer bvs.Unlock()
 	bvs.initBlockValidationState()
 	for _, tx := range txns {
-		if err := bvs.VerifyTransactionWithBlock(tx, nil); err != nil {
+		if err := bvs.verifyTransactionWithBlock(tx, nil); err != nil {
 			return err
 		}
 	}
