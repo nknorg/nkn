@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
 	"strings"
+	"time"
 
 	"github.com/nknorg/nkn/api/common"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/util/log"
 )
+
+const requestTimeout = 10 * time.Second
 
 // Call sends RPC request to server
 func Call(address string, method string, id interface{}, params map[string]interface{}) ([]byte, error) {
@@ -23,19 +25,22 @@ func Call(address string, method string, id interface{}, params map[string]inter
 		"params": params,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Marshal JSON request: %v\n", err)
+		log.Errorf("Marshal JSON request: %v\n", err)
 		return nil, err
 	}
-	resp, err := http.Post(address, "application/json", strings.NewReader(string(data)))
+	var netClient = &http.Client{
+		Timeout: requestTimeout,
+	}
+	resp, err := netClient.Post(address, "application/json", strings.NewReader(string(data)))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "POST request: %v\n", err)
+		log.Errorf("POST request: %v\n", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "GET response: %v\n", err)
+		log.Errorf("GET response: %v\n", err)
 		return nil, err
 	}
 
@@ -54,7 +59,7 @@ func GetRemoteBlkHeight(remote string) (uint32, error) {
 		Result  uint32 `json:"result"`
 	}
 	if err := json.Unmarshal(resp, &ret); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return 0, err
 	}
 
@@ -68,16 +73,16 @@ func FindSuccessorAddrs(remote string, key []byte) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("FindSuccessorAddrs: %s\n", string(resp))
+	log.Infof("FindSuccessorAddrs: %s\n", string(resp))
 
 	var ret struct {
 		Result []string `json:"result"`
 	}
 	if err := json.Unmarshal(resp, &ret); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return nil, err
 	}
-	log.Printf("Successor Address: %v\n", ret)
+	log.Infof("Successor Address: %v\n", ret)
 
 	return ret.Result, nil
 }
@@ -89,20 +94,20 @@ func GetMyExtIP(remote string, ip []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Printf("GetMyExtIP got resp: %v from %s\n", string(resp), remote)
+	log.Infof("GetMyExtIP got resp: %v from %s\n", string(resp), remote)
 
 	var ret struct {
 		Result struct{ RemoteAddr string } `json:"result"`
 		Err    map[string]interface{}      `json:"error"`
 	}
 	if err := json.Unmarshal(resp, &ret); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return "", err
 	}
 	if len(ret.Err) != 0 { // resp.error NOT empty
 		return "", fmt.Errorf("GetMyExtIP(%s) resp error: %v", remote, string(resp))
 	}
-	log.Printf("From %s got myself ExtIP: %s\n", remote, string(resp))
+	log.Infof("From %s got myself ExtIP: %s\n", remote, string(resp))
 
 	return ret.Result.RemoteAddr, nil
 }
@@ -114,14 +119,14 @@ func GetID(remote string, publicKey []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("GetID got resp: %v from %s\n", string(resp), remote)
+	log.Infof("GetID got resp: %v from %s\n", string(resp), remote)
 
 	var ret struct {
 		Result struct{ Id string }    `json:"result"`
 		Err    map[string]interface{} `json:"error"`
 	}
 	if err := json.Unmarshal(resp, &ret); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return nil, err
 	}
 	if len(ret.Err) != 0 { // resp.error NOT empty
@@ -154,7 +159,7 @@ func CreateID(remote string, genIdTxn string) (string, error) {
 		return "", err
 	}
 
-	log.Printf("CreateID got resp: %v from %s\n", string(resp), remote)
+	log.Infof("CreateID got resp: %v from %s\n", string(resp), remote)
 
 	var ret struct {
 		Result string                 `json:"result"`
@@ -162,7 +167,7 @@ func CreateID(remote string, genIdTxn string) (string, error) {
 	}
 
 	if err := json.Unmarshal(resp, &ret); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return "", err
 	}
 	if len(ret.Err) != 0 { // resp.error NOT empty
@@ -190,7 +195,7 @@ func GetNonceByAddr(remote string, addr string) (uint64, error) {
 		return 0, err
 	}
 
-	log.Printf("GetNonceByAddr got resp: %v from %s\n", string(resp), remote)
+	log.Infof("GetNonceByAddr got resp: %v from %s\n", string(resp), remote)
 
 	var ret struct {
 		Result struct {
@@ -202,7 +207,7 @@ func GetNonceByAddr(remote string, addr string) (uint64, error) {
 	}
 
 	if err := json.Unmarshal(resp, &ret); err != nil {
-		log.Println(err)
+		log.Error(err)
 		return 0, err
 	}
 	if len(ret.Err) != 0 { // resp.error NOT empty
