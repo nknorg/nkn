@@ -132,7 +132,10 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			defer cancel()
 
 			if acceptProposal {
-				if err = chain.HeaderCheck(proposal.Header); err != nil {
+				if err = chain.TimestampCheck(proposal.Header, true); err != nil {
+					log.Warningf("Proposal fails to pass soft timestamp check: %v", err)
+					acceptProposal = false
+				} else if err = chain.HeaderCheck(proposal.Header); err != nil {
 					log.Warningf("Proposal fails to pass header check: %v", err)
 					acceptProposal = false
 				} else if err = chain.NextBlockProposerCheck(proposal.Header); err != nil {
@@ -321,11 +324,11 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 	}
 
 	if consensus.canVerifyHeight(b.Header.UnsignedHeader.Height) {
-		// We put timestamp check here to prevent proposal with invalid timestamp to
-		// be propagated
-		if err = chain.TimestampCheck(b.Header); err != nil {
+		// We put hard timestamp check here to prevent proposal with invalid
+		// timestamp to be propagated
+		if err = chain.TimestampCheck(b.Header, false); err != nil {
 			consensus.proposals.Set(blockHash.ToArray(), b)
-			return nil, fmt.Errorf("Proposal fails to pass timestamp check: %v", err)
+			return nil, fmt.Errorf("Proposal fails to pass hard timestamp check: %v", err)
 		}
 		if err = chain.SignerCheck(b.Header); err != nil {
 			consensus.proposals.Set(blockHash.ToArray(), b)

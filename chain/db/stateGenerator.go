@@ -7,8 +7,8 @@ import (
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vm/contract"
-	"github.com/nknorg/nnet/log"
 )
 
 func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transaction, totalFee Fixed64, genesis bool) error {
