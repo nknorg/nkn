@@ -108,50 +108,65 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		// sigchain txn should not be added to txn pool
 		return nil
 	case pb.NanoPayType:
+		tp.blockValidationState.Lock()
+		defer tp.blockValidationState.Unlock()
+		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
+			tp.blockValidationState.Reset()
+			return err
+		}
 		tp.NanoPayTxs.Store(txn.Hash(), txn)
+		tp.blockValidationState.Commit()
 	default:
-		if _, err := list.Get(txn.UnsignedTx.Nonce); err == nil {
+		if oldTxn, err := list.Get(txn.UnsignedTx.Nonce); err == nil {
 			log.Warning("replace old tx")
-			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
+			tp.blockValidationState.Lock()
+			defer tp.blockValidationState.Unlock()
+			if err := tp.CleanBlockValidationState([]*transaction.Transaction{oldTxn}); err != nil {
 				return err
 			}
+			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
+				tp.blockValidationState.Reset()
+				return err
+			}
+
 			if err := list.Add(txn); err != nil {
 				return err
 			}
 
-			return nil
-		}
-
-		if list.Full() {
+			tp.deleteTransactionFromMap(oldTxn)
+		} else if list.Full() {
 			return errors.New("txpool is full")
-		}
+		} else {
+			var expectNonce uint64
+			if preNonce, err := list.GetLatestNonce(); err != nil {
+				if err != ErrNonceSortedTxsEmpty {
+					return errors.New("can not get nonce from txlist")
+				}
 
-		var expectNonce uint64
-		if preNonce, err := list.GetLatestNonce(); err != nil {
-			if err != ErrNonceSortedTxsEmpty {
-				return errors.New("can not get nonce from txlist")
+				expectNonce = chain.DefaultLedger.Store.GetNonce(sender[0])
+			} else {
+				expectNonce = preNonce + 1
 			}
 
-			expectNonce = chain.DefaultLedger.Store.GetNonce(sender[0])
-		} else {
-			expectNonce = preNonce + 1
+			if txn.UnsignedTx.Nonce != expectNonce {
+				return errors.New("the nonce is not continuous")
+			}
+
+			tp.blockValidationState.Lock()
+			defer tp.blockValidationState.Unlock()
+			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
+				tp.blockValidationState.Reset()
+				return err
+			}
+			if err := list.Push(txn); err != nil {
+				return err
+			}
 		}
 
-		if txn.UnsignedTx.Nonce != expectNonce {
-			return errors.New("the nonce is not continuous")
-		}
-
-		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
-			return err
-		}
-		if err := list.Push(txn); err != nil {
-			return err
-		}
-
+		tp.blockValidationState.Commit()
 	}
 
-	tp.TxMap.Store(txn.Hash(), txn)
-	tp.TxShortHashMap.Store(shortHashToKey(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)), txn)
+	tp.addTransactionToMap(txn)
 
 	return nil
 }
@@ -330,14 +345,26 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 		if _, ok := tp.TxMap.Load(txn.Hash()); ok {
 			txnsInPool = append(txnsInPool, txn)
 		}
-		tp.TxMap.Delete(txn.Hash())
-		tp.TxShortHashMap.Delete(shortHashToKey(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)))
+		tp.deleteTransactionFromMap(txn)
 	}
 
-	if err := tp.blockValidationState.CleanSubmittedTransactions(txnsInPool); err != nil {
-		if err := tp.blockValidationState.RefreshBlockValidationState(tp.GetAllTransactions()); err != nil {
-			return err
-		}
+	return tp.CleanBlockValidationState(txnsInPool)
+}
+
+func (tp *TxnPool) addTransactionToMap(txn *transaction.Transaction) {
+	tp.TxMap.Store(txn.Hash(), txn)
+	tp.TxShortHashMap.Store(shortHashToKey(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)), txn)
+}
+
+func (tp *TxnPool) deleteTransactionFromMap(txn *transaction.Transaction) {
+	tp.TxMap.Delete(txn.Hash())
+	tp.TxShortHashMap.Delete(shortHashToKey(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)))
+}
+
+func (tp *TxnPool) CleanBlockValidationState(txns []*transaction.Transaction) error {
+	if err := tp.blockValidationState.CleanSubmittedTransactions(txns); err != nil {
+		log.Errorf("[CleanBlockValidationState] couldn't clean txn from block validation state: %v", err)
+		return tp.blockValidationState.RefreshBlockValidationState(tp.GetAllTransactions())
 	}
 
 	return nil
