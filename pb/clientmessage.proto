@@ -15,14 +15,34 @@ option (gogoproto.testgen_all) = true;
 option (gogoproto.equal_all) = true;
 option (gogoproto.populate_all) = true;
 
+enum ClientMessageType {
+  OUTBOUND_MESSAGE = 0;
+  INBOUND_MESSAGE = 1;
+  RECEIPT = 2;
+}
+
+message ClientMessage {
+  ClientMessageType message_type = 1;
+  bytes message = 2;
+}
+
 message OutboundMessage {
   string dest = 1;
   bytes payload = 2;
   repeated string dests = 3;
   uint32 max_holding_seconds = 4;
+  uint32 nonce = 5;
+  bytes block_hash = 6;
+  repeated bytes signatures = 7;
 }
 
 message InboundMessage {
   string src = 1;
   bytes payload = 2;
+  bytes prev_signature = 3;
+}
+
+message Receipt {
+  bytes prev_signature = 1;
+  bytes signature = 2;
 }
