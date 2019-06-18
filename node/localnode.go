@@ -340,43 +340,43 @@ func (localNode *LocalNode) FindSuccessorAddrs(key []byte, numSucc int) ([]strin
 	return addrs, nil
 }
 
-func (localNode *LocalNode) findAddr(key []byte) (string, error) {
+func (localNode *LocalNode) findAddr(key []byte) (string, []byte, []byte, error) {
 	c, ok := localNode.nnet.Network.(*chord.Chord)
 	if !ok {
-		return "", errors.New("Overlay is not chord")
+		return "", nil, nil, errors.New("Overlay is not chord")
 	}
 
 	preds, err := c.FindPredecessors(key, 1)
 	if err != nil {
-		return "", err
+		return "", nil, nil, err
 	}
 
 	if len(preds) == 0 {
-		return "", errors.New("Found no predecessors")
+		return "", nil, nil, errors.New("Found no predecessors")
 	}
 
 	pred := preds[0]
 	nodeData := &pb.NodeData{}
 	err = proto.Unmarshal(pred.Data, nodeData)
 	if err != nil {
-		return "", err
+		return "", nil, nil, err
 	}
 
 	address, _ := url.Parse(pred.Addr)
 	if err != nil {
-		return "", err
+		return "", nil, nil, err
 	}
 
 	host := address.Hostname()
 	if host == "" {
-		return "", errors.New("Hostname is empty")
+		return "", nil, nil, errors.New("Hostname is empty")
 	}
 
 	wsAddr := fmt.Sprintf("%s:%d", host, nodeData.WebsocketPort)
 
-	return wsAddr, nil
+	return wsAddr, nodeData.PublicKey, pred.Id, nil
 }
 
-func (localNode *LocalNode) FindWsAddr(key []byte) (string, error) {
+func (localNode *LocalNode) FindWsAddr(key []byte) (string, []byte, []byte, error) {
 	return localNode.findAddr(key)
 }

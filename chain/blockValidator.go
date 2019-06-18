@@ -374,7 +374,7 @@ func TimestampCheck(header *block.Header, soft bool) error {
 	t := time.Unix(header.UnsignedHeader.Timestamp, 0) // Handle negative
 
 	prevBlockTimestamp := time.Unix(prevHeader.UnsignedHeader.Timestamp, 0)
-	if !t.After(prevBlockTimestamp) {
+	if t.Unix() <= prevBlockTimestamp.Unix() {
 		return fmt.Errorf("block timestamp %d is not later than previous block timestamp %d", t.Unix(), prevBlockTimestamp.Unix())
 	}
 
@@ -394,7 +394,7 @@ func TimestampCheck(header *block.Header, soft bool) error {
 		earliest = earliest.Add(-TimestampToleranceVariance)
 	}
 
-	if t.Before(earliest) || t.After(latest) {
+	if t.Unix() < earliest.Unix() || t.Unix() > latest.Unix() {
 		return fmt.Errorf("block timestamp %d exceed my tolerance [%d, %d]", t.Unix(), earliest.Unix(), latest.Unix())
 	}
 

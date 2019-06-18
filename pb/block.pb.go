@@ -44,6 +44,8 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Ignoring public import of GenerateID from pb/payload.proto
 
+// Ignoring public import of NanoPay from pb/payload.proto
+
 // Ignoring public import of PayloadType from pb/payload.proto
 
 // Ignoring public import of Program from pb/program.proto

@@ -164,16 +164,16 @@ func (ps *PorServer) Sign(relayMessage *pb.Relay, nextPubkey, prevNodeID []byte,
 	return nil
 }
 
-func (ps *PorServer) CreateSigChainForClient(dataSize uint32, blockHash *common.Uint256, srcID,
-	srcPubkey, destID, destPubkey, signature []byte, sigAlgo pb.SigAlgo) (*pb.SigChain, error) {
+func (ps *PorServer) CreateSigChainForClient(nonce, dataSize uint32, blockHash []byte, srcID, srcPubkey, destID, destPubkey, signature []byte, sigAlgo pb.SigAlgo) (*pb.SigChain, error) {
 	pubKey, err := ps.account.PubKey().EncodePoint(true)
 	if err != nil {
 		log.Error("Get account public key error:", err)
 		return nil, err
 	}
 	sigChain, err := pb.NewSigChainWithSignature(
+		nonce,
 		dataSize,
-		blockHash.ToArray(),
+		blockHash,
 		srcID,
 		srcPubkey,
 		destID,

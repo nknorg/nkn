@@ -6,10 +6,12 @@ import (
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket/server"
 	"github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/chain"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 )
 
@@ -109,8 +111,14 @@ func PushSigChainBlockHash(v interface{}) {
 	}
 	resp := common.ResponsePack(common.SUCCESS)
 	if block, ok := v.(*block.Block); ok {
+		sigChainBlockHeight := block.Header.UnsignedHeader.Height - config.MaxRollbackBlocks
+		sigChainBlockHash, err := chain.DefaultLedger.Store.GetBlockHash(sigChainBlockHeight)
+		if err != nil {
+			log.Warningf("get sigchain block hash at height %d error: %v", sigChainBlockHeight, err)
+			return
+		}
 		resp["Action"] = "updateSigChainBlockHash"
-		resp["Result"] = BytesToHexString(block.Header.UnsignedHeader.PrevBlockHash)
+		resp["Result"] = BytesToHexString(sigChainBlockHash.ToArray())
 		ws.PushResult(resp)
 	}
 }

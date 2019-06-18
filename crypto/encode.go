@@ -242,7 +242,11 @@ func DecodePoint(encodeData []byte) (*PubKey, error) {
 	}
 
 	if AlgChoice == Ed25519 {
-		return &PubKey{X: new(big.Int).SetBytes(encodeData[1:]), Y: big.NewInt(0)}, nil
+		pk := encodeData[1:]
+		if len(pk) != ed25519.GetPublicKeySize() {
+			return nil, fmt.Errorf("get public key length size %d, should be %d", len(pk), ed25519.GetPublicKeySize())
+		}
+		return &PubKey{X: new(big.Int).SetBytes(pk), Y: big.NewInt(0)}, nil
 	} else {
 		switch encodeData[0] {
 		case 0x00:
