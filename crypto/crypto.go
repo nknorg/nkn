@@ -120,7 +120,6 @@ func Sign(privateKey []byte, data []byte) ([]byte, error) {
 func Verify(publicKey PubKey, data []byte, signature []byte) error {
 	len := len(signature)
 	if len != util.SIGNATURELEN {
-		fmt.Printf("Unknown signature length %d\n", len)
 		return errors.New("Unknown signature length")
 	}
 
