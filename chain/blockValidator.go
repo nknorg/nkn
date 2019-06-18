@@ -123,8 +123,10 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 			return fmt.Errorf("transaction sanity check failed: %v", err)
 		}
 		if err := bvs.VerifyTransactionWithBlock(txn, block.Header); err != nil {
+			bvs.Reset()
 			return fmt.Errorf("transaction block check failed: %v", err)
 		}
+		bvs.Commit()
 		if err := VerifyTransactionWithLedger(txn, block.Header); err != nil {
 			return fmt.Errorf("transaction history check failed: %v", err)
 		}
