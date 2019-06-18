@@ -237,7 +237,7 @@ func (localNode *LocalNode) startRelayer() {
 	localNode.relayer.Start()
 }
 
-func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, signature []byte, maxHoldingSeconds uint32) error {
+func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, signature, blockHash []byte, nonce, maxHoldingSeconds uint32) error {
 	srcID, srcPubkey, srcIdentifier, err := address.ParseClientAddress(srcAddr)
 	if err != nil {
 		return err
@@ -248,26 +248,22 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 		return err
 	}
 
-	height := chain.DefaultLedger.Store.GetHeight() - config.MaxRollbackBlocks
-	if height < 0 {
-		height = 0
-	}
-	blockHash := chain.DefaultLedger.Store.GetHeaderHashByHeight(height)
 	_, err = por.GetPorServer().CreateSigChainForClient(
+		nonce,
 		uint32(len(payload)),
-		&blockHash,
+		blockHash,
 		srcID,
 		srcPubkey,
 		destID,
 		destPubkey,
 		signature,
-		pb.VRF,
+		pb.SIGNATURE,
 	)
 	if err != nil {
 		return err
 	}
 
-	msg, err := NewRelayMessage(srcIdentifier, srcPubkey, destID, payload, blockHash.ToArray(), signature, maxHoldingSeconds)
+	msg, err := NewRelayMessage(srcIdentifier, srcPubkey, destID, payload, blockHash, signature, maxHoldingSeconds)
 	if err != nil {
 		return err
 	}

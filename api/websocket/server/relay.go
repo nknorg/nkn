@@ -2,16 +2,22 @@ package server
 
 import (
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/log"
 )
+
+type sigChainInfo struct {
+	blockHash   []byte
+	sigChainLen int
+}
 
 func ResolveDest(Dest string) string {
 	substrings := strings.Split(Dest, ".")
@@ -29,30 +35,50 @@ func ResolveDest(Dest string) string {
 
 func (ws *WsServer) sendOutboundRelayMessage(srcAddrStrPtr *string, msg *pb.OutboundMessage) {
 	if srcAddrStrPtr == nil {
-		log.Error("src addr is nil")
+		log.Warningf("src addr is nil")
 		return
 	}
 
-	for _, dest := range append(msg.Dests, msg.Dest) {
+	dests := msg.Dests
+	if len(dests) == 0 && len(msg.Dest) > 0 {
+		dests = append(dests, msg.Dest)
+	}
+
+	if len(dests) == 0 {
+		log.Warningf("no destination")
+		return
+	}
+
+	for i, dest := range dests {
 		dest = ResolveDest(dest)
 
-		err := ws.localNode.SendRelayMessage(*srcAddrStrPtr, dest, msg.Payload, util.RandomBytes(32), msg.MaxHoldingSeconds)
+		err := ws.localNode.SendRelayMessage(*srcAddrStrPtr, dest, msg.Payload, msg.Signatures[i], msg.BlockHash, msg.Nonce, msg.MaxHoldingSeconds)
 		if err != nil {
 			log.Error("Send relay message error:", err)
 		}
 	}
 }
 
-func (ws *WsServer) sendInboundMessage(clientID string, msg *pb.InboundMessage) bool {
+func (ws *WsServer) sendInboundMessage(clientID string, inboundMsg *pb.InboundMessage) bool {
 	clients := ws.SessionList.GetSessionsById(clientID)
 	if clients == nil {
-		log.Info("Client Not Online:", clientID)
+		log.Infof("Client Not Online: %s", clientID)
 		return false
 	}
 
-	buf, err := proto.Marshal(msg)
+	buf, err := proto.Marshal(inboundMsg)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("Marshal inbound message error: %v", err)
+		return false
+	}
+
+	msg := &pb.ClientMessage{
+		MessageType: pb.INBOUND_MESSAGE,
+		Message:     buf,
+	}
+	buf, err = proto.Marshal(msg)
+	if err != nil {
+		log.Errorf("Marshal client message error: %v", err)
 		return false
 	}
 
@@ -82,19 +108,46 @@ func (ws *WsServer) sendInboundRelayMessage(relayMessage *pb.Relay) {
 		Payload: relayMessage.Payload,
 	}
 
+	shouldSign := por.GetPorServer().ShouldSignDestSigChainElem(relayMessage.BlockHash, relayMessage.LastSignature, int(relayMessage.SigChainLen))
+	if shouldSign {
+		msg.PrevSignature = relayMessage.LastSignature
+	}
+
 	success := ws.sendInboundMessage(hex.EncodeToString(clientID), msg)
 	if success {
-		porServer := por.GetPorServer()
-		if porServer.ShouldSignDestSigChainElem(relayMessage.BlockHash, relayMessage.LastSignature, int(relayMessage.SigChainLen)) {
-			destSigChainElem := pb.NewSigChainElem(clientID, nil, util.RandomBytes(32), nil, nil, false)
-			porServer.AddDestSigChainElem(
-				relayMessage.BlockHash,
-				relayMessage.LastSignature,
-				int(relayMessage.SigChainLen),
-				destSigChainElem,
-			)
+		if shouldSign {
+			ws.sigChainCache.Add(relayMessage.LastSignature, &sigChainInfo{
+				blockHash:   relayMessage.BlockHash,
+				sigChainLen: int(relayMessage.SigChainLen),
+			})
 		}
 	} else {
 		ws.messageBuffer.AddMessage(clientID, relayMessage)
 	}
+}
+
+func (ws *WsServer) handleReceipt(receipt *pb.Receipt) error {
+	v, ok := ws.sigChainCache.Get(receipt.PrevSignature)
+	if !ok {
+		return fmt.Errorf("sigchain info with last signature %x not found in cache", receipt.PrevSignature)
+	}
+
+	sci, ok := v.(*sigChainInfo)
+	if !ok {
+		return errors.New("convert to sigchain info failed")
+	}
+
+	if !por.GetPorServer().ShouldSignDestSigChainElem(sci.blockHash, receipt.PrevSignature, sci.sigChainLen) {
+		return nil
+	}
+
+	destSigChainElem := pb.NewSigChainElem(nil, nil, receipt.Signature, nil, nil, false)
+	por.GetPorServer().AddDestSigChainElem(
+		sci.blockHash,
+		receipt.PrevSignature,
+		sci.sigChainLen,
+		destSigChainElem,
+	)
+
+	return nil
 }

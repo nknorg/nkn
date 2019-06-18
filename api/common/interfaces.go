@@ -431,6 +431,14 @@ func commitPor(s Serverer, params map[string]interface{}) map[string]interface{}
 	return respPacking(SUCCESS, common.BytesToHexString(txHash.ToArrayReverse()))
 }
 
+func NodeInfo(addr string, pubkey, id []byte) map[string]string {
+	nodeInfo := make(map[string]string)
+	nodeInfo["addr"] = addr
+	nodeInfo["pubkey"] = common.BytesToHexString(pubkey)
+	nodeInfo["id"] = common.BytesToHexString(id)
+	return nodeInfo
+}
+
 // getWsAddr get a websocket address
 // params: {"address":<address>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
@@ -449,12 +457,13 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
-	addr, err := localNode.FindWsAddr(clientID)
+
+	addr, pubkey, id, err := localNode.FindWsAddr(clientID)
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	return respPacking(SUCCESS, addr)
+	return respPacking(SUCCESS, NodeInfo(addr, pubkey, id))
 }
 
 // getBalanceByAddr gets balance by address
