@@ -371,6 +371,8 @@ type BlockValidationState struct {
 	subscriptions     map[subscription]struct{}
 	subscriptionCount map[string]int
 	nanoPays          map[nanoPay]struct{}
+
+	changes []func()
 }
 
 func NewBlockValidationState() *BlockValidationState {
@@ -390,21 +392,32 @@ func (bvs *BlockValidationState) initBlockValidationState() {
 	bvs.nanoPays = make(map[nanoPay]struct{}, 0)
 }
 
-// VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, header *block.Header) (e error) {
-	bvs.Lock()
-	defer bvs.Unlock()
-	return bvs.verifyTransactionWithBlock(txn, header)
+func (bvs *BlockValidationState) addChange(change func()) {
+	bvs.changes = append(bvs.changes, change)
 }
 
-func (bvs *BlockValidationState) verifyTransactionWithBlock(txn *transaction.Transaction, header *block.Header) (e error) {
+func (bvs *BlockValidationState) Commit() {
+	for _, change := range bvs.changes {
+		change()
+	}
+	bvs.Reset()
+}
+
+func (bvs *BlockValidationState) Reset() {
+	bvs.changes = nil
+}
+
+// VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
+func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, header *block.Header) (e error) {
 	//1.check weather have duplicate transaction.
 	if _, exist := bvs.txnlist[txn.Hash()]; exist {
 		return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
 	} else {
 		defer func() {
 			if e == nil {
-				bvs.txnlist[txn.Hash()] = struct{}{}
+				bvs.addChange(func() {
+					bvs.txnlist[txn.Hash()] = struct{}{}
+				})
 			}
 		}()
 	}
@@ -453,8 +466,10 @@ func (bvs *BlockValidationState) verifyTransactionWithBlock(txn *transaction.Tra
 
 		defer func() {
 			if e == nil {
-				bvs.registeredNames[name] = struct{}{}
-				bvs.nameRegistrants[registrant] = struct{}{}
+				bvs.addChange(func() {
+					bvs.registeredNames[name] = struct{}{}
+					bvs.nameRegistrants[registrant] = struct{}{}
+				})
 			}
 		}()
 	case pb.DeleteNameType:
@@ -472,8 +487,10 @@ func (bvs *BlockValidationState) verifyTransactionWithBlock(txn *transaction.Tra
 
 		defer func() {
 			if e == nil {
-				bvs.registeredNames[name] = struct{}{}
-				bvs.nameRegistrants[registrant] = struct{}{}
+				bvs.addChange(func() {
+					bvs.registeredNames[name] = struct{}{}
+					bvs.nameRegistrants[registrant] = struct{}{}
+				})
 			}
 		}()
 	case pb.SubscribeType:
@@ -493,8 +510,10 @@ func (bvs *BlockValidationState) verifyTransactionWithBlock(txn *transaction.Tra
 
 		defer func() {
 			if e == nil {
-				bvs.subscriptions[key] = struct{}{}
-				bvs.subscriptionCount[topic] = subscriptionCount + 1
+				bvs.addChange(func() {
+					bvs.subscriptions[key] = struct{}{}
+					bvs.subscriptionCount[topic] = subscriptionCount + 1
+				})
 			}
 		}()
 	case pb.GenerateIDType:
@@ -507,7 +526,9 @@ func (bvs *BlockValidationState) verifyTransactionWithBlock(txn *transaction.Tra
 
 		defer func() {
 			if e == nil {
-				bvs.generateIDs[publicKey] = struct{}{}
+				bvs.addChange(func() {
+					bvs.generateIDs[publicKey] = struct{}{}
+				})
 			}
 		}()
 	case pb.NanoPayType:
@@ -532,7 +553,9 @@ func (bvs *BlockValidationState) verifyTransactionWithBlock(txn *transaction.Tra
 
 		defer func() {
 			if e == nil {
-				bvs.nanoPays[key] = struct{}{}
+				bvs.addChange(func() {
+					bvs.nanoPays[key] = struct{}{}
+				})
 			}
 		}()
 	}
@@ -546,7 +569,9 @@ func (bvs *BlockValidationState) verifyTransactionWithBlock(txn *transaction.Tra
 
 		defer func() {
 			if e == nil {
-				bvs.totalAmount[sender] = totalAmount + amount + fee
+				bvs.addChange(func() {
+					bvs.totalAmount[sender] = totalAmount + amount + fee
+				})
 			}
 		}()
 	}
@@ -555,8 +580,6 @@ func (bvs *BlockValidationState) verifyTransactionWithBlock(txn *transaction.Tra
 }
 
 func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.Transaction) error {
-	bvs.Lock()
-	defer bvs.Unlock()
 	for _, txn := range txns {
 		delete(bvs.txnlist, txn.Hash())
 
@@ -633,11 +656,9 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 }
 
 func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction.Transaction) error {
-	bvs.Lock()
-	defer bvs.Unlock()
 	bvs.initBlockValidationState()
 	for _, tx := range txns {
-		if err := bvs.verifyTransactionWithBlock(tx, nil); err != nil {
+		if err := bvs.VerifyTransactionWithBlock(tx, nil); err != nil {
 			return err
 		}
 	}
