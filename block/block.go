@@ -16,6 +16,7 @@ import (
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vm/signature"
+	"golang.org/x/crypto/ed25519"
 )
 
 const (
@@ -162,7 +163,7 @@ func GenesisBlockInit() (*Block, error) {
 		return nil, errors.New("GenesisBlockProposer is required in config.json")
 	}
 	proposer, err := HexStringToBytes(config.Parameters.GenesisBlockProposer)
-	if err != nil || len(proposer) != crypto.COMPRESSEDLEN {
+	if err != nil || len(proposer) != ed25519.PublicKeySize {
 		return nil, errors.New("invalid GenesisBlockProposer configured")
 	}
 	genesisBlockProposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)

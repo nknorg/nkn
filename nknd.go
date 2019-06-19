@@ -50,7 +50,6 @@ func init() {
 	log.Init(log.Path, log.Stdout)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().UnixNano())
-	crypto.SetAlg(config.EncryptAlg)
 }
 
 func InitLedger(account *vault.Account) error {
@@ -426,12 +425,9 @@ func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	pkEncoded, err := account.PubKey().EncodePoint(true)
-	if err != nil {
-		return nil, err
-	}
+	pk := account.PubKey().EncodePoint()
 
-	id, err := GetID(seeds, pkEncoded)
+	id, err := GetID(seeds, pk)
 	if err != nil {
 		if err := CreateID(seeds, wallet, regFee); err != nil {
 			return nil, err
@@ -452,7 +448,7 @@ out:
 		case <-timer.C:
 			timer.Reset(config.ConsensusDuration)
 			log.Warningf("try to get ID from local ledger and remoteNode...")
-			if id, err := GetID(seeds, pkEncoded); err == nil {
+			if id, err := GetID(seeds, pk); err == nil {
 				if !bytes.Equal(id, crypto.Sha256ZeroHash) {
 					return id, nil
 				}

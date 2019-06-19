@@ -101,10 +101,7 @@ func (ctx *ContractContext) AddSignatureToMultiList(contractIndex int, contract 
 	if ctx.MultiPubkeyPara[contractIndex] == nil {
 		ctx.MultiPubkeyPara[contractIndex] = make([]PubkeyParameter, len(contract.Parameters))
 	}
-	pk, err := pubkey.EncodePoint(true)
-	if err != nil {
-		return err
-	}
+	pk := pubkey.EncodePoint()
 
 	pubkeyPara := PubkeyParameter{
 		PubKey:    BytesToHexString(pk),

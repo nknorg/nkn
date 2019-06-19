@@ -62,10 +62,7 @@ func MakeRegisterNameTransaction(wallet vault.Wallet, name string, nonce uint64,
 	if err != nil {
 		return nil, err
 	}
-	registrant, err := account.PubKey().EncodePoint(true)
-	if err != nil {
-		return nil, err
-	}
+	registrant := account.PubKey().EncodePoint()
 	txn, err := transaction.NewRegisterNameTransaction(registrant, name, nonce, fee)
 	if err != nil {
 		return nil, err
@@ -90,10 +87,7 @@ func MakeDeleteNameTransaction(wallet vault.Wallet, name string, nonce uint64, f
 	if err != nil {
 		return nil, err
 	}
-	registrant, err := account.PubKey().EncodePoint(true)
-	if err != nil {
-		return nil, err
-	}
+	registrant := account.PubKey().EncodePoint()
 	txn, err := transaction.NewDeleteNameTransaction(registrant, name, nonce, fee)
 	if err != nil {
 		return nil, err
@@ -118,10 +112,7 @@ func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic stri
 	if err != nil {
 		return nil, err
 	}
-	subscriber, err := account.PubKey().EncodePoint(true)
-	if err != nil {
-		return nil, err
-	}
+	subscriber := account.PubKey().EncodePoint()
 	txn, err := transaction.NewSubscribeTransaction(subscriber, identifier, topic, bucket, duration, meta, nonce, fee)
 	if err != nil {
 		return nil, err
@@ -146,10 +137,7 @@ func MakeGenerateIDTransaction(wallet vault.Wallet, regFee Fixed64, nonce uint64
 	if err != nil {
 		return nil, err
 	}
-	pubkey, err := account.PubKey().EncodePoint(true)
-	if err != nil {
-		return nil, err
-	}
+	pubkey := account.PubKey().EncodePoint()
 	txn, err := transaction.NewGenerateIDTransaction(pubkey, regFee, nonce, txnFee)
 	if err != nil {
 		return nil, err

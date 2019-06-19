@@ -19,7 +19,7 @@ func showAccountInfo(wallet vault.Wallet, verbose bool) {
 	fmt.Printf(format, "Address", "Public Key")
 	fmt.Printf(format, "-------", "----------")
 	address, _ := account.ProgramHash.ToAddress()
-	publicKey, _ := account.PublicKey.EncodePoint(true)
+	publicKey := account.PublicKey.EncodePoint()
 	fmt.Printf(format, address, BytesToHexString(publicKey))
 	if verbose {
 		fmt.Printf("\nPrivate Key\n-----------\n%s\n", BytesToHexString(account.PrivateKey))
