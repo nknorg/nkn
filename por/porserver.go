@@ -53,6 +53,11 @@ type PorServer struct {
 	destSigChainElemCache common.Cache
 }
 
+var Store interface {
+	GetHeightByBlockHash(hash common.Uint256) (uint32, error)
+	GetID(publicKey []byte) ([]byte, error)
+}
+
 type vrfResult struct {
 	vrf   []byte
 	proof []byte
@@ -267,6 +272,27 @@ func (ps *PorServer) ShouldAddSigChainToCache(currentHeight, voteForHeight uint3
 	return true
 }
 
+func VerifyID(sc *pb.SigChain) error {
+	for i := range sc.Elems {
+		if i == 0 || (sc.IsComplete() && i == sc.Length()-1) {
+			continue
+		}
+
+		pk := sc.Elems[i-1].NextPubkey
+		id, err := Store.GetID(pk)
+		if err != nil {
+			return fmt.Errorf("get id of pk %x error: %v", pk, err)
+		}
+		if len(id) == 0 {
+			return fmt.Errorf("id of pk %x is empty", id)
+		}
+		if !bytes.Equal(sc.Elems[i].Id, id) {
+			return fmt.Errorf("id of pk %x should be %x, got %x", pk, id, sc.Elems[i].Id)
+		}
+	}
+	return nil
+}
+
 func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeight uint32) (*PorPackage, error) {
 	porPkg, err := NewPorPackage(txn, false)
 	if err != nil {
@@ -278,6 +304,11 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 
 	if !ps.ShouldAddSigChainToCache(currentHeight, porPkg.VoteForHeight, porPkg.SigHash) {
 		return nil, nil
+	}
+
+	err = VerifyID(porPkg.SigChain)
+	if err != nil {
+		return nil, err
 	}
 
 	err = porPkg.SigChain.Verify()
