@@ -170,7 +170,7 @@ func (rs *RelayService) broadcastSigChain(sigChain *pb.SigChain) error {
 		return err
 	}
 
-	txn, err := MakeCommitTransaction(rs.wallet, buf)
+	txn, err := MakeSigChainTransaction(rs.wallet, buf)
 	if err != nil {
 		return err
 	}
@@ -277,13 +277,13 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 	return nil
 }
 
-func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte) (*transaction.Transaction, error) {
+func MakeSigChainTransaction(wallet vault.Wallet, sigChain []byte) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
 	}
 	//TODO modify nonce
-	txn, err := transaction.NewCommitTransaction(sigChain, account.ProgramHash, 0)
+	txn, err := transaction.NewSigChainTransaction(sigChain, account.ProgramHash, 0)
 	if err != nil {
 		return nil, err
 	}

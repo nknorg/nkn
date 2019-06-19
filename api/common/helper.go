@@ -33,12 +33,12 @@ func MakeTransferTransaction(wallet vault.Wallet, receipt Uint160, nonce uint64,
 	return txn, nil
 }
 
-func MakeCommitTransaction(wallet vault.Wallet, sigChain []byte, nonce uint64) (*transaction.Transaction, error) {
+func MakeSigChainTransaction(wallet vault.Wallet, sigChain []byte, nonce uint64) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
 	}
-	txn, err := transaction.NewCommitTransaction(sigChain, account.ProgramHash, nonce)
+	txn, err := transaction.NewSigChainTransaction(sigChain, account.ProgramHash, nonce)
 	if err != nil {
 		return nil, err
 	}

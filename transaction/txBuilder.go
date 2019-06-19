@@ -24,9 +24,9 @@ func NewTransferAssetTransaction(sender, recipient Uint160, nonce uint64, value,
 	}, nil
 }
 
-func NewCommitTransaction(sigChain []byte, submitter Uint160, nonce uint64) (*Transaction, error) {
-	payload := NewCommit(sigChain, submitter)
-	pl, err := Pack(pb.CommitType, payload)
+func NewSigChainTransaction(sigChain []byte, submitter Uint160, nonce uint64) (*Transaction, error) {
+	payload := NewSigChainTxn(sigChain, submitter)
+	pl, err := Pack(pb.SigChainTxnType, payload)
 	if err != nil {
 		return nil, err
 	}

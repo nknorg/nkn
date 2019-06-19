@@ -289,7 +289,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.CoinbaseType:
-		case pb.CommitType:
+		case pb.SigChainTxnType:
 		case pb.TransferAssetType:
 		case pb.RegisterNameType:
 			registerNamePayload := pl.(*pb.RegisterName)
