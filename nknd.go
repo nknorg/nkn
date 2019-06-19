@@ -48,7 +48,6 @@ var (
 )
 
 func init() {
-	log.Init(log.Path, log.Stdout)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().UnixNano())
 }
@@ -123,16 +122,20 @@ func AskMyIP(seeds []string) (string, error) {
 }
 
 func nknMain(c *cli.Context) (err error) {
-	log.Info("Node version: ", config.Version)
 	signalChan := make(chan os.Signal, 1)
 
 	err = config.Init()
 	if err != nil {
 		return err
 	}
-	log.Log.SetDebugLevel(config.Parameters.LogLevel) // Update LogLevel after config.json loaded
-
 	defer config.Parameters.CleanPortMapping()
+
+	err = log.Init()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Node version: %v", config.Version)
 
 	if config.Parameters.Hostname == "" { // Skip query self extIP via set "HostName" in config.json
 		log.Info("Getting my IP address...")
@@ -270,16 +273,6 @@ func nknMain(c *cli.Context) (err error) {
 	}
 
 	consensus.Start()
-
-	go func() {
-		for {
-			time.Sleep(config.ConsensusDuration)
-			if log.CheckIfNeedNewFile() {
-				log.ClosePrintLog()
-				log.Init(log.Path, os.Stdout)
-			}
-		}
-	}()
 
 	signal.Notify(signalChan, os.Interrupt)
 	for _ = range signalChan {

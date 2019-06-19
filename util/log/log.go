@@ -12,9 +12,16 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nknorg/nkn/util/config"
+)
+
+const (
+	namePrefix = "LEVEL"
+	callDepth  = 2
+	mb         = 1024 * 1024
 )
 
 const (
@@ -23,10 +30,6 @@ const (
 	Yellow = "0;33"
 	Pink   = "1;35"
 )
-
-func Color(code, msg string) string {
-	return fmt.Sprintf("\033[%sm%s\033[m", code, msg)
-}
 
 const (
 	debugLog = iota
@@ -46,13 +49,9 @@ var (
 	Stdout = os.Stdout
 )
 
-const (
-	namePrefix        = "LEVEL"
-	callDepth         = 2
-	defaultMaxLogSize = 20
-	byteToMb          = 1024 * 1024
-	Path              = "./Log/"
-)
+func Color(code, msg string) string {
+	return fmt.Sprintf("\033[%sm%s\033[m", code, msg)
+}
 
 func GetGID() uint64 {
 	var buf [64]byte
@@ -64,6 +63,7 @@ func GetGID() uint64 {
 }
 
 var Log *Logger
+var initOnce sync.Once
 
 func LevelName(level int) string {
 	if name, ok := levels[level]; ok {
@@ -86,12 +86,13 @@ func NameLevel(name string) int {
 }
 
 type Logger struct {
+	sync.RWMutex
 	level   int
 	logger  *log.Logger
 	logFile *os.File
 }
 
-func New(out io.Writer, prefix string, flag, level int, file *os.File) *Logger {
+func newLogger(out io.Writer, prefix string, flag, level int, file *os.File) *Logger {
 	return &Logger{
 		level:   level,
 		logger:  log.New(out, prefix, flag),
@@ -99,10 +100,22 @@ func New(out io.Writer, prefix string, flag, level int, file *os.File) *Logger {
 	}
 }
 
+func (l *Logger) reset(out io.Writer, prefix string, flag, level int, file *os.File) {
+	l.Lock()
+	defer l.Unlock()
+	l.closeLogFile()
+	l.level = level
+	l.logger = log.New(out, prefix, flag)
+	l.logFile = file
+}
+
 func (l *Logger) SetDebugLevel(level int) error {
 	if level >= maxLevelLog || level < 0 {
 		return errors.New("Invalid Debug Level")
 	}
+
+	l.Lock()
+	defer l.Unlock()
 
 	l.level = level
 	return nil
@@ -110,8 +123,11 @@ func (l *Logger) SetDebugLevel(level int) error {
 
 func (l *Logger) Output(level int, a ...interface{}) error {
 	if l == nil {
-		l = New(Stdout, "", log.Ldate|log.Lmicroseconds, 0, nil)
+		l = newLogger(Stdout, "", log.Ldate|log.Lmicroseconds, 0, nil)
 	}
+
+	l.RLock()
+	defer l.RUnlock()
 
 	if level >= l.level {
 		gid := GetGID()
@@ -127,8 +143,11 @@ func (l *Logger) Output(level int, a ...interface{}) error {
 
 func (l *Logger) Outputf(level int, format string, v ...interface{}) error {
 	if l == nil {
-		l = New(Stdout, "", log.Ldate|log.Lmicroseconds, 0, nil)
+		l = newLogger(Stdout, "", log.Ldate|log.Lmicroseconds, 0, nil)
 	}
+
+	l.RLock()
+	defer l.RUnlock()
 
 	if level >= l.level {
 		gid := GetGID()
@@ -173,6 +192,9 @@ func (l *Logger) Errorf(format string, a ...interface{}) {
 }
 
 func Debug(a ...interface{}) {
+	Log.RLock()
+	defer Log.RUnlock()
+
 	if debugLog < Log.level {
 		return
 	}
@@ -193,6 +215,9 @@ func Debug(a ...interface{}) {
 }
 
 func Debugf(format string, a ...interface{}) {
+	Log.RLock()
+	defer Log.RUnlock()
+
 	if debugLog < Log.level {
 		return
 	}
@@ -256,68 +281,90 @@ func FileOpen(path string) (*os.File, error) {
 	return logfile, nil
 }
 
-func Init(a ...interface{}) {
+func getWritterAndFile(outputs ...interface{}) (io.Writer, *os.File, error) {
 	writers := []io.Writer{}
 	var logFile *os.File
 	var err error
-	if len(a) == 0 {
+	if len(outputs) == 0 {
 		writers = append(writers, ioutil.Discard)
 	} else {
-		for _, o := range a {
+		for _, o := range outputs {
 			switch o.(type) {
 			case string:
 				logFile, err = FileOpen(o.(string))
 				if err != nil {
-					fmt.Printf("open log file %v failed: %v", o, err)
-					os.Exit(1)
+					return nil, nil, fmt.Errorf("open log file %v failed: %v", o, err)
 				}
 				writers = append(writers, logFile)
 			case *os.File:
 				writers = append(writers, o.(*os.File))
 			default:
-				fmt.Println("error: invalid log location")
-				os.Exit(1)
+				return nil, nil, fmt.Errorf("invalid log location %v", o)
 			}
 		}
 	}
 	fileAndStdoutWrite := io.MultiWriter(writers...)
-	var loglevel int = config.Parameters.LogLevel
-	Log = New(fileAndStdoutWrite, "", log.Ldate|log.Lmicroseconds, loglevel, logFile)
+	return fileAndStdoutWrite, logFile, nil
 }
 
-func GetLogFileSize() (int64, error) {
-	f, e := Log.logFile.Stat()
+func Init() error {
+	var err error
+	initOnce.Do(func() {
+		var writter io.Writer
+		var file *os.File
+		writter, file, err = getWritterAndFile(config.Parameters.LogPath, Stdout)
+		if err != nil {
+			return
+		}
+
+		Log = newLogger(writter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, file)
+
+		go func() {
+			for {
+				time.Sleep(config.ConsensusDuration)
+				if Log.needNewLogFile() {
+					writter, file, err = getWritterAndFile(config.Parameters.LogPath, Stdout)
+					if err != nil {
+						panic(err)
+					}
+					Log.reset(writter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, file)
+				}
+			}
+		}()
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (l *Logger) GetLogFileSize() (int64, error) {
+	l.RLock()
+	defer l.RUnlock()
+
+	f, e := l.logFile.Stat()
 	if e != nil {
 		return 0, e
 	}
 	return f.Size(), nil
 }
 
-func GetMaxLogChangeInterval() int64 {
-	if config.Parameters.MaxLogSize != 0 {
-		return (config.Parameters.MaxLogSize * byteToMb)
-	} else {
-		return (defaultMaxLogSize * byteToMb)
-	}
-}
-
-func CheckIfNeedNewFile() bool {
-	logFileSize, err := GetLogFileSize()
-	maxLogFileSize := GetMaxLogChangeInterval()
+func (l *Logger) needNewLogFile() bool {
+	logFileSize, err := l.GetLogFileSize()
+	maxLogFileSize := int64(config.Parameters.MaxLogFileSize) * mb
 	if err != nil {
 		return false
 	}
 	if logFileSize > maxLogFileSize {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
-func ClosePrintLog() error {
+func (l *Logger) closeLogFile() error {
 	var err error
-	if Log.logFile != nil {
-		err = Log.logFile.Close()
+	if l.logFile != nil {
+		err = l.logFile.Close()
 	}
 	return err
 }
