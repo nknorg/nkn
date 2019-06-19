@@ -34,8 +34,8 @@ func Unpack(payload *pb.Payload) (IPayload, error) {
 		pl = new(pb.Coinbase)
 	case pb.TransferAssetType:
 		pl = new(pb.TransferAsset)
-	case pb.CommitType:
-		pl = new(pb.Commit)
+	case pb.SigChainTxnType:
+		pl = new(pb.SigChainTxn)
 	case pb.RegisterNameType:
 		pl = new(pb.RegisterName)
 	case pb.DeleteNameType:
@@ -71,8 +71,8 @@ func NewTransferAsset(sender, recipient common.Uint160, amount common.Fixed64) I
 	}
 }
 
-func NewCommit(sigChain []byte, submitter common.Uint160) IPayload {
-	return &pb.Commit{
+func NewSigChainTxn(sigChain []byte, submitter common.Uint160) IPayload {
+	return &pb.SigChainTxn{
 		SigChain:  sigChain,
 		Submitter: submitter.ToArray(),
 	}
@@ -111,11 +111,11 @@ func NewGenerateID(publicKey []byte, regFee common.Fixed64) IPayload {
 
 func NewNanoPay(sender, recipient common.Uint160, nonce uint64, amount common.Fixed64, height, duration uint32) IPayload {
 	return &pb.NanoPay{
-		Sender:     sender.ToArray(),
-		Recipient:  recipient.ToArray(),
-		Nonce:      nonce,
-		Amount:     int64(amount),
-		Height:     height,
-		Duration:   duration,
+		Sender:    sender.ToArray(),
+		Recipient: recipient.ToArray(),
+		Nonce:     nonce,
+		Amount:    int64(amount),
+		Height:    height,
+		Duration:  duration,
 	}
 }

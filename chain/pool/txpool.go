@@ -104,7 +104,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.CommitType:
+	case pb.SigChainTxnType:
 		// sigchain txn should not be added to txn pool
 		return nil
 	case pb.NanoPayType:
@@ -322,7 +322,7 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.CoinbaseType:
 			continue
-		case pb.CommitType:
+		case pb.SigChainTxnType:
 			continue
 		case pb.NanoPayType:
 			tp.NanoPayTxs.Delete(txn.Hash())

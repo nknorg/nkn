@@ -60,7 +60,7 @@ func (c PorPackages) Less(i, j int) bool {
 }
 
 func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage, error) {
-	if txn.UnsignedTx.Payload.Type != pb.CommitType {
+	if txn.UnsignedTx.Payload.Type != pb.SigChainTxnType {
 		return nil, errors.New("Transaction type mismatch")
 	}
 	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
@@ -68,7 +68,7 @@ func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage
 		return nil, err
 	}
 
-	rs := payload.(*pb.Commit)
+	rs := payload.(*pb.SigChainTxn)
 	sigChain := &pb.SigChain{}
 	err = proto.Unmarshal(rs.SigChain, sigChain)
 	if err != nil {

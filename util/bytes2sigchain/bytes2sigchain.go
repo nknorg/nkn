@@ -72,12 +72,12 @@ func main() {
 
 		var buf, jStr []byte
 		if buf, err = hex.DecodeString(strings.TrimRight(l, "\n")); err == nil { // hexStr to bin
-			commitTxn := &pb.Commit{}
-			if err = commitTxn.Unmarshal(buf); err == nil { // bin to pb struct of commitType txn
-				// submitter, _ := new(common.Uint160).SetBytes(commitTxn.Submitter).ToAddress()
+			sigChainTxn := &pb.SigChainTxn{}
+			if err = sigChainTxn.Unmarshal(buf); err == nil { // bin to pb struct of SigChainTxnType txn
+				// submitter, _ := new(common.Uint160).SetBytes(sigChainTxn.Submitter).ToAddress()
 				sc := &pb.SigChain{}
-				if err = sc.Unmarshal(commitTxn.SigChain); err == nil { // bin to pb struct of sigChain
-					js := map[string]interface{}{"SigChain": sc, "Submitter": commitTxn.Submitter}
+				if err = sc.Unmarshal(sigChainTxn.SigChain); err == nil { // bin to pb struct of sigChain
+					js := map[string]interface{}{"SigChain": sc, "Submitter": sigChainTxn.Submitter}
 					if jStr, err = json.Marshal(js); err == nil { // to json string
 						Base64Handler(re, os.Stdout, jStr) // replace all in jStr to stdout
 						os.Stdout.WriteString("\n")

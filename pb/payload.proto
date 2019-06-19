@@ -18,7 +18,7 @@ option (gogoproto.populate_all) = true;
 enum PayloadType {
 	CoinbaseType       = 0;
 	TransferAssetType  = 1;
-	CommitType         = 2;
+	SigChainTxnType    = 2;
 	RegisterNameType   = 3;
 	TransferNameType   = 4;
 	DeleteNameType     = 5;
@@ -38,7 +38,7 @@ message Coinbase {
 	int64 amount      = 3;
 }
 
-message Commit {
+message SigChainTxn {
 	bytes sigChain     = 1;
 	bytes submitter    = 2;
 }
