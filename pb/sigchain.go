@@ -150,7 +150,7 @@ func (sc *SigChain) VerifySignatures() error {
 	for i, e := range sc.Elems {
 		pk, err := crypto.DecodePoint(prevNextPubkey)
 		if err != nil {
-			return fmt.Errorf("invalid pubkey: %v", err)
+			return fmt.Errorf("invalid pubkey %x: %v", prevNextPubkey, err)
 		}
 
 		if i == 0 || (sc.IsComplete() && i == sc.Length()-1) {
