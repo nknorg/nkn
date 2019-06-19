@@ -3,7 +3,6 @@ package types
 import (
 	"math/big"
 
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/vm/interfaces"
 )
 
@@ -38,7 +37,7 @@ func (ba *ByteArray) Equals(other StackItemInterface) bool {
 
 func (ba *ByteArray) GetBigInteger() *big.Int {
 	bi := new(big.Int)
-	return bi.SetBytes(common.ToArrayReverse(ba.value))
+	return bi.SetBytes(ba.value)
 }
 
 func (ba *ByteArray) GetBoolean() bool {
