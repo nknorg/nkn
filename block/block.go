@@ -2,7 +2,6 @@ package block
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vm/signature"
-	"golang.org/x/crypto/ed25519"
 )
 
 type Block struct {
@@ -152,14 +150,10 @@ func (b *Block) Verify() error {
 }
 
 func GenesisBlockInit() (*Block, error) {
-	if config.Parameters.GenesisBlockProposer == "" {
-		return nil, errors.New("GenesisBlockProposer is required in config.json")
+	genesisBlockProposer, err := HexStringToBytes(config.Parameters.GenesisBlockProposer)
+	if err != nil {
+		return nil, fmt.Errorf("parse GenesisBlockProposer error: %v", err)
 	}
-	proposer, err := HexStringToBytes(config.Parameters.GenesisBlockProposer)
-	if err != nil || len(proposer) != ed25519.PublicKeySize {
-		return nil, errors.New("invalid GenesisBlockProposer configured")
-	}
-	genesisBlockProposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)
 
 	// block header
 	genesisBlockHeader := &Header{
@@ -175,8 +169,14 @@ func GenesisBlockInit() (*Block, error) {
 		},
 	}
 
-	rewardAddress, _ := ToScriptHash(config.InitialIssueAddress)
-	donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+	rewardAddress, err := ToScriptHash(config.InitialIssueAddress)
+	if err != nil {
+		return nil, fmt.Errorf("parse InitialIssueAddress error: %v", err)
+	}
+	donationProgramhash, err := ToScriptHash(config.DonationAddress)
+	if err != nil {
+		return nil, fmt.Errorf("parse DonationAddress error: %v", err)
+	}
 	payload := transaction.NewCoinbase(donationProgramhash, rewardAddress, Fixed64(config.InitialIssueAmount))
 	pl, err := transaction.Pack(pb.CoinbaseType, payload)
 	if err != nil {

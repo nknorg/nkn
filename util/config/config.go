@@ -18,6 +18,7 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nnet/transport"
+	"golang.org/x/crypto/ed25519"
 )
 
 const (
@@ -249,6 +250,25 @@ func check(config *Configuration) error {
 
 	if config.NumTxnPerBlock > MaxNumTxnPerBlock {
 		return fmt.Errorf("NumTxnPerBlock cannot be greater than %d", MaxNumTxnPerBlock)
+	}
+
+	if len(config.GenesisBlockProposer) == 0 {
+		return errors.New("no GenesisBlockProposer")
+	}
+
+	pk, err := common.HexStringToBytes(config.GenesisBlockProposer)
+	if err != nil {
+		return fmt.Errorf("parse GenesisBlockProposer error: %v", err)
+	}
+	if len(pk) != ed25519.PublicKeySize {
+		return fmt.Errorf("invalid GenesisBlockProposer length %d bytes, expecting %d bytes", len(pk), ed25519.PublicKeySize)
+	}
+
+	if len(config.BeneficiaryAddr) > 0 {
+		_, err = common.ToScriptHash(config.BeneficiaryAddr)
+		if err != nil {
+			return fmt.Errorf("parse BeneficiaryAddr error: %v", err)
+		}
 	}
 
 	return nil
