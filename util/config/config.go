@@ -12,10 +12,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nknorg/coniks-go/crypto/vrf"
 	gonat "github.com/nknorg/go-nat"
 	"github.com/nknorg/go-portscanner"
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/crypto/ed25519/vrf"
 	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nnet/transport"
 	"github.com/rdegges/go-ipify"
@@ -30,13 +30,13 @@ const (
 	MaxNumTxnPerBlock            = 4096
 	MaxBlockSize                 = 1 * 1024 * 1024 // in bytes
 	ConsensusDuration            = 20 * time.Second
-	ConsensusTimeout             = time.Minute
+	ConsensusTimeout             = 60 * time.Second
 	MinNumSuccessors             = 8
 	NodeIDBytes                  = 32
 	MaxRollbackBlocks            = 1
 	SigChainPropogationTime      = 1
 	HeaderVersion                = 1
-	DBVersion                    = 0x0e
+	DBVersion                    = 0x0f
 	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
 	InitialIssueAmount           = 700000000 * common.StorageFactor
 	TotalMiningRewards           = 300000000 * common.StorageFactor
@@ -51,9 +51,9 @@ const (
 	GenerateIDBlockDelay         = 1
 	RandomBeaconUniqueLength     = vrf.Size
 	RandomBeaconLength           = vrf.Size + vrf.ProofSize
-	ProtocolVersion              = 71
-	MinCompatibleProtocolVersion = 71
-	MaxCompatibleProtocolVersion = 75
+	ProtocolVersion              = 76
+	MinCompatibleProtocolVersion = 76
+	MaxCompatibleProtocolVersion = 80
 	DefaultTxPoolCap             = 32
 	ShortHashSize                = uint32(8)
 )
