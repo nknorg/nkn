@@ -33,12 +33,6 @@ type PorPackage struct {
 	SigChain      *pb.SigChain `protobuf:"bytes,6,opt,name=SigChain" json:"SigChain,omitempty"`
 }
 
-type PorStore interface {
-	GetHeightByBlockHash(hash Uint256) (uint32, error)
-}
-
-var Store PorStore
-
 type PorPackages []*PorPackage
 
 func (c PorPackages) Len() int {
@@ -107,6 +101,11 @@ func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage
 	}
 
 	if shouldVerify {
+		err = VerifyID(sigChain)
+		if err != nil {
+			return nil, err
+		}
+
 		err = sigChain.Verify()
 		if err != nil {
 			return nil, err
