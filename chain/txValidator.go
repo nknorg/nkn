@@ -129,7 +129,7 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		if pld.Amount < 0 {
 			return errors.New("transfer amount error.")
 		}
-	case pb.CommitType:
+	case pb.SigChainTxnType:
 	case pb.RegisterNameType:
 		pld := payload.(*pb.RegisterName)
 		match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)", pld.Name)
@@ -250,7 +250,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 		if int64(balance) < pld.Amount {
 			return errors.New("not sufficient funds")
 		}
-	case pb.CommitType:
+	case pb.SigChainTxnType:
 	case pb.RegisterNameType:
 		if err := checkNonce(); err != nil {
 			return err

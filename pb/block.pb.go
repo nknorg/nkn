@@ -32,7 +32,7 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Ignoring public import of Coinbase from pb/payload.proto
 
-// Ignoring public import of Commit from pb/payload.proto
+// Ignoring public import of SigChainTxn from pb/payload.proto
 
 // Ignoring public import of DeleteName from pb/payload.proto
 

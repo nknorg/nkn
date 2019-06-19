@@ -38,7 +38,7 @@ func TestPorPackage(t *testing.T) {
 	}
 
 	buf, err := proto.Marshal(sc)
-	txn, err := transaction.NewCommitTransaction(buf, from.ProgramHash)
+	txn, err := transaction.NewSigChainTransaction(buf, from.ProgramHash)
 	if err != nil {
 		log.Error("txn wrong", txn)
 	}

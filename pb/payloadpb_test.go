@@ -131,15 +131,15 @@ func TestCoinbaseMarshalTo(t *testing.T) {
 	}
 }
 
-func TestCommitProto(t *testing.T) {
+func TestSigChainTxnProto(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedCommit(popr, false)
+	p := NewPopulatedSigChainTxn(popr, false)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &Commit{}
+	msg := &SigChainTxn{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -162,10 +162,10 @@ func TestCommitProto(t *testing.T) {
 	}
 }
 
-func TestCommitMarshalTo(t *testing.T) {
+func TestSigChainTxnMarshalTo(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedCommit(popr, false)
+	p := NewPopulatedSigChainTxn(popr, false)
 	size := p.Size()
 	dAtA := make([]byte, size)
 	for i := range dAtA {
@@ -175,7 +175,7 @@ func TestCommitMarshalTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &Commit{}
+	msg := &SigChainTxn{}
 	if err := github_com_gogo_protobuf_proto.Unmarshal(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -559,16 +559,16 @@ func TestCoinbaseJSON(t *testing.T) {
 		t.Fatalf("seed = %d, %#v !Json Equal %#v", seed, msg, p)
 	}
 }
-func TestCommitJSON(t *testing.T) {
+func TestSigChainTxnJSON(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedCommit(popr, true)
+	p := NewPopulatedSigChainTxn(popr, true)
 	marshaler := github_com_gogo_protobuf_jsonpb.Marshaler{}
 	jsondata, err := marshaler.MarshalToString(p)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
-	msg := &Commit{}
+	msg := &SigChainTxn{}
 	err = github_com_gogo_protobuf_jsonpb.UnmarshalString(jsondata, msg)
 	if err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
@@ -741,12 +741,12 @@ func TestCoinbaseProtoCompactText(t *testing.T) {
 	}
 }
 
-func TestCommitProtoText(t *testing.T) {
+func TestSigChainTxnProtoText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedCommit(popr, true)
+	p := NewPopulatedSigChainTxn(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.MarshalTextString(p)
-	msg := &Commit{}
+	msg := &SigChainTxn{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -755,12 +755,12 @@ func TestCommitProtoText(t *testing.T) {
 	}
 }
 
-func TestCommitProtoCompactText(t *testing.T) {
+func TestSigChainTxnProtoCompactText(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedCommit(popr, true)
+	p := NewPopulatedSigChainTxn(popr, true)
 	dAtA := github_com_gogo_protobuf_proto.CompactTextString(p)
-	msg := &Commit{}
+	msg := &SigChainTxn{}
 	if err := github_com_gogo_protobuf_proto.UnmarshalText(dAtA, msg); err != nil {
 		t.Fatalf("seed = %d, err = %v", seed, err)
 	}
@@ -963,9 +963,9 @@ func TestCoinbaseGoString(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestCommitGoString(t *testing.T) {
+func TestSigChainTxnGoString(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedCommit(popr, false)
+	p := NewPopulatedSigChainTxn(popr, false)
 	s1 := p.GoString()
 	s2 := fmt.Sprintf("%#v", p)
 	if s1 != s2 {
@@ -1098,10 +1098,10 @@ func TestCoinbaseSize(t *testing.T) {
 	}
 }
 
-func TestCommitSize(t *testing.T) {
+func TestSigChainTxnSize(t *testing.T) {
 	seed := time.Now().UnixNano()
 	popr := math_rand.New(math_rand.NewSource(seed))
-	p := NewPopulatedCommit(popr, true)
+	p := NewPopulatedSigChainTxn(popr, true)
 	size2 := github_com_gogo_protobuf_proto.Size(p)
 	dAtA, err := github_com_gogo_protobuf_proto.Marshal(p)
 	if err != nil {
@@ -1270,9 +1270,9 @@ func TestCoinbaseStringer(t *testing.T) {
 		t.Fatalf("String want %v got %v", s1, s2)
 	}
 }
-func TestCommitStringer(t *testing.T) {
+func TestSigChainTxnStringer(t *testing.T) {
 	popr := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
-	p := NewPopulatedCommit(popr, false)
+	p := NewPopulatedSigChainTxn(popr, false)
 	s1 := p.String()
 	s2 := fmt.Sprintf("%v", p)
 	if s1 != s2 {

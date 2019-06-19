@@ -133,7 +133,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.CoinbaseType:
-		case pb.CommitType:
+		case pb.SigChainTxnType:
 		case pb.NanoPayType:
 		default:
 			addr, err := ToCodeHash(txn.Programs[0].Code)
@@ -249,19 +249,19 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 				return nil, nil, 0, err
 			}
 
-			if txn.UnsignedTx.Payload.Type != pb.CommitType {
+			if txn.UnsignedTx.Payload.Type != pb.SigChainTxnType {
 				return nil, nil, 0, errors.New("invalid transaction type")
 			}
 
-			commit, err := transaction.Unpack(txn.UnsignedTx.Payload)
+			payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 			if err != nil {
 				return nil, nil, 0, errors.New("invalid payload type")
 			}
 
-			payload := commit.(*pb.Commit)
-			sigchain := &pb.SigChain{}
-			proto.Unmarshal(payload.SigChain, sigchain)
-			publicKey, chordID, err = sigchain.GetMiner()
+			sigChainTxn := payload.(*pb.SigChainTxn)
+			sigChain := &pb.SigChain{}
+			proto.Unmarshal(sigChainTxn.SigChain, sigChain)
+			publicKey, chordID, err = sigChain.GetMiner()
 			if err != nil {
 				return nil, nil, 0, err
 			}
