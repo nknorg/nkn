@@ -1,12 +1,10 @@
 package block
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
@@ -17,11 +15,6 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vm/signature"
 	"golang.org/x/crypto/ed25519"
-)
-
-const (
-	BlockVersion  uint32 = 0
-	GenesisBeacon string = "6c9027722dc37f17739da69baffd6fc8281fe568701d8aa0092eb77549461469"
 )
 
 type Block struct {
@@ -168,20 +161,15 @@ func GenesisBlockInit() (*Block, error) {
 	}
 	genesisBlockProposer, _ := HexStringToBytes(config.Parameters.GenesisBlockProposer)
 
-	genesisBeacon, err := hex.DecodeString(GenesisBeacon)
-	if err != nil {
-		return nil, err
-	}
-
 	// block header
 	genesisBlockHeader := &Header{
 		Header: &pb.Header{
 			UnsignedHeader: &pb.UnsignedHeader{
-				Version:       BlockVersion,
+				Version:       config.HeaderVersion,
 				PrevBlockHash: EmptyUint256.ToArray(),
-				Timestamp:     time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix(),
+				Timestamp:     config.GenesisTimestamp,
 				Height:        uint32(0),
-				RandomBeacon:  genesisBeacon,
+				RandomBeacon:  config.GenesisBeacon,
 				Signer:        genesisBlockProposer,
 			},
 		},

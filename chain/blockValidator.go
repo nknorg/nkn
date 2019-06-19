@@ -27,7 +27,6 @@ const (
 	TimestampToleranceVariance = config.ConsensusDuration / 6
 	ProposingTimeTolerance     = config.ConsensusDuration / 2
 	NumGenesisBlocks           = por.SigChainMiningHeightOffset + config.MaxRollbackBlocks - 1
-	HeaderVersion              = 1
 )
 
 var timestampToleranceSalt []byte = util.RandomBytes(32)
@@ -295,7 +294,7 @@ func SignerCheck(header *block.Header) error {
 	currentHeight := DefaultLedger.Store.GetHeight()
 	publicKey, chordID, _, err := GetNextBlockSigner(currentHeight, header.UnsignedHeader.Timestamp)
 	if err != nil {
-		return err
+		return fmt.Errorf("get next block signer error: %v", err)
 	}
 
 	if !bytes.Equal(header.UnsignedHeader.Signer, publicKey) {
@@ -319,11 +318,11 @@ func SignerCheck(header *block.Header) error {
 
 	rawPubKey, err := crypto.DecodePoint(publicKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("decode public key error: %v", err)
 	}
 	err = crypto.Verify(*rawPubKey, signature.GetHashForSigning(header), header.Signature)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid header signature %x", header.Signature)
 	}
 
 	return nil
@@ -336,41 +335,51 @@ func HeaderCheck(header *block.Header) error {
 
 	expectedHeight := DefaultLedger.Store.GetHeight() + 1
 	if header.UnsignedHeader.Height != expectedHeight {
-		return fmt.Errorf("Block height %d is different from expected height %d", header.UnsignedHeader.Height, expectedHeight)
+		return fmt.Errorf("block height %d is different from expected height %d", header.UnsignedHeader.Height, expectedHeight)
 	}
 
 	err := SignerCheck(header)
 	if err != nil {
-		return err
+		return fmt.Errorf("signer check failed: %v", err)
 	}
 
 	currentHash := DefaultLedger.Store.GetCurrentBlockHash()
 	prevHash, err := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse prev block hash %x error: %v", header.UnsignedHeader.PrevBlockHash, err)
 	}
 	if prevHash != currentHash {
-		return errors.New("invalid prev header")
+		return fmt.Errorf("invalid prev header %x, expecting %x", prevHash.ToArray(), currentHash.ToArray())
 	}
 
 	prevHeader, err := DefaultLedger.Blockchain.GetHeader(currentHash)
 	if err != nil {
-		return err
+		return fmt.Errorf("get header by hash %x error: %v", currentHash.ToArray(), err)
 	}
 	if prevHeader == nil {
-		return errors.New("cannot get prev header")
-	}
-
-	if len(header.UnsignedHeader.RandomBeacon) != config.RandomBeaconLength {
-		return errors.New("invalid header RandomBeacon")
+		return fmt.Errorf("cannot get prev header by hash %x", currentHash.ToArray())
 	}
 
 	if prevHeader.UnsignedHeader.Timestamp >= header.UnsignedHeader.Timestamp {
-		return errors.New("invalid header timestamp")
+		return fmt.Errorf("header timestamp %d is not greater than prev timestamp %d", header.UnsignedHeader.Timestamp, prevHeader.UnsignedHeader.Timestamp)
 	}
 
 	if header.UnsignedHeader.WinnerType == pb.GENESIS_SIGNER && header.UnsignedHeader.Height >= NumGenesisBlocks {
-		return errors.New("invalid winning hash type")
+		return fmt.Errorf("invalid winner type %v for height %d", pb.GENESIS_SIGNER, header.UnsignedHeader.Height)
+	}
+
+	if len(header.UnsignedHeader.RandomBeacon) != config.RandomBeaconLength {
+		return fmt.Errorf("invalid header RandomBeacon length %d, expecting %d", len(header.UnsignedHeader.RandomBeacon), config.RandomBeaconLength)
+	}
+
+	rawPubKey, err := crypto.DecodePoint(header.UnsignedHeader.Signer)
+	if err != nil {
+		return err
+	}
+	vrf := header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength]
+	proof := header.UnsignedHeader.RandomBeacon[config.RandomBeaconUniqueLength:]
+	if !crypto.VerifyVrf(*rawPubKey, prevHash.ToArray(), vrf, proof) {
+		return fmt.Errorf("invalid header RandomBeacon %x", header.UnsignedHeader.RandomBeacon)
 	}
 
 	return nil

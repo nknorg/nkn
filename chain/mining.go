@@ -111,13 +111,19 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 	if err != nil {
 		return nil, err
 	}
-	encodedPubKey := bm.account.PublicKey.EncodePoint()
-	randomBeacon := util.RandomBytes(config.RandomBeaconLength)
+
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
+
+	vrf, proof, err := crypto.GenerateVrf(bm.account.PrivKey(), curBlockHash.ToArray())
+	if err != nil {
+		return nil, err
+	}
+	randomBeacon := append(vrf, proof...)
+
 	header := &block.Header{
 		Header: &pb.Header{
 			UnsignedHeader: &pb.UnsignedHeader{
-				Version:          HeaderVersion,
+				Version:          config.HeaderVersion,
 				PrevBlockHash:    curBlockHash.ToArray(),
 				Timestamp:        timestamp,
 				Height:           height,
@@ -125,7 +131,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 				TransactionsRoot: txnRoot.ToArray(),
 				WinnerHash:       winnerHash.ToArray(),
 				WinnerType:       winnerType,
-				Signer:           encodedPubKey,
+				Signer:           bm.account.PublicKey.EncodePoint(),
 				ChordId:          chordID,
 			},
 			Signature: nil,
