@@ -7,14 +7,12 @@ import (
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vm/contract"
 )
 
 func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transaction, totalFee Fixed64, genesis bool) error {
 	pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
-		log.Error("unpack payload error", err)
 		return err
 	}
 
@@ -24,7 +22,6 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if !genesis {
 			donationAmount, err := cs.GetDonation()
 			if err != nil {
-				log.Error("get donation from store err", err)
 				return err
 			}
 			if err := states.UpdateBalance(BytesToUint160(coinbase.Sender), donationAmount, Subtraction); err != nil {
@@ -122,7 +119,7 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 	//process previous block
 	height := b.Header.UnsignedHeader.Height
 	if height == 0 {
-		id := ComputeID(EmptyUint256, EmptyUint256, b.Header.UnsignedHeader.RandomBeacon)
+		id := ComputeID(EmptyUint256, EmptyUint256, b.Header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength])
 
 		pk, err := crypto.NewPubKeyFromBytes(b.Header.UnsignedHeader.Signer)
 		if err != nil {
@@ -148,7 +145,7 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 
 		for _, txn := range prevBlock.Transactions {
 			if txn.UnsignedTx.Payload.Type == pb.GenerateIDType {
-				id := ComputeID(preBlockHash, txn.Hash(), b.Header.UnsignedHeader.RandomBeacon)
+				id := ComputeID(preBlockHash, txn.Hash(), b.Header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength])
 
 				pg, err := txn.GetProgramHashes()
 				if err != nil {
