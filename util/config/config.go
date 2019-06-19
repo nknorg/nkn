@@ -84,6 +84,7 @@ var (
 		NATPortMappingTimeout:     365 * 86400,
 		NumTxnPerBlock:            MaxNumTxnPerBlock,
 		TxPoolCap:                 DefaultTxPoolCap,
+		RegisterIDFee:             0,
 	}
 )
 
@@ -107,6 +108,7 @@ type Configuration struct {
 	MaxHdrSyncReqs            int           `json:"MaxConcurrentSyncHeaderReqs"`
 	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
 	MinTxnFee                 int64         `json:"MinTxnFee"`
+	RegisterIDFee             int64         `json:"RegisterIDFee"`
 	Hostname                  string        `json:"Hostname"`
 	Transport                 string        `json:"Transport"`
 	NAT                       bool          `json:"NAT"`
