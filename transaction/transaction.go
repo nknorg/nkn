@@ -111,8 +111,8 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	}
 
 	switch tx.UnsignedTx.Payload.Type {
-	case pb.CommitType:
-		sender := payload.(*pb.Commit).Submitter
+	case pb.SigChainTxnType:
+		sender := payload.(*pb.SigChainTxn).Submitter
 		hashes = append(hashes, BytesToUint160(sender))
 	case pb.TransferAssetType:
 		sender := payload.(*pb.TransferAsset).Sender

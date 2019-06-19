@@ -389,10 +389,10 @@ func getVersion(s Serverer, params map[string]interface{}) map[string]interface{
 	return respPacking(SUCCESS, config.Version)
 }
 
-// commitPor send por transaction
+// sendSigChain send por transaction
 // params: {"sigchain":<sigchain>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func commitPor(s Serverer, params map[string]interface{}) map[string]interface{} {
+func sendSigChain(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -413,7 +413,7 @@ func commitPor(s Serverer, params map[string]interface{}) map[string]interface{}
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	txn, err := MakeCommitTransaction(wallet, sigChain, 0)
+	txn, err := MakeSigChainTransaction(wallet, sigChain, 0)
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
@@ -790,7 +790,7 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getnodestate":                 {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
 	"getchordringinfo":             {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
 	"setdebuginfo":                 {Handler: setDebugInfo},
-	"commitpor":                    {Handler: commitPor},
+	"sendSigChain":                 {Handler: sendSigChain},
 	"getbalancebyaddr":             {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
 	"getnoncebyaddr":               {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
 	"getid":                        {Handler: getId, AccessCtrl: BIT_JSONRPC},
