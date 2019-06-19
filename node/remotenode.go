@@ -15,7 +15,7 @@ type RemoteNode struct {
 	*Node
 	localNode *LocalNode
 	nnetNode  *nnetnode.RemoteNode
-	sharedKey *[32]byte
+	sharedKey *[sharedKeySize]byte
 
 	sync.RWMutex
 	height uint32
@@ -56,7 +56,7 @@ func NewRemoteNode(localNode *LocalNode, nnetNode *nnetnode.RemoteNode) (*Remote
 	if len(node.PublicKey) == 0 {
 		return nil, errors.New("nil public key")
 	}
-	sharedKey, err := localNode.computeSharedKey(node.PublicKey[1:])
+	sharedKey, err := localNode.computeSharedKey(node.PublicKey)
 	if err != nil {
 		return nil, err
 	}

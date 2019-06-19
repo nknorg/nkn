@@ -148,12 +148,12 @@ func (sc *SigChain) VerifySignatures() error {
 	sc.SerializationMetadata(buff)
 	prevSig := buff.Bytes()
 	for i, e := range sc.Elems {
-		if i == 0 || (sc.IsComplete() && i == sc.Length()-1) {
-			pk, err := crypto.DecodePoint(append([]byte{0x04}, prevNextPubkey...))
-			if err != nil {
-				return fmt.Errorf("invalid pubkey: %v", err)
-			}
+		pk, err := crypto.DecodePoint(prevNextPubkey)
+		if err != nil {
+			return fmt.Errorf("invalid pubkey: %v", err)
+		}
 
+		if i == 0 || (sc.IsComplete() && i == sc.Length()-1) {
 			lastSignatureHash := sha256.Sum256(prevSig)
 			buff := bytes.NewBuffer(lastSignatureHash[:])
 			elem := NewSigChainElem(e.Id, e.NextPubkey, nil, nil, nil, e.Mining)
@@ -168,11 +168,6 @@ func (sc *SigChain) VerifySignatures() error {
 				return fmt.Errorf("signature %x is invalid: %v", e.Signature, err)
 			}
 		} else {
-			pk, err := crypto.DecodePoint(prevNextPubkey)
-			if err != nil {
-				return fmt.Errorf("invalid pubkey: %v", err)
-			}
-
 			expectedSignature, err := ComputeSignature(e.Vrf, prevSig, e.Id, e.NextPubkey, e.Mining)
 			if err != nil {
 				return fmt.Errorf("compute signature error: %v", err)

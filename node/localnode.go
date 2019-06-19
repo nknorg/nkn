@@ -79,10 +79,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return nil, err
 	}
 
-	publicKey, err := account.PublicKey.EncodePoint(true)
-	if err != nil {
-		return nil, err
-	}
+	publicKey := account.PublicKey.EncodePoint()
 
 	nodeData := &pb.NodeData{
 		PublicKey:       publicKey,

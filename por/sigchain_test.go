@@ -6,23 +6,20 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/vault"
 )
 
 func TestSigChain(t *testing.T) {
-	crypto.SetAlg("P256R1")
-
 	from, _ := vault.NewAccount()
 	to, _ := vault.NewAccount()
 	relay1, _ := vault.NewAccount()
 	relay2, _ := vault.NewAccount()
 
-	fromPk, _ := from.PubKey().EncodePoint(true)
-	toPk, _ := to.PubKey().EncodePoint(true)
-	relay1Pk, _ := relay1.PubKey().EncodePoint(true)
-	relay2Pk, _ := relay2.PubKey().EncodePoint(true)
+	fromPk := from.PubKey().EncodePoint()
+	toPk := to.PubKey().EncodePoint()
+	relay1Pk := relay1.PubKey().EncodePoint()
+	relay2Pk := relay2.PubKey().EncodePoint()
 
 	// test Sign & Verify
 	var srcID []byte
