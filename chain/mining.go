@@ -163,7 +163,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *transaction.Transaction {
 	// Transfer the reward to the beneficiary
 	redeemHash := bm.account.ProgramHash
-	if config.Parameters.BeneficiaryAddr != "" {
+	if len(config.Parameters.BeneficiaryAddr) > 0 {
 		hash, err := common.ToScriptHash(config.Parameters.BeneficiaryAddr)
 		if err == nil {
 			redeemHash = hash
