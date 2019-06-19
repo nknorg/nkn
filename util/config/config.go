@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nknorg/coniks-go/crypto/vrf"
 	gonat "github.com/nknorg/go-nat"
 	"github.com/nknorg/go-portscanner"
 	"github.com/nknorg/nkn/common"
@@ -32,6 +33,7 @@ const (
 	NodeIDBytes                  = 32
 	MaxRollbackBlocks            = 1
 	SigChainPropogationTime      = 1
+	HeaderVersion                = 1
 	DBVersion                    = 0x0e
 	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
 	InitialIssueAmount           = 700000000 * common.StorageFactor
@@ -45,16 +47,19 @@ const (
 	DonationAdjustDivisorFactor  = 2
 	MinGenIDRegistrationFee      = 0
 	GenerateIDBlockDelay         = 1
-	RandomBeaconLength           = 32
+	RandomBeaconUniqueLength     = vrf.Size
+	RandomBeaconLength           = vrf.Size + vrf.ProofSize
 	ProtocolVersion              = 71
 	MinCompatibleProtocolVersion = 71
 	MaxCompatibleProtocolVersion = 75
 	DefaultTxPoolCap             = 32
+	ShortHashSize                = uint32(8)
 )
 
 var (
-	ShortHashSize uint32 = 8
-	ShortHashSalt []byte = util.RandomBytes(32)
+	ShortHashSalt    = util.RandomBytes(32)
+	GenesisTimestamp = time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix()
+	GenesisBeacon    = make([]byte, RandomBeaconLength)
 )
 
 var (

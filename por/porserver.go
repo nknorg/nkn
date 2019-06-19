@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto/ed25519"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/transaction"
@@ -127,7 +127,7 @@ func (ps *PorServer) GetOrComputeVrf(data []byte) ([]byte, []byte, error) {
 		}
 	}
 
-	vrf, proof, err := ed25519.GenerateVrf(ps.account.PrivKey(), data)
+	vrf, proof, err := crypto.GenerateVrf(ps.account.PrivKey(), data)
 	if err != nil {
 		return nil, nil, err
 	}
