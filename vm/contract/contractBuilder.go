@@ -13,10 +13,7 @@ import (
 
 //create a Single Singature contract for owner
 func CreateSignatureContract(ownerPubKey *crypto.PubKey) (*Contract, error) {
-	temp, err := ownerPubKey.EncodePoint(true)
-	if err != nil {
-		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
-	}
+	temp := ownerPubKey.EncodePoint()
 	signatureRedeemScript, err := CreateSignatureRedeemScript(ownerPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
@@ -38,10 +35,7 @@ func CreateSignatureContract(ownerPubKey *crypto.PubKey) (*Contract, error) {
 }
 
 func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
-	temp, err := pubkey.EncodePoint(true)
-	if err != nil {
-		return nil, fmt.Errorf("[Contract],CreateSignatureRedeemScript failed: %v", err)
-	}
+	temp := pubkey.EncodePoint()
 	return CreateSignatureRedeemScriptWithEncodedPublicKey(temp)
 }
 
@@ -87,10 +81,7 @@ func CreateMultiSigRedeemScript(m int, pubkeys []*crypto.PubKey) ([]byte, error)
 	sort.Sort(crypto.PubKeySlice(pubkeys))
 
 	for _, pubkey := range pubkeys {
-		temp, err := pubkey.EncodePoint(true)
-		if err != nil {
-			return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
-		}
+		temp := pubkey.EncodePoint()
 		sb.PushData(temp)
 	}
 

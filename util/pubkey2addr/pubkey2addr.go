@@ -26,7 +26,6 @@ func Key2Address(key string) (addr string, err error) {
 }
 
 func main() {
-	crypto.SetAlg("Ed25519")
 	for _, key := range os.Args[1:] {
 		addr, err := Key2Address(key)
 		if err != nil {

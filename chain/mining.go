@@ -111,10 +111,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 	if err != nil {
 		return nil, err
 	}
-	encodedPubKey, err := bm.account.PublicKey.EncodePoint(true)
-	if err != nil {
-		return nil, err
-	}
+	encodedPubKey := bm.account.PublicKey.EncodePoint()
 	randomBeacon := util.RandomBytes(config.RandomBeaconLength)
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
 	header := &block.Header{

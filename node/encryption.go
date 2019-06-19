@@ -13,8 +13,10 @@ import (
 	"golang.org/x/crypto/nacl/box"
 )
 
-const nonceSize = 24
-const sharedKeySize = 32
+const (
+	nonceSize     = 24
+	sharedKeySize = 32
+)
 
 var emptyNonce [nonceSize]byte
 
@@ -55,7 +57,7 @@ func (localNode *LocalNode) decryptMessage(msg []byte, rn *nnetnode.RemoteNode) 
 		nodeData := &pb.NodeData{}
 		if err := proto.Unmarshal(rn.Data, nodeData); err == nil {
 			if len(nodeData.PublicKey) > 0 {
-				sharedKey, err = localNode.computeSharedKey(nodeData.PublicKey[1:])
+				sharedKey, err = localNode.computeSharedKey(nodeData.PublicKey)
 				if err != nil {
 					log.Warningf("Compute shared key for pk %x error: %v", nodeData.PublicKey, err)
 				}

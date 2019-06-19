@@ -9,39 +9,13 @@ import (
 
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto/ed25519"
-	"github.com/nknorg/nkn/crypto/p256r1"
 	"github.com/nknorg/nkn/crypto/util"
-)
-
-const (
-	P256R1  = 0
-	Ed25519 = 1
 )
 
 var Sha256ZeroHash = make([]byte, 32)
 
-//It can be P256R1
-var AlgChoice int
-
-var algSet util.CryptoAlgSet
-
 type PubKey struct {
 	X, Y *big.Int
-}
-
-func SetAlg(algChoice string) {
-	switch algChoice {
-	case "Ed25519":
-		AlgChoice = Ed25519
-		ed25519.Init(&algSet)
-	case "P256R1":
-		AlgChoice = P256R1
-		p256r1.Init(&algSet)
-	default:
-		panic("unsupported algorithm type")
-	}
-
-	return
 }
 
 func GenKeyPair() ([]byte, PubKey, error) {
@@ -51,46 +25,24 @@ func GenKeyPair() ([]byte, PubKey, error) {
 	var Y *big.Int
 	var err error
 
-	if Ed25519 == AlgChoice {
-		privateD, X, Y, err = ed25519.GenKeyPair(&algSet)
-	} else {
-		privateD, X, Y, err = p256r1.GenKeyPair(&algSet)
-	}
+	privateD, X, Y, err = ed25519.GenKeyPair()
 
 	if nil != err {
 		return nil, *mPubKey, err
 	}
 
-	if Ed25519 == AlgChoice {
-		privkey := privateD
-		mPubKey.X = new(big.Int).Set(X)
-		mPubKey.Y = new(big.Int).Set(Y)
-		return privkey, *mPubKey, nil
-	} else {
-		privkey := make([]byte, util.PRIVATEKEYLEN)
-		copy(privkey[util.PRIVATEKEYLEN-len(privateD):], privateD)
-
-		mPubKey.X = new(big.Int).Set(X)
-		mPubKey.Y = new(big.Int).Set(Y)
-		return privkey, *mPubKey, nil
-	}
-
+	privkey := privateD
+	mPubKey.X = new(big.Int).Set(X)
+	mPubKey.Y = new(big.Int).Set(Y)
+	return privkey, *mPubKey, nil
 }
 
 func GetPrivateKeyFromSeed(seed []byte) []byte {
-	if Ed25519 == AlgChoice {
-		return ed25519.GetPrivateKeyFromSeed(seed)
-	} else {
-		panic("unsupported function")
-	}
+	return ed25519.GetPrivateKeyFromSeed(seed)
 }
 
 func GetSeedFromPrivateKey(priKey []byte) []byte {
-	if Ed25519 == AlgChoice {
-		return ed25519.GetSeedFromPrivateKey(priKey)
-	} else {
-		panic("unsupported function")
-	}
+	return ed25519.GetSeedFromPrivateKey(priKey)
 }
 
 func Sign(privateKey []byte, data []byte) ([]byte, error) {
@@ -98,11 +50,7 @@ func Sign(privateKey []byte, data []byte) ([]byte, error) {
 	var s *big.Int
 	var err error
 
-	if Ed25519 == AlgChoice {
-		r, s, err = ed25519.Sign(&algSet, privateKey, data)
-	} else {
-		r, s, err = p256r1.Sign(&algSet, privateKey, data)
-	}
+	r, s, err = ed25519.Sign(privateKey, data)
 
 	if err != nil {
 		return nil, err
@@ -126,29 +74,15 @@ func Verify(publicKey PubKey, data []byte, signature []byte) error {
 	r := new(big.Int).SetBytes(signature[:len/2])
 	s := new(big.Int).SetBytes(signature[len/2:])
 
-	if Ed25519 == AlgChoice {
-		return ed25519.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
-	}
-
-	return p256r1.Verify(&algSet, publicKey.X, publicKey.Y, data, r, s)
+	return ed25519.Verify(publicKey.X, publicKey.Y, data, r, s)
 }
 
-func GenerateVrf(privateKey []byte, data []byte) (vrf []byte, proof []byte, err error) {
-	if Ed25519 == AlgChoice {
-		vrf, proof, err = ed25519.GenerateVrf(privateKey, data)
-	} else {
-		panic("unsupported algorithm type")
-	}
-
-	return
+func GenerateVrf(privateKey []byte, data []byte) ([]byte, []byte, error) {
+	return ed25519.GenerateVrf(privateKey, data)
 }
 
 func VerifyVrf(publicKey PubKey, data, vrf, proof []byte) bool {
-	if Ed25519 == AlgChoice {
-		return ed25519.VerifyVrf(publicKey.X, publicKey.Y, data, vrf, proof)
-	} else {
-		panic("unsupported algorithm type")
-	}
+	return ed25519.VerifyVrf(publicKey.X, publicKey.Y, data, vrf, proof)
 }
 
 func (e *PubKey) Serialize(w io.Writer) error {
@@ -180,17 +114,8 @@ func (e *PubKey) Deserialize(r io.Reader) error {
 }
 
 func CheckPrivateKey(privkey []byte) error {
-	switch AlgChoice {
-	case P256R1:
-		if len(privkey) != p256r1.GetPrivateKeySize() {
-			return fmt.Errorf("the length of ECDSA privatekey is not %d", p256r1.GetPrivateKeySize())
-		}
-	case Ed25519:
-		if len(privkey) != ed25519.GetPrivateKeySize() {
-			return fmt.Errorf("the length of Ed25519 privatekey is not %d", ed25519.GetPrivateKeySize())
-		}
-	default:
-		panic("unsupported algorithm type")
+	if len(privkey) != ed25519.PrivateKeySize {
+		return fmt.Errorf("the length of Ed25519 privatekey is not %d", ed25519.PrivateKeySize)
 	}
 
 	return nil

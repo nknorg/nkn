@@ -4,12 +4,10 @@ import (
 	"testing"
 
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/vault"
 )
 
 func TestPorServer(t *testing.T) {
-	crypto.SetAlg("P256R1")
 	id := []byte{1, 2, 3}
 	from, _ := vault.NewAccount()
 	rel, _ := vault.NewAccount()
@@ -17,8 +15,8 @@ func TestPorServer(t *testing.T) {
 	pmFrom := NewPorServer(from, id)
 	pmRel := NewPorServer(rel, id)
 	pmTo := NewPorServer(to, id)
-	toPk, _ := to.PubKey().EncodePoint(true)
-	relPk, _ := rel.PubKey().EncodePoint(true)
+	toPk := to.PubKey().EncodePoint()
+	relPk := rel.PubKey().EncodePoint()
 
 	scFrom, err := pmFrom.CreateSigChain(1, &common.Uint256{}, &common.Uint256{}, id, toPk, relPk, true)
 	if err != nil {

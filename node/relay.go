@@ -215,12 +215,8 @@ func (rs *RelayService) backtrackDestSigChain(v interface{}) {
 
 func (rs *RelayService) signRelayMessage(relayMessage *pb.Relay, nextHop, prevHop *RemoteNode) error {
 	var nextPubkey []byte
-	var err error
 	if nextHop != nil {
-		nextPubkey, err = nextHop.GetPubKey().EncodePoint(true)
-		if err != nil {
-			return err
-		}
+		nextPubkey = nextHop.GetPubKey().EncodePoint()
 	}
 
 	mining := config.Parameters.Mining && rs.localNode.GetSyncState() == pb.PersistFinished

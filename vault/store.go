@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	WalletStoreVersion = "0.0.1"
+	WalletStoreVersion = "1.0.0"
 )
 
 type HeaderData struct {
