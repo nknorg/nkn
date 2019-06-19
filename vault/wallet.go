@@ -26,7 +26,6 @@ type Wallet interface {
 	Sign(context *contract.ContractContext) error
 	GetAccount(pubKey *crypto.PubKey) (*Account, error)
 	GetDefaultAccount() (*Account, error)
-	//GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error)
 }
 
 type WalletImpl struct {
@@ -94,8 +93,9 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 		return nil, err
 	}
 
-	if store.Data.Version != WalletStoreVersion {
-		return nil, fmt.Errorf("invalid wallet version.should be %s", WalletStoreVersion)
+	// 0.0.1 support is temporary and will be removed in a few days
+	if store.Data.Version != WalletStoreVersion && store.Data.Version != "0.0.1" {
+		return nil, fmt.Errorf("invalid wallet version %v, should be %v", store.Data.Version, WalletStoreVersion)
 	}
 
 	passwordKey := crypto.ToAesKey(password)
@@ -129,7 +129,7 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 	}
 
 	privateKey := crypto.GetPrivateKeyFromSeed(seed)
-	if err := crypto.CheckPrivateKey(privateKey); err != nil {
+	if err = crypto.CheckPrivateKey(privateKey); err != nil {
 		log.Error("open wallet error", err)
 		os.Exit(1)
 	}
@@ -290,11 +290,6 @@ func (w *WalletImpl) GetContract() (*contract.Contract, error) {
 
 	return w.contract, nil
 }
-
-//func (w *WalletImpl) GetUnspent() (map[Uint256][]*transaction.UTXOUnspent, error) {
-//	//TODO fix it
-//	return nil, nil
-//}
 
 func GetWallet() Wallet {
 	if !FileExisted(WalletFileName) {

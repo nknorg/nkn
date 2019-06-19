@@ -139,7 +139,7 @@ func (ws *WsServer) registryMethod() {
 			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 
-		_, err = crypto.DecodePoint(append([]byte{0x04}, pubKey...))
+		_, err = crypto.DecodePoint(pubKey)
 		if err != nil {
 			log.Error("Invalid public key hex decoding to point:", err)
 			return common.RespPacking(nil, common.INVALID_PARAMS)
@@ -162,8 +162,8 @@ func (ws *WsServer) registryMethod() {
 			return common.RespPacking(common.NodeInfo(addr, pubkey, id), common.WRONG_NODE)
 		}
 
-		newSessionId := hex.EncodeToString(clientID)
-		session, err := ws.SessionList.ChangeSessionToClient(cmd["Userid"].(string), newSessionId)
+		newSessionID := hex.EncodeToString(clientID)
+		session, err := ws.SessionList.ChangeSessionToClient(cmd["Userid"].(string), newSessionID)
 		if err != nil {
 			log.Error("Change session id error: ", err)
 			return common.RespPacking(nil, common.INTERNAL_ERROR)
@@ -177,7 +177,10 @@ func (ws *WsServer) registryMethod() {
 			}
 		}()
 
-		sigChainBlockHeight := chain.DefaultLedger.Store.GetHeight() - config.MaxRollbackBlocks
+		var sigChainBlockHeight uint32
+		if chain.DefaultLedger.Store.GetHeight() >= config.MaxRollbackBlocks {
+			sigChainBlockHeight = chain.DefaultLedger.Store.GetHeight() - config.MaxRollbackBlocks
+		}
 		sigChainBlockHash, err := chain.DefaultLedger.Store.GetBlockHash(sigChainBlockHeight)
 		if err != nil {
 			log.Warningf("get sigchain block hash at height %d error: %v", sigChainBlockHeight, err)

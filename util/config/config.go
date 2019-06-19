@@ -33,7 +33,6 @@ const (
 	NodeIDBytes                  = 32
 	MaxRollbackBlocks            = 1
 	SigChainPropogationTime      = 1
-	EncryptAlg                   = "Ed25519"
 	DBVersion                    = 0x0e
 	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
 	InitialIssueAmount           = 700000000 * common.StorageFactor
