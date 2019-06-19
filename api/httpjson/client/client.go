@@ -15,7 +15,7 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
-const requestTimeout = 10 * time.Second
+const requestTimeout = 5 * time.Second
 
 // Call sends RPC request to server
 func Call(address string, method string, id interface{}, params map[string]interface{}) ([]byte, error) {

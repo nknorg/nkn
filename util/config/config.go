@@ -15,11 +15,10 @@ import (
 	gonat "github.com/nknorg/go-nat"
 	"github.com/nknorg/go-portscanner"
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/crypto/ed25519"
 	"github.com/nknorg/nkn/crypto/ed25519/vrf"
 	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nnet/transport"
-	"github.com/rdegges/go-ipify"
-	"golang.org/x/crypto/ed25519"
 )
 
 const (
@@ -70,18 +69,17 @@ var (
 	SkipNAT       bool
 	nat           gonat.NAT
 	Parameters    = &Configuration{
-		Version:      1,
-		Transport:    "tcp",
-		NodePort:     30001,
-		HttpWsPort:   30002,
-		HttpJsonPort: 30003,
-		NAT:          true,
-		Mining:       true,
-		MiningDebug:  true,
-		LogLevel:     1,
-		SeedList: []string{
-			"http://127.0.0.1:30003",
-		},
+		Version:                   1,
+		Transport:                 "tcp",
+		NodePort:                  30001,
+		HttpWsPort:                30002,
+		HttpJsonPort:              30003,
+		NAT:                       true,
+		Mining:                    true,
+		MiningDebug:               true,
+		LogPath:                   "./Log/",
+		LogLevel:                  1,
+		MaxLogFileSize:            20,
 		SyncBatchWindowSize:       1024,
 		SyncBlockHeadersBatchSize: 256,
 		SyncBlocksBatchSize:       8,
@@ -105,13 +103,13 @@ type Configuration struct {
 	HttpWsPort                uint16        `json:"HttpWsPort"`
 	HttpJsonPort              uint16        `json:"HttpJsonPort"`
 	NodePort                  uint16        `json:"-"`
+	LogPath                   string        `json:"LogPath"`
 	LogLevel                  int           `json:"LogLevel"`
+	MaxLogFileSize            uint32        `json:"MaxLogSize"`
 	IsTLS                     bool          `json:"IsTLS"`
 	CertPath                  string        `json:"CertPath"`
 	KeyPath                   string        `json:"KeyPath"`
 	CAPath                    string        `json:"CAPath"`
-	GenBlockTime              uint          `json:"GenBlockTime"`
-	MaxLogSize                int64         `json:"MaxLogSize"`
 	MaxHdrSyncReqs            int           `json:"MaxConcurrentSyncHeaderReqs"`
 	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
 	MinTxnFee                 int64         `json:"MinTxnFee"`
@@ -160,28 +158,7 @@ func Init() error {
 		return err
 	}
 
-	if Parameters.Hostname == "" {
-		log.Println("Getting my IP address...")
-		ip, err := ipify.GetIp()
-		if err != nil {
-			return err
-		}
-		log.Printf("My IP address is %s", ip)
-
-		Parameters.Hostname = ip
-
-		// if !SkipCheckPort {
-		// 	ok, err := Parameters.CheckPorts(ip)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	if !ok {
-		// 		return errors.New("Some ports are not open. Please make sure you set up port forwarding or firewall correctly")
-		// 	}
-		// }
-	}
-
-	err := check(Parameters)
+	err := Parameters.validate()
 	if err != nil {
 		return err
 	}
@@ -265,7 +242,7 @@ func (config *Configuration) CleanPortMapping() error {
 	return nil
 }
 
-func check(config *Configuration) error {
+func (config *Configuration) validate() error {
 	if len(config.SeedList) == 0 {
 		return errors.New("seed list in config file should not be blank")
 	}
@@ -291,6 +268,10 @@ func check(config *Configuration) error {
 		if err != nil {
 			return fmt.Errorf("parse BeneficiaryAddr error: %v", err)
 		}
+	}
+
+	if config.MaxLogFileSize <= 0 {
+		return fmt.Errorf("MaxLogFileSize should be >= 1 (MB)")
 	}
 
 	return nil

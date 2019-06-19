@@ -34,6 +34,7 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay"
 	"github.com/nknorg/nnet/overlay/chord"
+	ipify "github.com/rdegges/go-ipify"
 	"github.com/urfave/cli"
 )
 
@@ -47,7 +48,6 @@ var (
 )
 
 func init() {
-	log.Init(log.Path, log.Stdout)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().UnixNano())
 }
@@ -105,17 +105,52 @@ func JoinNet(nn *nnet.NNet) error {
 	return errors.New("Failed to join the network")
 }
 
+// AskMyIP request to seeds randomly, in order to obtain self's externIP and corresponding chordID
+func AskMyIP(seeds []string) (string, error) {
+	rand.Shuffle(len(seeds), func(i int, j int) {
+		seeds[i], seeds[j] = seeds[j], seeds[i]
+	})
+
+	for _, seed := range seeds {
+		addr, err := client.GetMyExtIP(seed, []byte{})
+		if err == nil {
+			return addr, err
+		}
+		log.Warningf("Ask my ID from %s met error: %v", seed, err)
+	}
+	return "", errors.New("Tried all seeds but can't got my external IP and nknID")
+}
+
 func nknMain(c *cli.Context) error {
-	log.Info("Node version: ", config.Version)
 	signalChan := make(chan os.Signal, 1)
 
 	err := config.Init()
 	if err != nil {
 		return err
 	}
-	log.Log.SetDebugLevel(config.Parameters.LogLevel) // Update LogLevel after config.json loaded
-
 	defer config.Parameters.CleanPortMapping()
+
+	err = log.Init()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Node version: %v", config.Version)
+
+	if config.Parameters.Hostname == "" { // Skip query self extIP via set "HostName" in config.json
+		log.Info("Getting my IP address...")
+		var extIP string
+		if createMode { // There is no seed available in create mode, used ipify
+			extIP, err = ipify.GetIp()
+		} else {
+			extIP, err = AskMyIP(config.Parameters.SeedList)
+		}
+		if err != nil {
+			return err
+		}
+		log.Infof("My IP address is %s", extIP)
+		config.Parameters.Hostname = extIP
+	}
 
 	// Get local account
 	wallet := vault.GetWallet()
@@ -238,16 +273,6 @@ func nknMain(c *cli.Context) error {
 	}
 
 	consensus.Start()
-
-	go func() {
-		for {
-			time.Sleep(config.ConsensusDuration)
-			if log.CheckIfNeedNewFile() {
-				log.ClosePrintLog()
-				log.Init(log.Path, os.Stdout)
-			}
-		}
-	}()
 
 	signal.Notify(signalChan, os.Interrupt)
 	for _ = range signalChan {
