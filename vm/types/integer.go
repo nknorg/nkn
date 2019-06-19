@@ -3,7 +3,6 @@ package types
 import (
 	"math/big"
 
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/vm/interfaces"
 )
 
@@ -39,7 +38,7 @@ func (i *Integer) GetBoolean() bool {
 }
 
 func (i *Integer) GetByteArray() []byte {
-	return common.ToArrayReverse(i.value.Bytes())
+	return i.value.Bytes()
 }
 
 func (i *Integer) GetInterface() interfaces.IInteropInterface {

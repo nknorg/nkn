@@ -83,7 +83,7 @@ func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} 
 			return respPacking(UNKNOWN_HASH, err.Error())
 		}
 	} else if str, ok := params["hash"].(string); ok {
-		hex, err := common.HexStringToBytesReverse(str)
+		hex, err := common.HexStringToBytes(str)
 		if err != nil {
 			return respPacking(INVALID_PARAMS, err.Error())
 		}
@@ -139,7 +139,7 @@ func GetBlockTransactions(block *block.Block) interface{} {
 	trans := make([]string, len(block.Transactions))
 	for i := 0; i < len(block.Transactions); i++ {
 		h := block.Transactions[i].Hash()
-		trans[i] = common.BytesToHexString(h.ToArrayReverse())
+		trans[i] = common.BytesToHexString(h.ToArray())
 	}
 	hash := block.Hash()
 	type BlockTransactions struct {
@@ -148,7 +148,7 @@ func GetBlockTransactions(block *block.Block) interface{} {
 		Transactions []string
 	}
 	b := BlockTransactions{
-		Hash:         common.BytesToHexString(hash.ToArrayReverse()),
+		Hash:         common.BytesToHexString(hash.ToArray()),
 		Height:       block.Header.UnsignedHeader.Height,
 		Transactions: trans,
 	}
@@ -278,7 +278,7 @@ func getTransaction(s Serverer, params map[string]interface{}) map[string]interf
 		return respPacking(INVALID_PARAMS, "hash should be a string")
 	}
 
-	hex, err := common.HexStringToBytesReverse(str)
+	hex, err := common.HexStringToBytes(str)
 	if err != nil {
 		return respPacking(INVALID_PARAMS, err.Error())
 	}
@@ -336,7 +336,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		return respPacking(INVALID_PARAMS, err.Error())
 	}
 
-	return respPacking(SUCCESS, common.BytesToHexString(hash.ToArrayReverse()))
+	return respPacking(SUCCESS, common.BytesToHexString(hash.ToArray()))
 }
 
 // getNeighbor gets neighbors of this node
@@ -428,7 +428,7 @@ func commitPor(s Serverer, params map[string]interface{}) map[string]interface{}
 	}
 
 	txHash := txn.Hash()
-	return respPacking(SUCCESS, common.BytesToHexString(txHash.ToArrayReverse()))
+	return respPacking(SUCCESS, common.BytesToHexString(txHash.ToArray()))
 }
 
 func NodeInfo(addr string, pubkey, id []byte) map[string]string {

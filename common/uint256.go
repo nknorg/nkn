@@ -33,13 +33,7 @@ func (u *Uint256) CompareTo(o Uint256) int {
 func (u *Uint256) ToArray() []byte {
 	return u[:]
 }
-func (u *Uint256) ToArrayReverse() []byte {
-	var x = make([]byte, UINT256SIZE)
-	for i, j := 0, UINT256SIZE-1; i < j; i, j = i+1, j-1 {
-		x[i], x[j] = byte(u[j]), byte(u[i])
-	}
-	return x
-}
+
 func (u *Uint256) Serialize(w io.Writer) (int, error) {
 	b_buf := bytes.NewBuffer([]byte{})
 	binary.Write(b_buf, binary.LittleEndian, u)
@@ -70,8 +64,9 @@ func (u *Uint256) Deserialize(r io.Reader) error {
 func (u *Uint256) ToString() string {
 	return string(u.ToArray())
 }
+
 func (u *Uint256) ToHexString() string {
-	return fmt.Sprintf("%x", u.ToArrayReverse())
+	return fmt.Sprintf("%x", u.ToArray())
 }
 
 func Uint256ParseFromBytes(f []byte) (hash Uint256, err error) {

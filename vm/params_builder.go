@@ -3,8 +3,6 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
-
-	"github.com/nknorg/nkn/common"
 )
 
 type ParamsBuilder struct {
@@ -42,7 +40,7 @@ func (p *ParamsBuilder) EmitPushInteger(data int64) {
 	}
 	buf := bytes.NewBuffer([]byte{})
 	binary.Write(buf, binary.BigEndian, data)
-	p.EmitPushByteArray(common.ToArrayReverse(buf.Bytes()))
+	p.EmitPushByteArray(buf.Bytes())
 }
 
 func (p *ParamsBuilder) EmitPushByteArray(data []byte) {
