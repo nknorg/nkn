@@ -148,7 +148,7 @@ func nknMain(c *cli.Context) error {
 	// if InitLedger return err, chain.DefaultLedger is uninitialized.
 	defer chain.DefaultLedger.Store.Close()
 
-	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, 0)
+	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDFee))
 	if err != nil {
 		panic(err.Error())
 	}
