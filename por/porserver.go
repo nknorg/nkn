@@ -284,7 +284,7 @@ func VerifyID(sc *pb.SigChain) error {
 			return fmt.Errorf("get id of pk %x error: %v", pk, err)
 		}
 		if len(id) == 0 {
-			return fmt.Errorf("id of pk %x is empty", id)
+			return fmt.Errorf("id of pk %x is empty", pk)
 		}
 		if !bytes.Equal(sc.Elems[i].Id, id) {
 			return fmt.Errorf("id of pk %x should be %x, got %x", pk, id, sc.Elems[i].Id)

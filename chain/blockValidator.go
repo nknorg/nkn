@@ -307,13 +307,13 @@ func SignerCheck(header *block.Header) error {
 
 	id, err := DefaultLedger.Store.GetID(publicKey)
 	if err != nil {
-		return fmt.Errorf("invalid block signer ID %x error: %v", publicKey, err)
+		return fmt.Errorf("get ID of signer %x error: %v", publicKey, err)
 	}
 	if len(id) == 0 {
-		return fmt.Errorf("invalid block signer ID %x is empty", id)
+		return fmt.Errorf("ID of signer %x is empty", publicKey)
 	}
 	if !bytes.Equal(header.UnsignedHeader.ChordId, id) {
-		return fmt.Errorf("invalid block signer publickey %x should be %x, got %x", publicKey, id, header.UnsignedHeader.ChordId)
+		return fmt.Errorf("ID of signer %x should be %x, got %x", publicKey, id, header.UnsignedHeader.ChordId)
 	}
 
 	rawPubKey, err := crypto.DecodePoint(publicKey)
