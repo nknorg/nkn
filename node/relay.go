@@ -15,7 +15,6 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
-	"github.com/nknorg/nkn/vm/contract"
 )
 
 type RelayService struct {
@@ -282,22 +281,16 @@ func MakeSigChainTransaction(wallet vault.Wallet, sigChain []byte) (*transaction
 	if err != nil {
 		return nil, err
 	}
-	//TODO modify nonce
 	txn, err := transaction.NewSigChainTransaction(sigChain, account.ProgramHash, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	// sign transaction contract
-	ctx, err := contract.NewContractContext(txn)
+	err = wallet.Sign(txn)
 	if err != nil {
 		return nil, err
 	}
-	err = wallet.Sign(ctx)
-	if err != nil {
-		return nil, err
-	}
-	txn.SetPrograms(ctx.GetPrograms())
 
 	return txn, nil
 }

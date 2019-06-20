@@ -565,12 +565,12 @@ func getAddressByName(s Serverer, params map[string]interface{}) map[string]inte
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	script, err := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(publicKey)
+	pubKey, err := crypto.NewPubKeyFromBytes(publicKey)
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	scriptHash, err := common.ToCodeHash(script)
+	scriptHash, err := contract.CreateRedeemHash(pubKey)
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
