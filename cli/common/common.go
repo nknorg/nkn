@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
@@ -13,10 +12,6 @@ import (
 	"github.com/nknorg/nkn/util/password"
 
 	"github.com/urfave/cli"
-)
-
-const (
-	DefaultConfigFile = "./config.json"
 )
 
 var (
@@ -38,7 +33,7 @@ func NewPortFlag() cli.Flag {
 	return cli.StringFlag{
 		Name:        "port",
 		Usage:       "node's RPC port",
-		Value:       strconv.Itoa(int(parsePort())),
+		Value:       strconv.Itoa(int(config.Parameters.HttpJsonPort)),
 		Destination: &Port,
 	}
 }
@@ -74,25 +69,6 @@ func WalletPassword(passwd string) []byte {
 	} else {
 		return []byte(passwd)
 	}
-}
-
-func parsePort() uint16 {
-	file, err := ioutil.ReadFile(DefaultConfigFile)
-	if err != nil {
-		fmt.Printf("Config file error: %v, use default parameters.", err)
-		return 0
-	}
-	// Remove the UTF-8 Byte Order Mark
-	file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
-
-	config := config.Configuration{}
-	err = json.Unmarshal(file, &config)
-	if err != nil {
-		fmt.Printf("Unmarshal config file error: %v, use default parameters.", err)
-		return 0
-	}
-
-	return config.HttpJsonPort
 }
 
 func GetPassword(passwd string) []byte {

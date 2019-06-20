@@ -339,33 +339,48 @@ func main() {
 		cli.BoolFlag{
 			Name:        "create, c",
 			Usage:       "Create Mode",
-			Hidden:      false,
 			Destination: &createMode,
 		},
 		cli.StringFlag{
 			Name:        "seed",
 			Usage:       "Seed List to join",
-			Value:       "",
 			Destination: &seedStr,
 		},
 		cli.StringFlag{
 			Name:        "passwd, p",
 			Usage:       "Password of Your wallet private Key",
-			Value:       "",
 			Hidden:      true,
 			Destination: &password.Passwd,
 		},
 		cli.BoolFlag{
-			Name:        "no-check-port",
-			Usage:       "Skip checking port opening",
-			Hidden:      true,
-			Destination: &config.SkipCheckPort,
-		},
-		cli.BoolFlag{
 			Name:        "no-nat",
 			Usage:       "Skip NAT traversal for UPnP and NAT-PMP",
-			Hidden:      false,
 			Destination: &config.SkipNAT,
+		},
+		cli.StringFlag{
+			Name:        "config",
+			Usage:       "config file name",
+			Destination: &config.ConfigFile,
+		},
+		cli.StringFlag{
+			Name:        "log",
+			Usage:       "directory where your log file will be generated",
+			Destination: &config.LogPath,
+		},
+		cli.StringFlag{
+			Name:        "chaindb",
+			Usage:       "directory where your blockchain data will be stored",
+			Destination: &config.ChainDBPath,
+		},
+		cli.StringFlag{
+			Name:        "wallet",
+			Usage:       "wallet file",
+			Destination: &config.WalletFile,
+		},
+		cli.StringFlag{
+			Name:        "beneficiaryaddr",
+			Usage:       "beneficiary address where your mining reward will go to",
+			Destination: &config.BeneficiaryAddr,
 		},
 	}
 	app.Action = nknMain
