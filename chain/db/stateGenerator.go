@@ -125,12 +125,13 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 		if err != nil {
 			return nil, EmptyUint256, err
 		}
-		contract, err := contract.CreateSignatureContract(pk)
+
+		programHash, err := contract.CreateRedeemHash(pk)
 		if err != nil {
 			return nil, EmptyUint256, err
 		}
 
-		if err := states.UpdateID(contract.ProgramHash, id); err != nil {
+		if err := states.UpdateID(programHash, id); err != nil {
 			return nil, EmptyUint256, err
 		}
 	}

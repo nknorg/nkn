@@ -10,6 +10,8 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
@@ -23,7 +25,7 @@ const (
 )
 
 type Wallet interface {
-	Sign(context *contract.ContractContext) error
+	Sign(txn *transaction.Transaction) error
 	GetAccount(pubKey *crypto.PubKey) (*Account, error)
 	GetDefaultAccount() (*Account, error)
 }
@@ -221,25 +223,25 @@ func (w *WalletImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
 	return w.account, nil
 }
 
-func (w *WalletImpl) Sign(context *contract.ContractContext) error {
-	var err error
+func (w *WalletImpl) Sign(txn *transaction.Transaction) error {
 	contract, err := w.GetContract()
 	if err != nil {
-		return errors.New("no available contract in wallet")
-	}
-	account, err := w.GetDefaultAccount()
-	if err != nil {
-		return errors.New("no available account in wallet")
+		return fmt.Errorf("cannot get contract from wallet: %v", err)
 	}
 
-	signature, err := signature.SignBySigner(context.Data, account)
+	account, err := w.GetDefaultAccount()
+	if err != nil {
+		return fmt.Errorf("no available account in wallet: %v", account)
+	}
+
+	signature, err := signature.SignBySigner(txn, account)
 	if err != nil {
 		return err
 	}
-	err = context.AddContract(contract, account.PublicKey, signature)
-	if err != nil {
-		return err
-	}
+
+	program := contract.NewProgram(signature)
+
+	txn.SetPrograms([]*pb.Program{program})
 
 	return nil
 }
