@@ -32,7 +32,7 @@ type ChainStore struct {
 }
 
 func NewLedgerStore() (*ChainStore, error) {
-	st, err := NewLevelDBStore("ChainDB")
+	st, err := NewLevelDBStore(config.Parameters.ChainDBPath)
 	if err != nil {
 		return nil, err
 	}

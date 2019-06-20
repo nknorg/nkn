@@ -153,9 +153,9 @@ func nknMain(c *cli.Context) (err error) {
 	}
 
 	// Get local account
-	wallet := vault.GetWallet()
-	if wallet == nil {
-		return errors.New("open local wallet error")
+	wallet, err := vault.GetWallet()
+	if err != nil {
+		return err
 	}
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {

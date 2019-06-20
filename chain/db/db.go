@@ -31,7 +31,6 @@ type LevelDBStore struct {
 const BITSPERKEY = 10
 
 func NewLevelDBStore(file string) (*LevelDBStore, error) {
-
 	// default Options
 	o := opt.Options{
 		NoSync: false,
