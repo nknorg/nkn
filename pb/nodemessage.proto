@@ -15,9 +15,9 @@ option (gogoproto.marshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 
-// option (gogoproto.testgen_all) = true;
-// option (gogoproto.equal_all) = true;
-// option (gogoproto.populate_all) = true; // this will cause panic
+option (gogoproto.testgen_all) = true;
+option (gogoproto.equal_all) = true;
+option (gogoproto.populate_all) = true;
 
 enum MessageType {
   MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change

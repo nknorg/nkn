@@ -288,29 +288,29 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		}
 
 		switch txn.UnsignedTx.Payload.Type {
-		case pb.CoinbaseType:
-		case pb.SigChainTxnType:
-		case pb.TransferAssetType:
-		case pb.RegisterNameType:
+		case pb.COINBASE_TYPE:
+		case pb.SIG_CHAIN_TXN_TYPE:
+		case pb.TRANSFER_ASSET_TYPE:
+		case pb.REGISTER_NAME_TYPE:
 			registerNamePayload := pl.(*pb.RegisterName)
 			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
 			if err != nil {
 				return err
 			}
-		case pb.DeleteNameType:
+		case pb.DELETE_NAME_TYPE:
 			deleteNamePayload := pl.(*pb.DeleteName)
 			err = cs.DeleteName(deleteNamePayload.Registrant)
 			if err != nil {
 				return err
 			}
-		case pb.SubscribeType:
+		case pb.SUBSCRIBE_TYPE:
 			subscribePayload := pl.(*pb.Subscribe)
 			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.UnsignedHeader.Height)
 			if err != nil {
 				return err
 			}
-		case pb.GenerateIDType:
-		case pb.NanoPayType:
+		case pb.GENERATE_ID_TYPE:
+		case pb.NANO_PAY_TYPE:
 		default:
 			return errors.New("unsupported transaction type")
 		}

@@ -30,21 +30,21 @@ func Pack(plType pb.PayloadType, payload IPayload) (*pb.Payload, error) {
 func Unpack(payload *pb.Payload) (IPayload, error) {
 	var pl IPayload
 	switch payload.Type {
-	case pb.CoinbaseType:
+	case pb.COINBASE_TYPE:
 		pl = new(pb.Coinbase)
-	case pb.TransferAssetType:
+	case pb.TRANSFER_ASSET_TYPE:
 		pl = new(pb.TransferAsset)
-	case pb.SigChainTxnType:
+	case pb.SIG_CHAIN_TXN_TYPE:
 		pl = new(pb.SigChainTxn)
-	case pb.RegisterNameType:
+	case pb.REGISTER_NAME_TYPE:
 		pl = new(pb.RegisterName)
-	case pb.DeleteNameType:
+	case pb.DELETE_NAME_TYPE:
 		pl = new(pb.DeleteName)
-	case pb.SubscribeType:
+	case pb.SUBSCRIBE_TYPE:
 		pl = new(pb.Subscribe)
-	case pb.GenerateIDType:
+	case pb.GENERATE_ID_TYPE:
 		pl = new(pb.GenerateID)
-	case pb.NanoPayType:
+	case pb.NANO_PAY_TYPE:
 		pl = new(pb.NanoPay)
 	default:
 		return nil, errors.New("invalid payload type.")

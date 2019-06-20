@@ -4,8 +4,6 @@ package pb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "pb/transaction.proto";
-import public "pb/payload.proto";
-import public "pb/program.proto";
 
 option (gogoproto.gostring_all) = true;
 option (gogoproto.goproto_stringer_all) = false;

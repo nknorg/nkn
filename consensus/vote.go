@@ -14,7 +14,7 @@ func (consensus *Consensus) receiveVote(neighborID string, height uint32, blockH
 
 	if blockHash != common.EmptyUint256 {
 		err := consensus.receiveProposalHash(neighborID, height, blockHash)
-		if err != nil && consensus.localNode.GetSyncState() == pb.PersistFinished {
+		if err != nil && consensus.localNode.GetSyncState() == pb.PERSIST_FINISHED {
 			log.Warningf("Receive block hash error when receive vote: %v", err)
 		}
 	}

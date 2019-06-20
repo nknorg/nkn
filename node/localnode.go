@@ -195,7 +195,7 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 
 		id, err := chain.DefaultLedger.Store.GetID(nodeData.PublicKey)
 		if err != nil || len(id) == 0 || bytes.Equal(id, crypto.Sha256ZeroHash) {
-			if localNode.GetSyncState() == pb.PersistFinished {
+			if localNode.GetSyncState() == pb.PERSIST_FINISHED {
 				return fmt.Errorf("Remote node id can not be found in local ledger: err-%v, id-%v", err, id)
 			}
 		} else {
