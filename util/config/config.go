@@ -77,7 +77,6 @@ var (
 		NAT:                       true,
 		Mining:                    true,
 		MiningDebug:               true,
-		LogPath:                   "./Log/",
 		LogLevel:                  1,
 		MaxLogFileSize:            20,
 		SyncBatchWindowSize:       1024,
@@ -90,6 +89,9 @@ var (
 		NumTxnPerBlock:            MaxNumTxnPerBlock,
 		TxPoolCap:                 DefaultTxPoolCap,
 		RegisterIDFee:             0,
+		LogPath:                   "Log",
+		ChainDBPath:               "ChainDB",
+		WalletFile:                "wallet.dat",
 	}
 )
 
@@ -103,7 +105,6 @@ type Configuration struct {
 	HttpWsPort                uint16        `json:"HttpWsPort"`
 	HttpJsonPort              uint16        `json:"HttpJsonPort"`
 	NodePort                  uint16        `json:"-"`
-	LogPath                   string        `json:"LogPath"`
 	LogLevel                  int           `json:"LogLevel"`
 	MaxLogFileSize            uint32        `json:"MaxLogSize"`
 	IsTLS                     bool          `json:"IsTLS"`
@@ -129,6 +130,9 @@ type Configuration struct {
 	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`       // in seconds
 	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`      // in seconds
 	NATPortMappingTimeout     time.Duration `json:"NATPortMappingTimeout"` // in seconds
+	LogPath                   string        `json:"LogPath"`
+	ChainDBPath               string        `json:"ChainDBPath"`
+	WalletFile                string        `json:"WalletFile"`
 }
 
 func Init() error {

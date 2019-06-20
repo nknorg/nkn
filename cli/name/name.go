@@ -9,6 +9,7 @@ import (
 	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 
 	"github.com/urfave/cli"
@@ -94,7 +95,7 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "wallet, w",
 				Usage: "wallet name",
-				Value: vault.WalletFileName,
+				Value: config.Parameters.WalletFile,
 			},
 			cli.StringFlag{
 				Name:  "password, p",
