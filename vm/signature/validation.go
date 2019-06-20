@@ -6,9 +6,31 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/vm"
-	"github.com/nknorg/nkn/vm/interfaces"
 )
+
+func GetPublicKeyFromCode(code []byte) ([]byte, error) {
+	if len(code) != 34 {
+		return nil, errors.New("code length error")
+	}
+
+	if code[0] != 32 && code[33] != 0xAC {
+		return nil, errors.New("code format err")
+	}
+
+	return code[1:33], nil
+}
+
+func GetSignatureFromParameter(parameter []byte) ([]byte, error) {
+	if len(parameter) != 65 {
+		return nil, errors.New("parameter length error")
+	}
+
+	if parameter[0] != 64 {
+		return nil, errors.New("parameter format err")
+	}
+
+	return parameter[1:], nil
+}
 
 func VerifySignableData(signableData SignableData) error {
 
@@ -28,29 +50,25 @@ func VerifySignableData(signableData SignableData) error {
 		if hashes[i] != temp {
 			return fmt.Errorf("The data hashes %v is different with corresponding program code %v", hashes[i], temp)
 		}
-		//execute program on VM
-		var cryptos interfaces.ICrypto
-		cryptos = new(vm.ECCrypto)
-		se := vm.NewExecutionEngine(signableData, cryptos, nil, nil, Fixed64(0))
-		se.LoadCode(programs[i].Code, false)
-		se.LoadCode(programs[i].Parameter, true)
-		err := se.Execute()
 
+		pk, err := GetPublicKeyFromCode(programs[i].Code)
 		if err != nil {
 			return err
 		}
 
-		if se.GetState() != vm.HALT {
-			return errors.New("[VM] Finish State not equal to HALT.")
+		pubkey, err := crypto.NewPubKeyFromBytes(pk)
+		if err != nil {
+			return err
 		}
 
-		if se.GetEvaluationStack().Count() != 1 {
-			return errors.New("[VM] Execute Engine Stack Count Error.")
+		signature, err := GetSignatureFromParameter(programs[i].Parameter)
+		if err != nil {
+			return err
 		}
 
-		flag := se.GetExecuteResult()
-		if !flag {
-			return errors.New("[VM] Check Sig FALSE.")
+		_, err = VerifySignature(signableData, pubkey, signature)
+		if err != nil {
+			return err
 		}
 	}
 
