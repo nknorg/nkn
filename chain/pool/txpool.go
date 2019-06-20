@@ -104,10 +104,10 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.SigChainTxnType:
+	case pb.SIG_CHAIN_TXN_TYPE:
 		// sigchain txn should not be added to txn pool
 		return nil
-	case pb.NanoPayType:
+	case pb.NANO_PAY_TYPE:
 		tp.blockValidationState.Lock()
 		defer tp.blockValidationState.Unlock()
 		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
@@ -320,11 +320,11 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 	// clean submitted txs
 	for _, txn := range txns {
 		switch txn.UnsignedTx.Payload.Type {
-		case pb.CoinbaseType:
+		case pb.COINBASE_TYPE:
 			continue
-		case pb.SigChainTxnType:
+		case pb.SIG_CHAIN_TXN_TYPE:
 			continue
-		case pb.NanoPayType:
+		case pb.NANO_PAY_TYPE:
 			tp.NanoPayTxs.Delete(txn.Hash())
 		default:
 			sender, _ := common.ToCodeHash(txn.Programs[0].Code)

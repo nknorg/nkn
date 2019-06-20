@@ -66,7 +66,7 @@ func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
 		Node:      nnetNode,
 		NodeData:  nodeData,
 		publicKey: publicKey,
-		syncState: pb.WaitForSyncing,
+		syncState: pb.WAIT_FOR_SYNCING,
 	}
 
 	return node, nil

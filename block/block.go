@@ -178,7 +178,7 @@ func GenesisBlockInit() (*Block, error) {
 		return nil, fmt.Errorf("parse DonationAddress error: %v", err)
 	}
 	payload := transaction.NewCoinbase(donationProgramhash, rewardAddress, Fixed64(config.InitialIssueAmount))
-	pl, err := transaction.Pack(pb.CoinbaseType, payload)
+	pl, err := transaction.Pack(pb.COINBASE_TYPE, payload)
 	if err != nil {
 		return nil, err
 	}

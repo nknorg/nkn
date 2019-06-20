@@ -128,7 +128,7 @@ func (consensus *Consensus) prefillNeighborVotes(elc *election.Election, height 
 	neighbors := consensus.localNode.GetNeighbors(nil)
 	neighborIDs := make([]interface{}, 0, len(neighbors))
 	for _, rn := range neighbors {
-		if rn.GetSyncState() != pb.PersistFinished {
+		if rn.GetSyncState() != pb.PERSIST_FINISHED {
 			continue
 		}
 		// This is for nodes who just finished syncing but cannot verify block yet
@@ -279,8 +279,8 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 
 	syncState := consensus.localNode.GetSyncState()
 	if block.Header.UnsignedHeader.Height == chain.DefaultLedger.Store.GetHeight()+1 {
-		if syncState == pb.WaitForSyncing {
-			consensus.localNode.SetSyncState(pb.PersistFinished)
+		if syncState == pb.WAIT_FOR_SYNCING {
+			consensus.localNode.SetSyncState(pb.PERSIST_FINISHED)
 		}
 		err = chain.DefaultLedger.Blockchain.AddBlock(block, false)
 		if err != nil {
@@ -290,7 +290,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		return nil
 	}
 
-	if syncState == pb.SyncStarted || syncState == pb.SyncFinished {
+	if syncState == pb.SYNC_STARTED || syncState == pb.SYNC_FINISHED {
 		return nil
 	}
 
@@ -335,13 +335,13 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		err = consensus.saveBlocksAcceptedDuringSync(block.Header.UnsignedHeader.Height)
 		if err != nil {
 			log.Errorf("Error saving blocks accepted during sync: %v", err)
-			consensus.localNode.SetSyncState(pb.WaitForSyncing)
+			consensus.localNode.SetSyncState(pb.WAIT_FOR_SYNCING)
 			return
 		}
 
 		consensus.localNode.SetMinVerifiableHeight(chain.DefaultLedger.Store.GetHeight() + por.SigChainMiningHeightOffset)
 
-		consensus.localNode.SetSyncState(pb.PersistFinished)
+		consensus.localNode.SetSyncState(pb.PERSIST_FINISHED)
 	}()
 
 	return nil

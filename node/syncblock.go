@@ -313,7 +313,7 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 
 	syncOnce.Do(func() {
 		started = true
-		localNode.SetSyncState(pb.SyncStarted)
+		localNode.SetSyncState(pb.SYNC_STARTED)
 
 		currentHeight := chain.DefaultLedger.Store.GetHeight()
 		currentHash := chain.DefaultLedger.Store.GetHeaderHashByHeight(currentHeight)
@@ -356,7 +356,7 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 
 		log.Infof("Synced %d blocks in %s", stopHeight-currentHeight, time.Since(startTime))
 
-		localNode.SetSyncState(pb.SyncFinished)
+		localNode.SetSyncState(pb.SYNC_FINISHED)
 	})
 
 	return started, err

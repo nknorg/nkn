@@ -44,8 +44,8 @@ func (consensus *Consensus) startGettingNeighborConsensusState() {
 				if majorityConsensusHeight+1 > localLedgerHeight {
 					consensus.setNextConsensusHeight(majorityConsensusHeight + 1)
 					consensus.localNode.SetMinVerifiableHeight(majorityConsensusHeight + 1 + por.SigChainMiningHeightOffset)
-					if consensus.localNode.GetSyncState() == pb.PersistFinished {
-						consensus.localNode.SetSyncState(pb.WaitForSyncing)
+					if consensus.localNode.GetSyncState() == pb.PERSIST_FINISHED {
+						consensus.localNode.SetSyncState(pb.WAIT_FOR_SYNCING)
 					}
 				}
 			}
@@ -122,7 +122,7 @@ func (consensus *Consensus) getNeighborsMajorityConsensusHeight() uint32 {
 		totalCount := 0
 		allInfo.Range(func(key, value interface{}) bool {
 			if consensusState, ok := value.(*pb.GetConsensusStateReply); ok && consensusState != nil {
-				if consensusState.SyncState != pb.WaitForSyncing && consensusState.ConsensusHeight > 0 {
+				if consensusState.SyncState != pb.WAIT_FOR_SYNCING && consensusState.ConsensusHeight > 0 {
 					counter[consensusState.ConsensusHeight]++
 					totalCount++
 				}
