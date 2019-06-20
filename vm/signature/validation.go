@@ -1,36 +1,12 @@
 package signature
 
 import (
-	"errors"
 	"fmt"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/vm/contract"
 )
-
-func GetPublicKeyFromCode(code []byte) ([]byte, error) {
-	if len(code) != 34 {
-		return nil, errors.New("code length error")
-	}
-
-	if code[0] != 32 && code[33] != 0xAC {
-		return nil, errors.New("code format err")
-	}
-
-	return code[1:33], nil
-}
-
-func GetSignatureFromParameter(parameter []byte) ([]byte, error) {
-	if len(parameter) != 65 {
-		return nil, errors.New("parameter length error")
-	}
-
-	if parameter[0] != 64 {
-		return nil, errors.New("parameter format err")
-	}
-
-	return parameter[1:], nil
-}
 
 func VerifySignableData(signableData SignableData) error {
 
@@ -51,7 +27,7 @@ func VerifySignableData(signableData SignableData) error {
 			return fmt.Errorf("The data hashes %v is different with corresponding program code %v", hashes[i], temp)
 		}
 
-		pk, err := GetPublicKeyFromCode(programs[i].Code)
+		pk, err := contract.GetPublicKeyFromCode(programs[i].Code)
 		if err != nil {
 			return err
 		}
@@ -61,7 +37,7 @@ func VerifySignableData(signableData SignableData) error {
 			return err
 		}
 
-		signature, err := GetSignatureFromParameter(programs[i].Parameter)
+		signature, err := contract.GetSignatureFromParameter(programs[i].Parameter)
 		if err != nil {
 			return err
 		}
