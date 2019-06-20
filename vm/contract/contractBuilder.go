@@ -8,7 +8,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/vm"
 )
 
 //create a Single Singature contract for owner
@@ -42,7 +41,7 @@ func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
 func CreateSignatureRedeemScriptWithEncodedPublicKey(encodedPublicKey []byte) ([]byte, error) {
 	sb := NewProgramBuilder()
 	sb.PushData(encodedPublicKey)
-	sb.AddOp(vm.CHECKSIG)
+	sb.AddOp(CHECKSIG)
 	return sb.ToArray(), nil
 }
 
@@ -86,7 +85,7 @@ func CreateMultiSigRedeemScript(m int, pubkeys []*crypto.PubKey) ([]byte, error)
 	}
 
 	sb.PushNumber(big.NewInt(int64(len(pubkeys))))
-	sb.AddOp(vm.CHECKMULTISIG)
+	sb.AddOp(CHECKMULTISIG)
 	return sb.ToArray(), nil
 }
 
