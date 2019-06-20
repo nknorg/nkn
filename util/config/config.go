@@ -21,9 +21,7 @@ import (
 	"github.com/nknorg/nnet/transport"
 )
 
-const (
-	DefaultConfigFilename = "./config.json"
-)
+const DefaultConfigFile = "config.json"
 
 const (
 	MaxNumTxnPerBlock            = 4096
@@ -64,11 +62,15 @@ var (
 )
 
 var (
-	Version       string
-	SkipCheckPort bool
-	SkipNAT       bool
-	nat           gonat.NAT
-	Parameters    = &Configuration{
+	Version         string
+	SkipNAT         bool
+	nat             gonat.NAT
+	ConfigFile      string
+	LogPath         string
+	ChainDBPath     string
+	WalletFile      string
+	BeneficiaryAddr string
+	Parameters      = &Configuration{
 		Version:                   1,
 		Transport:                 "tcp",
 		NodePort:                  30001,
@@ -136,8 +138,13 @@ type Configuration struct {
 }
 
 func Init() error {
-	if _, err := os.Stat(DefaultConfigFilename); err == nil {
-		file, err := ioutil.ReadFile(DefaultConfigFilename)
+	configFile := ConfigFile
+	if configFile == "" {
+		configFile = DefaultConfigFile
+	}
+
+	if _, err := os.Stat(configFile); err == nil {
+		file, err := ioutil.ReadFile(configFile)
 		if err != nil {
 			return err
 		}
@@ -151,6 +158,22 @@ func Init() error {
 		}
 	} else {
 		log.Println("Config file not exists, use default parameters.")
+	}
+
+	if len(LogPath) > 0 {
+		Parameters.LogPath = LogPath
+	}
+
+	if len(ChainDBPath) > 0 {
+		Parameters.ChainDBPath = ChainDBPath
+	}
+
+	if len(WalletFile) > 0 {
+		Parameters.WalletFile = WalletFile
+	}
+
+	if len(BeneficiaryAddr) > 0 {
+		Parameters.BeneficiaryAddr = BeneficiaryAddr
 	}
 
 	if Parameters.Hostname == "127.0.0.1" {
