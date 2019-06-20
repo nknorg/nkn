@@ -45,7 +45,7 @@ var SigAlgo_value = map[string]int32{
 }
 
 func (SigAlgo) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_sigchain_6b957b0216d1cad9, []int{0}
+	return fileDescriptor_sigchain_a5e1681c49494756, []int{0}
 }
 
 type SigChainElem struct {
@@ -61,7 +61,7 @@ type SigChainElem struct {
 func (m *SigChainElem) Reset()      { *m = SigChainElem{} }
 func (*SigChainElem) ProtoMessage() {}
 func (*SigChainElem) Descriptor() ([]byte, []int) {
-	return fileDescriptor_sigchain_6b957b0216d1cad9, []int{0}
+	return fileDescriptor_sigchain_a5e1681c49494756, []int{0}
 }
 func (m *SigChainElem) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -153,7 +153,7 @@ type SigChain struct {
 func (m *SigChain) Reset()      { *m = SigChain{} }
 func (*SigChain) ProtoMessage() {}
 func (*SigChain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_sigchain_6b957b0216d1cad9, []int{1}
+	return fileDescriptor_sigchain_a5e1681c49494756, []int{1}
 }
 func (m *SigChain) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1427,9 +1427,9 @@ var (
 	ErrIntOverflowSigchain   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("pb/sigchain.proto", fileDescriptor_sigchain_6b957b0216d1cad9) }
+func init() { proto.RegisterFile("pb/sigchain.proto", fileDescriptor_sigchain_a5e1681c49494756) }
 
-var fileDescriptor_sigchain_6b957b0216d1cad9 = []byte{
+var fileDescriptor_sigchain_a5e1681c49494756 = []byte{
 	// 459 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x44, 0x92, 0xbb, 0x8e, 0xd3, 0x40,
 	0x18, 0x85, 0x3d, 0x09, 0xb1, 0x9d, 0x3f, 0xc9, 0x2a, 0x8c, 0xb8, 0x58, 0x5c, 0x86, 0xb0, 0xc5,

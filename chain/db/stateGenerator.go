@@ -17,7 +17,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.CoinbaseType:
+	case pb.COINBASE_TYPE:
 		coinbase := pl.(*pb.Coinbase)
 		if !genesis {
 			donationAmount, err := cs.GetDonation()
@@ -31,17 +31,17 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		}
 		states.IncrNonce(BytesToUint160(coinbase.Sender))
 		states.UpdateBalance(BytesToUint160(coinbase.Recipient), Fixed64(coinbase.Amount)+totalFee, Addition)
-	case pb.TransferAssetType:
+	case pb.TRANSFER_ASSET_TYPE:
 		transfer := pl.(*pb.TransferAsset)
 		states.UpdateBalance(BytesToUint160(transfer.Sender), Fixed64(transfer.Amount)+Fixed64(txn.UnsignedTx.Fee), Subtraction)
 		states.IncrNonce(BytesToUint160(transfer.Sender))
 		states.UpdateBalance(BytesToUint160(transfer.Recipient), Fixed64(transfer.Amount), Addition)
 
-	case pb.RegisterNameType:
+	case pb.REGISTER_NAME_TYPE:
 		fallthrough
-	case pb.DeleteNameType:
+	case pb.DELETE_NAME_TYPE:
 		fallthrough
-	case pb.SubscribeType:
+	case pb.SUBSCRIBE_TYPE:
 		pg, err := txn.GetProgramHashes()
 		if err != nil {
 			return err
@@ -52,7 +52,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		}
 		states.IncrNonce(pg[0])
 
-	case pb.GenerateIDType:
+	case pb.GENERATE_ID_TYPE:
 		genID := pl.(*pb.GenerateID)
 		pg, err := txn.GetProgramHashes()
 		if err != nil {
@@ -71,7 +71,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		}
 		states.UpdateBalance(donationAddress, Fixed64(genID.RegistrationFee), Addition)
 
-	case pb.NanoPayType:
+	case pb.NANO_PAY_TYPE:
 		nanoPay := pl.(*pb.NanoPay)
 		pg, err := txn.GetProgramHashes()
 		if err != nil {
@@ -144,7 +144,7 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 		preBlockHash := prevBlock.Hash()
 
 		for _, txn := range prevBlock.Transactions {
-			if txn.UnsignedTx.Payload.Type == pb.GenerateIDType {
+			if txn.UnsignedTx.Payload.Type == pb.GENERATE_ID_TYPE {
 				id := ComputeID(preBlockHash, txn.Hash(), b.Header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength])
 
 				pg, err := txn.GetProgramHashes()

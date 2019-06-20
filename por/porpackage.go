@@ -54,7 +54,7 @@ func (c PorPackages) Less(i, j int) bool {
 }
 
 func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage, error) {
-	if txn.UnsignedTx.Payload.Type != pb.SigChainTxnType {
+	if txn.UnsignedTx.Payload.Type != pb.SIG_CHAIN_TXN_TYPE {
 		return nil, errors.New("Transaction type mismatch")
 	}
 	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
