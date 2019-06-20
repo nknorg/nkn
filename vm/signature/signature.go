@@ -9,12 +9,10 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/vm/interfaces"
 )
 
 //SignableData describe the data need be signed.
 type SignableData interface {
-	interfaces.ICodeContainer
 	GetProgramHashes() ([]common.Uint160, error)
 	SetPrograms([]*pb.Program)
 	GetPrograms() []*pb.Program
