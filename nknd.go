@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/nknorg/nkn/api/common"
@@ -44,7 +43,6 @@ const (
 
 var (
 	createMode bool
-	seedStr    string
 )
 
 func init() {
@@ -203,11 +201,6 @@ func nknMain(c *cli.Context) (err error) {
 		return true
 	}, 0})
 
-	if len(seedStr) > 0 {
-		// Support input mutil seeds which split by ","
-		config.Parameters.SeedList = strings.Split(seedStr, ",")
-	}
-
 	err = por.InitPorServer(account, id)
 	if err != nil {
 		return fmt.Errorf("PorServer initialization error with: %v", err)
@@ -343,8 +336,8 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "seed",
-			Usage:       "Seed List to join",
-			Destination: &seedStr,
+			Usage:       "Seed node address to join, multiple seeds should be split by comma",
+			Destination: &config.SeedList,
 		},
 		cli.StringFlag{
 			Name:        "passwd, p",
@@ -381,6 +374,11 @@ func main() {
 			Name:        "beneficiaryaddr",
 			Usage:       "beneficiary address where your mining reward will go to",
 			Destination: &config.BeneficiaryAddr,
+		},
+		cli.StringFlag{
+			Name:        "genesisblockproposer",
+			Usage:       "public key of genesis block proposer",
+			Destination: &config.GenesisBlockProposer,
 		},
 	}
 	app.Action = nknMain
