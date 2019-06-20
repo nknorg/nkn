@@ -389,48 +389,6 @@ func getVersion(s Serverer, params map[string]interface{}) map[string]interface{
 	return respPacking(SUCCESS, config.Version)
 }
 
-// sendSigChain send por transaction
-// params: {"sigchain":<sigchain>}
-// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func sendSigChain(s Serverer, params map[string]interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return respPacking(INVALID_PARAMS, "length of params is less than 1")
-	}
-
-	var sigChain []byte
-	str, ok := params["sigchain"].(string)
-	if !ok {
-		return respPacking(INVALID_PARAMS, "sigchain should be a string")
-	}
-
-	sigChain, err := common.HexStringToBytes(str)
-	if err != nil {
-		return respPacking(INVALID_PARAMS, err.Error())
-	}
-
-	wallet, err := s.GetWallet()
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
-	}
-
-	txn, err := MakeSigChainTransaction(wallet, sigChain, 0)
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
-	}
-
-	localNode, err := s.GetNetNode()
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
-	}
-
-	if errCode, err := VerifyAndSendTx(localNode, txn); errCode != ErrNoError {
-		return respPacking(errCode, err.Error())
-	}
-
-	txHash := txn.Hash()
-	return respPacking(SUCCESS, common.BytesToHexString(txHash.ToArray()))
-}
-
 func NodeInfo(addr string, pubkey, id []byte) map[string]string {
 	nodeInfo := make(map[string]string)
 	nodeInfo["addr"] = addr
@@ -790,7 +748,6 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getnodestate":                 {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
 	"getchordringinfo":             {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
 	"setdebuginfo":                 {Handler: setDebugInfo},
-	"sendSigChain":                 {Handler: sendSigChain},
 	"getbalancebyaddr":             {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
 	"getnoncebyaddr":               {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
 	"getid":                        {Handler: getId, AccessCtrl: BIT_JSONRPC},
