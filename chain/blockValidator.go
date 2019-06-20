@@ -63,7 +63,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		return errors.New("serialized block is too big")
 	}
 
-	if block.Transactions[0].UnsignedTx.Payload.Type != pb.CoinbaseType {
+	if block.Transactions[0].UnsignedTx.Payload.Type != pb.COINBASE_TYPE {
 		return errors.New("first transaction in block is not Coinbase")
 	}
 
@@ -115,7 +115,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		default:
 		}
 
-		if i != 0 && txn.UnsignedTx.Payload.Type == pb.CoinbaseType {
+		if i != 0 && txn.UnsignedTx.Payload.Type == pb.COINBASE_TYPE {
 			return errors.New("Coinbase transaction order is incorrect")
 		}
 		if err := VerifyTransaction(txn); err != nil {
@@ -131,9 +131,9 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		}
 
 		switch txn.UnsignedTx.Payload.Type {
-		case pb.CoinbaseType:
-		case pb.SigChainTxnType:
-		case pb.NanoPayType:
+		case pb.COINBASE_TYPE:
+		case pb.SIG_CHAIN_TXN_TYPE:
+		case pb.NANO_PAY_TYPE:
 		default:
 			addr, err := ToCodeHash(txn.Programs[0].Code)
 			if err != nil {
@@ -248,7 +248,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 				return nil, nil, 0, err
 			}
 
-			if txn.UnsignedTx.Payload.Type != pb.SigChainTxnType {
+			if txn.UnsignedTx.Payload.Type != pb.SIG_CHAIN_TXN_TYPE {
 				return nil, nil, 0, errors.New("invalid transaction type")
 			}
 
@@ -322,7 +322,7 @@ func SignerCheck(header *block.Header) error {
 	}
 	err = crypto.Verify(*rawPubKey, signature.GetHashForSigning(header), header.Signature)
 	if err != nil {
-		return fmt.Errorf("invalid header signature %x", header.Signature)
+		return fmt.Errorf("invalid header signature %x: %v", header.Signature, err)
 	}
 
 	return nil

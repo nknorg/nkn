@@ -174,7 +174,7 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *trans
 
 	donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
 	payload := transaction.NewCoinbase(donationProgramhash, redeemHash, reward)
-	pl, err := transaction.Pack(pb.CoinbaseType, payload)
+	pl, err := transaction.Pack(pb.COINBASE_TYPE, payload)
 	if err != nil {
 		return nil
 	}

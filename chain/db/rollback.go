@@ -105,7 +105,7 @@ func (cs *ChainStore) rollbackCurrentBlockHash(b *block.Block) error {
 
 func (cs *ChainStore) rollbackNames(b *block.Block) error {
 	for _, txn := range b.Transactions {
-		if txn.UnsignedTx.Payload.Type == pb.RegisterNameType {
+		if txn.UnsignedTx.Payload.Type == pb.REGISTER_NAME_TYPE {
 			pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
 			if err != nil {
 				return err
@@ -120,7 +120,7 @@ func (cs *ChainStore) rollbackNames(b *block.Block) error {
 	}
 
 	for _, txn := range b.Transactions {
-		if txn.UnsignedTx.Payload.Type == pb.DeleteNameType {
+		if txn.UnsignedTx.Payload.Type == pb.DELETE_NAME_TYPE {
 			pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
 			if err != nil {
 				return err
@@ -141,7 +141,7 @@ func (cs *ChainStore) rollbackPubSub(b *block.Block) error {
 	height := b.Header.UnsignedHeader.Height
 
 	for _, txn := range b.Transactions {
-		if txn.UnsignedTx.Payload.Type == pb.SubscribeType {
+		if txn.UnsignedTx.Payload.Type == pb.SUBSCRIBE_TYPE {
 			pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
 			if err != nil {
 				return err
