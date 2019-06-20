@@ -15,7 +15,7 @@ import (
 )
 
 func showAccountInfo(wallet vault.Wallet, verbose bool) {
-	const format = "%-34s  %s\n"
+	const format = "%-37s  %s\n"
 	account, _ := wallet.GetDefaultAccount()
 	fmt.Printf(format, "Address", "Public Key")
 	fmt.Printf(format, "-------", "----------")
