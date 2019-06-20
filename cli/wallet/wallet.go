@@ -7,6 +7,7 @@ import (
 	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
 
@@ -61,7 +62,7 @@ func walletAction(c *cli.Context) error {
 		cli.ShowSubcommandHelp(c)
 		return nil
 	}
-	// wallet name is wallet.dat by default
+	// wallet file name
 	name := c.String("name")
 	if name == "" {
 		fmt.Fprintln(os.Stderr, "invalid wallet name")
@@ -178,7 +179,7 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "name, n",
 				Usage: "wallet name",
-				Value: vault.WalletFileName,
+				Value: config.Parameters.WalletFile,
 			},
 			cli.StringFlag{
 				Name:  "password, p",

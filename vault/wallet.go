@@ -10,6 +10,7 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vm/contract"
@@ -19,7 +20,6 @@ import (
 const (
 	WalletIVLength        = 16
 	WalletMasterKeyLength = 32
-	WalletFileName        = "wallet.dat"
 )
 
 type Wallet interface {
@@ -291,20 +291,18 @@ func (w *WalletImpl) GetContract() (*contract.Contract, error) {
 	return w.contract, nil
 }
 
-func GetWallet() Wallet {
-	if !FileExisted(WalletFileName) {
-		log.Errorf("No %s detected, please create a wallet by using command line.", WalletFileName)
-		os.Exit(1)
+func GetWallet() (Wallet, error) {
+	walletFileName := config.Parameters.WalletFile
+	if !FileExisted(walletFileName) {
+		return nil, fmt.Errorf("wallet file %s does not exist, please create a wallet using nknc.", walletFileName)
 	}
 	passwd, err := password.GetAccountPassword()
 	if err != nil {
-		log.Error("Get password error.")
-		os.Exit(1)
+		return nil, fmt.Errorf("get password error: %v", err)
 	}
-	c, err := OpenWallet(WalletFileName, passwd)
+	w, err := OpenWallet(walletFileName, passwd)
 	if err != nil {
-		log.Error(err)
-		return nil
+		return nil, fmt.Errorf("open wallet error: %v", err)
 	}
-	return c
+	return w, nil
 }

@@ -274,7 +274,7 @@ func FileOpen(path string) (*os.File, error) {
 
 	var currenttime string = time.Now().Format("2006-01-02_15.04.05")
 
-	logfile, err := os.OpenFile(path+currenttime+"_LOG.log", os.O_RDWR|os.O_CREATE, 0666)
+	logfile, err := os.OpenFile(filepath.Join(path, currenttime+"_LOG.log"), os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return nil, err
 	}
