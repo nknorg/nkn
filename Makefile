@@ -1,20 +1,21 @@
-.DEFAULT_GOAL := build_local
+.DEFAULT_GOAL:=build_local_or_with_proxy
 
-GOFMT=gofmt
-GC=go build
-VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
-Minversion := $(shell date)
-BUILD_NKND_PARAM = -ldflags "-s -w -X github.com/nknorg/nkn/util/config.Version=$(VERSION)" #-race
-BUILD_NKNC_PARAM = -ldflags "-s -w -X github.com/nknorg/nkn/cli/common.Version=$(VERSION)"
-IDENTIFIER= $(GOOS)-$(GOARCH)
+GC=GO111MODULE=on go build
+USE_PROXY=GOPROXY=https://goproxy.io
+GOFMT=go fmt
+VERSION:=$(shell git describe --abbrev=4 --dirty --always --tags)
+Minversion:=$(shell date)
+BUILD_NKND_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/util/config.Version=$(VERSION)" #-race
+BUILD_NKNC_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/cli/common.Version=$(VERSION)"
+IDENTIFIER=$(GOOS)-$(GOARCH)
 
-help:          ## Show available options with this Makefile
+help:  ## Show available options with this Makefile
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -v grep | awk 'BEGIN { FS = ":.*?##" }; { printf "%-15s  %s\n", $$1,$$2 }'
 
 .PHONY: build
 build:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd nknd.go
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC)  $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc nknc.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd nknd.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc nknc.go
 
 .PHONY: crossbuild
 crossbuild:
@@ -22,7 +23,7 @@ crossbuild:
 	make build FLAGS="build/$(IDENTIFIER)"
 
 .PHONY: all
-all: vendor ## Build binaries for all available architectures
+all:  ## Build binaries for all available architectures
 	make crossbuild GOOS=linux GOARCH=arm
 	make crossbuild GOOS=linux GOARCH=386
 	make crossbuild GOOS=linux GOARCH=arm64
@@ -35,29 +36,22 @@ all: vendor ## Build binaries for all available architectures
 	make crossbuild GOOS=windows GOARCH=386
 
 .PHONY: build_local
-build_local: vendor ## Build local binaries without providing specific GOOS/GOARCH
-	$(GC)  $(BUILD_NKND_PARAM) nknd.go
-	$(GC)  $(BUILD_NKNC_PARAM) nknc.go
+build_local:  ## Build local binaries without providing specific GOOS/GOARCH
+	$(GC) $(BUILD_NKND_PARAM) nknd.go
+	$(GC) $(BUILD_NKNC_PARAM) nknc.go
+
+.PHONY: build_local_with_proxy
+build_local_with_proxy:  ## Build local binaries with go proxy
+	$(USE_PROXY) $(GC) $(BUILD_NKND_PARAM) nknd.go
+	$(USE_PROXY) $(GC) $(BUILD_NKNC_PARAM) nknc.go
+
+.PHONY: build_local_or_with_proxy
+build_local_or_with_proxy:
+	${MAKE} build_local || ${MAKE} build_local_with_proxy
 
 .PHONY: format
-format:   ## Run go format on nknd.go
-	$(GOFMT) -w nknd.go
-
-.PHONY: glide
-glide:   ## Installs glide for go package management
-	@ mkdir -p $$(go env GOPATH)/bin
-	@ curl https://glide.sh/get | sh;
-
-vendor: glide.yaml glide.lock
-	@ glide install
-
-.PHONY: test
-test:  ## Run go test
-	go test -v github.com/nknorg/nkn/common
-	go test -v github.com/nknorg/nkn/net
-	go test -v github.com/nknorg/nkn/por
-	go test -v github.com/nknorg/nkn/db
-	go test -v github.com/nknorg/nkn/cli
+format:  ## Run go format on nknd.go
+	$(GOFMT) ./...
 
 .PHONY: clean
 clean:  ## Remove the nknd, nknc binaries and build directory
@@ -65,8 +59,8 @@ clean:  ## Remove the nknd, nknc binaries and build directory
 	rm -rf build/
 
 .PHONY: deepclean
-deepclean:  ## Remove the existing binaries, the vendor directory and build directory
-	rm -rf nknd nknc vendor build
+deepclean:  ## Remove the existing binaries and build directory
+	rm -rf nknd nknc build
 
 .PHONY: pb
 pb:

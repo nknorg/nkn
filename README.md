@@ -69,29 +69,12 @@ open a terminal (or cmd on windows - start -> run/search -> cmd.exe) and write t
 
 ### Building from source
 
-
-To build from source, you need a properly configured Go environment (Go 1.10+,
-$GOROOT and $GOPATH set up, see [Go Official Installation
-Documentation](https://golang.org/doc/install) for more details).
-
-Create directory $GOPATH/src/github.com/nknorg/ if not exists
-
-In directory $GOPATH/src/github.com/nknorg/ clone the repository
+To build from source, you need a properly configured Go environment (Go 1.11+,
+see [Go Official Installation Documentation](https://golang.org/doc/install) for
+more details).
 
 ```shell
 $ git clone https://github.com/nknorg/nkn.git
-```
-
-Install package management tool `glide` if it's not installed on your system.
-
-```shell
-$ cd nkn
-$ make glide
-```
-
-Download dependencies for building
-```shell
-$ make vendor
 ```
 
 Build the source code with make
@@ -146,9 +129,9 @@ Before starting the node, you need to create a new wallet first:
 $ ./nknc wallet -c
 Password:
 Re-enter Password:
-Address                            Public Key
--------                            ----------
-NjCWGM1EfJeopJopSQGC6aLEkuug5GiwLM 03d45f701e7e330e1fd1c7cce09ffb95f7b1870e5c429ad8e8c950ddb879093f52
+Address                                Public Key
+-------                                ----------
+NKNRQxosmUixL8bvLAS5G79m1XNx3YqPsFPW   35db285ea2f91499164cd3e19203ab5e525df6216d1eba3ac6bcef00503407ce
 ```
 
 If you are using Docker, it should be `docker run -it -v $PWD:/nkn nkn nknc

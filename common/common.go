@@ -9,7 +9,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/golang/crypto/ripemd160"
+	"golang.org/x/crypto/ripemd160"
 )
 
 const MaxUint32 = ^uint32(0)

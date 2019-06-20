@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/transaction"
