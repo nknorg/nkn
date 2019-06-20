@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	gonat "github.com/nknorg/go-nat"
@@ -62,15 +63,17 @@ var (
 )
 
 var (
-	Version         string
-	SkipNAT         bool
-	nat             gonat.NAT
-	ConfigFile      string
-	LogPath         string
-	ChainDBPath     string
-	WalletFile      string
-	BeneficiaryAddr string
-	Parameters      = &Configuration{
+	Version              string
+	SkipNAT              bool
+	nat                  gonat.NAT
+	ConfigFile           string
+	LogPath              string
+	ChainDBPath          string
+	WalletFile           string
+	BeneficiaryAddr      string
+	SeedList             string
+	GenesisBlockProposer string
+	Parameters           = &Configuration{
 		Version:                   1,
 		Transport:                 "tcp",
 		NodePort:                  30001,
@@ -174,6 +177,14 @@ func Init() error {
 
 	if len(BeneficiaryAddr) > 0 {
 		Parameters.BeneficiaryAddr = BeneficiaryAddr
+	}
+
+	if len(SeedList) > 0 {
+		Parameters.SeedList = strings.Split(SeedList, ",")
+	}
+
+	if len(GenesisBlockProposer) > 0 {
+		Parameters.GenesisBlockProposer = GenesisBlockProposer
 	}
 
 	if Parameters.Hostname == "127.0.0.1" {
