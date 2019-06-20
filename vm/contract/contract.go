@@ -2,10 +2,21 @@ package contract
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/pb"
+)
+
+type ContractParameterType byte
+
+const (
+	Signature ContractParameterType = 0
+	CHECKSIG  byte                  = 0xAC
 )
 
 //Contract address is the hash of contract program .
@@ -26,107 +37,6 @@ type Contract struct {
 
 	//owner's pubkey hash indicate the owner of contract
 	OwnerPubkeyHash Uint160
-}
-
-func (c *Contract) IsStandard() bool {
-	if len(c.Code) != 35 {
-		return false
-	}
-	if c.Code[0] != 33 || c.Code[34] != byte(CHECKSIG) {
-		return false
-	}
-	return true
-}
-
-func (c *Contract) IsMultiSigContract() bool {
-	var m int16 = 0
-	var n int16 = 0
-	i := 0
-
-	if len(c.Code) < 37 {
-		return false
-	}
-	if c.Code[i] > byte(PUSH16) {
-		return false
-	}
-	if c.Code[i] < byte(PUSH1) && c.Code[i] != 1 && c.Code[i] != 2 {
-		return false
-	}
-
-	switch c.Code[i] {
-	case 1:
-		i++
-		m = int16(c.Code[i])
-		i++
-		break
-	case 2:
-		i++
-		m = BytesToInt16(c.Code[i:])
-		i += 2
-		break
-	default:
-		m = int16(c.Code[i]) - 80
-		i++
-		break
-	}
-
-	if m < 1 || m > 1024 {
-		return false
-	}
-
-	for c.Code[i] == 33 {
-		i += 34
-		if len(c.Code) <= i {
-			return false
-		}
-		n++
-	}
-	if n < m || n > 1024 {
-		return false
-	}
-
-	switch c.Code[i] {
-	case 1:
-		i++
-		if n != int16(c.Code[i]) {
-			return false
-		}
-		i++
-		break
-	case 2:
-		i++
-		if n != BytesToInt16(c.Code[i:]) {
-			return false
-		}
-		i += 2
-		break
-	default:
-		if n != (int16(c.Code[i]) - 80) {
-			return false
-		}
-		i++
-		break
-	}
-
-	if c.Code[i] != byte(CHECKMULTISIG) {
-		return false
-	}
-	i++
-	if len(c.Code) != i {
-		return false
-	}
-
-	return true
-}
-
-func (c *Contract) GetType() ContractType {
-	if c.IsStandard() {
-		return SignatureContract
-	}
-	if c.IsMultiSigContract() {
-		return MultiSigContract
-	}
-	return CustomContract
 }
 
 func (c *Contract) Deserialize(r io.Reader) error {
@@ -192,4 +102,93 @@ func ByteToContractParameterType(b []byte) []ContractParameterType {
 	}
 
 	return c
+}
+
+//create a Single Singature contract for owner
+func CreateSignatureContract(ownerPubKey *crypto.PubKey) (*Contract, error) {
+	temp := ownerPubKey.EncodePoint()
+	signatureRedeemScript, err := CreateSignatureRedeemScript(ownerPubKey)
+	if err != nil {
+		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
+	}
+	hash, err := ToCodeHash(temp)
+	if err != nil {
+		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
+	}
+	signatureRedeemScriptHashToCodeHash, err := ToCodeHash(signatureRedeemScript)
+	if err != nil {
+		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
+	}
+	return &Contract{
+		Code:            signatureRedeemScript,
+		Parameters:      []ContractParameterType{Signature},
+		ProgramHash:     signatureRedeemScriptHashToCodeHash,
+		OwnerPubkeyHash: hash,
+	}, nil
+}
+
+//CODE: len(publickey) + publickey + CHECKSIG
+func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
+	encodedPublicKey := pubkey.EncodePoint()
+
+	code := bytes.NewBuffer(nil)
+	code.WriteByte(byte(len(encodedPublicKey)))
+	code.Write(encodedPublicKey)
+	code.WriteByte(byte(CHECKSIG))
+
+	return code.Bytes(), nil
+}
+
+func CreateRedeemHash(pubkey *crypto.PubKey) (Uint160, error) {
+	signatureRedeemScript, err := CreateSignatureRedeemScript(pubkey)
+	if err != nil {
+		return Uint160{}, errors.New("CreateSignatureRedeemScript failed")
+	}
+	RedeemHash, err := ToCodeHash(signatureRedeemScript)
+	if err != nil {
+		return Uint160{}, errors.New("ToCodeHash failed")
+	}
+
+	return RedeemHash, err
+}
+
+//CODE: len(publickey) + publickey + CHECKSIG
+//--------------------------------------------
+//Size:      1             32            1
+func GetPublicKeyFromCode(code []byte) ([]byte, error) {
+	if len(code) != 34 {
+		return nil, fmt.Errorf("code length error, need 34, but got %v", len(code))
+	}
+
+	if code[0] != 32 && code[33] != 0xAC {
+		return nil, fmt.Errorf("code format error, need code[0]=32, code[33]=0xac, but got %v and %x", code[0], code[33])
+	}
+
+	return code[1:33], nil
+}
+
+//Parameter: len(signature) + signature
+//--------------------------------------------
+//Size:          1             64
+func GetSignatureFromParameter(parameter []byte) ([]byte, error) {
+	if len(parameter) != 65 {
+		return nil, fmt.Errorf("parameter length error, need 65,but got %v", len(parameter))
+	}
+
+	if parameter[0] != 64 {
+		return nil, fmt.Errorf("parameter format error, need parameter[0]=64, bug got %v", parameter[0])
+	}
+
+	return parameter[1:], nil
+}
+
+//Parameter: len(signature) + signature
+func (c *Contract) NewProgram(signature []byte) *pb.Program {
+	size := len(signature)
+	parameter := append([]byte{byte(size)}, signature...)
+
+	return &pb.Program{
+		Code:      c.Code,
+		Parameter: parameter,
+	}
 }

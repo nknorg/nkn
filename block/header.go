@@ -9,6 +9,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/vm/contract"
 	"github.com/nknorg/nkn/vm/signature"
@@ -64,12 +65,17 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 func (h *Header) GetProgramHashes() ([]Uint160, error) {
 	programHashes := []Uint160{}
 
-	script, _ := contract.CreateSignatureRedeemScriptWithEncodedPublicKey(h.UnsignedHeader.Signer)
-	outputHashes, err := ToCodeHash(script)
+	pubKey, err := crypto.NewPubKeyFromBytes(h.UnsignedHeader.Signer)
+	if err != nil {
+		return nil, fmt.Errorf("[Header], Get publick key failed: %v", err)
+	}
+
+	programHash, err := contract.CreateRedeemHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("[Header], GetProgramHashes failed: %v", err)
 	}
-	programHashes = append(programHashes, outputHashes)
+
+	programHashes = append(programHashes, programHash)
 	return programHashes, nil
 }
 
