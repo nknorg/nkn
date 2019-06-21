@@ -495,7 +495,7 @@ func (cs *ChainStore) GetID(publicKey []byte) ([]byte, error) {
 		return nil, fmt.Errorf("GetID error: %v", err)
 	}
 
-	programHash, err := program.CreateRedeemHash(pubKey)
+	programHash, err := program.CreateProgramHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("GetID error: %v", err)
 	}

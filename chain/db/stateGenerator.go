@@ -126,7 +126,7 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 			return nil, EmptyUint256, err
 		}
 
-		programHash, err := program.CreateRedeemHash(pk)
+		programHash, err := program.CreateProgramHash(pk)
 		if err != nil {
 			return nil, EmptyUint256, err
 		}
