@@ -13,10 +13,10 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/program"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/vm/contract"
 )
 
 type ChainStore struct {
@@ -495,7 +495,7 @@ func (cs *ChainStore) GetID(publicKey []byte) ([]byte, error) {
 		return nil, fmt.Errorf("GetID error: %v", err)
 	}
 
-	programHash, err := contract.CreateRedeemHash(pubKey)
+	programHash, err := program.CreateRedeemHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("GetID error: %v", err)
 	}

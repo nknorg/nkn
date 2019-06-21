@@ -10,9 +10,9 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/vm/signature"
 )
 
 type Block struct {

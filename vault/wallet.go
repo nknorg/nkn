@@ -11,12 +11,12 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/program"
+	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
-	"github.com/nknorg/nkn/vm/contract"
-	"github.com/nknorg/nkn/vm/signature"
 )
 
 const (
@@ -35,7 +35,7 @@ type WalletImpl struct {
 	iv        []byte
 	masterKey []byte
 	account   *Account
-	contract  *contract.Contract
+	contract  *program.Contract
 	*WalletStore
 }
 
@@ -141,7 +141,7 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 		return nil, err
 	}
 
-	ct, err := contract.CreateSignatureContract(account.PubKey())
+	ct, err := program.CreateSignatureContract(account.PubKey())
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (w *WalletImpl) CreateAccount(privateKey []byte) error {
 	if err != nil {
 		return err
 	}
-	contract, err := contract.CreateSignatureContract(account.PubKey())
+	contract, err := program.CreateSignatureContract(account.PubKey())
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,7 @@ func (w *WalletImpl) GetDefaultAccount() (*Account, error) {
 }
 
 func (w *WalletImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
-	redeemHash, err := contract.CreateRedeemHash(pubKey)
+	redeemHash, err := program.CreateRedeemHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("%v\n%s", err, "[Account] GetAccount redeemhash generated failed")
 	}
@@ -285,7 +285,7 @@ func (w *WalletImpl) ChangePassword(oldPassword []byte, newPassword []byte) bool
 	return true
 }
 
-func (w *WalletImpl) GetContract() (*contract.Contract, error) {
+func (w *WalletImpl) GetContract() (*program.Contract, error) {
 	if w.contract == nil {
 		return nil, errors.New("contract error")
 	}
