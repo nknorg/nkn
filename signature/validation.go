@@ -5,7 +5,7 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/vm/contract"
+	"github.com/nknorg/nkn/program"
 )
 
 func VerifySignableData(signableData SignableData) error {
@@ -27,7 +27,7 @@ func VerifySignableData(signableData SignableData) error {
 			return fmt.Errorf("The data hashes %v is different with corresponding program code %v", hashes[i], temp)
 		}
 
-		pk, err := contract.GetPublicKeyFromCode(programs[i].Code)
+		pk, err := program.GetPublicKeyFromCode(programs[i].Code)
 		if err != nil {
 			return err
 		}
@@ -37,7 +37,7 @@ func VerifySignableData(signableData SignableData) error {
 			return err
 		}
 
-		signature, err := contract.GetSignatureFromParameter(programs[i].Parameter)
+		signature, err := program.GetSignatureFromParameter(programs[i].Parameter)
 		if err != nil {
 			return err
 		}

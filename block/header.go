@@ -11,8 +11,8 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/vm/contract"
-	"github.com/nknorg/nkn/vm/signature"
+	"github.com/nknorg/nkn/program"
+	"github.com/nknorg/nkn/signature"
 )
 
 type Header struct {
@@ -70,7 +70,7 @@ func (h *Header) GetProgramHashes() ([]Uint160, error) {
 		return nil, fmt.Errorf("[Header], Get publick key failed: %v", err)
 	}
 
-	programHash, err := contract.CreateRedeemHash(pubKey)
+	programHash, err := program.CreateRedeemHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("[Header], GetProgramHashes failed: %v", err)
 	}

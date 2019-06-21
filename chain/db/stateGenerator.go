@@ -5,9 +5,9 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/program"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/vm/contract"
 )
 
 func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transaction, totalFee Fixed64, genesis bool) error {
@@ -126,7 +126,7 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 			return nil, EmptyUint256, err
 		}
 
-		programHash, err := contract.CreateRedeemHash(pk)
+		programHash, err := program.CreateRedeemHash(pk)
 		if err != nil {
 			return nil, EmptyUint256, err
 		}
