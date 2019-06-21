@@ -18,3 +18,27 @@ wallet.json
 wallet.pswd
 config.json
 ChainDB
+
+# IDE / Editor
+.editorconfig
+# Service worker
+sw.*
+# web service
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+node_modules/
+.npm
+# next.js build output
+.next
+# nuxt.js build output
+.nuxt
+# Nuxt generate
+dist
+# Editor directories and files
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
