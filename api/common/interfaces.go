@@ -12,11 +12,11 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/node"
+	"github.com/nknorg/nkn/program"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/vm/contract"
 )
 
 const (
@@ -570,7 +570,7 @@ func getAddressByName(s Serverer, params map[string]interface{}) map[string]inte
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	scriptHash, err := contract.CreateRedeemHash(pubKey)
+	scriptHash, err := program.CreateRedeemHash(pubKey)
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}

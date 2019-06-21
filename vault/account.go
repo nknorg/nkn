@@ -5,7 +5,7 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/vm/contract"
+	"github.com/nknorg/nkn/program"
 )
 
 type Account struct {
@@ -17,7 +17,7 @@ type Account struct {
 func NewAccount() (*Account, error) {
 	priKey, pubKey, _ := crypto.GenKeyPair()
 
-	redeemHash, err := contract.CreateRedeemHash(&pubKey)
+	redeemHash, err := program.CreateRedeemHash(&pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("%v\n%s", err, "New account redeemhash generated failed")
 	}
@@ -34,7 +34,7 @@ func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
 	//	return nil, errors.New("invalid private key length")
 	//}
 	pubKey := crypto.NewPubKey(privateKey)
-	redeemHash, err := contract.CreateRedeemHash(pubKey)
+	redeemHash, err := program.CreateRedeemHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("%v\n%s", err, "New account redeemhash generated failed")
 	}
