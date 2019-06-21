@@ -7,7 +7,7 @@ import (
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/vm/contract"
+	"github.com/nknorg/nkn/program"
 )
 
 func Key2Address(key string) (addr string, err error) {
@@ -17,7 +17,7 @@ func Key2Address(key string) (addr string, err error) {
 
 	if k, err = hex.DecodeString(key); err == nil {
 		if pk, err = crypto.DecodePoint(k); err == nil {
-			if redeemHash, err = contract.CreateRedeemHash(pk); err == nil {
+			if redeemHash, err = program.CreateRedeemHash(pk); err == nil {
 				return redeemHash.ToAddress()
 			}
 		}

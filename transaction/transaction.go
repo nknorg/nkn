@@ -11,8 +11,8 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/vm/contract"
-	"github.com/nknorg/nkn/vm/signature"
+	"github.com/nknorg/nkn/program"
+	"github.com/nknorg/nkn/signature"
 )
 
 type Transaction struct {
@@ -126,7 +126,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		if err != nil {
 			return nil, err
 		}
-		programhash, err := contract.CreateRedeemHash(publicKey)
+		programhash, err := program.CreateRedeemHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		if err != nil {
 			return nil, err
 		}
-		programhash, err := contract.CreateRedeemHash(publicKey)
+		programhash, err := program.CreateRedeemHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +148,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		if err != nil {
 			return nil, err
 		}
-		programhash, err := contract.CreateRedeemHash(publicKey)
+		programhash, err := program.CreateRedeemHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		if err != nil {
 			return nil, err
 		}
-		programhash, err := contract.CreateRedeemHash(publicKey)
+		programhash, err := program.CreateRedeemHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
