@@ -570,12 +570,12 @@ func getAddressByName(s Serverer, params map[string]interface{}) map[string]inte
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	scriptHash, err := program.CreateRedeemHash(pubKey)
+	programHash, err := program.CreateProgramHash(pubKey)
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	address, err := scriptHash.ToAddress()
+	address, err := programHash.ToAddress()
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
