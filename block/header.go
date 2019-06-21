@@ -70,7 +70,7 @@ func (h *Header) GetProgramHashes() ([]Uint160, error) {
 		return nil, fmt.Errorf("[Header], Get publick key failed: %v", err)
 	}
 
-	programHash, err := program.CreateRedeemHash(pubKey)
+	programHash, err := program.CreateProgramHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("[Header], GetProgramHashes failed: %v", err)
 	}

@@ -12,34 +12,30 @@ import (
 	"github.com/nknorg/nkn/pb"
 )
 
-type ContractParameterType byte
+type ProgramContextParameterType byte
 
 const (
-	Signature ContractParameterType = 0
-	CHECKSIG  byte                  = 0xAC
+	Signature ProgramContextParameterType = 0
+	CHECKSIG  byte                        = 0xAC
 )
 
-//Contract address is the hash of contract program .
-//which be used to control asset or indicate the smart contract address �?
+type ProgramContext struct {
 
-//Contract include the program codes with parameters which can be executed on specific evnrioment
-type Contract struct {
-
-	//the contract program code,which will be run on VM or specific envrionment
+	//the program code,which will be run on VM or specific envrionment
 	Code []byte
 
-	//the Contract Parameter type list
-	// describe the number of contract program parameters and the parameter type
-	Parameters []ContractParameterType
+	//the ProgramContext Parameter type list
+	// describe the number of program parameters and the parameter type
+	Parameters []ProgramContextParameterType
 
-	//The program hash as contract address
+	//The program hash as address
 	ProgramHash Uint160
 
-	//owner's pubkey hash indicate the owner of contract
+	//owner's pubkey hash indicate the owner of program
 	OwnerPubkeyHash Uint160
 }
 
-func (c *Contract) Deserialize(r io.Reader) error {
+func (c *ProgramContext) Deserialize(r io.Reader) error {
 	code, err := serialization.ReadVarBytes(r)
 	if err != nil {
 		return err
@@ -50,7 +46,7 @@ func (c *Contract) Deserialize(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	c.Parameters = ByteToContractParameterType(p)
+	c.Parameters = ByteToProgramContextParameterType(p)
 
 	err = c.ProgramHash.Deserialize(r)
 	if err != nil {
@@ -60,12 +56,12 @@ func (c *Contract) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (c *Contract) Serialize(w io.Writer) error {
+func (c *ProgramContext) Serialize(w io.Writer) error {
 	err := serialization.WriteVarBytes(w, c.Code)
 	if err != nil {
 		return err
 	}
-	err = serialization.WriteVarBytes(w, ContractParameterTypeToByte(c.Parameters))
+	err = serialization.WriteVarBytes(w, ProgramContextParameterTypeToByte(c.Parameters))
 	if err != nil {
 		return err
 	}
@@ -77,14 +73,14 @@ func (c *Contract) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (c *Contract) ToArray() []byte {
+func (c *ProgramContext) ToArray() []byte {
 	w := new(bytes.Buffer)
 	c.Serialize(w)
 
 	return w.Bytes()
 }
 
-func ContractParameterTypeToByte(c []ContractParameterType) []byte {
+func ProgramContextParameterTypeToByte(c []ProgramContextParameterType) []byte {
 	b := make([]byte, len(c))
 
 	for i := 0; i < len(c); i++ {
@@ -94,41 +90,41 @@ func ContractParameterTypeToByte(c []ContractParameterType) []byte {
 	return b
 }
 
-func ByteToContractParameterType(b []byte) []ContractParameterType {
-	c := make([]ContractParameterType, len(b))
+func ByteToProgramContextParameterType(b []byte) []ProgramContextParameterType {
+	c := make([]ProgramContextParameterType, len(b))
 
 	for i := 0; i < len(b); i++ {
-		c[i] = ContractParameterType(b[i])
+		c[i] = ProgramContextParameterType(b[i])
 	}
 
 	return c
 }
 
-//create a Single Singature contract for owner
-func CreateSignatureContract(ownerPubKey *crypto.PubKey) (*Contract, error) {
+//create a Single Singature program context for owner
+func CreateSignatureProgramContext(ownerPubKey *crypto.PubKey) (*ProgramContext, error) {
 	temp := ownerPubKey.EncodePoint()
-	signatureRedeemScript, err := CreateSignatureRedeemScript(ownerPubKey)
+	code, err := CreateSignatureProgramCode(ownerPubKey)
 	if err != nil {
-		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
+		return nil, fmt.Errorf("[ProgramContext],CreateSignatureProgramContext failed: %v", err)
 	}
 	hash, err := ToCodeHash(temp)
 	if err != nil {
-		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
+		return nil, fmt.Errorf("[ProgramContext],CreateSignatureProgramContext failed: %v", err)
 	}
-	signatureRedeemScriptHashToCodeHash, err := ToCodeHash(signatureRedeemScript)
+	programHash, err := ToCodeHash(code)
 	if err != nil {
-		return nil, fmt.Errorf("[Contract],CreateSignatureContract failed: %v", err)
+		return nil, fmt.Errorf("[ProgramContext],CreateSignatureProgramContext failed: %v", err)
 	}
-	return &Contract{
-		Code:            signatureRedeemScript,
-		Parameters:      []ContractParameterType{Signature},
-		ProgramHash:     signatureRedeemScriptHashToCodeHash,
+	return &ProgramContext{
+		Code:            code,
+		Parameters:      []ProgramContextParameterType{Signature},
+		ProgramHash:     programHash,
 		OwnerPubkeyHash: hash,
 	}, nil
 }
 
 //CODE: len(publickey) + publickey + CHECKSIG
-func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
+func CreateSignatureProgramCode(pubkey *crypto.PubKey) ([]byte, error) {
 	encodedPublicKey := pubkey.EncodePoint()
 
 	code := bytes.NewBuffer(nil)
@@ -139,17 +135,17 @@ func CreateSignatureRedeemScript(pubkey *crypto.PubKey) ([]byte, error) {
 	return code.Bytes(), nil
 }
 
-func CreateRedeemHash(pubkey *crypto.PubKey) (Uint160, error) {
-	signatureRedeemScript, err := CreateSignatureRedeemScript(pubkey)
+func CreateProgramHash(pubkey *crypto.PubKey) (Uint160, error) {
+	code, err := CreateSignatureProgramCode(pubkey)
 	if err != nil {
-		return Uint160{}, errors.New("CreateSignatureRedeemScript failed")
+		return Uint160{}, errors.New("CreateSignatureProgramCode failed")
 	}
-	RedeemHash, err := ToCodeHash(signatureRedeemScript)
+	programHash, err := ToCodeHash(code)
 	if err != nil {
 		return Uint160{}, errors.New("ToCodeHash failed")
 	}
 
-	return RedeemHash, err
+	return programHash, err
 }
 
 //CODE: len(publickey) + publickey + CHECKSIG
@@ -183,7 +179,7 @@ func GetSignatureFromParameter(parameter []byte) ([]byte, error) {
 }
 
 //Parameter: len(signature) + signature
-func (c *Contract) NewProgram(signature []byte) *pb.Program {
+func (c *ProgramContext) NewProgram(signature []byte) *pb.Program {
 	size := len(signature)
 	parameter := append([]byte{byte(size)}, signature...)
 
