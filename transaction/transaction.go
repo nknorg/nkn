@@ -126,7 +126,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		if err != nil {
 			return nil, err
 		}
-		programhash, err := program.CreateRedeemHash(publicKey)
+		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		if err != nil {
 			return nil, err
 		}
-		programhash, err := program.CreateRedeemHash(publicKey)
+		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +148,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		if err != nil {
 			return nil, err
 		}
-		programhash, err := program.CreateRedeemHash(publicKey)
+		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		if err != nil {
 			return nil, err
 		}
-		programhash, err := program.CreateRedeemHash(publicKey)
+		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}

@@ -17,14 +17,14 @@ type Account struct {
 func NewAccount() (*Account, error) {
 	priKey, pubKey, _ := crypto.GenKeyPair()
 
-	redeemHash, err := program.CreateRedeemHash(&pubKey)
+	programHash, err := program.CreateProgramHash(&pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("%v\n%s", err, "New account redeemhash generated failed")
 	}
 	return &Account{
 		PrivateKey:  priKey,
 		PublicKey:   &pubKey,
-		ProgramHash: redeemHash,
+		ProgramHash: programHash,
 	}, nil
 }
 
@@ -34,7 +34,7 @@ func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
 	//	return nil, errors.New("invalid private key length")
 	//}
 	pubKey := crypto.NewPubKey(privateKey)
-	redeemHash, err := program.CreateRedeemHash(pubKey)
+	programHash, err := program.CreateProgramHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("%v\n%s", err, "New account redeemhash generated failed")
 	}
@@ -42,7 +42,7 @@ func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
 	return &Account{
 		PrivateKey:  privateKey,
 		PublicKey:   pubKey,
-		ProgramHash: redeemHash,
+		ProgramHash: programHash,
 	}, nil
 }
 
