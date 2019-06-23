@@ -378,7 +378,8 @@ func HeaderCheck(header *block.Header) error {
 	}
 	vrf := header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength]
 	proof := header.UnsignedHeader.RandomBeacon[config.RandomBeaconUniqueLength:]
-	if !crypto.VerifyVrf(*rawPubKey, prevHash.ToArray(), vrf, proof) {
+	prevVrf := prevHeader.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength]
+	if !crypto.VerifyVrf(*rawPubKey, prevVrf, vrf, proof) {
 		return fmt.Errorf("invalid header RandomBeacon %x", header.UnsignedHeader.RandomBeacon)
 	}
 
