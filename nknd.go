@@ -396,22 +396,41 @@ func GetID(seeds []string, publickey []byte) ([]byte, error) {
 		return id, nil
 	}
 
-	log.Infof("get ID from localnode faild, no ID in ledger: %v", err)
+	if err != nil {
+		log.Errorf("get ID from local ledger error: %v", err)
+	} else {
+		log.Infof("get no ID from local ledger")
+	}
 
 	rand.Shuffle(len(seeds), func(i int, j int) {
 		seeds[i], seeds[j] = seeds[j], seeds[i]
 	})
 
-	for _, seed := range seeds {
-		id, err := client.GetID(seed, publickey)
-		if err == nil && len(id) == config.NodeIDBytes {
-			return id, nil
-		}
-
-		log.Warningf("get ID from %s met error: %v", seed, err)
+	n := uint32(len(seeds))
+	if n > config.Parameters.MaxGetIDSeeds {
+		n = config.Parameters.MaxGetIDSeeds
 	}
 
-	return nil, errors.New("get ID failed")
+	counter := make(map[string]uint32)
+	for i := uint32(0); i < n; i++ {
+		id, err := client.GetID(seeds[i], publickey)
+		if err == nil && id != nil {
+			counter[string(id)]++
+		} else {
+			counter[""]++
+		}
+	}
+
+	for idStr, count := range counter {
+		if count > n/2 {
+			if idStr == "" {
+				return nil, nil
+			}
+			return []byte(idStr), nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to get ID from majority of %d seeds", n)
 }
 
 func CreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) error {
@@ -466,18 +485,21 @@ func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) ([]byte,
 	pk := account.PubKey().EncodePoint()
 
 	id, err := GetID(seeds, pk)
-	if err != nil {
+	if err != nil || id == nil {
+		if err != nil {
+			log.Warningf("Get id from neighbors error: %v", err)
+		}
 		if err := CreateID(seeds, wallet, regFee); err != nil {
 			return nil, err
 		}
-	} else {
-		if !bytes.Equal(id, crypto.Sha256ZeroHash) {
-			return id, nil
-		}
+	} else if len(id) != config.NodeIDBytes {
+		return nil, fmt.Errorf("Got id %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
+	} else if !bytes.Equal(id, crypto.Sha256ZeroHash) {
+		return id, nil
 	}
 
-	timer := time.NewTimer(2 * config.ConsensusDuration)
-	timeout := time.After(5 * config.ConsensusTimeout)
+	timer := time.NewTimer((config.GenerateIDBlockDelay+2) * config.ConsensusDuration)
+	timeout := time.After((config.GenerateIDBlockDelay+5) * config.ConsensusTimeout)
 	defer timer.Stop()
 
 out:
@@ -486,15 +508,17 @@ out:
 		case <-timer.C:
 			timer.Reset(config.ConsensusDuration)
 			log.Warningf("try to get ID from local ledger and remoteNode...")
-			if id, err := GetID(seeds, pk); err == nil {
+			if id, err := GetID(seeds, pk); err == nil && id != nil {
 				if !bytes.Equal(id, crypto.Sha256ZeroHash) {
 					return id, nil
 				}
+			} else if err != nil {
+				log.Warningf("Get id from neighbors error: %v", err)
 			}
 		case <-timeout:
 			break out
 		}
 	}
 
-	return nil, errors.New("timeout to get ID")
+	return nil, errors.New("get ID timeout")
 }
