@@ -34,7 +34,7 @@ const (
 	MaxRollbackBlocks            = 1
 	SigChainPropogationTime      = 1
 	HeaderVersion                = 1
-	DBVersion                    = 0x0f
+	DBVersion                    = 0x10
 	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
 	InitialIssueAmount           = 700000000 * common.StorageFactor
 	TotalMiningRewards           = 300000000 * common.StorageFactor
@@ -46,12 +46,12 @@ const (
 	DonationAdjustDividendFactor = 1
 	DonationAdjustDivisorFactor  = 2
 	MinGenIDRegistrationFee      = 0
-	GenerateIDBlockDelay         = 1
+	GenerateIDBlockDelay         = 8
 	RandomBeaconUniqueLength     = vrf.Size
 	RandomBeaconLength           = vrf.Size + vrf.ProofSize
-	ProtocolVersion              = 76
-	MinCompatibleProtocolVersion = 76
-	MaxCompatibleProtocolVersion = 80
+	ProtocolVersion              = 81
+	MinCompatibleProtocolVersion = 81
+	MaxCompatibleProtocolVersion = 85
 	DefaultTxPoolCap             = 32
 	ShortHashSize                = uint32(8)
 )
@@ -97,6 +97,7 @@ var (
 		LogPath:                   "Log",
 		ChainDBPath:               "ChainDB",
 		WalletFile:                "wallet.json",
+		MaxGetIDSeeds:             3,
 	}
 )
 
@@ -138,6 +139,7 @@ type Configuration struct {
 	LogPath                   string        `json:"LogPath"`
 	ChainDBPath               string        `json:"ChainDBPath"`
 	WalletFile                string        `json:"WalletFile"`
+	MaxGetIDSeeds             uint32        `json:"MaxGetIDSeeds"`
 }
 
 func Init() error {
