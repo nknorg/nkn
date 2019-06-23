@@ -77,8 +77,8 @@ func Verify(publicKey PubKey, data []byte, signature []byte) error {
 	return ed25519.Verify(publicKey.X, publicKey.Y, data, r, s)
 }
 
-func GenerateVrf(privateKey []byte, data []byte) ([]byte, []byte, error) {
-	return ed25519.GenerateVrf(privateKey, data)
+func GenerateVrf(privateKey, data []byte, randSrc bool) ([]byte, []byte, error) {
+	return ed25519.GenerateVrf(privateKey, data, randSrc)
 }
 
 func VerifyVrf(publicKey PubKey, data, vrf, proof []byte) bool {
