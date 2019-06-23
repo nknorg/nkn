@@ -70,13 +70,13 @@ func GetPrivateKeyFromSeed(seed []byte) []byte {
 	return ed25519.NewKeyFromSeed(seed)
 }
 
-func GenerateVrf(privKey []byte, data []byte) (dataVrf []byte, proof []byte, err error) {
+func GenerateVrf(privKey, data []byte, randSrc bool) (dataVrf []byte, proof []byte, err error) {
 	if len(privKey) != ed25519.PrivateKeySize {
 		err = errors.New("bad length of privKey")
 		return
 	}
 	sk := vrf.PrivateKey(privKey)
-	dataVrf, proof = sk.Prove(data)
+	dataVrf, proof = sk.Prove(data, randSrc)
 	return
 }
 

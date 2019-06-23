@@ -14,7 +14,7 @@ func TestHonestComplete(t *testing.T) {
 	pk, _ := sk.Public()
 	alice := []byte("alice")
 	aliceVRF := sk.Compute(alice)
-	aliceVRFFromProof, aliceProof := sk.Prove(alice)
+	aliceVRFFromProof, aliceProof := sk.Prove(alice, false)
 
 	fmt.Printf("pk:           %X\n", pk)
 	fmt.Printf("sk:           %X\n", sk)
@@ -57,7 +57,7 @@ func TestFlipBitForgery(t *testing.T) {
 		for j := uint(0); j < 8; j++ {
 			aliceVRF := sk.Compute(alice)
 			aliceVRF[i] ^= 1 << j
-			_, aliceProof := sk.Prove(alice)
+			_, aliceProof := sk.Prove(alice, false)
 			if pk.Verify(alice, aliceVRF, aliceProof) {
 				t.Fatalf("forged by using aliceVRF[%d]^=%d:\n (sk=%x)", i, j, sk)
 			}
@@ -153,7 +153,7 @@ func BenchmarkProve(b *testing.B) {
 	alice := []byte("alice")
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		sk.Prove(alice)
+		sk.Prove(alice, false)
 	}
 }
 
@@ -164,7 +164,7 @@ func BenchmarkVerify(b *testing.B) {
 	}
 	alice := []byte("alice")
 	aliceVRF := sk.Compute(alice)
-	_, aliceProof := sk.Prove(alice)
+	_, aliceProof := sk.Prove(alice, false)
 	pk, _ := sk.Public()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
