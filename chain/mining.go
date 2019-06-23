@@ -113,8 +113,13 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 	}
 
 	curBlockHash := DefaultLedger.Store.GetCurrentBlockHash()
+	curHeader, err := DefaultLedger.Store.GetHeader(curBlockHash)
+	if err != nil {
+		return nil, err
+	}
 
-	vrf, proof, err := crypto.GenerateVrf(bm.account.PrivKey(), curBlockHash.ToArray())
+	curVrf := curHeader.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength]
+	vrf, proof, err := crypto.GenerateVrf(bm.account.PrivKey(), curVrf, true)
 	if err != nil {
 		return nil, err
 	}

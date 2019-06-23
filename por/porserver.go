@@ -127,7 +127,7 @@ func (ps *PorServer) GetOrComputeVrf(data []byte) ([]byte, []byte, error) {
 		}
 	}
 
-	vrf, proof, err := crypto.GenerateVrf(ps.account.PrivKey(), data)
+	vrf, proof, err := crypto.GenerateVrf(ps.account.PrivKey(), data, false)
 	if err != nil {
 		return nil, nil, err
 	}
