@@ -1,0 +1,46 @@
+@import "material-dashboard/mixins";
+@import "material-dashboard/variables";
+@import "table";
+@import "material-dashboard/tabs";
+@import "material-dashboard/alerts";
+@import "material-dashboard/typography";
+
+html,body {min-width: 980px;overflow-x: auto;}
+.border-right{border-right-width: 1px;border-right-style: solid;}
+.card-border{border-color:rgba(0,0,0,0.12)}
+.text{word-break:break-all;}
+
+.v-sheet--offset {
+  top: -18px;
+  position: relative;
+}
+.v-text-field.v-text-field--enclosed .v-input__append-inner{margin-right: -10px;}
+.v-footer {z-index: 3;}
+.divider{
+  display: block;
+  flex: 1 1 0px;
+  max-width: calc(100% - 30px);
+  margin: -1px auto;
+  height: 0px;
+  max-height: 0px;
+  border: solid;
+  border-width: thin 0 0 0;
+  border-color: rgba(0,0,0,0.12);
+  transition: inherit;}
+.divider-vertical{
+  margin-top: 8px;
+  min-height: 0;
+  max-height: calc(100% - 16px);
+  align-self: stretch;
+  border: solid;
+  border-width: 0 thin 0 0;
+  border-color: rgba(255,255,255,0.12);
+  display: inline-flex;
+  height: inherit;
+  max-width: 0px;
+  width: 0px;
+  vertical-align: text-bottom;
+}
+.theme--light.v-stepper{background-color: transparent;}
+.v-stepper{box-shadow:none;}
+.v-stepper__header{box-shadow:none;}
