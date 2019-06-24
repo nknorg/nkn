@@ -14,7 +14,6 @@ import (
 	"github.com/nknorg/nnet/overlay/chord"
 )
 
-// TODO: move sigAlgo to config.json
 const (
 	sigAlgo                    = VRF
 	bitShiftPerSigChainElement = 4
