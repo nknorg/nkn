@@ -98,114 +98,116 @@ var (
 )
 
 var (
-	Version              string
-	SkipNAT              bool
-	nat                  gonat.NAT
-	ConfigFile           string
-	LogPath              string
-	ChainDBPath          string
-	WalletFile           string
-	BeneficiaryAddr      string
-	SeedList             string
-	GenesisBlockProposer string
-	Parameters           = &Configuration{
-		Version:                   1,
-		Transport:                 "tcp",
-		NodePort:                  30001,
-		HttpWsPort:                30002,
-		HttpJsonPort:              30003,
-		NAT:                       true,
-		Mining:                    true,
-		MiningDebug:               true,
-		LogLevel:                  1,
-		MaxLogFileSize:            20,
-		SyncBatchWindowSize:       0,
-		SyncBlockHeadersBatchSize: 128,
-		SyncBlocksBatchSize:       4,
-		SyncBlocksMaxMemorySize:   0,
-		RPCReadTimeout:            5,
-		RPCWriteTimeout:           10,
-		KeepAliveTimeout:          15,
-		NATPortMappingTimeout:     365 * 86400,
-		NumTxnPerBlock:            256,
-		TxPoolPerAccountTxCap:     32,
-		TxPoolTotalTxCap:          0,
-		TxPoolMaxMemorySize:       32,
+	Version                      string
+	SkipNAT                      bool
+	nat                          gonat.NAT
+	ConfigFile                   string
+	LogPath                      string
+	ChainDBPath                  string
+	WalletFile                   string
+	BeneficiaryAddr              string
+	SeedList                     string
+	GenesisBlockProposer         string
+	AllowEmptyBeneficiaryAddress bool
+	WebGuiListenAddress          string
+	WebGuiCreateWallet           bool
+	PasswordFile                 string
+	Parameters                   = &Configuration{
+		Version:                      1,
+		Transport:                    "tcp",
+		NodePort:                     30001,
+		HttpWsPort:                   30002,
+		HttpJsonPort:                 30003,
+		NAT:                          true,
+		Mining:                       true,
+		MiningDebug:                  true,
+		LogLevel:                     1,
+		MaxLogFileSize:               20,
+		SyncBatchWindowSize:          0,
+		SyncBlockHeadersBatchSize:    128,
+		SyncBlocksBatchSize:          4,
+		SyncBlocksMaxMemorySize:      0,
+		RPCReadTimeout:               5,
+		RPCWriteTimeout:              10,
+		KeepAliveTimeout:             15,
+		NATPortMappingTimeout:        365 * 86400,
+		NumTxnPerBlock:               256,
+		TxPoolPerAccountTxCap:        32,
+		TxPoolTotalTxCap:             0,
+		TxPoolMaxMemorySize:          32,
 		RegisterIDRegFee:          0,
-		RegisterIDTxnFee:          0,
-		LogPath:                   "Log",
-		ChainDBPath:               "ChainDB",
-		WalletFile:                "wallet.json",
-		MaxGetIDSeeds:             3,
-		DBFilesCacheCapacity:      100,
-		NumLowFeeTxnPerBlock:      0,
+		RegisterIDTxnFee:                0,
+		LogPath:                      "Log",
+		ChainDBPath:                  "ChainDB",
+		WalletFile:                   "wallet.json",
+		MaxGetIDSeeds:                3,
+		DBFilesCacheCapacity:         100,
+		NumLowFeeTxnPerBlock:         0,
 		LowFeeTxnSizePerBlock:     4096,
-		MinTxnFee:                 10000000,
+		MinTxnFee:                    10000000,
+		AllowEmptyBeneficiaryAddress: false,
+		WebGuiListenAddress:          "127.0.0.1",
+		WebGuiPort:                   30000,
+		WebGuiCreateWallet:           false,
+		PasswordFile:                 "",
 	}
 )
 
 type Configuration struct {
-	Version                   int           `json:"Version"`
-	SeedList                  []string      `json:"SeedList"`
-	RestCertPath              string        `json:"RestCertPath"`
-	RestKeyPath               string        `json:"RestKeyPath"`
-	RPCCert                   string        `json:"RPCCert"`
-	RPCKey                    string        `json:"RPCKey"`
-	HttpWsPort                uint16        `json:"HttpWsPort"`
-	HttpJsonPort              uint16        `json:"HttpJsonPort"`
-	NodePort                  uint16        `json:"-"`
-	LogLevel                  int           `json:"LogLevel"`
-	MaxLogFileSize            uint32        `json:"MaxLogSize"`
-	IsTLS                     bool          `json:"IsTLS"`
-	CertPath                  string        `json:"CertPath"`
-	KeyPath                   string        `json:"KeyPath"`
-	CAPath                    string        `json:"CAPath"`
-	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
-	NumLowFeeTxnPerBlock      uint32        `json:"NumLowFeeTxnPerBlock"`
+	Version                      int           `json:"Version"`
+	SeedList                     []string      `json:"SeedList"`
+	RestCertPath                 string        `json:"RestCertPath"`
+	RestKeyPath                  string        `json:"RestKeyPath"`
+	RPCCert                      string        `json:"RPCCert"`
+	RPCKey                       string        `json:"RPCKey"`
+	HttpWsPort                   uint16        `json:"HttpWsPort"`
+	HttpJsonPort                 uint16        `json:"HttpJsonPort"`
+	NodePort                     uint16        `json:"-"`
+	LogLevel                     int           `json:"LogLevel"`
+	MaxLogFileSize               uint32        `json:"MaxLogSize"`
+	IsTLS                        bool          `json:"IsTLS"`
+	CertPath                     string        `json:"CertPath"`
+	KeyPath                      string        `json:"KeyPath"`
+	CAPath                       string        `json:"CAPath"`
+	GenesisBlockProposer         string        `json:"GenesisBlockProposer"`
+	NumLowFeeTxnPerBlock         uint32        `json:"NumLowFeeTxnPerBlock"`
 	LowFeeTxnSizePerBlock     uint32        `json:"LowFeeTxnSizePerBlock"` // in bytes
-	MinTxnFee                 int64         `json:"MinTxnFee"`
-	RegisterIDRegFee          int64         `json:"RegisterIDRegFee"`
+	MinTxnFee                    int64         `json:"MinTxnFee"`
+	RegisterIDRegFee                int64         `json:"RegisterIDRegFee"`
 	RegisterIDTxnFee          int64         `json:"RegisterIDTxnFee"`
-	Hostname                  string        `json:"Hostname"`
-	Transport                 string        `json:"Transport"`
-	NAT                       bool          `json:"NAT"`
-	Mining                    bool          `json:"Mining"`
-	MiningDebug               bool          `json:"MiningDebug"`
-	BeneficiaryAddr           string        `json:"BeneficiaryAddr"`
-	SyncBatchWindowSize       uint32        `json:"SyncBatchWindowSize"`
-	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
-	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
-	SyncBlocksMaxMemorySize   uint32        `json:"SyncBlocksMaxMemorySize"` // in megabytes (MB)
-	NumTxnPerBlock            uint32        `json:"NumTxnPerBlock"`
-	TxPoolPerAccountTxCap     uint32        `json:"TxPoolPerAccountTxCap"`
-	TxPoolTotalTxCap          uint32        `json:"TxPoolTotalTxCap"`
-	TxPoolMaxMemorySize       uint32        `json:"TxPoolMaxMemorySize"`   // in megabytes (MB)
-	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`        // in seconds
-	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`       // in seconds
-	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`      // in seconds
-	NATPortMappingTimeout     time.Duration `json:"NATPortMappingTimeout"` // in seconds
-	LogPath                   string        `json:"LogPath"`
-	ChainDBPath               string        `json:"ChainDBPath"`
-	WalletFile                string        `json:"WalletFile"`
-	MaxGetIDSeeds             uint32        `json:"MaxGetIDSeeds"`
-	DBFilesCacheCapacity      uint32        `json:"DBFilesCacheCapacity"`
+	Hostname                     string        `json:"Hostname"`
+	Transport                    string        `json:"Transport"`
+	NAT                          bool          `json:"NAT"`
+	Mining                       bool          `json:"Mining"`
+	MiningDebug                  bool          `json:"MiningDebug"`
+	BeneficiaryAddr              string        `json:"BeneficiaryAddr"`
+	SyncBatchWindowSize          uint32        `json:"SyncBatchWindowSize"`
+	SyncBlockHeadersBatchSize    uint32        `json:"SyncBlockHeadersBatchSize"`
+	SyncBlocksBatchSize          uint32        `json:"SyncBlocksBatchSize"`
+	SyncBlocksMaxMemorySize      uint32        `json:"SyncBlocksMaxMemorySize"` // in megabytes (MB)
+	NumTxnPerBlock               uint32        `json:"NumTxnPerBlock"`
+	TxPoolPerAccountTxCap        uint32        `json:"TxPoolPerAccountTxCap"`
+	TxPoolTotalTxCap             uint32        `json:"TxPoolTotalTxCap"`
+	TxPoolMaxMemorySize          uint32        `json:"TxPoolMaxMemorySize"`   // in megabytes (MB)
+	RPCReadTimeout               time.Duration `json:"RPCReadTimeout"`        // in seconds
+	RPCWriteTimeout              time.Duration `json:"RPCWriteTimeout"`       // in seconds
+	KeepAliveTimeout             time.Duration `json:"KeepAliveTimeout"`      // in seconds
+	NATPortMappingTimeout        time.Duration `json:"NATPortMappingTimeout"` // in seconds
+	LogPath                      string        `json:"LogPath"`
+	ChainDBPath                  string        `json:"ChainDBPath"`
+	WalletFile                   string        `json:"WalletFile"`
+	MaxGetIDSeeds                uint32        `json:"MaxGetIDSeeds"`
+	DBFilesCacheCapacity         uint32        `json:"DBFilesCacheCapacity"`
+	AllowEmptyBeneficiaryAddress bool          `json:"AllowEmptyBeneficiaryAddress"`
+	WebGuiListenAddress          string        `json:"WebGuiListenAddress"`
+	WebGuiPort                   uint16        `json:"WebGuiPort"`
+	WebGuiCreateWallet           bool          `json:"WebGuiCreateWallet"`
+	PasswordFile                 string        `json:"PasswordFile"`
 }
 
 func Init() error {
-	configFile := ConfigFile
-	if configFile == "" {
-		configFile = defaultConfigFile
-	}
-
-	if _, err := os.Stat(configFile); err == nil {
-		file, err := ioutil.ReadFile(configFile)
-		if err != nil {
-			return err
-		}
-
-		// Remove the UTF-8 Byte Order Mark
-		file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
-
+	file, err := OpenConfigFile()
+	if err == nil {
 		err = json.Unmarshal(file, Parameters)
 		if err != nil {
 			return err
@@ -242,6 +244,22 @@ func Init() error {
 		Parameters.incrementPort()
 	}
 
+	if AllowEmptyBeneficiaryAddress {
+		Parameters.AllowEmptyBeneficiaryAddress = AllowEmptyBeneficiaryAddress
+	}
+
+	if len(WebGuiListenAddress) > 0 {
+		Parameters.WebGuiListenAddress = WebGuiListenAddress
+	}
+
+	if WebGuiCreateWallet {
+		Parameters.WebGuiCreateWallet = WebGuiCreateWallet
+	}
+
+	if len(PasswordFile) > 0 {
+		Parameters.PasswordFile = PasswordFile
+	}
+
 	if Parameters.SyncBatchWindowSize == 0 {
 		syncBlocksMaxMemorySize := uint64(Parameters.SyncBlocksMaxMemorySize) * 1024 * 1024
 		if syncBlocksMaxMemorySize == 0 {
@@ -255,7 +273,7 @@ func Init() error {
 		log.Printf("Set SyncBatchWindowSize to %vMB", Parameters.SyncBatchWindowSize)
 	}
 
-	err := Parameters.verify()
+	err = Parameters.verify()
 	if err != nil {
 		return err
 	}
@@ -463,4 +481,75 @@ func (config *Configuration) CheckPorts(myIP string) (bool, error) {
 		log.Printf("Port %d is open", port)
 	}
 	return true, nil
+}
+
+func GetConfigFile() string {
+	configFile := ConfigFile
+	if configFile == "" {
+		configFile = defaultConfigFile
+	}
+	return configFile
+}
+
+func OpenConfigFile() ([]byte, error) {
+	var file []byte
+
+	configFile := GetConfigFile()
+	_, err := os.Stat(configFile)
+	if err != nil {
+		return nil, err
+	}
+	file, err = ioutil.ReadFile(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove the UTF-8 Byte Order Mark
+	file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
+	return file, nil
+
+}
+
+func WriteConfigFile(configuration map[string]interface{}) error {
+	bytes, err := json.MarshalIndent(&configuration, "", "    ")
+	if err != nil {
+		return err
+	}
+	configFile := GetConfigFile()
+	return ioutil.WriteFile(configFile, bytes, 0666)
+}
+
+func SetBeneficiaryAddr(addr string, allowEmpty bool) error {
+	if !allowEmpty {
+		if addr == "" {
+			return errors.New("beneficiary address is empty.")
+		}
+	}
+
+	if addr != "" {
+		_, err := common.ToScriptHash(addr)
+		if err != nil {
+			return errors.New(fmt.Sprintf("parse BeneficiaryAddr error: %v", err))
+		}
+	}
+
+	file, err := OpenConfigFile()
+	if err != nil {
+		return err
+	}
+	var configuration map[string]interface{}
+	err = json.Unmarshal(file, &configuration)
+	if err != nil {
+		return err
+	}
+
+	// set beneficiary address
+	configuration["BeneficiaryAddr"] = addr
+
+	err = WriteConfigFile(configuration)
+	if err != nil {
+		return err
+	}
+	Parameters.BeneficiaryAddr = addr
+	return nil
 }

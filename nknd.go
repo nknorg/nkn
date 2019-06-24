@@ -29,6 +29,7 @@ import (
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nkn/webservice"
 	"github.com/nknorg/nnet"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay"
@@ -132,6 +133,13 @@ func nknMain(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// start webservice
+	go func() {
+		for {
+			webservice.Start()
+		}
+	}()
 
 	log.Infof("Node version: %v", config.Version)
 
