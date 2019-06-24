@@ -129,6 +129,7 @@ var (
 		WalletFile:                "wallet.json",
 		MaxGetIDSeeds:             3,
 		DBFilesCacheCapacity:      100,
+		WebServicePort:            30000,
 	}
 )
 
@@ -172,6 +173,7 @@ type Configuration struct {
 	WalletFile                string        `json:"WalletFile"`
 	MaxGetIDSeeds             uint32        `json:"MaxGetIDSeeds"`
 	DBFilesCacheCapacity      int           `json:"DBFilesCacheCapacity"`
+	WebServicePort            uint16        `json:"WebServicePort"`
 }
 
 func Init() error {
