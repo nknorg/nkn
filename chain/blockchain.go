@@ -1,8 +1,6 @@
 package chain
 
 import (
-	"errors"
-	"sort"
 	"sync"
 
 	"github.com/nknorg/nkn/block"
@@ -82,36 +80,6 @@ func (bc *Blockchain) SaveBlock(block *block.Block, fastAdd bool) error {
 	bc.BlockHeight = block.Header.UnsignedHeader.Height
 	event.Queue.Notify(event.BlockPersistCompleted, block)
 	log.Infof("# current block height: %d, block hash: %x", bc.BlockHeight, block.Hash())
-
-	return nil
-}
-
-func (bc *Blockchain) ContainsTransaction(hash Uint256) bool {
-	//TODO: implement error catch
-	_, err := DefaultLedger.Store.GetTransaction(hash)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-func (bc *Blockchain) CurrentBlockHash() Uint256 {
-	return DefaultLedger.Store.GetCurrentBlockHash()
-}
-
-func (bc *Blockchain) AddHeaders(headers []*block.Header) error {
-	//TODO mutex
-	sort.Slice(headers, func(i, j int) bool {
-		return headers[i].UnsignedHeader.Height < headers[j].UnsignedHeader.Height
-	})
-
-	for i := 0; i < len(headers); i++ {
-		if !VerifyHeader(headers[i]) {
-			return errors.New("header verify error.")
-		}
-
-		DefaultLedger.Store.AddHeader(headers[i])
-	}
 
 	return nil
 }

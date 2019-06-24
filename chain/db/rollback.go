@@ -160,13 +160,27 @@ func (cs *ChainStore) rollbackPubSub(b *block.Block) error {
 }
 
 func (cs *ChainStore) rollbackStates(b *block.Block) error {
-	//TODO add err statements
-	prevHash, _ := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
-	prevHead, _ := cs.GetHeader(prevHash)
-	root, _ := common.Uint256ParseFromBytes(prevHead.UnsignedHeader.StateRoot)
-	cs.States, _ = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+	prevHash, err := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
+	if err != nil {
+		return err
+	}
 
-	err := cs.st.BatchPut(currentStateTrie(), root.ToArray())
+	prevHead, err := cs.GetHeader(prevHash)
+	if err != nil {
+		return err
+	}
+
+	root, err := common.Uint256ParseFromBytes(prevHead.UnsignedHeader.StateRoot)
+	if err != nil {
+		return err
+	}
+
+	cs.States, err = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+	if err != nil {
+		return err
+	}
+
+	err = cs.st.BatchPut(currentStateTrie(), root.ToArray())
 	if err != nil {
 		return err
 	}
