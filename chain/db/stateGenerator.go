@@ -90,7 +90,9 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if err := states.UpdateBalance(addrRecipient, claimAmount, Addition); err != nil {
 			return err
 		}
-		states.SetNanoPay(pg[0], addrRecipient, nanoPay.Nonce, Fixed64(nanoPay.Amount), nanoPay.Height+nanoPay.Duration)
+		if err := states.SetNanoPay(pg[0], addrRecipient, nanoPay.Nonce, Fixed64(nanoPay.Amount), nanoPay.Height+nanoPay.Duration); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -182,7 +184,10 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 			}
 		}
 
-		states.CleanupNanoPay(b.Header.UnsignedHeader.Height)
+		err := states.CleanupNanoPay(b.Header.UnsignedHeader.Height)
+		if err != nil {
+			return nil, EmptyUint256, err
+		}
 	}
 
 	var root Uint256

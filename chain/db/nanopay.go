@@ -171,47 +171,60 @@ func (sdb *StateDB) deleteNanoPayCleanup(height uint32) error {
 	return nil
 }
 
-func (sdb *StateDB) cleanupNanoPayAtHeight(height uint32, id string) {
-	ids, ok := sdb.nanoPayCleanup[height]
-	if !ok {
-		ids = make(map[string]struct{})
-		sdb.nanoPayCleanup[height] = ids
+func (sdb *StateDB) cleanupNanoPayAtHeight(height uint32, id string) error {
+	ids, err := sdb.getNanoPayCleanup(height)
+	if err != nil {
+		return err
 	}
 	ids[id] = struct{}{}
+	return nil
 }
 
-func (sdb *StateDB) cancelNanoPayCleanupAtHeight(height uint32, id string) {
-	if ids, ok := sdb.nanoPayCleanup[height]; ok {
-		if _, ok = ids[id]; ok {
-			delete(ids, id)
-		}
+func (sdb *StateDB) cancelNanoPayCleanupAtHeight(height uint32, id string) error {
+	ids, err := sdb.getNanoPayCleanup(height)
+	if err != nil {
+		return err
 	}
+	if _, ok := ids[id]; ok {
+		delete(ids, id)
+	}
+	return nil
 }
 
-func (sdb *StateDB) SetNanoPay(sender, recipient common.Uint160, nonce uint64, balance common.Fixed64, expiresAt uint32) {
+func (sdb *StateDB) SetNanoPay(sender, recipient common.Uint160, nonce uint64, balance common.Fixed64, expiresAt uint32) error {
 	id := getNanoPayId(sender, recipient, nonce)
 	var np *nanoPay
 	var ok bool
 	if np, ok = sdb.nanoPay[id]; !ok {
 		np = &nanoPay{balance, expiresAt}
 		sdb.nanoPay[id] = np
-		sdb.cleanupNanoPayAtHeight(expiresAt, id)
+		if err := sdb.cleanupNanoPayAtHeight(expiresAt, id); err != nil {
+			return err
+		}
 	} else {
-		sdb.cancelNanoPayCleanupAtHeight(np.expiresAt, id)
-		sdb.cleanupNanoPayAtHeight(expiresAt, id)
+		if err := sdb.cancelNanoPayCleanupAtHeight(np.expiresAt, id); err != nil {
+			return err
+		}
+		if err := sdb.cleanupNanoPayAtHeight(expiresAt, id); err != nil {
+			return err
+		}
 		np.balance = balance
 		np.expiresAt = expiresAt
 	}
+	return nil
 }
 
-func (sdb *StateDB) CleanupNanoPay(height uint32) {
-	if ids, ok := sdb.nanoPayCleanup[height]; ok {
-		for id := range ids {
-			sdb.nanoPay[id] = nil
-		}
-		sdb.nanoPayCleanup[height] = nil
-		delete(sdb.nanoPayCleanup, height)
+func (sdb *StateDB) CleanupNanoPay(height uint32) error {
+	ids, err := sdb.getNanoPayCleanup(height)
+	if err != nil {
+		return err
 	}
+	for id := range ids {
+		sdb.nanoPay[id] = nil
+	}
+	sdb.nanoPayCleanup[height] = nil
+
+	return nil
 }
 
 func (sdb *StateDB) FinalizeNanoPay(commit bool) {
