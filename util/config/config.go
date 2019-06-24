@@ -118,6 +118,7 @@ var (
 		ChainDBPath:               "ChainDB",
 		WalletFile:                "wallet.json",
 		MaxGetIDSeeds:             3,
+		WebServicePort:            30000,
 	}
 )
 
@@ -160,6 +161,7 @@ type Configuration struct {
 	ChainDBPath               string        `json:"ChainDBPath"`
 	WalletFile                string        `json:"WalletFile"`
 	MaxGetIDSeeds             uint32        `json:"MaxGetIDSeeds"`
+	WebServicePort            uint16        `json:"WebServicePort"`
 }
 
 func Init() error {
