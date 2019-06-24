@@ -30,10 +30,12 @@ func NewStateDB(root common.Uint256, db *cachingDB) (*StateDB, error) {
 		return nil, err
 	}
 	return &StateDB{
-		db:             db,
-		trie:           trie,
-		nanoPay:        make(map[string]*nanoPay, 0),
-		nanoPayCleanup: make(map[uint32]map[string]struct{}, 0),
+		db:              db,
+		trie:            trie,
+		nanoPay:         make(map[string]*nanoPay, 0),
+		nanoPayCleanup:  make(map[uint32]map[string]struct{}, 0),
+		names:           make(map[string]string, 0),
+		nameRegistrants: make(map[string][]byte, 0),
 	}, nil
 }
 
