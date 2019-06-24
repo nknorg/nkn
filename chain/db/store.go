@@ -293,10 +293,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		case pb.TRANSFER_ASSET_TYPE:
 		case pb.REGISTER_NAME_TYPE:
 			registerNamePayload := pl.(*pb.RegisterName)
-			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
-			if err != nil {
-				return err
-			}
+			cs.SetName(registerNamePayload.Registrant, registerNamePayload.Name)
 		case pb.DELETE_NAME_TYPE:
 			deleteNamePayload := pl.(*pb.DeleteName)
 			err = cs.DeleteName(deleteNamePayload.Registrant)

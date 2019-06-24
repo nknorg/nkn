@@ -17,16 +17,10 @@ const (
 	ST_Prepaid   DataEntryPrefix = 0xc7
 	ST_StateTrie DataEntryPrefix = 0xc8
 
-	secureKeyPrefix DataEntryPrefix = 0xa0
-
 	//SYSTEM
 	SYS_CurrentBlock DataEntryPrefix = 0x40
 	SYS_ExpireKey    DataEntryPrefix = 0x41
 	SYS_Donations    DataEntryPrefix = 0x42
-
-	// NAME
-	NS_Registrant DataEntryPrefix = 0x50
-	NS_Name       DataEntryPrefix = 0x51
 
 	// PUBSUB
 	PS_Topic DataEntryPrefix = 0x60
