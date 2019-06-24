@@ -63,6 +63,7 @@ func GetGID() uint64 {
 }
 
 var Log *Logger
+var WebLog *Logger
 var initOnce sync.Once
 
 func LevelName(level int) string {
@@ -261,7 +262,7 @@ func Errorf(format string, a ...interface{}) {
 	Log.Errorf(format, a...)
 }
 
-func FileOpen(path string) (*os.File, error) {
+func FileOpen(path string, name string) (*os.File, error) {
 	if fi, err := os.Stat(path); err == nil {
 		if !fi.IsDir() {
 			return nil, fmt.Errorf("%s is not a directory", path)
@@ -274,14 +275,14 @@ func FileOpen(path string) (*os.File, error) {
 
 	var currenttime string = time.Now().Format("2006-01-02_15.04.05")
 
-	logfile, err := os.OpenFile(filepath.Join(path, currenttime+"_LOG.log"), os.O_RDWR|os.O_CREATE, 0666)
+	logfile, err := os.OpenFile(filepath.Join(path, currenttime+"_"+name+".log"), os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return nil, err
 	}
 	return logfile, nil
 }
 
-func getWritterAndFile(outputs ...interface{}) (io.Writer, *os.File, error) {
+func getWritterAndFile(name string, outputs ...interface{}) (io.Writer, *os.File, error) {
 	writers := []io.Writer{}
 	var logFile *os.File
 	var err error
@@ -291,7 +292,7 @@ func getWritterAndFile(outputs ...interface{}) (io.Writer, *os.File, error) {
 		for _, o := range outputs {
 			switch o.(type) {
 			case string:
-				logFile, err = FileOpen(o.(string))
+				logFile, err = FileOpen(o.(string), name)
 				if err != nil {
 					return nil, nil, fmt.Errorf("open log file %v failed: %v", o, err)
 				}
@@ -310,20 +311,32 @@ func getWritterAndFile(outputs ...interface{}) (io.Writer, *os.File, error) {
 func Init() error {
 	var err error
 	initOnce.Do(func() {
-		var writter io.Writer
-		var file *os.File
-		writter, file, err = getWritterAndFile(config.Parameters.LogPath, Stdout)
+		var writter, webWritter io.Writer
+		var file, webFile *os.File
+		writter, file, err = getWritterAndFile("LOG", config.Parameters.LogPath, Stdout)
+		if err != nil {
+			return
+		}
+		webWritter, webFile, err = getWritterAndFile("WEBLOG", config.Parameters.LogPath, Stdout)
 		if err != nil {
 			return
 		}
 
 		Log = newLogger(writter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, file)
+		WebLog = newLogger(webWritter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, webFile)
 
 		go func() {
 			for {
 				time.Sleep(config.ConsensusDuration)
 				if Log.needNewLogFile() {
-					writter, file, err = getWritterAndFile(config.Parameters.LogPath, Stdout)
+					writter, file, err = getWritterAndFile("LOG", config.Parameters.LogPath, Stdout)
+					if err != nil {
+						panic(err)
+					}
+					Log.reset(writter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, file)
+				}
+				if WebLog.needNewLogFile() {
+					writter, file, err = getWritterAndFile("WEBLOG", config.Parameters.LogPath, Stdout)
 					if err != nil {
 						panic(err)
 					}

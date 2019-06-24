@@ -29,6 +29,8 @@ yarn-debug.log*
 yarn-error.log*
 node_modules/
 .npm
+# Coverage directory used by tools like istanbul
+coverage
 # next.js build output
 .next
 # nuxt.js build output

@@ -97,6 +97,7 @@ var (
 		LogPath:                   "Log",
 		ChainDBPath:               "ChainDB",
 		WalletFile:                "wallet.dat",
+		WebServicePort:            30000,
 	}
 )
 
@@ -138,6 +139,7 @@ type Configuration struct {
 	LogPath                   string        `json:"LogPath"`
 	ChainDBPath               string        `json:"ChainDBPath"`
 	WalletFile                string        `json:"WalletFile"`
+	WebServicePort            uint16        `json:"WebServicePort"`
 }
 
 func Init() error {
