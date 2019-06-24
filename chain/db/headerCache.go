@@ -94,7 +94,6 @@ func (hc *HeaderCache) RollbackHeader(h *block.Header) {
 		return
 	}
 	for i := hc.currentCacheHeight; i >= h.UnsignedHeader.Height; i-- {
-		//TODO check if exsit
 		hash := hc.headerIndex[i]
 		delete(hc.headerIndex, i)
 		delete(hc.headerCache, hash)

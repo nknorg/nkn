@@ -117,7 +117,6 @@ func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
 	return subscribers
 }
 
-//TODO
 func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
 	for i := uint32(0); i < transaction.BucketsLimit; i++ {
 		count := cs.GetSubscribersCount(topic, i)
