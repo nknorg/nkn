@@ -1,0 +1,19 @@
+.breathe .v-badge__badge {
+  animation-timing-function: ease-in-out;
+  animation-name: breathe;
+  animation-duration: 1500ms;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+@-webkit-keyframes breathe {
+  0% {
+    opacity: .4;
+
+  }
+
+  100% {
+    opacity: 1;
+
+  }
+}
