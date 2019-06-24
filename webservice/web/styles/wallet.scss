@@ -1,0 +1,30 @@
+.wallet {
+  overflow: hidden;
+
+  .tag {
+    text-align: center;
+    border-radius: 0;
+    z-index: 3;
+    position: absolute;
+    width: 300px;
+    left: -95px;
+    top: 16px;
+    transform: rotate(-20deg);
+  }
+
+  .toolbar {
+    .v-toolbar__content{
+    padding: 0;
+    }
+    .line{
+      position: absolute;
+      width: calc(100% - 80px);
+      right: 10px;
+      bottom:0;
+      border: solid;
+      border-width: thin 0 0 0;
+      border-color: rgba(0,0,0,0.12);
+    }
+  }
+
+}
