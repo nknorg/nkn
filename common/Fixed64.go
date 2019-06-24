@@ -69,7 +69,7 @@ func (f Fixed64) String() string {
 
 func StringToFixed64(s string) (Fixed64, error) {
 	var buffer bytes.Buffer
-	//TODO: check invalid string
+
 	di := strings.Index(s, ".")
 	if di == -1 {
 		buffer.WriteString(s)
