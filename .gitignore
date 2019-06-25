@@ -19,6 +19,7 @@ wallet.pswd
 config.json
 ChainDB
 
+/web/
 # IDE / Editor
 .editorconfig
 # Service worker

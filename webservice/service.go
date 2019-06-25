@@ -2,16 +2,38 @@ package webservice
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nkn/webservice/routes"
 	"net/http"
 	"strconv"
 	"time"
 )
 
-func Start() {
-	app := gin.Default()
+var (
+	localNode *node.LocalNode
+	wallet    vault.Wallet
+	isInit = false
+	app = gin.Default()
+)
 
+func Init(ln *node.LocalNode, w vault.Wallet) {
+	isInit = true
+	localNode = ln
+	wallet = w
+}
+
+func Start() {
+	//gin.SetMode(gin.ReleaseMode)
+	//app := gin.Default()
+	app.Use(func(context *gin.Context) {
+		if isInit {
+			context.Set("localNode", localNode)
+			context.Set("wallet", wallet)
+		}
+	})
 	app.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		log.WebLog.Infof("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
 			param.ClientIP,
@@ -27,20 +49,9 @@ func Start() {
 		return ""
 	}))
 	//app.Static("/assets", "./assets")
-	app.StaticFS("/web", http.Dir("dist"))
-	//_ = flag.String("config", "./config/config.json","config file")
-	//flag.Parse()
+	app.StaticFS("/web", http.Dir("webservice/web/dist"))
 
-	//app.Use(routerv1.Sign())
-	//	app.Use(routerv1.Router(app.Group("/api/v1")))
-	//(&home.HomeRouter{}).RouterByGroup(app.Group("/api/v1"))
-	app.GET("/ping", func(c *gin.Context) {
-		log.WebLog.Infof("pong")
-		log.Infof("pong")
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
+	app.Use(routes.Routes(app))
 
 	// 404 router
 	app.Use(func(context *gin.Context) {

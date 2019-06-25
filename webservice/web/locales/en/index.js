@@ -1,5 +1,5 @@
-import Home from './home'
-
+import Menu from './menu'
 export default {
-  language: 'English'
+  language: 'English',
+  menu: Menu
 }
