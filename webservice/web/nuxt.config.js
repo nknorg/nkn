@@ -1,9 +1,9 @@
 import colors from 'vuetify/es5/util/colors'
 
 export default {
-  // router: {
-  //   base: '/web/'
-  // },
+  router: {
+    base: '/web/'
+  },
   ssr: false,
   mode: 'spa',
   /*
