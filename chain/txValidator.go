@@ -198,7 +198,7 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 			return errors.New(fmt.Sprintf("duration can't be lower than %d", transaction.MinNanoPayDuration))
 		}
 	default:
-		return errors.New("[txValidator],invalidate transaction payload type")
+		return fmt.Errorf("[txValidator], invalid transaction payload type %v", txn.UnsignedTx.Payload.Type)
 	}
 	return nil
 }
@@ -347,7 +347,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 			return errors.New("not sufficient funds")
 		}
 	default:
-		return errors.New("[txValidator],invalidate transaction payload type.")
+		return fmt.Errorf("[txValidator], invalid transaction payload type %v", txn.UnsignedTx.Payload.Type)
 	}
 	return nil
 }

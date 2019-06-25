@@ -95,10 +95,14 @@ func (n *Node) GetSyncState() pb.SyncState {
 	return n.syncState
 }
 
-func (n *Node) SetSyncState(s pb.SyncState) {
+func (n *Node) SetSyncState(s pb.SyncState) bool {
 	n.Lock()
 	defer n.Unlock()
+	if n.syncState == s {
+		return false
+	}
 	n.syncState = s
+	return true
 }
 
 func (n *Node) GetMinVerifiableHeight() uint32 {
