@@ -398,6 +398,8 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		return nil, fmt.Errorf("Unsupported request type %v", requestType)
 	}
 
+	log.Infof("Receive block info %s, %d txn found in pool, %d txn to request", blockHash.ToHexString(), len(poolTxns), len(missingTxnsHash))
+
 	requestedTxns, err := consensus.requestProposalTransactions(neighbor, blockHash, requestType, missingTxnsHash)
 	if err != nil {
 		return nil, err
