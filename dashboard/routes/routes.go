@@ -6,7 +6,6 @@ import (
 	"github.com/nknorg/nkn/webservice/routes/wallet"
 )
 
-
 func Routes(app *gin.Engine) gin.HandlerFunc {
 	nodeRouter := &node.NodeRouter{}
 	nodeRouter.Router(app.Group("/api"))
