@@ -537,7 +537,7 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		}()
 	case pb.NANO_PAY_TYPE:
 		npPayload := payload.(*pb.NanoPay)
-		if npPayload.Height < header.UnsignedHeader.Height {
+		if header != nil && header.UnsignedHeader.Height > npPayload.Height+npPayload.Duration {
 			return errors.New("[VerifyTransactionWithBlock], nano pay expired")
 		}
 		key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Nonce}
