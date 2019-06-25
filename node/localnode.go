@@ -64,6 +64,7 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 	out["height"] = localNode.GetHeight()
 	out["uptime"] = time.Since(localNode.startTime).Truncate(time.Second).Seconds()
 	out["version"] = config.Version
+	out["beneficiaryAddr"] = config.Parameters.BeneficiaryAddr
 	out["relayMessageCount"] = localNode.GetRelayMessageCount()
 	if config.Parameters.MiningDebug {
 		out["proposalSubmitted"] = localNode.GetProposalSubmitted()
