@@ -127,7 +127,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	}, 0})
 
 	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady{func(remoteNode *nnetnode.RemoteNode) bool {
-		err := localNode.validateRemoteNode(remoteNode)
+		err := localNode.verifyRemoteNode(remoteNode)
 		if err != nil {
 			remoteNode.Stop(err)
 			return false
@@ -212,7 +212,7 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 	return nil
 }
 
-func (localNode *LocalNode) validateRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+func (localNode *LocalNode) verifyRemoteNode(remoteNode *nnetnode.RemoteNode) error {
 	if remoteNode.GetId() == nil {
 		return errors.New("Remote node id is nil")
 	}
@@ -296,9 +296,22 @@ func (localNode *LocalNode) GetHeight() uint32 {
 	return chain.DefaultLedger.Store.GetHeight()
 }
 
-func (localNode *LocalNode) SetSyncState(s pb.SyncState) {
+func (localNode *LocalNode) SetSyncState(s pb.SyncState) bool {
 	log.Infof("Set sync state to %s", s.String())
-	localNode.Node.SetSyncState(s)
+	changed := localNode.Node.SetSyncState(s)
+	if changed && s == pb.PERSIST_FINISHED {
+		localNode.verifyNeighbors()
+	}
+	return changed
+}
+
+func (localNode *LocalNode) verifyNeighbors() {
+	for _, nbr := range localNode.GetNeighbors(nil) {
+		err := localNode.verifyRemoteNode(nbr.nnetNode)
+		if err != nil {
+			nbr.nnetNode.Stop(err)
+		}
+	}
 }
 
 func (localNode *LocalNode) GetSyncState() pb.SyncState {

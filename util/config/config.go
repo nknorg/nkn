@@ -198,7 +198,7 @@ func Init() error {
 		return err
 	}
 
-	err := Parameters.validate()
+	err := Parameters.verify()
 	if err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func (config *Configuration) CleanPortMapping() error {
 	return nil
 }
 
-func (config *Configuration) validate() error {
+func (config *Configuration) verify() error {
 	if len(config.SeedList) == 0 {
 		return errors.New("seed list in config file should not be blank")
 	}
