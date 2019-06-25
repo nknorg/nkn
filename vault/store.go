@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"sync"
 
-	simplejson "github.com/bitly/go-simplejson"
 	. "github.com/nknorg/nkn/common"
 )
 
@@ -72,17 +71,8 @@ func LoadStore(fullPath string) (*WalletStore, error) {
 		return nil, err
 	}
 
-	js, err := simplejson.NewJson(fileData)
-	value, ok := js.CheckGet("PrivateKeyEncrypted")
-	if ok {
-		privateKey := value.MustString()
-		js.Set("SeedEncrypted", privateKey[:64])
-		js.Del("PrivateKeyEncrypted")
-	}
-	data, _ := js.Encode()
-
 	var walletData WalletData
-	err = json.Unmarshal(data, &walletData)
+	err = json.Unmarshal(fileData, &walletData)
 	if err != nil {
 		return nil, err
 	}
