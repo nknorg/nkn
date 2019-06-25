@@ -14,7 +14,7 @@ nknc
 cscope*
 *~
 build/
-wallet.dat
+wallet.json
 wallet.pswd
 config.json
 ChainDB

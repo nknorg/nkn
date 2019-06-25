@@ -14,15 +14,11 @@ import (
 	. "github.com/nknorg/nkn/common"
 )
 
-const (
-	WalletStoreVersion = "1.0.0"
-)
-
 type HeaderData struct {
 	PasswordHash string
 	IV           string
 	MasterKey    string
-	Version      string
+	Version      int
 }
 
 type AccountData struct {
@@ -170,7 +166,7 @@ func (s *WalletStore) SaveAccountData(programHash []byte, encryptedSeed []byte, 
 	return nil
 }
 
-func (s *WalletStore) SaveBasicData(version, iv, masterKey, passwordHash []byte) error {
+func (s *WalletStore) SaveBasicData(version int, iv, masterKey, passwordHash []byte) error {
 	oldBlob, err := s.read()
 	if err != nil {
 		return err
@@ -179,7 +175,7 @@ func (s *WalletStore) SaveBasicData(version, iv, masterKey, passwordHash []byte)
 		return err
 	}
 
-	s.Data.Version = string(version)
+	s.Data.Version = version
 	s.Data.IV = BytesToHexString(iv)
 	s.Data.MasterKey = BytesToHexString(masterKey)
 	s.Data.PasswordHash = BytesToHexString(passwordHash)

@@ -96,7 +96,7 @@ var (
 		RegisterIDFee:             0,
 		LogPath:                   "Log",
 		ChainDBPath:               "ChainDB",
-		WalletFile:                "wallet.dat",
+		WalletFile:                "wallet.json",
 	}
 )
 
