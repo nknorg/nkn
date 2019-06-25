@@ -32,7 +32,7 @@ func ResponsePack(errCode ErrCode) map[string]interface{} {
 		"Result":  "",
 		"Error":   errCode,
 		"Desc":    "",
-		"Version": "1.0.0",
+		"Version": 1,
 	}
 	return resp
 }

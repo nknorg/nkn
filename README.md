@@ -109,9 +109,11 @@ $ docker build -t nkn .
 This command should be run once every time you update the code base.
 
 When starting the container, a directory with configuration files containing
-`config.json` (see [configuration](#configuration)) and `wallet.dat` (if exists)
-should be mapped to `/nkn` directory in the container. This directory will also
-be used for wallet, block data and logs storage.
+`config.json` (see [configuration](#configuration)) and `wallet.json` (if
+exists) should be mapped to `/nkn` directory in the container. This directory
+will also be used for blockhain data and logs storage by default. The path of
+config file, wallet file, database directory and log directory can be specified
+by passing arguments to `nknd`, run `nknd --help` for more information.
 
 ### Configuration
 
@@ -140,7 +142,7 @@ wallet -c` instead.
 The last line of the output is the public key of this wallet, and the second
 last line is the wallet address. A wallet address always starts with `N`.
 
-Wallet information will be saved at `wallet.dat` and it's encrypted with the
+Wallet information will be saved at `wallet.json` and it's encrypted with the
 password you provided when creating the wallet. So please make sure you pick a
 strong password and remember it!
 
