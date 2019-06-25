@@ -15,8 +15,8 @@ import (
 var (
 	localNode *node.LocalNode
 	wallet    vault.Wallet
-	isInit = false
-	app = gin.Default()
+	isInit    = false
+	app       = gin.Default()
 )
 
 func Init(ln *node.LocalNode, w vault.Wallet) {
