@@ -20,8 +20,11 @@ import (
 )
 
 const (
-	WalletIVLength        = 16
-	WalletMasterKeyLength = 32
+	WalletIVLength             = 16
+	WalletMasterKeyLength      = 32
+	WalletVersion              = 1
+	MinCompatibleWalletVersion = 1
+	MaxCompatibleWalletVersion = 1
 )
 
 type Wallet interface {
@@ -66,7 +69,7 @@ func NewWallet(path string, password []byte, needAccount bool) (*WalletImpl, err
 		return nil, err
 	}
 	// persist to store
-	err = store.SaveBasicData([]byte(WalletStoreVersion), iv, encryptedMasterKey, pwdhash[:])
+	err = store.SaveBasicData(WalletVersion, iv, encryptedMasterKey, pwdhash[:])
 	if err != nil {
 		return nil, err
 	}
@@ -95,9 +98,8 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 		return nil, err
 	}
 
-	// 0.0.1 support is temporary and will be removed in a few days
-	if store.Data.Version != WalletStoreVersion && store.Data.Version != "0.0.1" {
-		return nil, fmt.Errorf("invalid wallet version %v, should be %v", store.Data.Version, WalletStoreVersion)
+	if store.Data.Version < MinCompatibleWalletVersion || store.Data.Version > MaxCompatibleWalletVersion {
+		return nil, fmt.Errorf("invalid wallet version %v, should be between %v and %v", store.Data.Version, MinCompatibleWalletVersion, MaxCompatibleWalletVersion)
 	}
 
 	passwordKey := crypto.ToAesKey(password)
@@ -277,7 +279,7 @@ func (w *WalletImpl) ChangePassword(oldPassword []byte, newPassword []byte) bool
 	}
 
 	// update wallet file
-	err = w.SaveBasicData([]byte(WalletStoreVersion), w.iv, newMasterKey, newPasswordHash[:])
+	err = w.SaveBasicData(WalletVersion, w.iv, newMasterKey, newPasswordHash[:])
 	if err != nil {
 		return false
 	}
