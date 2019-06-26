@@ -17,13 +17,17 @@ import (
 const hashPrefixLength = 20
 
 type pubSub struct {
-	subscriber string
+	subscriber []byte
+	identifier string
 	meta       string
 	expiresAt  uint32
 }
 
 func (ps *pubSub) Serialize(w io.Writer) error {
-	if err := serialization.WriteVarString(w, ps.subscriber); err != nil {
+	if err := serialization.WriteVarBytes(w, ps.subscriber); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarString(w, ps.identifier); err != nil {
 		return err
 	}
 	if err := serialization.WriteVarString(w, ps.meta); err != nil {
@@ -40,7 +44,12 @@ func (ps *pubSub) Serialize(w io.Writer) error {
 func (ps *pubSub) Deserialize(r io.Reader) error {
 	var err error
 
-	ps.subscriber, err = serialization.ReadVarString(r)
+	ps.subscriber, err = serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+
+	ps.identifier, err = serialization.ReadVarString(r)
 	if err != nil {
 		return err
 	}
@@ -59,7 +68,7 @@ func (ps *pubSub) Deserialize(r io.Reader) error {
 }
 
 func (ps *pubSub) Empty() bool {
-	return len(ps.subscriber) == 0 && len(ps.meta) == 0 && ps.expiresAt == 0
+	return len(ps.subscriber) == 0 && len(ps.identifier) == 0 && len(ps.meta) == 0 && ps.expiresAt == 0
 }
 
 func getTopicId(topic string) []byte {
@@ -180,7 +189,8 @@ func (sdb *StateDB) subscribe(topic string, bucket uint32, subscriber []byte, id
 	}
 
 	if ps.Empty() {
-		ps.subscriber = address.MakeAddressString(subscriber, identifier)
+		ps.subscriber = subscriber
+		ps.identifier = identifier
 	} else {
 		if err := sdb.cancelPubSubCleanupAtHeight(ps.expiresAt, id); err != nil {
 			return err
@@ -214,35 +224,34 @@ func (cs *ChainStore) IsSubscribed(topic string, bucket uint32, subscriber []byt
 	return cs.States.isSubscribed(topic, bucket, subscriber, identifier)
 }
 
-func (sdb *StateDB) getSubscribers(topic string, bucket uint32) map[string]string {
+func (sdb *StateDB) getSubscribers(topic string, bucket uint32) (map[string]string, error) {
 	subscribers := make(map[string]string, 0)
 
 	prefix := getTopicBucketId(topic, bucket)
 	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
 	for iter.Next() {
-		rk := bytes.NewReader(iter.Key)
+		buff := bytes.NewBuffer(iter.Value)
+		ps := &pubSub{}
+		if err := ps.Deserialize(buff); err != nil {
+			return nil, err
+		}
 
-		// read prefix
-		_, _ = serialization.ReadBytes(rk, uint64(len(prefix)))
+		subscriberString := address.MakeAddressString(ps.subscriber, ps.identifier)
 
-		subscriber, _ := serialization.ReadVarBytes(rk)
-		identifier, _ := serialization.ReadVarString(rk)
-		subscriberString := address.MakeAddressString(subscriber, identifier)
-
-		subscribers[subscriberString] = string(iter.Value)
+		subscribers[subscriberString] = ps.meta
 	}
 
-	return subscribers
+	return subscribers, nil
 }
 
-func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) map[string]string {
+func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) (map[string]string, error) {
 	return cs.States.getSubscribers(topic, bucket)
 }
 
 func (sdb *StateDB) getSubscribersCount(topic string, bucket uint32) int {
 	subscribers := 0
 
-	prefix := getTopicBucketId(topic, bucket)
+	prefix := append(PubSubPrefix, getTopicBucketId(topic, bucket)...)
 	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
 	for iter.Next() {
 		subscribers++
@@ -273,7 +282,7 @@ func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
 func (sdb *StateDB) getTopicBucketsCount(topic string) uint32 {
 	lastBucket := uint32(0)
 
-	prefix := getTopicId(topic)
+	prefix := append(PubSubPrefix, getTopicId(topic)...)
 
 	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
 	var lastKey []byte
