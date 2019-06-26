@@ -135,7 +135,7 @@ func nknMain(c *cli.Context) error {
 	}
 
 	// start webservice
-	go webservice.Start()
+	go dashboard.Start()
 
 	log.Infof("Node version: %v", config.Version)
 
@@ -221,7 +221,7 @@ func nknMain(c *cli.Context) error {
 	}
 
 	//init web service
-	webservice.Init(localNode, wallet)
+	dashboard.Init(localNode, wallet)
 
 	//start JsonRPC
 	rpcServer := httpjson.NewServer(localNode, wallet)
