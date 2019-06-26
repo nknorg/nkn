@@ -34,8 +34,5 @@ func (nodeRouter *NodeRouter) Router(router *gin.RouterGroup) {
 			return
 		}
 
-		context.JSON(200, gin.H{
-			"status": "...",
-		})
 	})
 }
