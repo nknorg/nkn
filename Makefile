@@ -16,6 +16,7 @@ web:
 	@cd dashboard/web && yarn build && cp -a ./dist ../../web
 
 yarn:
+	@rm -rf web
 	@cd dashboard/web && yarn build && cp -a ./dist ../../web
 
 .PHONY: build
