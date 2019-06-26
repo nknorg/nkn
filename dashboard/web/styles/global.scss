@@ -5,7 +5,10 @@
 @import "material-dashboard/alerts";
 @import "material-dashboard/typography";
 
-html,body {min-width: 980px;overflow-x: auto;}
+html,body {
+  min-width: 980px;overflow-x: auto;
+}
+
 .border-right{border-right-width: 1px;border-right-style: solid;}
 .card-border{border-color:rgba(0,0,0,0.12)}
 .text{word-break:break-all;}
