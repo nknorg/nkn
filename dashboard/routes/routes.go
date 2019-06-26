@@ -2,8 +2,8 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/nknorg/nkn/webservice/routes/node"
-	"github.com/nknorg/nkn/webservice/routes/wallet"
+	"github.com/nknorg/nkn/dashboard/routes/node"
+	"github.com/nknorg/nkn/dashboard/routes/wallet"
 )
 
 func Routes(app *gin.Engine) gin.HandlerFunc {
