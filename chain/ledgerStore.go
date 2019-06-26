@@ -20,7 +20,7 @@ type ILedgerStore interface {
 	SetName(registrant []byte, name string)
 	GetName(registrant []byte) (string, error)
 	GetRegistrant(name string) ([]byte, error)
-	IsSubscribed(subscriber []byte, identifier string, topic string, bucket uint32) (bool, error)
+	IsSubscribed(topic string, bucket uint32, subscriber []byte, identifier string) (bool, error)
 	GetSubscribers(topic string, bucket uint32) map[string]string
 	GetSubscribersCount(topic string, bucket uint32) int
 	GetFirstAvailableTopicBucket(topic string) int

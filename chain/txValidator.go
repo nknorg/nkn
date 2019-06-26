@@ -141,6 +141,11 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 	case pb.DELETE_NAME_TYPE:
 	case pb.SUBSCRIBE_TYPE:
 		pld := payload.(*pb.Subscribe)
+
+		if pld.Duration == 0 {
+			return fmt.Errorf("duration can't be 0")
+		}
+
 		bucket := pld.Bucket
 		if bucket > transaction.BucketsLimit {
 			return fmt.Errorf("topic bucket %d can't be bigger than %d", bucket, transaction.BucketsLimit)
@@ -292,7 +297,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 		}
 
 		pld := payload.(*pb.Subscribe)
-		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, pld.Topic, pld.Bucket)
+		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Topic, pld.Bucket, pld.Subscriber, pld.Identifier)
 		if err != nil {
 			return err
 		}

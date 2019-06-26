@@ -15,6 +15,7 @@ type ITrie interface {
 	TryDelete(key []byte) error
 	Hash() Uint256
 	CommitTo() (Uint256, error)
+	NodeIterator(start []byte) trie.NodeIterator
 }
 
 type cachingDB struct {

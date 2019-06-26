@@ -2,54 +2,53 @@ package db
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"fmt"
+	"io"
+	"sort"
 	"strings"
 
+	"github.com/nknorg/nkn/chain/trie"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 )
 
-func generateTopicKey(topic string) []byte {
-	topicKey := bytes.NewBuffer(nil)
-	topicKey.WriteByte(byte(PS_Topic))
-	serialization.WriteVarString(topicKey, strings.ToLower(topic))
-
-	return topicKey.Bytes()
+type pubSub struct {
+	subscriber string
+	meta       string
+	expiresAt  uint32
 }
 
-func generateTopicBucketKey(topic string, bucket uint32) []byte {
-	topicBucketKey := bytes.NewBuffer(nil)
-	topicKey := generateTopicKey(topic)
-	topicBucketKey.Write(topicKey)
-	serialization.WriteUint32(topicBucketKey, bucket)
-
-	return topicBucketKey.Bytes()
-}
-
-func generateSubscriberKey(subscriber []byte, identifier string, topic string, bucket uint32) []byte {
-	subscriberKey := bytes.NewBuffer(nil)
-	topicBucketKey := generateTopicBucketKey(topic, bucket)
-	subscriberKey.Write(topicBucketKey)
-	serialization.WriteVarBytes(subscriberKey, subscriber)
-	serialization.WriteVarString(subscriberKey, identifier)
-
-	return subscriberKey.Bytes()
-}
-
-func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic string, bucket uint32, duration uint32, meta string, height uint32) error {
-	if duration == 0 {
-		return nil
+func (ps *pubSub) Serialize(w io.Writer) error {
+	if err := serialization.WriteVarString(w, ps.subscriber); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarString(w, ps.meta); err != nil {
+		return err
 	}
 
-	subscriberKey := generateSubscriberKey(subscriber, identifier, topic, bucket)
+	if err := serialization.WriteUint32(w, ps.expiresAt); err != nil {
+		return err
+	}
 
-	// PUT VALUE
-	err := cs.st.BatchPut(subscriberKey, []byte(meta))
+	return nil
+}
+
+func (ps *pubSub) Deserialize(r io.Reader) error {
+	var err error
+
+	ps.subscriber, err = serialization.ReadVarString(r)
 	if err != nil {
 		return err
 	}
 
-	err = cs.ExpireKeyAtBlock(height+duration, subscriberKey)
+	ps.meta, err = serialization.ReadVarString(r)
+	if err != nil {
+		return err
+	}
+
+	ps.expiresAt, err = serialization.ReadUint32(r)
 	if err != nil {
 		return err
 	}
@@ -57,40 +56,166 @@ func (cs *ChainStore) Subscribe(subscriber []byte, identifier string, topic stri
 	return nil
 }
 
-func (cs *ChainStore) Unsubscribe(subscriber []byte, identifier string, topic string, bucket uint32, duration uint32, height uint32) error {
-	if duration == 0 {
-		return nil
+func (ps *pubSub) Empty() bool {
+	return len(ps.subscriber) == 0 && len(ps.meta) == 0 && ps.expiresAt == 0
+}
+
+func getTopicId(topic string) []byte {
+	topicHash := sha256.Sum256([]byte(strings.ToLower(topic)))
+	return topicHash[:20]
+}
+
+func getTopicBucketId(topic string, bucket uint32) []byte {
+	topicBucketId := bytes.NewBuffer(nil)
+
+	topicId := getTopicId(topic)
+	topicBucketId.Write(topicId)
+
+	serialization.WriteUint32(topicBucketId, bucket)
+
+	return topicBucketId.Bytes()
+}
+
+func getPubSubId(topic string, bucket uint32, subscriber []byte, identifier string) string {
+	pubSubId := bytes.NewBuffer(nil)
+
+	pubSubId.Write(getTopicBucketId(topic, bucket))
+
+	subscriberHash := sha256.Sum256(append(subscriber, identifier...))
+	pubSubId.Write(subscriberHash[:20])
+
+	return string(pubSubId.Bytes())
+}
+
+func getPubSubCleanupId(height uint32) string {
+	buf := new(bytes.Buffer)
+	_ = serialization.WriteUint32(buf, height)
+	return string(buf.Bytes())
+}
+
+func (sdb *StateDB) getPubSub(id string) (*pubSub, error) {
+	var ps *pubSub
+	var ok bool
+	if ps, ok = sdb.pubSub[id]; !ok {
+		enc, err := sdb.trie.TryGet(append(PubSubPrefix, id...))
+		if err != nil {
+			return nil, err
+		}
+
+		ps = &pubSub{}
+
+		if len(enc) > 0 {
+			buff := bytes.NewBuffer(enc)
+			if err := ps.Deserialize(buff); err != nil {
+				return nil, fmt.Errorf("[getPubSub]Failed to decode state object for pub sub: %v", err)
+			}
+		}
+
+		sdb.pubSub[id] = ps
 	}
 
-	subscriberKey := generateSubscriberKey(subscriber, identifier, topic, bucket)
+	return ps, nil
+}
 
-	// DELETE VALUE
-	err := cs.st.BatchDelete(subscriberKey)
+func (sdb *StateDB) getPubSubCleanup(height uint32) (map[string]struct{}, error) {
+	var psc map[string]struct{}
+	var ok bool
+	if psc, ok = sdb.pubSubCleanup[height]; !ok {
+		enc, err := sdb.trie.TryGet(append(PubSubCleanupPrefix, getPubSubCleanupId(height)...))
+		if err != nil || len(enc) == 0 {
+			return nil, fmt.Errorf("[getPubSubCleanup]can not get pub sub cleanup from trie: %v", err)
+		}
+
+		buff := bytes.NewBuffer(enc)
+		psc = make(map[string]struct{}, 0)
+		pscLength, err := serialization.ReadVarUint(buff, 0)
+		if err != nil {
+			return nil, fmt.Errorf("[getPubSubCleanup]Failed to decode state object for pub sub cleanup: %v", err)
+		}
+		for i := uint64(0); i < pscLength; i++ {
+			id, err := serialization.ReadVarString(buff)
+			if err != nil {
+				return nil, fmt.Errorf("[getPubSubCleanup]Failed to decode state object for pub sub cleanup: %v", err)
+			}
+			psc[id] = struct{}{}
+		}
+
+		sdb.pubSubCleanup[height] = psc
+	}
+
+	return psc, nil
+}
+
+func (sdb *StateDB) cleanupPubSubAtHeight(height uint32, id string) error {
+	ids, err := sdb.getPubSubCleanup(height)
+	if err != nil {
+		return err
+	}
+	ids[id] = struct{}{}
+	return nil
+}
+
+func (sdb *StateDB) cancelPubSubCleanupAtHeight(height uint32, id string) error {
+	ids, err := sdb.getPubSubCleanup(height)
+	if err != nil {
+		return err
+	}
+	if _, ok := ids[id]; ok {
+		delete(ids, id)
+	}
+	return nil
+}
+
+func (sdb *StateDB) subscribe(topic string, bucket uint32, subscriber []byte, identifier string, meta string, expiresAt uint32) error {
+	id := getPubSubId(topic, bucket, subscriber, identifier)
+
+	ps, err := sdb.getPubSub(id)
 	if err != nil {
 		return err
 	}
 
-	err = cs.CancelKeyExpirationAtBlock(height+duration, subscriberKey)
-	if err != nil {
+	if ps.Empty() {
+		ps.subscriber = address.MakeAddressString(subscriber, identifier)
+	} else {
+		if err := sdb.cancelPubSubCleanupAtHeight(ps.expiresAt, id); err != nil {
+			return err
+		}
+	}
+	if err := sdb.cleanupPubSubAtHeight(expiresAt, id); err != nil {
 		return err
 	}
+	ps.meta = meta
+	ps.expiresAt = expiresAt
 
 	return nil
 }
 
-func (cs *ChainStore) IsSubscribed(subscriber []byte, identifier string, topic string, bucket uint32) (bool, error) {
-	subscriberKey := generateSubscriberKey(subscriber, identifier, topic, bucket)
-
-	return cs.st.Has(subscriberKey)
+func (cs *ChainStore) Subscribe(topic string, bucket uint32, subscriber []byte, identifier string, meta string, expiresAt uint32) error {
+	return cs.States.subscribe(topic, bucket, subscriber, identifier, meta, expiresAt)
 }
 
-func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) map[string]string {
+func (sdb *StateDB) isSubscribed(topic string, bucket uint32, subscriber []byte, identifier string) (bool, error) {
+	id := getPubSubId(topic, bucket, subscriber, identifier)
+
+	ps, err := sdb.getPubSub(id)
+	if err != nil {
+		return false, err
+	}
+
+	return !ps.Empty(), nil
+}
+
+func (cs *ChainStore) IsSubscribed(topic string, bucket uint32, subscriber []byte, identifier string) (bool, error) {
+	return cs.States.isSubscribed(topic, bucket, subscriber, identifier)
+}
+
+func (sdb *StateDB) getSubscribers(topic string, bucket uint32) map[string]string {
 	subscribers := make(map[string]string, 0)
 
-	prefix := generateTopicBucketKey(topic, bucket)
-	iter := cs.st.NewIterator(prefix)
+	prefix := getTopicBucketId(topic, bucket)
+	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
 	for iter.Next() {
-		rk := bytes.NewReader(iter.Key())
+		rk := bytes.NewReader(iter.Key)
 
 		// read prefix
 		_, _ = serialization.ReadBytes(rk, uint64(len(prefix)))
@@ -99,17 +224,21 @@ func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) map[string]str
 		identifier, _ := serialization.ReadVarString(rk)
 		subscriberString := address.MakeAddressString(subscriber, identifier)
 
-		subscribers[subscriberString] = string(iter.Value())
+		subscribers[subscriberString] = string(iter.Value)
 	}
 
 	return subscribers
 }
 
-func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
+func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) map[string]string {
+	return cs.States.getSubscribers(topic, bucket)
+}
+
+func (sdb *StateDB) getSubscribersCount(topic string, bucket uint32) int {
 	subscribers := 0
 
-	prefix := generateTopicBucketKey(topic, bucket)
-	iter := cs.st.NewIterator(prefix)
+	prefix := getTopicBucketId(topic, bucket)
+	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
 	for iter.Next() {
 		subscribers++
 	}
@@ -117,9 +246,13 @@ func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
 	return subscribers
 }
 
-func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
+func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
+	return cs.States.getSubscribersCount(topic, bucket)
+}
+
+func (sdb *StateDB) getFirstAvailableTopicBucket(topic string) int {
 	for i := uint32(0); i < transaction.BucketsLimit; i++ {
-		count := cs.GetSubscribersCount(topic, i)
+		count := sdb.getSubscribersCount(topic, i)
 		if count < transaction.SubscriptionsLimit {
 			return int(i)
 		}
@@ -128,94 +261,120 @@ func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
 	return -1
 }
 
-func (cs *ChainStore) GetTopicBucketsCount(topic string) uint32 {
+func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
+	return cs.States.getFirstAvailableTopicBucket(topic)
+}
+
+func (sdb *StateDB) getTopicBucketsCount(topic string) uint32 {
 	lastBucket := uint32(0)
 
-	prefix := generateTopicKey(topic)
+	prefix := getTopicId(topic)
 
-	iter := cs.st.NewIterator(prefix)
+	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
+	var lastKey []byte
 	for iter.Next() {
-		rk := bytes.NewReader(iter.Key())
-
-		// read prefix
-		_, _ = serialization.ReadBytes(rk, uint64(len(prefix)))
-
-		bucket, _ := serialization.ReadUint32(rk)
-
-		lastBucket = bucket
+		lastKey = iter.Key
 	}
+
+	rk := bytes.NewReader(lastKey)
+
+	// read prefix
+	_, _ = serialization.ReadBytes(rk, uint64(len(prefix)))
+
+	bucket, _ := serialization.ReadUint32(rk)
+
+	lastBucket = bucket
 
 	return lastBucket
 }
 
-func (cs *ChainStore) ExpireKeyAtBlock(height uint32, key []byte) error {
-	expireKey := bytes.NewBuffer(nil)
-	expireKey.WriteByte(byte(SYS_ExpireKey))
-	serialization.WriteUint32(expireKey, height)
-	serialization.WriteVarBytes(expireKey, key)
+func (cs *ChainStore) GetTopicBucketsCount(topic string) uint32 {
+	return cs.States.getTopicBucketsCount(topic)
+}
 
-	err := cs.st.BatchPut(expireKey.Bytes(), []byte{})
+func (sdb *StateDB) deletePubSub(id string) error {
+	err := sdb.trie.TryDelete(append(PubSubPrefix, id...))
 	if err != nil {
 		return err
 	}
+
+	delete(sdb.pubSub, id)
+	return nil
+}
+
+func (sdb *StateDB) updatePubSub(id string, pubSub *pubSub) error {
+	buff := bytes.NewBuffer(nil)
+	err := pubSub.Serialize(buff)
+	if err != nil {
+		panic(fmt.Errorf("can't encode pub sub %v: %v", pubSub, err))
+	}
+
+	return sdb.trie.TryUpdate(append(PubSubPrefix, id...), buff.Bytes())
+}
+
+func (sdb *StateDB) deletePubSubCleanup(height uint32) error {
+	err := sdb.trie.TryDelete(append(PubSubCleanupPrefix, getPubSubCleanupId(height)...))
+	if err != nil {
+		return err
+	}
+
+	delete(sdb.pubSubCleanup, height)
+	return nil
+}
+
+func (sdb *StateDB) updatePubSubCleanup(height uint32, psc map[string]struct{}) error {
+	buff := bytes.NewBuffer(nil)
+
+	if err := serialization.WriteVarUint(buff, uint64(len(psc))); err != nil {
+		panic(fmt.Errorf("can't encode pub sub cleanup %v: %v", psc, err))
+	}
+	pscs := make([]string, len(psc))
+	for id := range psc {
+		pscs = append(pscs, id)
+	}
+	sort.Strings(pscs)
+	for _, id := range pscs {
+		if err := serialization.WriteVarString(buff, id); err != nil {
+			panic(fmt.Errorf("can't encode pub sub cleanup %v: %v", psc, err))
+		}
+	}
+
+	return sdb.trie.TryUpdate(append(PubSubCleanupPrefix, getPubSubCleanupId(height)...), buff.Bytes())
+}
+
+func (sdb *StateDB) CleanupPubSub(height uint32) error {
+	ids, err := sdb.getPubSubCleanup(height)
+	if err != nil {
+		return err
+	}
+	for id := range ids {
+		sdb.pubSub[id] = nil
+	}
+	sdb.pubSubCleanup[height] = nil
 
 	return nil
 }
 
-func (cs *ChainStore) CancelKeyExpirationAtBlock(height uint32, key []byte) error {
-	expireKey := bytes.NewBuffer(nil)
-	expireKey.WriteByte(byte(SYS_ExpireKey))
-	serialization.WriteUint32(expireKey, height)
-	serialization.WriteVarBytes(expireKey, key)
-
-	err := cs.st.BatchDelete(expireKey.Bytes())
-	if err != nil {
-		return err
+func (sdb *StateDB) FinalizePubSub(commit bool) {
+	for id, pubSub := range sdb.pubSub {
+		if pubSub == nil || pubSub.Empty() {
+			sdb.deletePubSub(id)
+		} else {
+			sdb.updatePubSub(id, pubSub)
+		}
+		if commit {
+			delete(sdb.pubSub, id)
+		}
 	}
 
-	return nil
-}
-
-func (cs *ChainStore) GetExpiredKeys(height uint32) [][]byte {
-	keys := make([][]byte, 0)
-
-	prefix := bytes.NewBuffer(nil)
-	prefix.WriteByte(byte(SYS_ExpireKey))
-	serialization.WriteUint32(prefix, height)
-
-	iter := cs.st.NewIterator(prefix.Bytes())
-	for iter.Next() {
-		key := make([]byte, len(iter.Key()))
-		copy(key, iter.Key())
-		keys = append(keys, key)
+	for height, psc := range sdb.pubSubCleanup {
+		if psc == nil || len(psc) == 0 {
+			sdb.deletePubSubCleanup(height)
+		} else {
+			sdb.updatePubSubCleanup(height, psc)
+		}
+		if commit {
+			delete(sdb.pubSubCleanup, height)
+		}
 	}
-
-	return keys
-}
-
-func (cs *ChainStore) RemoveExpiredKey(key []byte) error {
-	rk := bytes.NewReader(key)
-
-	// read prefix
-	_, err := serialization.ReadBytes(rk, 5)
-	if err != nil {
-		return err
-	}
-
-	expiredKey, err := serialization.ReadVarBytes(rk)
-	if err != nil {
-		return err
-	}
-
-	err = cs.st.BatchDelete(key)
-	if err != nil {
-		return err
-	}
-
-	err = cs.st.BatchDelete(expiredKey)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

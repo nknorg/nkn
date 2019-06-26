@@ -184,8 +184,11 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 			}
 		}
 
-		err := states.CleanupNanoPay(b.Header.UnsignedHeader.Height)
-		if err != nil {
+		if err := states.CleanupNanoPay(b.Header.UnsignedHeader.Height); err != nil {
+			return nil, EmptyUint256, err
+		}
+
+		if err := states.CleanupPubSub(b.Header.UnsignedHeader.Height); err != nil {
 			return nil, EmptyUint256, err
 		}
 	}

@@ -302,7 +302,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 			}
 		case pb.SUBSCRIBE_TYPE:
 			subscribePayload := pl.(*pb.Subscribe)
-			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.UnsignedHeader.Height)
+			err = cs.Subscribe(subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Meta, b.Header.UnsignedHeader.Height+subscribePayload.Duration)
 			if err != nil {
 				return err
 			}
@@ -310,14 +310,6 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		case pb.NANO_PAY_TYPE:
 		default:
 			return errors.New("unsupported transaction type")
-		}
-	}
-
-	expiredKeys := cs.GetExpiredKeys(b.Header.UnsignedHeader.Height)
-	for i := 0; i < len(expiredKeys); i++ {
-		err := cs.RemoveExpiredKey(expiredKeys[i])
-		if err != nil {
-			return err
 		}
 	}
 

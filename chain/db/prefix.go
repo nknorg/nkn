@@ -19,11 +19,7 @@ const (
 
 	//SYSTEM
 	SYS_CurrentBlock DataEntryPrefix = 0x40
-	SYS_ExpireKey    DataEntryPrefix = 0x41
 	SYS_Donations    DataEntryPrefix = 0x42
-
-	// PUBSUB
-	PS_Topic DataEntryPrefix = 0x60
 
 	//CONFIG
 	CFG_Version DataEntryPrefix = 0xf0
@@ -68,8 +64,4 @@ func headerKey(blockHash common.Uint256) []byte {
 
 func transactionKey(txHash common.Uint256) []byte {
 	return paddingKey(DATA_Transaction, txHash.ToArray())
-}
-
-func iteratorBlockHash(store IStore) IIterator {
-	return store.NewIterator([]byte{byte(DATA_BlockHash)})
 }
