@@ -227,9 +227,13 @@ func (cs *ChainStore) IsSubscribed(topic string, bucket uint32, subscriber []byt
 func (sdb *StateDB) getSubscribers(topic string, bucket uint32) (map[string]string, error) {
 	subscribers := make(map[string]string, 0)
 
-	prefix := getTopicBucketId(topic, bucket)
-	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
+	prefix := string(getTopicBucketId(topic, bucket))
+	iter := trie.NewIterator(sdb.trie.NodeIterator([]byte(prefix)))
 	for iter.Next() {
+		if !strings.HasPrefix(string(iter.Key), prefix) {
+			break
+		}
+
 		buff := bytes.NewBuffer(iter.Value)
 		ps := &pubSub{}
 		if err := ps.Deserialize(buff); err != nil {
@@ -251,9 +255,13 @@ func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) (map[string]st
 func (sdb *StateDB) getSubscribersCount(topic string, bucket uint32) int {
 	subscribers := 0
 
-	prefix := append(PubSubPrefix, getTopicBucketId(topic, bucket)...)
-	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
+	prefix := string(append(PubSubPrefix, getTopicBucketId(topic, bucket)...))
+	iter := trie.NewIterator(sdb.trie.NodeIterator([]byte(prefix)))
 	for iter.Next() {
+		if !strings.HasPrefix(string(iter.Key), prefix) {
+			break
+		}
+
 		subscribers++
 	}
 
@@ -280,23 +288,34 @@ func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
 }
 
 func (sdb *StateDB) getTopicBucketsCount(topic string) (uint32, error) {
-	prefix := append(PubSubPrefix, getTopicId(topic)...)
+	prefix := string(append(PubSubPrefix, getTopicId(topic)...))
 
-	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
-	var lastKey []byte
+	iter := trie.NewIterator(sdb.trie.NodeIterator([]byte(prefix)))
+	lastBucket := uint32(0)
 	for iter.Next() {
-		lastKey = iter.Key
+		if !strings.HasPrefix(string(iter.Key), prefix) {
+			break
+		}
+
+		rk := bytes.NewReader(iter.Key)
+
+		// read prefix
+		_, err := serialization.ReadBytes(rk, uint64(len(prefix)))
+		if err != nil {
+			return 0, err
+		}
+
+		bucket, err := serialization.ReadUint32(rk)
+		if err != nil {
+			return 0, err
+		}
+
+		if bucket > lastBucket {
+			lastBucket = bucket
+		}
 	}
 
-	rk := bytes.NewReader(lastKey)
-
-	// read prefix
-	_, err := serialization.ReadBytes(rk, uint64(len(prefix)))
-	if err != nil {
-		return 0, err
-	}
-
-	return serialization.ReadUint32(rk)
+	return lastBucket, nil
 }
 
 func (cs *ChainStore) GetTopicBucketsCount(topic string) (uint32, error) {
