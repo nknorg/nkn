@@ -317,7 +317,7 @@ func Init() error {
 		if err != nil {
 			return
 		}
-		webWritter, webFile, err = getWritterAndFile("WEBLOG", config.Parameters.LogPath, Stdout)
+		webWritter, webFile, err = getWritterAndFile("WEBLOG", config.Parameters.LogPath)
 		if err != nil {
 			return
 		}
@@ -336,11 +336,11 @@ func Init() error {
 					Log.reset(writter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, file)
 				}
 				if WebLog.needNewLogFile() {
-					writter, file, err = getWritterAndFile("WEBLOG", config.Parameters.LogPath, Stdout)
+					writter, file, err = getWritterAndFile("WEBLOG", config.Parameters.LogPath)
 					if err != nil {
 						panic(err)
 					}
-					Log.reset(writter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, file)
+					WebLog.reset(writter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, file)
 				}
 			}
 		}()
