@@ -57,6 +57,10 @@ func (np *nanoPay) Deserialize(r io.Reader) error {
 	return nil
 }
 
+func (np *nanoPay) Empty() bool {
+	return np.balance == 0 && np.expiresAt == 0
+}
+
 func (sdb *StateDB) getNanoPay(id string) (*nanoPay, error) {
 	var np *nanoPay
 	var ok bool
@@ -229,7 +233,7 @@ func (sdb *StateDB) CleanupNanoPay(height uint32) error {
 
 func (sdb *StateDB) FinalizeNanoPay(commit bool) {
 	for id, nanoPay := range sdb.nanoPay {
-		if nanoPay == nil {
+		if nanoPay == nil || nanoPay.Empty() {
 			sdb.deleteNanoPay(id)
 		} else {
 			sdb.updateNanoPay(id, nanoPay)
@@ -240,7 +244,7 @@ func (sdb *StateDB) FinalizeNanoPay(commit bool) {
 	}
 
 	for height, nanoPayCleanup := range sdb.nanoPayCleanup {
-		if nanoPayCleanup == nil {
+		if nanoPayCleanup == nil || len(nanoPayCleanup) == 0 {
 			sdb.deleteNanoPayCleanup(height)
 		} else {
 			sdb.updateNanoPayCleanup(height, nanoPayCleanup)
