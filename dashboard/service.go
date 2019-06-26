@@ -1,12 +1,12 @@
-package webservice
+package dashboard
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/nknorg/nkn/dashboard/routes"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
-	"github.com/nknorg/nkn/webservice/routes"
 	"net/http"
 	"strconv"
 	"time"
@@ -49,7 +49,7 @@ func Start() {
 		return ""
 	}))
 	//app.Static("/assets", "./assets")
-	app.StaticFS("/web", http.Dir("webservice/web/dist"))
+	app.StaticFS("/web", http.Dir("dashboard/web/dist"))
 
 	app.Use(routes.Routes(app))
 
