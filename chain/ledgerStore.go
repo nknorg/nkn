@@ -24,7 +24,7 @@ type ILedgerStore interface {
 	GetSubscribers(topic string, bucket uint32) (map[string]string, error)
 	GetSubscribersCount(topic string, bucket uint32) int
 	GetFirstAvailableTopicBucket(topic string) int
-	GetTopicBucketsCount(topic string) uint32
+	GetTopicBucketsCount(topic string) (uint32, error)
 	GetID(publicKey []byte) ([]byte, error)
 	GetBalance(addr Uint160) Fixed64
 	GetNonce(addr Uint160) uint64

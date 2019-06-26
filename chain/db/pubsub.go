@@ -279,9 +279,7 @@ func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
 	return cs.States.getFirstAvailableTopicBucket(topic)
 }
 
-func (sdb *StateDB) getTopicBucketsCount(topic string) uint32 {
-	lastBucket := uint32(0)
-
+func (sdb *StateDB) getTopicBucketsCount(topic string) (uint32, error) {
 	prefix := append(PubSubPrefix, getTopicId(topic)...)
 
 	iter := trie.NewIterator(sdb.trie.NodeIterator(prefix))
@@ -293,16 +291,15 @@ func (sdb *StateDB) getTopicBucketsCount(topic string) uint32 {
 	rk := bytes.NewReader(lastKey)
 
 	// read prefix
-	_, _ = serialization.ReadBytes(rk, uint64(len(prefix)))
+	_, err := serialization.ReadBytes(rk, uint64(len(prefix)))
+	if err != nil {
+		return 0, err
+	}
 
-	bucket, _ := serialization.ReadUint32(rk)
-
-	lastBucket = bucket
-
-	return lastBucket
+	return serialization.ReadUint32(rk)
 }
 
-func (cs *ChainStore) GetTopicBucketsCount(topic string) uint32 {
+func (cs *ChainStore) GetTopicBucketsCount(topic string) (uint32, error) {
 	return cs.States.getTopicBucketsCount(topic)
 }
 

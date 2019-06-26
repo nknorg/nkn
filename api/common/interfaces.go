@@ -638,7 +638,10 @@ func getTopicBucketsCount(s Serverer, params map[string]interface{}) map[string]
 		return respPacking(INVALID_PARAMS, "topic should be a string")
 	}
 
-	count := chain.DefaultLedger.Store.GetTopicBucketsCount(topic)
+	count, err := chain.DefaultLedger.Store.GetTopicBucketsCount(topic)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
 	return respPacking(SUCCESS, count)
 }
 
