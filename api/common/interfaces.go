@@ -601,7 +601,10 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 		return respPacking(INVALID_PARAMS, "bucket should be a string")
 	}
 
-	subscribers := chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket))
+	subscribers, err := chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket))
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
 	return respPacking(SUCCESS, subscribers)
 }
 
