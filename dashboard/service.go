@@ -16,7 +16,7 @@ var (
 	localNode *node.LocalNode
 	wallet    vault.Wallet
 	isInit    = false
-	app       = gin.Default()
+	app       = gin.New()
 )
 
 func Init(ln *node.LocalNode, w vault.Wallet) {
@@ -26,14 +26,9 @@ func Init(ln *node.LocalNode, w vault.Wallet) {
 }
 
 func Start() {
-	//gin.SetMode(gin.ReleaseMode)
-	//app := gin.Default()
-	app.Use(func(context *gin.Context) {
-		if isInit {
-			context.Set("localNode", localNode)
-			context.Set("wallet", wallet)
-		}
-	})
+	// build release settings
+	gin.SetMode(gin.ReleaseMode)
+
 	app.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		log.WebLog.Infof("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
 			param.ClientIP,
@@ -48,8 +43,34 @@ func Start() {
 		)
 		return ""
 	}))
+	// 使用 Recovery 中间件
+	app.Use(gin.Recovery())
+
+	app.Use(func(context *gin.Context) {
+		// init config
+		if isInit {
+			context.Set("localNode", localNode)
+			context.Set("wallet", wallet)
+		}
+
+		// header
+		context.Header("Access-Control-Allow-Origin", "*") // 这是允许访问所有域
+		context.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
+
+	})
+
 	//app.Static("/assets", "./assets")
-	app.StaticFS("/web", http.Dir("dashboard/web/dist"))
+	app.StaticFS("/web", http.Dir("web"))
+
+	// error
+	app.Use(func(context *gin.Context) {
+		context.Next()
+
+		err := context.Errors.Last()
+		if err != nil && !context.Writer.Written() {
+			context.JSON(http.StatusInternalServerError, err.Error())
+		}
+	})
 
 	app.Use(routes.Routes(app))
 
