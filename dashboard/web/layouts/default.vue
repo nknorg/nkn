@@ -1,6 +1,5 @@
 <template>
   <v-app>
-
     <v-toolbar :clipped-left="clipped" dark app tabs color="indigo" dense>
       <!--<v-toolbar-side-icon @click="drawer = !drawer">
         <v-icon class="fas fa-wallet"></v-icon>
@@ -13,14 +12,14 @@
         NKN WEB
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <NodeRunStatus></NodeRunStatus>
+      <NodeRunStatus :node-status="this.nodeStatus"></NodeRunStatus>
       <div class="divider-vertical mx-3"></div>
       <v-badge color="transparent">
-        <span>Node version: v0.8.0-alpha-174-gd090</span>
+        <span>{{$t('node_status.NODE_VERSION')}}: {{nodeStatus.version}}</span>
       </v-badge>
       <template v-slot:extension>
         <v-tabs align-with-title color="transparent" v-if="update">
-          <v-tab href="#node_status" :to="localePath('index')" >{{$t('menu.NODE_STATUS')}}</v-tab>
+          <v-tab href="#node_status" :to="localePath('index')">{{$t('menu.NODE_STATUS')}}</v-tab>
           <v-tab href="#overview" :to="localePath('overview')">{{$t('menu.OVERVIEW')}}</v-tab>
           <v-tab href="#settings" :to="localePath('settings')">{{$t('menu.SETTINGS')}}</v-tab>
           <v-tabs-slider color="pink accent-3"></v-tabs-slider>
@@ -34,12 +33,15 @@
           </v-btn>
         </template>
         <v-list>
-          <v-list-tile @click="reload()" :to="switchLocalePath('en')">
-            <v-list-tile-title>English</v-list-tile-title>
+          <v-list-tile
+            v-for="locale in availableLocales"
+            :key="locale.code"
+            :to="switchLocalePath(locale.code)"
+            @click="reload"
+          >
+            <v-list-tile-title>{{ locale.name }}</v-list-tile-title>
           </v-list-tile>
-          <v-list-tile @click="reload()" :to="switchLocalePath('zh')">
-            <v-list-tile-title>简体中文</v-list-tile-title>
-          </v-list-tile>
+
         </v-list>
       </v-menu>
     </v-toolbar>
@@ -54,18 +56,14 @@
 
 <script>
   import Footer from '~/components/Footer.vue'
-  import Wallet from '~/components/wallet/Wallet.vue'
-  import Wallet2 from '~/components/wallet/Wallet2.vue'
-  import AddWallet from '~/components/wallet/AddWallet.vue'
   import NodeRunStatus from '~/components/status/NodeRunStatus.vue'
+  import {startLoopTask} from '~/helpers/task'
+  import {mapState, mapActions} from 'vuex'
   import '~/styles/status.scss'
 
   export default {
     components: {
       Footer,
-      Wallet,
-      Wallet2,
-      AddWallet,
       NodeRunStatus
     },
     data() {
@@ -74,12 +72,30 @@
         update: true
       }
     },
+    computed: {
+      ...mapState({
+        nodeStatus: state => state.node.nodeStatus,
+      }),
+      availableLocales() {
+        return this.$i18n.locales
+      }
+    },
+    beforeMount() {
+      startLoopTask(this.getNodeStatus, 1000)
+    },
+    created() {
+
+    },
+
     methods: {
+      ...mapActions('node', ['getNodeStatus']),
       reload() {
-        this.update = false
-        this.$nextTick(() => {
-          this.update = true
-        })
+        setTimeout(() => { // prevent execution before link to
+          this.update = false
+          this.$nextTick(() => {
+            this.update = true
+          })
+        }, 10)
       }
     }
   }
