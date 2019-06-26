@@ -90,22 +90,25 @@ func (sdb *StateDB) getNanoPayCleanup(height uint32) (map[string]struct{}, error
 	var ok bool
 	if npc, ok = sdb.nanoPayCleanup[height]; !ok {
 		enc, err := sdb.trie.TryGet(append(NanoPayCleanupPrefix, getNanoPayCleanupId(height)...))
-		if err != nil || len(enc) == 0 {
+		if err != nil {
 			return nil, fmt.Errorf("[getNanoPayCleanup]can not get nano pay cleanup from trie: %v", err)
 		}
 
-		buff := bytes.NewBuffer(enc)
 		npc = make(map[string]struct{}, 0)
-		npcLength, err := serialization.ReadVarUint(buff, 0)
-		if err != nil {
-			return nil, fmt.Errorf("[getNanoPayCleanup]Failed to decode state object for nano pay cleanup: %v", err)
-		}
-		for i := uint64(0); i < npcLength; i++ {
-			id, err := serialization.ReadVarString(buff)
+
+		if len(enc) > 0 {
+			buff := bytes.NewBuffer(enc)
+			npcLength, err := serialization.ReadVarUint(buff, 0)
 			if err != nil {
 				return nil, fmt.Errorf("[getNanoPayCleanup]Failed to decode state object for nano pay cleanup: %v", err)
 			}
-			npc[id] = struct{}{}
+			for i := uint64(0); i < npcLength; i++ {
+				id, err := serialization.ReadVarString(buff)
+				if err != nil {
+					return nil, fmt.Errorf("[getNanoPayCleanup]Failed to decode state object for nano pay cleanup: %v", err)
+				}
+				npc[id] = struct{}{}
+			}
 		}
 
 		sdb.nanoPayCleanup[height] = npc

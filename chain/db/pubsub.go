@@ -124,22 +124,25 @@ func (sdb *StateDB) getPubSubCleanup(height uint32) (map[string]struct{}, error)
 	var ok bool
 	if psc, ok = sdb.pubSubCleanup[height]; !ok {
 		enc, err := sdb.trie.TryGet(append(PubSubCleanupPrefix, getPubSubCleanupId(height)...))
-		if err != nil || len(enc) == 0 {
+		if err != nil {
 			return nil, fmt.Errorf("[getPubSubCleanup]can not get pub sub cleanup from trie: %v", err)
 		}
 
-		buff := bytes.NewBuffer(enc)
 		psc = make(map[string]struct{}, 0)
-		pscLength, err := serialization.ReadVarUint(buff, 0)
-		if err != nil {
-			return nil, fmt.Errorf("[getPubSubCleanup]Failed to decode state object for pub sub cleanup: %v", err)
-		}
-		for i := uint64(0); i < pscLength; i++ {
-			id, err := serialization.ReadVarString(buff)
+
+		if len(enc) > 0 {
+			buff := bytes.NewBuffer(enc)
+			pscLength, err := serialization.ReadVarUint(buff, 0)
 			if err != nil {
 				return nil, fmt.Errorf("[getPubSubCleanup]Failed to decode state object for pub sub cleanup: %v", err)
 			}
-			psc[id] = struct{}{}
+			for i := uint64(0); i < pscLength; i++ {
+				id, err := serialization.ReadVarString(buff)
+				if err != nil {
+					return nil, fmt.Errorf("[getPubSubCleanup]Failed to decode state object for pub sub cleanup: %v", err)
+				}
+				psc[id] = struct{}{}
+			}
 		}
 
 		sdb.pubSubCleanup[height] = psc
