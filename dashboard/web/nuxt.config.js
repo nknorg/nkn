@@ -25,7 +25,7 @@ export default {
   /*
   ** Customize the progress-bar color
   */
-  loading: {color: '#fff'},
+  loading: false,
   /*
   ** Global CSS
   */
@@ -175,6 +175,12 @@ export default {
       // onLanguageSwitched: () => null
     }]
   ],
+  /*
+  ** axios configuration
+  */
+  axios:{
+    baseURL: 'http://localhost:30000'
+  },
   /*
   ** vuetify module configuration
   ** https://github.com/nuxt-community/vuetify-module
