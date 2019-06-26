@@ -14,6 +14,8 @@ import (
 	"github.com/nknorg/nkn/util/address"
 )
 
+const hashPrefixLength = 20
+
 type pubSub struct {
 	subscriber string
 	meta       string
@@ -62,7 +64,7 @@ func (ps *pubSub) Empty() bool {
 
 func getTopicId(topic string) []byte {
 	topicHash := sha256.Sum256([]byte(strings.ToLower(topic)))
-	return topicHash[:20]
+	return topicHash[:hashPrefixLength]
 }
 
 func getTopicBucketId(topic string, bucket uint32) []byte {
@@ -82,7 +84,7 @@ func getPubSubId(topic string, bucket uint32, subscriber []byte, identifier stri
 	pubSubId.Write(getTopicBucketId(topic, bucket))
 
 	subscriberHash := sha256.Sum256(append(subscriber, identifier...))
-	pubSubId.Write(subscriberHash[:20])
+	pubSubId.Write(subscriberHash[:hashPrefixLength])
 
 	return string(pubSubId.Bytes())
 }
