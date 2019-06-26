@@ -471,7 +471,7 @@ func (cs *ChainStore) GetDatabase() IStore {
 }
 
 func (cs *ChainStore) GetBalance(addr Uint160) Fixed64 {
-	return cs.States.GetBalance(addr)
+	return cs.States.GetBalance(config.NKNAssetID, addr)
 }
 
 func (cs *ChainStore) GetNonce(addr Uint160) uint64 {
@@ -581,7 +581,7 @@ func (cs *ChainStore) CalcNextDonation(height uint32) (*Donation, error) {
 		return nil, err
 	}
 	account := cs.States.GetOrNewAccount(donationAddress)
-	amount := account.GetBalance()
+	amount := account.GetBalance(config.NKNAssetID)
 	donation := amount * config.DonationAdjustDividendFactor / config.DonationAdjustDivisorFactor
 	donationPerBlock := int64(donation) / int64(config.RewardAdjustInterval)
 
