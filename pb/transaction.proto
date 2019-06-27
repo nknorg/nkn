@@ -43,6 +43,7 @@ enum PayloadType {
 	UNSUBSCRIBE_TYPE    = 7;
 	GENERATE_ID_TYPE    = 8;
 	NANO_PAY_TYPE       = 9;
+	ISSUE_ASSET_TYPE    = 10;
 }
 
 message Payload {
@@ -98,4 +99,12 @@ message NanoPay {
 	int64 amount    = 4;
 	uint32 height   = 5;
 	uint32 duration = 6;
+}
+
+message IssueAsset {
+	bytes sender       = 1;
+	string name        = 2;
+	string symbol      = 3;
+	int64 total_supply = 4;
+	uint32 precision   = 5;
 }

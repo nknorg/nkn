@@ -54,12 +54,17 @@ const (
 	MaxCompatibleProtocolVersion = 85
 	DefaultTxPoolCap             = 32
 	ShortHashSize                = uint32(8)
+	NKNAssetSymbol               = "nkn"
+	NKNAssetName                 = "nkn"
+	NKNAssetPrecision            = uint32(8)
+	MaxAssetPrecision            = uint32(8)
 )
 
 var (
 	ShortHashSalt    = util.RandomBytes(32)
 	GenesisTimestamp = time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix()
 	GenesisBeacon    = make([]byte, RandomBeaconLength)
+	NKNAssetID       = common.EmptyUint256
 )
 
 var (

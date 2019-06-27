@@ -107,3 +107,17 @@ func NewNanoPayTransaction(sender, recipient Uint160, nonce uint64, amount Fixed
 		Transaction: tx,
 	}, nil
 }
+
+func NewIssueAssetTransaction(sender Uint160, name, symbol string, totalSupply Fixed64, precision uint32, nonce uint64, fee Fixed64) (*Transaction, error) {
+	payload := NewIssueAsset(sender, name, symbol, precision, totalSupply)
+	pl, err := Pack(pb.ISSUE_ASSET_TYPE, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
+
+	return &Transaction{
+		Transaction: tx,
+	}, nil
+}

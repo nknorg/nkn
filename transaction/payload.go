@@ -46,6 +46,8 @@ func Unpack(payload *pb.Payload) (IPayload, error) {
 		pl = new(pb.GenerateID)
 	case pb.NANO_PAY_TYPE:
 		pl = new(pb.NanoPay)
+	case pb.ISSUE_ASSET_TYPE:
+		pl = new(pb.IssueAsset)
 	default:
 		return nil, errors.New("invalid payload type.")
 
@@ -117,5 +119,15 @@ func NewNanoPay(sender, recipient common.Uint160, nonce uint64, amount common.Fi
 		Amount:    int64(amount),
 		Height:    height,
 		Duration:  duration,
+	}
+}
+
+func NewIssueAsset(sender common.Uint160, name, symbol string, precision uint32, totalSupply common.Fixed64) IPayload {
+	return &pb.IssueAsset{
+		Sender:      sender.ToArray(),
+		Name:        name,
+		Symbol:      symbol,
+		TotalSupply: int64(totalSupply),
+		Precision:   precision,
 	}
 }

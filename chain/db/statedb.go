@@ -14,6 +14,7 @@ var (
 	NameRegistrantPrefix = []byte{0x04}
 	PubSubPrefix         = []byte{0x05}
 	PubSubCleanupPrefix  = []byte{0x06}
+	IssueAssetPrefix     = []byte{0x07}
 )
 
 type StateDB struct {
@@ -26,6 +27,7 @@ type StateDB struct {
 	nameRegistrants map[string][]byte
 	pubSub          map[string]*pubSub
 	pubSubCleanup   map[uint32]map[string]struct{}
+	assets          map[common.Uint256]*Asset
 }
 
 func NewStateDB(root common.Uint256, db *cachingDB) (*StateDB, error) {
@@ -42,6 +44,7 @@ func NewStateDB(root common.Uint256, db *cachingDB) (*StateDB, error) {
 		nameRegistrants: make(map[string][]byte, 0),
 		pubSub:          make(map[string]*pubSub, 0),
 		pubSubCleanup:   make(map[uint32]map[string]struct{}, 0),
+		assets:          make(map[common.Uint256]*Asset, 0),
 	}, nil
 }
 
@@ -53,6 +56,8 @@ func (sdb *StateDB) Finalize(commit bool) (root common.Uint256, err error) {
 	sdb.FinalizeNames(commit)
 
 	sdb.FinalizePubSub(commit)
+
+	sdb.FinalizeIssueAsset(commit)
 
 	if commit {
 		root, err = sdb.trie.CommitTo()
@@ -67,4 +72,3 @@ func (sdb *StateDB) IntermediateRoot() common.Uint256 {
 	sdb.Finalize(false)
 	return sdb.trie.Hash()
 }
-
