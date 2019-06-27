@@ -15,7 +15,6 @@ import (
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var (
@@ -142,6 +141,11 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 	case pb.DELETE_NAME_TYPE:
 	case pb.SUBSCRIBE_TYPE:
 		pld := payload.(*pb.Subscribe)
+
+		if pld.Duration == 0 {
+			return fmt.Errorf("duration can't be 0")
+		}
+
 		bucket := pld.Bucket
 		if bucket > transaction.BucketsLimit {
 			return fmt.Errorf("topic bucket %d can't be bigger than %d", bucket, transaction.BucketsLimit)
@@ -258,10 +262,10 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 
 		pld := payload.(*pb.RegisterName)
 		name, err := DefaultLedger.Store.GetName(pld.Registrant)
-		if name != nil {
-			return fmt.Errorf("pubKey %+v already has registered name %s", pld.Registrant, *name)
+		if name != "" {
+			return fmt.Errorf("pubKey %+v already has registered name %s", pld.Registrant, name)
 		}
-		if err != leveldb.ErrNotFound {
+		if err != nil {
 			return err
 		}
 
@@ -269,7 +273,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 		if registrant != nil {
 			return fmt.Errorf("name %s is already registered for pubKey %+v", pld.Name, registrant)
 		}
-		if err != leveldb.ErrNotFound {
+		if err != nil {
 			return err
 		}
 	case pb.DELETE_NAME_TYPE:
@@ -279,12 +283,12 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 
 		pld := payload.(*pb.DeleteName)
 		name, err := DefaultLedger.Store.GetName(pld.Registrant)
-		if err != leveldb.ErrNotFound {
+		if err != nil {
 			return err
 		}
-		if name == nil {
+		if name == "" {
 			return fmt.Errorf("no name registered for pubKey %+v", pld.Registrant)
-		} else if *name != pld.Name {
+		} else if name != pld.Name {
 			return fmt.Errorf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant)
 		}
 	case pb.SUBSCRIBE_TYPE:
@@ -293,7 +297,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 		}
 
 		pld := payload.(*pb.Subscribe)
-		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Subscriber, pld.Identifier, pld.Topic, pld.Bucket)
+		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Topic, pld.Bucket, pld.Subscriber, pld.Identifier)
 		if err != nil {
 			return err
 		}

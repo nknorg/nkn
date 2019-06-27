@@ -9,6 +9,8 @@ import (
 	"github.com/nknorg/nkn/util/log"
 )
 
+var secureKeyPrefix = []byte{0xa0}
+
 type Database interface {
 	Get(key []byte) ([]byte, error)
 	Has(key []byte) (bool, error)
@@ -24,13 +26,17 @@ type Trie struct {
 func New(hash common.Uint256, db Database) (*Trie, error) {
 	trie := &Trie{db: db, originalRoot: hash}
 	if hash != common.EmptyUint256 && db != nil {
-		root, err := trie.resolveHash(hash.ToArray(), nil)
+		root, err := trie.resolveHash(hash.ToArray())
 		if err != nil {
 			return nil, err
 		}
 		trie.root = root
 	}
 	return trie, nil
+}
+
+func (t *Trie) NodeIterator(start []byte) NodeIterator {
+	return newNodeIterator(t, start)
 }
 
 func (t *Trie) Get(key []byte) []byte {
@@ -80,7 +86,7 @@ func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newNode
 		n.Children[key[pos]] = newNode
 		return value, n, nil
 	case hashNode:
-		child, err := t.resolveHash(n, key[:pos])
+		child, err := t.resolveHash(n)
 		if err != nil {
 			return nil, n, err
 		}
@@ -98,7 +104,7 @@ func (t *Trie) Update(key, value []byte) {
 
 func (t *Trie) TryUpdate(key, value []byte) error {
 	k := keyBytesToHex(key)
-	n, err := t.insert(t.root, nil, k, valueNode(value))
+	n, err := t.insert(t.root, k, valueNode(value))
 	if err != nil {
 		return err
 	}
@@ -106,7 +112,7 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 	return nil
 }
 
-func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
+func (t *Trie) insert(n node, key []byte, value node) (node, error) {
 	//log.Infof("=====insert node type : %v,%v\n", reflect.TypeOf(n), common.BytesToHexString(key))
 	if len(key) == 0 {
 		return value, nil
@@ -115,7 +121,7 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
 	case *shortNode:
 		matchLen := prefixLen(key, n.Key)
 		if matchLen == len(n.Key) {
-			nn, err := t.insert(n.Val, append(prefix, key[:matchLen]...), key[matchLen:], value)
+			nn, err := t.insert(n.Val, key[matchLen:], value)
 			if err != nil {
 				return nil, err
 			}
@@ -124,11 +130,11 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
 		branch := &fullNode{flags: nodeFlag{}}
 		var err error
 
-		branch.Children[n.Key[matchLen]], err = t.insert(nil, append(prefix, n.Key[:matchLen+1]...), n.Key[matchLen+1:], n.Val)
+		branch.Children[n.Key[matchLen]], err = t.insert(nil, n.Key[matchLen+1:], n.Val)
 		if err != nil {
 			return nil, err
 		}
-		branch.Children[key[matchLen]], err = t.insert(nil, append(prefix, key[:matchLen+1]...), key[matchLen+1:], value)
+		branch.Children[key[matchLen]], err = t.insert(nil, key[matchLen+1:], value)
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +147,7 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
 		if ok {
 			log.Info("---------->", key[0], reflect.TypeOf(n.Children[key[0]]), len(x), n.fString(""))
 		}
-		nn, err := t.insert(n.Children[key[0]], append(prefix, key[0]), key[1:], value)
+		nn, err := t.insert(n.Children[key[0]], key[1:], value)
 		if err != nil {
 			return nil, err
 		}
@@ -152,11 +158,11 @@ func (t *Trie) insert(n node, prefix, key []byte, value node) (node, error) {
 	case nil:
 		return &shortNode{Key: key, Val: value, flags: nodeFlag{dirty: true}}, nil
 	case hashNode:
-		rn, err := t.resolveHash(n, prefix)
+		rn, err := t.resolveHash(n)
 		if err != nil {
 			return nil, err
 		}
-		nn, err := t.insert(rn, prefix, key, value)
+		nn, err := t.insert(rn, key, value)
 		if err != nil {
 			return rn, err
 		}
@@ -174,7 +180,7 @@ func (t *Trie) Delete(key []byte) {
 
 func (t *Trie) TryDelete(key []byte) error {
 	k := keyBytesToHex(key)
-	n, err := t.delete(t.root, nil, k)
+	n, err := t.delete(t.root, k)
 	if err != nil {
 		return err
 	}
@@ -182,7 +188,7 @@ func (t *Trie) TryDelete(key []byte) error {
 	return nil
 }
 
-func (t *Trie) delete(n node, prefix, key []byte) (node, error) {
+func (t *Trie) delete(n node, key []byte) (node, error) {
 	switch n := n.(type) {
 	case *shortNode:
 		matchLen := prefixLen(key, n.Key)
@@ -192,7 +198,7 @@ func (t *Trie) delete(n node, prefix, key []byte) (node, error) {
 		if matchLen == len(key) {
 			return nil, nil
 		}
-		child, err := t.delete(n.Val, append(prefix, key[:len(n.Key)]...), key[len(n.Key):])
+		child, err := t.delete(n.Val, key[len(n.Key):])
 		if err != nil {
 			return n, err
 		}
@@ -203,7 +209,7 @@ func (t *Trie) delete(n node, prefix, key []byte) (node, error) {
 			return &shortNode{Key: n.Key, Val: child}, nil
 		}
 	case *fullNode:
-		nn, err := t.delete(n.Children[key[0]], append(prefix, key[0]), key[1:])
+		nn, err := t.delete(n.Children[key[0]], key[1:])
 		if err != nil {
 			return n, err
 		}
@@ -223,7 +229,7 @@ func (t *Trie) delete(n node, prefix, key []byte) (node, error) {
 		}
 		if pos >= 0 {
 			if pos != 16 {
-				cNode, err := t.resolve(n.Children[pos], prefix)
+				cNode, err := t.resolve(n.Children[pos])
 				if err != nil {
 					return nil, err
 				}
@@ -240,11 +246,11 @@ func (t *Trie) delete(n node, prefix, key []byte) (node, error) {
 	case nil:
 		return nil, nil
 	case hashNode:
-		rn, err := t.resolveHash(n, prefix)
+		rn, err := t.resolveHash(n)
 		if err != nil {
 			return nil, err
 		}
-		nn, err := t.delete(rn, prefix, key)
+		nn, err := t.delete(rn, key)
 		if err != nil {
 			return rn, err
 		}
@@ -258,10 +264,10 @@ func (t *Trie) Commit() (common.Uint256, error) {
 	if t.db == nil {
 		panic("Commit data to trie whit nil database")
 	}
-	return t.commitTo(t.db)
+	return t.CommitTo(t.db)
 }
 
-func (t *Trie) commitTo(db Database) (common.Uint256, error) {
+func (t *Trie) CommitTo(db Database) (common.Uint256, error) {
 	hash, cached, err := t.hashRoot(db)
 	if err != nil {
 		return common.Uint256{}, err
@@ -293,14 +299,14 @@ func (t *Trie) hashRoot(db Database) (node, node, error) {
 	return h.hash(t.root, db, true)
 }
 
-func (t *Trie) resolve(n node, prefix []byte) (node, error) {
+func (t *Trie) resolve(n node) (node, error) {
 	if n, ok := n.(hashNode); ok {
-		return t.resolveHash(n, prefix)
+		return t.resolveHash(n)
 	}
 	return n, nil
 }
 
-func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
+func (t *Trie) resolveHash(n hashNode) (node, error) {
 	enc, err := t.db.Get(append(secureKeyPrefix, []byte(n)...))
 	if err != nil {
 		return nil, err
@@ -314,4 +320,9 @@ func concat(s1 []byte, s2 ...byte) []byte {
 	copy(r, s1)
 	copy(r[len(s1):], s2)
 	return r
+}
+
+func (t *Trie) Copy() *Trie {
+	cpy := *t
+	return &cpy
 }

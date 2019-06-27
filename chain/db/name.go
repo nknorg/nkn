@@ -1,102 +1,133 @@
 package db
 
 import (
-	"bytes"
 	"strings"
-
-	"github.com/nknorg/nkn/common/serialization"
 )
 
-func generateRegistrantKey(registrant []byte) []byte {
-	registrantKey := bytes.NewBuffer(nil)
-	registrantKey.WriteByte(byte(NS_Registrant))
-	serialization.WriteVarBytes(registrantKey, registrant)
-	return registrantKey.Bytes()
+func getRegistrantId(registrant []byte) string {
+	return string(registrant)
 }
 
-func generateNameKey(name string) []byte {
-	nameKey := bytes.NewBuffer(nil)
-	nameKey.WriteByte(byte(NS_Name))
-	serialization.WriteVarString(nameKey, strings.ToLower(name))
-	return nameKey.Bytes()
+func getNameId(name string) string {
+	return strings.ToLower(name)
 }
 
-func (cs *ChainStore) SaveName(registrant []byte, name string) error {
-	registrantKey := generateRegistrantKey(registrant)
-	nameKey := generateNameKey(name)
+func (sdb *StateDB) updateName(registrant []byte, name string) error {
+	registrantId := getRegistrantId(registrant)
+	nameId := getNameId(name)
 
-	// PUT VALUE
-	w := bytes.NewBuffer(nil)
-	serialization.WriteVarString(w, name)
-	err := cs.st.BatchPut(registrantKey, w.Bytes())
+	err := sdb.trie.TryUpdate(append(NamePrefix, nameId...), registrant)
 	if err != nil {
 		return err
 	}
 
-	w = bytes.NewBuffer(nil)
-	serialization.WriteVarBytes(w, registrant)
-	err = cs.st.BatchPut(nameKey, w.Bytes())
+	return sdb.trie.TryUpdate(append(NameRegistrantPrefix, registrantId...), []byte(name))
+}
+
+func (sdb *StateDB) setName(registrant []byte, name string) {
+	registrantId := getRegistrantId(registrant)
+	nameId := getNameId(name)
+
+	sdb.names[registrantId] = name
+	sdb.nameRegistrants[nameId] = registrant
+}
+
+func (sdb *StateDB) deleteName(registrantId string) error {
+	name, err := sdb.trie.TryGet(append(NameRegistrantPrefix, registrantId...))
 	if err != nil {
 		return err
 	}
+
+	nameId := getNameId(string(name))
+	err = sdb.trie.TryDelete(append(NameRegistrantPrefix, registrantId...))
+	if err != nil {
+		return err
+	}
+
+	err = sdb.trie.TryDelete(append(NamePrefix, nameId...))
+	if err != nil {
+		return err
+	}
+
+	delete(sdb.names, registrantId)
+	delete(sdb.nameRegistrants, nameId)
 
 	return nil
 }
 
-func (cs *ChainStore) DeleteName(registrant []byte) error {
-	name, err := cs.GetName(registrant)
-	if err != nil {
-		return err
-	}
+func (sdb *StateDB) deleteNameForRegistrant(registrant []byte, name string) {
+	registrantId := getRegistrantId(registrant)
+	nameId := getNameId(name)
 
-	registrantKey := generateRegistrantKey(registrant)
-	nameKey := generateNameKey(*name)
-
-	// DELETE VALUE
-	err = cs.st.BatchDelete(registrantKey)
-	if err != nil {
-		return err
-	}
-	err = cs.st.BatchDelete(nameKey)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	sdb.names[registrantId] = ""
+	sdb.nameRegistrants[nameId] = nil
 }
 
-func (cs *ChainStore) GetName(registrant []byte) (*string, error) {
-	registrantKey := generateRegistrantKey(registrant)
+func (sdb *StateDB) getName(registrant []byte) (string, error) {
+	registrantId := getRegistrantId(registrant)
+	var name string
+	var ok bool
+	if name, ok = sdb.names[registrantId]; !ok {
+		enc, err := sdb.trie.TryGet(append(NameRegistrantPrefix, registrantId...))
+		if err != nil {
+			return "", err
+		}
 
-	data, err := cs.st.Get(registrantKey)
-	if err != nil {
-		return nil, err
+		if len(enc) > 0 {
+			name = string(enc)
+			nameId := getNameId(name)
+			sdb.names[registrantId] = name
+			sdb.nameRegistrants[nameId] = registrant
+		}
 	}
 
-	r := bytes.NewReader(data)
-
-	name, err := serialization.ReadVarString(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return &name, nil
+	return name, nil
 }
 
-func (cs *ChainStore) GetRegistrant(name string) ([]byte, error) {
-	nameKey := generateNameKey(name)
+func (sdb *StateDB) getRegistrant(name string) ([]byte, error) {
+	nameId := getNameId(name)
+	var registrant []byte
+	var ok bool
+	if registrant, ok = sdb.nameRegistrants[nameId]; !ok {
+		enc, err := sdb.trie.TryGet(append(NamePrefix, nameId...))
+		if err != nil {
+			return nil, err
+		}
 
-	data, err := cs.st.Get(nameKey)
-	if err != nil {
-		return nil, err
-	}
+		if len(enc) > 0 {
+			registrant = enc
 
-	r := bytes.NewReader(data)
-
-	registrant, err := serialization.ReadVarBytes(r)
-	if err != nil {
-		return nil, err
+			registrantId := getRegistrantId(registrant)
+			sdb.names[registrantId] = name
+			sdb.nameRegistrants[nameId] = registrant
+		}
 	}
 
 	return registrant, nil
+}
+
+func (cs *ChainStore) GetName(registrant []byte) (string, error) {
+	return cs.States.getName(registrant)
+}
+
+func (cs *ChainStore) GetRegistrant(name string) ([]byte, error) {
+	return cs.States.getRegistrant(name)
+}
+
+func (sdb *StateDB) FinalizeNames(commit bool) {
+	for registrantId, name := range sdb.names {
+		if name == "" {
+			sdb.deleteName(registrantId)
+		} else {
+			nameId := getNameId(name)
+			registrant := sdb.nameRegistrants[nameId]
+			sdb.updateName(registrant, name)
+			if commit {
+				delete(sdb.nameRegistrants, nameId)
+			}
+		}
+		if commit {
+			delete(sdb.names, registrantId)
+		}
+	}
 }
