@@ -179,7 +179,7 @@ export default {
   ** axios configuration
   */
   axios:{
-    baseURL: 'http://localhost:30000'
+    baseURL: '/',
   },
   /*
   ** vuetify module configuration
