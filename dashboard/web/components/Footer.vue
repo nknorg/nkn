@@ -1,6 +1,6 @@
 <template>
   <v-footer height="auto">
-    <v-card flat tile class="indigo lighten-1 white--text text-xs-center">
+    <v-card flat tile class="indigo lighten-1 white--text text-xs-center" width="100%">
       <v-card-text>
         <v-tooltip top v-for="item in icons" :key="item.icon">
           <template v-slot:activator="{ on }">
@@ -15,9 +15,8 @@
       </v-card-text>
 
       <v-card-text class="white--text pt-0">
-        <h4>NKN:
-          Network Infra for Decentralized Internet</h4>
-        NKN is the new kind of P2P network connectivity protocol & ecosystem powered by a novel public blockchain. We use economic incentives to motivate Internet users to share network connection and utilize unused bandwidth. NKN's open, efficient, and robust networking infrastructure enables application developers to build the decentralized Internet so everyone can enjoy secure, low cost, and universally accessible connectivity.
+        <h4>{{$t('footer.TITLE')}}</h4>
+        {{$t('footer.TEXT')}}
       </v-card-text>
 
       <v-divider></v-divider>
