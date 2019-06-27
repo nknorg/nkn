@@ -8,8 +8,6 @@ import (
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -42,14 +40,6 @@ func (cs *ChainStore) Rollback(b *block.Block) error {
 	}
 
 	if err := cs.rollbackDonation(b); err != nil {
-		return err
-	}
-
-	if err := cs.rollbackNames(b); err != nil {
-		return err
-	}
-
-	if err := cs.rollbackPubSub(b); err != nil {
 		return err
 	}
 
@@ -101,62 +91,6 @@ func (cs *ChainStore) rollbackCurrentBlockHash(b *block.Block) error {
 	}
 
 	return cs.st.BatchPut([]byte{byte(SYS_CurrentBlock)}, value.Bytes())
-}
-
-func (cs *ChainStore) rollbackNames(b *block.Block) error {
-	for _, txn := range b.Transactions {
-		if txn.UnsignedTx.Payload.Type == pb.REGISTER_NAME_TYPE {
-			pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
-			if err != nil {
-				return err
-			}
-
-			registerNamePayload := pl.(*pb.RegisterName)
-			err = cs.DeleteName(registerNamePayload.Registrant)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, txn := range b.Transactions {
-		if txn.UnsignedTx.Payload.Type == pb.DELETE_NAME_TYPE {
-			pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
-			if err != nil {
-				return err
-			}
-
-			deleteNamePayload := pl.(*pb.DeleteName)
-			err = cs.SaveName(deleteNamePayload.Registrant, deleteNamePayload.Name)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func (cs *ChainStore) rollbackPubSub(b *block.Block) error {
-	height := b.Header.UnsignedHeader.Height
-
-	for _, txn := range b.Transactions {
-		if txn.UnsignedTx.Payload.Type == pb.SUBSCRIBE_TYPE {
-			pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
-			if err != nil {
-				return err
-			}
-
-			subscribePayload := pl.(*pb.Subscribe)
-			err = cs.Unsubscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, height)
-
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 func (cs *ChainStore) rollbackStates(b *block.Block) error {

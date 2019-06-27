@@ -46,6 +46,18 @@ func keyBytesToHex(str []byte) []byte {
 	return nibbles
 }
 
+func hexToKeyBytes(hex []byte) []byte {
+	if hasTerm(hex) {
+		hex = hex[:len(hex)-1]
+	}
+	if len(hex)&1 != 0 {
+		panic("can't convert hex key of odd length")
+	}
+	key := make([]byte, len(hex)/2)
+	decodeNibbles(hex, key)
+	return key
+}
+
 func prefixLen(a, b []byte) int {
 	var i, length = 0, len(a)
 	if len(b) < length {
