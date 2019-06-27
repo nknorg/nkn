@@ -24,7 +24,7 @@ func ResolveDest(Dest string) string {
 	pubKeyOrName := substrings[len(substrings)-1]
 
 	registrant, err := chain.DefaultLedger.Store.GetRegistrant(pubKeyOrName)
-	if err != nil {
+	if err != nil || registrant == nil {
 		return Dest
 	}
 	pubKeyStr := hex.EncodeToString(registrant)

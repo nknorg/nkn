@@ -17,14 +17,13 @@ type ILedgerStore interface {
 	GetHeader(hash Uint256) (*block.Header, error)
 	GetHeaderByHeight(height uint32) (*block.Header, error)
 	GetTransaction(hash Uint256) (*transaction.Transaction, error)
-	SaveName(registrant []byte, name string) error
-	GetName(registrant []byte) (*string, error)
+	GetName(registrant []byte) (string, error)
 	GetRegistrant(name string) ([]byte, error)
-	IsSubscribed(subscriber []byte, identifier string, topic string, bucket uint32) (bool, error)
-	GetSubscribers(topic string, bucket uint32) map[string]string
+	IsSubscribed(topic string, bucket uint32, subscriber []byte, identifier string) (bool, error)
+	GetSubscribers(topic string, bucket uint32) (map[string]string, error)
 	GetSubscribersCount(topic string, bucket uint32) int
 	GetFirstAvailableTopicBucket(topic string) int
-	GetTopicBucketsCount(topic string) uint32
+	GetTopicBucketsCount(topic string) (uint32, error)
 	GetID(publicKey []byte) ([]byte, error)
 	GetBalance(addr Uint160) Fixed64
 	GetNonce(addr Uint160) uint64

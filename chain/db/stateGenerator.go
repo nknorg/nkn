@@ -10,7 +10,7 @@ import (
 	"github.com/nknorg/nkn/util/config"
 )
 
-func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transaction, totalFee Fixed64, genesis bool) error {
+func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transaction, totalFee Fixed64, genesis bool, height uint32) error {
 	pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
 		return err
@@ -38,9 +38,31 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		states.UpdateBalance(BytesToUint160(transfer.Recipient), Fixed64(transfer.Amount), Addition)
 
 	case pb.REGISTER_NAME_TYPE:
-		fallthrough
+		pg, err := txn.GetProgramHashes()
+		if err != nil {
+			return err
+		}
+
+		if err := states.UpdateBalance(pg[0], Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
+			return err
+		}
+		states.IncrNonce(pg[0])
+
+		registerNamePayload := pl.(*pb.RegisterName)
+		states.setName(registerNamePayload.Registrant, registerNamePayload.Name)
 	case pb.DELETE_NAME_TYPE:
-		fallthrough
+		pg, err := txn.GetProgramHashes()
+		if err != nil {
+			return err
+		}
+
+		if err := states.UpdateBalance(pg[0], Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
+			return err
+		}
+		states.IncrNonce(pg[0])
+
+		deleteNamePayload := pl.(*pb.DeleteName)
+		states.deleteNameForRegistrant(deleteNamePayload.Registrant, deleteNamePayload.Name)
 	case pb.SUBSCRIBE_TYPE:
 		pg, err := txn.GetProgramHashes()
 		if err != nil {
@@ -52,6 +74,11 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		}
 		states.IncrNonce(pg[0])
 
+		subscribePayload := pl.(*pb.Subscribe)
+		err = states.subscribe(subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Meta, height+subscribePayload.Duration)
+		if err != nil {
+			return err
+		}
 	case pb.GENERATE_ID_TYPE:
 		genID := pl.(*pb.GenerateID)
 		pg, err := txn.GetProgramHashes()
@@ -90,7 +117,9 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if err := states.UpdateBalance(addrRecipient, claimAmount, Addition); err != nil {
 			return err
 		}
-		states.SetNanoPay(pg[0], addrRecipient, nanoPay.Nonce, Fixed64(nanoPay.Amount), nanoPay.Height+nanoPay.Duration)
+		if err := states.SetNanoPay(pg[0], addrRecipient, nanoPay.Nonce, Fixed64(nanoPay.Amount), nanoPay.Height+nanoPay.Duration); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -167,22 +196,28 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 	}
 
 	if height == 0 { //genesisBlock
-		if err := cs.spendTransaction(states, b.Transactions[0], totalFee, true); err != nil {
+		if err := cs.spendTransaction(states, b.Transactions[0], totalFee, true, height); err != nil {
 			return nil, EmptyUint256, err
 		}
 		for _, txn := range b.Transactions[1:] {
-			if err := cs.spendTransaction(states, txn, 0, false); err != nil {
+			if err := cs.spendTransaction(states, txn, 0, false, height); err != nil {
 				return nil, EmptyUint256, err
 			}
 		}
 	} else {
 		for _, txn := range b.Transactions {
-			if err := cs.spendTransaction(states, txn, totalFee, false); err != nil {
+			if err := cs.spendTransaction(states, txn, totalFee, false, height); err != nil {
 				return nil, EmptyUint256, err
 			}
 		}
 
-		states.CleanupNanoPay(b.Header.UnsignedHeader.Height)
+		if err := states.CleanupNanoPay(b.Header.UnsignedHeader.Height); err != nil {
+			return nil, EmptyUint256, err
+		}
+
+		if err := states.CleanupPubSub(b.Header.UnsignedHeader.Height); err != nil {
+			return nil, EmptyUint256, err
+		}
 	}
 
 	var root Uint256

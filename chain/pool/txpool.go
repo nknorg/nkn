@@ -348,6 +348,8 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 		tp.deleteTransactionFromMap(txn)
 	}
 
+	tp.blockValidationState.Lock()
+	defer tp.blockValidationState.Unlock()
 	return tp.CleanBlockValidationState(txnsInPool)
 }
 

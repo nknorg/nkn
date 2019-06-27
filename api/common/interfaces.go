@@ -564,6 +564,9 @@ func getAddressByName(s Serverer, params map[string]interface{}) map[string]inte
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
+	if publicKey == nil {
+		return respPacking(INTERNAL_ERROR, "no such name registered")
+	}
 
 	pubKey, err := crypto.NewPubKeyFromBytes(publicKey)
 	if err != nil {
@@ -601,7 +604,10 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 		return respPacking(INVALID_PARAMS, "bucket should be a string")
 	}
 
-	subscribers := chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket))
+	subscribers, err := chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket))
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
 	return respPacking(SUCCESS, subscribers)
 }
 
@@ -635,7 +641,10 @@ func getTopicBucketsCount(s Serverer, params map[string]interface{}) map[string]
 		return respPacking(INVALID_PARAMS, "topic should be a string")
 	}
 
-	count := chain.DefaultLedger.Store.GetTopicBucketsCount(topic)
+	count, err := chain.DefaultLedger.Store.GetTopicBucketsCount(topic)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
 	return respPacking(SUCCESS, count)
 }
 
