@@ -20,8 +20,6 @@ const actions = {
       console.log(e)
     }
 
-    // console.log(res.data)
-    // commit('setNodeStatus', {version: '11.1.1'})
   }
 }
 export default {
