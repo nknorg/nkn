@@ -282,45 +282,17 @@ func (cs *ChainStore) persist(b *block.Block) error {
 			return err
 		}
 
-		pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
-		if err != nil {
-			return err
-		}
-
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.COINBASE_TYPE:
 		case pb.SIG_CHAIN_TXN_TYPE:
 		case pb.TRANSFER_ASSET_TYPE:
 		case pb.REGISTER_NAME_TYPE:
-			registerNamePayload := pl.(*pb.RegisterName)
-			err = cs.SaveName(registerNamePayload.Registrant, registerNamePayload.Name)
-			if err != nil {
-				return err
-			}
 		case pb.DELETE_NAME_TYPE:
-			deleteNamePayload := pl.(*pb.DeleteName)
-			err = cs.DeleteName(deleteNamePayload.Registrant)
-			if err != nil {
-				return err
-			}
 		case pb.SUBSCRIBE_TYPE:
-			subscribePayload := pl.(*pb.Subscribe)
-			err = cs.Subscribe(subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Duration, subscribePayload.Meta, b.Header.UnsignedHeader.Height)
-			if err != nil {
-				return err
-			}
 		case pb.GENERATE_ID_TYPE:
 		case pb.NANO_PAY_TYPE:
 		default:
 			return errors.New("unsupported transaction type")
-		}
-	}
-
-	expiredKeys := cs.GetExpiredKeys(b.Header.UnsignedHeader.Height)
-	for i := 0; i < len(expiredKeys); i++ {
-		err := cs.RemoveExpiredKey(expiredKeys[i])
-		if err != nil {
-			return err
 		}
 	}
 
