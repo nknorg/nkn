@@ -43,7 +43,7 @@ func Start() {
 		)
 		return ""
 	}))
-	// 使用 Recovery 中间件
+
 	app.Use(gin.Recovery())
 
 	app.Use(func(context *gin.Context) {
@@ -59,14 +59,13 @@ func Start() {
 		context.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
 		context.Header("Access-Control-Allow-Headers", "Origin,X-Requested-With,content-type,Authorization,Accept")
 		context.Header("Access-Control-Allow-Credentials", "true")
-		//放行所有OPTIONS方法
+		// pass all OPTIONS method
 		if method == "OPTIONS" {
 			context.JSON(http.StatusOK, "Options")
 		}
 		context.Next()
 	})
 
-	//app.Static("/assets", "./assets")
 	app.StaticFS("/web", http.Dir("web"))
 
 	// error
