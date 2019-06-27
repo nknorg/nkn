@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
@@ -17,14 +18,68 @@ const (
 	Subtraction
 )
 
-type account struct {
-	nonce   uint64
-	balance common.Fixed64
-	id      []byte
+type sortIDs []common.Uint256
+
+func (s sortIDs) Len() int      { return len(s) }
+func (s sortIDs) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s sortIDs) Less(i, j int) bool {
+	if s[i].CompareTo(s[j]) == 1 {
+		return false
+	} else {
+		return true
+	}
 }
 
-func NewAccount(n uint64, b common.Fixed64, id []byte) *account {
-	return &account{nonce: n, balance: b, id: id}
+type balance struct {
+	assetID common.Uint256
+	amount  common.Fixed64
+}
+
+func (b *balance) Serialize(w io.Writer) error {
+	if _, err := b.assetID.Serialize(w); err != nil {
+		return fmt.Errorf("balance asset id serialize error: %v", err)
+	}
+
+	if err := b.amount.Serialize(w); err != nil {
+		return fmt.Errorf("balance amount serialize error: %v", err)
+	}
+
+	return nil
+}
+
+func (b *balance) Deserialize(r io.Reader) error {
+	var err error
+
+	if err := b.assetID.Deserialize(r); err != nil {
+		return fmt.Errorf("balance asset id serialize error: %v", err)
+	}
+
+	err = b.amount.Deserialize(r)
+	if err != nil {
+		return fmt.Errorf("balance amount deserialize error:%v", err)
+	}
+
+	return nil
+}
+
+type account struct {
+	nonce    uint64
+	balances map[common.Uint256]*balance
+	id       []byte
+}
+
+func NewAccount(n uint64, b *balance, id []byte) *account {
+	acc := &account{
+		nonce:    n,
+		balances: make(map[common.Uint256]*balance),
+		id:       id,
+	}
+
+	if b != nil {
+		acc.balances[b.assetID] = b
+	}
+
+	return acc
 }
 
 func (acc *account) Serialize(w io.Writer) error {
@@ -32,8 +87,19 @@ func (acc *account) Serialize(w io.Writer) error {
 		return fmt.Errorf("account nonce Serialize error: %v", err)
 	}
 
-	if err := acc.balance.Serialize(w); err != nil {
-		return fmt.Errorf("account balance Serialize error: %v", err)
+	var ids []common.Uint256
+	for id, _ := range acc.balances {
+		ids = append(ids, id)
+	}
+	sort.Sort(sortIDs(ids))
+
+	if err := serialization.WriteVarUint(w, uint64(len(ids))); err != nil {
+		return fmt.Errorf("length of acc.balance error: %v", err)
+	}
+	for _, id := range ids {
+		if err := acc.balances[id].Serialize(w); err != nil {
+			return fmt.Errorf("account balance Serialize error: %v", err)
+		}
 	}
 
 	if err := serialization.WriteVarBytes(w, acc.id); err != nil {
@@ -50,9 +116,22 @@ func (acc *account) Deserialize(r io.Reader) error {
 	}
 	acc.nonce = nonce
 
-	err = acc.balance.Deserialize(r)
+	if acc.balances == nil {
+		acc.balances = make(map[common.Uint256]*balance)
+	}
+
+	balanceSize, err := serialization.ReadVarUint(r, 0)
 	if err != nil {
-		return fmt.Errorf("Deserialize balance error:%v", err)
+		return fmt.Errorf("Deserialize length of balances error:%v", err)
+	}
+
+	for i := 0; i < int(balanceSize); i++ {
+		var b balance
+		err := b.Deserialize(r)
+		if err != nil {
+			return fmt.Errorf("Deserialize balances error:%v", err)
+		}
+		acc.balances[b.assetID] = &b
 	}
 
 	id, err := serialization.ReadVarBytes(r)
@@ -68,8 +147,12 @@ func (acc *account) GetNonce() uint64 {
 	return acc.nonce
 }
 
-func (acc *account) GetBalance() common.Fixed64 {
-	return acc.balance
+func (acc *account) GetBalance(assetID common.Uint256) common.Fixed64 {
+	if _, ok := acc.balances[assetID]; !ok {
+		return common.Fixed64(0)
+	}
+
+	return acc.balances[assetID].amount
 }
 
 func (acc *account) GetID() []byte {
@@ -80,8 +163,16 @@ func (acc *account) SetNonce(nonce uint64) {
 	acc.nonce = nonce
 }
 
-func (acc *account) SetBalance(balance common.Fixed64) {
-	acc.balance = balance
+func (acc *account) SetBalance(assetID common.Uint256, amount common.Fixed64) {
+	if _, ok := acc.balances[assetID]; !ok {
+		acc.balances[assetID] = &balance{
+			assetID: assetID,
+			amount:  amount,
+		}
+		return
+	}
+
+	acc.balances[assetID].amount = amount
 }
 
 func (acc *account) SetID(id []byte) {
@@ -89,7 +180,7 @@ func (acc *account) SetID(id []byte) {
 }
 
 func (acc *account) Empty() bool {
-	return acc.nonce == 0 && acc.balance == 0 && acc.id == nil
+	return acc.nonce == 0 && len(acc.balances) == 0 && acc.id == nil
 }
 
 func (sdb *StateDB) getAccount(addr common.Uint160) (*account, error) {
@@ -115,12 +206,13 @@ func (sdb *StateDB) getAccount(addr common.Uint160) (*account, error) {
 	return data, nil
 }
 
-func (sdb *StateDB) GetBalance(addr common.Uint160) common.Fixed64 {
+func (sdb *StateDB) GetBalance(assetID common.Uint256, addr common.Uint160) common.Fixed64 {
 	account, err := sdb.getAccount(addr)
 	if err != nil {
 		return common.Fixed64(0)
 	}
-	return account.GetBalance()
+
+	return account.GetBalance(assetID)
 }
 
 func (sdb *StateDB) GetNonce(addr common.Uint160) uint64 {
@@ -158,7 +250,7 @@ func (sdb *StateDB) GetOrNewAccount(addr common.Uint160) *account {
 
 func (sdb *StateDB) createAccount(addr common.Uint160) (new, old *account) {
 	old, _ = sdb.getAccount(addr)
-	new = NewAccount(0, 0, nil)
+	new = NewAccount(0, nil, nil)
 
 	sdb.setAccount(addr, new)
 	return new, old
@@ -184,13 +276,13 @@ func (sdb *StateDB) deleteAccount(addr common.Uint160) error {
 	return nil
 }
 
-func (sdb *StateDB) SetBalance(addr common.Uint160, value common.Fixed64) error {
+func (sdb *StateDB) SetBalance(addr common.Uint160, assetID common.Uint256, value common.Fixed64) error {
 	account, err := sdb.getAccount(addr)
 	if err != nil {
 		return err
 	}
 
-	account.SetBalance(value)
+	account.SetBalance(assetID, value)
 	return nil
 }
 
@@ -214,18 +306,18 @@ func (sdb *StateDB) SetID(addr common.Uint160, id []byte) error {
 	return nil
 }
 
-func (sdb *StateDB) UpdateBalance(addr common.Uint160, value common.Fixed64, op Operation) error {
+func (sdb *StateDB) UpdateBalance(addr common.Uint160, assetID common.Uint256, value common.Fixed64, op Operation) error {
 	acc := sdb.GetOrNewAccount(addr)
-	amount := acc.GetBalance()
+	amount := acc.GetBalance(assetID)
 
 	switch op {
 	case Addition:
-		acc.SetBalance(amount + value)
+		acc.SetBalance(assetID, amount+value)
 	case Subtraction:
 		if amount < value {
 			return errors.New("UpdateBalance: no sufficient funds")
 		}
-		acc.SetBalance(amount - value)
+		acc.SetBalance(assetID, amount-value)
 	default:
 		return errors.New("UpdateBalance: invalid operation")
 	}

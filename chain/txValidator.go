@@ -20,6 +20,7 @@ import (
 var (
 	ErrIDRegistered           = errors.New("ID has be registered")
 	ErrDuplicateGenerateIDTxn = errors.New("[VerifyTransactionWithBlock], duplicate GenerateID txns")
+	ErrDuplicateIssueAssetTxn = errors.New("[VerifyTransactionWithBlock], duplicate IssueAsset txns")
 )
 
 // VerifyTransaction verifys received single transaction
@@ -197,6 +198,36 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		if pld.Duration < transaction.MinNanoPayDuration {
 			return errors.New(fmt.Sprintf("duration can't be lower than %d", transaction.MinNanoPayDuration))
 		}
+
+	case pb.ISSUE_ASSET_TYPE:
+		pld := payload.(*pb.IssueAsset)
+		if len(pld.Sender) != UINT160SIZE {
+			return errors.New("length of programhash error")
+		}
+
+		match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9 ]{2,11}$)", pld.Name)
+		if err != nil {
+			return err
+		}
+		if !match {
+			return fmt.Errorf("name %s should start with a letter, contain A-Za-z0-9 and have length 3-12", pld.Name)
+		}
+
+		match, err = regexp.MatchString("(^[a-z][a-z0-9]{2,8}$)", pld.Symbol)
+		if err != nil {
+			return err
+		}
+		if !match {
+			return fmt.Errorf("name %s should start with a letter, contain a-z0-9 and have length 3-9", pld.Name)
+		}
+
+		if pld.TotalSupply < 0 {
+			return fmt.Errorf("TotalSupply %v should be a positive number", pld.TotalSupply)
+		}
+
+		if pld.Precision > config.MaxAssetPrecision {
+			return fmt.Errorf("Precision %v should less than %v", pld.Precision, config.MaxAssetPrecision)
+		}
 	default:
 		return fmt.Errorf("[txValidator], invalid transaction payload type %v", txn.UnsignedTx.Payload.Type)
 	}
@@ -215,7 +246,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 
 	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
-		return errors.New("Unpack transactiion's paylaod error")
+		return errors.New("Unpack transactiion's payload error")
 	}
 
 	checkNonce := func() error {
@@ -345,6 +376,17 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 		}
 		if int64(balance) < balanceToClaim {
 			return errors.New("not sufficient funds")
+		}
+
+	case pb.ISSUE_ASSET_TYPE:
+		if err := checkNonce(); err != nil {
+			return err
+		}
+
+		assetID := txn.Hash()
+		_, _, _, _, err := DefaultLedger.Store.GetAsset(assetID)
+		if err == nil {
+			return ErrDuplicateIssueAssetTxn
 		}
 	default:
 		return fmt.Errorf("[txValidator], invalid transaction payload type %v", txn.UnsignedTx.Payload.Type)
@@ -562,6 +604,8 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 				})
 			}
 		}()
+
+	case pb.ISSUE_ASSET_TYPE:
 	}
 
 	if amount > 0 || fee > 0 {
@@ -641,6 +685,7 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			npPayload := payload.(*pb.NanoPay)
 			key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Nonce}
 			delete(bvs.nanoPays, key)
+		case pb.ISSUE_ASSET_TYPE:
 		}
 
 		if amount > 0 || fee > 0 {
