@@ -26,6 +26,7 @@ type ILedgerStore interface {
 	GetTopicBucketsCount(topic string) (uint32, error)
 	GetID(publicKey []byte) ([]byte, error)
 	GetBalance(addr Uint160) Fixed64
+	GetBalanceByAssetID(addr Uint160, assetID Uint256) Fixed64
 	GetNonce(addr Uint160) uint64
 	GetNanoPay(addr Uint160, recipient Uint160, nonce uint64) (Fixed64, uint32, error)
 	GetCurrentBlockHash() Uint256
@@ -41,5 +42,7 @@ type ILedgerStore interface {
 	IsBlockInStore(hash Uint256) bool
 	Rollback(b *block.Block) error
 	GenerateStateRoot(b *block.Block, genesisBlockInitialized, needBeCommitted bool) (Uint256, error)
+	GetAsset(assetID Uint256) (name, symbol string, totalSupply Fixed64, precision uint32, err error)
+
 	Close()
 }

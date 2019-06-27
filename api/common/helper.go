@@ -146,3 +146,24 @@ func MakeNanoPayTransaction(wallet vault.Wallet, recipient Uint160, nonce uint64
 
 	return txn, nil
 }
+
+func MakeIssueAssetTransaction(wallet vault.Wallet, name, symbol string, totalSupply Fixed64, precision uint32, nonce uint64, fee Fixed64) (*transaction.Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// construct transaction
+	txn, err := transaction.NewIssueAssetTransaction(account.ProgramHash, name, symbol, totalSupply, precision, nonce, fee)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	err = wallet.Sign(txn)
+	if err != nil {
+		return nil, err
+	}
+
+	return txn, nil
+}

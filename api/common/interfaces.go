@@ -451,6 +451,54 @@ func getBalanceByAddr(s Serverer, params map[string]interface{}) map[string]inte
 	return respPacking(SUCCESS, ret)
 }
 
+// getBalanceByAssetID gets balance by address
+// params: {"address":<address>, "assetid":<assetid>}
+// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
+func GetBalanceByAssetID(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 2 {
+		return respPacking(INVALID_PARAMS, "length of params is less than 2")
+	}
+
+	addr, ok := params["address"].(string)
+	if !ok {
+		return respPacking(INVALID_PARAMS, "address should be a string")
+	}
+
+	id, ok := params["assetid"].(string)
+	if !ok {
+		return respPacking(INVALID_PARAMS, "asset id should be a string")
+	}
+
+	hexAssetID, err := common.HexStringToBytes(id)
+	if err != nil {
+		return respPacking(INVALID_PARAMS, err.Error())
+	}
+
+	assetID, err := common.Uint256ParseFromBytes(hexAssetID)
+	if err != nil {
+		return respPacking(INVALID_PARAMS, err.Error())
+	}
+
+	pg, err := common.ToScriptHash(addr)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+
+	value := chain.DefaultLedger.Store.GetBalanceByAssetID(pg, assetID)
+	_, symbol, _, _, err := chain.DefaultLedger.Store.GetAsset(assetID)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+
+	ret := map[string]interface{}{
+		"assetID": id,
+		"symbol":  symbol,
+		"amount":  value.String(),
+	}
+
+	return respPacking(SUCCESS, ret)
+}
+
 // getNonceByAddr gets balance by address
 // params: {"address":<address>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
@@ -611,6 +659,44 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 	return respPacking(SUCCESS, subscribers)
 }
 
+// getAsset get subscribers by topic
+// params: {"assetid":<id>}
+// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
+func getAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(INVALID_PARAMS, "length of params is less than 1")
+	}
+
+	str, ok := params["assetid"].(string)
+	if !ok {
+		return respPacking(INVALID_PARAMS, "asset ID should be a string")
+	}
+
+	hexAssetID, err := common.HexStringToBytes(str)
+	if err != nil {
+		return respPacking(INVALID_PARAMS, err.Error())
+	}
+
+	assetID, err := common.Uint256ParseFromBytes(hexAssetID)
+	if err != nil {
+		return respPacking(INVALID_PARAMS, err.Error())
+	}
+
+	name, symbol, totalSupply, precision, err := chain.DefaultLedger.Store.GetAsset(assetID)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+
+	ret := map[string]interface{}{
+		"name":        name,
+		"symbol":      symbol,
+		"totalSupply": totalSupply.String(),
+		"precision":   precision,
+	}
+
+	return respPacking(SUCCESS, ret)
+}
+
 // getFirstAvailableTopicBucket get free topic bucket
 // params: {"topic":<topic>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
@@ -758,10 +844,12 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getchordringinfo":             {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
 	"setdebuginfo":                 {Handler: setDebugInfo},
 	"getbalancebyaddr":             {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
+	"getbalancebyassetid":          {Handler: GetBalanceByAssetID, AccessCtrl: BIT_JSONRPC},
 	"getnoncebyaddr":               {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
 	"getid":                        {Handler: getId, AccessCtrl: BIT_JSONRPC},
 	"getaddressbyname":             {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
 	"getsubscribers":               {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
+	"getasset":                     {Handler: getAsset, AccessCtrl: BIT_JSONRPC},
 	"getfirstavailabletopicbucket": {Handler: getFirstAvailableTopicBucket, AccessCtrl: BIT_JSONRPC},
 	"gettopicbucketscount":         {Handler: getTopicBucketsCount, AccessCtrl: BIT_JSONRPC},
 	"getmyextip":                   {Handler: getMyExtIP, AccessCtrl: BIT_JSONRPC},
