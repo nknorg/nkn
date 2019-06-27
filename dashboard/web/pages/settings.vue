@@ -6,7 +6,7 @@
       <v-layout wrap>
         <v-flex xs12>
           <v-subheader class="pa-0">Restart nknd</v-subheader>
-          <NodeRunStatus></NodeRunStatus>
+          <NodeRunStatus :node-status="this.nodeStatus"></NodeRunStatus>
           <v-btn color="primary" :loading="restarting"
                  :disabled="restarting" @click="restarting = !restarting">RESTART
           </v-btn>
@@ -74,12 +74,15 @@
 
 <script>
   import NodeRunStatus from '~/components/status/NodeRunStatus.vue'
-
+import {mapState} from 'vuex'
   export default {
     name: "settings",
     components: {
       NodeRunStatus
     },
+    computed: mapState({
+      nodeStatus: state => state.node.nodeStatus,
+    }),
     data: () => ({
       isEditWallet: false,
       restarting: false,
