@@ -23,14 +23,16 @@ func (nodeRouter *NodeRouter) Router(router *gin.RouterGroup) {
 			if err != nil {
 				log.WebLog.Error(err)
 				context.AbortWithError(http.StatusInternalServerError, err)
+				return
 			}
 			err = json.Unmarshal(buf, &out)
 			if err != nil {
 				log.WebLog.Error(err)
 				context.AbortWithError(http.StatusInternalServerError, err)
+				return
 			}
 			out["beneficiaryAddr"] = config.Parameters.BeneficiaryAddr
-			context.JSON(200, out)
+			context.JSON(http.StatusOK, out)
 			return
 		}
 

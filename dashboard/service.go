@@ -30,7 +30,7 @@ func Start() {
 	gin.SetMode(gin.ReleaseMode)
 
 	app.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-		log.WebLog.Infof("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
+		log.WebLog.Infof("%s - [%s] \"%s %s %s %d %s\" %s \"%s\"",
 			param.ClientIP,
 			param.TimeStamp.Format(time.RFC1123),
 			param.Method,
@@ -53,10 +53,17 @@ func Start() {
 			context.Set("wallet", wallet)
 		}
 
+		method := context.Request.Method
 		// header
-		context.Header("Access-Control-Allow-Origin", "*") // 这是允许访问所有域
-		context.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
-
+		context.Header("Access-Control-Allow-Origin", "*")
+		context.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
+		context.Header("Access-Control-Allow-Headers", "Origin,X-Requested-With,content-type,Authorization,Accept")
+		context.Header("Access-Control-Allow-Credentials", "true")
+		//放行所有OPTIONS方法
+		if method == "OPTIONS" {
+			context.JSON(http.StatusOK, "Options")
+		}
+		context.Next()
 	})
 
 	//app.Static("/assets", "./assets")
