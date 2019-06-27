@@ -2,9 +2,7 @@ const state = {
   currentWalletStatus: {}
 }
 
-const getters = {
-
-}
+const getters = {}
 
 const mutations = {
   setCurrentWalletStatus(state, wallet) {
@@ -19,9 +17,19 @@ const actions = {
     } catch (e) {
       console.log(e)
     }
-
-    // console.log(res.data)
-    // commit('setNodeStatus', {version: '11.1.1'})
+  },
+  async getCurrentWalletPrivateKey({commit}, payload) {
+    try {
+      this.$axios.setHeader("Authorization", payload)
+      let res = await this.$axios.get('/api/current-wallet/details')
+      return res.data
+    } catch (e) {
+      if (e.response.status === 401 || e.response.status === 403) {
+        e.code = e.response.status
+        throw e
+      }
+      return undefined
+    }
   }
 }
 export default {
