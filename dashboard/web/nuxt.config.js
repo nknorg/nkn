@@ -37,7 +37,8 @@ export default {
   */
   plugins: [
     '~/plugins/axios',
-    '~/plugins/i18n'
+    '~/plugins/i18n',
+    '~/plugins/task'
   ],
   /*
   ** Nuxt.js modules

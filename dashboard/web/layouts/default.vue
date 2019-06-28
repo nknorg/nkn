@@ -57,8 +57,7 @@
 <script>
   import Footer from '~/components/Footer.vue'
   import NodeRunStatus from '~/components/status/NodeRunStatus.vue'
-  import {startLoopTask} from '~/helpers/task'
-  import {mapState, mapActions} from 'vuex'
+  import {mapState} from 'vuex'
   import '~/styles/status.scss'
 
   export default {
@@ -80,15 +79,7 @@
         return this.$i18n.locales
       }
     },
-    beforeMount() {
-      startLoopTask(this.getNodeStatus, 1000)
-    },
-    created() {
-
-    },
-
     methods: {
-      ...mapActions('node', ['getNodeStatus']),
       reload() {
         setTimeout(() => { // prevent execution before link to
           this.update = false
