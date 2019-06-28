@@ -22,6 +22,7 @@ export default {
   PUBLIC_KEY: 'Public key',
   PRIVATE_KEY: 'Private key',
   PASSWORD: 'Password',
+  PASSWORD_ERROR: 'Invalid password.',
   PASSWORD_REQUIRED: 'Password is required.',
   PASSWORD_HINT: 'Please enter wallet password.',
 
