@@ -1,4 +1,4 @@
-package wallet
+package node
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ type SetBeneficiaryData struct {
 }
 
 func BeneficiaryRouter(router *gin.RouterGroup) {
-	router.PUT("/current-wallet/beneficiary", auth.WalletAuth(), func(context *gin.Context) {
+	router.PUT("/node/beneficiary", auth.WalletAuth(), func(context *gin.Context) {
 		var data SetBeneficiaryData
 		if err := context.ShouldBind(&data); err != nil {
 			log.WebLog.Error(err)
@@ -75,8 +75,8 @@ func BeneficiaryRouter(router *gin.RouterGroup) {
 			}
 
 			context.JSON(http.StatusOK, gin.H{
-				"message":      configuration["BeneficiaryAddr"],
-				"currentValue": config.Parameters.BeneficiaryAddr,
+				"beneficiaryAddr":        configuration["BeneficiaryAddr"],
+				"currentBeneficiaryAddr": config.Parameters.BeneficiaryAddr,
 			})
 			return
 		} else {
