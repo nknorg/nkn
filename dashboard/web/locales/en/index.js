@@ -1,15 +1,22 @@
 import Menu from './menu'
 import Node from './node'
+import Settings from './settings'
 
 export default {
   language: 'English',
   menu: Menu,
   node: Node,
+  settings: Settings,
 
   NEXT: 'Next',
   CLOSE: 'Close',
   CANCEL: 'Cancel',
+  RESTART: 'Restart',
+  START: 'Start',
+  STOP: 'Stop',
+  SUBMIT: 'Submit',
 
+  BENEFICIARY: 'Beneficiary',
   BALANCE: 'Balance',
   WALLET_ADDRESS: 'Wallet address',
   PUBLIC_KEY: 'Public key',
@@ -18,7 +25,7 @@ export default {
   PASSWORD_REQUIRED: 'Password is required.',
   PASSWORD_HINT: 'Please enter wallet password.',
 
-  footer:{
+  footer: {
     TITLE: 'NKN: Network Infra for Decentralized Internet',
     TEXT: 'NKN is the new kind of P2P network connectivity protocol & ecosystem powered by a novel public blockchain. We use economic incentives to motivate Internet users to share network connection and utilize unused bandwidth. NKN\'s open, efficient, and robust networking infrastructure enables application developers to build the decentralized Internet so everyone can enjoy secure, low cost, and universally accessible connectivity.'
   },
