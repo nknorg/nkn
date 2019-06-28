@@ -6,7 +6,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 option (gogoproto.gostring_all) = true;
 option (gogoproto.goproto_stringer_all) = false;
-option (gogoproto.stringer_all) =  true;
+option (gogoproto.stringer_all) = true;
 option (gogoproto.marshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;
@@ -93,12 +93,12 @@ message GenerateID {
 }
 
 message NanoPay {
-	bytes sender    = 1;
+	bytes sender = 1;
 	bytes recipient = 2;
-	uint64 nonce    = 3;
-	int64 amount    = 4;
-	uint32 height   = 5;
-	uint32 duration = 6;
+	uint64 id = 3;
+	int64 amount = 4;
+	uint32 txn_expiration = 5;
+	uint32 nano_pay_expiration = 6;
 }
 
 message IssueAsset {

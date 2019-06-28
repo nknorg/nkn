@@ -203,7 +203,10 @@ func (sdb *StateDB) SetNanoPay(sender, recipient common.Uint160, nonce uint64, b
 	var np *nanoPay
 	var ok bool
 	if np, ok = sdb.nanoPay[id]; !ok {
-		np = &nanoPay{balance, expiresAt}
+		np = &nanoPay{
+			balance:   balance,
+			expiresAt: expiresAt,
+		}
 		sdb.nanoPay[id] = np
 		if err := sdb.cleanupNanoPayAtHeight(expiresAt, id); err != nil {
 			return err
