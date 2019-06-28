@@ -181,7 +181,7 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 	if height == 0 {
 		id := ComputeID(EmptyUint256, EmptyUint256, b.Header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength])
 
-		pk, err := crypto.NewPubKeyFromBytes(b.Header.UnsignedHeader.Signer)
+		pk, err := crypto.NewPubKeyFromBytes(b.Header.UnsignedHeader.SignerPk)
 		if err != nil {
 			return nil, EmptyUint256, err
 		}
@@ -208,7 +208,6 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 		if err := states.UpdateBalance(issueAddress, config.NKNAssetID, config.InitialIssueAmount, Addition); err != nil {
 			return nil, EmptyUint256, err
 		}
-
 	}
 
 	if height > config.GenerateIDBlockDelay {

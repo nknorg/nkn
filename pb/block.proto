@@ -32,8 +32,8 @@ message UnsignedHeader {
 	bytes      random_beacon       = 7;
 	bytes      winner_hash         = 8;
 	WinnerType winner_type         = 9;
-	bytes      signer              = 10;
-	bytes      chord_id            = 11;
+	bytes      signer_pk           = 10;
+	bytes      signer_id           = 11;
 }
 
 message Header {
