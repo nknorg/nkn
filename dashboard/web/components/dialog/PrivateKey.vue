@@ -51,7 +51,6 @@
 
 <script>
   import ClipboardText from '~/components/widget/ClipboardText.vue'
-  import {doubleSha256} from '~/helpers/crypto'
   import {mapActions} from 'vuex'
 
   export default {
@@ -84,8 +83,9 @@
     watch: {
       value(val) {
         this.visible = val
-        if (this.visible === true) {
+        if (this.visible === false) {
           this.step = 1
+          this.$refs.form.reset()
         }
       },
       password(val) {
@@ -105,16 +105,15 @@
       async next() {
         if (this.$refs.form.validate()) {
           try {
-            let res = await this.getCurrentWalletPrivateKey(doubleSha256(this.password))
+            let res = await this.getCurrentWalletPrivateKey(this.password)
             this.privateKey = res.privateKey
             this.passwordError = false
             this.passwordErrorMessage = ''
             this.step++
-            this.$refs.form.reset()
           } catch (e) {
             if (e.code === 401 || e.code === 403) {
               this.passwordError = true
-              this.passwordErrorMessage = 'invalid password'
+              this.passwordErrorMessage = this.$t('PASSWORD_ERROR')
             }
           }
         }
