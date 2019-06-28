@@ -22,8 +22,9 @@ export default {
   PUBLIC_KEY: '公钥',
   PRIVATE_KEY: '私钥',
   PASSWORD: '密码',
-  PASSWORD_REQUIRED: '密码不能为空',
-  PASSWORD_HINT: '请输入钱包密码',
+  PASSWORD_ERROR: '无效的密码.',
+  PASSWORD_REQUIRED: '密码不能为空.',
+  PASSWORD_HINT: '请输入钱包密码.',
 
   footer:{
     TITLE: 'NKN：新一代互联网的网络基础设施',
