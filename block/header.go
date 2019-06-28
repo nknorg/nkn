@@ -40,8 +40,8 @@ func (h *Header) SerializeUnsigned(w io.Writer) error {
 	serialization.WriteUint64(w, uint64(h.UnsignedHeader.Timestamp))
 	serialization.WriteUint32(w, h.UnsignedHeader.Height)
 	serialization.WriteUint32(w, uint32(h.UnsignedHeader.WinnerType))
-	serialization.WriteVarBytes(w, h.UnsignedHeader.Signer)
-	serialization.WriteVarBytes(w, h.UnsignedHeader.ChordId)
+	serialization.WriteVarBytes(w, h.UnsignedHeader.SignerPk)
+	serialization.WriteVarBytes(w, h.UnsignedHeader.SignerId)
 
 	return nil
 }
@@ -56,8 +56,8 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 	h.UnsignedHeader.Height, _ = serialization.ReadUint32(r)
 	winnerType, _ := serialization.ReadUint32(r)
 	h.UnsignedHeader.WinnerType = pb.WinnerType(winnerType)
-	h.UnsignedHeader.Signer, _ = serialization.ReadVarBytes(r)
-	h.UnsignedHeader.ChordId, _ = serialization.ReadVarBytes(r)
+	h.UnsignedHeader.SignerPk, _ = serialization.ReadVarBytes(r)
+	h.UnsignedHeader.SignerId, _ = serialization.ReadVarBytes(r)
 
 	return nil
 }
@@ -65,7 +65,7 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 func (h *Header) GetProgramHashes() ([]Uint160, error) {
 	programHashes := []Uint160{}
 
-	pubKey, err := crypto.NewPubKeyFromBytes(h.UnsignedHeader.Signer)
+	pubKey, err := crypto.NewPubKeyFromBytes(h.UnsignedHeader.SignerPk)
 	if err != nil {
 		return nil, fmt.Errorf("[Header], Get publick key failed: %v", err)
 	}
@@ -119,8 +119,8 @@ func (h *Header) GetInfo() ([]byte, error) {
 		RandomBeacon     string `json:"randomBeacon"`
 		WinnerHash       string `json:"winnerHash"`
 		WinnerType       string `json:"winnerType"`
-		Signer           string `json:"signer"`
-		ChordId          string `json:"chordId"`
+		SignerPk         string `json:"signerPk"`
+		SignerId         string `json:"signerId"`
 		Signature        string `json:"signature"`
 		Hash             string `json:"hash"`
 	}
@@ -136,8 +136,8 @@ func (h *Header) GetInfo() ([]byte, error) {
 		RandomBeacon:     BytesToHexString(h.UnsignedHeader.RandomBeacon),
 		WinnerHash:       BytesToHexString(h.UnsignedHeader.WinnerHash),
 		WinnerType:       h.UnsignedHeader.WinnerType.String(),
-		Signer:           BytesToHexString(h.UnsignedHeader.Signer),
-		ChordId:          BytesToHexString(h.UnsignedHeader.ChordId),
+		SignerPk:         BytesToHexString(h.UnsignedHeader.SignerPk),
+		SignerId:         BytesToHexString(h.UnsignedHeader.SignerId),
 		Signature:        BytesToHexString(h.Signature),
 		Hash:             hash.ToHexString(),
 	}

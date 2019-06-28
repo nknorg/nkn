@@ -223,7 +223,7 @@ func (consensus *Consensus) startRequestingProposal() {
 func (consensus *Consensus) receiveProposal(block *block.Block) error {
 	blockHash := block.Hash()
 
-	log.Infof("Receive block proposal %s (%d txn, %d bytes) by %x", blockHash.ToHexString(), len(block.Transactions), block.GetTxsSize(), block.Header.UnsignedHeader.Signer)
+	log.Infof("Receive block proposal %s (%d txn, %d bytes) by %x", blockHash.ToHexString(), len(block.Transactions), block.GetTxsSize(), block.Header.UnsignedHeader.SignerPk)
 
 	consensus.proposalLock.RLock()
 	defer consensus.proposalLock.RUnlock()

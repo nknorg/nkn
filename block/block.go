@@ -67,7 +67,7 @@ func (b *Block) GetTxsSize() int {
 }
 
 func (b *Block) GetSigner() ([]byte, []byte, error) {
-	return b.Header.UnsignedHeader.Signer, b.Header.UnsignedHeader.ChordId, nil
+	return b.Header.UnsignedHeader.SignerPk, b.Header.UnsignedHeader.SignerId, nil
 }
 
 func (b *Block) Trim(w io.Writer) error {
@@ -164,7 +164,7 @@ func GenesisBlockInit() (*Block, error) {
 				Timestamp:     config.GenesisTimestamp,
 				Height:        uint32(0),
 				RandomBeacon:  config.GenesisBeacon,
-				Signer:        genesisBlockProposer,
+				SignerPk:      genesisBlockProposer,
 			},
 		},
 	}
