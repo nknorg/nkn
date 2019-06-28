@@ -11,7 +11,6 @@ const (
 	SubscriptionsLimit      = 1000
 	BucketsLimit            = 1000
 	MaxSubscriptionDuration = 65535
-	MinNanoPayDuration      = 10
 )
 
 type IPayload interface {
@@ -50,7 +49,6 @@ func Unpack(payload *pb.Payload) (IPayload, error) {
 		pl = new(pb.IssueAsset)
 	default:
 		return nil, errors.New("invalid payload type.")
-
 	}
 
 	err := pl.Unmarshal(payload.Data)
@@ -111,14 +109,14 @@ func NewGenerateID(publicKey []byte, regFee common.Fixed64) IPayload {
 	}
 }
 
-func NewNanoPay(sender, recipient common.Uint160, nonce uint64, amount common.Fixed64, height, duration uint32) IPayload {
+func NewNanoPay(sender, recipient common.Uint160, id uint64, amount common.Fixed64, txnExpiration, nanoPayExpiration uint32) IPayload {
 	return &pb.NanoPay{
-		Sender:    sender.ToArray(),
-		Recipient: recipient.ToArray(),
-		Nonce:     nonce,
-		Amount:    int64(amount),
-		Height:    height,
-		Duration:  duration,
+		Sender:            sender.ToArray(),
+		Recipient:         recipient.ToArray(),
+		Id:                id,
+		Amount:            int64(amount),
+		TxnExpiration:     txnExpiration,
+		NanoPayExpiration: nanoPayExpiration,
 	}
 }
 

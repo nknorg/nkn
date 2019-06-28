@@ -51,7 +51,7 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 	}
 
 	// 3. verify txn with ledger
-	if err := chain.VerifyTransactionWithLedger(txn, nil); err != nil {
+	if err := chain.VerifyTransactionWithLedger(txn); err != nil {
 		return err
 	}
 

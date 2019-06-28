@@ -117,7 +117,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		}
 
 		addrRecipient := BytesToUint160(nanoPay.Recipient)
-		nanoPayBalance, _, err := states.GetNanoPay(pg[0], addrRecipient, nanoPay.Nonce)
+		nanoPayBalance, _, err := states.GetNanoPay(pg[0], addrRecipient, nanoPay.Id)
 		if err != nil {
 			return err
 		}
@@ -128,7 +128,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if err := states.UpdateBalance(addrRecipient, config.NKNAssetID, claimAmount, Addition); err != nil {
 			return err
 		}
-		if err := states.SetNanoPay(pg[0], addrRecipient, nanoPay.Nonce, Fixed64(nanoPay.Amount), nanoPay.Height+nanoPay.Duration); err != nil {
+		if err := states.SetNanoPay(pg[0], addrRecipient, nanoPay.Id, Fixed64(nanoPay.Amount), nanoPay.NanoPayExpiration); err != nil {
 			return err
 		}
 	case pb.ISSUE_ASSET_TYPE:
