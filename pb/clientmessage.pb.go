@@ -48,7 +48,7 @@ var ClientMessageType_value = map[string]int32{
 }
 
 func (ClientMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_clientmessage_cae7d8e84f67204e, []int{0}
+	return fileDescriptor_clientmessage_c021a6273ba926f1, []int{0}
 }
 
 type ClientMessage struct {
@@ -59,7 +59,7 @@ type ClientMessage struct {
 func (m *ClientMessage) Reset()      { *m = ClientMessage{} }
 func (*ClientMessage) ProtoMessage() {}
 func (*ClientMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_clientmessage_cae7d8e84f67204e, []int{0}
+	return fileDescriptor_clientmessage_c021a6273ba926f1, []int{0}
 }
 func (m *ClientMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -115,7 +115,7 @@ type OutboundMessage struct {
 func (m *OutboundMessage) Reset()      { *m = OutboundMessage{} }
 func (*OutboundMessage) ProtoMessage() {}
 func (*OutboundMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_clientmessage_cae7d8e84f67204e, []int{1}
+	return fileDescriptor_clientmessage_c021a6273ba926f1, []int{1}
 }
 func (m *OutboundMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -202,7 +202,7 @@ type InboundMessage struct {
 func (m *InboundMessage) Reset()      { *m = InboundMessage{} }
 func (*InboundMessage) ProtoMessage() {}
 func (*InboundMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_clientmessage_cae7d8e84f67204e, []int{2}
+	return fileDescriptor_clientmessage_c021a6273ba926f1, []int{2}
 }
 func (m *InboundMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -260,7 +260,7 @@ type Receipt struct {
 func (m *Receipt) Reset()      { *m = Receipt{} }
 func (*Receipt) ProtoMessage() {}
 func (*Receipt) Descriptor() ([]byte, []int) {
-	return fileDescriptor_clientmessage_cae7d8e84f67204e, []int{3}
+	return fileDescriptor_clientmessage_c021a6273ba926f1, []int{3}
 }
 func (m *Receipt) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1698,10 +1698,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("pb/clientmessage.proto", fileDescriptor_clientmessage_cae7d8e84f67204e)
+	proto.RegisterFile("pb/clientmessage.proto", fileDescriptor_clientmessage_c021a6273ba926f1)
 }
 
-var fileDescriptor_clientmessage_cae7d8e84f67204e = []byte{
+var fileDescriptor_clientmessage_c021a6273ba926f1 = []byte{
 	// 468 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x92, 0xc1, 0x6e, 0xd3, 0x40,
 	0x10, 0x86, 0xbd, 0x71, 0xdb, 0x28, 0xd3, 0x24, 0x4d, 0xb7, 0x05, 0x59, 0x08, 0x56, 0x56, 0x24,

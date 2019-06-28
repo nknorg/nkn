@@ -94,8 +94,8 @@ func NewGenerateIDTransaction(publicKey []byte, regFee Fixed64, nonce uint64, fe
 	}, nil
 }
 
-func NewNanoPayTransaction(sender, recipient Uint160, nonce uint64, amount Fixed64, height, duration uint32) (*Transaction, error) {
-	payload := NewNanoPay(sender, recipient, nonce, amount, height, duration)
+func NewNanoPayTransaction(sender, recipient Uint160, id uint64, amount Fixed64, txnExpiration, nanoPayExpiration uint32) (*Transaction, error) {
+	payload := NewNanoPay(sender, recipient, id, amount, txnExpiration, nanoPayExpiration)
 	pl, err := Pack(pb.NANO_PAY_TYPE, payload)
 	if err != nil {
 		return nil, err
