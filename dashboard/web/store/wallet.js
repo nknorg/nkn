@@ -1,3 +1,5 @@
+import {doubleSha256} from '~/helpers/crypto'
+
 const state = {
   currentWalletStatus: {}
 }
@@ -20,7 +22,7 @@ const actions = {
   },
   async getCurrentWalletPrivateKey({commit}, payload) {
     try {
-      this.$axios.setHeader("Authorization", payload)
+      this.$axios.setHeader("Authorization", doubleSha256(payload))
       let res = await this.$axios.get('/api/current-wallet/details')
       return res.data
     } catch (e) {

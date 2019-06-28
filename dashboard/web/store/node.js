@@ -1,3 +1,5 @@
+import {doubleSha256} from '~/helpers/crypto'
+
 const state = {
   nodeStatus: {syncState: 'DEFAULT'}
 }
@@ -21,13 +23,13 @@ const actions = {
       console.log(e)
     }
   },
-  async setBeneficiaryAddr({commit}, payload) {
+  async setBeneficiaryAddr({commit}, {password, beneficiaryAddr}) {
     try {
-      this.$axios.setHeader("Authorization", payload)
-      let res = await this.$axios.put('/api/current-wallet/beneficiary')
+      this.$axios.setHeader("Authorization", doubleSha256(password))
+      let res = await this.$axios.put('/api/node/beneficiary',{beneficiaryAddr: beneficiaryAddr})
       return res.data
     }catch(e){
-      if (e.response.status === 401 || e.response.status === 403) {
+      if (e.response.status === 400) {
         e.code = e.response.status
         throw e
       }
