@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nknorg/nkn/chain"
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/dashboard/auth"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -66,7 +67,7 @@ func (walletRouter *WalletRouter) Router(router *gin.RouterGroup) {
 			}
 
 			context.JSON(http.StatusOK, gin.H{
-				"privateKey": BytesToHexString(account.PrivateKey),
+				"privateKey": BytesToHexString(crypto.GetSeedFromPrivateKey(account.PrivateKey)),
 			})
 			return
 		} else {
