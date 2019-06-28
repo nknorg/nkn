@@ -188,15 +188,15 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		}
 
 		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
-			return errors.New("The precision of amount is incorrect.")
+			return errors.New("The precision of amount is incorrect")
 		}
 
 		if pld.Amount < 0 {
-			return errors.New("transfer amount error.")
+			return errors.New("transfer amount error")
 		}
 
-		if pld.Duration < transaction.MinNanoPayDuration {
-			return errors.New(fmt.Sprintf("duration can't be lower than %d", transaction.MinNanoPayDuration))
+		if pld.TxnExpiration > pld.NanoPayExpiration {
+			return errors.New("txn expiration should be no later than nano pay expiration")
 		}
 
 	case pb.ISSUE_ASSET_TYPE:
@@ -235,7 +235,7 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 }
 
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
-func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Header) error {
+func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 	if DefaultLedger.Store.IsDoubleSpend(txn) {
 		return errors.New("[VerifyTransactionWithLedger] IsDoubleSpend check faild")
 	}
@@ -356,17 +356,21 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, header *block.Hea
 	case pb.NANO_PAY_TYPE:
 		pld := payload.(*pb.NanoPay)
 
-		channelBalance, expiresAt, err := DefaultLedger.Store.GetNanoPay(
+		channelBalance, _, err := DefaultLedger.Store.GetNanoPay(
 			BytesToUint160(pld.Sender),
 			BytesToUint160(pld.Recipient),
-			pld.Nonce,
+			pld.Id,
 		)
 		if err != nil {
 			return err
 		}
 
-		if header != nil && expiresAt > 0 && expiresAt < header.UnsignedHeader.Height {
-			return errors.New("nano pay expired")
+		height := DefaultLedger.Store.GetHeight()
+		if height > pld.TxnExpiration {
+			return errors.New("nano pay txn has expired")
+		}
+		if height > pld.NanoPayExpiration {
+			return errors.New("nano pay has expired")
 		}
 
 		balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Sender))
@@ -579,10 +583,15 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		}()
 	case pb.NANO_PAY_TYPE:
 		npPayload := payload.(*pb.NanoPay)
-		if header != nil && header.UnsignedHeader.Height > npPayload.Height+npPayload.Duration {
-			return errors.New("[VerifyTransactionWithBlock], nano pay expired")
+		if header != nil {
+			if header.UnsignedHeader.Height > npPayload.TxnExpiration {
+				return errors.New("[VerifyTransactionWithBlock], nano pay txn has expired")
+			}
+			if header.UnsignedHeader.Height > npPayload.NanoPayExpiration {
+				return errors.New("[VerifyTransactionWithBlock], nano pay has expired")
+			}
 		}
-		key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Nonce}
+		key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Id}
 		if _, ok := bvs.nanoPays[key]; ok {
 			return errors.New("[VerifyTransactionWithBlock], duplicate payment channel exist in block")
 		}
@@ -590,7 +599,7 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		channelBalance, _, err := DefaultLedger.Store.GetNanoPay(
 			BytesToUint160(npPayload.Sender),
 			BytesToUint160(npPayload.Recipient),
-			npPayload.Nonce,
+			npPayload.Id,
 		)
 		if err != nil {
 			return err
@@ -683,7 +692,7 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			delete(bvs.generateIDs, publicKey)
 		case pb.NANO_PAY_TYPE:
 			npPayload := payload.(*pb.NanoPay)
-			key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Nonce}
+			key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Id}
 			delete(bvs.nanoPays, key)
 		case pb.ISSUE_ASSET_TYPE:
 		}
