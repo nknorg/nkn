@@ -16,7 +16,6 @@ var (
 	localNode *node.LocalNode
 	wallet    vault.Wallet
 	isInit    = false
-	app       = gin.New()
 )
 
 func Init(ln *node.LocalNode, w vault.Wallet) {
@@ -28,7 +27,7 @@ func Init(ln *node.LocalNode, w vault.Wallet) {
 func Start() {
 	// build release settings
 	gin.SetMode(gin.ReleaseMode)
-
+	app := gin.New()
 	app.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		log.WebLog.Infof("%s - [%s] \"%s %s %s %d %s\" %s \"%s\"",
 			param.ClientIP,

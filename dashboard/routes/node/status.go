@@ -9,10 +9,7 @@ import (
 	"net/http"
 )
 
-type NodeRouter struct {
-}
-
-func (nodeRouter *NodeRouter) Router(router *gin.RouterGroup) {
+func StatusRouter(router *gin.RouterGroup) {
 	router.GET("/node/status", func(context *gin.Context) {
 		var out map[string]interface{}
 
