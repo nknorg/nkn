@@ -149,11 +149,20 @@ func (b *Block) Verify() error {
 	return nil
 }
 
+func ComputeID(preBlockHash, txnHash Uint256, randomBeacon []byte) []byte {
+	data := append(preBlockHash[:], txnHash[:]...)
+	data = append(data, randomBeacon...)
+	id := crypto.Sha256(data)
+	return id
+}
+
 func GenesisBlockInit() (*Block, error) {
-	genesisBlockProposer, err := HexStringToBytes(config.Parameters.GenesisBlockProposer)
+	genesisSignerPk, err := HexStringToBytes(config.Parameters.GenesisBlockProposer)
 	if err != nil {
 		return nil, fmt.Errorf("parse GenesisBlockProposer error: %v", err)
 	}
+
+	genesisSignerID := ComputeID(EmptyUint256, EmptyUint256, config.GenesisBeacon[:config.RandomBeaconUniqueLength])
 
 	// block header
 	genesisBlockHeader := &Header{
@@ -164,7 +173,8 @@ func GenesisBlockInit() (*Block, error) {
 				Timestamp:     config.GenesisTimestamp,
 				Height:        uint32(0),
 				RandomBeacon:  config.GenesisBeacon,
-				SignerPk:      genesisBlockProposer,
+				SignerPk:      genesisSignerPk,
+				SignerId:      genesisSignerID,
 			},
 		},
 	}
