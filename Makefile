@@ -12,15 +12,16 @@ IDENTIFIER=$(GOOS)-$(GOARCH)
 help:  ## Show available options with this Makefile
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -v grep | awk 'BEGIN { FS = ":.*?##" }; { printf "%-15s  %s\n", $$1,$$2 }'
 
-web:
+web: dashboard
 	@cd dashboard/web && yarn build && cp -a ./dist ../../web
 
+.PHONY: yarn
 yarn:
 	@rm -rf web
 	@cd dashboard/web && yarn build && cp -a ./dist ../../web
 
 .PHONY: build
-build: 
+build: web
 	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd nknd.go
 	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc nknc.go
 
@@ -31,7 +32,7 @@ crossbuild: web
 	@cp -a dashboard/web/dist build/$(IDENTIFIER)/web
 
 .PHONY: all
-all:  ## Build binaries for all available architectures
+all: ## Build binaries for all available architectures
 	@rm -rf web
 	make crossbuild GOOS=linux GOARCH=arm
 	make crossbuild GOOS=linux GOARCH=386
@@ -45,7 +46,7 @@ all:  ## Build binaries for all available architectures
 	make crossbuild GOOS=windows GOARCH=386
 
 .PHONY: build_local
-build_local: ## Build local binaries without providing specific GOOS/GOARCH
+build_local: web ## Build local binaries without providing specific GOOS/GOARCH
 	$(GC) $(BUILD_NKND_PARAM) nknd.go
 	$(GC) $(BUILD_NKNC_PARAM) nknc.go
 	## the following parts will be removed after the transition period from testnet to mainnet
@@ -54,7 +55,7 @@ build_local: ## Build local binaries without providing specific GOOS/GOARCH
 	rm -f Chain/*.ldb
 
 .PHONY: build_local_with_proxy
-build_local_with_proxy:  ## Build local binaries with go proxy
+build_local_with_proxy: web ## Build local binaries with go proxy
 	$(USE_PROXY) $(GC) $(BUILD_NKND_PARAM) nknd.go
 	$(USE_PROXY) $(GC) $(BUILD_NKNC_PARAM) nknc.go
 
