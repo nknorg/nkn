@@ -126,7 +126,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 			return fmt.Errorf("transaction block check failed: %v", err)
 		}
 		bvs.Commit()
-		if err := VerifyTransactionWithLedger(txn, block.Header); err != nil {
+		if err := VerifyTransactionWithLedger(txn); err != nil {
 			return fmt.Errorf("transaction history check failed: %v", err)
 		}
 
