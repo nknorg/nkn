@@ -297,12 +297,12 @@ func SignerCheck(header *block.Header) error {
 		return fmt.Errorf("get next block signer error: %v", err)
 	}
 
-	if !bytes.Equal(header.UnsignedHeader.Signer, publicKey) {
-		return fmt.Errorf("invalid block signer public key %x, should be %x", header.UnsignedHeader.Signer, publicKey)
+	if !bytes.Equal(header.UnsignedHeader.SignerPk, publicKey) {
+		return fmt.Errorf("invalid block signer public key %x, should be %x", header.UnsignedHeader.SignerPk, publicKey)
 	}
 
-	if len(chordID) > 0 && !bytes.Equal(header.UnsignedHeader.ChordId, chordID) {
-		return fmt.Errorf("invalid block signer chord ID %x, should be %x", header.UnsignedHeader.ChordId, chordID)
+	if len(chordID) > 0 && !bytes.Equal(header.UnsignedHeader.SignerId, chordID) {
+		return fmt.Errorf("invalid block signer chord ID %x, should be %x", header.UnsignedHeader.SignerId, chordID)
 	}
 
 	id, err := DefaultLedger.Store.GetID(publicKey)
@@ -312,8 +312,8 @@ func SignerCheck(header *block.Header) error {
 	if len(id) == 0 {
 		return fmt.Errorf("ID of signer %x is empty", publicKey)
 	}
-	if !bytes.Equal(header.UnsignedHeader.ChordId, id) {
-		return fmt.Errorf("ID of signer %x should be %x, got %x", publicKey, id, header.UnsignedHeader.ChordId)
+	if !bytes.Equal(header.UnsignedHeader.SignerId, id) {
+		return fmt.Errorf("ID of signer %x should be %x, got %x", publicKey, id, header.UnsignedHeader.SignerId)
 	}
 
 	rawPubKey, err := crypto.DecodePoint(publicKey)
@@ -372,7 +372,7 @@ func HeaderCheck(header *block.Header) error {
 		return fmt.Errorf("invalid header RandomBeacon length %d, expecting %d", len(header.UnsignedHeader.RandomBeacon), config.RandomBeaconLength)
 	}
 
-	rawPubKey, err := crypto.DecodePoint(header.UnsignedHeader.Signer)
+	rawPubKey, err := crypto.DecodePoint(header.UnsignedHeader.SignerPk)
 	if err != nil {
 		return err
 	}
