@@ -1,15 +1,22 @@
 import Menu from "./menu"
 import Node from "./node"
+import Settings from "./settings"
 
 export default {
   language: '简体中文',
   menu: Menu,
   node: Node,
+  settings: Settings,
 
   NEXT: '下一步',
   CLOSE: '关闭',
   CANCEL: '取消',
+  RESTART: '重启',
+  START: '开始',
+  STOP: '停止',
+  SUBMIT: '提交',
 
+  BENEFICIARY: '受益人',
   BALANCE: '余额',
   WALLET_ADDRESS: '钱包地址',
   PUBLIC_KEY: '公钥',
