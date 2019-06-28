@@ -13,10 +13,13 @@
         </v-flex>
         <v-flex xs12 md6>
           <v-subheader class="pa-0">{{$t('settings.BENEFICIARY_TITLE')}}</v-subheader>
-          <v-text-field :label="$t('BENEFICIARY')" :value="beneficiaryAddr" box readonly persistent-hint
+          <material-notification class="mb-3" color="warning" v-model="beneficiaryWaringAlert">
+            {{$t('settings.BENEFICIARY_WARING', { beneficiaryAddr: beneficiaryAddr})}}
+          </material-notification>
+          <v-text-field :label="$t('BENEFICIARY')" :value="nodeStatus.beneficiaryAddr" box readonly persistent-hint
                         :hint="$t('settings.BENEFICIARY_HINT')">
             <template v-slot:append>
-              <v-btn icon small v-clipboard:copy="beneficiaryAddr">
+              <v-btn icon small v-clipboard:copy="nodeStatus.beneficiaryAddr">
                 <v-icon color="primary" class="far fa-copy" small></v-icon>
               </v-btn>
               <v-btn icon small @click="dialog = true">
@@ -25,6 +28,7 @@
             </template>
           </v-text-field>
         </v-flex>
+
       </v-layout>
     </v-card-text>
     <div class="divider"></div>
@@ -32,32 +36,42 @@
 
 
     </v-card-actions>
-    <BeneficiaryAddrDialog v-model="dialog"></BeneficiaryAddrDialog>
+    <BeneficiaryAddrDialog v-model="dialog" :on-success="onDialogSuccess"></BeneficiaryAddrDialog>
   </v-card>
 </template>
 
 <script>
   import BeneficiaryAddrDialog from '../components/dialog/BeneficiaryAddr.vue'
   import NodeRunStatus from '~/components/status/NodeRunStatus.vue'
+  import MaterialNotification from '~/components/material/Notification'
   import {mapState} from 'vuex'
 
   export default {
     name: "settings",
     components: {
       NodeRunStatus,
-      BeneficiaryAddrDialog
+      BeneficiaryAddrDialog,
+      MaterialNotification
     },
     computed: mapState({
       nodeStatus: state => state.node.nodeStatus,
     }),
-    data: () => ({
-      dialog: false,
-      isEditWallet: false,
-      restarting: false,
-      wallets: null,
-      beneficiaryAddr: 'sdfsdfs '
-    }),
-    methods: {}
+    data() {
+      return {
+        dialog: false,
+        beneficiaryWaringAlert: false,
+        isEditWallet: false,
+        restarting: false,
+        wallets: null,
+        beneficiaryAddr: ''
+      }
+    },
+    methods: {
+      onDialogSuccess(data) {
+        this.beneficiaryAddr = data.beneficiaryAddr
+        this.beneficiaryWaringAlert = true
+      }
+    }
   }
 </script>
 
