@@ -83,8 +83,7 @@
   import NodeRunStatus from '~/components/status/NodeRunStatus.vue'
   import PrivateKeyDialog from '~/components/dialog/PrivateKey.vue'
   import ClipboardText from '~/components/widget/ClipboardText.vue'
-  import {startLoopTask} from '~/helpers/task'
-  import {mapState, mapActions} from 'vuex'
+  import {mapState} from 'vuex'
 
   export default {
     name: "nodeStatus",
@@ -100,15 +99,10 @@
       nodeStatus: state => state.node.nodeStatus,
       currentWalletStatus: state => state.wallet.currentWalletStatus
     }),
-    beforeMount() {
-      startLoopTask(this.getCurrentWalletStatus, 1000)
-    },
     created() {
 
     },
     methods: {
-      ...mapActions('node', ['getNodeStatus']),
-      ...mapActions('wallet', ['getCurrentWalletStatus']),
       remove(item) {
         const index = this.wallets.indexOf(item.name)
         if (index >= 0) this.wallets.splice(index, 1)
