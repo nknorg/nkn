@@ -1,14 +1,15 @@
 const state = {
-  nodeStatus: {syncState:'DEFAULT'}
+  nodeStatus: {syncState: 'DEFAULT'}
 }
 
-const getters = {
-
-}
+const getters = {}
 
 const mutations = {
   setNodeStatus(state, node) {
     state.nodeStatus = node
+  },
+  setBeneficiaryAddr(state, addr) {
+    state.nodeStatus.beneficiaryAddr = addr
   }
 }
 const actions = {
@@ -19,7 +20,19 @@ const actions = {
     } catch (e) {
       console.log(e)
     }
-
+  },
+  async setBeneficiaryAddr({commit}, payload) {
+    try {
+      this.$axios.setHeader("Authorization", payload)
+      let res = await this.$axios.put('/api/current-wallet/beneficiary')
+      return res.data
+    }catch(e){
+      if (e.response.status === 401 || e.response.status === 403) {
+        e.code = e.response.status
+        throw e
+      }
+      return undefined
+    }
   }
 }
 export default {
