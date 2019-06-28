@@ -7,11 +7,10 @@ import (
 )
 
 func Routes(app *gin.Engine) gin.HandlerFunc {
-	nodeRouter := &node.NodeRouter{}
-	nodeRouter.Router(app.Group("/api"))
+	node.StatusRouter(app.Group("/api"))
 
-	walletRouter := &wallet.WalletRouter{}
-	walletRouter.Router(app.Group("/api"))
+	wallet.StatusRouter(app.Group("/api"))
+	wallet.BeneficiaryRouter(app.Group("/api"))
 
 	return func(c *gin.Context) {
 

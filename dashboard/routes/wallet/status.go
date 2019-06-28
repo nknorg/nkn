@@ -12,10 +12,7 @@ import (
 	"net/http"
 )
 
-type WalletRouter struct {
-}
-
-func (walletRouter *WalletRouter) Router(router *gin.RouterGroup) {
+func StatusRouter(router *gin.RouterGroup) {
 	router.GET("/current-wallet/status", func(context *gin.Context) {
 		wallet, exists := context.Get("wallet")
 
