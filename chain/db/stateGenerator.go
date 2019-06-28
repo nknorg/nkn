@@ -23,12 +23,13 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 	case pb.COINBASE_TYPE:
 		coinbase := pl.(*pb.Coinbase)
 		if !genesis {
-			donationAmount, err := cs.GetDonation()
+			var donationAmount Fixed64
+			donationAmount, err = cs.GetDonation()
 			if err != nil {
 				return err
 			}
 
-			if err := states.UpdateBalance(BytesToUint160(coinbase.Sender), config.NKNAssetID, donationAmount, Subtraction); err != nil {
+			if err = states.UpdateBalance(BytesToUint160(coinbase.Sender), config.NKNAssetID, donationAmount, Subtraction); err != nil {
 				return err
 			}
 
@@ -80,7 +81,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 			return err
 		}
 
-		if err := states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
+		if err = states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
 			return err
 		}
 		states.IncrNonce(pg[0])
@@ -97,7 +98,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 			return err
 		}
 
-		if err := states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(genID.RegistrationFee)+Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
+		if err = states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(genID.RegistrationFee)+Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
 			return err
 		}
 		states.IncrNonce(pg[0])
@@ -179,23 +180,24 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 	//process previous block
 	height := b.Header.UnsignedHeader.Height
 	if height == 0 {
-		id := ComputeID(EmptyUint256, EmptyUint256, b.Header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength])
-
-		pk, err := crypto.NewPubKeyFromBytes(b.Header.UnsignedHeader.SignerPk)
+		var pk *crypto.PubKey
+		pk, err = crypto.NewPubKeyFromBytes(b.Header.UnsignedHeader.SignerPk)
 		if err != nil {
 			return nil, EmptyUint256, err
 		}
 
-		programHash, err := program.CreateProgramHash(pk)
+		var programHash Uint160
+		programHash, err = program.CreateProgramHash(pk)
 		if err != nil {
 			return nil, EmptyUint256, err
 		}
 
-		if err := states.UpdateID(programHash, id); err != nil {
+		if err = states.UpdateID(programHash, b.Header.UnsignedHeader.SignerId); err != nil {
 			return nil, EmptyUint256, err
 		}
 
-		issueAddress, err := ToScriptHash(config.InitialIssueAddress)
+		var issueAddress Uint160
+		issueAddress, err = ToScriptHash(config.InitialIssueAddress)
 		if err != nil {
 			return nil, EmptyUint256, fmt.Errorf("parse InitialIssueAddress error: %v", err)
 		}
@@ -205,13 +207,14 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 			return nil, EmptyUint256, err
 		}
 
-		if err := states.UpdateBalance(issueAddress, config.NKNAssetID, config.InitialIssueAmount, Addition); err != nil {
+		if err = states.UpdateBalance(issueAddress, config.NKNAssetID, config.InitialIssueAmount, Addition); err != nil {
 			return nil, EmptyUint256, err
 		}
 	}
 
 	if height > config.GenerateIDBlockDelay {
-		prevBlock, err := cs.GetBlockByHeight(height - config.GenerateIDBlockDelay)
+		var prevBlock *block.Block
+		prevBlock, err = cs.GetBlockByHeight(height - config.GenerateIDBlockDelay)
 		if err != nil {
 			return nil, EmptyUint256, err
 		}
@@ -220,14 +223,15 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 
 		for _, txn := range prevBlock.Transactions {
 			if txn.UnsignedTx.Payload.Type == pb.GENERATE_ID_TYPE {
-				id := ComputeID(preBlockHash, txn.Hash(), b.Header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength])
+				id := block.ComputeID(preBlockHash, txn.Hash(), b.Header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength])
 
-				pg, err := txn.GetProgramHashes()
+				var pg []Uint160
+				pg, err = txn.GetProgramHashes()
 				if err != nil {
 					return nil, EmptyUint256, err
 				}
 
-				if err := states.UpdateID(pg[0], id); err != nil {
+				if err = states.UpdateID(pg[0], id); err != nil {
 					return nil, EmptyUint256, err
 				}
 
@@ -241,26 +245,26 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 	}
 
 	if height == 0 { //genesisBlock
-		if err := cs.spendTransaction(states, b.Transactions[0], totalFee, true, height); err != nil {
+		if err = cs.spendTransaction(states, b.Transactions[0], totalFee, true, height); err != nil {
 			return nil, EmptyUint256, err
 		}
 		for _, txn := range b.Transactions[1:] {
-			if err := cs.spendTransaction(states, txn, 0, false, height); err != nil {
+			if err = cs.spendTransaction(states, txn, 0, false, height); err != nil {
 				return nil, EmptyUint256, err
 			}
 		}
 	} else {
 		for _, txn := range b.Transactions {
-			if err := cs.spendTransaction(states, txn, totalFee, false, height); err != nil {
+			if err = cs.spendTransaction(states, txn, totalFee, false, height); err != nil {
 				return nil, EmptyUint256, err
 			}
 		}
 
-		if err := states.CleanupNanoPay(b.Header.UnsignedHeader.Height); err != nil {
+		if err = states.CleanupNanoPay(b.Header.UnsignedHeader.Height); err != nil {
 			return nil, EmptyUint256, err
 		}
 
-		if err := states.CleanupPubSub(b.Header.UnsignedHeader.Height); err != nil {
+		if err = states.CleanupPubSub(b.Header.UnsignedHeader.Height); err != nil {
 			return nil, EmptyUint256, err
 		}
 	}
@@ -276,11 +280,4 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 	}
 
 	return states, root, nil
-}
-
-func ComputeID(preBlockHash, txnHash Uint256, randomBeacon []byte) []byte {
-	data := append(preBlockHash[:], txnHash[:]...)
-	data = append(data, randomBeacon...)
-	id := crypto.Sha256(data)
-	return id
 }
