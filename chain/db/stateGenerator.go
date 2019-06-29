@@ -210,6 +210,11 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 		if err = states.UpdateBalance(issueAddress, config.NKNAssetID, config.InitialIssueAmount, Addition); err != nil {
 			return nil, EmptyUint256, err
 		}
+
+		err = states.SetAsset(config.GASAssetID, config.GASAssetName, config.GASAssetSymbol, 0, config.GASAssetPrecision, issueAddress)
+		if err != nil {
+			return nil, EmptyUint256, err
+		}
 	}
 
 	if height > config.GenerateIDBlockDelay {
