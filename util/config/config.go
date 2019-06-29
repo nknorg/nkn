@@ -34,13 +34,13 @@ const (
 	MaxRollbackBlocks            = 1
 	SigChainPropogationTime      = 1
 	HeaderVersion                = 1
-	DBVersion                    = 0x10
-	InitialIssueAddress          = "NKNQ83xc8zQNEE6WBDKm7tZrLwoMwAq4c4jo"
+	DBVersion                    = 0x01
+	InitialIssueAddress          = "NKNFCrUMFPkSeDRMG2ME21hD6wBCA2poc347"
 	InitialIssueAmount           = 700000000 * common.StorageFactor
 	TotalMiningRewards           = 300000000 * common.StorageFactor
 	TotalRewardDuration          = uint32(25)
 	InitialReward                = common.Fixed64(18000000 * common.StorageFactor)
-	RewardAdjustInterval         = 2 * 60 * 60 / int(ConsensusDuration/time.Second) //TODO reduce interval for testing
+	RewardAdjustInterval         = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
 	ReductionAmount              = common.Fixed64(500000 * common.StorageFactor)
 	DonationAddress              = "NKNaaaaaaaaaaaaaaaaaaaaaaaaaaaeJ6gxa"
 	DonationAdjustDividendFactor = 1
@@ -49,9 +49,9 @@ const (
 	GenerateIDBlockDelay         = 8
 	RandomBeaconUniqueLength     = vrf.Size
 	RandomBeaconLength           = vrf.Size + vrf.ProofSize
-	ProtocolVersion              = 81
-	MinCompatibleProtocolVersion = 81
-	MaxCompatibleProtocolVersion = 85
+	ProtocolVersion              = 1
+	MinCompatibleProtocolVersion = 1
+	MaxCompatibleProtocolVersion = 9
 	DefaultTxPoolCap             = 32
 	ShortHashSize                = uint32(8)
 	MaxAssetPrecision            = uint32(8)
@@ -65,7 +65,7 @@ const (
 
 var (
 	ShortHashSalt    = util.RandomBytes(32)
-	GenesisTimestamp = time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix()
+	GenesisTimestamp = time.Date(2019, time.June, 28, 13, 10, 13, 0, time.UTC).Unix()
 	GenesisBeacon    = make([]byte, RandomBeaconLength)
 	NKNAssetID       = common.Uint256{
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -101,16 +101,16 @@ var (
 		NAT:                       true,
 		Mining:                    true,
 		MiningDebug:               true,
-		LogLevel:                  1,
+		LogLevel:                  3,
 		MaxLogFileSize:            20,
-		SyncBatchWindowSize:       1024,
-		SyncBlockHeadersBatchSize: 256,
+		SyncBatchWindowSize:       128,
+		SyncBlockHeadersBatchSize: 128,
 		SyncBlocksBatchSize:       8,
 		RPCReadTimeout:            5,
 		RPCWriteTimeout:           10,
 		KeepAliveTimeout:          15,
 		NATPortMappingTimeout:     365 * 86400,
-		NumTxnPerBlock:            MaxNumTxnPerBlock,
+		NumTxnPerBlock:            256,
 		TxPoolCap:                 DefaultTxPoolCap,
 		RegisterIDFee:             0,
 		LogPath:                   "Log",
