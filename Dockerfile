@@ -10,7 +10,7 @@ FROM ${base}alpine:latest
 RUN apk --no-cache add ca-certificates
 COPY --from=builder /nkn/nknd /nkn/
 COPY --from=builder /nkn/nknc /nkn/
-COPY --from=builder /nkn/config.testnet.json /nkn/
+COPY --from=builder /nkn/config.mainnet.json /nkn/
 RUN ln -s /nkn/nknd /nkn/nknc /usr/local/bin/
 WORKDIR /nkn/data
 CMD nknd
