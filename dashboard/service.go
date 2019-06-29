@@ -77,7 +77,7 @@ func Start() {
 
 	})
 
-	app.StaticFS("/web", http.Dir("dashboard/web/dist"))
+	app.StaticFS("/web", http.Dir("web"))
 
 	// error
 	app.Use(func(context *gin.Context) {
