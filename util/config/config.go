@@ -65,7 +65,7 @@ const (
 
 var (
 	ShortHashSalt    = util.RandomBytes(32)
-	GenesisTimestamp = time.Date(2019, time.June, 28, 13, 10, 13, 0, time.UTC).Unix()
+	GenesisTimestamp = time.Date(2019, time.June, 29, 13, 10, 13, 0, time.UTC).Unix()
 	GenesisBeacon    = make([]byte, RandomBeaconLength)
 	NKNAssetID       = common.Uint256{
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
