@@ -39,6 +39,10 @@ all:  ## Build binaries for all available architectures
 build_local:  ## Build local binaries without providing specific GOOS/GOARCH
 	$(GC) $(BUILD_NKND_PARAM) nknd.go
 	$(GC) $(BUILD_NKNC_PARAM) nknc.go
+	## the following parts will be removed after the transition period from testnet to mainnet
+	[ -s "wallet.dat" ] && [ -s "wallet.pswd" ] && ! [ -s "wallet.json" ] && cat wallet.pswd wallet.pswd | ./nknc wallet -c || :
+	grep -qE "022d52b07dff29ae6ee22295da2dc315fef1e2337de7ab6e51539d379aa35b9503|0149c42944eea91f094c16538eff0449d4d1e236f31c8c706b2e40e98402984c" config.json && mv config.json config.json.bk && cp config.mainnet.json config.json
+	rm -f Chain/*.ldb
 
 .PHONY: build_local_with_proxy
 build_local_with_proxy:  ## Build local binaries with go proxy
