@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	TestNetVersionNum = 4
+	NetVersionNum = 1 // This is temporary and will be removed soon after mainnet is stabilized
 )
 
 var (
@@ -276,13 +276,13 @@ func nknMain(c *cli.Context) error {
 	return nil
 }
 
-type testNetVer struct {
+type NetVer struct {
 	Ver int `json:"version"`
 }
 
 func GetRemoteVersionNum() (int, error) {
 	var myClient = &http.Client{Timeout: 10 * time.Second}
-	r, err := myClient.Get("http://testnet.nkn.org/devnet.runtime.version")
+	r, err := myClient.Get("https://nkn.org/mainnet.runtime.version")
 	if err != nil {
 		return 0, err
 	}
@@ -292,13 +292,14 @@ func GetRemoteVersionNum() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	res := testNetVer{}
+	res := NetVer{}
 	json.Unmarshal(body, &res)
 
 	return res.Ver, err
 }
 
-func TestNetVersion(timer *time.Timer) {
+// This is temporary and will be removed soon after mainnet is stabilized
+func netVersion(timer *time.Timer) {
 	for {
 		select {
 		case <-timer.C:
@@ -308,7 +309,7 @@ func TestNetVersion(timer *time.Timer) {
 				timer.Reset(30 * time.Minute)
 				break
 			}
-			if verNum > TestNetVersionNum {
+			if verNum > NetVersionNum {
 				log.Error("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
 				panic("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
 			}
@@ -319,9 +320,9 @@ func TestNetVersion(timer *time.Timer) {
 }
 
 func main() {
-	// Detect the remote nknd version, only used for testnet for debugging purposes
+	// This is temporary and will be removed soon after mainnet is stabilized
 	timer := time.NewTimer(1 * time.Second)
-	go TestNetVersion(timer)
+	go netVersion(timer)
 
 	app := cli.NewApp()
 	app.Name = "nknd"
