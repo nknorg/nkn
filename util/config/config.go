@@ -54,17 +54,31 @@ const (
 	MaxCompatibleProtocolVersion = 85
 	DefaultTxPoolCap             = 32
 	ShortHashSize                = uint32(8)
-	NKNAssetSymbol               = "nkn"
-	NKNAssetName                 = "nkn"
-	NKNAssetPrecision            = uint32(8)
 	MaxAssetPrecision            = uint32(8)
+	NKNAssetName                 = "NKN"
+	NKNAssetSymbol               = "nkn"
+	NKNAssetPrecision            = uint32(8)
+	GASAssetName                 = "New Network Coin"
+	GASAssetSymbol               = "nnc"
+	GASAssetPrecision            = uint32(8)
 )
 
 var (
 	ShortHashSalt    = util.RandomBytes(32)
 	GenesisTimestamp = time.Date(2018, time.January, 0, 0, 0, 0, 0, time.UTC).Unix()
 	GenesisBeacon    = make([]byte, RandomBeaconLength)
-	NKNAssetID       = common.EmptyUint256
+	NKNAssetID       = common.Uint256{
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	}
+	GASAssetID = common.Uint256{
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	}
 )
 
 var (
