@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"os"
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
@@ -15,7 +14,6 @@ import (
 	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
 )
 
@@ -134,8 +132,7 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 
 	privateKey := crypto.GetPrivateKeyFromSeed(seed)
 	if err = crypto.CheckPrivateKey(privateKey); err != nil {
-		log.Error("open wallet error", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	account, err := NewAccountWithPrivatekey(privateKey)
@@ -158,16 +155,16 @@ func OpenWallet(path string, password []byte) (*WalletImpl, error) {
 	}, nil
 }
 
-func RecoverWallet(path string, password []byte, privateKeyHex string) (*WalletImpl, error) {
+func RecoverWallet(path string, password []byte, seedHex string) (*WalletImpl, error) {
 	wallet, err := NewWallet(path, password, false)
 	if err != nil {
 		return nil, errors.New("create new wallet error")
 	}
-	privateKey, err := HexStringToBytes(privateKeyHex)
+	seed, err := HexStringToBytes(seedHex)
 	if err != nil {
 		return nil, err
 	}
-	err = wallet.CreateAccount(privateKey)
+	err = wallet.CreateAccount(seed)
 	if err != nil {
 		return nil, err
 	}
@@ -175,19 +172,29 @@ func RecoverWallet(path string, password []byte, privateKeyHex string) (*WalletI
 	return wallet, nil
 }
 
-func (w *WalletImpl) CreateAccount(privateKey []byte) error {
+func (w *WalletImpl) CreateAccount(seed []byte) error {
 	var account *Account
 	var err error
-	if privateKey == nil {
+	if seed == nil {
 		account, err = NewAccount()
+		if err != nil {
+			return err
+		}
+		seed = crypto.GetSeedFromPrivateKey(account.PrivateKey)
 	} else {
+		if err = crypto.CheckSeed(seed); err != nil {
+			return err
+		}
+		privateKey := crypto.GetPrivateKeyFromSeed(seed)
+		if err = crypto.CheckPrivateKey(privateKey); err != nil {
+			return err
+		}
 		account, err = NewAccountWithPrivatekey(privateKey)
-	}
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
-	seed := crypto.GetSeedFromPrivateKey(account.PrivateKey)
 	encryptedSeed, err := crypto.AesEncrypt(seed, w.masterKey, w.iv)
 	if err != nil {
 		return err

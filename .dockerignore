@@ -12,4 +12,3 @@ nknc
 build/
 wallet.json
 config.json
-Dockerfile

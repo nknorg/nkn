@@ -7,6 +7,7 @@ import (
 	"github.com/nknorg/nkn/api/httpjson/client"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
@@ -23,7 +24,7 @@ func showAccountInfo(wallet vault.Wallet, verbose bool) {
 	publicKey := account.PublicKey.EncodePoint()
 	fmt.Printf(format, address, BytesToHexString(publicKey))
 	if verbose {
-		fmt.Printf("\nPrivate Key\n-----------\n%s\n", BytesToHexString(account.PrivateKey))
+		fmt.Printf("\nSecret Seed\n-----------\n%s\n", BytesToHexString(crypto.GetSeedFromPrivateKey(account.PrivateKey)))
 	}
 }
 

@@ -115,7 +115,15 @@ func (e *PubKey) Deserialize(r io.Reader) error {
 
 func CheckPrivateKey(privkey []byte) error {
 	if len(privkey) != ed25519.PrivateKeySize {
-		return fmt.Errorf("the length of Ed25519 privatekey is not %d", ed25519.PrivateKeySize)
+		return fmt.Errorf("invalid private key size %d, expecting %d", len(privkey), ed25519.PrivateKeySize)
+	}
+
+	return nil
+}
+
+func CheckSeed(seed []byte) error {
+	if len(seed) != ed25519.SeedSize {
+		return fmt.Errorf("invalid seed size %d, expecting %d", len(seed), ed25519.SeedSize)
 	}
 
 	return nil
