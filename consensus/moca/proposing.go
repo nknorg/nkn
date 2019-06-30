@@ -30,7 +30,6 @@ func (consensus *Consensus) startProposing() {
 
 				blockHash := block.Header.Hash()
 				log.Infof("Propose block %s at height %d", blockHash.ToHexString(), expectedHeight)
-				consensus.localNode.IncrementProposalSubmitted()
 
 				err = consensus.receiveProposal(block)
 				if err != nil {

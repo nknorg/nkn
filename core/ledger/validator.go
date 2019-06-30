@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	TimestampTolerance = config.ConsensusDuration
+	TimestampTolerance = 40 * time.Second
 )
 
 type VBlock struct {
@@ -241,19 +241,14 @@ func HeaderCheck(header *Header) error {
 	return nil
 }
 
-func TimestampCheck(header *Header) error {
-	prevHeader, err := DefaultLedger.Store.GetHeaderByHeight(header.Height - 1)
-	if err != nil {
-		return err
-	}
-
-	t := time.Unix(header.Timestamp, 0) // Handle negative
+func TimestampCheck(timestamp int64) error {
+	t := time.Unix(timestamp, 0) // Handle negative
 	now := time.Now()
-	earliest := time.Unix(prevHeader.Timestamp, 0)
+	earliest := now.Add(-TimestampTolerance)
 	latest := now.Add(TimestampTolerance)
 
-	if t.Before(earliest) || t.Equal(earliest) || t.After(latest) {
-		return fmt.Errorf("timestamp %d exceed my tolerance [%d, %d]", t.Unix(), earliest.Unix(), latest.Unix())
+	if t.Before(earliest) || t.After(latest) {
+		return fmt.Errorf("timestamp %d exceed my tolerance [%d, %d]", timestamp, earliest.Unix(), latest.Unix())
 	}
 
 	return nil

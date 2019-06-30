@@ -15,6 +15,7 @@ import (
 	gonat "github.com/nknorg/go-nat"
 	"github.com/nknorg/go-portscanner"
 	"github.com/nknorg/nnet/transport"
+	"github.com/rdegges/go-ipify"
 )
 
 const (
@@ -28,7 +29,7 @@ const (
 	DefaultMiningReward = 15
 	MinNumSuccessors    = 8
 	NodeIDBytes         = 32
-	MaxRollbackBlocks   = 50
+	MaxRollbackBlocks   = 1
 )
 
 var (
@@ -43,7 +44,6 @@ var (
 		HttpWsPort:   30002,
 		HttpJsonPort: 30003,
 		NAT:          true,
-		MiningDebug:  true,
 		LogLevel:     1,
 		SeedList: []string{
 			"http://127.0.0.1:30003",
@@ -82,7 +82,6 @@ type Configuration struct {
 	Hostname                  string        `json:"Hostname"`
 	Transport                 string        `json:"Transport"`
 	NAT                       bool          `json:"NAT"`
-	MiningDebug               bool          `json:"MiningDebug"`
 	BeneficiaryAddr           string        `json:"BeneficiaryAddr"`
 	SyncBatchWindowSize       uint32        `json:"SyncBatchWindowSize"`
 	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
@@ -118,6 +117,27 @@ func Init() error {
 	if err := Parameters.SetupPortMapping(); err != nil {
 		log.Printf("Error adding port mapping. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.")
 		return err
+	}
+
+	if Parameters.Hostname == "" {
+		log.Println("Getting my IP address...")
+		ip, err := ipify.GetIp()
+		if err != nil {
+			return err
+		}
+		log.Printf("My IP address is %s", ip)
+
+		Parameters.Hostname = ip
+
+		// if !SkipCheckPort {
+		// 	ok, err := Parameters.CheckPorts(ip)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	if !ok {
+		// 		return errors.New("Some ports are not open. Please make sure you set up port forwarding or firewall correctly")
+		// 	}
+		// }
 	}
 
 	err := check(Parameters)
