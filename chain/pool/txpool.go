@@ -110,7 +110,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	case pb.NANO_PAY_TYPE:
 		tp.blockValidationState.Lock()
 		defer tp.blockValidationState.Unlock()
-		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
+		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, 0); err != nil {
 			tp.blockValidationState.Reset()
 			return err
 		}
@@ -124,7 +124,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 			if err := tp.CleanBlockValidationState([]*transaction.Transaction{oldTxn}); err != nil {
 				return err
 			}
-			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
+			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, 0); err != nil {
 				tp.blockValidationState.Reset()
 				return err
 			}
@@ -154,7 +154,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 
 			tp.blockValidationState.Lock()
 			defer tp.blockValidationState.Unlock()
-			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, nil); err != nil {
+			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, 0); err != nil {
 				tp.blockValidationState.Reset()
 				return err
 			}

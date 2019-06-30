@@ -65,6 +65,8 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 		return nil, err
 	}
 
+	bvs := NewBlockValidationState()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -93,17 +95,30 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 			break
 		}
 
-		txnHash := txn.Hash()
-		if DefaultLedger.Store.IsTxHashDuplicate(txnHash) {
-			log.Warning("it's a duplicate transaction")
+		if err := VerifyTransaction(txn); err != nil {
+			log.Warning("invalid transaction")
+			txnCollection.Pop()
+			continue
+		}
+		if err := VerifyTransactionWithLedger(txn); err != nil {
+			log.Warning("invalid transaction")
+			txnCollection.Pop()
+			continue
+		}
+		if err := bvs.VerifyTransactionWithBlock(txn, height); err != nil {
+			bvs.Reset()
+			log.Warning("invalid transaction")
 			txnCollection.Pop()
 			continue
 		}
 
 		txnList = append(txnList, txn)
-		txnHashList = append(txnHashList, txnHash)
+		txnHashList = append(txnHashList, txn.Hash())
 		if err = txnCollection.Update(); err != nil {
+			bvs.Reset()
 			txnCollection.Pop()
+		} else {
+			bvs.Commit()
 		}
 	}
 

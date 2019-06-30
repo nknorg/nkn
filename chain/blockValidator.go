@@ -121,7 +121,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		if err := VerifyTransaction(txn); err != nil {
 			return fmt.Errorf("transaction sanity check failed: %v", err)
 		}
-		if err := bvs.VerifyTransactionWithBlock(txn, block.Header); err != nil {
+		if err := bvs.VerifyTransactionWithBlock(txn, block.Header.UnsignedHeader.Height); err != nil {
 			bvs.Reset()
 			return fmt.Errorf("transaction block check failed: %v", err)
 		}
