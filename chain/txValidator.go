@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
@@ -458,7 +457,7 @@ func (bvs *BlockValidationState) Reset() {
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
-func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, header *block.Header) (e error) {
+func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, height uint32) (e error) {
 	//1.check weather have duplicate transaction.
 	if _, exist := bvs.txnlist[txn.Hash()]; exist {
 		return errors.New("[VerifyTransactionWithBlock], duplicate transaction exist in block.")
@@ -488,15 +487,13 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.COINBASE_TYPE:
-		if header != nil {
-			coinbase := payload.(*pb.Coinbase)
-			donationAmount, err := DefaultLedger.Store.GetDonation()
-			if err != nil {
-				return err
-			}
-			if Fixed64(coinbase.Amount) != GetRewardByHeight(header.UnsignedHeader.Height)+donationAmount {
-				return errors.New("Mining reward incorrectly.")
-			}
+		coinbase := payload.(*pb.Coinbase)
+		donationAmount, err := DefaultLedger.Store.GetDonation()
+		if err != nil {
+			return err
+		}
+		if Fixed64(coinbase.Amount) != GetRewardByHeight(height)+donationAmount {
+			return errors.New("Mining reward incorrectly.")
 		}
 	case pb.TRANSFER_ASSET_TYPE:
 		transfer := payload.(*pb.TransferAsset)
@@ -583,13 +580,11 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		}()
 	case pb.NANO_PAY_TYPE:
 		npPayload := payload.(*pb.NanoPay)
-		if header != nil {
-			if header.UnsignedHeader.Height > npPayload.TxnExpiration {
-				return errors.New("[VerifyTransactionWithBlock], nano pay txn has expired")
-			}
-			if header.UnsignedHeader.Height > npPayload.NanoPayExpiration {
-				return errors.New("[VerifyTransactionWithBlock], nano pay has expired")
-			}
+		if height > npPayload.TxnExpiration {
+			return errors.New("[VerifyTransactionWithBlock], nano pay txn has expired")
+		}
+		if height > npPayload.NanoPayExpiration {
+			return errors.New("[VerifyTransactionWithBlock], nano pay has expired")
 		}
 		key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Id}
 		if _, ok := bvs.nanoPays[key]; ok {
@@ -716,7 +711,7 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction.Transaction) error {
 	bvs.initBlockValidationState()
 	for _, tx := range txns {
-		if err := bvs.VerifyTransactionWithBlock(tx, nil); err != nil {
+		if err := bvs.VerifyTransactionWithBlock(tx, 0); err != nil {
 			return err
 		}
 	}
