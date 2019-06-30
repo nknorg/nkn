@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
@@ -20,7 +21,7 @@ type TxnInput struct {
 }
 
 // MaxRefIndex is the max of TxnInput.ReferTxOutputIndex
-const MaxRefIndex = 667
+const MaxRefIndex = int(math.MaxUint16)
 
 func (input *TxnInput) Serialize(w io.Writer) error {
 	_, err := input.ReferTxID.Serialize(w)

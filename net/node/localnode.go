@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -27,9 +26,9 @@ import (
 )
 
 const (
-	protocolVersion              = 11
-	minCompatibleProtocolVersion = 11
-	maxCompatibleProtocolVersion = 20
+	protocolVersion              = 1
+	minCompatibleProtocolVersion = 0
+	maxCompatibleProtocolVersion = 10
 )
 
 type LocalNode struct {
@@ -48,7 +47,6 @@ type LocalNode struct {
 	syncOnce          *sync.Once
 	relayMessageCount uint64    // count how many messages node has relayed since start
 	startTime         time.Time // Time of localNode init
-	proposalSubmitted uint32    // Count of localNode submitted proposal
 }
 
 func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
@@ -68,10 +66,6 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 	out["uptime"] = time.Since(localNode.startTime).Truncate(time.Second).Seconds()
 	out["version"] = config.Version
 	out["relayMessageCount"] = localNode.GetRelayMessageCount()
-	if config.Parameters.MiningDebug {
-		out["proposalSubmitted"] = localNode.GetProposalSubmitted()
-		out["currTimeStamp"] = time.Now().Unix()
-	}
 
 	return json.Marshal(out)
 }
@@ -211,14 +205,6 @@ func (localNode *LocalNode) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) 
 		return localNode.addRemoteNode(remoteNode)
 	}
 	return nil
-}
-
-func (localNode *LocalNode) GetProposalSubmitted() uint32 {
-	return atomic.LoadUint32(&localNode.proposalSubmitted)
-}
-
-func (localNode *LocalNode) IncrementProposalSubmitted() {
-	atomic.AddUint32(&localNode.proposalSubmitted, 1)
 }
 
 func (localNode *LocalNode) GetRelayMessageCount() uint64 {

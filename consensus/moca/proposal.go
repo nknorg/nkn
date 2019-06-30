@@ -41,7 +41,7 @@ func (consensus *Consensus) getBlockProposal(blockHash common.Uint256) (*ledger.
 
 // waitAndHandleProposal waits for first valid proposal, and continues to handle
 // proposal for electionStartDelay duration.
-func (consensus *Consensus) waitAndHandleProposal(excludedProposers [][]byte) (*election.Election, map[common.Uint256]*ledger.Block, error) {
+func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) {
 	var timerStartOnce sync.Once
 	electionStartTimer := time.NewTimer(math.MaxInt64)
 	electionStartTimer.Stop()
@@ -55,7 +55,7 @@ func (consensus *Consensus) waitAndHandleProposal(excludedProposers [][]byte) (*
 
 	elc, _, err := consensus.loadOrCreateElection(heightToKey(consensusHeight))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	for {
@@ -73,7 +73,7 @@ func (consensus *Consensus) waitAndHandleProposal(excludedProposers [][]byte) (*
 
 		select {
 		case <-timeoutTimer.C:
-			return nil, nil, errors.New("Wait for proposal timeout")
+			return nil, errors.New("Wait for proposal timeout")
 		default:
 			time.Sleep(50 * time.Millisecond)
 		}
@@ -82,17 +82,6 @@ func (consensus *Consensus) waitAndHandleProposal(excludedProposers [][]byte) (*
 	for {
 		select {
 		case proposal := <-proposalChan:
-			found := false
-			for _, excludedProposer := range excludedProposers {
-				if bytes.Equal(proposal.Header.Signer, excludedProposer) {
-					found = true
-					break
-				}
-			}
-			if found {
-				continue
-			}
-
 			blockHash := proposal.Header.Hash()
 
 			if !ledger.CanVerifyHeight(consensusHeight) {
@@ -103,7 +92,7 @@ func (consensus *Consensus) waitAndHandleProposal(excludedProposers [][]byte) (*
 				continue
 			}
 
-			err = ledger.TimestampCheck(proposal.Header)
+			err = ledger.TimestampCheck(proposal.Header.Timestamp)
 			if err != nil {
 				log.Warningf("Ignore proposal that fails to pass timestamp check: %v", err)
 				continue
@@ -168,10 +157,10 @@ func (consensus *Consensus) waitAndHandleProposal(excludedProposers [][]byte) (*
 			}
 
 		case <-electionStartTimer.C:
-			return elc, proposals, nil
+			return elc, nil
 
 		case <-timeoutTimer.C:
-			return nil, nil, errors.New("Wait for proposal timeout")
+			return nil, errors.New("Wait for proposal timeout")
 		}
 	}
 }
@@ -225,7 +214,7 @@ func (consensus *Consensus) startRequestingProposal() {
 func (consensus *Consensus) receiveProposal(block *ledger.Block) error {
 	blockHash := block.Header.Hash()
 
-	log.Infof("Receive block proposal %s", blockHash.ToHexString())
+	log.Debugf("Receive block proposal %s", blockHash.ToHexString())
 
 	consensus.proposalLock.RLock()
 	defer consensus.proposalLock.RUnlock()
