@@ -6,13 +6,13 @@ import wallet from './wallet'
 
 Vue.use(Vuex)
 
-const store = () => new Vuex.Store({
+const store = {
   modules: {
     node,
     wallet
   },
   ...common
-})
+}
 
 export default store
 
