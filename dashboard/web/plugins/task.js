@@ -8,5 +8,7 @@ export default function ({store}) {
   startLoopTask(function () {
     store.dispatch('wallet/getCurrentWalletStatus')
   }, 1000)
-
+  startLoopTask(function () {
+    store.dispatch('node/getNeighbors')
+  }, 1000)
 }
