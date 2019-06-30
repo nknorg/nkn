@@ -1,6 +1,6 @@
 <template>
   <v-card min-width="800">
-    <v-card-title class="headline">Neighbors</v-card-title>
+    <v-card-title class="headline">{{$t('neighbor.TITLE')}}</v-card-title>
     <div class="divider"></div>
     <v-card-text>
       <v-layout wrap>
@@ -16,21 +16,25 @@
         <v-flex>
           <v-data-table
             :headers="headers"
-            :items="desserts"
+            :items="neighbors"
             :search="search"
             prev-icon="chevron_left"
             next-icon="chevron_right"
             sort-icon="arrow_upward"
-            :rows-per-page-items="[]"
+            :no-data-text="$t('NO_DATA')"
             :pagination.sync="pagination"
+            rows-per-page-text=""
+            :rows-per-page-items="[0]"
           >
             <template slot="headerCell" slot-scope="{ header }">
               <span class="subheading font-weight-light" v-text="header.text"/>
             </template>
             <template v-slot:items="props">
               <td>{{ props.item.id }}</td>
-              <td>{{ props.item.ip }}</td>
-              <td>{{ props.item.port }}</td>
+              <td>{{ props.item.addr }}</td>
+              <td>{{ getStatus(props.item.syncState) }}</td>
+              <td>{{ props.item.isOutbound }}</td>
+              <td>{{ props.item.roundTripTime }}</td>
             </template>
             <template v-slot:pageText="props">
               {{ props.pageStart }} - {{ props.pageStop }} of {{ props.itemsLength }}
@@ -43,98 +47,43 @@
 </template>
 
 <script>
+  import {mapState} from 'vuex'
+
   export default {
     name: "Neighbors",
+    computed: {
+      ...mapState({
+        neighbors: state => state.node.neighbors,
+      })
+    },
     data: () => ({
       search: '',
       pagination: {
         descending: false,
-        rowsPerPage: 10
+        rowsPerPage: 10,
+        sortBy: 'id'
       },
       headers: [
-        {text: 'ID', align: 'left', sortable: false, ip: 'id'},
-        {text: 'IP', align: 'left', sortable: false, ip: 'ip'},
-        {text: 'Port', align: 'left', sortable: false, ip: 'port'}
+        {text: 'ID', value: 'id', align: 'left', sortable: false},
+        {text: 'Address', value: 'addr', align: 'left', sortable: false},
+        {text: 'Sync state', value: 'syncState', align: 'left', sortable: false},
+        {text: 'Is outbound', value: 'isOutbound', align: 'left', sortable: false},
+        {text: 'Round Trip Time', value: 'roundTripTime', align: 'left', sortable: false}
       ],
-      desserts: [
-        {
-          id: 'Frozen Yogurt',
-          ip: '159.169.1.1',
-          port: 6.0,
-          time: 24
-        },
-        {
-          id: 'Ice cream sandwich',
-          ip: '237.169.1.1',
-          port: 9.0,
-          time: 37
-        },
-        {
-          id: 'Eclair',
-          ip: '262.169.1.1',
-          port: 16.0,
-          time: 23,
 
-
-        },
-        {
-          id: 'Cupcake',
-          ip: '305.169.1.1',
-          port: 3.7,
-          time: 67,
-
-
-        },
-        {
-          id: 'Gingerbread',
-          ip: '356.169.1.1',
-          port: 16.0,
-          time: 49,
-
-
-        },
-        {
-          id: 'Jelly bean',
-          ip: '375.169.1.1',
-          port: 0.0,
-          time: 94,
-
-
-        },
-        {
-          id: 'Lollipop',
-          ip: '392.169.1.1',
-          port: 0.2,
-          time: 98,
-
-
-        },
-        {
-          id: 'Honeycomb',
-          ip: '408.169.1.1',
-          port: 3.2,
-          time: 87,
-
-
-        },
-        {
-          id: 'Donut',
-          ip: '452.169.1.1',
-          port: 25.0,
-          time: 51,
-
-
-        },
-        {
-          id: 'KitKat',
-          ip: '518.169.1.1',
-          port: 26.0,
-          time: 65,
-
-
+    }),
+    methods: {
+      getStatus(stateStr) {
+        const statusEnum = {
+          'DEFAULT': this.$t('node.state.DEFAULT'),
+          'WAIT_FOR_SYNCING': this.$t('node.state.WAIT_FOR_SYNCING'),
+          'SYNC_STARTED': this.$t('node.state.SYNC_STARTED'),
+          'SYNC_FINISHED': this.$t('node.state.SYNC_FINISHED'),
+          'PERSIST_FINISHED': this.$t('node.state.PERSIST_FINISHED')
         }
-      ]
-    })
+        return statusEnum[stateStr] || this.$t('node.state.DEFAULT')
+      },
+    }
   }
 </script>
 
