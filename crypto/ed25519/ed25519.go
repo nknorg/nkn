@@ -14,6 +14,7 @@ import (
 const PublicKeySize = ed25519.PublicKeySize
 const PrivateKeySize = ed25519.PrivateKeySize
 const SignatureSize = ed25519.SignatureSize
+const SeedSize = ed25519.SeedSize
 
 func GenKeyPair() ([]byte, *big.Int, *big.Int, error) {
 	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)

@@ -29,10 +29,6 @@ func NewAccount() (*Account, error) {
 }
 
 func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
-	//privKeyLen := len(privateKey)
-	//if privKeyLen != 32 {
-	//	return nil, errors.New("invalid private key length")
-	//}
 	pubKey := crypto.NewPubKey(privateKey)
 	programHash, err := program.CreateProgramHash(pubKey)
 	if err != nil {
