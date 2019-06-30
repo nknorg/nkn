@@ -51,18 +51,22 @@
       </v-container>
       <Footer/>
     </v-content>
+
+    <WatchOutBoundCount></WatchOutBoundCount>
   </v-app>
 </template>
 
 <script>
   import Footer from '~/components/Footer.vue'
   import NodeRunStatus from '~/components/status/NodeRunStatus.vue'
+  import WatchOutBoundCount from '~/components/widget/WatchOutBoundCount.vue'
   import {mapState} from 'vuex'
   import '~/styles/status.scss'
 
   export default {
     components: {
       Footer,
+      WatchOutBoundCount,
       NodeRunStatus
     },
     data() {

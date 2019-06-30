@@ -1,12 +1,14 @@
 import Menu from './menu'
 import Node from './node'
 import Settings from './settings'
+import Neighbor from './neighbor'
 
 export default {
   language: 'English',
   menu: Menu,
   node: Node,
   settings: Settings,
+  neighbor: Neighbor,
 
   NEXT: 'Next',
   CLOSE: 'Close',
@@ -25,6 +27,8 @@ export default {
   PASSWORD_ERROR: 'Invalid password.',
   PASSWORD_REQUIRED: 'Password is required.',
   PASSWORD_HINT: 'Please enter wallet password.',
+
+  NO_DATA: 'No data available',
 
   footer: {
     TITLE: 'NKN: Network Infra for Decentralized Internet',
