@@ -101,7 +101,7 @@ var (
 		NAT:                       true,
 		Mining:                    true,
 		MiningDebug:               true,
-		LogLevel:                  3,
+		LogLevel:                  1,
 		MaxLogFileSize:            20,
 		SyncBatchWindowSize:       128,
 		SyncBlockHeadersBatchSize: 128,
