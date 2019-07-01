@@ -6,7 +6,7 @@
               :timeout="timeout"
               right
   >
-    {{ inBoundCount }}
+    {{ text }}
     <v-btn dark flat @click="close">
       Close
     </v-btn>
@@ -28,7 +28,7 @@
         visible: true,
         mode: '',
         timeout: 0,
-        text: 'Hello, I\'m a snackbar'
+        text: this.$t('neighbor.WARNING')
       }
     },
     methods: {
