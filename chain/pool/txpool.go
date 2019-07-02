@@ -2,6 +2,7 @@ package pool
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -104,6 +105,8 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
+	case pb.COINBASE_TYPE:
+		return fmt.Errorf("Invalid txn type %v", txn.UnsignedTx.Payload.Type)
 	case pb.SIG_CHAIN_TXN_TYPE:
 		// sigchain txn should not be added to txn pool
 		return nil
