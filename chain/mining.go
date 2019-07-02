@@ -96,18 +96,18 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 		}
 
 		if err := VerifyTransaction(txn); err != nil {
-			log.Warning("invalid transaction")
+			log.Warningf("invalid transaction: %v", err)
 			txnCollection.Pop()
 			continue
 		}
 		if err := VerifyTransactionWithLedger(txn); err != nil {
-			log.Warning("invalid transaction")
+			log.Warningf("invalid transaction: %v", err)
 			txnCollection.Pop()
 			continue
 		}
 		if err := bvs.VerifyTransactionWithBlock(txn, height); err != nil {
+			log.Warningf("invalid transaction: %v", err)
 			bvs.Reset()
-			log.Warning("invalid transaction")
 			txnCollection.Pop()
 			continue
 		}
