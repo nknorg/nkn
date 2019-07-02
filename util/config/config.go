@@ -25,7 +25,7 @@ const (
 	MaxNumTxnPerBlock   = 4096
 	ConsensusDuration   = 20 * time.Second
 	ConsensusTimeout    = time.Minute
-	DefaultMiningReward = 15
+	DefaultMiningReward = 5
 	MinNumSuccessors    = 8
 	NodeIDBytes         = 32
 	MaxRollbackBlocks   = 50
