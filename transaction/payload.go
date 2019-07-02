@@ -35,8 +35,8 @@ func Unpack(payload *pb.Payload) (IPayload, error) {
 		pl = new(pb.TransferAsset)
 	case pb.SIG_CHAIN_TXN_TYPE:
 		pl = new(pb.SigChainTxn)
-	// case pb.REGISTER_NAME_TYPE:
-	// 	pl = new(pb.RegisterName)
+	case pb.REGISTER_NAME_TYPE:
+		pl = new(pb.RegisterName)
 	case pb.DELETE_NAME_TYPE:
 		pl = new(pb.DeleteName)
 	case pb.SUBSCRIBE_TYPE:

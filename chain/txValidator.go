@@ -130,14 +130,15 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		}
 	case pb.SIG_CHAIN_TXN_TYPE:
 	case pb.REGISTER_NAME_TYPE:
-		pld := payload.(*pb.RegisterName)
-		match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)", pld.Name)
-		if err != nil {
-			return err
-		}
-		if !match {
-			return fmt.Errorf("name %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", pld.Name)
-		}
+		return errors.New("Register name transaction is not supported yet")
+		// pld := payload.(*pb.RegisterName)
+		// match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)", pld.Name)
+		// if err != nil {
+		// 	return err
+		// }
+		// if !match {
+		// 	return fmt.Errorf("name %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", pld.Name)
+		// }
 	case pb.DELETE_NAME_TYPE:
 	case pb.SUBSCRIBE_TYPE:
 		pld := payload.(*pb.Subscribe)
