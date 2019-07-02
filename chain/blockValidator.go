@@ -254,7 +254,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 
 			payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 			if err != nil {
-				return nil, nil, 0, errors.New("invalid payload type")
+				return nil, nil, 0, err
 			}
 
 			sigChainTxn := payload.(*pb.SigChainTxn)
