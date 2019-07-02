@@ -17,7 +17,8 @@ import (
 )
 
 type Mining interface {
-	BuildBlock(ctx context.Context, height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType, timestamp int64) (*block.Block, error)
+	BuildBlock(ctx context.Context, height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType) (*block.Block, error)
+	SignBlock(b *block.Block, timestamp int64) error
 }
 
 type BuiltinMining struct {
@@ -32,7 +33,7 @@ func NewBuiltinMining(account *vault.Account, txnCollector *TxnCollector) *Built
 	}
 }
 
-func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType, timestamp int64) (*block.Block, error) {
+func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID []byte, winnerHash common.Uint256, winnerType pb.WinnerType) (*block.Block, error) {
 	var txnList []*transaction.Transaction
 	var txnHashList []common.Uint256
 
@@ -145,7 +146,6 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 			UnsignedHeader: &pb.UnsignedHeader{
 				Version:          config.HeaderVersion,
 				PrevBlockHash:    curBlockHash.ToArray(),
-				Timestamp:        timestamp,
 				Height:           height,
 				RandomBeacon:     randomBeacon,
 				TransactionsRoot: txnRoot.ToArray(),
@@ -170,14 +170,19 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 
 	header.UnsignedHeader.StateRoot = curStateHash.ToArray()
 
-	hash := signature.GetHashForSigning(header)
+	return block, nil
+}
+
+func (bm *BuiltinMining) SignBlock(b *block.Block, timestamp int64) error {
+	b.Header.UnsignedHeader.Timestamp = timestamp
+
+	hash := signature.GetHashForSigning(b.Header)
 	sig, err := crypto.Sign(bm.account.PrivateKey, hash)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	header.Signature = append(header.Signature, sig...)
-
-	return block, nil
+	b.Header.Signature = append(b.Header.Signature, sig...)
+	return nil
 }
 
 func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *transaction.Transaction {

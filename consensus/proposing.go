@@ -30,13 +30,24 @@ func (consensus *Consensus) startProposing() {
 
 				ctx, cancel = context.WithTimeout(context.Background(), proposingTimeout)
 
-				block, err := consensus.proposeBlock(ctx, expectedHeight, timestamp)
+				block, err := consensus.proposeBlock(ctx, expectedHeight)
 				if err != nil {
 					log.Errorf("Propose block %d at %v error: %v", expectedHeight, timestamp, err)
 					break
 				}
 
 				cancel()
+
+				timestamp = time.Now().Unix()
+				if !consensus.isBlockProposer(currentHeight, timestamp) {
+					log.Errorf("I'm no longer the block proposer at height %d at %v", expectedHeight, timestamp)
+					break
+				}
+				err = consensus.mining.SignBlock(block, timestamp)
+				if err != nil {
+					log.Errorf("Sign block with timestamp %v error: %v", timestamp, err)
+					break
+				}
 
 				blockHash := block.Hash()
 				log.Infof("Propose block %s at height %d", blockHash.ToHexString(), expectedHeight)
@@ -82,11 +93,11 @@ func (consensus *Consensus) isBlockProposer(height uint32, timestamp int64) bool
 }
 
 // proposeBlock proposes a new block at give height and timestamp
-func (consensus *Consensus) proposeBlock(ctx context.Context, height uint32, timestamp int64) (*block.Block, error) {
+func (consensus *Consensus) proposeBlock(ctx context.Context, height uint32) (*block.Block, error) {
 	winnerHash, winnerType, err := chain.GetNextMiningSigChainTxnHash(height)
 	if err != nil {
 		return nil, err
 	}
 
-	return consensus.mining.BuildBlock(ctx, height, consensus.localNode.GetChordID(), winnerHash, winnerType, timestamp)
+	return consensus.mining.BuildBlock(ctx, height, consensus.localNode.GetChordID(), winnerHash, winnerType)
 }

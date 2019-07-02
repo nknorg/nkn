@@ -3,6 +3,7 @@ package moca
 import (
 	"time"
 
+	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/config"
 )
@@ -14,7 +15,7 @@ const (
 	minVotingInterval           = 500 * time.Millisecond
 	maxVotingInterval           = 2 * time.Second
 	proposingInterval           = 500 * time.Millisecond
-	proposingTimeout            = config.ConsensusDuration / 10
+	proposingTimeout            = chain.ProposingTimeTolerance * 4 / 5
 	cacheExpiration             = 3600 * time.Second
 	cacheCleanupInterval        = 600 * time.Second
 	proposingStartDelay         = config.ConsensusTimeout + time.Second
