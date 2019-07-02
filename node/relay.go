@@ -311,7 +311,7 @@ func (rs *RelayService) flushSigChain(v interface{}) {
 		return
 	}
 
-	height := block.Header.UnsignedHeader.Height - config.MaxRollbackBlocks - 1
+	height := block.Header.UnsignedHeader.Height - config.SigChainBlockDelay - 1
 	if height < 0 {
 		height = 0
 	}

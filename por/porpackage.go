@@ -113,7 +113,7 @@ func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage
 	}
 
 	pp := &PorPackage{
-		VoteForHeight: height + SigChainMiningHeightOffset + config.MaxRollbackBlocks,
+		VoteForHeight: height + SigChainMiningHeightOffset + config.SigChainBlockDelay,
 		BlockHash:     sigChain.BlockHash,
 		TxHash:        txHash.ToArray(),
 		SigHash:       sigHash,
