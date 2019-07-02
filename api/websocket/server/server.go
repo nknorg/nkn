@@ -178,8 +178,8 @@ func (ws *WsServer) registryMethod() {
 		}()
 
 		var sigChainBlockHeight uint32
-		if chain.DefaultLedger.Store.GetHeight() >= config.MaxRollbackBlocks {
-			sigChainBlockHeight = chain.DefaultLedger.Store.GetHeight() - config.MaxRollbackBlocks
+		if chain.DefaultLedger.Store.GetHeight() >= config.SigChainBlockDelay {
+			sigChainBlockHeight = chain.DefaultLedger.Store.GetHeight() - config.SigChainBlockDelay
 		}
 		sigChainBlockHash, err := chain.DefaultLedger.Store.GetBlockHash(sigChainBlockHeight)
 		if err != nil {

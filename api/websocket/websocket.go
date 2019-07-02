@@ -111,7 +111,7 @@ func PushSigChainBlockHash(v interface{}) {
 	}
 	resp := common.ResponsePack(common.SUCCESS)
 	if block, ok := v.(*block.Block); ok {
-		sigChainBlockHeight := block.Header.UnsignedHeader.Height - config.MaxRollbackBlocks
+		sigChainBlockHeight := block.Header.UnsignedHeader.Height - config.SigChainBlockDelay
 		sigChainBlockHash, err := chain.DefaultLedger.Store.GetBlockHash(sigChainBlockHeight)
 		if err != nil {
 			log.Warningf("get sigchain block hash at height %d error: %v", sigChainBlockHeight, err)

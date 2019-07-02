@@ -32,7 +32,7 @@ const (
 	sigChainTxnCacheCleanupInterval      = config.ConsensusDuration
 	miningPorPackageCacheExpiration      = 50 * config.ConsensusTimeout
 	miningPorPackageCacheCleanupInterval = config.ConsensusDuration
-	vrfCacheExpiration                   = (SigChainMiningHeightOffset + config.MaxRollbackBlocks + 5) * config.ConsensusTimeout
+	vrfCacheExpiration                   = (SigChainMiningHeightOffset + config.SigChainBlockDelay + 5) * config.ConsensusTimeout
 	vrfCacheCleanupInterval              = config.ConsensusDuration
 	flushSigChainDelay                   = 500 * time.Millisecond
 )

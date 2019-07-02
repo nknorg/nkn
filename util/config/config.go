@@ -31,7 +31,8 @@ const (
 	ConsensusTimeout             = 60 * time.Second
 	MinNumSuccessors             = 8
 	NodeIDBytes                  = 32
-	MaxRollbackBlocks            = 1
+	MaxRollbackBlocks            = 180
+	SigChainBlockDelay           = 1
 	SigChainPropogationTime      = 1
 	HeaderVersion                = 1
 	DBVersion                    = 0x01
