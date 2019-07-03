@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -93,8 +94,8 @@ func walletAction(c *cli.Context) error {
 
 	// list wallet info
 	if item := c.String("list"); item != "" {
-		if item != "account" && item != "balance" && item != "verbose" && item != "nonce" {
-			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose | nonce]")
+		if item != "account" && item != "balance" && item != "verbose" && item != "nonce" && item != "id" {
+			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose | nonce | id]")
 			os.Exit(1)
 		} else {
 			wallet, err := vault.OpenWallet(name, getPassword(passwd))
@@ -122,6 +123,16 @@ func walletAction(c *cli.Context) error {
 				account, _ := wallet.GetDefaultAccount()
 				address, _ := account.ProgramHash.ToAddress()
 				resp, err := client.Call(Address(), "getnoncebyaddr", 0, map[string]interface{}{"address": address})
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					return err
+				}
+				FormatOutput(resp)
+			case "id":
+				account, _ := wallet.GetDefaultAccount()
+				publicKey := account.PubKey().EncodePoint()
+				pk := hex.EncodeToString(publicKey)
+				resp, err := client.Call(Address(), "getid", 0, map[string]interface{}{"publickey": pk})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					return err
