@@ -53,3 +53,14 @@ func AesDecrypt(encrypted string, pwd string) (string, error) {
 	decrypter.XORKeyStream(decrypted, src)
 	return string(decrypted), nil
 }
+
+func HmacSha256(message string, secret string) []byte {
+	key := []byte(secret)
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(message))
+	return h.Sum(nil)
+}
+
+//func DecodeAuthorization(hex string, secret string) []byte{
+//
+//}
