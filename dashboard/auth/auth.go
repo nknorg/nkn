@@ -2,22 +2,28 @@ package auth
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"errors"
 	"github.com/gin-gonic/gin"
 	. "github.com/nknorg/nkn/common"
+	serviceConfig "github.com/nknorg/nkn/dashboard/config"
+	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 func verifyPasswordKey(passwordKey []byte, passwordHash []byte) bool {
-	keyHash := sha256.Sum256(passwordKey)
-	if !bytes.Equal(passwordHash, keyHash[:]) {
-		return false
+	password := BytesToHexString(passwordHash)
+	tick := time.Now().Unix()
+	padding := int64(serviceConfig.UnixRange / 2)
+	for i := tick - padding; i < tick+padding; i++ {
+		if bytes.Equal(helpers.HmacSha256(password, strconv.FormatInt(i, 10)), passwordKey) {
+			return true
+		}
 	}
-
-	return true
+	return false
 }
 
 // request filter: header["Authorization"] = (passwordhash)
