@@ -24,6 +24,7 @@ import (
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/dashboard"
+	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
@@ -394,6 +395,11 @@ func main() {
 			Name:        "genesisblockproposer",
 			Usage:       "public key of genesis block proposer",
 			Destination: &config.GenesisBlockProposer,
+		},
+		cli.BoolFlag{
+			Name:        "remote",
+			Usage:       "web service was run in remote mode",
+			Destination: &serviceConfig.IsRemote,
 		},
 	}
 	app.Action = nknMain

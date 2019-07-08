@@ -3,6 +3,7 @@ package dashboard
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/nknorg/nkn/dashboard/auth"
+	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/dashboard/routes"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
@@ -16,11 +17,10 @@ import (
 var (
 	localNode *node.LocalNode
 	wallet    vault.Wallet
-	isInit    = false
 )
 
 func Init(ln *node.LocalNode, w vault.Wallet) {
-	isInit = true
+	serviceConfig.IsInit = true
 	localNode = ln
 	wallet = w
 }
@@ -48,7 +48,7 @@ func Start() {
 
 	app.Use(func(context *gin.Context) {
 		// init config
-		if isInit {
+		if serviceConfig.IsInit {
 			context.Set("localNode", localNode)
 			context.Set("wallet", wallet)
 		}
@@ -58,7 +58,7 @@ func Start() {
 		// header
 		context.Header("Access-Control-Allow-Origin", "*")
 		context.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
-		context.Header("Access-Control-Allow-Headers", "Origin,X-Requested-With,content-type,Authorization,Accept")
+		context.Header("Access-Control-Allow-Headers", "Origin,X-Requested-With,content-type,Authorization, Unix,Accept")
 		context.Header("Access-Control-Allow-Credentials", "true")
 
 		context.Next()
@@ -77,9 +77,9 @@ func Start() {
 
 	})
 
-	app.StaticFS("/web", http.Dir("web"))
+	app.StaticFS("/web", http.Dir("dashboard/web/dist"))
 
-	// error
+	// error route
 	app.Use(func(context *gin.Context) {
 		context.Next()
 
@@ -91,11 +91,15 @@ func Start() {
 
 	app.Use(routes.Routes(app))
 
-	// 404 router
+	// 404 route
 	app.Use(func(context *gin.Context) {
 		context.JSON(http.StatusNotFound, "not found")
 	})
 
-	app.Run(":" + strconv.Itoa(int(config.Parameters.WebServicePort)))
+	if serviceConfig.IsRemote {
+		app.Run(":" + strconv.Itoa(int(config.Parameters.WebServicePort)))
+	} else {
+		app.Run("localhost:" + strconv.Itoa(int(config.Parameters.WebServicePort)))
+	}
 
 }
