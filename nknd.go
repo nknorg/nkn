@@ -24,6 +24,7 @@ import (
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/dashboard"
+	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
@@ -388,6 +389,11 @@ func main() {
 			Usage:       "public key of genesis block proposer",
 			Destination: &config.GenesisBlockProposer,
 		},
+		cli.BoolFlag{
+			Name:        "remote",
+			Usage:       "web service was run in remote mode",
+			Destination: &serviceConfig.IsRemote,
+		},
 	}
 	app.Action = nknMain
 
@@ -506,8 +512,8 @@ func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) ([]byte,
 		return id, nil
 	}
 
-	timer := time.NewTimer((config.GenerateIDBlockDelay+2) * config.ConsensusDuration)
-	timeout := time.After((config.GenerateIDBlockDelay+5) * config.ConsensusTimeout)
+	timer := time.NewTimer((config.GenerateIDBlockDelay + 2) * config.ConsensusDuration)
+	timeout := time.After((config.GenerateIDBlockDelay + 5) * config.ConsensusTimeout)
 	defer timer.Stop()
 
 out:
