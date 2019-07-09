@@ -95,6 +95,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	localNode := &LocalNode{
 		Node:                node,
+		nbrNodes:            newNbrNodes(),
 		account:             account,
 		TxnPool:             pool.NewTxPool(),
 		quit:                make(chan bool, 1),
@@ -178,6 +179,7 @@ func (localNode *LocalNode) Start() error {
 	localNode.startRelayer()
 	localNode.initSyncing()
 	localNode.initTxnHandlers()
+	go localNode.startConnectingToRandomNeighbors()
 	return nil
 }
 
