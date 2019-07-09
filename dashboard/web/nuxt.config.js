@@ -64,8 +64,8 @@ export default {
       //   { code: 'es', iso: 'es-ES', file: 'es.js' }
       // ]
       locales: [
-        {code: 'en', name: 'English', iso:'en-US', file:'en/index.js'},
-        {code: 'zh', name: '简体中文', iso:'zh-CN', file:'zh/index.js'}
+        {code: 'en', name: 'English', iso: 'en-US', file: 'en/index.js'},
+        {code: 'zh', name: '简体中文', iso: 'zh-CN', file: 'zh/index.js'}
       ],
 
       // The app's default locale, URLs for this locale won't have a prefix if
@@ -134,20 +134,20 @@ export default {
       // app's i18n current state
       // Set to false to disable
       // vuex: {
-        // Module namespace
-        // moduleName: 'i18n',
+      // Module namespace
+      // moduleName: 'i18n',
 
-        // Mutations config
-        // mutations: {
-          // Mutation to commit to store current locale, set to false to disable
-          // setLocale: 'I18N_SET_LOCALE',
+      // Mutations config
+      // mutations: {
+      // Mutation to commit to store current locale, set to false to disable
+      // setLocale: 'I18N_SET_LOCALE',
 
-          // Mutation to commit to store current message, set to false to disable
-          // setMessages: 'I18N_SET_MESSAGES'
-        // },
+      // Mutation to commit to store current message, set to false to disable
+      // setMessages: 'I18N_SET_MESSAGES'
+      // },
 
-        // PreserveState from server
-        // preserveState: false
+      // PreserveState from server
+      // preserveState: false
       // },
 
       // By default, custom routes are extracted from page files using acorn parsing,
@@ -179,8 +179,9 @@ export default {
   /*
   ** axios configuration
   */
-  axios:{
-    baseURL: '/',
+  axios: {
+    withCredentials: true,
+    baseURL: 'http://localhost:30000',
   },
   /*
   ** vuetify module configuration
