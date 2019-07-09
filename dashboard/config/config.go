@@ -1,7 +1,7 @@
 package config
 
 const (
-	UnixRange = 20
+	UnixRange = 10
 )
 
 var (
