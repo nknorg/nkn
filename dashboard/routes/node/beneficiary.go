@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/dashboard/auth"
+	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"io/ioutil"
@@ -20,14 +21,16 @@ type SetBeneficiaryData struct {
 
 func BeneficiaryRouter(router *gin.RouterGroup) {
 	router.PUT("/node/beneficiary", auth.WalletAuth(), func(context *gin.Context) {
+		bodyData := helpers.DecryptData(context)
+
 		var data SetBeneficiaryData
-		if err := context.ShouldBind(&data); err != nil {
+		err := json.Unmarshal([]byte(bodyData), &data)
+		if err != nil {
 			log.WebLog.Error(err)
 			context.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
-
-		_, err := ToScriptHash(data.BeneficiaryAddr)
+		_, err = ToScriptHash(data.BeneficiaryAddr)
 		if err != nil {
 			log.WebLog.Errorf("parse BeneficiaryAddr error: %v", err)
 			context.AbortWithError(http.StatusBadRequest, err)
@@ -74,9 +77,13 @@ func BeneficiaryRouter(router *gin.RouterGroup) {
 				return
 			}
 
-			context.JSON(http.StatusOK, gin.H{
+			data := helpers.EncryptData(context, gin.H{
 				"beneficiaryAddr":        configuration["BeneficiaryAddr"],
 				"currentBeneficiaryAddr": config.Parameters.BeneficiaryAddr,
+			})
+
+			context.JSON(http.StatusOK, gin.H{
+				"data": data,
 			})
 			return
 		} else {

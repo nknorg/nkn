@@ -3,6 +3,7 @@ package node
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -29,7 +30,12 @@ func StatusRouter(router *gin.RouterGroup) {
 				return
 			}
 			out["beneficiaryAddr"] = config.Parameters.BeneficiaryAddr
-			context.JSON(http.StatusOK, out)
+
+			data := helpers.EncryptData(context, out)
+
+			context.JSON(http.StatusOK, gin.H{
+				"data": data,
+			})
 			return
 		}
 

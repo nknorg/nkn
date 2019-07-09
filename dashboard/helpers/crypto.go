@@ -6,6 +6,15 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
+	serviceConfig "github.com/nknorg/nkn/dashboard/config"
+	"github.com/nknorg/nkn/util/log"
+	"net/http"
+	"strconv"
+	"time"
 )
 
 func BuildPwd(pwd string) []byte {
@@ -33,11 +42,6 @@ func AesEncrypt(plaintext string, pwd string) (string, error) {
 func AesDecrypt(encrypted string, pwd string) (string, error) {
 	key := BuildPwd(pwd)
 	var err error
-	defer func() {
-		if e := recover(); e != nil {
-			err = e.(error)
-		}
-	}()
 	src, err := hex.DecodeString(encrypted)
 	if err != nil {
 		return "", err
@@ -61,6 +65,53 @@ func HmacSha256(message string, secret string) []byte {
 	return h.Sum(nil)
 }
 
-//func DecodeAuthorization(hex string, secret string) []byte{
-//
-//}
+type BodyData struct {
+	Data string `form:"data"`
+}
+
+func DecryptData(context *gin.Context) string {
+	var body BodyData
+	if err := context.ShouldBind(&body); err != nil {
+		log.WebLog.Error(err)
+		context.AbortWithError(http.StatusBadRequest, err)
+		return ""
+	}
+
+	tick := time.Now().Unix()
+	padding := int64(serviceConfig.UnixRange)
+	session := sessions.Default(context)
+	token := session.Get("token")
+	if token == nil {
+		context.AbortWithError(http.StatusForbidden, errors.New("403 Forbidden"))
+		return ""
+	}
+	for i := tick - padding; i < tick+padding; i++ {
+		jsonData, err := AesDecrypt(body.Data, token.(string)+strconv.FormatInt(i, 10))
+		if err != nil {
+			continue
+		}
+		var data map[string]interface{}
+		err = json.Unmarshal([]byte(jsonData), &data)
+		if err != nil {
+			continue
+		}
+		return jsonData
+	}
+
+	return ""
+}
+
+func EncryptData(context *gin.Context, sourceData interface{}) string {
+	buf, err := json.Marshal(sourceData)
+	if err != nil {
+		return ""
+	}
+	tick := time.Now().Unix()
+	session := sessions.Default(context)
+	token := session.Get("token")
+	data, err := AesEncrypt(string(buf), token.(string)+strconv.FormatInt(tick, 10))
+	if err != nil {
+		return ""
+	}
+	return data
+}
