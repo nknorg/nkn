@@ -25,7 +25,7 @@
     },
     data() {
       return {
-        visible: true,
+        visible: false,
         mode: '',
         timeout: 0,
         text: this.$t('neighbor.WARNING')
