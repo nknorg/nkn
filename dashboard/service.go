@@ -1,6 +1,8 @@
 package dashboard
 
 import (
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/nknorg/nkn/dashboard/auth"
 	serviceConfig "github.com/nknorg/nkn/dashboard/config"
@@ -9,6 +11,7 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
+	"github.com/pborman/uuid"
 	"net/http"
 	"strconv"
 	"time"
@@ -46,19 +49,28 @@ func Start() {
 
 	app.Use(gin.Recovery())
 
+	store := cookie.NewStore([]byte("nkn"))
+	store.Options(sessions.Options{
+		MaxAge:   int(30 * time.Second), //30s
+		Path:     "/",
+		HttpOnly: false,
+	})
+	app.Use(sessions.Sessions("session", store))
+
 	app.Use(func(context *gin.Context) {
 		// init config
 		if serviceConfig.IsInit {
 			context.Set("localNode", localNode)
 			context.Set("wallet", wallet)
+			context.Set("seed", wallet.(*vault.WalletImpl).Data.PasswordHash)
 		}
 	})
 
 	app.Use(func(context *gin.Context) {
 		// header
-		context.Header("Access-Control-Allow-Origin", "*")
+		context.Header("Access-Control-Allow-Origin", context.Request.Header.Get("Origin"))
 		context.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
-		context.Header("Access-Control-Allow-Headers", "Origin,X-Requested-With,content-type,Authorization, Unix,Accept")
+		context.Header("Access-Control-Allow-Headers", "Origin,X-Requested-With,content-type,Authorization,Unix,Accept,Token")
 		context.Header("Access-Control-Allow-Credentials", "true")
 
 		context.Next()
@@ -75,6 +87,17 @@ func Start() {
 
 	app.HEAD("/api/verification", auth.WalletAuth(), func(context *gin.Context) {
 
+	})
+
+	app.Use(func(context *gin.Context) {
+		session := sessions.Default(context)
+		token := session.Get("token")
+		if token == nil {
+			session.Set("token", uuid.NewUUID().String())
+			session.Save()
+		}
+
+		context.Next()
 	})
 
 	app.StaticFS("/web", http.Dir("dashboard/web/dist"))

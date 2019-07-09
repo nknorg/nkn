@@ -2,7 +2,9 @@ package auth
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	. "github.com/nknorg/nkn/common"
 	serviceConfig "github.com/nknorg/nkn/dashboard/config"
@@ -14,12 +16,22 @@ import (
 	"time"
 )
 
-func verifyPasswordKey(passwordKey []byte, passwordHash []byte) bool {
-	password := BytesToHexString(passwordHash)
+func verifyPasswordKey(passwordKey []byte, passwordHash []byte, token string, seed string) bool {
 	tick := time.Now().Unix()
-	padding := int64(serviceConfig.UnixRange / 2)
+	padding := int64(serviceConfig.UnixRange)
+	hash := sha256.Sum224([]byte(BytesToHexString(passwordHash)))
 	for i := tick - padding; i < tick+padding; i++ {
-		if bytes.Equal(helpers.HmacSha256(password, strconv.FormatInt(i, 10)), passwordKey) {
+		hex, err := helpers.AesEncrypt(BytesToHexString(hash[:]), seed+token+strconv.FormatInt(i, 10))
+		if err != nil {
+			log.WebLog.Error(err)
+			return false
+		}
+		hexByte, err := HexStringToBytes(hex)
+		if err != nil {
+			log.WebLog.Error(err)
+			return false
+		}
+		if bytes.Equal(hexByte, passwordKey) {
 			return true
 		}
 	}
@@ -53,7 +65,21 @@ func WalletAuth() gin.HandlerFunc {
 			context.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
-		if ok := verifyPasswordKey(passwordKey, passwordKeyHash[:]); !ok {
+
+		//seed, exists := context.Get("seed")
+		//if !exists {
+		//	context.AbortWithError(http.StatusInternalServerError, errors.New("wallet is not init"))
+		//	return
+		//}
+
+		session := sessions.Default(context)
+		token := session.Get("token")
+
+		if token == nil {
+			context.AbortWithError(http.StatusForbidden, errors.New("403 Forbidden"))
+			return
+		}
+		if ok := verifyPasswordKey(passwordKey, passwordKeyHash, token.(string), ""); !ok {
 			context.AbortWithError(http.StatusForbidden, errors.New("403 Forbidden"))
 			return
 		}
