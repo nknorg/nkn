@@ -1,4 +1,4 @@
-import {doubleSha256} from '~/helpers/crypto'
+import {passwordHash} from '~/helpers/crypto'
 
 const state = {
   currentWalletStatus: {}
@@ -20,9 +20,9 @@ const actions = {
       console.log(e)
     }
   },
-  async getCurrentWalletPrivateKey({commit}, payload) {
+  async getCurrentWalletPrivateKey({commit,rootState}, payload) {
     try {
-      this.$axios.setHeader("Authorization", doubleSha256(payload))
+      this.$axios.setHeader("Authorization", passwordHash(payload, rootState.token + rootState.unix))
       let res = await this.$axios.get('/api/current-wallet/details')
       return res.data
     } catch (e) {
@@ -36,7 +36,7 @@ const actions = {
 }
 export default {
   namespaced: true,
-  state :() => state,
+  state: () => state,
   getters,
   actions,
   mutations
