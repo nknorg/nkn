@@ -7,6 +7,7 @@ import (
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/dashboard/auth"
+	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 	"net/http"
@@ -39,10 +40,15 @@ func StatusRouter(router *gin.RouterGroup) {
 			}
 
 			balance := chain.DefaultLedger.Store.GetBalance(pg)
-			context.JSON(http.StatusOK, gin.H{
+
+			data := helpers.EncryptData(context, gin.H{
 				"balance":   balance.String(),
 				"address":   address,
 				"publicKey": BytesToHexString(account.PublicKey.EncodePoint()),
+			})
+
+			context.JSON(http.StatusOK, gin.H{
+				"data": data,
 			})
 			return
 		} else {
@@ -63,8 +69,11 @@ func StatusRouter(router *gin.RouterGroup) {
 				return
 			}
 
-			context.JSON(http.StatusOK, gin.H{
+			data := helpers.EncryptData(context, gin.H{
 				"privateKey": BytesToHexString(crypto.GetSeedFromPrivateKey(account.PrivateKey)),
+			})
+			context.JSON(http.StatusOK, gin.H{
+				"data": data,
 			})
 			return
 		} else {
