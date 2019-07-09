@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	maxNumRandomNeighbors         = 16
-	randomNeighborConnectInterval = config.ConsensusTimeout
+	maxNumRandomNeighbors         = 8
+	randomNeighborConnectInterval = 5 * config.ConsensusTimeout
 )
 
 // The neighbor node list

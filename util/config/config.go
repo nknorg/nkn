@@ -50,9 +50,9 @@ const (
 	GenerateIDBlockDelay         = 8
 	RandomBeaconUniqueLength     = vrf.Size
 	RandomBeaconLength           = vrf.Size + vrf.ProofSize
-	ProtocolVersion              = 10
-	MinCompatibleProtocolVersion = 10
-	MaxCompatibleProtocolVersion = 19
+	ProtocolVersion              = 20
+	MinCompatibleProtocolVersion = 20
+	MaxCompatibleProtocolVersion = 29
 	DefaultTxPoolCap             = 32
 	ShortHashSize                = uint32(8)
 	MaxAssetPrecision            = uint32(8)
