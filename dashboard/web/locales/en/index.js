@@ -28,6 +28,15 @@ export default {
   PASSWORD_REQUIRED: 'Password is required.',
   PASSWORD_HINT: 'Please enter wallet password.',
 
+  PASSWORD_CONFIRM: 'Password confirm',
+  PASSWORD_CONFIRM_ERROR: 'Invalid password confirm.',
+  PASSWORD_CONFIRM_REQUIRED: 'Password confirm is required.',
+  PASSWORD_CONFIRM_HINT: 'Please enter password confirm.',
+
+  WALLET_CREATE: 'Create wallet',
+  CREATE : 'Create',
+
+
   NO_DATA: 'No data available',
 
   footer: {
