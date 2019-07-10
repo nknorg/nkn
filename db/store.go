@@ -891,6 +891,24 @@ func (cs *ChainStore) GetVotingWeight(hash Uint160) (int, error) {
 	return 1, nil
 }
 
+// Mining Reward Schedule
+const (
+	NormalReward       = 15
+	ReduceRewardHeight = uint32(1133806)
+	ReduceReward       = 1
+	ZeroRewardHeight   = uint32(1157325)
+	ZeroReward         = 0
+)
+
+func checkCoinBase(height uint32, reward Fixed64) bool {
+	if height < ReduceRewardHeight {
+		return reward <= NormalReward
+	} else if height < ZeroRewardHeight {
+		return reward == ReduceReward
+	}
+	return reward == ZeroReward
+}
+
 func (cs *ChainStore) persist(b *Block) error {
 	utxoUnspents := newUTXOs(cs)
 	unspents := make(map[Uint256][]uint16)
@@ -942,6 +960,14 @@ func (cs *ChainStore) persist(b *Block) error {
 		}
 
 		switch b.Transactions[i].TxType {
+		case tx.Coinbase:
+			var totalReward Fixed64
+			for _, o := range b.Transactions[i].Outputs {
+				totalReward += o.Value
+			}
+			if !checkCoinBase(b.Header.Height, totalReward) {
+				return fmt.Errorf("Incorrect reward %v for Height %v", totalReward, b.Header.Height)
+			}
 		case tx.RegisterAsset:
 			ar := b.Transactions[i].Payload.(*payload.RegisterAsset)
 			err = cs.SaveAsset(b.Transactions[i].Hash(), ar.Asset)
