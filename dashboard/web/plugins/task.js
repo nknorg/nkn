@@ -2,7 +2,7 @@ import {startLoopTask} from '~/helpers/task'
 import {ServiceStatusEnum} from '~/helpers/consts'
 
 const loopInterval = 2000
-const syncUnixInterval = 10000
+const syncUnixInterval = 20000
 const tickInterval = 1000
 export default function ({store}) {
   startLoopTask(function () {
