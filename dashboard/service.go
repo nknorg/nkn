@@ -51,7 +51,7 @@ func Start() {
 
 	store := cookie.NewStore([]byte("nkn"))
 	store.Options(sessions.Options{
-		MaxAge:   int(30 * time.Second), //30s
+		MaxAge:   30, //30s
 		Path:     "/",
 		HttpOnly: false,
 	})
@@ -100,7 +100,7 @@ func Start() {
 		context.Next()
 	})
 
-	app.StaticFS("/web", http.Dir("dashboard/web/dist"))
+	app.StaticFS("/web", http.Dir("web"))
 
 	// error route
 	app.Use(func(context *gin.Context) {
