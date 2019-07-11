@@ -1,7 +1,9 @@
 package password
 
 import (
+	"errors"
 	"fmt"
+	"github.com/nknorg/nkn/util/config"
 	"os"
 
 	"github.com/howeyc/gopass"
@@ -58,8 +60,13 @@ func GetAccountPassword() ([]byte, error) {
 	if Passwd == "" {
 		Passwd = os.Getenv("NKN_WALLET_PASSWORD")
 	}
+	if !config.Parameters.OnlyUI {
+		if Passwd == "" {
+			return GetPassword()
+		}
+	}
 	if Passwd == "" {
-		return GetPassword()
+		return []byte(Passwd), errors.New("wait for set password")
 	}
 	return []byte(Passwd), nil
 }

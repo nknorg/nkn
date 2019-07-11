@@ -93,6 +93,7 @@ var (
 	BeneficiaryAddr      string
 	SeedList             string
 	GenesisBlockProposer string
+	OnlyUI               bool
 	Parameters           = &Configuration{
 		Version:                   1,
 		Transport:                 "tcp",
@@ -119,6 +120,7 @@ var (
 		WalletFile:                "wallet.json",
 		MaxGetIDSeeds:             3,
 		WebServicePort:            30000,
+		OnlyUI:                    false,
 	}
 )
 
@@ -162,6 +164,7 @@ type Configuration struct {
 	WalletFile                string        `json:"WalletFile"`
 	MaxGetIDSeeds             uint32        `json:"MaxGetIDSeeds"`
 	WebServicePort            uint16        `json:"WebServicePort"`
+	OnlyUI                    bool          `json:"OnlyUI"`
 }
 
 func Init() error {
@@ -213,6 +216,10 @@ func Init() error {
 
 	if Parameters.Hostname == "127.0.0.1" {
 		Parameters.incrementPort()
+	}
+
+	if OnlyUI {
+		Parameters.OnlyUI = OnlyUI
 	}
 
 	if err := Parameters.SetupPortMapping(); err != nil {
