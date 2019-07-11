@@ -10,6 +10,9 @@ export default {
   settings: Settings,
   neighbor: Neighbor,
 
+  LOADING: '加载中',
+  SEARCH: '搜索',
+
   NEXT: '下一步',
   CLOSE: '关闭',
   CANCEL: '取消',
@@ -34,7 +37,10 @@ export default {
   PASSWORD_CONFIRM_HINT: '请再次输入密码.',
 
   WALLET_CREATE: '创建钱包',
+  WALLET_OPEN: '打开钱包',
   CREATE: '创建',
+  OPEN: '打开',
+
 
   NO_DATA: '没有数据',
 
