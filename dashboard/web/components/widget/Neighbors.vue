@@ -8,7 +8,7 @@
           <v-text-field
             v-model="search"
             append-icon="search"
-            label="Search"
+            :label="$t('SEARCH')"
             single-line
             hide-details
           ></v-text-field>

@@ -7,9 +7,9 @@
         <v-flex xs12>
           <v-subheader class="pa-0">{{$t('settings.TITLE')}}</v-subheader>
           <NodeRunStatus :node-status="this.nodeStatus"></NodeRunStatus>
-          <v-btn color="primary" :loading="restarting"
+          <!--<v-btn color="primary" :loading="restarting"
                  :disabled="restarting" @click="restarting = !restarting">{{$t('RESTART')}}
-          </v-btn>
+          </v-btn>-->
         </v-flex>
         <v-flex xs12 md6>
           <v-subheader class="pa-0">{{$t('settings.BENEFICIARY_TITLE')}}</v-subheader>

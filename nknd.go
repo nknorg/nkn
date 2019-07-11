@@ -155,14 +155,19 @@ func nknMain(c *cli.Context) error {
 		config.Parameters.Hostname = extIP
 	}
 
-	// Get local account
-	wallet, err := vault.GetWallet()
-	if err != nil {
-		return err
-	}
-	account, err := wallet.GetDefaultAccount()
-	if err != nil {
-		return errors.New("load local account error")
+	var wallet vault.Wallet
+	var account *vault.Account
+	for wallet == nil {
+		time.Sleep(time.Second * 3)
+		wallet, err = vault.GetWallet()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		account, err = wallet.GetDefaultAccount()
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	conf := &nnet.Config{
@@ -400,6 +405,11 @@ func main() {
 			Name:        "remote",
 			Usage:       "web service was run in remote mode",
 			Destination: &serviceConfig.IsRemote,
+		},
+		cli.BoolFlag{
+			Name:        "onlyui",
+			Usage:       "only run web ui",
+			Destination: &config.OnlyUI,
 		},
 	}
 	app.Action = nknMain

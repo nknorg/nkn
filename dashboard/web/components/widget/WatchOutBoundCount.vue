@@ -1,16 +1,16 @@
 <template>
-  <v-snackbar v-if="inBoundCount !== 0"
-              v-model="visible"
-              color="warning"
-              multi-line
-              :timeout="timeout"
-              right
-  >
-    {{ text }}
-    <v-btn dark flat @click="close">
-      Close
-    </v-btn>
-  </v-snackbar>
+    <v-snackbar v-if="inBoundCount !== 0"
+                v-model="visible"
+                color="warning"
+                multi-line
+                :timeout="timeout"
+                right
+    >
+        {{ this.$t('neighbor.WARNING') }}
+        <v-btn dark flat @click="close">
+            Close
+        </v-btn>
+    </v-snackbar>
 </template>
 
 <script>
@@ -25,10 +25,10 @@
     },
     data() {
       return {
-        visible: false,
+        visible: true,
         mode: '',
         timeout: 0,
-        text: this.$t('neighbor.WARNING')
+        // text: this.$t('neighbor.WARNING')
       }
     },
     methods: {

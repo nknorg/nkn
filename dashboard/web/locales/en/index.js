@@ -10,6 +10,9 @@ export default {
   settings: Settings,
   neighbor: Neighbor,
 
+  LOADING: 'loading',
+  SEARCH: 'Search',
+
   NEXT: 'Next',
   CLOSE: 'Close',
   CANCEL: 'Cancel',
@@ -34,7 +37,9 @@ export default {
   PASSWORD_CONFIRM_HINT: 'Please enter password confirm.',
 
   WALLET_CREATE: 'Create wallet',
+  WALLET_OPEN: 'Open wallet',
   CREATE : 'Create',
+  OPEN : 'Open',
 
 
   NO_DATA: 'No data available',
