@@ -3,7 +3,7 @@
         <v-form ref="form">
             <v-card class="card">
                 <v-card-title class="headline">
-                    {{$t('WALLET_CREATE')}}
+                    {{$t('WALLET_OPEN')}}
                 </v-card-title>
                 <div class="divider"></div>
                 <v-card-text>
@@ -20,24 +20,12 @@
                                   :error-messages="passwordErrorMessage"
                                   @click:append="showPassword = !showPassword"
                     ></v-text-field>
-                    <v-text-field
-                            ref="password_confirm"
-                            v-model="passwordConfirm"
-                            :label="$t('PASSWORD_CONFIRM') + '*'"
-                            :hint="$t('PASSWORD_HINT')"
-                            persistent-hint
-                            :append-icon="showPasswordConfirm ? 'visibility' : 'visibility_off'"
-                            :type="showPasswordConfirm ? 'text' : 'password'"
-                            :rules="rules.passwordConfirm"
-                            :error="passwordConfirmError"
-                            :error-messages="passwordConfirmErrorMessage"
-                            @click:append="showPasswordConfirm = !showPasswordConfirm"
-                    ></v-text-field>
+
                 </v-card-text>
 
                 <v-card-actions class="pa-3">
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" small @click="submit">{{$t('CREATE')}}</v-btn>
+                    <v-btn color="primary" small @click="submit">{{$t('OPEN')}}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-form>
@@ -50,37 +38,30 @@
 
   export default {
     layout: 'sign',
-    name: "create",
+    name: "walletOpen",
     data: function () {
       return {
         password: '',
-        passwordConfirm: '',
         showPassword: false,
-        showPasswordConfirm: false,
         passwordError: false,
-        passwordConfirmError: false,
         passwordErrorMessage: '',
-        passwordConfirmErrorMessage: '',
         rules: {
           password: [
             v => !!v || this.$t('PASSWORD_REQUIRED'),
-          ],
-          passwordConfirm: [
-            v => !!v || this.$t('PASSWORD_CONFIRM_REQUIRED'),
-            v => this.password === v || this.$t('PASSWORD_CONFIRM_ERROR'),
           ]
         }
       }
     },
     methods: {
-      ...mapActions('wallet', ['createWallet']),
+      ...mapActions('wallet', ['openWallet']),
       async submit() {
         if (this.$refs.form.validate()) {
           try {
-            await this.createWallet(this.password)
+            await this.openWallet(this.password)
             this.$router.push(this.localePath('loading'))
           } catch (e) {
-
+            this.passwordError = true
+            this.passwordErrorMessage = this.$t('PASSWORD_ERROR')
           }
         }
       }
