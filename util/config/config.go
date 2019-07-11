@@ -103,6 +103,7 @@ var (
 	BeneficiaryAddr      string
 	SeedList             string
 	GenesisBlockProposer string
+	OnlyUI               bool
 	Parameters           = &Configuration{
 		Version:                   1,
 		Transport:                 "tcp",
@@ -130,6 +131,7 @@ var (
 		MaxGetIDSeeds:             3,
 		DBFilesCacheCapacity:      100,
 		WebServicePort:            30000,
+		OnlyUI:                    false,
 	}
 )
 
@@ -174,6 +176,7 @@ type Configuration struct {
 	MaxGetIDSeeds             uint32        `json:"MaxGetIDSeeds"`
 	DBFilesCacheCapacity      int           `json:"DBFilesCacheCapacity"`
 	WebServicePort            uint16        `json:"WebServicePort"`
+	OnlyUI                    bool          `json:"OnlyUI"`
 }
 
 func Init() error {
@@ -225,6 +228,10 @@ func Init() error {
 
 	if Parameters.Hostname == "127.0.0.1" {
 		Parameters.incrementPort()
+	}
+
+	if OnlyUI {
+		Parameters.OnlyUI = OnlyUI
 	}
 
 	if err := Parameters.SetupPortMapping(); err != nil {
