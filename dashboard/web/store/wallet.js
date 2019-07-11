@@ -1,5 +1,6 @@
 import {passwordHash} from '~/helpers/crypto'
 import {ServiceStatusEnum} from '~/helpers/consts'
+
 const state = {
   currentWalletStatus: {}
 }
@@ -8,7 +9,9 @@ const getters = {}
 
 const mutations = {
   setCurrentWalletStatus(state, wallet) {
-    state.currentWalletStatus = wallet
+    if (!!wallet) {
+      state.currentWalletStatus = wallet
+    }
   }
 }
 const actions = {
@@ -36,7 +39,7 @@ const actions = {
   async createWallet({commit, rootState}, payload) {
     try {
       let res = await this.$axios.post('/api/wallet/create', {password: payload})
-      commit('syncServiceStatus', {status: ServiceStatusEnum.SERVICE_STATUS_RUNNING}, { root: true })
+      commit('syncServiceStatus', {status: ServiceStatusEnum.SERVICE_STATUS_RUNNING}, {root: true})
       return res.data
     } catch (e) {
       throw e
@@ -45,7 +48,7 @@ const actions = {
   async openWallet({commit, rootState}, payload) {
     try {
       let res = await this.$axios.post('/api/wallet/open', {password: payload})
-      commit('syncServiceStatus', {status: ServiceStatusEnum.SERVICE_STATUS_RUNNING}, { root: true })
+      commit('syncServiceStatus', {status: ServiceStatusEnum.SERVICE_STATUS_RUNNING}, {root: true})
       return res.data
     } catch (e) {
       if (e.response.status === 401 || e.response.status === 403) {
