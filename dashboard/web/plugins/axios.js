@@ -10,7 +10,6 @@ export default function ({$axios, redirect, store}) {
       config.data = {data: aesEncrypt(JSON.stringify(config.data), secret)}
     }
   })
-
   $axios.onResponse(resp => {
     if (resp.data.data !== undefined){
       let padding = 10
@@ -29,8 +28,8 @@ export default function ({$axios, redirect, store}) {
 
   $axios.onError(error => {
     const code = parseInt(error.response && error.response.status)
-    if (code === 500) {
-      redirect('/error')
-    }
+    // if (code === 500) {
+    //   redirect('/error')
+    // }
   })
 }

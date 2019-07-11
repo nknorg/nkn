@@ -1,13 +1,19 @@
 import {passwordHash} from '~/helpers/crypto'
+import {ServiceStatusEnum} from '~/helpers/consts'
+
 
 const state = {
   token: undefined,
   unix: Date.now(),
+  serviceStatus: ServiceStatusEnum.SERVICE_STATUS_DEFAULT
 }
 
 const getters = {}
 
 const mutations = {
+  syncServiceStatus(state, data) {
+    state.serviceStatus = data.status
+  },
   syncToken(state, data) {
     state.token = data.token
     state.unix = data.unix
@@ -22,6 +28,17 @@ const mutations = {
   }
 }
 const actions = {
+  async getServiceStatus({commit}) {
+    try {
+      let res = await this.$axios.get('/api/sync/status')
+      commit('syncServiceStatus', res.data)
+    } catch (e) {
+      if (e.response.status !== 200) {
+        e.code = e.response.status
+        throw e
+      }
+    }
+  },
   async getToken({commit}) {
     try {
       let res = await this.$axios.get('/api/sync/token')

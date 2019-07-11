@@ -68,5 +68,15 @@
         return this.$i18n.locales
       }
     },
+    methods: {
+      reload() {
+        setTimeout(() => { // prevent execution before link to
+          this.update = false
+          this.$nextTick(() => {
+            this.update = true
+          })
+        }, 10)
+      }
+    }
   }
 </script>
