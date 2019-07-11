@@ -15,13 +15,20 @@ const getters = {
 
 const mutations = {
   setNodeStatus(state, node) {
-    state.nodeStatus = node
+    if (!!node){
+      state.nodeStatus = node
+    }
+
   },
   setBeneficiaryAddr(state, addr) {
     state.nodeStatus.beneficiaryAddr = addr
   },
   setNeighbors(state, neighbors) {
-    state.neighbors = neighbors
+    if (Array.isArray(neighbors)) {
+      state.neighbors = neighbors
+    } else {
+      state.neighbors = []
+    }
   }
 }
 const actions = {
@@ -33,7 +40,7 @@ const actions = {
       console.log(e)
     }
   },
-  async setBeneficiaryAddr({commit,rootState}, {password, beneficiaryAddr}) {
+  async setBeneficiaryAddr({commit, rootState}, {password, beneficiaryAddr}) {
     try {
       this.$axios.setHeader("Authorization", passwordHash(password, rootState.token + rootState.unix))
       let res = await this.$axios.put('/api/node/beneficiary', {beneficiaryAddr: beneficiaryAddr})
