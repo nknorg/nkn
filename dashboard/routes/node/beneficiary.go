@@ -30,11 +30,14 @@ func BeneficiaryRouter(router *gin.RouterGroup) {
 			context.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
-		_, err = ToScriptHash(data.BeneficiaryAddr)
-		if err != nil {
-			log.WebLog.Errorf("parse BeneficiaryAddr error: %v", err)
-			context.AbortWithError(http.StatusBadRequest, err)
-			return
+
+		if data.BeneficiaryAddr != "" {
+			_, err = ToScriptHash(data.BeneficiaryAddr)
+			if err != nil {
+				log.WebLog.Errorf("parse BeneficiaryAddr error: %v", err)
+				context.AbortWithError(http.StatusBadRequest, err)
+				return
+			}
 		}
 
 		configFile := config.ConfigFile
