@@ -18,6 +18,8 @@ func Routes(app *gin.Engine) gin.HandlerFunc {
 	node.NeighborRouter(app.Group("/api"))
 
 	wallet.StatusRouter(app.Group("/api"))
+	wallet.WalletCreateRouter(app.Group("/api"))
+	wallet.WalletOpenRouter(app.Group("/api"))
 
 	return func(c *gin.Context) {
 
