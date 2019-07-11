@@ -19,10 +19,11 @@ export default function ({$axios, redirect, store}) {
         try{
           let data = aesDecrypt(resp.data.data, secret)
           resp.data = JSON.parse(data)
+          return
         }catch (e) {
-
         }
       }
+      throw new Error('data can not decrypt')
     }
   })
 
