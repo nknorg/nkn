@@ -34,10 +34,9 @@
             <v-card-text>
               <v-text-field autofocus
                             v-model="beneficiaryAddr"
-                            :label="$t('BENEFICIARY') + '*'"
+                            :label="$t('BENEFICIARY')"
                             :hint="$t('settings.BENEFICIARY_HINT')"
                             persistent-hint
-                            :rules="rules.beneficiaryAddr"
                             :error="beneficiaryAddrError"
                             :error-messages="beneficiaryAddrErrorMessage"
               ></v-text-field>
@@ -88,9 +87,9 @@
           password: [
             v => !!v || this.$t('PASSWORD_REQUIRED'),
           ],
-          beneficiaryAddr: [
-            v => !!v || this.$t('settings.BENEFICIARY_REQUIRED'),
-          ]
+          // beneficiaryAddr: [
+          //   v => !!v || this.$t('settings.BENEFICIARY_REQUIRED'),
+          // ]
         }
       }
     },
