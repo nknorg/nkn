@@ -3,6 +3,7 @@ package common
 import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/pborman/uuid"
 	"net/http"
 	"time"
@@ -25,6 +26,14 @@ func SyncRouter(router *gin.RouterGroup) {
 		context.JSON(http.StatusOK, gin.H{
 			"token": token,
 			"unix":  time.Now().Unix(),
+		})
+		return
+	})
+
+	router.GET("/sync/status", func(context *gin.Context) {
+		context.JSON(http.StatusOK, gin.H{
+			"isInit": serviceConfig.IsInit,
+			"status": serviceConfig.Status,
 		})
 		return
 	})
