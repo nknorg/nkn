@@ -28,9 +28,9 @@ const (
 	destSigChainElemCacheCleanupInterval = config.ConsensusDuration
 	finalizedBlockCacheExpiration        = 10 * config.ConsensusTimeout
 	finalizedBlockCacheCleanupInterval   = config.ConsensusDuration
-	sigChainTxnCacheExpiration           = 50 * config.ConsensusTimeout
+	sigChainTxnCacheExpiration           = 10 * config.ConsensusTimeout
 	sigChainTxnCacheCleanupInterval      = config.ConsensusDuration
-	miningPorPackageCacheExpiration      = 50 * config.ConsensusTimeout
+	miningPorPackageCacheExpiration      = 10 * config.ConsensusTimeout
 	miningPorPackageCacheCleanupInterval = config.ConsensusDuration
 	vrfCacheExpiration                   = (SigChainMiningHeightOffset + config.SigChainBlockDelay + 5) * config.ConsensusTimeout
 	vrfCacheCleanupInterval              = config.ConsensusDuration

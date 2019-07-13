@@ -180,10 +180,10 @@ Address                                Public Key
 NKNRQxosmUixL8bvLAS5G79m1XNx3YqPsFPW   35db285ea2f91499164cd3e19203ab5e525df6216d1eba3ac6bcef00503407ce
 ```
 
-If you are using Docker, it should be `docker run -it -v $PWD:/nkn/data
+If you are using Docker, it should be `docker run -it -v ${PWD}:/nkn/data
 nknorg/nkn nknc wallet -c` instead, assuming you want to store the `wallet.json`
 in your current working directory. If you want it to be saved to another
-directory, you need to change `$PWD` to that directory.
+directory, you need to change `${PWD}` to that directory.
 
 **[IMPORTANT] Each node needs to use a unique wallet. If you use share wallet
 among multiple nodes, only one of them will be able to join the network!**
@@ -200,8 +200,8 @@ chain](https://github.com/nknorg/nkn/wiki/Create-a-Private-Chain).
 ### Join the MainNet
 
 **[IMPORTANT] Currently, in order to join the MainNet, you need to have a public
-*IP address, or set up [port forwarding](#port-forwarding) on your router
-*properly so that other people can establish connection to you.**
+IP address, or set up [port forwarding](#port-forwarding) on your router
+properly so that other people can establish connection to you.**
 
 If you have done the previous steps correctly (`config.json`, create wallet,
 public IP or port forwarding), joining the MainNet is as simple as running:
@@ -213,7 +213,7 @@ $ ./nknd
 If you are using Docker then you should run the following command instead:
 
 ```shell
-$ docker run -p 30001-30003:30001-30003 -v $PWD:/nkn/data --name nkn --rm -it nknorg/nkn nknd
+$ docker run -p 30001-30003:30001-30003 -v ${PWD}:/nkn/data --name nkn --rm -it nknorg/nkn nknd
 ```
 
 If you get an error saying `docker: Error response from daemon: Conflict. The

@@ -33,7 +33,7 @@ const (
 	NodeIDBytes                  = 32
 	MaxRollbackBlocks            = 180
 	SigChainBlockDelay           = 1
-	SigChainPropogationTime      = 1
+	SigChainPropogationTime      = 2
 	HeaderVersion                = 1
 	DBVersion                    = 0x01
 	InitialIssueAddress          = "NKNFCrUMFPkSeDRMG2ME21hD6wBCA2poc347"
@@ -50,9 +50,9 @@ const (
 	GenerateIDBlockDelay         = 8
 	RandomBeaconUniqueLength     = vrf.Size
 	RandomBeaconLength           = vrf.Size + vrf.ProofSize
-	ProtocolVersion              = 20
-	MinCompatibleProtocolVersion = 20
-	MaxCompatibleProtocolVersion = 29
+	ProtocolVersion              = 30
+	MinCompatibleProtocolVersion = 30
+	MaxCompatibleProtocolVersion = 39
 	DefaultTxPoolCap             = 32
 	ShortHashSize                = uint32(8)
 	MaxAssetPrecision            = uint32(8)
