@@ -95,7 +95,7 @@ func (localNode *LocalNode) startConnectingToRandomNeighbors() {
 	}
 
 	for {
-		time.Sleep(util.RandDuration(randomNeighborConnectInterval, 1.0/6.0))
+		time.Sleep(util.RandDuration(randomNeighborConnectInterval, 1.0/3.0))
 
 		if len(localNode.randomNeighbors) >= maxNumRandomNeighbors {
 			nbr := localNode.GetNbrNode(localNode.randomNeighbors[0])

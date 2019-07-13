@@ -81,6 +81,7 @@ func (consensus *Consensus) getNeighborConsensusState(neighbor *node.RemoteNode)
 	neighbor.SetHeight(replyMsg.LedgerHeight)
 	neighbor.SetMinVerifiableHeight(replyMsg.MinVerifiableHeight)
 	neighbor.SetSyncState(replyMsg.SyncState)
+	neighbor.SetLastUpdateTime(time.Now())
 
 	return replyMsg, nil
 }
