@@ -26,7 +26,7 @@ const (
 	TimestampTolerancePast     = config.ConsensusDuration / 2
 	TimestampToleranceVariance = config.ConsensusDuration / 6
 	ProposingTimeTolerance     = config.ConsensusDuration / 2
-	NumGenesisBlocks           = por.SigChainMiningHeightOffset + config.SigChainBlockDelay - 1
+	NumGenesisBlocks           = 4
 )
 
 var timestampToleranceSalt []byte = util.RandomBytes(32)

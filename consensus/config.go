@@ -12,7 +12,7 @@ const (
 	electionStartDelay          = config.ConsensusDuration / 2
 	electionDuration            = config.ConsensusDuration / 2
 	proposalVerificationTimeout = electionStartDelay * 4 / 5
-	minVotingInterval           = 500 * time.Millisecond
+	minVotingInterval           = 200 * time.Millisecond
 	maxVotingInterval           = 2 * time.Second
 	proposingInterval           = 500 * time.Millisecond
 	proposingTimeout            = chain.ProposingTimeTolerance * 4 / 5
