@@ -1,5 +1,5 @@
 <template>
-    <v-snackbar v-if="inBoundCount !== 0"
+    <v-snackbar v-if="inBoundCount === 0"
                 v-model="visible"
                 color="warning"
                 multi-line
