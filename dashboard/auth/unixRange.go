@@ -12,11 +12,7 @@ import (
 )
 
 func verifyUnix(a int64, b int64) bool {
-	if math.Abs(float64(a-b)) < serviceConfig.UnixRange {
-		return true
-	} else {
-		return false
-	}
+	return math.Abs(float64(a-b)) < serviceConfig.UnixRange
 }
 
 func UnixRangeAuth() gin.HandlerFunc {

@@ -24,7 +24,6 @@ import (
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/dashboard"
-	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
@@ -35,7 +34,7 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay"
 	"github.com/nknorg/nnet/overlay/chord"
-	ipify "github.com/rdegges/go-ipify"
+	"github.com/rdegges/go-ipify"
 	"github.com/urfave/cli"
 )
 
@@ -402,14 +401,24 @@ func main() {
 			Destination: &config.GenesisBlockProposer,
 		},
 		cli.BoolFlag{
-			Name:        "remote",
-			Usage:       "web service was run in remote mode",
-			Destination: &serviceConfig.IsRemote,
+			Name:        "allow-empty-beneficiary-address",
+			Usage:       "beneficiary address is forced unless --allow-empty-beneficiary-address is true",
+			Destination: &config.AllowEmptyBeneficiaryAddress,
+		},
+		cli.StringFlag{
+			Name:        "web-gui-listen-address",
+			Usage:       "web gui will listen this address (default: 127.0.0.1)",
+			Destination: &config.WebGuiListenAddress,
 		},
 		cli.BoolFlag{
-			Name:        "onlyui",
-			Usage:       "only run web ui",
-			Destination: &config.OnlyUI,
+			Name:        "web-gui-create-wallet",
+			Usage:       "web gui create/open wallet",
+			Destination: &config.WebGuiCreateWallet,
+		},
+		cli.StringFlag{
+			Name:        "password-file",
+			Usage:       "save password to file when both --password-file and --web-gui-create-wallet arguments are set and password file does not exist",
+			Destination: &config.PasswordFile,
 		},
 	}
 	app.Action = nknMain
