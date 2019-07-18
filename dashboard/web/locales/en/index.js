@@ -31,9 +31,9 @@ export default {
   PASSWORD_REQUIRED: 'Password is required.',
   PASSWORD_HINT: 'Please enter wallet password.',
 
-  PASSWORD_CONFIRM: 'Password confirm',
-  PASSWORD_CONFIRM_ERROR: 'Invalid password confirm.',
-  PASSWORD_CONFIRM_REQUIRED: 'Password confirm is required.',
+  PASSWORD_CONFIRM: 'Please enter password again',
+  PASSWORD_CONFIRM_ERROR: 'Password does not match.',
+  PASSWORD_CONFIRM_REQUIRED: 'Please enter password again.',
   PASSWORD_CONFIRM_HINT: 'Please enter password confirm.',
 
   WALLET_CREATE: 'Create wallet',
