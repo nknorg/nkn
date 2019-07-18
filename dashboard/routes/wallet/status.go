@@ -52,8 +52,8 @@ func StatusRouter(router *gin.RouterGroup) {
 			})
 			return
 		} else {
-			log.WebLog.Error("wallet has not init.")
-			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet has not init."))
+			log.WebLog.Error("wallet has not been initialized.")
+			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet has not been initialized."))
 			return
 		}
 
@@ -77,8 +77,8 @@ func StatusRouter(router *gin.RouterGroup) {
 			})
 			return
 		} else {
-			log.WebLog.Error("wallet has not init.")
-			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet has not init."))
+			log.WebLog.Error("wallet has not been initialized.")
+			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet has not been initialized."))
 			return
 		}
 

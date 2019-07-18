@@ -1,10 +1,6 @@
 <template>
   <v-app>
     <v-toolbar :clipped-left="clipped" dark app tabs color="indigo" dense>
-      <!--<v-toolbar-side-icon @click="drawer = !drawer">
-        <v-icon class="fas fa-wallet"></v-icon>
-      </v-toolbar-side-icon>-->
-      <!--<div class="divider-vertical mx-3"></div>-->
       <v-toolbar-title class="ml-2">
         <v-avatar tile size="30">
           <img src="~/static/img/logo.png" alt="avatar">
