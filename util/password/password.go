@@ -60,7 +60,7 @@ func GetAccountPassword() ([]byte, error) {
 	if Passwd == "" {
 		Passwd = os.Getenv("NKN_WALLET_PASSWORD")
 	}
-	if !config.Parameters.OnlyUI {
+	if !config.Parameters.WebGuiCreateWallet {
 		if Passwd == "" {
 			return GetPassword()
 		}
