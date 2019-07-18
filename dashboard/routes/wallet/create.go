@@ -30,8 +30,8 @@ func WalletCreateRouter(router *gin.RouterGroup) {
 
 		_, exists := context.Get("wallet")
 		if exists {
-			log.WebLog.Error("wallet has exist.")
-			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet has exist."))
+			log.WebLog.Error("wallet file exists.")
+			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet file exists."))
 			return
 		} else {
 			_, err := vault.NewWallet(config.Parameters.WalletFile, []byte(data.Password), true)
