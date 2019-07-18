@@ -12,7 +12,6 @@ const (
 )
 
 var (
-	IsInit   = false
-	IsRemote = false
-	Status   = SERVICE_STATUS_DEFAULT
+	IsInit = false
+	Status = SERVICE_STATUS_DEFAULT
 )

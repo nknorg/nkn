@@ -49,7 +49,7 @@ func WalletAuth() gin.HandlerFunc {
 		}
 		wallet, exists := context.Get("wallet")
 		if !exists {
-			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet is not init"))
+			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet has not been initialized"))
 			return
 		}
 
@@ -68,7 +68,7 @@ func WalletAuth() gin.HandlerFunc {
 
 		//seed, exists := context.Get("seed")
 		//if !exists {
-		//	context.AbortWithError(http.StatusInternalServerError, errors.New("wallet is not init"))
+		//	context.AbortWithError(http.StatusInternalServerError, errors.New("wallet has not been initialized"))
 		//	return
 		//}
 
