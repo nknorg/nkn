@@ -192,7 +192,7 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 		}
 
 		if nodeData.ProtocolVersion < config.MinCompatibleProtocolVersion || nodeData.ProtocolVersion > config.MaxCompatibleProtocolVersion {
-			return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol verison %d", nodeData.ProtocolVersion, config.ProtocolVersion)
+			return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol version %d", nodeData.ProtocolVersion, config.ProtocolVersion)
 		}
 
 		id, err := chain.DefaultLedger.Store.GetID(nodeData.PublicKey)
