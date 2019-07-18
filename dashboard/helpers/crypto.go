@@ -58,13 +58,6 @@ func AesDecrypt(encrypted string, pwd string) (string, error) {
 	return string(decrypted), nil
 }
 
-func HmacSha256(message string, secret string) []byte {
-	key := []byte(secret)
-	h := hmac.New(sha256.New, key)
-	h.Write([]byte(message))
-	return h.Sum(nil)
-}
-
 type BodyData struct {
 	Data string `form:"data"`
 }
@@ -98,6 +91,7 @@ func DecryptData(context *gin.Context) string {
 		return jsonData
 	}
 
+	context.AbortWithError(http.StatusBadRequest, errors.New("400 Bad request"))
 	return ""
 }
 

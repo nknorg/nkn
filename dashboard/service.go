@@ -119,10 +119,5 @@ func Start() {
 		context.JSON(http.StatusNotFound, "not found")
 	})
 
-	if serviceConfig.IsRemote {
-		app.Run(":" + strconv.Itoa(int(config.Parameters.WebServicePort)))
-	} else {
-		app.Run("localhost:" + strconv.Itoa(int(config.Parameters.WebServicePort)))
-	}
-
+	app.Run(config.Parameters.WebGuiListenAddress + ":" + strconv.Itoa(int(config.Parameters.WebGuiPort)))
 }

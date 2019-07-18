@@ -93,107 +93,104 @@ var (
 )
 
 var (
-	Version              string
-	SkipNAT              bool
-	nat                  gonat.NAT
-	ConfigFile           string
-	LogPath              string
-	ChainDBPath          string
-	WalletFile           string
-	BeneficiaryAddr      string
-	SeedList             string
-	GenesisBlockProposer string
-	OnlyUI               bool
-	Parameters           = &Configuration{
-		Version:                   1,
-		Transport:                 "tcp",
-		NodePort:                  30001,
-		HttpWsPort:                30002,
-		HttpJsonPort:              30003,
-		NAT:                       true,
-		Mining:                    true,
-		MiningDebug:               true,
-		LogLevel:                  1,
-		MaxLogFileSize:            20,
-		SyncBatchWindowSize:       128,
-		SyncBlockHeadersBatchSize: 128,
-		SyncBlocksBatchSize:       8,
-		RPCReadTimeout:            5,
-		RPCWriteTimeout:           10,
-		KeepAliveTimeout:          15,
-		NATPortMappingTimeout:     365 * 86400,
-		NumTxnPerBlock:            256,
-		TxPoolCap:                 DefaultTxPoolCap,
-		RegisterIDFee:             0,
-		LogPath:                   "Log",
-		ChainDBPath:               "ChainDB",
-		WalletFile:                "wallet.json",
-		MaxGetIDSeeds:             3,
-		DBFilesCacheCapacity:      100,
-		WebServicePort:            30000,
-		OnlyUI:                    false,
+	Version                      string
+	SkipNAT                      bool
+	nat                          gonat.NAT
+	ConfigFile                   string
+	LogPath                      string
+	ChainDBPath                  string
+	WalletFile                   string
+	BeneficiaryAddr              string
+	SeedList                     string
+	GenesisBlockProposer         string
+	AllowEmptyBeneficiaryAddress bool
+	WebGuiListenAddress          string
+	WebGuiCreateWallet           bool
+	PasswordFile                 string
+	Parameters                   = &Configuration{
+		Version:                      1,
+		Transport:                    "tcp",
+		NodePort:                     30001,
+		HttpWsPort:                   30002,
+		HttpJsonPort:                 30003,
+		NAT:                          true,
+		Mining:                       true,
+		MiningDebug:                  true,
+		LogLevel:                     1,
+		MaxLogFileSize:               20,
+		SyncBatchWindowSize:          128,
+		SyncBlockHeadersBatchSize:    128,
+		SyncBlocksBatchSize:          8,
+		RPCReadTimeout:               5,
+		RPCWriteTimeout:              10,
+		KeepAliveTimeout:             15,
+		NATPortMappingTimeout:        365 * 86400,
+		NumTxnPerBlock:               256,
+		TxPoolCap:                    DefaultTxPoolCap,
+		RegisterIDFee:                0,
+		LogPath:                      "Log",
+		ChainDBPath:                  "ChainDB",
+		WalletFile:                   "wallet.json",
+		MaxGetIDSeeds:                3,
+		DBFilesCacheCapacity:         100,
+		AllowEmptyBeneficiaryAddress: false,
+		WebGuiListenAddress:          "127.0.0.1",
+		WebGuiPort:                   30000,
+		WebGuiCreateWallet:           false,
+		PasswordFile:                 "",
 	}
 )
 
 type Configuration struct {
-	Version                   int           `json:"Version"`
-	SeedList                  []string      `json:"SeedList"`
-	RestCertPath              string        `json:"RestCertPath"`
-	RestKeyPath               string        `json:"RestKeyPath"`
-	RPCCert                   string        `json:"RPCCert"`
-	RPCKey                    string        `json:"RPCKey"`
-	HttpWsPort                uint16        `json:"HttpWsPort"`
-	HttpJsonPort              uint16        `json:"HttpJsonPort"`
-	NodePort                  uint16        `json:"-"`
-	LogLevel                  int           `json:"LogLevel"`
-	MaxLogFileSize            uint32        `json:"MaxLogSize"`
-	IsTLS                     bool          `json:"IsTLS"`
-	CertPath                  string        `json:"CertPath"`
-	KeyPath                   string        `json:"KeyPath"`
-	CAPath                    string        `json:"CAPath"`
-	MaxHdrSyncReqs            int           `json:"MaxConcurrentSyncHeaderReqs"`
-	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
-	MinTxnFee                 int64         `json:"MinTxnFee"`
-	RegisterIDFee             int64         `json:"RegisterIDFee"`
-	Hostname                  string        `json:"Hostname"`
-	Transport                 string        `json:"Transport"`
-	NAT                       bool          `json:"NAT"`
-	Mining                    bool          `json:"Mining"`
-	MiningDebug               bool          `json:"MiningDebug"`
-	BeneficiaryAddr           string        `json:"BeneficiaryAddr"`
-	SyncBatchWindowSize       uint32        `json:"SyncBatchWindowSize"`
-	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
-	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
-	NumTxnPerBlock            uint32        `json:"NumTxnPerBlock"`
-	TxPoolCap                 int           `json:"TxPoolCap"`
-	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`        // in seconds
-	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`       // in seconds
-	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`      // in seconds
-	NATPortMappingTimeout     time.Duration `json:"NATPortMappingTimeout"` // in seconds
-	LogPath                   string        `json:"LogPath"`
-	ChainDBPath               string        `json:"ChainDBPath"`
-	WalletFile                string        `json:"WalletFile"`
-	MaxGetIDSeeds             uint32        `json:"MaxGetIDSeeds"`
-	DBFilesCacheCapacity      int           `json:"DBFilesCacheCapacity"`
-	WebServicePort            uint16        `json:"WebServicePort"`
-	OnlyUI                    bool          `json:"OnlyUI"`
+	Version                      int           `json:"Version"`
+	SeedList                     []string      `json:"SeedList"`
+	RestCertPath                 string        `json:"RestCertPath"`
+	RestKeyPath                  string        `json:"RestKeyPath"`
+	RPCCert                      string        `json:"RPCCert"`
+	RPCKey                       string        `json:"RPCKey"`
+	HttpWsPort                   uint16        `json:"HttpWsPort"`
+	HttpJsonPort                 uint16        `json:"HttpJsonPort"`
+	NodePort                     uint16        `json:"-"`
+	LogLevel                     int           `json:"LogLevel"`
+	MaxLogFileSize               uint32        `json:"MaxLogSize"`
+	IsTLS                        bool          `json:"IsTLS"`
+	CertPath                     string        `json:"CertPath"`
+	KeyPath                      string        `json:"KeyPath"`
+	CAPath                       string        `json:"CAPath"`
+	MaxHdrSyncReqs               int           `json:"MaxConcurrentSyncHeaderReqs"`
+	GenesisBlockProposer         string        `json:"GenesisBlockProposer"`
+	MinTxnFee                    int64         `json:"MinTxnFee"`
+	RegisterIDFee                int64         `json:"RegisterIDFee"`
+	Hostname                     string        `json:"Hostname"`
+	Transport                    string        `json:"Transport"`
+	NAT                          bool          `json:"NAT"`
+	Mining                       bool          `json:"Mining"`
+	MiningDebug                  bool          `json:"MiningDebug"`
+	BeneficiaryAddr              string        `json:"BeneficiaryAddr"`
+	SyncBatchWindowSize          uint32        `json:"SyncBatchWindowSize"`
+	SyncBlockHeadersBatchSize    uint32        `json:"SyncBlockHeadersBatchSize"`
+	SyncBlocksBatchSize          uint32        `json:"SyncBlocksBatchSize"`
+	NumTxnPerBlock               uint32        `json:"NumTxnPerBlock"`
+	TxPoolCap                    int           `json:"TxPoolCap"`
+	RPCReadTimeout               time.Duration `json:"RPCReadTimeout"`        // in seconds
+	RPCWriteTimeout              time.Duration `json:"RPCWriteTimeout"`       // in seconds
+	KeepAliveTimeout             time.Duration `json:"KeepAliveTimeout"`      // in seconds
+	NATPortMappingTimeout        time.Duration `json:"NATPortMappingTimeout"` // in seconds
+	LogPath                      string        `json:"LogPath"`
+	ChainDBPath                  string        `json:"ChainDBPath"`
+	WalletFile                   string        `json:"WalletFile"`
+	MaxGetIDSeeds                uint32        `json:"MaxGetIDSeeds"`
+	DBFilesCacheCapacity         int           `json:"DBFilesCacheCapacity"`
+	AllowEmptyBeneficiaryAddress bool          `json:"AllowEmptyBeneficiaryAddress"`
+	WebGuiListenAddress          string        `json:"WebGuiListenAddress"`
+	WebGuiPort                   uint16        `json:"WebGuiPort"`
+	WebGuiCreateWallet           bool          `json:"WebGuiCreateWallet"`
+	PasswordFile                 string        `json:"PasswordFile"`
 }
 
 func Init() error {
-	configFile := ConfigFile
-	if configFile == "" {
-		configFile = DefaultConfigFile
-	}
-
-	if _, err := os.Stat(configFile); err == nil {
-		file, err := ioutil.ReadFile(configFile)
-		if err != nil {
-			return err
-		}
-
-		// Remove the UTF-8 Byte Order Mark
-		file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
-
+	file, err := OpenConfigFile()
+	if err == nil {
 		err = json.Unmarshal(file, Parameters)
 		if err != nil {
 			return err
@@ -230,8 +227,16 @@ func Init() error {
 		Parameters.incrementPort()
 	}
 
-	if OnlyUI {
-		Parameters.OnlyUI = OnlyUI
+	if AllowEmptyBeneficiaryAddress {
+		Parameters.AllowEmptyBeneficiaryAddress = AllowEmptyBeneficiaryAddress
+	}
+
+	if len(WebGuiListenAddress) > 0 {
+		Parameters.WebGuiListenAddress = WebGuiListenAddress
+	}
+
+	if WebGuiCreateWallet {
+		Parameters.WebGuiCreateWallet = WebGuiCreateWallet
 	}
 
 	if err := Parameters.SetupPortMapping(); err != nil {
@@ -239,7 +244,7 @@ func Init() error {
 		return err
 	}
 
-	err := Parameters.verify()
+	err = Parameters.verify()
 	if err != nil {
 		return err
 	}
@@ -442,4 +447,34 @@ func (config *Configuration) CheckPorts(myIP string) (bool, error) {
 		log.Printf("Port %d is open", port)
 	}
 	return true, nil
+}
+
+func OpenConfigFile() ([]byte, error) {
+	var file []byte
+
+	configFile := ConfigFile
+	if configFile == "" {
+		configFile = DefaultConfigFile
+	}
+	_, err := os.Stat(configFile)
+	if err != nil {
+		return file, err
+	}
+	file, err = ioutil.ReadFile(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove the UTF-8 Byte Order Mark
+	file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
+	return file, err
+
+}
+
+func WriteConfigFile(data []byte) error {
+	configFile := ConfigFile
+	if configFile == "" {
+		configFile = DefaultConfigFile
+	}
+	return ioutil.WriteFile(configFile, data, 0666)
 }

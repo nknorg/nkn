@@ -1,7 +1,6 @@
 package node
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -10,9 +9,7 @@ import (
 	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"io/ioutil"
 	"net/http"
-	"os"
 )
 
 type SetBeneficiaryData struct {
@@ -40,60 +37,46 @@ func BeneficiaryRouter(router *gin.RouterGroup) {
 			}
 		}
 
-		configFile := config.ConfigFile
-		if configFile == "" {
-			configFile = config.DefaultConfigFile
-		}
-		if _, err := os.Stat(configFile); err == nil {
-			file, err := ioutil.ReadFile(configFile)
-			if err != nil {
-				log.WebLog.Error("Read config file error:", err)
-				context.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
-
-			// Remove the UTF-8 Byte Order Mark
-			file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
-
-			var configuration map[string]interface{}
-			err = json.Unmarshal(file, &configuration)
-			if err != nil {
-				log.WebLog.Error(err)
-				context.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
-
-			// set beneficiary address
-			configuration["BeneficiaryAddr"] = data.BeneficiaryAddr
-
-			bytes, err := json.MarshalIndent(&configuration, "", "    ")
-			if err != nil {
-				log.WebLog.Error(err)
-				context.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
-
-			err = ioutil.WriteFile(configFile, bytes, 0666)
-			if err != nil {
-				log.WebLog.Error(err)
-				context.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
-
-			data := helpers.EncryptData(context, gin.H{
-				"beneficiaryAddr":        configuration["BeneficiaryAddr"],
-				"currentBeneficiaryAddr": config.Parameters.BeneficiaryAddr,
-			})
-
-			context.JSON(http.StatusOK, gin.H{
-				"data": data,
-			})
-			return
-		} else {
+		file, err := config.OpenConfigFile()
+		if err != nil {
 			log.WebLog.Error("Config file not exists.")
 			context.AbortWithError(http.StatusInternalServerError, errors.New("Config file not exists."))
 			return
 		}
+		var configuration map[string]interface{}
+		err = json.Unmarshal(file, &configuration)
+		if err != nil {
+			log.WebLog.Error(err)
+			context.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		// set beneficiary address
+		configuration["BeneficiaryAddr"] = data.BeneficiaryAddr
+
+		bytes, err := json.MarshalIndent(&configuration, "", "    ")
+		if err != nil {
+			log.WebLog.Error(err)
+			context.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		err = config.WriteConfigFile(bytes)
+		if err != nil {
+			log.WebLog.Error(err)
+			context.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		respData := helpers.EncryptData(context, gin.H{
+			"beneficiaryAddr":        configuration["BeneficiaryAddr"],
+			"currentBeneficiaryAddr": config.Parameters.BeneficiaryAddr,
+		})
+
+		context.JSON(http.StatusOK, gin.H{
+			"data": respData,
+		})
+		return
 
 	})
 
