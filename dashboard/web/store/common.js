@@ -1,6 +1,7 @@
 import {passwordHash} from '~/helpers/crypto'
 import {ServiceStatusEnum} from '~/helpers/consts'
 import {countBy} from "lodash"
+import {hmacSHA256} from "../helpers/crypto"
 
 
 const state = {
@@ -74,7 +75,8 @@ const actions = {
   },
   async verification({commit, rootState}, payload) {
     try {
-      this.$axios.setHeader("Authorization", passwordHash(payload, rootState.token + rootState.unix))
+      let seed = localStorage.getItem('seed')
+      this.$axios.setHeader("Authorization", passwordHash(payload, hmacSHA256(seed,rootState.token + rootState.unix)))
       let res = await this.$axios.head('/api/verification')
       return res.data
     } catch (e) {

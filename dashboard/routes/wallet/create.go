@@ -21,7 +21,7 @@ type CreateWalletData struct {
 
 func WalletCreateRouter(router *gin.RouterGroup) {
 	router.POST("/wallet/create", func(context *gin.Context) {
-		bodyData := helpers.DecryptData(context)
+		bodyData := helpers.DecryptData(context, false)
 
 		var data CreateWalletData
 		err := json.Unmarshal([]byte(bodyData), &data)
@@ -92,12 +92,7 @@ func WalletCreateRouter(router *gin.RouterGroup) {
 			return
 		}
 		password.Passwd = data.Password
-		err = password.SavePassword()
-		if err != nil {
-			log.WebLog.Error("save wallet password error: ", err)
-			context.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
+		password.SavePassword()
 
 		serviceConfig.Status = serviceConfig.SERVICE_STATUS_RUNNING
 
