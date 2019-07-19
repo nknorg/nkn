@@ -1,9 +1,12 @@
 package password
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
+	"io/ioutil"
 	"os"
 
 	"github.com/howeyc/gopass"
@@ -57,6 +60,16 @@ func GetConfirmedPassword() ([]byte, error) {
 // GetAccountPassword gets the node's wallet password from the command line,
 // the NKN_WALLET_PASSWORD environment variable, or user input, in this order
 func GetAccountPassword() ([]byte, error) {
+	if Passwd == "" && config.Parameters.PasswordFile != "" {
+		passwordByte, err := ReadPasswordFile()
+		if err != nil {
+			fmt.Println(err)
+		}
+		Passwd = string(passwordByte)
+		if Passwd != "" {
+			return passwordByte, nil
+		}
+	}
 	if Passwd == "" {
 		Passwd = os.Getenv("NKN_WALLET_PASSWORD")
 	}
@@ -69,4 +82,38 @@ func GetAccountPassword() ([]byte, error) {
 		return []byte(Passwd), errors.New("wait for set password")
 	}
 	return []byte(Passwd), nil
+}
+
+func ReadPasswordFile() ([]byte, error) {
+	var file []byte
+
+	passwordFile := config.Parameters.PasswordFile
+
+	_, err := os.Stat(passwordFile)
+	if err != nil {
+		return file, err
+	}
+
+	file, err = ioutil.ReadFile(passwordFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove the UTF-8 Byte Order Mark
+	file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf"))
+	return file, err
+}
+
+func SavePassword() error {
+	passwordFile := config.Parameters.PasswordFile
+
+	if Passwd != "" && passwordFile != "" && config.Parameters.WebGuiCreateWallet {
+		if common.FileExisted(passwordFile) {
+			return errors.New("wallet password file exists")
+		}
+
+		return ioutil.WriteFile(config.Parameters.PasswordFile, []byte(Passwd), 0666)
+	}
+
+	return nil
 }

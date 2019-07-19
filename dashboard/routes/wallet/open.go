@@ -40,6 +40,13 @@ func WalletOpenRouter(router *gin.RouterGroup) {
 				context.AbortWithError(http.StatusForbidden, err)
 				return
 			}
+
+			err = password.SavePassword()
+			if err != nil {
+				log.WebLog.Error("save wallet error: ", err)
+				context.AbortWithError(http.StatusInternalServerError, err)
+				return
+			}
 			context.JSON(http.StatusOK, "")
 			return
 		}
