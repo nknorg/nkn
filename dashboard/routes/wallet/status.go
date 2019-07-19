@@ -70,7 +70,7 @@ func StatusRouter(router *gin.RouterGroup) {
 			}
 
 			data := helpers.EncryptData(context, gin.H{
-				"privateKey": BytesToHexString(crypto.GetSeedFromPrivateKey(account.PrivateKey)),
+				"secretSeed": BytesToHexString(crypto.GetSeedFromPrivateKey(account.PrivateKey)),
 			})
 			context.JSON(http.StatusOK, gin.H{
 				"data": data,

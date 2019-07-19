@@ -1,18 +1,29 @@
 import {passwordHash} from '~/helpers/crypto'
 import {ServiceStatusEnum} from '~/helpers/consts'
+import {countBy} from "lodash"
 
 
 const state = {
   token: undefined,
   unix: Date.now(),
-  serviceStatus: ServiceStatusEnum.SERVICE_STATUS_DEFAULT
+  beneficiaryAddr: '',
+  serviceStatus: ServiceStatusEnum.SERVICE_STATUS_DEFAULT,
+  allowEmptyBeneficiaryAddress: false,
+  webGuiCreateWallet: false
 }
 
-const getters = {}
+const getters = {
+  beneficiaryAddrRequired(state) {
+    return !state.allowEmptyBeneficiaryAddress && state.webGuiCreateWallet
+  }
+}
 
 const mutations = {
   syncServiceStatus(state, data) {
     state.serviceStatus = data.status
+    state.allowEmptyBeneficiaryAddress = data.allowEmptyBeneficiaryAddress
+    state.webGuiCreateWallet = data.webGuiCreateWallet
+    state.beneficiaryAddr = data.beneficiaryAddr
   },
   syncToken(state, data) {
     state.token = data.token

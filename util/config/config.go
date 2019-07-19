@@ -227,6 +227,10 @@ func Init() error {
 		Parameters.WebGuiCreateWallet = WebGuiCreateWallet
 	}
 
+	if len(PasswordFile) > 0 {
+		Parameters.PasswordFile = PasswordFile
+	}
+
 	if err := Parameters.SetupPortMapping(); err != nil {
 		log.Printf("Error adding port mapping. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.")
 		return err
