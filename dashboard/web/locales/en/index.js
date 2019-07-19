@@ -25,7 +25,7 @@ export default {
   BALANCE: 'Balance',
   WALLET_ADDRESS: 'Wallet address',
   PUBLIC_KEY: 'Public key',
-  PRIVATE_KEY: 'Private key',
+  SECRET_SEED: 'Secret seed',
   PASSWORD: 'Password',
   PASSWORD_ERROR: 'Invalid password.',
   PASSWORD_REQUIRED: 'Password is required.',
