@@ -65,7 +65,7 @@
           <v-layout>
             <v-flex xs12>
                 <span>
-                  {{$t('PRIVATE_KEY')}}:
+                  {{$t('SECRET_SEED')}}:
                   <v-btn icon small>
                     <v-icon class="far fa-eye" small color="primary" @click="dialog = true"></v-icon>
                   </v-btn>
@@ -75,20 +75,20 @@
         </v-card-text>
       </v-card>
     </v-flex>
-    <PrivateKeyDialog v-model="dialog"></PrivateKeyDialog>
+    <SecretSeedDialog v-model="dialog"></SecretSeedDialog>
   </v-layout>
 </template>
 
 <script>
   import NodeRunStatus from '~/components/status/NodeRunStatus.vue'
-  import PrivateKeyDialog from '~/components/dialog/PrivateKey.vue'
+  import SecretSeed from '~/components/dialog/SecretSeed.vue'
   import ClipboardText from '~/components/widget/ClipboardText.vue'
   import {mapState} from 'vuex'
 
   export default {
     name: "nodeStatus",
     components: {
-      PrivateKeyDialog,
+      SecretSeedDialog: SecretSeed,
       NodeRunStatus,
       ClipboardText
     },

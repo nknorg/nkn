@@ -306,13 +306,17 @@ func (w *WalletImpl) GetContract() (*program.ProgramContext, error) {
 func GetWallet() (Wallet, error) {
 	walletFileName := config.Parameters.WalletFile
 	if !FileExisted(walletFileName) {
-		serviceConfig.Status = serviceConfig.SERVICE_STATUS_NO_WALLET_FILE
+		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_NO_WALLET_FILE
 		return nil, fmt.Errorf("wallet file %s does not exist, please create a wallet using nknc.", walletFileName)
 	}
 	passwd, err := password.GetAccountPassword()
 	if err != nil {
-		serviceConfig.Status = serviceConfig.SERVICE_STATUS_NO_PASSWORD
+		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_NO_PASSWORD
 		return nil, fmt.Errorf("get password error: %v", err)
+	}
+	if !config.Parameters.AllowEmptyBeneficiaryAddress && config.Parameters.BeneficiaryAddr == "" {
+		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_NO_BENEFICIARY
+		return nil, fmt.Errorf("wait for set beneficiary address.")
 	}
 	w, err := OpenWallet(walletFileName, passwd)
 	if err != nil {

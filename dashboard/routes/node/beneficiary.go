@@ -67,6 +67,7 @@ func BeneficiaryRouter(router *gin.RouterGroup) {
 			context.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
+		config.Parameters.BeneficiaryAddr = data.BeneficiaryAddr
 
 		respData := helpers.EncryptData(context, gin.H{
 			"beneficiaryAddr":        configuration["BeneficiaryAddr"],

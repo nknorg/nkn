@@ -156,16 +156,30 @@ func nknMain(c *cli.Context) error {
 
 	var wallet vault.Wallet
 	var account *vault.Account
-	for wallet == nil {
-		time.Sleep(time.Second * 3)
+	if config.Parameters.WebGuiCreateWallet {
+		for wallet == nil {
+			time.Sleep(time.Second * 3)
+
+			wallet, err = vault.GetWallet()
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			account, err = wallet.GetDefaultAccount()
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+	} else {
+		// Get local account
 		wallet, err = vault.GetWallet()
 		if err != nil {
-			fmt.Println(err)
-			continue
+			return err
 		}
 		account, err = wallet.GetDefaultAccount()
 		if err != nil {
-			fmt.Println(err)
+			return errors.New("load local account error")
 		}
 	}
 
@@ -417,7 +431,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "password-file",
-			Usage:       "save password to file when both --password-file and --web-gui-create-wallet arguments are set and password file does not exist",
+			Usage:       "read password from file, save password to file when --web-gui-create-wallet arguments be true and password file does not exist",
 			Destination: &config.PasswordFile,
 		},
 	}

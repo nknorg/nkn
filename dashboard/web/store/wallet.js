@@ -23,7 +23,7 @@ const actions = {
       console.log(e)
     }
   },
-  async getCurrentWalletPrivateKey({commit, rootState}, payload) {
+  async getCurrentWalletDetails({commit, rootState}, payload) {
     try {
       this.$axios.setHeader("Authorization", passwordHash(payload, rootState.token + rootState.unix))
       let res = await this.$axios.get('/api/current-wallet/details')
@@ -36,13 +36,16 @@ const actions = {
       return undefined
     }
   },
-  async createWallet({commit, rootState}, payload) {
+  async createWallet({commit, rootState}, {password, beneficiaryAddr}) {
     try {
-      let res = await this.$axios.post('/api/wallet/create', {password: payload})
+      let res = await this.$axios.post('/api/wallet/create', {password: password, beneficiaryAddr:beneficiaryAddr})
       commit('syncServiceStatus', {status: ServiceStatusEnum.SERVICE_STATUS_RUNNING}, {root: true})
       return res.data
     } catch (e) {
-      throw e
+      if (e.response.status === 400) {
+        e.code = e.response.status
+        throw e
+      }
     }
   },
   async openWallet({commit, rootState}, payload) {
