@@ -1,4 +1,4 @@
-import {aesEncrypt, aesDecrypt} from '~/helpers/crypto'
+import {aesEncrypt, aesDecrypt, hmacSHA256} from '~/helpers/crypto'
 
 export default function ({$axios, redirect, store}) {
   $axios.onRequest(config => {
@@ -6,21 +6,23 @@ export default function ({$axios, redirect, store}) {
     config.headers['Unix'] = Math.floor(Date.now() / 1000)
 
     if (config.data !== undefined) {
-      let secret = store.state.token + store.state.unix
+      let seed = localStorage.getItem('seed')
+      let secret = hmacSHA256(seed, store.state.token + store.state.unix)
       config.data = {data: aesEncrypt(JSON.stringify(config.data), secret)}
     }
   })
   $axios.onResponse(resp => {
-    if (resp.data.data !== undefined){
+    if (resp.data.data !== undefined) {
       let padding = 10
       let tick = store.state.unix
-      for (let i =  tick - padding; i < tick + padding; i++){
-        let secret = store.state.token + i
-        try{
+      for (let i = tick - padding; i < tick + padding; i++) {
+        let seed = localStorage.getItem('seed')
+        let secret = hmacSHA256(seed, store.state.token + i)
+        try {
           let data = aesDecrypt(resp.data.data, secret)
           resp.data = JSON.parse(data)
           return
-        }catch (e) {
+        } catch (e) {
         }
       }
       throw new Error('data can not decrypt')

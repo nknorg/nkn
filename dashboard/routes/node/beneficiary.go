@@ -18,7 +18,7 @@ type SetBeneficiaryData struct {
 
 func BeneficiaryRouter(router *gin.RouterGroup) {
 	router.PUT("/node/beneficiary", auth.WalletAuth(), func(context *gin.Context) {
-		bodyData := helpers.DecryptData(context)
+		bodyData := helpers.DecryptData(context, true)
 
 		var data SetBeneficiaryData
 		err := json.Unmarshal([]byte(bodyData), &data)
@@ -69,7 +69,7 @@ func BeneficiaryRouter(router *gin.RouterGroup) {
 		}
 		config.Parameters.BeneficiaryAddr = data.BeneficiaryAddr
 
-		respData := helpers.EncryptData(context, gin.H{
+		respData := helpers.EncryptData(context, true, gin.H{
 			"beneficiaryAddr":        configuration["BeneficiaryAddr"],
 			"currentBeneficiaryAddr": config.Parameters.BeneficiaryAddr,
 		})

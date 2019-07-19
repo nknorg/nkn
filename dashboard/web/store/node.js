@@ -1,5 +1,6 @@
 import {countBy} from 'lodash'
 import {passwordHash} from '~/helpers/crypto'
+import {hmacSHA256} from "../helpers/crypto"
 
 const state = {
   nodeStatus: {syncState: 'DEFAULT'},
@@ -42,7 +43,8 @@ const actions = {
   },
   async setBeneficiaryAddr({commit, rootState}, {password, beneficiaryAddr}) {
     try {
-      this.$axios.setHeader("Authorization", passwordHash(password, rootState.token + rootState.unix))
+      let seed = localStorage.getItem('seed')
+      this.$axios.setHeader("Authorization", passwordHash(password, hmacSHA256(seed,rootState.token + rootState.unix)))
       let res = await this.$axios.put('/api/node/beneficiary', {beneficiaryAddr: beneficiaryAddr})
       return res.data
     } catch (e) {

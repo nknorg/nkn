@@ -16,17 +16,19 @@ import (
 	"time"
 )
 
-func verifyPasswordKey(passwordKey []byte, passwordHash []byte, token string, seed string) bool {
+func verifyPasswordKey(passwordKey []byte, passwordHash []byte, token string) bool {
 	tick := time.Now().Unix()
 	padding := int64(serviceConfig.UnixRange)
-	hash := sha256.Sum224([]byte(BytesToHexString(passwordHash)))
+	pwdData := []byte(BytesToHexString(passwordHash))
+	hash := sha256.Sum224(pwdData)
 	for i := tick - padding; i < tick+padding; i++ {
-		hex, err := helpers.AesEncrypt(BytesToHexString(hash[:]), seed+token+strconv.FormatInt(i, 10))
+		seedHash := BytesToHexString(helpers.HmacSha256(pwdData, []byte(token+strconv.FormatInt(i, 10))))
+		hexHash, err := helpers.AesEncrypt(BytesToHexString(hash[:]), seedHash)
 		if err != nil {
 			log.WebLog.Error(err)
 			return false
 		}
-		hexByte, err := HexStringToBytes(hex)
+		hexByte, err := HexStringToBytes(hexHash)
 		if err != nil {
 			log.WebLog.Error(err)
 			return false
@@ -66,12 +68,6 @@ func WalletAuth() gin.HandlerFunc {
 			return
 		}
 
-		//seed, exists := context.Get("seed")
-		//if !exists {
-		//	context.AbortWithError(http.StatusInternalServerError, errors.New("wallet has not been initialized"))
-		//	return
-		//}
-
 		session := sessions.Default(context)
 		token := session.Get("token")
 
@@ -79,7 +75,7 @@ func WalletAuth() gin.HandlerFunc {
 			context.AbortWithError(http.StatusForbidden, errors.New("403 Forbidden"))
 			return
 		}
-		if ok := verifyPasswordKey(passwordKey, passwordKeyHash, token.(string), ""); !ok {
+		if ok := verifyPasswordKey(passwordKey, passwordKeyHash, token.(string)); !ok {
 			context.AbortWithError(http.StatusForbidden, errors.New("403 Forbidden"))
 			return
 		}

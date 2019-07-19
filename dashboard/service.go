@@ -4,6 +4,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/securecookie"
 	"github.com/nknorg/nkn/dashboard/auth"
 	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/dashboard/routes"
@@ -49,7 +50,7 @@ func Start() {
 
 	app.Use(gin.Recovery())
 
-	store := cookie.NewStore([]byte(uuid.NewUUID().String()))
+	store := cookie.NewStore(securecookie.GenerateRandomKey(16), securecookie.GenerateRandomKey(16))
 	store.Options(sessions.Options{
 		MaxAge:   30, //30s
 		Path:     "/",
@@ -62,7 +63,6 @@ func Start() {
 		if serviceConfig.IsInit {
 			context.Set("localNode", localNode)
 			context.Set("wallet", wallet)
-			context.Set("seed", wallet.(*vault.WalletImpl).Data.PasswordHash)
 		}
 	})
 
