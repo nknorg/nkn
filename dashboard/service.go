@@ -23,9 +23,9 @@ var (
 )
 
 func Init(ln *node.LocalNode, w vault.Wallet) {
-	serviceConfig.IsInit = true
 	localNode = ln
 	wallet = w
+	serviceConfig.IsInit = true
 }
 
 func Start() {
@@ -49,7 +49,7 @@ func Start() {
 
 	app.Use(gin.Recovery())
 
-	store := cookie.NewStore([]byte("nkn"))
+	store := cookie.NewStore([]byte(uuid.NewUUID().String()))
 	store.Options(sessions.Options{
 		MaxAge:   30, //30s
 		Path:     "/",
