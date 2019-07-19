@@ -41,7 +41,7 @@ func StatusRouter(router *gin.RouterGroup) {
 
 			balance := chain.DefaultLedger.Store.GetBalance(pg)
 
-			data := helpers.EncryptData(context, gin.H{
+			data := helpers.EncryptData(context, true, gin.H{
 				"balance":   balance.String(),
 				"address":   address,
 				"publicKey": BytesToHexString(account.PublicKey.EncodePoint()),
@@ -69,7 +69,7 @@ func StatusRouter(router *gin.RouterGroup) {
 				return
 			}
 
-			data := helpers.EncryptData(context, gin.H{
+			data := helpers.EncryptData(context, true, gin.H{
 				"secretSeed": BytesToHexString(crypto.GetSeedFromPrivateKey(account.PrivateKey)),
 			})
 			context.JSON(http.StatusOK, gin.H{

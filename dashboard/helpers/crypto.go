@@ -10,12 +10,20 @@ import (
 	"errors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	. "github.com/nknorg/nkn/common"
 	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/vault"
 	"net/http"
 	"strconv"
 	"time"
 )
+
+func HmacSha256(data []byte, secret []byte) []byte {
+	h := hmac.New(sha256.New, secret)
+	h.Write(data)
+	return h.Sum(nil)
+}
 
 func BuildPwd(pwd string) []byte {
 	key := []byte(pwd)
@@ -62,12 +70,18 @@ type BodyData struct {
 	Data string `form:"data"`
 }
 
-func DecryptData(context *gin.Context) string {
+func DecryptData(context *gin.Context, hasSeed bool) string {
 	var body BodyData
 	if err := context.ShouldBind(&body); err != nil {
 		log.WebLog.Error(err)
 		context.AbortWithError(http.StatusBadRequest, err)
 		return ""
+	}
+	seed := ""
+	wallet, exists := context.Get("wallet")
+	if exists && hasSeed {
+		passwordKeyHash := wallet.(*vault.WalletImpl).Data.PasswordHash
+		seed = passwordKeyHash
 	}
 
 	tick := time.Now().Unix()
@@ -78,8 +92,10 @@ func DecryptData(context *gin.Context) string {
 		context.AbortWithError(http.StatusForbidden, errors.New("403 Forbidden"))
 		return ""
 	}
+
 	for i := tick - padding; i < tick+padding; i++ {
-		jsonData, err := AesDecrypt(body.Data, token.(string)+strconv.FormatInt(i, 10))
+		seedHash := BytesToHexString(HmacSha256([]byte(seed), []byte(token.(string)+strconv.FormatInt(i, 10))))
+		jsonData, err := AesDecrypt(body.Data, seedHash)
 		if err != nil {
 			continue
 		}
@@ -95,15 +111,24 @@ func DecryptData(context *gin.Context) string {
 	return ""
 }
 
-func EncryptData(context *gin.Context, sourceData interface{}) string {
+func EncryptData(context *gin.Context, hasSeed bool, sourceData interface{}) string {
 	buf, err := json.Marshal(sourceData)
 	if err != nil {
 		return ""
 	}
+
+	seed := ""
+	wallet, exists := context.Get("wallet")
+	if exists && hasSeed {
+		passwordKeyHash := wallet.(*vault.WalletImpl).Data.PasswordHash
+		seed = passwordKeyHash
+	}
+
 	tick := time.Now().Unix()
 	session := sessions.Default(context)
 	token := session.Get("token")
-	data, err := AesEncrypt(string(buf), token.(string)+strconv.FormatInt(tick, 10))
+	seedHash := BytesToHexString(HmacSha256([]byte(seed), []byte(token.(string)+strconv.FormatInt(tick, 10))))
+	data, err := AesEncrypt(string(buf), seedHash)
 	if err != nil {
 		return ""
 	}

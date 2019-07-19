@@ -31,7 +31,7 @@ func StatusRouter(router *gin.RouterGroup) {
 			}
 			out["beneficiaryAddr"] = config.Parameters.BeneficiaryAddr
 
-			data := helpers.EncryptData(context, out)
+			data := helpers.EncryptData(context, true, out)
 
 			context.JSON(http.StatusOK, gin.H{
 				"data": data,
