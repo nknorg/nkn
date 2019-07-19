@@ -320,6 +320,7 @@ func GetWallet() (Wallet, error) {
 	}
 	w, err := OpenWallet(walletFileName, passwd)
 	if err != nil {
+		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_NO_PASSWORD
 		return nil, fmt.Errorf("open wallet error: %v", err)
 	}
 	serviceConfig.Status = serviceConfig.SERVICE_STATUS_RUNNING
