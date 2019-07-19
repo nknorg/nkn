@@ -5,6 +5,10 @@ export function hmacSHA256(message, secret) {
   return CryptoJS.HmacSHA256(message, secret).toString()
 }
 
+export function seedHash(password) {
+  return tripleSha256(password)
+}
+
 export function passwordHash(password, secret) {
   let passwordHash = sha224(tripleSha256(password))
   return aesEncrypt(passwordHash, secret)

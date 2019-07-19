@@ -14,7 +14,7 @@ func NeighborRouter(router *gin.RouterGroup) {
 		if exists {
 			list := localNode.(*node.LocalNode).GetNeighborInfo()
 
-			data := helpers.EncryptData(context, list)
+			data := helpers.EncryptData(context, true, list)
 			context.JSON(http.StatusOK, gin.H{
 				"data": data,
 			})
