@@ -2,7 +2,7 @@
   <v-dialog v-model="visible" persistent max-width="600px">
     <v-card>
       <v-card-title>
-        <span class="headline">{{$t('PRIVATE_KEY')}}</span>
+        <span class="headline">{{$t('SECRET_SEED')}}</span>
         <v-spacer></v-spacer>
         <v-btn class="mr-0" icon small @click="cancel">
           <v-icon class="fas fa-times" color="grey darken-2" small></v-icon>
@@ -33,7 +33,7 @@
 
         <v-window-item :value="2">
           <v-card-text>
-            <ClipboardText v-model="privateKey" :label="$t('PRIVATE_KEY')"></ClipboardText>
+            <ClipboardText v-model="secretSeed" :label="$t('SECRET_SEED')"></ClipboardText>
           </v-card-text>
         </v-window-item>
 
@@ -54,7 +54,7 @@
   import {mapActions} from 'vuex'
 
   export default {
-    name: "PrivateKey",
+    name: "SecretSeed",
     components: {
       ClipboardText
     },
@@ -69,7 +69,7 @@
         step: 1,
         visible: this.value,
         password: '',
-        privateKey: '',
+        secretSeed: '',
         showPassword: false,
         passwordError: false,
         passwordErrorMessage: '',
@@ -94,7 +94,7 @@
       },
     },
     methods: {
-      ...mapActions('wallet', ['getCurrentWalletPrivateKey']),
+      ...mapActions('wallet', ['getCurrentWalletDetails']),
       cancel() {
         this.visible = false
         this.$emit('input', this.visible)
@@ -105,8 +105,8 @@
       async next() {
         if (this.$refs.form.validate()) {
           try {
-            let res = await this.getCurrentWalletPrivateKey(this.password)
-            this.privateKey = res.privateKey
+            let res = await this.getCurrentWalletDetails(this.password)
+            this.secretSeed = res.secretSeed
             this.passwordError = false
             this.passwordErrorMessage = ''
             this.step++

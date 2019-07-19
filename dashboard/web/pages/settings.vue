@@ -13,9 +13,6 @@
         </v-flex>
         <v-flex xs12 md6>
           <v-subheader class="pa-0">{{$t('settings.BENEFICIARY_TITLE')}}</v-subheader>
-          <material-notification class="mb-3" color="warning" v-model="beneficiaryWaringAlert">
-            {{$t('settings.BENEFICIARY_WARING', { beneficiaryAddr: beneficiaryAddr})}}
-          </material-notification>
           <v-text-field :label="$t('BENEFICIARY')" :value="nodeStatus.beneficiaryAddr" box readonly persistent-hint
                         :hint="$t('settings.BENEFICIARY_HINT')">
             <template v-slot:append>
@@ -59,7 +56,6 @@
     data() {
       return {
         dialog: false,
-        beneficiaryWaringAlert: false,
         isEditWallet: false,
         restarting: false,
         wallets: null,
@@ -69,7 +65,6 @@
     methods: {
       onDialogSuccess(data) {
         this.beneficiaryAddr = data.beneficiaryAddr
-        this.beneficiaryWaringAlert = true
       }
     }
   }

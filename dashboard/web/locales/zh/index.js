@@ -25,7 +25,7 @@ export default {
   BALANCE: '余额',
   WALLET_ADDRESS: '钱包地址',
   PUBLIC_KEY: '公钥',
-  PRIVATE_KEY: '私钥',
+  SECRET_SEED: '私钥种子',
   PASSWORD: '密码',
   PASSWORD_ERROR: '无效的密码.',
   PASSWORD_REQUIRED: '密码不能为空.',
