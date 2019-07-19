@@ -13,12 +13,17 @@ export default ({app, redirect, store}) => {
     let status = store.state.serviceStatus
     if (status === ServiceStatusEnum.SERVICE_STATUS_DEFAULT) {
       redirect(app.localePath('loading'))
-    } else if (status === ServiceStatusEnum.SERVICE_STATUS_NO_WALLET_FILE) {
+    } else if ((status & ServiceStatusEnum.SERVICE_STATUS_NO_WALLET_FILE) > 0) {
       if (!~to.path.indexOf('/wallet/create')) {
         redirect(app.localePath('wallet-create'))
       }
-    } else if (status === ServiceStatusEnum.SERVICE_STATUS_NO_PASSWORD) {
+    } else if ((status & ServiceStatusEnum.SERVICE_STATUS_NO_PASSWORD) > 0) {
       if (!~to.path.indexOf('/wallet/open')) {
+        redirect(app.localePath('wallet-open'))
+      }
+    }else{
+      let seed = localStorage.getItem('seed')
+      if (!seed) {
         redirect(app.localePath('wallet-open'))
       }
     }

@@ -105,6 +105,7 @@
     methods: {
       ...mapActions('wallet', ['createWallet']),
       async submit() {
+        localStorage.setItem('seed','')
         if (this.$refs.form.validate()) {
           try {
             await this.createWallet({password: this.password, beneficiaryAddr: this.beneficiaryAddr})
