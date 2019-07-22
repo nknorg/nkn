@@ -22,7 +22,7 @@ func verifyPasswordKey(passwordKey []byte, passwordHash []byte, token string) bo
 	pwdData := []byte(BytesToHexString(passwordHash))
 	hash := sha256.Sum224(pwdData)
 	for i := tick - padding; i < tick+padding; i++ {
-		seedHash := BytesToHexString(helpers.HmacSha256(pwdData, []byte(token+strconv.FormatInt(i, 10))))
+		seedHash := BytesToHexString(helpers.HmacSha256([]byte(BytesToHexString(hash[:])), []byte(token+strconv.FormatInt(i, 10))))
 		hexHash, err := helpers.AesEncrypt(BytesToHexString(hash[:]), seedHash)
 		if err != nil {
 			log.WebLog.Error(err)

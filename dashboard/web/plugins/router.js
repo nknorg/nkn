@@ -22,7 +22,7 @@ export default ({app, redirect, store}) => {
         redirect(app.localePath('wallet-open'))
       }
     }else{
-      let seed = localStorage.getItem('seed')
+      let seed = sessionStorage.getItem('seed')
       if (!seed) {
         redirect(app.localePath('wallet-open'))
       }
