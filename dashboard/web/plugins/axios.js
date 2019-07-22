@@ -6,7 +6,7 @@ export default function ({$axios, redirect, store}) {
     config.headers['Unix'] = Math.floor(Date.now() / 1000)
 
     if (config.data !== undefined) {
-      let seed = localStorage.getItem('seed')
+      let seed = sessionStorage.getItem('seed')
       let secret = hmacSHA256(seed, store.state.token + store.state.unix)
       config.data = {data: aesEncrypt(JSON.stringify(config.data), secret)}
     }
@@ -16,7 +16,7 @@ export default function ({$axios, redirect, store}) {
       let padding = 10
       let tick = store.state.unix
       for (let i = tick - padding; i < tick + padding; i++) {
-        let seed = localStorage.getItem('seed')
+        let seed = sessionStorage.getItem('seed')
         let secret = hmacSHA256(seed, store.state.token + i)
         try {
           let data = aesDecrypt(resp.data.data, secret)

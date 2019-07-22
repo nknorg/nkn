@@ -1,4 +1,4 @@
-import {passwordHash, seedHash, hmacSHA256} from '~/helpers/crypto'
+import {passwordHash, seedHash, hmacSHA256, authHash} from '~/helpers/crypto'
 import {ServiceStatusEnum} from '~/helpers/consts'
 
 const state = {
@@ -25,8 +25,7 @@ const actions = {
   },
   async getCurrentWalletDetails({commit, rootState}, payload) {
     try {
-      let seed = localStorage.getItem('seed')
-      this.$axios.setHeader("Authorization", passwordHash(payload, hmacSHA256(seed,rootState.token + rootState.unix)))
+      this.$axios.setHeader("Authorization", passwordHash(payload, hmacSHA256(authHash(payload),rootState.token + rootState.unix)))
       let res = await this.$axios.get('/api/current-wallet/details')
       return res.data
     } catch (e) {
@@ -40,7 +39,7 @@ const actions = {
   async createWallet({commit, rootState}, {password, beneficiaryAddr}) {
     try {
       let res = await this.$axios.post('/api/wallet/create', {password: password, beneficiaryAddr:beneficiaryAddr})
-      localStorage.setItem('seed', seedHash(password))
+      sessionStorage.setItem('seed', seedHash(password))
       commit('syncServiceStatus', {status: ServiceStatusEnum.SERVICE_STATUS_RUNNING}, {root: true})
       return res.data
     } catch (e) {
@@ -53,7 +52,7 @@ const actions = {
   async openWallet({commit, rootState}, payload) {
     try {
       let res = await this.$axios.post('/api/wallet/open', {password: payload})
-      localStorage.setItem('seed', seedHash(payload))
+      sessionStorage.setItem('seed', seedHash(payload))
       commit('syncServiceStatus', {status: ServiceStatusEnum.SERVICE_STATUS_RUNNING}, {root: true})
       return res.data
     } catch (e) {
