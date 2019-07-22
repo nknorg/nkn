@@ -6,7 +6,11 @@ export function hmacSHA256(message, secret) {
 }
 
 export function seedHash(password) {
-  return tripleSha256(password)
+  return sha256(tripleSha256(password))
+}
+
+export function authHash(password){
+  return sha224(tripleSha256(password))
 }
 
 export function passwordHash(password, secret) {
