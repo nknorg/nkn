@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
-	. "github.com/nknorg/nkn/common"
 	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/util/config"
@@ -38,51 +37,13 @@ func WalletCreateRouter(router *gin.RouterGroup) {
 			return
 		}
 
-		if config.Parameters.WebGuiCreateWallet && !config.Parameters.AllowEmptyBeneficiaryAddress {
-			if data.BeneficiaryAddr == "" {
-				log.WebLog.Error("beneficiary address is empty.")
-				context.AbortWithError(http.StatusBadRequest, errors.New("beneficiary address is empty."))
-				return
-			}
-
-			_, err = ToScriptHash(data.BeneficiaryAddr)
+		if config.Parameters.WebGuiCreateWallet {
+			err = config.SetBeneficiaryAddr(data.BeneficiaryAddr, !config.Parameters.AllowEmptyBeneficiaryAddress)
 			if err != nil {
-				log.WebLog.Errorf("parse BeneficiaryAddr error: %v", err)
+				log.WebLog.Error(err)
 				context.AbortWithError(http.StatusBadRequest, err)
 				return
 			}
-
-			file, err := config.OpenConfigFile()
-			if err != nil {
-				log.WebLog.Error("Config file not exists.")
-				context.AbortWithError(http.StatusInternalServerError, errors.New("Config file not exists."))
-				return
-			}
-			var configuration map[string]interface{}
-			err = json.Unmarshal(file, &configuration)
-			if err != nil {
-				log.WebLog.Error(err)
-				context.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
-
-			// set beneficiary address
-			configuration["BeneficiaryAddr"] = data.BeneficiaryAddr
-
-			bytes, err := json.MarshalIndent(&configuration, "", "    ")
-			if err != nil {
-				log.WebLog.Error(err)
-				context.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
-
-			err = config.WriteConfigFile(bytes)
-			if err != nil {
-				log.WebLog.Error(err)
-				context.AbortWithError(http.StatusInternalServerError, err)
-				return
-			}
-			config.Parameters.BeneficiaryAddr = data.BeneficiaryAddr
 		}
 
 		_, err = vault.NewWallet(config.Parameters.WalletFile, []byte(data.Password), true)
@@ -92,7 +53,10 @@ func WalletCreateRouter(router *gin.RouterGroup) {
 			return
 		}
 		password.Passwd = data.Password
-		password.SavePassword()
+		err = password.SavePassword(password.Passwd)
+		if err != nil {
+			log.WebLog.Error("save wallet error: ", err)
+		}
 
 		serviceConfig.Status = serviceConfig.SERVICE_STATUS_RUNNING
 
