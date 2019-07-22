@@ -2,9 +2,7 @@ package node
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/gin-gonic/gin"
-	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/dashboard/auth"
 	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/util/config"
@@ -28,49 +26,15 @@ func BeneficiaryRouter(router *gin.RouterGroup) {
 			return
 		}
 
-		if data.BeneficiaryAddr != "" {
-			_, err = ToScriptHash(data.BeneficiaryAddr)
-			if err != nil {
-				log.WebLog.Errorf("parse BeneficiaryAddr error: %v", err)
-				context.AbortWithError(http.StatusBadRequest, err)
-				return
-			}
-		}
-
-		file, err := config.OpenConfigFile()
-		if err != nil {
-			log.WebLog.Error("Config file not exists.")
-			context.AbortWithError(http.StatusInternalServerError, errors.New("Config file not exists."))
-			return
-		}
-		var configuration map[string]interface{}
-		err = json.Unmarshal(file, &configuration)
+		err = config.SetBeneficiaryAddr(data.BeneficiaryAddr, !config.Parameters.AllowEmptyBeneficiaryAddress)
 		if err != nil {
 			log.WebLog.Error(err)
-			context.AbortWithError(http.StatusInternalServerError, err)
+			context.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
-
-		// set beneficiary address
-		configuration["BeneficiaryAddr"] = data.BeneficiaryAddr
-
-		bytes, err := json.MarshalIndent(&configuration, "", "    ")
-		if err != nil {
-			log.WebLog.Error(err)
-			context.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-
-		err = config.WriteConfigFile(bytes)
-		if err != nil {
-			log.WebLog.Error(err)
-			context.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-		config.Parameters.BeneficiaryAddr = data.BeneficiaryAddr
 
 		respData := helpers.EncryptData(context, true, gin.H{
-			"beneficiaryAddr":        configuration["BeneficiaryAddr"],
+			"beneficiaryAddr":        data.BeneficiaryAddr,
 			"currentBeneficiaryAddr": config.Parameters.BeneficiaryAddr,
 		})
 

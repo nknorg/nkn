@@ -66,7 +66,10 @@ func WalletOpenRouter(router *gin.RouterGroup) {
 				return
 			}
 
-			password.SavePassword()
+			err = password.SavePassword(password.Passwd)
+			if err != nil {
+				log.WebLog.Error("save wallet error: ", err)
+			}
 		}
 		context.JSON(http.StatusOK, "")
 		return

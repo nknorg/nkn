@@ -157,7 +157,7 @@ func nknMain(c *cli.Context) error {
 	var wallet vault.Wallet
 	var account *vault.Account
 	if config.Parameters.WebGuiCreateWallet {
-		for wallet == nil {
+		for wallet == nil || account == nil {
 			time.Sleep(time.Second * 3)
 
 			wallet, err = vault.GetWallet()
