@@ -72,8 +72,7 @@ const actions = {
   },
   async verification({commit, rootState}, payload) {
     try {
-      let seed = sessionStorage.getItem('seed')
-      this.$axios.setHeader("Authorization", passwordHash(authHash(payload), hmacSHA256(seed,rootState.token + rootState.unix)))
+      this.$axios.setHeader("Authorization", passwordHash(payload, hmacSHA256(authHash(payload),rootState.token + rootState.unix)))
       let res = await this.$axios.head('/api/verification')
       return res.data
     } catch (e) {

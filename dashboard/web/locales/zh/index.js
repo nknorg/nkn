@@ -40,7 +40,8 @@ export default {
   WALLET_OPEN: '打开钱包',
   CREATE: '创建',
   OPEN: '打开',
-
+  WALLET_DOWNLOAD: '下载钱包',
+  WALLET_UPLOAD: '上传钱包',
 
   NO_DATA: '没有数据',
 
