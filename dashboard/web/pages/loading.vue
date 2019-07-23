@@ -37,11 +37,11 @@
     methods: {
       loadPage() {
         // let currentPage = this.$route.name
-        if ((this.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_NO_WALLET_FILE) > 0) {
-          this.$router.push(this.localePath('wallet-create'))
-        } else if ((this.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_NO_PASSWORD) > 0) {
+        if ((this.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_NO_PASSWORD) > 0) {
           this.$router.push(this.localePath('wallet-open'))
-        }else if ((this.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_RUNNING) > 0){
+        } else if ((this.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_NO_WALLET_FILE) > 0) {
+          this.$router.push(this.localePath('wallet-create'))
+        } else if ((this.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_RUNNING) > 0){
           this.$router.push(this.localePath('index'))
         }
 

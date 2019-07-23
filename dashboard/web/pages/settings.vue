@@ -19,7 +19,7 @@
               <v-btn icon small v-clipboard:copy="nodeStatus.beneficiaryAddr">
                 <v-icon color="primary" class="far fa-copy" small></v-icon>
               </v-btn>
-              <v-btn icon small @click="dialog = true">
+              <v-btn icon small @click="secretSeedDialog = true">
                 <v-icon color="primary" class="far fa-edit" small></v-icon>
               </v-btn>
             </template>
@@ -31,14 +31,13 @@
     <div class="divider"></div>
     <v-card-actions class="pa-3">
 
-
     </v-card-actions>
-    <BeneficiaryAddrDialog v-model="dialog" :on-success="onDialogSuccess"></BeneficiaryAddrDialog>
+    <BeneficiaryAddrDialog v-model="secretSeedDialog" :on-success="onDialogSuccess"></BeneficiaryAddrDialog>
   </v-card>
 </template>
 
 <script>
-  import BeneficiaryAddrDialog from '../components/dialog/BeneficiaryAddr.vue'
+  import BeneficiaryAddrDialog from '~/components/dialog/BeneficiaryAddr.vue'
   import NodeRunStatus from '~/components/status/NodeRunStatus.vue'
   import MaterialNotification from '~/components/material/Notification'
   import {mapState} from 'vuex'
@@ -55,8 +54,7 @@
     }),
     data() {
       return {
-        dialog: false,
-        isEditWallet: false,
+        secretSeedDialog: false,
         restarting: false,
         wallets: null,
         beneficiaryAddr: ''
