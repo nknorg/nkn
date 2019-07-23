@@ -5,7 +5,7 @@ export default function ({$axios, redirect, store}) {
     config.withCredentials = true
     config.headers['Unix'] = Math.floor(Date.now() / 1000)
 
-    if (config.data !== undefined) {
+    if (config.data !== undefined && !(config.data instanceof FormData)) {
       let seed = sessionStorage.getItem('seed')
       let secret = hmacSHA256(seed, store.state.token + store.state.unix)
       config.data = {data: aesEncrypt(JSON.stringify(config.data), secret)}

@@ -25,7 +25,7 @@ const actions = {
   },
   async getCurrentWalletDetails({commit, rootState}, payload) {
     try {
-      this.$axios.setHeader("Authorization", passwordHash(payload, hmacSHA256(authHash(payload),rootState.token + rootState.unix)))
+      this.$axios.setHeader("Authorization", passwordHash(payload, hmacSHA256(authHash(payload), rootState.token + rootState.unix)))
       let res = await this.$axios.get('/api/current-wallet/details')
       return res.data
     } catch (e) {
@@ -38,7 +38,7 @@ const actions = {
   },
   async createWallet({commit, rootState}, {password, beneficiaryAddr}) {
     try {
-      let res = await this.$axios.post('/api/wallet/create', {password: password, beneficiaryAddr:beneficiaryAddr})
+      let res = await this.$axios.post('/api/wallet/create', {password: password, beneficiaryAddr: beneficiaryAddr})
       sessionStorage.setItem('seed', seedHash(password))
       commit('syncServiceStatus', {status: ServiceStatusEnum.SERVICE_STATUS_RUNNING}, {root: true})
       return res.data
@@ -62,8 +62,27 @@ const actions = {
       }
       return undefined
     }
+  },
+  async downloadWallet({commit, rootState}, payload) {
+    try {
+      this.$axios.setHeader("Authorization", passwordHash(payload, hmacSHA256(authHash(payload), rootState.token + rootState.unix)))
+      let res = await this.$axios.get('/api/wallet/download')
+      let blob = new Blob([JSON.stringify(res.data)], {type: res.headers['content-type']})
+      let downloadElement = document.createElement('a')
+      let href = window.URL.createObjectURL(blob)
+      downloadElement.href = href
+      downloadElement.download = 'wallet.json'
+      document.body.appendChild(downloadElement)
+      downloadElement.click()
+      document.body.removeChild(downloadElement)
+      window.URL.revokeObjectURL(href)
+    } catch (e) {
+      throw e
+    }
   }
+
 }
+
 export default {
   namespaced: true,
   state: () => state,
