@@ -40,7 +40,8 @@ export default {
   WALLET_OPEN: 'Open wallet',
   CREATE : 'Create',
   OPEN : 'Open',
-
+  WALLET_DOWNLOAD: 'Download wallet',
+  WALLET_UPLOAD: 'Upload wallet',
 
   NO_DATA: 'No data available',
 
