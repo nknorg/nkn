@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/big"
 
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/config"
@@ -368,4 +369,33 @@ func (sc *SigChain) SignatureHash() ([]byte, error) {
 	}
 	signatureHash := ComputeSignatureHash(signature, sc.Length())
 	return signatureHash, nil
+}
+
+func (e *SigChainElem) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"id":         common.HexStr(e.Id),
+		"nextPubkey": common.HexStr(e.NextPubkey),
+		"mining":     e.Mining,
+		"signature":  common.HexStr(e.Signature),
+		"sigAlgo":    e.SigAlgo,
+		"vrf":        common.HexStr(e.Vrf),
+		"proof":      common.HexStr(e.Proof),
+	}
+}
+
+func (sc *SigChain) ToMap() map[string]interface{} {
+	elems := make([]interface{}, 0)
+	for _, e := range sc.Elems {
+		elems = append(elems, e.ToMap())
+	}
+	return map[string]interface{}{
+		"nonce":      sc.Nonce,
+		"dataSize":   sc.DataSize,
+		"blockHash":  common.HexStr(sc.BlockHash),
+		"srcId":      common.HexStr(sc.SrcId),
+		"srcPubkey":  common.HexStr(sc.SrcPubkey),
+		"destId":     common.HexStr(sc.DestId),
+		"destPubkey": common.HexStr(sc.DestPubkey),
+		"elems":      elems,
+	}
 }
