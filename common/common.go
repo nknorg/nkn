@@ -14,6 +14,12 @@ import (
 
 const MaxUint32 = ^uint32(0)
 
+type HexStr []byte
+
+func (b HexStr) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + hex.EncodeToString(b) + "\""), nil
+}
+
 func ToCodeHash(code []byte) (Uint160, error) {
 	temp := sha256.Sum256(code)
 	md := ripemd160.New()

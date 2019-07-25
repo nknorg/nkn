@@ -89,6 +89,11 @@ func IsValidHexAddr(s []byte) bool {
 	return false
 }
 
+func (f Uint160) MarshalJSON() ([]byte, error) {
+	str, err := f.ToAddress()
+	return []byte("\"" + str + "\""), err
+}
+
 func (f *Uint160) ToAddress() (string, error) {
 	data := append(big.NewInt(FOOLPROOFPREFIX).Bytes(), f.ToArray()...)
 	temp := sha256.Sum256(data)

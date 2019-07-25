@@ -28,6 +28,7 @@ func infoAction(c *cli.Context) (err error) {
 	balance := c.String("balance")
 	nonce := c.String("nonce")
 	id := c.String("id")
+	pretty := c.Bool("pretty")
 
 	var resp []byte
 	var output [][]byte
@@ -37,6 +38,13 @@ func infoAction(c *cli.Context) (err error) {
 			fmt.Fprintln(os.Stderr, err)
 			return err
 		}
+		if pretty {
+			if p, err := PrettyPrinter(resp).PrettyBlock(); err == nil {
+				resp = p // replace resp if pretty success
+			} else {
+				fmt.Fprintln(os.Stderr, "Fallback to original resp due to PrettyPrint fail: ", err)
+			}
+		}
 		output = append(output, resp)
 	}
 
@@ -45,6 +53,13 @@ func infoAction(c *cli.Context) (err error) {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
+		}
+		if pretty {
+			if p, err := PrettyPrinter(resp).PrettyBlock(); err == nil {
+				resp = p // replace resp if pretty success
+			} else {
+				fmt.Fprintln(os.Stderr, "Fallback to original resp due to PrettyPrint fail: ", err)
+			}
 		}
 		output = append(output, resp)
 	}
@@ -109,6 +124,13 @@ func infoAction(c *cli.Context) (err error) {
 			fmt.Fprintln(os.Stderr, err)
 			return err
 		}
+		if pretty {
+			if p, err := PrettyPrinter(resp).PrettyTxn(); err == nil {
+				resp = p // replace resp if pretty success
+			} else {
+				fmt.Fprintln(os.Stderr, "Output origin resp due to PrettyPrint fail: ", err)
+			}
+		}
 		output = append(output, resp)
 	}
 
@@ -163,6 +185,10 @@ func NewCommand() *cli.Command {
 		Description: "With nknc info, you could look up blocks, transactions, etc.",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "pretty, p",
+				Usage: "pretty print",
+			},
 			cli.StringFlag{
 				Name:  "blockhash, b",
 				Usage: "hash for querying a block",
