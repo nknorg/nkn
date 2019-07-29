@@ -38,7 +38,7 @@ func WalletCreateRouter(router *gin.RouterGroup) {
 		}
 
 		if config.Parameters.WebGuiCreateWallet {
-			err = config.SetBeneficiaryAddr(data.BeneficiaryAddr, !config.Parameters.AllowEmptyBeneficiaryAddress)
+			err = config.SetBeneficiaryAddr(data.BeneficiaryAddr, config.Parameters.AllowEmptyBeneficiaryAddress)
 			if err != nil {
 				log.WebLog.Error(err)
 				context.AbortWithError(http.StatusBadRequest, err)
