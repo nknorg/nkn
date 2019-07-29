@@ -478,7 +478,7 @@ func WriteConfigFile(configuration map[string]interface{}) error {
 }
 
 func SetBeneficiaryAddr(addr string, allowEmpty bool) error {
-	if allowEmpty {
+	if !allowEmpty {
 		if addr == "" {
 			return errors.New("beneficiary address is empty.")
 		}
@@ -493,7 +493,7 @@ func SetBeneficiaryAddr(addr string, allowEmpty bool) error {
 
 	file, err := OpenConfigFile()
 	if err != nil {
-		return errors.New("Config file not exists.")
+		return err
 	}
 	var configuration map[string]interface{}
 	err = json.Unmarshal(file, &configuration)
