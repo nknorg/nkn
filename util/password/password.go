@@ -8,6 +8,7 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/howeyc/gopass"
 )
@@ -65,9 +66,10 @@ func GetAccountPassword() ([]byte, error) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		Passwd = string(passwordByte)
+		pwd := string(passwordByte)
+		Passwd = strings.Trim(pwd, "\r\n")
 		if Passwd != "" {
-			return passwordByte, nil
+			return []byte(Passwd), nil
 		}
 	}
 	if Passwd == "" {
