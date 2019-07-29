@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 )
 
@@ -71,67 +70,4 @@ func (p *Payload) Deserialize(r io.Reader) error {
 	p.Data = dat
 
 	return nil
-}
-
-func (m *Coinbase) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"sender":    common.BytesToUint160(m.Sender),
-		"recipient": common.BytesToUint160(m.Recipient),
-		"amount":    m.Amount,
-	}
-}
-
-func (m *TransferAsset) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"sender":    common.BytesToUint160(m.Sender),
-		"recipient": common.BytesToUint160(m.Recipient),
-		"amount":    m.Amount,
-	}
-}
-
-func (m *GenerateID) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"publicKey":       common.HexStr(m.PublicKey),
-		"registrationFee": m.RegistrationFee,
-	}
-}
-
-func (m *RegisterName) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"registrant": common.BytesToUint160(m.Registrant),
-		"name":       m.Name,
-	}
-}
-
-func (m *Subscribe) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"subscriber": common.BytesToUint160(m.Subscriber),
-		"identifier": m.Identifier,
-		"topic":      m.Topic,
-		"bucket":     m.Bucket,
-		"duration":   m.Duration,
-		"meta":       m.Meta,
-	}
-}
-
-func (m *NanoPay) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"sender":            common.BytesToUint160(m.Sender),
-		"recipient":         common.BytesToUint160(m.Recipient),
-		"id":                m.Id,
-		"amount":            m.Amount,
-		"txnExpiration":     m.TxnExpiration,
-		"nanoPayExpiration": m.NanoPayExpiration,
-	}
-}
-
-func (m *SigChainTxn) ToMap() map[string]interface{} {
-	sc := &SigChain{}
-	if err := sc.Unmarshal(m.SigChain); err != nil {
-		return map[string]interface{}{}
-	}
-	return map[string]interface{}{
-		"SigChain":  sc.ToMap(),
-		"Submitter": common.BytesToUint160(m.Submitter),
-	}
 }
