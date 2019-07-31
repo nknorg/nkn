@@ -17,7 +17,7 @@ func Key2Address(key string) (addr string, err error) {
 
 	if k, err = hex.DecodeString(key); err == nil {
 		if pk, err = crypto.DecodePoint(k); err == nil {
-			if redeemHash, err = program.CreateRedeemHash(pk); err == nil {
+			if redeemHash, err = program.CreateProgramHash(pk); err == nil {
 				return redeemHash.ToAddress()
 			}
 		}
