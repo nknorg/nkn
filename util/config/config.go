@@ -14,7 +14,7 @@ import (
 	"time"
 
 	gonat "github.com/nknorg/go-nat"
-	"github.com/nknorg/go-portscanner"
+	portscanner "github.com/nknorg/go-portscanner"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto/ed25519"
 	"github.com/nknorg/nkn/crypto/ed25519/vrf"
@@ -118,6 +118,7 @@ var (
 		ChainDBPath:               "ChainDB",
 		WalletFile:                "wallet.json",
 		MaxGetIDSeeds:             3,
+		DBFilesCacheCapacity:      100,
 	}
 )
 
@@ -160,6 +161,7 @@ type Configuration struct {
 	ChainDBPath               string        `json:"ChainDBPath"`
 	WalletFile                string        `json:"WalletFile"`
 	MaxGetIDSeeds             uint32        `json:"MaxGetIDSeeds"`
+	DBFilesCacheCapacity      int           `json:"DBFilesCacheCapacity"`
 }
 
 func Init() error {

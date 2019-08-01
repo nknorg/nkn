@@ -1,6 +1,7 @@
 package db
 
 import (
+	"github.com/nknorg/nkn/util/config"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -33,8 +34,9 @@ const BITSPERKEY = 10
 func NewLevelDBStore(file string) (*LevelDBStore, error) {
 	// default Options
 	o := opt.Options{
-		NoSync: false,
-		Filter: filter.NewBloomFilter(BITSPERKEY),
+		NoSync:                 false,
+		OpenFilesCacheCapacity: config.Parameters.DBFilesCacheCapacity,
+		Filter:                 filter.NewBloomFilter(BITSPERKEY),
 	}
 
 	db, err := leveldb.OpenFile(file, &o)
