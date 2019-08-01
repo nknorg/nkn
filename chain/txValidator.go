@@ -165,6 +165,15 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		if !match {
 			return fmt.Errorf("topic %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", topic)
 		}
+
+		// Check sub.Meta & sub.Identifier limitation via height
+		h := DefaultLedger.Store.GetHeight() + 1 // txn's height should be currHeight + 1
+		if len(pld.Identifier) > config.MaxTxnSubIdentifierList.GetValueAtHeight(h) {
+			return errors.New("Identifier too long")
+		}
+		if len(pld.Meta) > config.MaxTxnSubMetaList.GetValueAtHeight(h) {
+			return errors.New("Meta too long")
+		}
 	case pb.GENERATE_ID_TYPE:
 		pld := payload.(*pb.GenerateID)
 		_, err := crypto.NewPubKeyFromBytes(pld.PublicKey)

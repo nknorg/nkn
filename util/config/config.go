@@ -25,6 +25,8 @@ import (
 const DefaultConfigFile = "config.json"
 
 const (
+	MaxUint                      = ^uint(0)
+	MaxInt                       = int(MaxUint >> 1)
 	MaxNumTxnPerBlock            = 4096
 	MaxBlockSize                 = 1 * 1024 * 1024 // in bytes
 	ConsensusDuration            = 20 * time.Second
@@ -79,6 +81,14 @@ var (
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	}
+	MaxTxnSubIdentifierList = HeightDependentInt{ // ChangePoin for txn payload Subscribe.Identifier
+		heights: []uint32{136000, 0},
+		values:  []int{64, MaxInt},
+	}
+	MaxTxnSubMetaList = HeightDependentInt{ // ChangePoin for txn payload Subscribe.Meta
+		heights: []uint32{136000, 0},
+		values:  []int{1024, MaxInt},
 	}
 )
 
