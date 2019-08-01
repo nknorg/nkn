@@ -325,9 +325,8 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		prevhash, _ := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.PrevBlockHash)
 		started, err := consensus.localNode.StartSyncing(prevhash, block.Header.UnsignedHeader.Height-1, neighbors)
 		if err != nil {
-			log.Errorf("Error syncing blocks: %v", err)
 			if started {
-				panic(err)
+				panic(fmt.Errorf("Error syncing blocks: %v", err))
 			}
 		}
 		if !started {

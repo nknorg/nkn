@@ -5,7 +5,7 @@ USE_PROXY=GOPROXY=https://goproxy.io
 GOFMT=go fmt
 VERSION:=$(shell git describe --abbrev=4 --dirty --always --tags)
 Minversion:=$(shell date)
-BUILD_NKND_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/util/config.Version=$(VERSION)" #-race
+BUILD_NKND_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/util/config.Version=$(VERSION)"
 BUILD_NKNC_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/cli/common.Version=$(VERSION)"
 IDENTIFIER=$(GOOS)-$(GOARCH)
 
