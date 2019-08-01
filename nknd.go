@@ -183,7 +183,7 @@ func nknMain(c *cli.Context) error {
 
 	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDFee))
 	if err != nil {
-		panic(err.Error())
+		panic(fmt.Errorf("Get or create id error: %v", err))
 	}
 
 	log.Info("current chord ID: ", BytesToHexString(id))
@@ -241,14 +241,14 @@ func nknMain(c *cli.Context) error {
 		}
 
 		go func() {
+			errMsg := "Node has lost connections to all neighbors. This is typically caused by loss of Internet or firewall."
 			for {
 				time.Sleep(time.Minute)
-				err = fmt.Errorf("Node has no neighbors and is too lonely to run")
 				if localNode.GetConnectionCnt() == 0 {
-					panic(err)
+					panic(errors.New(errMsg))
 				}
-				if nnetNeighbors, _ := nn.GetLocalNode().GetNeighbors(nil); len(nnetNeighbors) == 0 {
-					panic(err)
+				if nnetNeighbors, err := nn.GetLocalNode().GetNeighbors(nil); err == nil && len(nnetNeighbors) == 0 {
+					panic(errors.New(errMsg))
 				}
 			}
 		}()
@@ -320,6 +320,13 @@ func netVersion(timer *time.Timer) {
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Panic: %+v", r)
+			os.Exit(1)
+		}
+	}()
+
 	// This is temporary and will be removed soon after mainnet is stabilized
 	timer := time.NewTimer(1 * time.Second)
 	go netVersion(timer)
