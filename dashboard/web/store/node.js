@@ -8,6 +8,8 @@ const state = {
 
 const getters = {
   inBoundCount(state) {
+    if (state.neighbors.length === 0)
+      return undefined
     let res = countBy(state.neighbors, (item) => !item.isOutbound)
     return res.true || 0
   }
