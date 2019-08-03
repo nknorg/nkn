@@ -9,7 +9,7 @@ export default {
     ID: 'ID',
     IP: 'IP',
     STATE: 'State',
-    BOUND: 'Bound',
+    BOUND: 'Direction',
     PING: 'Ping'
   }
 

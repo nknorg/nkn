@@ -112,6 +112,10 @@ func Start() {
 		}
 	})
 
+	app.GET("/", func(context *gin.Context) {
+		context.Redirect(301, "/web")
+	})
+
 	app.Use(routes.Routes(app))
 
 	// 404 route
