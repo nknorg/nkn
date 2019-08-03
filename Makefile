@@ -13,6 +13,7 @@ help:  ## Show available options with this Makefile
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -v grep | awk 'BEGIN { FS = ":.*?##" }; { printf "%-15s  %s\n", $$1,$$2 }'
 
 web: dashboard
+	@rm -rf web
 	-@cd dashboard/web && yarn install && yarn build && cp -a ./dist ../../web
 
 .PHONY: yarn
