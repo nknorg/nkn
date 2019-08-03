@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	NetVersionNum = 3 // This is temporary and will be removed soon after mainnet is stabilized
+	NetVersionNum = 4 // This is temporary and will be removed soon after mainnet is stabilized
 )
 
 var (
@@ -499,8 +499,8 @@ func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) ([]byte,
 		return id, nil
 	}
 
-	timer := time.NewTimer((config.GenerateIDBlockDelay+2) * config.ConsensusDuration)
-	timeout := time.After((config.GenerateIDBlockDelay+5) * config.ConsensusTimeout)
+	timer := time.NewTimer((config.GenerateIDBlockDelay + 2) * config.ConsensusDuration)
+	timeout := time.After((config.GenerateIDBlockDelay + 5) * config.ConsensusTimeout)
 	defer timer.Stop()
 
 out:
