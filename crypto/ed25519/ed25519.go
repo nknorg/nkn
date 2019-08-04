@@ -5,8 +5,8 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/nknorg/nkn/crypto/ed25519/extra25519"
 	"github.com/nknorg/nkn/crypto/ed25519/vrf"
-	"github.com/nknorg/vxeddsa/extra25519"
 
 	"golang.org/x/crypto/ed25519"
 )
