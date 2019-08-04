@@ -83,11 +83,11 @@ var (
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 	}
 	MaxTxnSubIdentifierList = HeightDependentInt{ // ChangePoin for txn payload Subscribe.Identifier
-		heights: []uint32{136000, 0},
+		heights: []uint32{133400, 0},
 		values:  []int{64, MaxInt},
 	}
 	MaxTxnSubMetaList = HeightDependentInt{ // ChangePoin for txn payload Subscribe.Meta
-		heights: []uint32{136000, 0},
+		heights: []uint32{133400, 0},
 		values:  []int{1024, MaxInt},
 	}
 )
