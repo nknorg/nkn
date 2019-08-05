@@ -4,7 +4,7 @@
       <v-card-text>
         <v-tooltip top v-for="item in icons" :key="item.icon">
           <template v-slot:activator="{ on }">
-            <v-btn href="https://github.com/nknorg" target="_blank" class="mx-3 white--text" icon v-on="on">
+            <v-btn :href="item.url" target="_blank" class="mx-3 white--text" icon v-on="on">
               <v-icon size="24px">{{item.icon}}</v-icon>
             </v-btn>
           </template>
@@ -31,14 +31,13 @@
   export default {
     data:() =>({
       icons: [
-        {icon: 'fab fa-github', tooltip: 'GitHub'},
-        {icon: 'fab fa-discord', tooltip: 'Discord'},
-        {icon: 'fab fa-twitter', tooltip: 'Twitter'},
-        {icon: 'fab fa-medium', tooltip: 'Medium'},
-        {icon: 'fab fa-youtube', tooltip: 'Youtube'},
-        {icon: 'fab fa-reddit', tooltip: 'Reddit'},
-        {icon: 'fab fa-telegram', tooltip: 'Telegram'},
-        {icon: 'fas fa-comments', tooltip: 'Forum'},
+        {icon: 'fab fa-github', tooltip: 'GitHub', url: 'https://github.com/nknorg'},
+        {icon: 'fab fa-discord', tooltip: 'Discord', url: 'https://discord.gg/hrZvrVa'},
+        {icon: 'fab fa-twitter', tooltip: 'Twitter', url: 'https://twitter.com/NKN_ORG'},
+        {icon: 'fab fa-medium', tooltip: 'Medium', url: 'https://medium.com/nknetwork'},
+        {icon: 'fab fa-youtube', tooltip: 'Youtube', url: 'http://www.youtube.com/c/NKNORG'},
+        {icon: 'fab fa-telegram', tooltip: 'Telegram', url: 'https://t.me/nknorg'},
+        {icon: 'fas fa-comments', tooltip: 'Forum', url: 'https://forum.nkn.org/'},
       ]
     })
   }
