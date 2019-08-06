@@ -64,9 +64,9 @@ func (s sortTxnsByPriceSize) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 func (s sortTxnsByPriceSize) Less(i, j int) bool {
 	if s[i].UnsignedTx.Fee == s[j].UnsignedTx.Fee {
-		return s[i].GetSize() < s[j].GetSize()
+		return s[i].GetSize() > s[j].GetSize()
 	}
-	return s[i].UnsignedTx.Fee > s[j].UnsignedTx.Fee
+	return s[i].UnsignedTx.Fee < s[j].UnsignedTx.Fee
 }
 
 type TxnCollection struct {
