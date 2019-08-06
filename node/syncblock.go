@@ -348,13 +348,20 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 		log.Infof("Synced %d block headers in %s", stopHeight-currentHeight, time.Since(startTime))
 
 		startTime = time.Now()
-		err = localNode.syncBlocks(currentHeight+1, stopHeight, neighbors, headersHash)
+		for syncBlocksBatchSize := config.Parameters.SyncBlocksBatchSize; syncBlocksBatchSize > 0; syncBlocksBatchSize /= 2 {
+			numSyncedBlocks := chain.DefaultLedger.Store.GetHeight() - currentHeight
+			err = localNode.syncBlocks(currentHeight+numSyncedBlocks+1, stopHeight, syncBlocksBatchSize, neighbors, headersHash[numSyncedBlocks:])
+			if err == nil {
+				log.Infof("Synced %d blocks in %s", stopHeight-currentHeight, time.Since(startTime))
+				break
+			}
+			log.Errorf("Sync blocks error with batch size %d: %v", syncBlocksBatchSize, err)
+		}
+
 		if err != nil {
 			err = fmt.Errorf("sync blocks error: %v", err)
 			return
 		}
-
-		log.Infof("Synced %d blocks in %s", stopHeight-currentHeight, time.Since(startTime))
 
 		localNode.SetSyncState(pb.SYNC_FINISHED)
 	})
@@ -453,13 +460,13 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 	return headersHash, nil
 }
 
-func (localNode *LocalNode) syncBlocks(startHeight, stopHeight uint32, neighbors []*RemoteNode, headersHash []common.Uint256) error {
-	numBatches := (stopHeight-startHeight)/config.Parameters.SyncBlocksBatchSize + 1
+func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchSize uint32, neighbors []*RemoteNode, headersHash []common.Uint256) error {
+	numBatches := (stopHeight-startHeight)/syncBlocksBatchSize + 1
 	numWorkers := uint32(len(neighbors)) * concurrentSyncRequestPerNeighbor
 
 	getBatchHeightRange := func(batchID uint32) (uint32, uint32) {
-		batchStartHeight := startHeight + batchID*config.Parameters.SyncBlocksBatchSize
-		batchEndHeight := batchStartHeight + config.Parameters.SyncBlocksBatchSize - 1
+		batchStartHeight := startHeight + batchID*syncBlocksBatchSize
+		batchEndHeight := batchStartHeight + syncBlocksBatchSize - 1
 		if batchEndHeight > stopHeight {
 			batchEndHeight = stopHeight
 		}
