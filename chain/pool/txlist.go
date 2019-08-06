@@ -103,6 +103,22 @@ func (nst *NonceSortedTxs) Pop() (*transaction.Transaction, error) {
 	return tx, nil
 }
 
+func (nst *NonceSortedTxs) Drop() (*transaction.Transaction, error) {
+	nst.mu.Lock()
+	defer nst.mu.Unlock()
+
+	if nst.empty() {
+		return nil, ErrNonceSortedTxsEmpty
+	}
+
+	hash := nst.idx[nst.len()-1]
+	nst.idx = nst.idx[:nst.len()-1]
+	tx := nst.txs[hash]
+	delete(nst.txs, hash)
+
+	return tx, nil
+}
+
 func (nst *NonceSortedTxs) Seek() (*transaction.Transaction, error) {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
