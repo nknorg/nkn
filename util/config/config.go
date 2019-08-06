@@ -20,6 +20,7 @@ import (
 	"github.com/nknorg/nkn/crypto/ed25519/vrf"
 	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nnet/transport"
+	"github.com/pbnjay/memory"
 )
 
 const DefaultConfigFile = "config.json"
@@ -64,6 +65,7 @@ const (
 	GASAssetName                 = "New Network Coin"
 	GASAssetSymbol               = "nnc"
 	GASAssetPrecision            = uint32(8)
+	MaxSyncMemoryUsagePercent    = 10
 )
 
 var (
@@ -114,9 +116,9 @@ var (
 		MiningDebug:               true,
 		LogLevel:                  1,
 		MaxLogFileSize:            20,
-		SyncBatchWindowSize:       128,
+		SyncBatchWindowSize:       64,
 		SyncBlockHeadersBatchSize: 128,
-		SyncBlocksBatchSize:       8,
+		SyncBlocksBatchSize:       4,
 		RPCReadTimeout:            5,
 		RPCWriteTimeout:           10,
 		KeepAliveTimeout:          15,
@@ -178,6 +180,11 @@ type Configuration struct {
 }
 
 func Init() error {
+	syncBatchWindowSize := uint32(memory.TotalMemory()*MaxSyncMemoryUsagePercent/100/MaxBlockSize) / Parameters.SyncBlocksBatchSize
+	if syncBatchWindowSize > 0 {
+		Parameters.SyncBatchWindowSize = syncBatchWindowSize
+	}
+
 	configFile := ConfigFile
 	if configFile == "" {
 		configFile = DefaultConfigFile
