@@ -21,13 +21,13 @@ type StateDB struct {
 	db              *cachingDB
 	trie            ITrie
 	accounts        sync.Map
-	nanoPay         map[string]*nanoPay
-	nanoPayCleanup  map[uint32]map[string]struct{}
-	names           map[string]string
-	nameRegistrants map[string][]byte
-	pubSub          map[string]*pubSub
-	pubSubCleanup   map[uint32]map[string]struct{}
-	assets          map[common.Uint256]*Asset
+	nanoPay         sync.Map
+	nanoPayCleanup  sync.Map
+	names           sync.Map
+	nameRegistrants sync.Map
+	pubSub          sync.Map
+	pubSubCleanup   sync.Map
+	assets          sync.Map
 }
 
 func NewStateDB(root common.Uint256, db *cachingDB) (*StateDB, error) {
@@ -36,15 +36,8 @@ func NewStateDB(root common.Uint256, db *cachingDB) (*StateDB, error) {
 		return nil, err
 	}
 	return &StateDB{
-		db:              db,
-		trie:            trie,
-		nanoPay:         make(map[string]*nanoPay, 0),
-		nanoPayCleanup:  make(map[uint32]map[string]struct{}, 0),
-		names:           make(map[string]string, 0),
-		nameRegistrants: make(map[string][]byte, 0),
-		pubSub:          make(map[string]*pubSub, 0),
-		pubSubCleanup:   make(map[uint32]map[string]struct{}, 0),
-		assets:          make(map[common.Uint256]*Asset, 0),
+		db:   db,
+		trie: trie,
 	}, nil
 }
 

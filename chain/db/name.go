@@ -28,8 +28,8 @@ func (sdb *StateDB) setName(registrant []byte, name string) {
 	registrantId := getRegistrantId(registrant)
 	nameId := getNameId(name)
 
-	sdb.names[registrantId] = name
-	sdb.nameRegistrants[nameId] = registrant
+	sdb.names.Store(registrantId, name)
+	sdb.nameRegistrants.Store(nameId, registrant)
 }
 
 func (sdb *StateDB) deleteName(registrantId string) error {
@@ -49,8 +49,8 @@ func (sdb *StateDB) deleteName(registrantId string) error {
 		return err
 	}
 
-	delete(sdb.names, registrantId)
-	delete(sdb.nameRegistrants, nameId)
+	sdb.names.Delete(registrantId)
+	sdb.nameRegistrants.Delete(nameId)
 
 	return nil
 }
@@ -59,26 +59,30 @@ func (sdb *StateDB) deleteNameForRegistrant(registrant []byte, name string) {
 	registrantId := getRegistrantId(registrant)
 	nameId := getNameId(name)
 
-	sdb.names[registrantId] = ""
-	sdb.nameRegistrants[nameId] = nil
+	sdb.names.Store(registrantId, "")
+	sdb.nameRegistrants.Store(nameId, nil)
 }
 
 func (sdb *StateDB) getName(registrant []byte) (string, error) {
 	registrantId := getRegistrantId(registrant)
-	var name string
-	var ok bool
-	if name, ok = sdb.names[registrantId]; !ok {
-		enc, err := sdb.trie.TryGet(append(NameRegistrantPrefix, registrantId...))
-		if err != nil {
-			return "", err
-		}
 
-		if len(enc) > 0 {
-			name = string(enc)
-			nameId := getNameId(name)
-			sdb.names[registrantId] = name
-			sdb.nameRegistrants[nameId] = registrant
+	if v, ok := sdb.names.Load(registrantId); ok {
+		if name, ok := v.(string); ok {
+			return name, nil
 		}
+	}
+
+	var name string
+	enc, err := sdb.trie.TryGet(append(NameRegistrantPrefix, registrantId...))
+	if err != nil {
+		return "", err
+	}
+
+	if len(enc) > 0 {
+		name = string(enc)
+		nameId := getNameId(name)
+		sdb.names.Store(registrantId, name)
+		sdb.nameRegistrants.Store(nameId, registrant)
 	}
 
 	return name, nil
@@ -86,21 +90,24 @@ func (sdb *StateDB) getName(registrant []byte) (string, error) {
 
 func (sdb *StateDB) getRegistrant(name string) ([]byte, error) {
 	nameId := getNameId(name)
+
+	if v, ok := sdb.nameRegistrants.Load(nameId); ok {
+		if registrant, ok := v.([]byte); ok {
+			return registrant, nil
+		}
+	}
+
 	var registrant []byte
-	var ok bool
-	if registrant, ok = sdb.nameRegistrants[nameId]; !ok {
-		enc, err := sdb.trie.TryGet(append(NamePrefix, nameId...))
-		if err != nil {
-			return nil, err
-		}
+	enc, err := sdb.trie.TryGet(append(NamePrefix, nameId...))
+	if err != nil {
+		return nil, err
+	}
 
-		if len(enc) > 0 {
-			registrant = enc
-
-			registrantId := getRegistrantId(registrant)
-			sdb.names[registrantId] = name
-			sdb.nameRegistrants[nameId] = registrant
-		}
+	if len(enc) > 0 {
+		registrant = enc
+		registrantId := getRegistrantId(registrant)
+		sdb.names.Store(registrantId, name)
+		sdb.nameRegistrants.Store(nameId, registrant)
 	}
 
 	return registrant, nil
@@ -115,19 +122,25 @@ func (cs *ChainStore) GetRegistrant(name string) ([]byte, error) {
 }
 
 func (sdb *StateDB) FinalizeNames(commit bool) {
-	for registrantId, name := range sdb.names {
-		if name == "" {
-			sdb.deleteName(registrantId)
-		} else {
-			nameId := getNameId(name)
-			registrant := sdb.nameRegistrants[nameId]
-			sdb.updateName(registrant, name)
+	sdb.names.Range(func(key, value interface{}) bool {
+		if registrantId, ok := key.(string); ok {
+			if name, ok := value.(string); ok && len(name) > 0 {
+				nameId := getNameId(name)
+				if v, ok := sdb.nameRegistrants.Load(nameId); ok {
+					if registrant, ok := v.([]byte); ok {
+						sdb.updateName(registrant, name)
+						if commit {
+							sdb.nameRegistrants.Delete(nameId)
+						}
+					}
+				}
+			} else {
+				sdb.deleteName(registrantId)
+			}
 			if commit {
-				delete(sdb.nameRegistrants, nameId)
+				sdb.names.Delete(registrantId)
 			}
 		}
-		if commit {
-			delete(sdb.names, registrantId)
-		}
-	}
+		return true
+	})
 }
