@@ -56,7 +56,7 @@ const (
 	ProtocolVersion              = 30
 	MinCompatibleProtocolVersion = 30
 	MaxCompatibleProtocolVersion = 39
-	DefaultTxPoolCap             = 32
+	TxPoolCleanupInterval        = ConsensusDuration
 	ShortHashSize                = uint32(8)
 	MaxAssetPrecision            = uint32(8)
 	NKNAssetName                 = "NKN"
@@ -124,7 +124,8 @@ var (
 		KeepAliveTimeout:          15,
 		NATPortMappingTimeout:     365 * 86400,
 		NumTxnPerBlock:            256,
-		TxPoolCap:                 DefaultTxPoolCap,
+		TxPoolPerAccountTxCap:     32,
+		TxPoolTotalTxCap:          1000,
 		RegisterIDFee:             0,
 		LogPath:                   "Log",
 		ChainDBPath:               "ChainDB",
@@ -167,7 +168,8 @@ type Configuration struct {
 	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
 	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
 	NumTxnPerBlock            uint32        `json:"NumTxnPerBlock"`
-	TxPoolCap                 int           `json:"TxPoolCap"`
+	TxPoolPerAccountTxCap     int           `json:"TxPoolPerAccountTxCap"`
+	TxPoolTotalTxCap          int           `json:"TxPoolTotalTxCap "`
 	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`        // in seconds
 	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`       // in seconds
 	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`      // in seconds
