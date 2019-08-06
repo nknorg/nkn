@@ -17,6 +17,7 @@ require (
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/pbnjay/memory v0.0.0-20190104145345-974d429e7ae4
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/rdegges/go-ipify v0.0.0-20150526035502-2d94a6a86c40
