@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	NetVersionNum = 4 // This is temporary and will be removed soon after mainnet is stabilized
+	NetVersionNum = 5 // This is temporary and will be removed soon after mainnet is stabilized
 )
 
 var (
@@ -260,7 +260,7 @@ func nknMain(c *cli.Context) error {
 
 	go ws.Start()
 
-	consensus, err := moca.NewConsensus(account, localNode)
+	consensus, err := consensus.NewConsensus(account, localNode)
 	if err != nil {
 		return err
 	}

@@ -57,11 +57,17 @@ func (tc *TxnCollector) Cleanup(txns []*transaction.Transaction) error {
 	return tc.TxnSource.CleanSubmittedTransactions(txns)
 }
 
-type sortTxnsByPrice []*transaction.Transaction
+type sortTxnsByPriceSize []*transaction.Transaction
 
-func (s sortTxnsByPrice) Len() int           { return len(s) }
-func (s sortTxnsByPrice) Less(i, j int) bool { return s[i].UnsignedTx.Fee > s[j].UnsignedTx.Fee }
-func (s sortTxnsByPrice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s sortTxnsByPriceSize) Len() int      { return len(s) }
+func (s sortTxnsByPriceSize) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
+func (s sortTxnsByPriceSize) Less(i, j int) bool {
+	if s[i].UnsignedTx.Fee == s[j].UnsignedTx.Fee {
+		return s[i].GetSize() < s[j].GetSize()
+	}
+	return s[i].UnsignedTx.Fee > s[j].UnsignedTx.Fee
+}
 
 type TxnCollection struct {
 	txns map[Uint160][]*transaction.Transaction
@@ -75,7 +81,7 @@ func NewTxnCollection(txnLists map[Uint160][]*transaction.Transaction) *TxnColle
 		txnLists[addr] = txnList[1:]
 	}
 
-	sort.Sort(sort.Reverse(sortTxnsByPrice(tops)))
+	sort.Sort(sort.Reverse(sortTxnsByPriceSize(tops)))
 
 	return &TxnCollection{
 		txns: txnLists,
@@ -97,7 +103,7 @@ func (tc *TxnCollection) Update() error {
 	}
 	if txnList, ok := tc.txns[hashes[0]]; ok && len(txnList) > 0 {
 		tc.tops[0], tc.txns[hashes[0]] = txnList[0], txnList[1:]
-		sort.Sort(sort.Reverse(sortTxnsByPrice(tc.tops)))
+		sort.Sort(sort.Reverse(sortTxnsByPriceSize(tc.tops)))
 	} else {
 		tc.tops = tc.tops[1:]
 	}
@@ -105,8 +111,11 @@ func (tc *TxnCollection) Update() error {
 	return nil
 }
 
-func (tc *TxnCollection) Pop() {
-	if len(tc.tops) > 0 {
-		tc.tops = tc.tops[1:]
+func (tc *TxnCollection) Pop() *transaction.Transaction {
+	if len(tc.tops) == 0 {
+		return nil
 	}
+	top := tc.tops[0]
+	tc.tops = tc.tops[1:]
+	return top
 }

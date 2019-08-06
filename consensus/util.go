@@ -1,4 +1,4 @@
-package moca
+package consensus
 
 import (
 	"encoding/binary"

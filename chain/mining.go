@@ -46,6 +46,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 	txnHashList = append(txnHashList, coinbase.Hash())
 	totalTxsSize := coinbase.GetSize()
 	txCount := 1
+	lowFeeTxCount := 0
 
 	if winnerType == pb.TXN_SIGNER {
 		if _, err = DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
@@ -75,24 +76,22 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 		default:
 		}
 
+		if txCount >= int(config.Parameters.NumTxnPerBlock) {
+			break
+		}
+
 		txn := txnCollection.Peek()
 		if txn == nil {
 			break
 		}
 
-		if txn.UnsignedTx.Fee < int64(config.Parameters.MinTxnFee) {
+		if txn.UnsignedTx.Fee < int64(config.Parameters.MinTxnFee) && uint32(lowFeeTxCount) >= config.Parameters.NumLowFeeTxnPerBlock {
 			log.Warning("transaction fee is too low")
-			txnCollection.Pop()
-			continue
+			break
 		}
 
 		totalTxsSize = totalTxsSize + txn.GetSize()
 		if totalTxsSize > config.MaxBlockSize {
-			break
-		}
-
-		txCount++
-		if txCount > int(config.Parameters.NumTxnPerBlock) {
 			break
 		}
 
@@ -118,8 +117,13 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 		if err = txnCollection.Update(); err != nil {
 			bvs.Reset()
 			txnCollection.Pop()
-		} else {
-			bvs.Commit()
+			continue
+		}
+
+		bvs.Commit()
+		txCount++
+		if txn.UnsignedTx.Fee < int64(config.Parameters.MinTxnFee) {
+			lowFeeTxCount++
 		}
 	}
 
