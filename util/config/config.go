@@ -129,6 +129,8 @@ var (
 		WalletFile:                "wallet.json",
 		MaxGetIDSeeds:             3,
 		DBFilesCacheCapacity:      100,
+		NumLowFeeTxnPerBlock:      4,
+		MinTxnFee:                 10000000,
 	}
 )
 
@@ -150,6 +152,7 @@ type Configuration struct {
 	CAPath                    string        `json:"CAPath"`
 	MaxHdrSyncReqs            int           `json:"MaxConcurrentSyncHeaderReqs"`
 	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
+	NumLowFeeTxnPerBlock      uint32        `json:"NumLowFeeTxnPerBlock"`
 	MinTxnFee                 int64         `json:"MinTxnFee"`
 	RegisterIDFee             int64         `json:"RegisterIDFee"`
 	Hostname                  string        `json:"Hostname"`

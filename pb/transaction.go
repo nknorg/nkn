@@ -98,14 +98,14 @@ func (m *GenerateID) ToMap() map[string]interface{} {
 
 func (m *RegisterName) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"registrant": common.BytesToUint160(m.Registrant),
+		"registrant": common.HexStr(m.Registrant),
 		"name":       m.Name,
 	}
 }
 
 func (m *Subscribe) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"subscriber": common.BytesToUint160(m.Subscriber),
+		"subscriber": common.HexStr(m.Subscriber),
 		"identifier": m.Identifier,
 		"topic":      m.Topic,
 		"bucket":     m.Bucket,
