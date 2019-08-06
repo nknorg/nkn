@@ -94,7 +94,7 @@ func (sdb *StateDB) setAsset(assetID common.Uint256, asset *Asset) error {
 		return fmt.Errorf("asset %v has already exist.", assetID.ToHexString())
 	}
 
-	sdb.assets[assetID] = asset
+	sdb.assets.Store(assetID, asset)
 
 	return nil
 }
@@ -125,8 +125,10 @@ func (sdb *StateDB) updateAsset(assetID common.Uint256, asset *Asset) error {
 }
 
 func (sdb *StateDB) GetAsset(assetID common.Uint256) (*Asset, error) {
-	if asset, ok := sdb.assets[assetID]; ok {
-		return asset, nil
+	if v, ok := sdb.assets.Load(assetID); ok {
+		if asset, ok := v.(*Asset); ok {
+			return asset, nil
+		}
 	}
 
 	return sdb.getAsset(assetID)
@@ -144,29 +146,31 @@ func (sdb *StateDB) getAsset(assetID common.Uint256) (*Asset, error) {
 		return nil, err
 	}
 
-	sdb.assets[assetID] = asset
+	sdb.assets.Store(assetID, asset)
 
 	return asset, nil
 }
 
 func (sdb *StateDB) deleteAsset(assetID common.Uint256) error {
-	delete(sdb.assets, assetID)
+	sdb.assets.Delete(assetID)
 
 	return nil
 }
 
 func (sdb *StateDB) FinalizeIssueAsset(commit bool) {
-	for assetID, asset := range sdb.assets {
-		if asset == nil || asset.Empty() {
-			sdb.deleteAsset(assetID)
-		} else {
-			sdb.updateAsset(assetID, asset)
+	sdb.assets.Range(func(key, value interface{}) bool {
+		if assetID, ok := key.(common.Uint256); ok {
+			if asset, ok := value.(*Asset); ok && !asset.Empty() {
+				sdb.updateAsset(assetID, asset)
+			} else {
+				sdb.deleteAsset(assetID)
+			}
+			if commit {
+				sdb.assets.Delete(assetID)
+			}
 		}
-
-		if commit {
-			delete(sdb.assets, assetID)
-		}
-	}
+		return true
+	})
 }
 
 func (cs *ChainStore) GetAsset(assetID common.Uint256) (name, symbol string, totalSupply common.Fixed64, precision uint32, err error) {

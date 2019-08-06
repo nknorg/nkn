@@ -23,6 +23,8 @@ type pubSub struct {
 	expiresAt  uint32
 }
 
+type pubSubCleanup map[string]struct{}
+
 func (ps *pubSub) Serialize(w io.Writer) error {
 	if err := serialization.WriteVarBytes(w, ps.subscriber); err != nil {
 		return err
@@ -105,57 +107,61 @@ func getPubSubCleanupId(height uint32) []byte {
 }
 
 func (sdb *StateDB) getPubSub(id []byte) (*pubSub, error) {
-	var ps *pubSub
-	var ok bool
-	if ps, ok = sdb.pubSub[string(id)]; !ok {
-		enc, err := sdb.trie.TryGet(append(PubSubPrefix, id...))
-		if err != nil {
-			return nil, err
+	if v, ok := sdb.pubSub.Load(string(id)); ok {
+		if ps, ok := v.(*pubSub); ok {
+			return ps, nil
 		}
-
-		ps = &pubSub{}
-
-		if len(enc) > 0 {
-			buff := bytes.NewBuffer(enc)
-			if err := ps.Deserialize(buff); err != nil {
-				return nil, fmt.Errorf("[getPubSub]Failed to decode state object for pub sub: %v", err)
-			}
-		}
-
-		sdb.pubSub[string(id)] = ps
 	}
+
+	enc, err := sdb.trie.TryGet(append(PubSubPrefix, id...))
+	if err != nil {
+		return nil, err
+	}
+
+	ps := &pubSub{}
+
+	if len(enc) > 0 {
+		buff := bytes.NewBuffer(enc)
+		if err := ps.Deserialize(buff); err != nil {
+			return nil, fmt.Errorf("[getPubSub]Failed to decode state object for pub sub: %v", err)
+		}
+	}
+
+	sdb.pubSub.Store(string(id), ps)
 
 	return ps, nil
 }
 
-func (sdb *StateDB) getPubSubCleanup(height uint32) (map[string]struct{}, error) {
-	var psc map[string]struct{}
-	var ok bool
-	if psc, ok = sdb.pubSubCleanup[height]; !ok {
-		enc, err := sdb.trie.TryGet(append(PubSubCleanupPrefix, getPubSubCleanupId(height)...))
-		if err != nil {
-			return nil, fmt.Errorf("[getPubSubCleanup]can not get pub sub cleanup from trie: %v", err)
+func (sdb *StateDB) getPubSubCleanup(height uint32) (pubSubCleanup, error) {
+	if v, ok := sdb.pubSubCleanup.Load(height); ok {
+		if psc, ok := v.(pubSubCleanup); ok {
+			return psc, nil
 		}
+	}
 
-		psc = make(map[string]struct{}, 0)
+	enc, err := sdb.trie.TryGet(append(PubSubCleanupPrefix, getPubSubCleanupId(height)...))
+	if err != nil {
+		return nil, fmt.Errorf("[getPubSubCleanup]can not get pub sub cleanup from trie: %v", err)
+	}
 
-		if len(enc) > 0 {
-			buff := bytes.NewBuffer(enc)
-			pscLength, err := serialization.ReadVarUint(buff, 0)
+	psc := make(pubSubCleanup, 0)
+
+	if len(enc) > 0 {
+		buff := bytes.NewBuffer(enc)
+		pscLength, err := serialization.ReadVarUint(buff, 0)
+		if err != nil {
+			return nil, fmt.Errorf("[getPubSubCleanup]Failed to decode state object for pub sub cleanup: %v", err)
+		}
+		for i := uint64(0); i < pscLength; i++ {
+			id, err := serialization.ReadVarString(buff)
 			if err != nil {
 				return nil, fmt.Errorf("[getPubSubCleanup]Failed to decode state object for pub sub cleanup: %v", err)
 			}
-			for i := uint64(0); i < pscLength; i++ {
-				id, err := serialization.ReadVarString(buff)
-				if err != nil {
-					return nil, fmt.Errorf("[getPubSubCleanup]Failed to decode state object for pub sub cleanup: %v", err)
-				}
-				psc[id] = struct{}{}
-			}
+			psc[id] = struct{}{}
 		}
-
-		sdb.pubSubCleanup[height] = psc
 	}
+
+	sdb.pubSubCleanup.Store(height, psc)
 
 	return psc, nil
 }
@@ -324,7 +330,7 @@ func (sdb *StateDB) deletePubSub(id string) error {
 		return err
 	}
 
-	delete(sdb.pubSub, id)
+	sdb.pubSub.Delete(id)
 	return nil
 }
 
@@ -344,11 +350,11 @@ func (sdb *StateDB) deletePubSubCleanup(height uint32) error {
 		return err
 	}
 
-	delete(sdb.pubSubCleanup, height)
+	sdb.pubSubCleanup.Delete(height)
 	return nil
 }
 
-func (sdb *StateDB) updatePubSubCleanup(height uint32, psc map[string]struct{}) error {
+func (sdb *StateDB) updatePubSubCleanup(height uint32, psc pubSubCleanup) error {
 	buff := bytes.NewBuffer(nil)
 
 	if err := serialization.WriteVarUint(buff, uint64(len(psc))); err != nil {
@@ -374,33 +380,39 @@ func (sdb *StateDB) CleanupPubSub(height uint32) error {
 		return err
 	}
 	for id := range ids {
-		sdb.pubSub[id] = nil
+		sdb.pubSub.Store(id, nil)
 	}
-	sdb.pubSubCleanup[height] = nil
+	sdb.pubSubCleanup.Store(height, nil)
 
 	return nil
 }
 
 func (sdb *StateDB) FinalizePubSub(commit bool) {
-	for id, pubSub := range sdb.pubSub {
-		if pubSub == nil || pubSub.Empty() {
-			sdb.deletePubSub(id)
-		} else {
-			sdb.updatePubSub(id, pubSub)
+	sdb.pubSub.Range(func(key, value interface{}) bool {
+		if id, ok := key.(string); ok {
+			if ps, ok := value.(*pubSub); ok && !ps.Empty() {
+				sdb.updatePubSub(id, ps)
+			} else {
+				sdb.deletePubSub(id)
+			}
+			if commit {
+				sdb.pubSub.Delete(id)
+			}
 		}
-		if commit {
-			delete(sdb.pubSub, id)
-		}
-	}
+		return true
+	})
 
-	for height, psc := range sdb.pubSubCleanup {
-		if psc == nil || len(psc) == 0 {
-			sdb.deletePubSubCleanup(height)
-		} else {
-			sdb.updatePubSubCleanup(height, psc)
+	sdb.pubSubCleanup.Range(func(key, value interface{}) bool {
+		if height, ok := key.(uint32); ok {
+			if psc, ok := value.(pubSubCleanup); ok && len(psc) > 0 {
+				sdb.updatePubSubCleanup(height, psc)
+			} else {
+				sdb.deletePubSubCleanup(height)
+			}
+			if commit {
+				sdb.pubSubCleanup.Delete(height)
+			}
 		}
-		if commit {
-			delete(sdb.pubSubCleanup, height)
-		}
-	}
+		return true
+	})
 }

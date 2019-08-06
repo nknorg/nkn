@@ -29,6 +29,8 @@ type nanoPay struct {
 	expiresAt uint32
 }
 
+type nanoPayCleanup map[string]struct{}
+
 func (np *nanoPay) Serialize(w io.Writer) error {
 	err := np.balance.Serialize(w)
 	if err != nil {
@@ -62,57 +64,61 @@ func (np *nanoPay) Empty() bool {
 }
 
 func (sdb *StateDB) getNanoPay(id string) (*nanoPay, error) {
-	var np *nanoPay
-	var ok bool
-	if np, ok = sdb.nanoPay[id]; !ok {
-		enc, err := sdb.trie.TryGet(append(NanoPayPrefix, id...))
-		if err != nil {
-			return nil, err
+	if v, ok := sdb.nanoPay.Load(id); ok {
+		if np, ok := v.(*nanoPay); ok {
+			return np, nil
 		}
-
-		np = &nanoPay{}
-
-		if len(enc) > 0 {
-			buff := bytes.NewBuffer(enc)
-			if err := np.Deserialize(buff); err != nil {
-				return nil, fmt.Errorf("[getNanoPay]Failed to decode state object for nano pay: %v", err)
-			}
-		}
-
-		sdb.nanoPay[id] = np
 	}
+
+	enc, err := sdb.trie.TryGet(append(NanoPayPrefix, id...))
+	if err != nil {
+		return nil, err
+	}
+
+	np := &nanoPay{}
+
+	if len(enc) > 0 {
+		buff := bytes.NewBuffer(enc)
+		if err := np.Deserialize(buff); err != nil {
+			return nil, fmt.Errorf("[getNanoPay]Failed to decode state object for nano pay: %v", err)
+		}
+	}
+
+	sdb.nanoPay.Store(id, np)
 
 	return np, nil
 }
 
-func (sdb *StateDB) getNanoPayCleanup(height uint32) (map[string]struct{}, error) {
-	var npc map[string]struct{}
-	var ok bool
-	if npc, ok = sdb.nanoPayCleanup[height]; !ok {
-		enc, err := sdb.trie.TryGet(append(NanoPayCleanupPrefix, getNanoPayCleanupId(height)...))
-		if err != nil {
-			return nil, fmt.Errorf("[getNanoPayCleanup]can not get nano pay cleanup from trie: %v", err)
+func (sdb *StateDB) getNanoPayCleanup(height uint32) (nanoPayCleanup, error) {
+	if v, ok := sdb.nanoPayCleanup.Load(height); ok {
+		if npc, ok := v.(nanoPayCleanup); ok {
+			return npc, nil
 		}
+	}
 
-		npc = make(map[string]struct{}, 0)
+	enc, err := sdb.trie.TryGet(append(NanoPayCleanupPrefix, getNanoPayCleanupId(height)...))
+	if err != nil {
+		return nil, fmt.Errorf("[getNanoPayCleanup]can not get nano pay cleanup from trie: %v", err)
+	}
 
-		if len(enc) > 0 {
-			buff := bytes.NewBuffer(enc)
-			npcLength, err := serialization.ReadVarUint(buff, 0)
+	npc := make(nanoPayCleanup, 0)
+
+	if len(enc) > 0 {
+		buff := bytes.NewBuffer(enc)
+		npcLength, err := serialization.ReadVarUint(buff, 0)
+		if err != nil {
+			return nil, fmt.Errorf("[getNanoPayCleanup]Failed to decode state object for nano pay cleanup: %v", err)
+		}
+		for i := uint64(0); i < npcLength; i++ {
+			id, err := serialization.ReadVarString(buff)
 			if err != nil {
 				return nil, fmt.Errorf("[getNanoPayCleanup]Failed to decode state object for nano pay cleanup: %v", err)
 			}
-			for i := uint64(0); i < npcLength; i++ {
-				id, err := serialization.ReadVarString(buff)
-				if err != nil {
-					return nil, fmt.Errorf("[getNanoPayCleanup]Failed to decode state object for nano pay cleanup: %v", err)
-				}
-				npc[id] = struct{}{}
-			}
+			npc[id] = struct{}{}
 		}
-
-		sdb.nanoPayCleanup[height] = npc
 	}
+
+	sdb.nanoPayCleanup.Store(height, npc)
 
 	return npc, nil
 }
@@ -144,24 +150,24 @@ func (sdb *StateDB) deleteNanoPay(id string) error {
 		return err
 	}
 
-	delete(sdb.nanoPay, id)
+	sdb.nanoPay.Delete(id)
 	return nil
 }
 
-func (sdb *StateDB) updateNanoPayCleanup(height uint32, nanoPayCleanup map[string]struct{}) error {
+func (sdb *StateDB) updateNanoPayCleanup(height uint32, npc nanoPayCleanup) error {
 	buff := bytes.NewBuffer(nil)
 
-	if err := serialization.WriteVarUint(buff, uint64(len(nanoPayCleanup))); err != nil {
-		panic(fmt.Errorf("can't encode nano pay cleanup %v: %v", nanoPayCleanup, err))
+	if err := serialization.WriteVarUint(buff, uint64(len(npc))); err != nil {
+		panic(fmt.Errorf("can't encode nano pay cleanup %v: %v", npc, err))
 	}
 	npcs := make([]string, 0)
-	for id := range nanoPayCleanup {
+	for id := range npc {
 		npcs = append(npcs, id)
 	}
 	sort.Strings(npcs)
 	for _, id := range npcs {
 		if err := serialization.WriteVarString(buff, id); err != nil {
-			panic(fmt.Errorf("can't encode nano pay cleanup %v: %v", nanoPayCleanup, err))
+			panic(fmt.Errorf("can't encode nano pay cleanup %v: %v", npc, err))
 		}
 	}
 
@@ -174,7 +180,7 @@ func (sdb *StateDB) deleteNanoPayCleanup(height uint32) error {
 		return err
 	}
 
-	delete(sdb.nanoPayCleanup, height)
+	sdb.nanoPayCleanup.Delete(height)
 	return nil
 }
 
@@ -200,26 +206,26 @@ func (sdb *StateDB) cancelNanoPayCleanupAtHeight(height uint32, id string) error
 
 func (sdb *StateDB) SetNanoPay(sender, recipient common.Uint160, nonce uint64, balance common.Fixed64, expiresAt uint32) error {
 	id := getNanoPayId(sender, recipient, nonce)
-	var np *nanoPay
-	var ok bool
-	if np, ok = sdb.nanoPay[id]; !ok {
-		np = &nanoPay{
-			balance:   balance,
-			expiresAt: expiresAt,
+	if v, ok := sdb.nanoPay.Load(id); ok {
+		if np, ok := v.(*nanoPay); ok {
+			if err := sdb.cancelNanoPayCleanupAtHeight(np.expiresAt, id); err != nil {
+				return err
+			}
+			if err := sdb.cleanupNanoPayAtHeight(expiresAt, id); err != nil {
+				return err
+			}
+			np.balance = balance
+			np.expiresAt = expiresAt
+			return nil
 		}
-		sdb.nanoPay[id] = np
-		if err := sdb.cleanupNanoPayAtHeight(expiresAt, id); err != nil {
-			return err
-		}
-	} else {
-		if err := sdb.cancelNanoPayCleanupAtHeight(np.expiresAt, id); err != nil {
-			return err
-		}
-		if err := sdb.cleanupNanoPayAtHeight(expiresAt, id); err != nil {
-			return err
-		}
-		np.balance = balance
-		np.expiresAt = expiresAt
+	}
+	np := &nanoPay{
+		balance:   balance,
+		expiresAt: expiresAt,
+	}
+	sdb.nanoPay.Store(id, np)
+	if err := sdb.cleanupNanoPayAtHeight(expiresAt, id); err != nil {
+		return err
 	}
 	return nil
 }
@@ -230,33 +236,39 @@ func (sdb *StateDB) CleanupNanoPay(height uint32) error {
 		return err
 	}
 	for id := range ids {
-		sdb.nanoPay[id] = nil
+		sdb.nanoPay.Store(id, nil)
 	}
-	sdb.nanoPayCleanup[height] = nil
+	sdb.nanoPayCleanup.Store(height, nil)
 
 	return nil
 }
 
 func (sdb *StateDB) FinalizeNanoPay(commit bool) {
-	for id, nanoPay := range sdb.nanoPay {
-		if nanoPay == nil || nanoPay.Empty() {
-			sdb.deleteNanoPay(id)
-		} else {
-			sdb.updateNanoPay(id, nanoPay)
+	sdb.nanoPay.Range(func(key, value interface{}) bool {
+		if id, ok := key.(string); ok {
+			if np, ok := value.(*nanoPay); ok && !np.Empty() {
+				sdb.updateNanoPay(id, np)
+			} else {
+				sdb.deleteNanoPay(id)
+			}
+			if commit {
+				sdb.nanoPay.Delete(id)
+			}
 		}
-		if commit {
-			delete(sdb.nanoPay, id)
-		}
-	}
+		return true
+	})
 
-	for height, nanoPayCleanup := range sdb.nanoPayCleanup {
-		if nanoPayCleanup == nil || len(nanoPayCleanup) == 0 {
-			sdb.deleteNanoPayCleanup(height)
-		} else {
-			sdb.updateNanoPayCleanup(height, nanoPayCleanup)
+	sdb.nanoPayCleanup.Range(func(key, value interface{}) bool {
+		if height, ok := key.(uint32); ok {
+			if npc, ok := value.(nanoPayCleanup); ok && len(npc) > 0 {
+				sdb.updateNanoPayCleanup(height, npc)
+			} else {
+				sdb.deleteNanoPayCleanup(height)
+			}
+			if commit {
+				sdb.nanoPayCleanup.Delete(height)
+			}
 		}
-		if commit {
-			delete(sdb.nanoPayCleanup, height)
-		}
-	}
+		return true
+	})
 }
