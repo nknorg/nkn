@@ -61,15 +61,10 @@ func NewTxPool() *TxnPool {
 		txnCount:             0,
 	}
 
-	t := time.NewTicker(config.TxPoolCleanupInterval)
-
 	go func() {
 		for {
-			select {
-			case <-t.C:
-				tp.DropOldTxns()
-				time.Sleep(config.TxPoolCleanupInterval)
-			}
+			tp.DropOldTxns()
+			time.Sleep(config.TxPoolCleanupInterval)
 		}
 	}()
 
@@ -79,13 +74,12 @@ func NewTxPool() *TxnPool {
 func (tp *TxnPool) DropOldTxns() {
 	currentTxnCount := atomic.LoadInt32(&tp.txnCount)
 
-	log.Infof("DropOldTxns: %v txns in txpool", currentTxnCount)
-
 	if currentTxnCount <= int32(config.Parameters.TxPoolTotalTxCap) {
+		log.Infof("DropOldTxns: %v txns in txpool, no need to drop", currentTxnCount)
 		return
 	}
 
-	log.Infof("DropOldTxns: %v txns need to be dropped", currentTxnCount-int32(config.Parameters.TxPoolTotalTxCap))
+	log.Infof("DropOldTxns: %v txns in txpool, %v txns need to be dropped", currentTxnCount, currentTxnCount-int32(config.Parameters.TxPoolTotalTxCap))
 
 	txnsInPool := make([]*transaction.Transaction, 0)
 	dropList := make([]*transaction.Transaction, 0)
@@ -130,15 +124,21 @@ func (tp *TxnPool) DropOldTxns() {
 			continue
 		}
 
-		list.Drop()
-		tp.deleteTransactionFromMap(txn)
-		txnsInPool = append(txnsInPool, txn)
+		_, ok, err = list.Drop(txn.Hash())
+		if err != nil {
+			continue
+		}
 
-		atomic.AddInt32(&tp.txnCount, -1)
-		currentTxnCount--
+		if ok {
+			tp.deleteTransactionFromMap(txn)
+			txnsInPool = append(txnsInPool, txn)
 
-		if currentTxnCount <= int32(config.Parameters.TxPoolTotalTxCap) {
-			break
+			atomic.AddInt32(&tp.txnCount, -1)
+			currentTxnCount--
+
+			if currentTxnCount <= int32(config.Parameters.TxPoolTotalTxCap) {
+				break
+			}
 		}
 
 		if list.Len() > 0 {
@@ -157,6 +157,8 @@ func (tp *TxnPool) DropOldTxns() {
 	tp.blockValidationState.Lock()
 	tp.CleanBlockValidationState(txnsInPool)
 	tp.blockValidationState.Unlock()
+
+	log.Infof("DropOldTxns: dropped %v txns", len(txnsInPool))
 
 	return
 }
