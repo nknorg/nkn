@@ -60,7 +60,7 @@ func (b *Block) Unmarshal(buf []byte) error {
 func (b *Block) GetTxsSize() int {
 	txnSize := 0
 	for _, txn := range b.Transactions {
-		txnSize += txn.GetSize()
+		txnSize += int(txn.GetSize())
 	}
 
 	return txnSize

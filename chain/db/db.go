@@ -35,7 +35,7 @@ func NewLevelDBStore(file string) (*LevelDBStore, error) {
 	// default Options
 	o := opt.Options{
 		NoSync:                 false,
-		OpenFilesCacheCapacity: config.Parameters.DBFilesCacheCapacity,
+		OpenFilesCacheCapacity: int(config.Parameters.DBFilesCacheCapacity),
 		Filter:                 filter.NewBloomFilter(BITSPERKEY),
 	}
 
