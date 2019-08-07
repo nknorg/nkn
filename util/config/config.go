@@ -23,8 +23,6 @@ import (
 	"github.com/pbnjay/memory"
 )
 
-const DefaultConfigFile = "config.json"
-
 const (
 	MaxUint                      = ^uint(0)
 	MaxInt                       = int(MaxUint >> 1)
@@ -65,7 +63,12 @@ const (
 	GASAssetName                 = "New Network Coin"
 	GASAssetSymbol               = "nnc"
 	GASAssetPrecision            = uint32(8)
-	MaxSyncMemoryUsagePercent    = 10
+)
+
+const (
+	defaultConfigFile          = "config.json"
+	defaultSyncMemoryPercent   = 10
+	defaultSyncBatchWindowSize = 64
 )
 
 var (
@@ -116,16 +119,18 @@ var (
 		MiningDebug:               true,
 		LogLevel:                  1,
 		MaxLogFileSize:            20,
-		SyncBatchWindowSize:       64,
+		SyncBatchWindowSize:       0,
 		SyncBlockHeadersBatchSize: 128,
 		SyncBlocksBatchSize:       4,
+		SyncBlocksMaxMemorySize:   0,
 		RPCReadTimeout:            5,
 		RPCWriteTimeout:           10,
 		KeepAliveTimeout:          15,
 		NATPortMappingTimeout:     365 * 86400,
 		NumTxnPerBlock:            256,
 		TxPoolPerAccountTxCap:     32,
-		TxPoolTotalTxCap:          1024,
+		TxPoolTotalTxCap:          0,
+		TxPoolMaxMemorySize:       32,
 		RegisterIDFee:             0,
 		LogPath:                   "Log",
 		ChainDBPath:               "ChainDB",
@@ -153,7 +158,6 @@ type Configuration struct {
 	CertPath                  string        `json:"CertPath"`
 	KeyPath                   string        `json:"KeyPath"`
 	CAPath                    string        `json:"CAPath"`
-	MaxHdrSyncReqs            int           `json:"MaxConcurrentSyncHeaderReqs"`
 	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
 	NumLowFeeTxnPerBlock      uint32        `json:"NumLowFeeTxnPerBlock"`
 	MinTxnFee                 int64         `json:"MinTxnFee"`
@@ -167,9 +171,11 @@ type Configuration struct {
 	SyncBatchWindowSize       uint32        `json:"SyncBatchWindowSize"`
 	SyncBlockHeadersBatchSize uint32        `json:"SyncBlockHeadersBatchSize"`
 	SyncBlocksBatchSize       uint32        `json:"SyncBlocksBatchSize"`
+	SyncBlocksMaxMemorySize   uint32        `json:"SyncBlocksMaxMemorySize"` // in megabytes (MB)
 	NumTxnPerBlock            uint32        `json:"NumTxnPerBlock"`
-	TxPoolPerAccountTxCap     int           `json:"TxPoolPerAccountTxCap"`
-	TxPoolTotalTxCap          int           `json:"TxPoolTotalTxCap "`
+	TxPoolPerAccountTxCap     uint32        `json:"TxPoolPerAccountTxCap"`
+	TxPoolTotalTxCap          uint32        `json:"TxPoolTotalTxCap"`
+	TxPoolMaxMemorySize       uint32        `json:"TxPoolMaxMemorySize"`   // in megabytes (MB)
 	RPCReadTimeout            time.Duration `json:"RPCReadTimeout"`        // in seconds
 	RPCWriteTimeout           time.Duration `json:"RPCWriteTimeout"`       // in seconds
 	KeepAliveTimeout          time.Duration `json:"KeepAliveTimeout"`      // in seconds
@@ -178,18 +184,13 @@ type Configuration struct {
 	ChainDBPath               string        `json:"ChainDBPath"`
 	WalletFile                string        `json:"WalletFile"`
 	MaxGetIDSeeds             uint32        `json:"MaxGetIDSeeds"`
-	DBFilesCacheCapacity      int           `json:"DBFilesCacheCapacity"`
+	DBFilesCacheCapacity      uint32        `json:"DBFilesCacheCapacity"`
 }
 
 func Init() error {
-	syncBatchWindowSize := uint32(memory.TotalMemory()*MaxSyncMemoryUsagePercent/100/MaxBlockSize) / Parameters.SyncBlocksBatchSize
-	if syncBatchWindowSize > 0 {
-		Parameters.SyncBatchWindowSize = syncBatchWindowSize
-	}
-
 	configFile := ConfigFile
 	if configFile == "" {
-		configFile = DefaultConfigFile
+		configFile = defaultConfigFile
 	}
 
 	if _, err := os.Stat(configFile); err == nil {
@@ -237,13 +238,25 @@ func Init() error {
 		Parameters.incrementPort()
 	}
 
-	if err := Parameters.SetupPortMapping(); err != nil {
-		log.Printf("Error adding port mapping. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.")
-		return err
+	if Parameters.SyncBatchWindowSize == 0 {
+		syncBlocksMaxMemorySize := uint64(Parameters.SyncBlocksMaxMemorySize) * 1024 * 1024
+		if syncBlocksMaxMemorySize == 0 {
+			syncBlocksMaxMemorySize = memory.TotalMemory() * defaultSyncMemoryPercent / 100
+		}
+
+		Parameters.SyncBatchWindowSize = uint32(syncBlocksMaxMemorySize/MaxBlockSize) / Parameters.SyncBlocksBatchSize
+		if Parameters.SyncBatchWindowSize == 0 {
+			Parameters.SyncBatchWindowSize = defaultSyncBatchWindowSize
+		}
 	}
 
 	err := Parameters.verify()
 	if err != nil {
+		return err
+	}
+
+	if err := Parameters.SetupPortMapping(); err != nil {
+		log.Printf("Error adding port mapping. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.")
 		return err
 	}
 

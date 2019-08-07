@@ -18,6 +18,7 @@ import (
 type Transaction struct {
 	*pb.Transaction
 	hash                *Uint256
+	size                uint32
 	isSignatureVerified bool
 }
 
@@ -97,9 +98,12 @@ func (tx *Transaction) DeserializeUnsigned(r io.Reader) error {
 	return nil
 }
 
-func (tx *Transaction) GetSize() int {
-	marshaledTx, _ := tx.Marshal()
-	return len(marshaledTx)
+func (tx *Transaction) GetSize() uint32 {
+	if tx.size == 0 {
+		marshaledTx, _ := tx.Marshal()
+		tx.size = uint32(len(marshaledTx))
+	}
+	return tx.size
 }
 
 func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {

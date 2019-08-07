@@ -53,6 +53,7 @@ type TxnPool struct {
 	NanoPayTxs           sync.Map // tx with nano pay type.
 	blockValidationState *chain.BlockValidationState
 	txnCount             int32
+	txnSize              int64
 }
 
 func NewTxPool() *TxnPool {
@@ -63,7 +64,7 @@ func NewTxPool() *TxnPool {
 
 	go func() {
 		for {
-			tp.DropOldTxns()
+			tp.DropTxns()
 			time.Sleep(config.TxPoolCleanupInterval)
 		}
 	}()
@@ -71,17 +72,28 @@ func NewTxPool() *TxnPool {
 	return tp
 }
 
-func (tp *TxnPool) DropOldTxns() {
-	currentTxnCount := atomic.LoadInt32(&tp.txnCount)
+func isTxPoolFull(txnCount int32, txnSize int64) bool {
+	if config.Parameters.TxPoolTotalTxCap > 0 && txnCount > int32(config.Parameters.TxPoolTotalTxCap) {
+		return true
+	}
+	if config.Parameters.TxPoolMaxMemorySize > 0 && txnSize > int64(config.Parameters.TxPoolMaxMemorySize)*1024*1024 {
+		return true
+	}
+	return false
+}
 
-	if currentTxnCount <= int32(config.Parameters.TxPoolTotalTxCap) {
-		log.Infof("DropOldTxns: %v txns in txpool, no need to drop", currentTxnCount)
+func (tp *TxnPool) DropTxns() {
+	currentTxnCount := atomic.LoadInt32(&tp.txnCount)
+	currentTxnSize := atomic.LoadInt64(&tp.txnSize)
+
+	if !isTxPoolFull(currentTxnCount, currentTxnSize) {
+		log.Infof("DropTxns: %v txns (%v bytes) in txpool, no need to drop", currentTxnCount, currentTxnSize)
 		return
 	}
 
-	log.Infof("DropOldTxns: %v txns in txpool, %v txns need to be dropped", currentTxnCount, currentTxnCount-int32(config.Parameters.TxPoolTotalTxCap))
+	log.Infof("DropTxns: %v txns (%v bytes) in txpool, need to drop txns", currentTxnCount, currentTxnSize)
 
-	txnsInPool := make([]*transaction.Transaction, 0)
+	txnsDropped := make([]*transaction.Transaction, 0)
 	dropList := make([]*transaction.Transaction, 0)
 
 	tp.TxLists.Range(func(_, v interface{}) bool {
@@ -131,12 +143,14 @@ func (tp *TxnPool) DropOldTxns() {
 
 		if ok {
 			tp.deleteTransactionFromMap(txn)
-			txnsInPool = append(txnsInPool, txn)
+			txnsDropped = append(txnsDropped, txn)
 
 			atomic.AddInt32(&tp.txnCount, -1)
+			atomic.AddInt64(&tp.txnSize, -int64(txn.GetSize()))
 			currentTxnCount--
+			currentTxnSize -= int64(txn.GetSize())
 
-			if currentTxnCount <= int32(config.Parameters.TxPoolTotalTxCap) {
+			if !isTxPoolFull(currentTxnCount, currentTxnSize) {
 				break
 			}
 		}
@@ -155,10 +169,14 @@ func (tp *TxnPool) DropOldTxns() {
 	}
 
 	tp.blockValidationState.Lock()
-	tp.CleanBlockValidationState(txnsInPool)
+	tp.CleanBlockValidationState(txnsDropped)
 	tp.blockValidationState.Unlock()
 
-	log.Infof("DropOldTxns: dropped %v txns", len(txnsInPool))
+	bytesDropped := int64(0)
+	for _, txn := range txnsDropped {
+		bytesDropped += int64(txn.GetSize())
+	}
+	log.Infof("DropTxns: dropped %v txns (%v bytes)", len(txnsDropped), bytesDropped)
 
 	return
 }
@@ -199,7 +217,7 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 func (tp *TxnPool) getOrNewList(owner common.Uint160) (*NonceSortedTxs, error) {
 	// check if the owner exsits.
 	if _, ok := tp.TxLists.Load(owner); !ok {
-		tp.TxLists.LoadOrStore(owner, NewNonceSortedTxs(owner, config.Parameters.TxPoolPerAccountTxCap))
+		tp.TxLists.LoadOrStore(owner, NewNonceSortedTxs(owner, int(config.Parameters.TxPoolPerAccountTxCap)))
 	}
 
 	// 2. check if the txn exsits.
@@ -270,7 +288,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 
 			tp.deleteTransactionFromMap(oldTxn)
 		} else if list.Full() {
-			return errors.New("txpool is full")
+			return errors.New("txpool per account list is full")
 		} else {
 			var expectNonce uint64
 			if preNonce, err := list.GetLatestNonce(); err != nil {
@@ -284,7 +302,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 			}
 
 			if txn.UnsignedTx.Nonce != expectNonce {
-				return errors.New("the nonce is not continuous")
+				return errors.New("nonce is not continuous")
 			}
 
 			tp.blockValidationState.Lock()
@@ -303,6 +321,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 
 	tp.addTransactionToMap(txn)
 	atomic.AddInt32(&tp.txnCount, 1)
+	atomic.AddInt64(&tp.txnSize, int64(txn.GetSize()))
 
 	return nil
 }
@@ -473,6 +492,7 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 						for i := 0; uint64(i) <= txNonce-nonce; i++ {
 							list.Pop()
 							atomic.AddInt32(&tp.txnCount, -1)
+							atomic.AddInt64(&tp.txnSize, -int64(txn.GetSize()))
 						}
 					}
 				}
