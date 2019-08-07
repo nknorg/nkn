@@ -125,7 +125,7 @@ var (
 		NATPortMappingTimeout:     365 * 86400,
 		NumTxnPerBlock:            256,
 		TxPoolPerAccountTxCap:     32,
-		TxPoolTotalTxCap:          1000,
+		TxPoolTotalTxCap:          1024,
 		RegisterIDFee:             0,
 		LogPath:                   "Log",
 		ChainDBPath:               "ChainDB",
