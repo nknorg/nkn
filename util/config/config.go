@@ -131,7 +131,8 @@ var (
 		TxPoolPerAccountTxCap:     32,
 		TxPoolTotalTxCap:          0,
 		TxPoolMaxMemorySize:       32,
-		RegisterIDFee:             0,
+		RegisterIDRegFee:          0,
+		RegisterIDTxnFee:          0,
 		LogPath:                   "Log",
 		ChainDBPath:               "ChainDB",
 		WalletFile:                "wallet.json",
@@ -161,7 +162,8 @@ type Configuration struct {
 	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
 	NumLowFeeTxnPerBlock      uint32        `json:"NumLowFeeTxnPerBlock"`
 	MinTxnFee                 int64         `json:"MinTxnFee"`
-	RegisterIDFee             int64         `json:"RegisterIDFee"`
+	RegisterIDRegFee          int64         `json:"RegisterIDRegFee"`
+	RegisterIDTxnFee          int64         `json:"RegisterIDTxnFee"`
 	Hostname                  string        `json:"Hostname"`
 	Transport                 string        `json:"Transport"`
 	NAT                       bool          `json:"NAT"`

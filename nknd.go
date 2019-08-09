@@ -181,7 +181,7 @@ func nknMain(c *cli.Context) error {
 	// if InitLedger return err, chain.DefaultLedger is uninitialized.
 	defer chain.DefaultLedger.Store.Close()
 
-	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDFee))
+	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDRegFee), Fixed64(config.Parameters.RegisterIDTxnFee))
 	if err != nil {
 		panic(fmt.Errorf("Get or create id error: %v", err))
 	}
@@ -441,7 +441,7 @@ func GetID(seeds []string, publickey []byte) ([]byte, error) {
 	return nil, fmt.Errorf("failed to get ID from majority of %d seeds", n)
 }
 
-func CreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) error {
+func CreateID(seeds []string, wallet vault.Wallet, regFee, txnFee Fixed64) error {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return err
@@ -463,7 +463,7 @@ func CreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) error {
 			continue
 		}
 
-		txn, err := common.MakeGenerateIDTransaction(wallet, regFee, nonce, 0)
+		txn, err := common.MakeGenerateIDTransaction(wallet, regFee, nonce, txnFee)
 		if err != nil {
 			return err
 		}
@@ -485,7 +485,7 @@ func CreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) error {
 	return errors.New("create ID failed")
 }
 
-func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) ([]byte, error) {
+func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee, txnFee Fixed64) ([]byte, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -497,7 +497,7 @@ func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee Fixed64) ([]byte,
 		if err != nil {
 			log.Warningf("Get id from neighbors error: %v", err)
 		}
-		if err := CreateID(seeds, wallet, regFee); err != nil {
+		if err := CreateID(seeds, wallet, regFee, txnFee); err != nil {
 			return nil, err
 		}
 	} else if len(id) != config.NodeIDBytes {
