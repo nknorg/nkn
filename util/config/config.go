@@ -138,7 +138,8 @@ var (
 		WalletFile:                "wallet.json",
 		MaxGetIDSeeds:             3,
 		DBFilesCacheCapacity:      100,
-		NumLowFeeTxnPerBlock:      4,
+		NumLowFeeTxnPerBlock:      0,
+		LowFeeTxnSizePerBlock:     4096,
 		MinTxnFee:                 10000000,
 	}
 )
@@ -161,6 +162,7 @@ type Configuration struct {
 	CAPath                    string        `json:"CAPath"`
 	GenesisBlockProposer      string        `json:"GenesisBlockProposer"`
 	NumLowFeeTxnPerBlock      uint32        `json:"NumLowFeeTxnPerBlock"`
+	LowFeeTxnSizePerBlock     uint32        `json:"LowFeeTxnSizePerBlock"` // in bytes
 	MinTxnFee                 int64         `json:"MinTxnFee"`
 	RegisterIDRegFee          int64         `json:"RegisterIDRegFee"`
 	RegisterIDTxnFee          int64         `json:"RegisterIDTxnFee"`
@@ -250,6 +252,7 @@ func Init() error {
 		if Parameters.SyncBatchWindowSize == 0 {
 			Parameters.SyncBatchWindowSize = defaultSyncBatchWindowSize
 		}
+		log.Printf("Set SyncBatchWindowSize to %vMB", Parameters.SyncBatchWindowSize)
 	}
 
 	err := Parameters.verify()

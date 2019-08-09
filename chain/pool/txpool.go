@@ -285,7 +285,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		tp.blockValidationState.Commit()
 	default:
 		if oldTxn, err := list.Get(txn.UnsignedTx.Nonce); err == nil {
-			log.Warning("replace old tx")
+			log.Debug("replace old tx")
 			tp.blockValidationState.Lock()
 			defer tp.blockValidationState.Unlock()
 			if err := tp.CleanBlockValidationState([]*transaction.Transaction{oldTxn}); err != nil {
