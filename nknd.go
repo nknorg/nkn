@@ -205,6 +205,9 @@ func nknMain(c *cli.Context) error {
 	// if InitLedger return err, chain.DefaultLedger is uninitialized.
 	defer chain.DefaultLedger.Store.Close()
 
+	//init web service
+	dashboard.Init(nil, wallet)
+
 	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDRegFee), Fixed64(config.Parameters.RegisterIDTxnFee))
 	if err != nil {
 		panic(fmt.Errorf("Get or create id error: %v", err))
@@ -241,7 +244,7 @@ func nknMain(c *cli.Context) error {
 	}
 
 	//init web service
-	dashboard.Init(localNode, wallet)
+	dashboard.Init(localNode, nil)
 
 	//start JsonRPC
 	rpcServer := httpjson.NewServer(localNode, wallet)
