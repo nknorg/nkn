@@ -1,6 +1,6 @@
 <template>
     <v-container fluid grid-list-lg>
-        <v-form ref="form">
+        <v-form ref="form" @submit.prevent="submit">
             <v-card class="card">
                 <v-card-title class="headline">
                     {{$t('WALLET_OPEN')}}
