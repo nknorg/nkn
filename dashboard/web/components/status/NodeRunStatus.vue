@@ -39,7 +39,6 @@
     methods: {
       // get node status
       getStatus(stateStr) {
-        console.log(stateStr)
         const statusEnum = {
           'WAIT_FOR_SYNCING': this.$t('node.state.WAIT_FOR_SYNCING'),
           'SYNC_STARTED': this.$t('node.state.SYNC_STARTED'),

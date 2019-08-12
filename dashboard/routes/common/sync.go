@@ -33,7 +33,8 @@ func SyncRouter(router *gin.RouterGroup) {
 
 	router.GET("/sync/status", func(context *gin.Context) {
 		context.JSON(http.StatusOK, gin.H{
-			"isInit":                       serviceConfig.IsInit,
+			"isNodeInit":                   serviceConfig.IsNodeInit,
+			"isWalletInit":                 serviceConfig.IsWalletInit,
 			"status":                       serviceConfig.Status,
 			"beneficiaryAddr":              config.Parameters.BeneficiaryAddr,
 			"webGuiCreateWallet":           config.Parameters.WebGuiCreateWallet,

@@ -24,9 +24,14 @@ var (
 )
 
 func Init(ln *node.LocalNode, w vault.Wallet) {
-	localNode = ln
-	wallet = w
-	serviceConfig.IsInit = true
+	if ln != nil {
+		localNode = ln
+		serviceConfig.IsNodeInit = true
+	}
+	if w != nil {
+		wallet = w
+		serviceConfig.IsWalletInit = true
+	}
 }
 
 func Start() {
@@ -60,8 +65,10 @@ func Start() {
 
 	app.Use(func(context *gin.Context) {
 		// init config
-		if serviceConfig.IsInit {
+		if serviceConfig.IsNodeInit {
 			context.Set("localNode", localNode)
+		}
+		if serviceConfig.IsWalletInit {
 			context.Set("wallet", wallet)
 		}
 	})

@@ -14,6 +14,7 @@ const (
 )
 
 var (
-	IsInit = false
-	Status = SERVICE_STATUS_DEFAULT
+	IsNodeInit   = false
+	IsWalletInit = false
+	Status       = SERVICE_STATUS_DEFAULT
 )
