@@ -135,15 +135,15 @@ var (
 		TxPoolPerAccountTxCap:        32,
 		TxPoolTotalTxCap:             0,
 		TxPoolMaxMemorySize:          32,
-		RegisterIDRegFee:          0,
-		RegisterIDTxnFee:                0,
+		RegisterIDRegFee:             0,
+		RegisterIDTxnFee:             0,
 		LogPath:                      "Log",
 		ChainDBPath:                  "ChainDB",
 		WalletFile:                   "wallet.json",
 		MaxGetIDSeeds:                3,
 		DBFilesCacheCapacity:         100,
 		NumLowFeeTxnPerBlock:         0,
-		LowFeeTxnSizePerBlock:     4096,
+		LowFeeTxnSizePerBlock:        4096,
 		MinTxnFee:                    10000000,
 		AllowEmptyBeneficiaryAddress: false,
 		WebGuiListenAddress:          "127.0.0.1",
@@ -171,10 +171,10 @@ type Configuration struct {
 	CAPath                       string        `json:"CAPath"`
 	GenesisBlockProposer         string        `json:"GenesisBlockProposer"`
 	NumLowFeeTxnPerBlock         uint32        `json:"NumLowFeeTxnPerBlock"`
-	LowFeeTxnSizePerBlock     uint32        `json:"LowFeeTxnSizePerBlock"` // in bytes
+	LowFeeTxnSizePerBlock        uint32        `json:"LowFeeTxnSizePerBlock"` // in bytes
 	MinTxnFee                    int64         `json:"MinTxnFee"`
-	RegisterIDRegFee                int64         `json:"RegisterIDRegFee"`
-	RegisterIDTxnFee          int64         `json:"RegisterIDTxnFee"`
+	RegisterIDRegFee             int64         `json:"RegisterIDRegFee"`
+	RegisterIDTxnFee             int64         `json:"RegisterIDTxnFee"`
 	Hostname                     string        `json:"Hostname"`
 	Transport                    string        `json:"Transport"`
 	NAT                          bool          `json:"NAT"`
