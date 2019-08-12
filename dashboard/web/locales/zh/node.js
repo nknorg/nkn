@@ -5,6 +5,8 @@ export default {
     SYNC_STARTED: '账本开始同步',
     SYNC_FINISHED: '账本同步完成',
     PERSIST_FINISHED: '运行中'
+  },
+  serviceStatus:{
+    SERVICE_STATUS_CREATE_ID: '正在创建ID'
   }
-
 }
