@@ -5,6 +5,8 @@ export default {
     SYNC_STARTED: 'chain db sync started',
     SYNC_FINISHED: 'chain db sync finished',
     PERSIST_FINISHED: 'mining'
+  },
+  serviceStatus: {
+    SERVICE_STATUS_CREATE_ID: 'creating ID'
   }
-
 }

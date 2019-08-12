@@ -24,6 +24,7 @@ import (
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/dashboard"
+	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/config"
@@ -543,9 +544,11 @@ func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee, txnFee Fixed64) 
 		if err != nil {
 			log.Warningf("Get id from neighbors error: %v", err)
 		}
+		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_CREATE_ID
 		if err := CreateID(seeds, wallet, regFee, txnFee); err != nil {
 			return nil, err
 		}
+
 	} else if len(id) != config.NodeIDBytes {
 		return nil, fmt.Errorf("Got id %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
 	} else if !bytes.Equal(id, crypto.Sha256ZeroHash) {
@@ -574,5 +577,6 @@ out:
 		}
 	}
 
+	serviceConfig.Status = serviceConfig.Status &^ serviceConfig.SERVICE_STATUS_CREATE_ID
 	return nil, errors.New("get ID timeout")
 }
