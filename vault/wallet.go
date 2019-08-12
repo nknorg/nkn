@@ -320,7 +320,7 @@ func GetWallet() (Wallet, error) {
 		serviceConfig.Status = serviceConfig.Status &^ serviceConfig.SERVICE_STATUS_NO_PASSWORD
 	}
 
-	if !config.Parameters.AllowEmptyBeneficiaryAddress && config.Parameters.BeneficiaryAddr == "" {
+	if (serviceConfig.Status&serviceConfig.SERVICE_STATUS_NO_WALLET_FILE) != 0 && !config.Parameters.AllowEmptyBeneficiaryAddress && config.Parameters.BeneficiaryAddr == "" {
 		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_NO_BENEFICIARY
 		return nil, fmt.Errorf("wait for set beneficiary address.")
 	} else {
@@ -334,6 +334,6 @@ func GetWallet() (Wallet, error) {
 	} else {
 		serviceConfig.Status = serviceConfig.Status &^ serviceConfig.SERVICE_STATUS_NO_PASSWORD
 	}
-	serviceConfig.Status = serviceConfig.SERVICE_STATUS_RUNNING
+	serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_RUNNING
 	return w, nil
 }

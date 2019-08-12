@@ -58,7 +58,7 @@ func WalletCreateRouter(router *gin.RouterGroup) {
 			log.WebLog.Error("save wallet error: ", err)
 		}
 
-		serviceConfig.Status = serviceConfig.SERVICE_STATUS_RUNNING
+		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_RUNNING
 
 		context.JSON(http.StatusOK, "")
 		return
