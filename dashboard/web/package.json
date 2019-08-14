@@ -14,8 +14,9 @@
   "dependencies": {
     "@nuxtjs/axios": "^5.5.4",
     "@nuxtjs/pwa": "^3.0.0-beta.16",
-    "@nuxtjs/vuetify": "0.5.5",
+    "@nuxtjs/vuetify": "^1.2.1",
     "crypto-js": "^3.1.9-1",
+    "decimal.js": "^10.2.0",
     "lodash": "^4.17.11",
     "nuxt": "^2.0.0",
     "nuxt-i18n": "^5.12.4",
@@ -31,6 +32,7 @@
     "babel-core": "7.0.0-bridge.0",
     "babel-jest": "^24.1.0",
     "jest": "^24.1.0",
+    "material-design-icons-iconfont": "^5.0.1",
     "node-sass": "^4.12.0",
     "nodemon": "^1.18.9",
     "sass-loader": "^7.1.0",

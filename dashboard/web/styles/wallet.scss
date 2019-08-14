@@ -13,18 +13,25 @@
   }
 
   .toolbar {
-    .v-toolbar__content{
-    padding: 0;
+    .v-toolbar__content {
+      padding: 0;
     }
-    .line{
+
+    .line {
       position: absolute;
       width: calc(100% - 80px);
       right: 10px;
-      bottom:0;
+      bottom: 0;
       border: solid;
       border-width: thin 0 0 0;
-      border-color: rgba(0,0,0,0.12);
+      border-color: rgba(0, 0, 0, 0.12);
     }
   }
 
+}
+
+.balance {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
 }

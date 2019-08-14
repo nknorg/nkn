@@ -47,7 +47,7 @@
       </v-window>
 
       <v-card-actions class="pa-3">
-        <v-btn color="blue darken-1" flat @click="cancel">{{$t('CANCEL')}}</v-btn>
+        <v-btn color="blue darken-1" text @click="cancel">{{$t('CANCEL')}}</v-btn>
         <v-spacer></v-spacer>
         <v-btn v-if="step === 3" color="primary" @click="cancel">{{$t('CLOSE')}}</v-btn>
         <v-btn v-else color="primary" @click="next">{{$t('NEXT')}}</v-btn>
@@ -104,8 +104,8 @@
           this.beneficiaryAddr = ''
           this.beneficiaryAddrError = false
           this.beneficiaryAddrErrorMessage = ''
-          this.$refs.form1.reset()
-          this.$refs.form2.reset()
+          this.$refs.form1 && this.$refs.form1.reset()
+          this.$refs.form2 && this.$refs.form2.reset()
         }
       },
       password(val) {

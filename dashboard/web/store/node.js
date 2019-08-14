@@ -17,7 +17,7 @@ const getters = {
 
 const mutations = {
   setNodeStatus(state, node) {
-    if (!!node){
+    if (!!node) {
       state.nodeStatus = node
     }
 
@@ -44,8 +44,21 @@ const actions = {
   },
   async setBeneficiaryAddr({commit, rootState}, {password, beneficiaryAddr}) {
     try {
-      this.$axios.setHeader("Authorization", passwordHash(password, hmacSHA256(authHash(password),rootState.token + rootState.unix)))
+      this.$axios.setHeader("Authorization", passwordHash(password, hmacSHA256(authHash(password), rootState.token + rootState.unix)))
       let res = await this.$axios.put('/api/node/beneficiary', {beneficiaryAddr: beneficiaryAddr})
+      return res.data
+    } catch (e) {
+      if (e.response.status === 400) {
+        e.code = e.response.status
+        throw e
+      }
+      return undefined
+    }
+  },
+  async setNodeConfig({commit, rootState}, {password, config}) {
+    try {
+      this.$axios.setHeader("Authorization", passwordHash(password, hmacSHA256(authHash(password), rootState.token + rootState.unix)))
+      let res = await this.$axios.put('/api/node/config', config)
       return res.data
     } catch (e) {
       if (e.response.status === 400) {

@@ -1,5 +1,5 @@
 <template>
-    <v-container fluid grid-list-lg>
+    <v-container fluid grid-list-lg fill-height>
         <v-layout flex align-center justify-center fill-height>
             <v-progress-circular
                     :size="70"
@@ -42,7 +42,7 @@
         } else if ((this.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_NO_WALLET_FILE) > 0) {
           this.$router.push(this.localePath('wallet-create'))
         } else if ((this.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_RUNNING) > 0){
-          this.$router.push(this.localePath('index'))
+          this.$router.push(this.localePath('nodeStatus'))
         }
 
       }
