@@ -137,7 +137,7 @@
         this.beneficiaryAddr = data.beneficiaryAddr
       },
       reset() {
-        this.registerIDTxnFee = this.nodeStatus.registerIDTxnFee
+        this.registerIDTxnFee = formatFee(this.nodeStatus.registerIDTxnFee)
         this.numLowFeeTxnPerBlock = this.nodeStatus.numLowFeeTxnPerBlock
         this.lowFeeTxnSizePerBlock = this.nodeStatus.lowFeeTxnSizePerBlock
         this.minTxnFee = formatFee(this.nodeStatus.minTxnFee)
@@ -151,7 +151,7 @@
         try {
           let res = await this.setNodeConfig({
             password: data, config: {
-              registerIDTxnFee: Number(this.registerIDTxnFee),
+              registerIDTxnFee: parseFee(this.registerIDTxnFee),
               numLowFeeTxnPerBlock: Number(this.numLowFeeTxnPerBlock),
               lowFeeTxnSizePerBlock: Number(this.lowFeeTxnSizePerBlock),
               minTxnFee: parseFee(this.minTxnFee)

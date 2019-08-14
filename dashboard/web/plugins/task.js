@@ -16,8 +16,8 @@ export default function ({store}) {
   }, tickInterval)
 
   startLoopTask(function () {
-    store.dispatch('wallet/getCurrentWalletStatus')
-    if (store.state.serviceStatus === ServiceStatusEnum.SERVICE_STATUS_RUNNING) {
+    if ((store.state.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_CREATE_ID) > 0 || (store.state.serviceStatus & ServiceStatusEnum.SERVICE_STATUS_RUNNING) > 0) {
+      store.dispatch('wallet/getCurrentWalletStatus')
       store.dispatch('node/getNodeStatus')
       store.dispatch('node/getNeighbors')
     }
