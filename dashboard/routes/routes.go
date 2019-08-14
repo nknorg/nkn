@@ -16,6 +16,7 @@ func Routes(app *gin.Engine) gin.HandlerFunc {
 	node.StatusRouter(app.Group("/api"))
 	node.BeneficiaryRouter(app.Group("/api"))
 	node.NeighborRouter(app.Group("/api"))
+	node.NodeConfigRouter(app.Group("/api"))
 
 	wallet.StatusRouter(app.Group("/api"))
 	wallet.WalletCreateRouter(app.Group("/api"))

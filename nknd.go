@@ -206,7 +206,7 @@ func nknMain(c *cli.Context) error {
 	defer chain.DefaultLedger.Store.Close()
 
 	//init web service
-	dashboard.Init(nil, wallet)
+	dashboard.Init(nil, wallet, nil)
 
 	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDRegFee), Fixed64(config.Parameters.RegisterIDTxnFee))
 	if err != nil {
@@ -244,7 +244,7 @@ func nknMain(c *cli.Context) error {
 	}
 
 	//init web service
-	dashboard.Init(localNode, nil)
+	dashboard.Init(localNode, nil, id)
 
 	//start JsonRPC
 	rpcServer := httpjson.NewServer(localNode, wallet)

@@ -3,6 +3,7 @@ package node
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
@@ -29,7 +30,14 @@ func StatusRouter(router *gin.RouterGroup) {
 				context.AbortWithError(http.StatusInternalServerError, err)
 				return
 			}
+
+			id := context.MustGet("id").([]byte)
+			out["id"] = common.BytesToHexString(id)
 			out["beneficiaryAddr"] = config.Parameters.BeneficiaryAddr
+			out["registerIDTxnFee"] = config.Parameters.RegisterIDTxnFee
+			out["numLowFeeTxnPerBlock"] = config.Parameters.NumLowFeeTxnPerBlock
+			out["lowFeeTxnSizePerBlock"] = config.Parameters.LowFeeTxnSizePerBlock
+			out["minTxnFee"] = config.Parameters.MinTxnFee
 
 			data := helpers.EncryptData(context, true, out)
 

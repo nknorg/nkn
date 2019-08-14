@@ -1,7 +1,8 @@
 package config
 
 const (
-	UnixRange = 10
+	UnixRange   = 20
+	TokenExpSec = 60
 )
 
 const (
@@ -14,7 +15,10 @@ const (
 )
 
 var (
-	IsNodeInit   = false
-	IsWalletInit = false
-	Status       = SERVICE_STATUS_DEFAULT
+	IsNodeInit         = false
+	IsWalletInit       = false
+	IsIdInit           = false
+	Status             = SERVICE_STATUS_DEFAULT
+	Token              = ""
+	TokenExp     int64 = 0
 )
