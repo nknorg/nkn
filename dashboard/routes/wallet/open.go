@@ -33,7 +33,6 @@ type OpenWalletData struct {
 func WalletOpenRouter(router *gin.RouterGroup) {
 	router.POST("/wallet/open", func(context *gin.Context) {
 		bodyData := helpers.DecryptData(context, false)
-
 		var data OpenWalletData
 		err := json.Unmarshal([]byte(bodyData), &data)
 		if err != nil {
