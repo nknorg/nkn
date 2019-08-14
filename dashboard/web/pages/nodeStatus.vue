@@ -80,7 +80,7 @@
                                 <v-flex shrink class="label">
                                     <span>{{$t('config.Num_Low_Fee_Txn_Per_Block')}}: </span>
                                 </v-flex>
-                                <v-flex>{{nodeStatus.lowFeeTxnSizePerBlock}} K</v-flex>
+                                <v-flex>{{nodeStatus.lowFeeTxnSizePerBlock}} kb</v-flex>
                             </v-layout>
                         </v-flex>
                         <v-flex xs12>
