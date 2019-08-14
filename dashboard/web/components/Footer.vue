@@ -1,6 +1,6 @@
 <template>
-  <v-footer height="auto">
-    <v-card flat tile class="indigo lighten-1 white--text text-xs-center" width="100%">
+  <v-footer class="pl-0 pr-0" height="auto">
+    <v-card flat dark tile class="indigo lighten-1 text-center" width="100%">
       <v-card-text>
         <v-tooltip top v-for="item in icons" :key="item.icon">
           <template v-slot:activator="{ on }">

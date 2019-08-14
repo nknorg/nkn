@@ -1,9 +1,9 @@
 <template>
     <v-badge color="transparent" class="breathe mr-4">
         <template v-slot:badge>
-            <v-icon dark small :color="getStatusColor(nodeStatus.syncState)">lens</v-icon>
+            <v-icon dark small :color="getStatusColor(nodeStatus.syncState)">fa-circle</v-icon>
         </template>
-        <span>{{$t('node_status.NODE_STATUS')}}: {{getStatus( nodeStatus.syncState)}}</span>
+        <span> {{getStatus( nodeStatus.syncState)}}</span>
     </v-badge>
 </template>
 

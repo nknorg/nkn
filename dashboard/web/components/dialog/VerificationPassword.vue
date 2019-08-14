@@ -2,7 +2,7 @@
     <v-dialog v-model="visible" persistent max-width="600px">
         <v-card>
             <v-card-title>
-                <span class="headline">{{$t('WALLET_DOWNLOAD')}}</span>
+                <span class="headline">{{title}}</span>
                 <v-spacer></v-spacer>
                 <v-btn class="mr-0" icon small @click="cancel">
                     <v-icon class="fas fa-times" color="grey darken-2" small></v-icon>
@@ -34,7 +34,7 @@
             </v-window>
 
             <v-card-actions class="pa-3">
-                <v-btn color="blue darken-1" flat @click="cancel">{{$t('CANCEL')}}</v-btn>
+                <v-btn color="blue darken-1" text @click="cancel">{{$t('CANCEL')}}</v-btn>
                 <v-spacer></v-spacer>
                 <v-btn v-if="step === 3" color="primary" @click="cancel">{{$t('CLOSE')}}</v-btn>
                 <v-btn v-else color="primary" @click="next">{{$t('NEXT')}}</v-btn>
@@ -48,12 +48,15 @@
   import {mapActions} from 'vuex'
 
   export default {
-    name: "BeneficiaryAddr",
+    name: "VerificationPassword",
     components: {},
     props: {
       value: {
         type: Boolean,
         default: false
+      },
+      title:{
+        type: String
       },
       onSuccess: {
         type: Function

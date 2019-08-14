@@ -13,7 +13,7 @@ export default function ({$axios, redirect, store}) {
   })
   $axios.onResponse(resp => {
     if (resp.data.data !== undefined) {
-      let padding = 10
+      let padding = 20
       let tick = store.state.unix
       for (let i = tick - padding; i < tick + padding; i++) {
         let seed = sessionStorage.getItem('seed')
@@ -25,6 +25,7 @@ export default function ({$axios, redirect, store}) {
         } catch (e) {
         }
       }
+
       throw new Error('data can not decrypt')
     }
   })

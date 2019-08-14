@@ -1,39 +1,41 @@
 <template>
   <v-app>
-    <v-toolbar :clipped-left="clipped" dark app tabs color="indigo" dense>
+    <v-app-bar dark app color="indigo" dense
+               fade-img-on-scroll>
+
       <v-toolbar-title class="ml-2">
-        <v-avatar tile size="30">
-          <img src="~/static/img/logo.png" alt="avatar">
-        </v-avatar>
-        NKN WEB
+        <h3 class="pt-0 mt-2">
+          <v-avatar tile size="35">
+            <img src="~/static/img/logo.png" alt="avatar">
+          </v-avatar>
+          NKN WEB
+        </h3>
       </v-toolbar-title>
-      <v-spacer></v-spacer>
-      <NodeRunStatus :node-status="this.nodeStatus"></NodeRunStatus>
-      <div class="divider-vertical mx-3"></div>
-      <v-badge color="transparent">
-        <span>{{$t('node_status.NODE_VERSION')}}: {{nodeStatus.version}}</span>
-      </v-badge>
 
-      <div class="divider-vertical mx-3"></div>
-      <v-menu offset-y>
-        <template v-slot:activator="{ on }">
-          <v-btn icon v-on="on">
-            <v-icon>language</v-icon>
-          </v-btn>
-        </template>
-        <v-list>
-          <v-list-tile
-            v-for="locale in availableLocales"
-            :key="locale.code"
-            :to="switchLocalePath(locale.code)"
-            @click="reload"
-          >
-            <v-list-tile-title>{{ locale.name }}</v-list-tile-title>
-          </v-list-tile>
+      <v-flex class="toolbar" d-flex align-center justify-end>
 
-        </v-list>
-      </v-menu>
-    </v-toolbar>
+        <v-menu offset-y>
+          <template v-slot:activator="{ on }">
+            <v-btn icon v-on="on">
+              <v-icon>language</v-icon>
+            </v-btn>
+          </template>
+          <v-list>
+            <v-list-item
+                    v-for="locale in availableLocales"
+                    :key="locale.code"
+                    :to="switchLocalePath(locale.code)"
+                    @click="reload"
+            >
+              <v-list-tile-title>{{ locale.name }}</v-list-tile-title>
+            </v-list-item>
+
+          </v-list>
+        </v-menu>
+      </v-flex>
+
+
+    </v-app-bar>
     <v-content>
       <v-container fluid grid-list-lg>
         <nuxt/>
