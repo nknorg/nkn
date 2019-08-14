@@ -37,6 +37,7 @@ export default {
   ** Plugins to load before mounting the App
   */
   plugins: [
+    '~/plugins/vuetify',
     '~/plugins/axios',
     '~/plugins/i18n',
     '~/plugins/task',
