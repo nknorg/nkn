@@ -40,7 +40,7 @@
       </v-window>
 
       <v-card-actions class="pa-3">
-        <v-btn color="blue darken-1" flat @click="cancel">{{$t('CANCEL')}}</v-btn>
+        <v-btn color="blue darken-1" text @click="cancel">{{$t('CANCEL')}}</v-btn>
         <v-spacer></v-spacer>
         <v-btn v-if="step === 1" color="primary" @click="next">{{$t('NEXT')}}</v-btn>
         <v-btn v-if="step === 2" color="primary" @click="cancel">{{$t('CLOSE')}}</v-btn>

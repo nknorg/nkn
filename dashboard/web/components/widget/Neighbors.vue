@@ -18,25 +18,27 @@
                             :headers="headers"
                             :items="neighbors"
                             :search="search"
-                            prev-icon="chevron_left"
-                            next-icon="chevron_right"
-                            sort-icon="arrow_upward"
                             :no-data-text="$t('NO_DATA')"
-                            :pagination.sync="pagination"
-                            rows-per-page-text=""
-                            :rows-per-page-items="[0]"
+                            :footer-props="{
+                              itemsPerPageText: this.$t('PER_PAGE_TEXT')
+                            }"
                     >
                         <template slot="headerCell" slot-scope="{ header }">
                             <span class="subheading font-weight-light" v-text="header.text"/>
                         </template>
-                        <template v-slot:items="props">
-                            <td>{{ props.item.id }}</td>
-                            <td>{{ props.item.addr }}</td>
-                            <td>{{ getStatus(props.item.syncState) }}</td>
-                            <td>{{ getBound(props.item.isOutbound) }}</td>
-                            <td>{{ props.item.roundTripTime }}</td>
+                        <template v-slot:body="{items}">
+                            <tbody>
+                            <tr v-for="item in items" :key="item.id">
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.addr }}</td>
+                                <td>{{ getStatus(item.syncState) }}</td>
+                                <td>{{ getBound(item.isOutbound) }}</td>
+                                <td>{{ item.roundTripTime }}</td>
+                            </tr>
+                            </tbody>
+
                         </template>
-                        <template v-slot:pageText="props">
+                        <template v-slot:page-text="props">
                             {{ props.pageStart }} - {{ props.pageStop }} of {{ props.itemsLength }}
                         </template>
                     </v-data-table>
