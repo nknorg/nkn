@@ -36,6 +36,9 @@ export default {
   FIELD_REQUIRED: 'This field is required.',
   NUMBER_FIELD_ERROR: 'This field must be a number.',
   POSITIVE_NUMBER_FIELD_ERROR: 'This field cannot be negative.',
+  NUMBER_MIN_ERROR: 'This field must be greater than {min}',
+  NUMBER_MAX_ERROR: 'This field must be less than {max}',
+  NUMBER_DP_ERROR: 'The number of decimal places cannot exceed {dp} digits',
 
   PASSWORD_CONFIRM: 'Please enter password again',
   PASSWORD_CONFIRM_ERROR: 'Password does not match.',

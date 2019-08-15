@@ -9,6 +9,9 @@
                           :error="numberError"
                           :error-messages="numberErrorMessage"
             >
+                <template v-slot:append>
+                    <slot name="append-icon"></slot>
+                </template>
             </v-text-field>
         </v-flex>
         <v-flex md9 d-flex align-end>
@@ -39,7 +42,8 @@
 </template>
 
 <script>
-  import {sub, add} from '~/helpers/math'
+  import {Decimal} from 'decimal.js'
+  import {sub, add, NKN_DP_LENGTH} from '~/helpers/math'
 
   export default {
     name: "NumberInput",
@@ -54,6 +58,14 @@
       max: {
         type: Number,
         default: 1
+      },
+      numberMin: {
+        type: Number,
+        default: 0
+      },
+      numberMax: {
+        type: Number,
+        default: Number.MAX_SAFE_INTEGER
       },
       step: {
         type: Number,
@@ -83,7 +95,6 @@
         rules: {
           number: [
             v => {
-
               if (v === '')
                 return this.$t('NUMBER_FIELD_ERROR')
               let num = Number(v)
@@ -91,6 +102,12 @@
                 return this.$t('NUMBER_FIELD_ERROR')
               } else if (num < 0) {
                 return this.$t('POSITIVE_NUMBER_FIELD_ERROR')
+              } else if (num < this.numberMin) {
+                return this.$t('NUMBER_MIN_ERROR', {min: this.numberMin})
+              } else if (num > this.numberMax) {
+                return this.$t('NUMBER_MAX_ERROR', {max: this.numberMax})
+              } else if (new Decimal(num).dp() > NKN_DP_LENGTH) {
+                return this.$t('NUMBER_DP_ERROR', {dp: NKN_DP_LENGTH})
               } else {
                 return true
               }
