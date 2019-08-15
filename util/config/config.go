@@ -270,7 +270,7 @@ func Init() error {
 		if Parameters.SyncBatchWindowSize == 0 {
 			Parameters.SyncBatchWindowSize = defaultSyncBatchWindowSize
 		}
-		log.Printf("Set SyncBatchWindowSize to %vMB", Parameters.SyncBatchWindowSize)
+		log.Printf("Set SyncBatchWindowSize to %v", Parameters.SyncBatchWindowSize)
 	}
 
 	err = Parameters.verify()
