@@ -1,6 +1,7 @@
 import {Decimal} from 'decimal.js'
 
 export const NKN_ACC_MUL = newNum(100000000)
+export const NKN_DP_LENGTH = 8
 
 export function newNum(arg) {
   return new Decimal(arg)

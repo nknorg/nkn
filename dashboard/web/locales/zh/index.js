@@ -36,6 +36,9 @@ export default {
   FIELD_REQUIRED: '该字段不能为空.',
   NUMBER_FIELD_ERROR: '该字段必须是数字',
   POSITIVE_NUMBER_FIELD_ERROR: '该字段不能为负数',
+  NUMBER_MIN_ERROR: '该字段必须大于 {min}',
+  NUMBER_MAX_ERROR: '该字段必须小于 {max}',
+  NUMBER_DP_ERROR: '小数位数不能超过 {dp} 位',
 
   PASSWORD_CONFIRM: '确认密码',
   PASSWORD_CONFIRM_ERROR: '两次密码不一致.',

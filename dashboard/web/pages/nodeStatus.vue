@@ -62,7 +62,7 @@
                                 <v-flex shrink class="label">
                                     <span>{{$t('config.Register_ID_Txn_Fee')}}: </span>
                                 </v-flex>
-                                <v-flex>
+                                <v-flex d-flex algin-center>
                                     <Balance :balance="formatFee(nodeStatus.registerIDTxnFee)"></Balance>
                                 </v-flex>
                             </v-layout>
@@ -88,7 +88,7 @@
                                 <v-flex shrink class="label">
                                     <span>{{$t('config.Min_Txn_Fee')}}: </span>
                                 </v-flex>
-                                <v-flex>
+                                <v-flex d-flex algin-center>
                                     <Balance :balance="formatFee(nodeStatus.minTxnFee)"></Balance>
                                 </v-flex>
                             </v-layout>
