@@ -52,7 +52,20 @@
                         <v-flex xs12>
                             <v-layout wrap>
                                 <v-flex shrink class="label">
-                                    <span>{{$t('node_status.BENEFICIARY_ADDR')}}: </span>
+                                    <v-badge color="transparent" class="breathe mr-4">
+                                        <template v-slot:badge>
+
+                                        </template>
+
+                                    </v-badge>
+                                    <span>{{$t('node_status.BENEFICIARY_ADDR')}}
+                                        <v-tooltip top>
+                                          <template v-slot:activator="{ on }">
+                                            <v-icon color="grey darken-3" dark small v-on="on">mdi-help-circle</v-icon>
+                                          </template>
+                                          <span>{{$t('tooltip.BENEFICIARY_TOOLTIP')}}</span>
+                                        </v-tooltip>:
+                                    </span>
                                 </v-flex>
                                 <v-flex>{{nodeStatus.beneficiaryAddr}}</v-flex>
                             </v-layout>
@@ -60,7 +73,14 @@
                         <v-flex xs12>
                             <v-layout wrap>
                                 <v-flex shrink class="label">
-                                    <span>{{$t('config.Register_ID_Txn_Fee')}}: </span>
+                                    <span>{{$t('config.Register_ID_Txn_Fee')}}
+                                        <v-tooltip top>
+                                        <template v-slot:activator="{ on }">
+                                            <v-icon color="grey darken-3" dark small v-on="on">mdi-help-circle</v-icon>
+                                        </template>
+                                        <span>{{$t('tooltip.Register_ID_Txn_Fee_TOOLTIP')}}</span>
+                                    </v-tooltip>:
+                                    </span>
                                 </v-flex>
                                 <v-flex d-flex algin-center>
                                     <Balance :balance="formatFee(nodeStatus.registerIDTxnFee)"></Balance>
@@ -70,7 +90,13 @@
                         <v-flex xs12>
                             <v-layout wrap>
                                 <v-flex shrink class="label">
-                                    <span>{{$t('config.Low_Fee_Txn_Size_Per_Block')}}: </span>
+                                    <span>{{$t('config.Low_Fee_Txn_Size_Per_Block')}}
+                                        <v-tooltip top>
+                                          <template v-slot:activator="{ on }">
+                                            <v-icon color="grey darken-3" dark small v-on="on">mdi-help-circle</v-icon>
+                                          </template>
+                                          <span>{{$t('tooltip.Low_Fee_Txn_Size_Per_Block_TOOLTIP')}}</span>
+                                        </v-tooltip>: </span>
                                 </v-flex>
                                 <v-flex>{{nodeStatus.numLowFeeTxnPerBlock}}</v-flex>
                             </v-layout>
@@ -78,7 +104,13 @@
                         <v-flex xs12>
                             <v-layout wrap>
                                 <v-flex shrink class="label">
-                                    <span>{{$t('config.Num_Low_Fee_Txn_Per_Block')}}: </span>
+                                    <span>{{$t('config.Num_Low_Fee_Txn_Per_Block')}}
+                                        <v-tooltip top>
+                                          <template v-slot:activator="{ on }">
+                                            <v-icon color="grey darken-3" dark small v-on="on">mdi-help-circle</v-icon>
+                                          </template>
+                                          <span>{{$t('tooltip.Num_Low_Fee_Txn_Per_Block_TOOLTIP')}}</span>
+                                        </v-tooltip>: </span>
                                 </v-flex>
                                 <v-flex>{{nodeStatus.lowFeeTxnSizePerBlock}} kb</v-flex>
                             </v-layout>
@@ -86,7 +118,13 @@
                         <v-flex xs12>
                             <v-layout class="text" align-center>
                                 <v-flex shrink class="label">
-                                    <span>{{$t('config.Min_Txn_Fee')}}: </span>
+                                    <span>{{$t('config.Min_Txn_Fee')}}
+                                        <v-tooltip top>
+                                          <template v-slot:activator="{ on }">
+                                            <v-icon color="grey darken-3" dark small v-on="on">mdi-help-circle</v-icon>
+                                          </template>
+                                          <span>{{$t('tooltip.Min_Txn_Fee_TOOLTIP')}}</span>
+                                        </v-tooltip>: </span>
                                 </v-flex>
                                 <v-flex d-flex algin-center>
                                     <Balance :balance="formatFee(nodeStatus.minTxnFee)"></Balance>
