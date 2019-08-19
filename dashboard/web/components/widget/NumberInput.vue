@@ -12,6 +12,9 @@
                 <template v-slot:append>
                     <slot name="append-icon"></slot>
                 </template>
+                <template v-slot:append-outer>
+                    <slot name="append-outer"></slot>
+                </template>
             </v-text-field>
         </v-flex>
         <v-flex md9 d-flex align-end>

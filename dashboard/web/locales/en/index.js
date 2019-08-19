@@ -3,6 +3,7 @@ import Node from './node'
 import Settings from './settings'
 import Neighbor from './neighbor'
 import Config from './config'
+import Tooltip from './tooltip'
 
 export default {
   language: 'English',
@@ -11,6 +12,7 @@ export default {
   settings: Settings,
   neighbor: Neighbor,
   config: Config,
+  tooltip: Tooltip,
 
   LOADING: 'loading',
   SEARCH: 'Search',
