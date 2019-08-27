@@ -1,7 +1,7 @@
 <template>
     <v-layout>
 
-        <v-flex md3>
+        <v-flex md4>
             <v-text-field :label="label" :value="value" :step="step" @input="onInput" type="text"
                           :suffix="suffix"
                           persistent-hint
@@ -17,7 +17,7 @@
                 </template>
             </v-text-field>
         </v-flex>
-        <v-flex md9 d-flex align-end>
+        <v-flex md8 d-flex align-end>
             <v-slider
                     v-model="val"
                     @change="onValueChange"

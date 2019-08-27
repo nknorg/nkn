@@ -98,7 +98,7 @@
                                           <span>{{$t('tooltip.Low_Fee_Txn_Size_Per_Block_TOOLTIP')}}</span>
                                         </v-tooltip>: </span>
                                 </v-flex>
-                                <v-flex>{{nodeStatus.numLowFeeTxnPerBlock}}</v-flex>
+                                <v-flex>{{nodeStatus.lowFeeTxnSizePerBlock}} kb</v-flex>
                             </v-layout>
                         </v-flex>
                         <v-flex xs12>
@@ -112,7 +112,7 @@
                                           <span>{{$t('tooltip.Num_Low_Fee_Txn_Per_Block_TOOLTIP')}}</span>
                                         </v-tooltip>: </span>
                                 </v-flex>
-                                <v-flex>{{nodeStatus.lowFeeTxnSizePerBlock}} kb</v-flex>
+                                <v-flex>{{nodeStatus.numLowFeeTxnPerBlock}}</v-flex>
                             </v-layout>
                         </v-flex>
                         <v-flex xs12>

@@ -68,7 +68,7 @@ export default {
     NODE_VERSION: 'Node version',
     ID: 'ID',
     RELAY_MESSAGE_COUNT: 'Message relayed by node',
-    HEIGHT: 'NKN network block height',
+    HEIGHT: 'NKN node block height',
     BENEFICIARY_ADDR: 'Beneficiary address'
   },
   current_wallet_status: {

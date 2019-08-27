@@ -34,10 +34,10 @@
         {icon: 'fab fa-github', tooltip: 'GitHub', url: 'https://github.com/nknorg'},
         {icon: 'fab fa-discord', tooltip: 'Discord', url: 'https://discord.gg/hrZvrVa'},
         {icon: 'fab fa-twitter', tooltip: 'Twitter', url: 'https://twitter.com/NKN_ORG'},
-        {icon: 'fab fa-medium', tooltip: 'Medium', url: 'https://medium.com/nknetwork'},
+        {icon: 'fas fa-comments', tooltip: 'Forum', url: 'https://forum.nkn.org/'},
         {icon: 'fab fa-youtube', tooltip: 'Youtube', url: 'http://www.youtube.com/c/NKNORG'},
         {icon: 'fab fa-telegram', tooltip: 'Telegram', url: 'https://t.me/nknorg'},
-        {icon: 'fas fa-comments', tooltip: 'Forum', url: 'https://forum.nkn.org/'},
+        {icon: 'fab fa-medium', tooltip: 'Medium', url: 'https://medium.com/nknetwork'},
       ]
     })
   }
