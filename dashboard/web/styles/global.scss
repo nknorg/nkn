@@ -50,3 +50,7 @@ html,body {
 .theme--light.v-card .v-card__text{
   color: #000 !important;
 }
+.theme--light.v-data-table thead tr th{
+  vertical-align: center !important;
+  .v-icon{ margin-bottom: 4px;}
+}

@@ -68,7 +68,7 @@ export default {
     NODE_VERSION: '节点版本',
     ID: 'ID',
     RELAY_MESSAGE_COUNT: '节点转发消息数量',
-    HEIGHT: 'NKN区块高度',
+    HEIGHT: 'NKN节点区块高度',
     BENEFICIARY_ADDR: '受益人地址'
   },
   current_wallet_status: {

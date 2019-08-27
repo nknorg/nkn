@@ -17,6 +17,8 @@
                     <v-data-table
                             :headers="headers"
                             :items="neighbors"
+                            :sort-by="['addr']"
+                            :sort-desc="[false]"
                             :search="search"
                             :no-data-text="$t('NO_DATA')"
                             :footer-props="{
@@ -24,7 +26,7 @@
                             }"
                     >
                         <template slot="headerCell" slot-scope="{ header }">
-                            <span class="subheading font-weight-light" v-text="header.text"/>
+                            <span class="subheading font-weight-light" v-text="header.text" />
                         </template>
                         <template v-slot:body="{items}">
                             <tbody>
@@ -68,10 +70,10 @@
         },
         headers: [
           {text: this.$t('neighbor.header.ID'), value: 'id', align: 'left', sortable: false},
-          {text: this.$t('neighbor.header.IP'), value: 'addr', align: 'left', sortable: false},
-          {text: this.$t('neighbor.header.STATE'), value: 'syncState', align: 'left', sortable: false},
-          {text: this.$t('neighbor.header.BOUND'), value: 'isOutbound', align: 'left', sortable: false},
-          {text: this.$t('neighbor.header.PING'), value: 'roundTripTime', align: 'left', sortable: false}
+          {width: '260px',text: this.$t('neighbor.header.IP'), value: 'addr', align: 'left', sortable: true},
+          {width: '240px', text: this.$t('neighbor.header.STATE'), value: 'syncState', align: 'left', sortable: true},
+          {width: '120px',text: this.$t('neighbor.header.BOUND'), value: 'isOutbound', align: 'left', sortable: true},
+          {width: '100px',text: this.$t('neighbor.header.PING'), value: 'roundTripTime', align: 'left', sortable: true}
         ],
       }
     },
