@@ -86,13 +86,33 @@ func MakeDeleteNameTransaction(wallet vault.Wallet, name string, nonce uint64, f
 	return txn, nil
 }
 
-func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic string, bucket uint32, duration uint32, meta string, nonce uint64, fee Fixed64) (*transaction.Transaction, error) {
+func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic string, duration uint32, meta string, nonce uint64, fee Fixed64) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
 	}
 	subscriber := account.PubKey().EncodePoint()
-	txn, err := transaction.NewSubscribeTransaction(subscriber, identifier, topic, bucket, duration, meta, nonce, fee)
+	txn, err := transaction.NewSubscribeTransaction(subscriber, identifier, topic, duration, meta, nonce, fee)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	err = wallet.Sign(txn)
+	if err != nil {
+		return nil, err
+	}
+
+	return txn, nil
+}
+
+func MakeUnsubscribeTransaction(wallet vault.Wallet, identifier string, topic string, nonce uint64, fee Fixed64) (*transaction.Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+	subscriber := account.PubKey().EncodePoint()
+	txn, err := transaction.NewUnsubscribeTransaction(subscriber, identifier, topic, nonce, fee)
 	if err != nil {
 		return nil, err
 	}

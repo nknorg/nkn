@@ -76,9 +76,15 @@ message Subscribe {
 	bytes subscriber   = 1;
 	string identifier  = 2;
 	string topic       = 3;
-	uint32 bucket      = 4;
+	uint32 bucket      = 4 [deprecated = true];
 	uint32 duration    = 5;
 	string meta        = 6;
+}
+
+message Unsubscribe {
+	bytes subscriber   = 1;
+	string identifier  = 2;
+	string topic       = 3;
 }
 
 message TransferAsset {

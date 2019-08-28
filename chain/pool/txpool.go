@@ -491,6 +491,14 @@ func (tp *TxnPool) GetAllTransactions() []*transaction.Transaction {
 	return txs
 }
 
+func (tp *TxnPool) GetSubscribers(topic string) []string {
+	return tp.blockValidationState.GetSubscribers(topic)
+}
+
+func (tp *TxnPool) GetSubscribersWithMeta(topic string) map[string]string {
+	return tp.blockValidationState.GetSubscribersWithMeta(topic)
+}
+
 func (tp *TxnPool) GetAllTransactionLists() map[common.Uint160][]*transaction.Transaction {
 	txs := make(map[common.Uint160][]*transaction.Transaction)
 

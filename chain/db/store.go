@@ -291,6 +291,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		case pb.REGISTER_NAME_TYPE:
 		case pb.DELETE_NAME_TYPE:
 		case pb.SUBSCRIBE_TYPE:
+		case pb.UNSUBSCRIBE_TYPE:
 		case pb.GENERATE_ID_TYPE:
 		case pb.NANO_PAY_TYPE:
 		default:

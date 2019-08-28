@@ -93,6 +93,22 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if err != nil {
 			return err
 		}
+	case pb.UNSUBSCRIBE_TYPE:
+		pg, err := txn.GetProgramHashes()
+		if err != nil {
+			return err
+		}
+
+		if err = states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
+			return err
+		}
+		states.IncrNonce(pg[0])
+
+		unsubscribePayload := pl.(*pb.Unsubscribe)
+		err = states.unsubscribe(unsubscribePayload.Topic, unsubscribePayload.Subscriber, unsubscribePayload.Identifier)
+		if err != nil {
+			return err
+		}
 	case pb.GENERATE_ID_TYPE:
 		genID := pl.(*pb.GenerateID)
 		pg, err := txn.GetProgramHashes()
