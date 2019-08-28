@@ -53,6 +53,11 @@ func TxnUnmarshal(m map[string]interface{}) (interface{}, error) {
 		if err = sub.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
 			m["payloadData"] = sub.ToMap()
 		}
+	case pb.PayloadType_name[int32(pb.UNSUBSCRIBE_TYPE)]:
+		sub := &pb.Unsubscribe{}
+		if err = sub.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
+			m["payloadData"] = sub.ToMap()
+		}
 	case pb.PayloadType_name[int32(pb.NANO_PAY_TYPE)]:
 		pay := &pb.NanoPay{}
 		if err = pay.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
@@ -61,8 +66,6 @@ func TxnUnmarshal(m map[string]interface{}) (interface{}, error) {
 	case pb.PayloadType_name[int32(pb.TRANSFER_NAME_TYPE)]:
 		fallthrough //TODO
 	case pb.PayloadType_name[int32(pb.DELETE_NAME_TYPE)]:
-		fallthrough //TODO
-	case pb.PayloadType_name[int32(pb.UNSUBSCRIBE_TYPE)]:
 		fallthrough //TODO
 	case pb.PayloadType_name[int32(pb.ISSUE_ASSET_TYPE)]:
 		fallthrough //TODO

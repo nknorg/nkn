@@ -89,6 +89,18 @@ func checkAmountPrecise(amount Fixed64, precision byte) bool {
 	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
 }
 
+func verifyPubSubTopic(topic string) error {
+	match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)", topic)
+	if err != nil {
+		return err
+	}
+	if !match {
+		return fmt.Errorf("topic %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", topic)
+	}
+	return nil
+
+}
+
 func CheckTransactionPayload(txn *transaction.Transaction) error {
 	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
@@ -148,8 +160,10 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		}
 
 		bucket := pld.Bucket
-		if bucket > transaction.BucketsLimit {
-			return fmt.Errorf("topic bucket %d can't be bigger than %d", bucket, transaction.BucketsLimit)
+		h := DefaultLedger.Store.GetHeight() + 1 // txn's height should be currHeight + 1
+		bucketsLimit := uint32(config.BucketsLimit.GetValueAtHeight(h))
+		if bucket > bucketsLimit {
+			return fmt.Errorf("topic bucket %d can't be bigger than %d", bucket, bucketsLimit)
 		}
 
 		duration := pld.Duration
@@ -157,22 +171,22 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 			return fmt.Errorf("subscription duration %d can't be bigger than %d", duration, transaction.MaxSubscriptionDuration)
 		}
 
-		topic := pld.Topic
-		match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)", topic)
-		if err != nil {
+		if err := verifyPubSubTopic(pld.Topic); err != nil {
 			return err
-		}
-		if !match {
-			return fmt.Errorf("topic %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", topic)
 		}
 
 		// Check sub.Meta & sub.Identifier limitation via height
-		h := DefaultLedger.Store.GetHeight() + 1 // txn's height should be currHeight + 1
 		if len(pld.Identifier) > config.MaxTxnSubIdentifierList.GetValueAtHeight(h) {
 			return errors.New("Identifier too long")
 		}
 		if len(pld.Meta) > config.MaxTxnSubMetaList.GetValueAtHeight(h) {
 			return errors.New("Meta too long")
+		}
+	case pb.UNSUBSCRIBE_TYPE:
+		pld := payload.(*pb.Unsubscribe)
+
+		if err := verifyPubSubTopic(pld.Topic); err != nil {
+			return err
 		}
 	case pb.GENERATE_ID_TYPE:
 		pld := payload.(*pb.GenerateID)
@@ -341,13 +355,24 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 		if err != nil {
 			return err
 		}
-		if subscribed {
-			return fmt.Errorf("subscriber %s already subscribed to %s", address.MakeAddressString(pld.Subscriber, pld.Identifier), pld.Topic)
+		if !subscribed {
+			subscriptionCount := DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
+			if subscriptionCount >= transaction.SubscriptionsLimit {
+				return fmt.Errorf("subscription count to %s can't be more than %d", pld.Topic, subscriptionCount)
+			}
+		}
+	case pb.UNSUBSCRIBE_TYPE:
+		if err := checkNonce(); err != nil {
+			return err
 		}
 
-		subscriptionCount := DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
-		if subscriptionCount >= transaction.SubscriptionsLimit {
-			return fmt.Errorf("subscribtion count to %s can't be more than %d", pld.Topic, subscriptionCount)
+		pld := payload.(*pb.Unsubscribe)
+		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Topic, 0, pld.Subscriber, pld.Identifier)
+		if err != nil {
+			return err
+		}
+		if !subscribed {
+			return fmt.Errorf("subscription to %s doesn't exist", pld.Topic)
 		}
 	case pb.GENERATE_ID_TYPE:
 		if err := checkNonce(); err != nil {
@@ -414,6 +439,11 @@ type subscription struct {
 	identifier string
 }
 
+type subscriptionInfo struct {
+	new  bool
+	meta string
+}
+
 type nanoPay struct {
 	sender    string
 	recipient string
@@ -422,14 +452,15 @@ type nanoPay struct {
 
 type BlockValidationState struct {
 	sync.Mutex
-	txnlist           map[Uint256]struct{}
-	totalAmount       map[Uint160]Fixed64
-	registeredNames   map[string]struct{}
-	nameRegistrants   map[string]struct{}
-	generateIDs       map[string]struct{}
-	subscriptions     map[subscription]struct{}
-	subscriptionCount map[string]int
-	nanoPays          map[nanoPay]struct{}
+	txnlist                 map[Uint256]struct{}
+	totalAmount             map[Uint160]Fixed64
+	registeredNames         map[string]struct{}
+	nameRegistrants         map[string]struct{}
+	generateIDs             map[string]struct{}
+	subscriptions           map[subscription]subscriptionInfo
+	subscriptionCount       map[string]int
+	subscriptionCountChange map[string]int
+	nanoPays                map[nanoPay]struct{}
 
 	changes []func()
 }
@@ -446,8 +477,9 @@ func (bvs *BlockValidationState) initBlockValidationState() {
 	bvs.registeredNames = make(map[string]struct{}, 0)
 	bvs.nameRegistrants = make(map[string]struct{}, 0)
 	bvs.generateIDs = make(map[string]struct{}, 0)
-	bvs.subscriptions = make(map[subscription]struct{}, 0)
+	bvs.subscriptions = make(map[subscription]subscriptionInfo, 0)
 	bvs.subscriptionCount = make(map[string]int, 0)
+	bvs.subscriptionCountChange = make(map[string]int, 0)
 	bvs.nanoPays = make(map[nanoPay]struct{}, 0)
 }
 
@@ -459,11 +491,37 @@ func (bvs *BlockValidationState) Commit() {
 	for _, change := range bvs.changes {
 		change()
 	}
+	for topic, change := range bvs.subscriptionCountChange {
+		bvs.subscriptionCount[topic] += change
+	}
 	bvs.Reset()
 }
 
 func (bvs *BlockValidationState) Reset() {
 	bvs.changes = nil
+	bvs.subscriptionCountChange = make(map[string]int, 0)
+}
+
+func (bvs *BlockValidationState) GetSubscribers(topic string) []string {
+	subscribers := make([]string, 0)
+	for key, info := range bvs.subscriptions {
+		if key.topic == topic && info.new {
+			subscriber := address.MakeAddressString([]byte(key.subscriber), key.identifier)
+			subscribers = append(subscribers, subscriber)
+		}
+	}
+	return subscribers
+}
+
+func (bvs *BlockValidationState) GetSubscribersWithMeta(topic string) map[string]string {
+	subscribers := make(map[string]string)
+	for key, info := range bvs.subscriptions {
+		if key.topic == topic && info.new {
+			subscriber := address.MakeAddressString([]byte(key.subscriber), key.identifier)
+			subscribers[subscriber] = info.meta
+		}
+	}
+	return subscribers
 }
 
 // VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
@@ -554,22 +612,53 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		subscribePayload := payload.(*pb.Subscribe)
 		topic := subscribePayload.Topic
 		bucket := subscribePayload.Bucket
-		key := subscription{topic, bucket, BytesToHexString(subscribePayload.Subscriber), subscribePayload.Identifier}
+		key := subscription{topic, bucket, string(subscribePayload.Subscriber), subscribePayload.Identifier}
 		if _, ok := bvs.subscriptions[key]; ok {
 			return errors.New("[VerifyTransactionWithBlock], duplicate subscription exist in block")
 		}
 
+		subscribed, err := DefaultLedger.Store.IsSubscribed(subscribePayload.Topic, bucket, subscribePayload.Subscriber, subscribePayload.Identifier)
+		if err != nil {
+			return err
+		}
 		subscriptionCount := bvs.subscriptionCount[topic]
-		ledgerSubscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
-		if ledgerSubscriptionCount+subscriptionCount >= transaction.SubscriptionsLimit {
-			return errors.New("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
+		subscriptionCountChange := bvs.subscriptionCountChange[topic]
+		if !subscribed {
+			ledgerSubscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
+			if ledgerSubscriptionCount+subscriptionCount+subscriptionCountChange >= transaction.SubscriptionsLimit {
+				return errors.New("[VerifyTransactionWithBlock], subscription limit exceeded in block.")
+			}
+			bvs.subscriptionCountChange[topic]++
 		}
 
 		defer func() {
 			if e == nil {
 				bvs.addChange(func() {
-					bvs.subscriptions[key] = struct{}{}
-					bvs.subscriptionCount[topic] = subscriptionCount + 1
+					bvs.subscriptions[key] = subscriptionInfo{new: !subscribed, meta: subscribePayload.Meta}
+				})
+			}
+		}()
+	case pb.UNSUBSCRIBE_TYPE:
+		unsubscribePayload := payload.(*pb.Unsubscribe)
+		topic := unsubscribePayload.Topic
+		key := subscription{topic, 0, string(unsubscribePayload.Subscriber), unsubscribePayload.Identifier}
+		if _, ok := bvs.subscriptions[key]; ok {
+			return errors.New("[VerifyTransactionWithBlock], duplicate subscription exist in block")
+		}
+
+		subscribed, err := DefaultLedger.Store.IsSubscribed(unsubscribePayload.Topic, 0, unsubscribePayload.Subscriber, unsubscribePayload.Identifier)
+		if err != nil {
+			return err
+		}
+		if !subscribed {
+			return errors.New("[VerifyTransactionWithBlock], subscription doesn't exist.")
+		}
+		bvs.subscriptionCountChange[topic]--
+
+		defer func() {
+			if e == nil {
+				bvs.addChange(func() {
+					bvs.subscriptions[key] = subscriptionInfo{new: false}
 				})
 			}
 		}()
@@ -682,13 +771,26 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			subscribePayload := payload.(*pb.Subscribe)
 			topic := subscribePayload.Topic
 			bucket := subscribePayload.Bucket
-			key := subscription{topic, bucket, BytesToHexString(subscribePayload.Subscriber), subscribePayload.Identifier}
-			delete(bvs.subscriptions, key)
+			key := subscription{topic, bucket, string(subscribePayload.Subscriber), subscribePayload.Identifier}
+			if info, ok := bvs.subscriptions[key]; ok {
+				delete(bvs.subscriptions, key)
 
-			bvs.subscriptionCount[topic]--
+				if info.new {
+					bvs.subscriptionCount[topic]--
 
-			if bvs.subscriptionCount[topic] == 0 {
-				delete(bvs.subscriptionCount, topic)
+					if bvs.subscriptionCount[topic] == 0 {
+						delete(bvs.subscriptionCount, topic)
+					}
+				}
+			}
+		case pb.UNSUBSCRIBE_TYPE:
+			unsubscribePayload := payload.(*pb.Unsubscribe)
+			topic := unsubscribePayload.Topic
+			key := subscription{topic, 0, string(unsubscribePayload.Subscriber), unsubscribePayload.Identifier}
+			if _, ok := bvs.subscriptions[key]; ok {
+				delete(bvs.subscriptions, key)
+
+				bvs.subscriptionCount[topic]++
 			}
 		case pb.GENERATE_ID_TYPE:
 			generateIdPayload := payload.(*pb.GenerateID)

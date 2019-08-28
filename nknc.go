@@ -11,7 +11,7 @@ import (
 	"github.com/nknorg/nkn/cli/id"
 	"github.com/nknorg/nkn/cli/info"
 	"github.com/nknorg/nkn/cli/name"
-	"github.com/nknorg/nkn/cli/subscribe"
+	"github.com/nknorg/nkn/cli/pubsub"
 	"github.com/nknorg/nkn/cli/wallet"
 	"github.com/urfave/cli"
 )
@@ -37,7 +37,7 @@ func main() {
 		*wallet.NewCommand(),
 		*asset.NewCommand(),
 		*name.NewCommand(),
-		*subscribe.NewCommand(),
+		*pubsub.NewCommand(),
 		*id.NewCommand(),
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))

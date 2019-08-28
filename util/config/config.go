@@ -95,6 +95,10 @@ var (
 		heights: []uint32{133400, 0},
 		values:  []int{1024, MaxInt},
 	}
+	BucketsLimit = HeightDependentInt{ // ChangePoin for txn payload Subscribe.Meta
+		heights: []uint32{133400, 0},
+		values:  []int{0, 1000},
+	}
 )
 
 var (

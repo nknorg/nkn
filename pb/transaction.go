@@ -114,6 +114,14 @@ func (m *Subscribe) ToMap() map[string]interface{} {
 	}
 }
 
+func (m *Unsubscribe) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"subscriber": common.HexStr(m.Subscriber),
+		"identifier": m.Identifier,
+		"topic":      m.Topic,
+	}
+}
+
 func (m *NanoPay) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"sender":            common.BytesToUint160(m.Sender),

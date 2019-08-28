@@ -634,8 +634,52 @@ func getAddressByName(s Serverer, params map[string]interface{}) map[string]inte
 	return respPacking(SUCCESS, address)
 }
 
+// getSubscription get subscription
+// params: {"topic":<topic>, "bucket":<bucket>, "subscriber":<subscriber>}
+// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
+func getSubscription(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 2 {
+		return respPacking(INVALID_PARAMS, "length of params is less than 2")
+	}
+
+	topic, ok := params["topic"].(string)
+	if !ok {
+		return respPacking(INVALID_PARAMS, "topic should be a string")
+	}
+
+	var bucket float64
+	if _, ok := params["bucket"]; ok {
+		bucket, ok = params["bucket"].(float64)
+		if !ok {
+			return respPacking(INVALID_PARAMS, "bucket should be a float64")
+		}
+	}
+
+	subscriber, ok := params["subscriber"].(string)
+	if !ok {
+		return respPacking(INVALID_PARAMS, "subscriber should be a string")
+	}
+
+	_, pubKey, identifier, err := address.ParseClientAddress(subscriber)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+
+	meta, expiresAt, err := chain.DefaultLedger.Store.GetSubscription(topic, uint32(bucket), pubKey, identifier)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+	return respPacking(SUCCESS, struct {
+		Meta      string `json:"meta"`
+		ExpiresAt uint32 `json:"expiresAt"`
+	}{
+		meta,
+		expiresAt,
+	})
+}
+
 // getSubscribers get subscribers by topic
-// params: {"topic":<topic>, "bucket":<bucket>}
+// params: {"topic":<topic>, "bucket":<bucket>, "offset":<offset>, "limit":<limit>, "meta":<meta>, "txPool":<txPool>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
 func getSubscribers(s Serverer, params map[string]interface{}) map[string]interface{} {
 	if len(params) < 2 {
@@ -647,16 +691,87 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 		return respPacking(INVALID_PARAMS, "topic should be a string")
 	}
 
-	bucket, ok := params["bucket"].(float64)
-	if !ok {
-		return respPacking(INVALID_PARAMS, "bucket should be a string")
+	var bucket float64
+	if _, ok := params["bucket"]; ok {
+		bucket, ok = params["bucket"].(float64)
+		if !ok {
+			return respPacking(INVALID_PARAMS, "bucket should be a float64")
+		}
 	}
 
-	subscribers, err := chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket))
+	var offset float64
+	if _, ok := params["offset"]; ok {
+		offset, ok = params["offset"].(float64)
+		if !ok {
+			return respPacking(INVALID_PARAMS, "offset should be a float64")
+		}
+	}
+
+	var limit float64
+	if _, ok := params["limit"]; ok {
+		limit, ok = params["limit"].(float64)
+		if !ok {
+			return respPacking(INVALID_PARAMS, "limit should be a float64")
+		}
+	} else {
+		limit = 1000
+	}
+
+	txPool, _ := params["txPool"].(bool)
+
+	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
-	return respPacking(SUCCESS, subscribers)
+
+	response := make(map[string]interface{})
+
+	meta, _ := params["meta"].(bool)
+	var subscribers interface{}
+	if !meta {
+		subscribers, err = chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket), uint32(offset), uint32(limit))
+	} else {
+		subscribers, err = chain.DefaultLedger.Store.GetSubscribersWithMeta(topic, uint32(bucket), uint32(offset), uint32(limit))
+	}
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+	response["subscribers"] = subscribers
+
+	if txPool {
+		if !meta {
+			response["subscribersInTxPool"] = localNode.GetTxnPool().GetSubscribers(topic)
+		} else {
+			response["subscribersInTxPool"] = localNode.GetTxnPool().GetSubscribersWithMeta(topic)
+		}
+	}
+
+	return respPacking(SUCCESS, response)
+}
+
+// getSubscribersCount get subscribers count by topic
+// params: {"topic":<topic>, "bucket":<bucket>}
+// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
+func getSubscribersCount(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(INVALID_PARAMS, "length of params is less than 1")
+	}
+
+	topic, ok := params["topic"].(string)
+	if !ok {
+		return respPacking(INVALID_PARAMS, "topic should be a string")
+	}
+
+	var bucket float64
+	if _, ok := params["bucket"]; ok {
+		bucket, ok = params["bucket"].(float64)
+		if !ok {
+			return respPacking(INVALID_PARAMS, "bucket should be a float64")
+		}
+	}
+
+	count := chain.DefaultLedger.Store.GetSubscribersCount(topic, uint32(bucket))
+	return respPacking(SUCCESS, count)
 }
 
 // getAsset get subscribers by topic
@@ -695,43 +810,6 @@ func getAsset(s Serverer, params map[string]interface{}) map[string]interface{} 
 	}
 
 	return respPacking(SUCCESS, ret)
-}
-
-// getFirstAvailableTopicBucket get free topic bucket
-// params: {"topic":<topic>}
-// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getFirstAvailableTopicBucket(s Serverer, params map[string]interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return respPacking(INVALID_PARAMS, "length of params is less than 1")
-	}
-
-	topic, ok := params["topic"].(string)
-	if !ok {
-		return respPacking(INVALID_PARAMS, "topic should be a string")
-	}
-
-	bucket := chain.DefaultLedger.Store.GetFirstAvailableTopicBucket(topic)
-	return respPacking(SUCCESS, bucket)
-}
-
-// getTopicBucketsCount get topic buckets count
-// params: {"topic":<topic>}
-// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getTopicBucketsCount(s Serverer, params map[string]interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return respPacking(INVALID_PARAMS, "length of params is less than 1")
-	}
-
-	topic, ok := params["topic"].(string)
-	if !ok {
-		return respPacking(INVALID_PARAMS, "topic should be a string")
-	}
-
-	count, err := chain.DefaultLedger.Store.GetTopicBucketsCount(topic)
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
-	}
-	return respPacking(SUCCESS, count)
 }
 
 // getMyExtIP get RPC client's external IP
@@ -828,31 +906,31 @@ func findSuccessorAddr(s Serverer, params map[string]interface{}) map[string]int
 }
 
 var InitialAPIHandlers = map[string]APIHandler{
-	"getlatestblockhash":           {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
-	"getblock":                     {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getblockcount":                {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
-	"getlatestblockheight":         {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getblocktxsbyheight":          {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
-	"getconnectioncount":           {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getrawmempool":                {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC},
-	"gettransaction":               {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"sendrawtransaction":           {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
-	"getwsaddr":                    {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
-	"getversion":                   {Handler: getVersion, AccessCtrl: BIT_JSONRPC},
-	"getneighbor":                  {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
-	"getnodestate":                 {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
-	"getchordringinfo":             {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
-	"setdebuginfo":                 {Handler: setDebugInfo},
-	"getbalancebyaddr":             {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
-	"getbalancebyassetid":          {Handler: GetBalanceByAssetID, AccessCtrl: BIT_JSONRPC},
-	"getnoncebyaddr":               {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
-	"getid":                        {Handler: getId, AccessCtrl: BIT_JSONRPC},
-	"getaddressbyname":             {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
-	"getsubscribers":               {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
-	"getasset":                     {Handler: getAsset, AccessCtrl: BIT_JSONRPC},
-	"getfirstavailabletopicbucket": {Handler: getFirstAvailableTopicBucket, AccessCtrl: BIT_JSONRPC},
-	"gettopicbucketscount":         {Handler: getTopicBucketsCount, AccessCtrl: BIT_JSONRPC},
-	"getmyextip":                   {Handler: getMyExtIP, AccessCtrl: BIT_JSONRPC},
-	"findsuccessoraddr":            {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
-	"findsuccessoraddrs":           {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},
+	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
+	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
+	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
+	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getrawmempool":        {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC},
+	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
+	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC},
+	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
+	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
+	"getchordringinfo":     {Handler: getChordRingInfo, AccessCtrl: BIT_JSONRPC},
+	"setdebuginfo":         {Handler: setDebugInfo},
+	"getbalancebyaddr":     {Handler: getBalanceByAddr, AccessCtrl: BIT_JSONRPC},
+	"getbalancebyassetid":  {Handler: GetBalanceByAssetID, AccessCtrl: BIT_JSONRPC},
+	"getnoncebyaddr":       {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
+	"getid":                {Handler: getId, AccessCtrl: BIT_JSONRPC},
+	"getaddressbyname":     {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
+	"getsubscription":      {Handler: getSubscription, AccessCtrl: BIT_JSONRPC},
+	"getsubscribers":       {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
+	"getsubscriberscount":  {Handler: getSubscribersCount, AccessCtrl: BIT_JSONRPC},
+	"getasset":             {Handler: getAsset, AccessCtrl: BIT_JSONRPC},
+	"getmyextip":           {Handler: getMyExtIP, AccessCtrl: BIT_JSONRPC},
+	"findsuccessoraddr":    {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
+	"findsuccessoraddrs":   {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},
 }

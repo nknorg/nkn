@@ -1,4 +1,4 @@
-package subscribe
+package pubsub
 
 import (
 	"encoding/hex"
@@ -54,7 +54,6 @@ func subscribeAction(c *cli.Context) error {
 			return nil
 		}
 
-		bucket := c.Uint64("bucket")
 		duration := c.Uint64("duration")
 
 		meta := c.String("meta")
@@ -63,7 +62,23 @@ func subscribeAction(c *cli.Context) error {
 			return nil
 		}
 
-		txn, _ := MakeSubscribeTransaction(myWallet, id, topic, uint32(bucket), uint32(duration), meta, nonce, txnFee)
+		txn, _ := MakeSubscribeTransaction(myWallet, id, topic, uint32(duration), meta, nonce, txnFee)
+		buff, _ := txn.Marshal()
+		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+	case c.Bool("unsub"):
+		id := c.String("identifier")
+		if id == "" {
+			fmt.Println("identifier is required with [--id]")
+			return nil
+		}
+
+		topic := c.String("topic")
+		if topic == "" {
+			fmt.Println("topic is required with [--topic]")
+			return nil
+		}
+
+		txn, _ := MakeUnsubscribeTransaction(myWallet, id, topic, nonce, txnFee)
 		buff, _ := txn.Marshal()
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	default:
@@ -81,14 +96,18 @@ func subscribeAction(c *cli.Context) error {
 
 func NewCommand() *cli.Command {
 	return &cli.Command{
-		Name:        "subscribe",
-		Usage:       "subscribe topic",
-		Description: "With nknc sub, you could subscribe your topic.",
+		Name:        "pubsub",
+		Usage:       "manage topic subscriptions",
+		Description: "With nknc pubsub, you could manage topic subscriptions.",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "sub, s",
-				Usage: "subscribe your topic",
+				Usage: "subscribe to topic",
+			},
+			cli.BoolFlag{
+				Name:  "unsub, u",
+				Usage: "unsubscribe from topic",
 			},
 			cli.StringFlag{
 				Name:  "identifier, id",
@@ -97,10 +116,6 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "topic",
 				Usage: "topic",
-			},
-			cli.Uint64Flag{
-				Name:  "bucket",
-				Usage: "bucket",
 			},
 			cli.Uint64Flag{
 				Name:  "duration",
@@ -131,7 +146,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: subscribeAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "subscribe")
+			PrintError(c, err, "pubsub")
 			return cli.NewExitError("", 1)
 		},
 	}

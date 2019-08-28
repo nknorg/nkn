@@ -10,7 +10,6 @@ import (
 
 	"github.com/nknorg/nkn/chain/trie"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 )
 
@@ -211,6 +210,24 @@ func (sdb *StateDB) subscribe(topic string, bucket uint32, subscriber []byte, id
 	return nil
 }
 
+func (sdb *StateDB) unsubscribe(topic string, subscriber []byte, identifier string) error {
+	id := getPubSubId(topic, 0, subscriber, identifier)
+
+	ps, err := sdb.getPubSub(id)
+	if err != nil {
+		return err
+	}
+
+	if !ps.Empty() {
+		if err := sdb.cancelPubSubCleanupAtHeight(ps.expiresAt, id); err != nil {
+			return err
+		}
+		sdb.pubSub.Store(string(id), nil)
+	}
+
+	return nil
+}
+
 func (sdb *StateDB) isSubscribed(topic string, bucket uint32, subscriber []byte, identifier string) (bool, error) {
 	id := getPubSubId(topic, bucket, subscriber, identifier)
 
@@ -226,13 +243,35 @@ func (cs *ChainStore) IsSubscribed(topic string, bucket uint32, subscriber []byt
 	return cs.States.isSubscribed(topic, bucket, subscriber, identifier)
 }
 
-func (sdb *StateDB) getSubscribers(topic string, bucket uint32) (map[string]string, error) {
+func (sdb *StateDB) getSubscription(topic string, bucket uint32, subscriber []byte, identifier string) (string, uint32, error) {
+	id := getPubSubId(topic, bucket, subscriber, identifier)
+
+	ps, err := sdb.getPubSub(id)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return ps.meta, ps.expiresAt, nil
+}
+
+func (cs *ChainStore) GetSubscription(topic string, bucket uint32, subscriber []byte, identifier string) (string, uint32, error) {
+	return cs.States.getSubscription(topic, bucket, subscriber, identifier)
+}
+
+func (sdb *StateDB) getSubscribers(topic string, bucket, offset, limit uint32) (map[string]string, error) {
 	subscribers := make(map[string]string, 0)
 
 	prefix := string(append(PubSubPrefix, getTopicBucketId(topic, bucket)...))
 	iter := trie.NewIterator(sdb.trie.NodeIterator([]byte(prefix)))
-	for iter.Next() {
+	i := uint32(0)
+	for ; iter.Next(); i++ {
 		if !strings.HasPrefix(string(iter.Key), prefix) {
+			break
+		}
+		if i < offset {
+			continue
+		}
+		if limit > 0 && i >= offset + limit {
 			break
 		}
 
@@ -250,8 +289,20 @@ func (sdb *StateDB) getSubscribers(topic string, bucket uint32) (map[string]stri
 	return subscribers, nil
 }
 
-func (cs *ChainStore) GetSubscribers(topic string, bucket uint32) (map[string]string, error) {
-	return cs.States.getSubscribers(topic, bucket)
+func (cs *ChainStore) GetSubscribers(topic string, bucket, offset, limit uint32) ([]string, error) {
+	subscribersWithMeta, err := cs.States.getSubscribers(topic, bucket, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	subscribers := make([]string, 0)
+	for subscriber, _ := range subscribersWithMeta {
+		subscribers = append(subscribers, subscriber)
+	}
+	return subscribers, nil
+}
+
+func (cs *ChainStore) GetSubscribersWithMeta(topic string, bucket, offset, limit uint32) (map[string]string, error) {
+	return cs.States.getSubscribers(topic, bucket, offset, limit)
 }
 
 func (sdb *StateDB) getSubscribersCount(topic string, bucket uint32) int {
@@ -272,56 +323,6 @@ func (sdb *StateDB) getSubscribersCount(topic string, bucket uint32) int {
 
 func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
 	return cs.States.getSubscribersCount(topic, bucket)
-}
-
-func (sdb *StateDB) getFirstAvailableTopicBucket(topic string) int {
-	for i := uint32(0); i < transaction.BucketsLimit; i++ {
-		count := sdb.getSubscribersCount(topic, i)
-		if count < transaction.SubscriptionsLimit {
-			return int(i)
-		}
-	}
-
-	return -1
-}
-
-func (cs *ChainStore) GetFirstAvailableTopicBucket(topic string) int {
-	return cs.States.getFirstAvailableTopicBucket(topic)
-}
-
-func (sdb *StateDB) getTopicBucketsCount(topic string) (uint32, error) {
-	prefix := string(append(PubSubPrefix, getTopicId(topic)...))
-
-	iter := trie.NewIterator(sdb.trie.NodeIterator([]byte(prefix)))
-	lastBucket := uint32(0)
-	for iter.Next() {
-		if !strings.HasPrefix(string(iter.Key), prefix) {
-			break
-		}
-
-		rk := bytes.NewReader(iter.Key)
-
-		// read prefix
-		_, err := serialization.ReadBytes(rk, uint64(len(prefix)))
-		if err != nil {
-			return 0, err
-		}
-
-		bucket, err := serialization.ReadUint32(rk)
-		if err != nil {
-			return 0, err
-		}
-
-		if bucket > lastBucket {
-			lastBucket = bucket
-		}
-	}
-
-	return lastBucket, nil
-}
-
-func (cs *ChainStore) GetTopicBucketsCount(topic string) (uint32, error) {
-	return cs.States.getTopicBucketsCount(topic)
 }
 
 func (sdb *StateDB) deletePubSub(id string) error {
