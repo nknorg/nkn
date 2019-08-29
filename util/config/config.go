@@ -66,9 +66,11 @@ const (
 )
 
 const (
-	defaultConfigFile          = "config.json"
-	defaultSyncMemoryPercent   = 10
-	defaultSyncBatchWindowSize = 64
+	defaultConfigFile             = "config.json"
+	defaultSyncMaxMemoryPercent   = 25
+	defaultSyncBatchWindowSize    = 64
+	defaultTxPoolMaxMemoryPercent = 0.4
+	defaultTxPoolMaxMemorySize    = 32
 )
 
 var (
@@ -134,7 +136,7 @@ var (
 		NumTxnPerBlock:               256,
 		TxPoolPerAccountTxCap:        32,
 		TxPoolTotalTxCap:             0,
-		TxPoolMaxMemorySize:          32,
+		TxPoolMaxMemorySize:          0,
 		RegisterIDRegFee:             0,
 		RegisterIDTxnFee:             0,
 		LogPath:                      "Log",
@@ -143,7 +145,7 @@ var (
 		MaxGetIDSeeds:                3,
 		DBFilesCacheCapacity:         100,
 		NumLowFeeTxnPerBlock:         0,
-		LowFeeTxnSizePerBlock:        4096,
+		LowFeeTxnSizePerBlock:        2048,
 		MinTxnFee:                    10000000,
 		AllowEmptyBeneficiaryAddress: false,
 		WebGuiListenAddress:          "127.0.0.1",
@@ -263,7 +265,7 @@ func Init() error {
 	if Parameters.SyncBatchWindowSize == 0 {
 		syncBlocksMaxMemorySize := uint64(Parameters.SyncBlocksMaxMemorySize) * 1024 * 1024
 		if syncBlocksMaxMemorySize == 0 {
-			syncBlocksMaxMemorySize = memory.TotalMemory() * defaultSyncMemoryPercent / 100
+			syncBlocksMaxMemorySize = uint64(float64(memory.TotalMemory()) * defaultSyncMaxMemoryPercent / 100.0)
 		}
 
 		Parameters.SyncBatchWindowSize = uint32(syncBlocksMaxMemorySize/MaxBlockSize) / Parameters.SyncBlocksBatchSize
@@ -271,6 +273,13 @@ func Init() error {
 			Parameters.SyncBatchWindowSize = defaultSyncBatchWindowSize
 		}
 		log.Printf("Set SyncBatchWindowSize to %v", Parameters.SyncBatchWindowSize)
+	}
+
+	if Parameters.TxPoolMaxMemorySize == 0 {
+		Parameters.TxPoolMaxMemorySize = uint32(float64(memory.TotalMemory()) / 1024 / 1024 * defaultTxPoolMaxMemoryPercent / 100.0)
+		if Parameters.TxPoolMaxMemorySize == 0 {
+			Parameters.TxPoolMaxMemorySize = defaultTxPoolMaxMemorySize
+		}
 	}
 
 	err = Parameters.verify()
