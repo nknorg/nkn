@@ -94,14 +94,14 @@ func NewUnsubscribeTransaction(subscriber []byte, identifier string, topic strin
 	}, nil
 }
 
-func NewGenerateIDTransaction(publicKey []byte, regFee Fixed64, nonce uint64, fee Fixed64) (*Transaction, error) {
+func NewGenerateIDTransaction(publicKey []byte, regFee Fixed64, nonce uint64, fee Fixed64, attrs []byte) (*Transaction, error) {
 	payload := NewGenerateID(publicKey, regFee)
 	pl, err := Pack(pb.GENERATE_ID_TYPE, payload)
 	if err != nil {
 		return nil, err
 	}
 
-	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
+	tx := NewMsgTx(pl, nonce, fee, attrs)
 
 	return &Transaction{
 		Transaction: tx,

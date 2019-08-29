@@ -89,17 +89,29 @@ var (
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 	}
-	MaxTxnSubIdentifierList = HeightDependentInt{ // ChangePoin for txn payload Subscribe.Identifier
+	MaxTxnSubIdentifierList = HeightDependentInt{ // Max length for txn payload Subscribe.Identifier
 		heights: []uint32{133400, 0},
 		values:  []int{64, MaxInt},
 	}
-	MaxTxnSubMetaList = HeightDependentInt{ // ChangePoin for txn payload Subscribe.Meta
+	MaxTxnSubMetaList = HeightDependentInt{ // Max length for txn payload Subscribe.Meta
 		heights: []uint32{133400, 0},
 		values:  []int{1024, MaxInt},
 	}
-	BucketsLimit = HeightDependentInt{ // ChangePoin for txn payload Subscribe.Meta
+	BucketsLimit = HeightDependentInt{ // Max bucket for txn payload Subscribe.Bucket
 		heights: []uint32{133400, 0},
 		values:  []int{0, 1000},
+	}
+	MaxGenerateIDTxnHash = HeightDependentUint256{
+		heights: []uint32{230000, 0},
+		values: []common.Uint256{
+			common.Uint256{
+				0x00, 0x00, 0x00, 0x03, 0xff, 0xff, 0xff, 0xff,
+				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			},
+			common.MaxUint256,
+		},
 	}
 )
 
@@ -284,6 +296,7 @@ func Init() error {
 		if Parameters.TxPoolMaxMemorySize == 0 {
 			Parameters.TxPoolMaxMemorySize = defaultTxPoolMaxMemorySize
 		}
+		log.Printf("Set TxPoolMaxMemorySize to %v", Parameters.TxPoolMaxMemorySize)
 	}
 
 	err = Parameters.verify()

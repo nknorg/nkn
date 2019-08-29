@@ -71,7 +71,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 	for i, txn := range block.Transactions {
 		select {
 		case <-ctx.Done():
-			return errors.New("context deadline exceeded")
+			return ctx.Err()
 		default:
 		}
 
@@ -111,7 +111,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 	for i, txn := range block.Transactions {
 		select {
 		case <-ctx.Done():
-			return errors.New("context deadline exceeded")
+			return ctx.Err()
 		default:
 		}
 

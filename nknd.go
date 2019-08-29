@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -27,6 +28,7 @@ import (
 	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/por"
+	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
@@ -35,7 +37,7 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay"
 	"github.com/nknorg/nnet/overlay/chord"
-	"github.com/rdegges/go-ipify"
+	ipify "github.com/rdegges/go-ipify"
 	"github.com/urfave/cli"
 )
 
@@ -506,16 +508,23 @@ func CreateID(seeds []string, wallet vault.Wallet, regFee, txnFee Fixed64) error
 		seeds[i], seeds[j] = seeds[j], seeds[i]
 	})
 
+	var prevNonce uint64
+	var txn *transaction.Transaction
+
 	for _, seed := range seeds {
-		nonce, err := client.GetNonceByAddr(seed, addr)
+		nonce, height, err := client.GetNonceByAddr(seed, addr)
 		if err != nil {
 			log.Warningf("get nonce from %s met error: %v", seed, err)
 			continue
 		}
 
-		txn, err := common.MakeGenerateIDTransaction(wallet, regFee, nonce, txnFee)
-		if err != nil {
-			return err
+		if txn == nil || nonce != prevNonce {
+			log.Info("Creating generate ID txn. This process may take quite a few minutes...")
+			txn, err = common.MakeGenerateIDTransaction(context.Background(), wallet, regFee, nonce, txnFee, config.MaxGenerateIDTxnHash.GetValueAtHeight(height+1))
+			if err != nil {
+				return err
+			}
+			prevNonce = nonce
 		}
 
 		buff, err := txn.Marshal()
@@ -551,22 +560,20 @@ func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee, txnFee Fixed64) 
 		if err := CreateID(seeds, wallet, regFee, txnFee); err != nil {
 			return nil, err
 		}
-
 	} else if len(id) != config.NodeIDBytes {
 		return nil, fmt.Errorf("Got id %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
 	} else if !bytes.Equal(id, crypto.Sha256ZeroHash) {
 		return id, nil
 	}
 
-	timer := time.NewTimer((config.GenerateIDBlockDelay + 2) * config.ConsensusDuration)
-	timeout := time.After((config.GenerateIDBlockDelay + 5) * config.ConsensusTimeout)
+	timer := time.NewTimer((config.GenerateIDBlockDelay + 4) * config.ConsensusDuration)
+	timeout := time.After((config.GenerateIDBlockDelay + 12) * config.ConsensusTimeout)
 	defer timer.Stop()
 
 out:
 	for {
 		select {
 		case <-timer.C:
-			timer.Reset(config.ConsensusDuration)
 			log.Warningf("try to get ID from local ledger and remoteNode...")
 			if id, err := GetID(seeds, pk); err == nil && id != nil {
 				if !bytes.Equal(id, crypto.Sha256ZeroHash) {
@@ -575,6 +582,7 @@ out:
 			} else if err != nil {
 				log.Warningf("Get id from neighbors error: %v", err)
 			}
+			timer.Reset(config.ConsensusDuration)
 		case <-timeout:
 			break out
 		}

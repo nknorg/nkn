@@ -1,12 +1,14 @@
 package id
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"os"
 
 	. "github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/httpjson/client"
+	"github.com/nknorg/nkn/chain"
 	. "github.com/nknorg/nkn/cli/common"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
@@ -50,7 +52,7 @@ func generateIDAction(c *cli.Context) error {
 	var resp []byte
 	switch {
 	case c.Bool("genid"):
-		txn, _ := MakeGenerateIDTransaction(myWallet, regFee, nonce, txnFee)
+		txn, _ := MakeGenerateIDTransaction(context.Background(), myWallet, regFee, nonce, txnFee, config.MaxGenerateIDTxnHash.GetValueAtHeight(chain.DefaultLedger.Store.GetHeight()+1))
 		buff, _ := txn.Marshal()
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	default:
