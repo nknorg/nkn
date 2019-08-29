@@ -356,11 +356,10 @@ func (localNode *LocalNode) handleTransactionsMessage(txnMsg *pb.Transactions) (
 		}
 
 		err := localNode.AppendTxnPool(txn)
-		if err == pool.ErrDuplicatedTx {
+		if err == pool.ErrDuplicatedTx || err == pool.ErrRejectLowPriority {
 			return false, nil
 		}
 		if err != nil {
-			log.Warningf("Verify transaction failed when append to txn pool: %v", err)
 			return false, err
 		}
 	}

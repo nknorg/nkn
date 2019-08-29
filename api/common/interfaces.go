@@ -579,7 +579,7 @@ func getId(s Serverer, params map[string]interface{}) map[string]interface{} {
 
 func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) (ErrCode, error) {
 	if err := localNode.AppendTxnPool(txn); err != nil {
-		log.Warningf("Can NOT add the transaction to TxnPool: %v", err)
+		log.Warningf("Add transaction to TxnPool error: %v", err)
 
 		if err == chain.ErrIDRegistered || err == chain.ErrDuplicateGenerateIDTxn {
 			return ErrDuplicatedTx, err
