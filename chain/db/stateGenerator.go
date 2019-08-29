@@ -1,6 +1,8 @@
 package db
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
 	"github.com/nknorg/nkn/block"
@@ -157,13 +159,13 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 	return nil
 }
 
-func (cs *ChainStore) GenerateStateRoot(b *block.Block, genesisBlockInitialized, needBeCommitted bool) (Uint256, error) {
-	_, root, err := cs.generateStateRoot(b, genesisBlockInitialized, needBeCommitted)
+func (cs *ChainStore) GenerateStateRoot(ctx context.Context, b *block.Block, genesisBlockInitialized, needBeCommitted bool) (Uint256, error) {
+	_, root, err := cs.generateStateRoot(ctx, b, genesisBlockInitialized, needBeCommitted)
 
 	return root, err
 }
 
-func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized, needBeCommitted bool) (*StateDB, Uint256, error) {
+func (cs *ChainStore) generateStateRoot(ctx context.Context, b *block.Block, genesisBlockInitialized, needBeCommitted bool) (*StateDB, Uint256, error) {
 	stateRoot := EmptyUint256
 	if genesisBlockInitialized {
 		var err error
@@ -228,6 +230,12 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 
 		for _, txn := range prevBlock.Transactions {
 			if txn.UnsignedTx.Payload.Type == pb.GENERATE_ID_TYPE {
+				select {
+				case <-ctx.Done():
+					return nil, EmptyUint256, errors.New("context deadline exceeded")
+				default:
+				}
+
 				id := block.ComputeID(preBlockHash, txn.Hash(), b.Header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength])
 
 				var pg []Uint160
@@ -239,7 +247,6 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 				if err = states.UpdateID(pg[0], id); err != nil {
 					return nil, EmptyUint256, err
 				}
-
 			}
 		}
 	}
@@ -254,12 +261,24 @@ func (cs *ChainStore) generateStateRoot(b *block.Block, genesisBlockInitialized,
 			return nil, EmptyUint256, err
 		}
 		for _, txn := range b.Transactions[1:] {
+			select {
+			case <-ctx.Done():
+				return nil, EmptyUint256, errors.New("context deadline exceeded")
+			default:
+			}
+
 			if err = cs.spendTransaction(states, txn, 0, false, height); err != nil {
 				return nil, EmptyUint256, err
 			}
 		}
 	} else {
 		for _, txn := range b.Transactions {
+			select {
+			case <-ctx.Done():
+				return nil, EmptyUint256, errors.New("context deadline exceeded")
+			default:
+			}
+
 			if err = cs.spendTransaction(states, txn, totalFee, false, height); err != nil {
 				return nil, EmptyUint256, err
 			}

@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"context"
 	"sync"
 
 	"github.com/nknorg/nkn/block"
@@ -31,7 +32,7 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore) (*Blockchain, error) {
 		return nil, err
 	}
 
-	root, err := store.GenerateStateRoot(genesisBlock, false, false)
+	root, err := store.GenerateStateRoot(context.Background(), genesisBlock, false, false)
 	if err != nil {
 		return nil, err
 	}
