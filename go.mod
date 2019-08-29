@@ -14,6 +14,7 @@ require (
 	github.com/jpillora/backoff v0.0.0-20180909062703-3050d21c67d7 // indirect
 	github.com/klauspost/reedsolomon v1.9.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a
 	github.com/nknorg/go-nat v1.0.1
 	github.com/nknorg/go-portscanner v0.0.0-20181002101859-8493ef01db79
 	github.com/nknorg/nnet v0.0.0-20190815010835-03d8e5d1105c

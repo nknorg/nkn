@@ -80,6 +80,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.1 h1:9f412s+6RmYXLWZSEzVVgPGK7C2PphHj5RJrvfx9AWI=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
+github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a h1:DXTCQnVV2EsTWEVk/YhVGb2QxdgW8JzB2GEsNntDlaU=
+github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a/go.mod h1:H7XeI/XOPpWVmqM+ScT75RLMn7jWnlZDwHRahSxNxo0=
 github.com/nknorg/go-nat v1.0.1 h1:4dFK0oDyqkIE0it03Y4pMgBQpl1Y0mrYHEp+j/nZ910=
 github.com/nknorg/go-nat v1.0.1/go.mod h1:dblX1Ac2j08rTUGs5CKCAfjHGN5eDFhbeqt2rccSP3Y=
 github.com/nknorg/go-portscanner v0.0.0-20181002101859-8493ef01db79 h1:AT5YRim0696HFnGSvFg0uOmSuo1X11roGBQhKB25PHE=
