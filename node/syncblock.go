@@ -1,16 +1,17 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/nknorg/consequential"
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/node/consequential"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -391,7 +392,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		return batchStartHeight, batchEndHeight
 	}
 
-	getHeader := func(workerID, batchID uint32) (interface{}, bool) {
+	getHeader := func(ctx context.Context, workerID, batchID uint32) (interface{}, bool) {
 		neighbor := neighbors[workerID%uint32(len(neighbors))]
 		batchStartHeight, batchEndHeight := getBatchHeightRange(batchID)
 
@@ -404,7 +405,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		return batchHeaders, true
 	}
 
-	saveHeader := func(batchID uint32, result interface{}) bool {
+	saveHeader := func(ctx context.Context, batchID uint32, result interface{}) bool {
 		batchHeaders, ok := result.([]*block.Header)
 		if !ok {
 			log.Warningf("Convert batch headers error")
@@ -452,7 +453,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		return nil, err
 	}
 
-	err = cs.Start()
+	err = cs.Start(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +474,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchS
 		return batchStartHeight, batchEndHeight
 	}
 
-	getBlock := func(workerID, batchID uint32) (interface{}, bool) {
+	getBlock := func(ctx context.Context, workerID, batchID uint32) (interface{}, bool) {
 		neighbor := neighbors[workerID%uint32(len(neighbors))]
 		batchStartHeight, batchEndHeight := getBatchHeightRange(batchID)
 
@@ -486,7 +487,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchS
 		return batchBlocks, true
 	}
 
-	saveBlock := func(batchID uint32, result interface{}) bool {
+	saveBlock := func(ctx context.Context, batchID uint32, result interface{}) bool {
 		batchBlocks, ok := result.([]*block.Block)
 		if !ok {
 			log.Warningf("Convert batch blocks error")
@@ -526,7 +527,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchS
 		return err
 	}
 
-	err = cs.Start()
+	err = cs.Start(context.Background())
 	if err != nil {
 		return err
 	}
