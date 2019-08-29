@@ -107,6 +107,8 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		return err
 	}
 
+	currentHeight := DefaultLedger.Store.GetHeight()
+
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.COINBASE_TYPE:
 		pld := payload.(*pb.Coinbase)
@@ -176,10 +178,10 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		}
 
 		// Check sub.Meta & sub.Identifier limitation via height
-		if len(pld.Identifier) > config.MaxTxnSubIdentifierList.GetValueAtHeight(h) {
+		if len(pld.Identifier) > config.MaxTxnSubIdentifierList.GetValueAtHeight(currentHeight+1) {
 			return errors.New("Identifier too long")
 		}
-		if len(pld.Meta) > config.MaxTxnSubMetaList.GetValueAtHeight(h) {
+		if len(pld.Meta) > config.MaxTxnSubMetaList.GetValueAtHeight(currentHeight+1) {
 			return errors.New("Meta too long")
 		}
 	case pb.UNSUBSCRIBE_TYPE:
@@ -192,11 +194,16 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		pld := payload.(*pb.GenerateID)
 		_, err := crypto.NewPubKeyFromBytes(pld.PublicKey)
 		if err != nil {
-			return fmt.Errorf("GenerateID error: %v", err)
+			return fmt.Errorf("Decode pubkey error: %v", err)
 		}
 
 		if Fixed64(pld.RegistrationFee) < Fixed64(config.MinGenIDRegistrationFee) {
-			return errors.New("fee is too low than MinGenIDRegistrationFee")
+			return errors.New("registration fee is lower than MinGenIDRegistrationFee")
+		}
+
+		txnHash := txn.Hash()
+		if txnHash.CompareTo(config.MaxGenerateIDTxnHash.GetValueAtHeight(currentHeight+1)) > 0 {
+			return errors.New("txn hash is greater than MaxGenerateIDTxnHash")
 		}
 	case pb.NANO_PAY_TYPE:
 		pld := payload.(*pb.NanoPay)

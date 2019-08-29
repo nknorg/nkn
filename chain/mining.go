@@ -92,7 +92,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 	for {
 		select {
 		case <-ctx.Done():
-			break
+			return nil, ctx.Err()
 		default:
 		}
 
