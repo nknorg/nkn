@@ -154,7 +154,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 	}
 
 	//state root check
-	root, err := DefaultLedger.Store.GenerateStateRoot(block, true, false)
+	root, err := DefaultLedger.Store.GenerateStateRoot(ctx, block, true, false)
 	if err != nil {
 		return err
 	}

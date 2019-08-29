@@ -2,6 +2,7 @@ package db
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -298,7 +299,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 	}
 
 	//StateRoot
-	states, root, err := cs.generateStateRoot(b, b.Header.UnsignedHeader.Height != 0, true)
+	states, root, err := cs.generateStateRoot(context.Background(), b, b.Header.UnsignedHeader.Height != 0, true)
 	if err != nil {
 		return err
 	}

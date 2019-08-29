@@ -1,6 +1,8 @@
 package chain
 
 import (
+	"context"
+
 	"github.com/nknorg/nkn/block"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/transaction"
@@ -41,7 +43,7 @@ type ILedgerStore interface {
 	IsTxHashDuplicate(txhash Uint256) bool
 	IsBlockInStore(hash Uint256) bool
 	Rollback(b *block.Block) error
-	GenerateStateRoot(b *block.Block, genesisBlockInitialized, needBeCommitted bool) (Uint256, error)
+	GenerateStateRoot(ctx context.Context, b *block.Block, genesisBlockInitialized, needBeCommitted bool) (Uint256, error)
 	GetAsset(assetID Uint256) (name, symbol string, totalSupply Fixed64, precision uint32, err error)
 
 	Close()

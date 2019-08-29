@@ -184,7 +184,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 		Transactions: txnList,
 	}
 
-	curStateHash, err := DefaultLedger.Store.GenerateStateRoot(block, true, false)
+	curStateHash, err := DefaultLedger.Store.GenerateStateRoot(ctx, block, true, false)
 	if err != nil {
 		return nil, err
 	}
