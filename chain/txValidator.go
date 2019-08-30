@@ -483,6 +483,17 @@ func (bvs *BlockValidationState) initBlockValidationState() {
 	bvs.nanoPays = make(map[nanoPay]struct{}, 0)
 }
 
+func (bvs *BlockValidationState) Close() {
+	bvs.txnlist = nil
+	bvs.totalAmount = nil
+	bvs.registeredNames = nil
+	bvs.nameRegistrants = nil
+	bvs.generateIDs = nil
+	bvs.subscriptions = nil
+	bvs.subscriptionCount = nil
+	bvs.nanoPays = nil
+}
+
 func (bvs *BlockValidationState) addChange(change func()) {
 	bvs.changes = append(bvs.changes, change)
 }

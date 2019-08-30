@@ -144,6 +144,8 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 		}
 	}
 
+	bvs.Close()
+
 	txnRoot, err := crypto.ComputeRoot(txnHashList)
 	if err != nil {
 		return nil, err

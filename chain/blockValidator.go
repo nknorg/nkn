@@ -153,6 +153,8 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		}
 	}
 
+	bvs.Close()
+
 	//state root check
 	root, err := DefaultLedger.Store.GenerateStateRoot(ctx, block, true, false)
 	if err != nil {

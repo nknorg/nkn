@@ -569,15 +569,16 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 			atomic.AddInt32(&tp.txnCount, -1)
 			atomic.AddInt64(&tp.txnSize, -int64(t.GetSize()))
 		}
-
-		tp.TxLists.Range(func(k, v interface{}) bool {
-			listLen := v.(*NonceSortedTxs).Len()
-			if listLen == 0 {
-				tp.TxLists.Delete(k)
-			}
-			return true
-		})
 	}
+
+	tp.TxLists.Range(func(k, v interface{}) bool {
+		listLen := v.(*NonceSortedTxs).Len()
+		if listLen == 0 {
+			v.(*NonceSortedTxs).txs = nil
+			tp.TxLists.Delete(k)
+		}
+		return true
+	})
 
 	tp.blockValidationState.Lock()
 	defer tp.blockValidationState.Unlock()
