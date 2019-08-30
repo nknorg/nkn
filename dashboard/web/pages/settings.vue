@@ -131,8 +131,8 @@
   import MaterialNotification from '~/components/material/Notification.vue'
   import NumberInput from '~/components/widget/NumberInput.vue'
   import Result from '~/components/dialog/Result.vue'
-  import {formatFee, parseFee} from '~/helpers/tools'
-  import {mapState, mapActions} from 'vuex'
+  import { formatFee, parseFee } from '~/helpers/tools'
+  import { mapState, mapActions } from 'vuex'
 
   export default {
     name: "settings",
@@ -166,18 +166,20 @@
       }
     },
     created() {
-      this.reset()
+
     },
     methods: {
       ...mapActions('node', ['setNodeConfig']),
       onDialogSuccess(data) {
         this.beneficiaryAddr = data.beneficiaryAddr
       },
+      init() {
+        this.registerIDTxnFee = formatFee(this.nodeStatus.registerIDTxnFee)
+        this.numLowFeeTxnPerBlock = this.nodeStatus.numLowFeeTxnPerBlock
+        this.lowFeeTxnSizePerBlock = this.nodeStatus.lowFeeTxnSizePerBlock
+        this.minTxnFee = formatFee(this.nodeStatus.minTxnFee)
+      },
       reset() {
-        // this.registerIDTxnFee = formatFee(this.nodeStatus.registerIDTxnFee)
-        // this.numLowFeeTxnPerBlock = this.nodeStatus.numLowFeeTxnPerBlock
-        // this.lowFeeTxnSizePerBlock = this.nodeStatus.lowFeeTxnSizePerBlock
-        // this.minTxnFee = formatFee(this.nodeStatus.minTxnFee)
         this.registerIDTxnFee = 0
         this.numLowFeeTxnPerBlock = 0
         this.lowFeeTxnSizePerBlock = 4096
@@ -210,7 +212,7 @@
       nodeStatus(v) {
         if (!this.loaded) {
           this.loaded = true
-          this.reset()
+          this.init()
         }
       }
     }
