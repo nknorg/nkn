@@ -63,6 +63,7 @@ const (
 	GASAssetName                 = "New Network Coin"
 	GASAssetSymbol               = "nnc"
 	GASAssetPrecision            = uint32(8)
+	DumpMemInterval              = 30 * time.Second
 )
 
 const (
@@ -74,6 +75,8 @@ const (
 )
 
 var (
+	Debug            = false
+	PprofPort        = "127.0.0.1:8080"
 	ShortHashSalt    = util.RandomBytes(32)
 	GenesisTimestamp = time.Date(2019, time.June, 29, 13, 10, 13, 0, time.UTC).Unix()
 	GenesisBeacon    = make([]byte, RandomBeaconLength)

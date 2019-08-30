@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
@@ -35,7 +36,7 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay"
 	"github.com/nknorg/nnet/overlay/chord"
-	"github.com/rdegges/go-ipify"
+	ipify "github.com/rdegges/go-ipify"
 	"github.com/urfave/cli"
 )
 
@@ -69,6 +70,14 @@ func InitLedger(account *vault.Account) error {
 	por.Store = chain.DefaultLedger.Store
 
 	return nil
+}
+
+func printMemStats() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	log.Infof("Alloc = %v TotalAlloc = %v Sys = %v NumGC = %v\n", m.Alloc/1024, m.TotalAlloc/1024, m.Sys/1024, m.NumGC)
+	log.Infof("HeapAlloc = %v HeapSys = %v HeapIdle = %v HeapInuse = %v HeapReleased = %v HeapObjects = %v\n", m.HeapAlloc/1024, m.HeapSys/1024, m.HeapIdle/1024, m.HeapInuse/1024, m.HeapReleased/1024, m.HeapObjects/1024)
+	log.Infof("StackInuse = %v StackSys = %v MCacheInuse = %v MCacheSys = %v\n", m.StackInuse/1024, m.StackSys/1024, m.MCacheInuse/1024, m.MCacheSys/1024)
 }
 
 func JoinNet(nn *nnet.NNet) error {
@@ -122,6 +131,22 @@ func AskMyIP(seeds []string) (string, error) {
 }
 
 func nknMain(c *cli.Context) error {
+	if config.Debug {
+		//pprof
+		go func() {
+			log.Info(http.ListenAndServe(config.PprofPort, nil))
+		}()
+
+		//dump runtime memory status
+		t := time.NewTicker(config.DumpMemInterval)
+		go func() {
+			for {
+				<-t.C
+				printMemStats()
+			}
+		}()
+	}
+
 	signalChan := make(chan os.Signal, 1)
 
 	err := config.Init()
@@ -387,6 +412,16 @@ func main() {
 			Name:        "no-nat",
 			Usage:       "Skip NAT traversal for UPnP and NAT-PMP",
 			Destination: &config.SkipNAT,
+		},
+		cli.BoolFlag{
+			Name:        "debug",
+			Usage:       "Provide runtime profiling data of NKN",
+			Destination: &config.Debug,
+		},
+		cli.StringFlag{
+			Name:        "pprof-port",
+			Usage:       "The port used for pprof in debug mode",
+			Destination: &config.PprofPort,
 		},
 		cli.StringFlag{
 			Name:        "config",
