@@ -13,6 +13,7 @@ import (
 )
 
 const MaxUint32 = ^uint32(0)
+const MaxInt32 = int32(MaxUint32 >> 1)
 
 type HexStr []byte
 
