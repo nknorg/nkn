@@ -199,9 +199,9 @@ func GetNonceByAddr(remote string, addr string) (uint64, uint32, error) {
 
 	var ret struct {
 		Result struct {
-			nonce         uint64
-			nonceInTxPool uint64
-			currentHeight uint32
+			Nonce         uint64
+			NonceInTxPool uint64
+			CurrentHeight uint32
 		} `json:"result"`
 		Err map[string]interface{} `json:"error"`
 	}
@@ -214,5 +214,5 @@ func GetNonceByAddr(remote string, addr string) (uint64, uint32, error) {
 		return 0, 0, fmt.Errorf("GetNonceByAddr(%s) resp error: %v", remote, string(resp))
 	}
 
-	return ret.Result.nonceInTxPool, ret.Result.currentHeight, nil
+	return ret.Result.NonceInTxPool, ret.Result.CurrentHeight, nil
 }
