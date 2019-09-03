@@ -32,7 +32,7 @@ func (u *Uint160) CompareTo(o Uint160) int {
 	x := u.ToArray()
 	y := o.ToArray()
 
-	for i := len(x) - 1; i >= 0; i-- {
+	for i := 0; i < len(x); i++ {
 		if x[i] > y[i] {
 			return 1
 		}

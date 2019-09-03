@@ -7,11 +7,6 @@ import (
 	"github.com/nknorg/nkn/pb"
 )
 
-const (
-	SubscriptionsLimit      = 100000
-	MaxSubscriptionDuration = 65535
-)
-
 type IPayload interface {
 	Marshal() (data []byte, err error)
 	Unmarshal(data []byte) error

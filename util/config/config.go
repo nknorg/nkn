@@ -24,8 +24,6 @@ import (
 )
 
 const (
-	MaxUint                      = ^uint(0)
-	MaxInt                       = int(MaxUint >> 1)
 	MaxNumTxnPerBlock            = 4096
 	MaxBlockSize                 = 1 * 1024 * 1024 // in bytes
 	ConsensusDuration            = 20 * time.Second
@@ -89,23 +87,28 @@ var (
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 	}
-	MaxTxnSubIdentifierList = HeightDependentInt{ // Max length for txn payload Subscribe.Identifier
+	MaxSubscribeIdentifierLen = HeightDependentInt32{
 		heights: []uint32{133400, 0},
-		values:  []int{64, MaxInt},
+		values:  []int32{64, common.MaxInt32},
 	}
-	MaxTxnSubMetaList = HeightDependentInt{ // Max length for txn payload Subscribe.Meta
+	MaxSubscribeMetaLen = HeightDependentInt32{
 		heights: []uint32{133400, 0},
-		values:  []int{1024, MaxInt},
+		values:  []int32{1024, common.MaxInt32},
 	}
-	BucketsLimit = HeightDependentInt{ // Max bucket for txn payload Subscribe.Bucket
-		heights: []uint32{133400, 0},
-		values:  []int{0, 1000},
+	MaxSubscribeBucket = HeightDependentInt32{
+		heights: []uint32{245000, 0},
+		values:  []int32{0, 1000},
 	}
-	MaxGenerateIDTxnHash = HeightDependentUint256{
-		heights: []uint32{230000, 0},
+	MaxSubscribeDuration = HeightDependentInt32{
+		heights: []uint32{245000, 0},
+		values:  []int32{400000, 65535},
+	}
+	MaxSubscriptionsCount = 100000
+	MaxGenerateIDTxnHash  = HeightDependentUint256{
+		heights: []uint32{245000, 0},
 		values: []common.Uint256{
 			common.Uint256{
-				0x00, 0x00, 0x00, 0x03, 0xff, 0xff, 0xff, 0xff,
+				0x00, 0x00, 0x00, 0x07, 0xff, 0xff, 0xff, 0xff,
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -113,6 +116,7 @@ var (
 			common.MaxUint256,
 		},
 	}
+	MaxTxnAttributesLen = 100
 )
 
 var (
