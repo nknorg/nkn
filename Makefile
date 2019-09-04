@@ -46,8 +46,9 @@ all: ## Build binaries for all available architectures
 	make crossbuild GOOS=windows GOARCH=amd64
 	make crossbuild GOOS=windows GOARCH=386
 
-.PHONY: build_local
+.PHONY: build_local, no_web
 build_local: web ## Build local binaries without providing specific GOOS/GOARCH
+no_web:
 	$(GC) $(BUILD_NKND_PARAM) nknd.go
 	$(GC) $(BUILD_NKNC_PARAM) nknc.go
 	## the following parts will be removed after the transition period from testnet to mainnet
