@@ -1,5 +1,5 @@
 export default {
   NODE_STATUS: 'Node status',
-  OVERVIEW: 'Neightbors',
+  OVERVIEW: 'Neighbors',
   SETTINGS: 'settings'
 }
