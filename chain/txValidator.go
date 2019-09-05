@@ -23,7 +23,7 @@ var (
 )
 
 // VerifyTransaction verifys received single transaction
-func VerifyTransaction(txn *transaction.Transaction) error {
+func VerifyTransaction(txn *transaction.Transaction, height uint32) error {
 	if err := CheckTransactionSize(txn); err != nil {
 		return fmt.Errorf("[VerifyTransaction] %v", err)
 	}
@@ -44,7 +44,7 @@ func VerifyTransaction(txn *transaction.Transaction) error {
 		return fmt.Errorf("[VerifyTransaction] %v", err)
 	}
 
-	if err := CheckTransactionPayload(txn); err != nil {
+	if err := CheckTransactionPayload(txn, height); err != nil {
 		return fmt.Errorf("[VerifyTransaction] %v", err)
 	}
 
@@ -100,13 +100,11 @@ func verifyPubSubTopic(topic string) error {
 
 }
 
-func CheckTransactionPayload(txn *transaction.Transaction) error {
+func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error {
 	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
 		return err
 	}
-
-	currentHeight := DefaultLedger.Store.GetHeight()
 
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.COINBASE_TYPE:
@@ -160,12 +158,12 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 			return fmt.Errorf("subscribe duration should be greater than 0")
 		}
 
-		maxSubscribeBucket := config.MaxSubscribeBucket.GetValueAtHeight(currentHeight + 1)
+		maxSubscribeBucket := config.MaxSubscribeBucket.GetValueAtHeight(height)
 		if pld.Bucket > uint32(maxSubscribeBucket) {
 			return fmt.Errorf("subscribe bucket %d is greater than %d", pld.Bucket, maxSubscribeBucket)
 		}
 
-		maxDuration := config.MaxSubscribeDuration.GetValueAtHeight(currentHeight + 1)
+		maxDuration := config.MaxSubscribeDuration.GetValueAtHeight(height)
 		if pld.Duration > uint32(maxDuration) {
 			return fmt.Errorf("subscribe duration %d is greater than %d", pld.Duration, maxDuration)
 		}
@@ -174,12 +172,12 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 			return err
 		}
 
-		maxIdentifierLen := config.MaxSubscribeIdentifierLen.GetValueAtHeight(currentHeight + 1)
+		maxIdentifierLen := config.MaxSubscribeIdentifierLen.GetValueAtHeight(height)
 		if len(pld.Identifier) > int(maxIdentifierLen) {
 			return fmt.Errorf("subscribe identifier len %d is greater than %d", len(pld.Identifier), maxIdentifierLen)
 		}
 
-		maxMetaLen := config.MaxSubscribeMetaLen.GetValueAtHeight(currentHeight + 1)
+		maxMetaLen := config.MaxSubscribeMetaLen.GetValueAtHeight(height)
 		if len(pld.Meta) > int(maxMetaLen) {
 			return fmt.Errorf("subscribe meta len %d is greater than %d", len(pld.Meta), maxMetaLen)
 		}
@@ -201,7 +199,7 @@ func CheckTransactionPayload(txn *transaction.Transaction) error {
 		}
 
 		txnHash := txn.Hash()
-		if txnHash.CompareTo(config.MaxGenerateIDTxnHash.GetValueAtHeight(currentHeight+1)) > 0 {
+		if txnHash.CompareTo(config.MaxGenerateIDTxnHash.GetValueAtHeight(height)) > 0 {
 			return errors.New("txn hash is greater than MaxGenerateIDTxnHash")
 		}
 	case pb.NANO_PAY_TYPE:

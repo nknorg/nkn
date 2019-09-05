@@ -110,7 +110,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 			break
 		}
 
-		if err := VerifyTransaction(txn); err != nil {
+		if err := VerifyTransaction(txn, height); err != nil {
 			log.Warningf("invalid transaction: %v", err)
 			txnCollection.Pop()
 			continue

@@ -118,7 +118,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		if i != 0 && txn.UnsignedTx.Payload.Type == pb.COINBASE_TYPE {
 			return errors.New("Coinbase transaction order is incorrect")
 		}
-		if err := VerifyTransaction(txn); err != nil {
+		if err := VerifyTransaction(txn, block.Header.UnsignedHeader.Height); err != nil {
 			return fmt.Errorf("transaction sanity check failed: %v", err)
 		}
 		if err := bvs.VerifyTransactionWithBlock(txn, block.Header.UnsignedHeader.Height); err != nil {
