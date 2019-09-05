@@ -46,11 +46,14 @@ all: ## Build binaries for all available architectures
 	make crossbuild GOOS=windows GOARCH=amd64
 	make crossbuild GOOS=windows GOARCH=386
 
-.PHONY: build_local, no_web
-build_local: web ## Build local binaries without providing specific GOOS/GOARCH
+.PHONY: no_web
 no_web:
 	$(GC) $(BUILD_NKND_PARAM) nknd.go
 	$(GC) $(BUILD_NKNC_PARAM) nknc.go
+
+.PHONY: build_local
+build_local: web ## Build local binaries without providing specific GOOS/GOARCH
+	${MAKE} no_web
 	## the following parts will be removed after the transition period from testnet to mainnet
 	[ -s "wallet.dat" ] && [ -s "wallet.pswd" ] && ! [ -s "wallet.json" ] && cat wallet.pswd wallet.pswd | ./nknc wallet -c || :
 	[ -s "config.json" ] && ! [ -s "config.json.bk" ] && grep -qE "022d52b07dff29ae6ee22295da2dc315fef1e2337de7ab6e51539d379aa35b9503|0149c42944eea91f094c16538eff0449d4d1e236f31c8c706b2e40e98402984c" config.json && mv config.json config.json.bk && cp config.mainnet.json config.json || :

@@ -174,12 +174,14 @@ func (rs *RelayService) broadcastSigChain(sigChain *pb.SigChain) error {
 		return err
 	}
 
-	err = chain.VerifyTransaction(txn)
+	currentHeight := chain.DefaultLedger.Store.GetHeight()
+
+	err = chain.VerifyTransaction(txn, currentHeight+1)
 	if err != nil {
 		return err
 	}
 
-	porPkg, err := por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
+	porPkg, err := por.GetPorServer().AddSigChainFromTx(txn, currentHeight)
 	if err != nil {
 		return err
 	}

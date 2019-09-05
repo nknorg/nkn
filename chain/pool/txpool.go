@@ -245,7 +245,7 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 	}
 
 	// 2. verify txn
-	if err := chain.VerifyTransaction(txn); err != nil {
+	if err := chain.VerifyTransaction(txn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
 		return err
 	}
 

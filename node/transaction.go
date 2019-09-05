@@ -180,7 +180,9 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 					continue
 				}
 
-				if !por.GetPorServer().ShouldAddSigChainToCache(chain.DefaultLedger.Store.GetHeight(), info.height, info.hash) {
+				currentHeight := chain.DefaultLedger.Store.GetHeight()
+
+				if !por.GetPorServer().ShouldAddSigChainToCache(currentHeight, info.height, info.hash) {
 					continue
 				}
 
@@ -197,7 +199,7 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 
 				requestedHashCache.Set(info.hash, struct{}{})
 
-				err = chain.VerifyTransaction(txn)
+				err = chain.VerifyTransaction(txn, currentHeight+1)
 				if err != nil {
 					log.Warningf("Verify sigchain txn error: %v", err)
 					continue
