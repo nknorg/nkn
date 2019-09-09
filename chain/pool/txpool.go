@@ -124,7 +124,7 @@ func (tp *TxnPool) DropTxns() {
 			if listSize := list.Len(); listSize != 0 {
 				nonce, err := list.GetLatestNonce()
 				if err == nil {
-					txn, err := list.Get(nonce)
+					txn, err := list.GetByNonce(nonce)
 					if err == nil {
 						dropList = append(dropList, txn)
 					}
@@ -181,7 +181,7 @@ func (tp *TxnPool) DropTxns() {
 				if err != nil {
 					continue
 				}
-				nextTxn, err := list.Get(nonce)
+				nextTxn, err := list.GetByNonce(nonce)
 				if err != nil {
 					continue
 				}
@@ -240,7 +240,7 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 		return err
 	}
 
-	if _, err := list.Get(txn.UnsignedTx.Nonce); err != nil && list.Full() {
+	if _, err := list.GetByNonce(txn.UnsignedTx.Nonce); err != nil && list.Full() {
 		return errors.New("account txpool full, too many transaction in list")
 	}
 
@@ -318,7 +318,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		tp.NanoPayTxs.Store(txn.Hash(), txn)
 		tp.blockValidationState.Commit()
 	default:
-		if oldTxn, err := list.Get(txn.UnsignedTx.Nonce); err == nil {
+		if oldTxn, err := list.GetByNonce(txn.UnsignedTx.Nonce); err == nil {
 			log.Debug("replace old tx")
 			tp.blockValidationState.Lock()
 			defer tp.blockValidationState.Unlock()
@@ -330,7 +330,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 				return err
 			}
 
-			if err := list.Add(txn); err != nil {
+			if err := list.Replace(txn); err != nil {
 				return err
 			}
 
@@ -550,7 +550,7 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 
 			if v, ok := tp.TxLists.Load(sender); ok {
 				if list, ok := v.(*NonceSortedTxs); ok {
-					if _, err := list.Get(txNonce); err == nil {
+					if _, err := list.GetByNonce(txNonce); err == nil {
 						nonce := list.getNonce(list.idx[0])
 						for i := 0; uint64(i) <= txNonce-nonce; i++ {
 							t, err := list.Pop()
@@ -572,9 +572,7 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 	}
 
 	tp.TxLists.Range(func(k, v interface{}) bool {
-		listLen := v.(*NonceSortedTxs).Len()
-		if listLen == 0 {
-			v.(*NonceSortedTxs).txs = nil
+		if v.(*NonceSortedTxs).CleanIfEmpty() {
 			tp.TxLists.Delete(k)
 		}
 		return true

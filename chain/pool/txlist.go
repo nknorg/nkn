@@ -66,6 +66,15 @@ func (nst *NonceSortedTxs) Empty() bool {
 	return nst.empty()
 }
 
+func (nst *NonceSortedTxs) CleanIfEmpty() (ret bool) {
+	nst.mu.Lock()
+	defer nst.mu.Unlock()
+	if ret = nst.empty(); ret {
+		nst.txs = nil
+	}
+	return ret
+}
+
 func (nst *NonceSortedTxs) full() bool {
 	return nst.len() >= nst.cap
 }
@@ -82,6 +91,9 @@ func (nst *NonceSortedTxs) Push(tx *transaction.Transaction) error {
 
 	hash := tx.Hash()
 	nst.idx = append(nst.idx, hash)
+	if nst.txs == nil {
+		nst.txs = make(map[common.Uint256]*transaction.Transaction)
+	}
 	nst.txs[hash] = tx
 
 	return nil
@@ -142,7 +154,7 @@ func (nst *NonceSortedTxs) getNonce(hash common.Uint256) uint64 {
 	panic("no such tx in NonceSortedTxs")
 }
 
-func (nst *NonceSortedTxs) Add(tx *transaction.Transaction) error {
+func (nst *NonceSortedTxs) Replace(tx *transaction.Transaction) error {
 	nst.mu.Lock()
 	defer nst.mu.Unlock()
 
@@ -163,7 +175,7 @@ func (nst *NonceSortedTxs) Add(tx *transaction.Transaction) error {
 	return nil
 }
 
-func (nst *NonceSortedTxs) Get(nonce uint64) (*transaction.Transaction, error) {
+func (nst *NonceSortedTxs) GetByNonce(nonce uint64) (*transaction.Transaction, error) {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
 
@@ -181,14 +193,20 @@ func (nst *NonceSortedTxs) Get(nonce uint64) (*transaction.Transaction, error) {
 }
 
 func (nst *NonceSortedTxs) GetAllTransactions() []*transaction.Transaction {
+	nst.mu.RLock()
+	defer nst.mu.RUnlock()
+
 	txns := make([]*transaction.Transaction, 0)
-	for _, txnHash := range nst.idx {
-		txns = append(txns, nst.txs[txnHash])
+	if !nst.empty() {
+		for _, txnHash := range nst.idx {
+			txns = append(txns, nst.txs[txnHash])
+		}
 	}
 
 	return txns
 }
 
+// TODO: GetLatestTxn for better performance
 func (nst *NonceSortedTxs) GetLatestNonce() (uint64, error) {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
@@ -205,8 +223,10 @@ func (nst *NonceSortedTxs) ExistTx(hash common.Uint256) bool {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
 
-	if _, ok := nst.txs[hash]; ok {
-		return true
+	if !nst.empty() {
+		if _, ok := nst.txs[hash]; ok {
+			return true
+		}
 	}
 
 	return false
