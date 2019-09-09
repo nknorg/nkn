@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"sync"
 
+	database "github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/common"
 )
 
@@ -102,7 +103,7 @@ func (h *hasher) store(n node, db Database, force bool) (node, error) {
 		hs = hashNode(u256[:])
 	}
 	if db != nil {
-		return hs, db.BatchPut(append(secureKeyPrefix, []byte(hs)...), h.tmp.Bytes())
+		return hs, db.BatchPut(database.TrieNodeKey([]byte(hs)), h.tmp.Bytes())
 	}
 	return hs, nil
 }

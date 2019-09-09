@@ -21,7 +21,7 @@ import (
 	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/api/websocket"
 	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/chain/db"
+	"github.com/nknorg/nkn/chain/store"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
@@ -57,7 +57,7 @@ func init() {
 
 func InitLedger(account *vault.Account) error {
 	var err error
-	store, err := db.NewLedgerStore()
+	store, err := store.NewLedgerStore()
 	if err != nil {
 		return err
 	}

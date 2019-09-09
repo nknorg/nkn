@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"reflect"
 
+	database "github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/log"
 )
-
-var secureKeyPrefix = []byte{0xa0}
 
 type Database interface {
 	Get(key []byte) ([]byte, error)
@@ -307,7 +306,7 @@ func (t *Trie) resolve(n node) (node, error) {
 }
 
 func (t *Trie) resolveHash(n hashNode) (node, error) {
-	enc, err := t.db.Get(append(secureKeyPrefix, []byte(n)...))
+	enc, err := t.db.Get(database.TrieNodeKey([]byte(n)))
 	if err != nil {
 		return nil, err
 	}

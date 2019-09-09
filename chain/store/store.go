@@ -1,4 +1,4 @@
-package db
+package store
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/chain/db"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
@@ -21,7 +22,7 @@ import (
 )
 
 type ChainStore struct {
-	st IStore
+	st db.IStore
 
 	mu          sync.RWMutex
 	blockCache  map[Uint256]*block.Block
@@ -33,7 +34,7 @@ type ChainStore struct {
 }
 
 func NewLedgerStore() (*ChainStore, error) {
-	st, err := NewLevelDBStore(config.Parameters.ChainDBPath)
+	st, err := db.NewLevelDBStore(config.Parameters.ChainDBPath)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func (cs *ChainStore) ResetDB() error {
 }
 
 func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block) (uint32, error) {
-	version, err := cs.st.Get(versionKey())
+	version, err := cs.st.Get(db.VersionKey())
 	if err != nil {
 		version = []byte{0x00}
 	}
@@ -115,7 +116,7 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 		}
 
 		// put version to db
-		if err = cs.st.Put(versionKey(), []byte{config.DBVersion}); err != nil {
+		if err = cs.st.Put(db.VersionKey(), []byte{config.DBVersion}); err != nil {
 			return 0, err
 		}
 
@@ -128,7 +129,7 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 }
 
 func (cs *ChainStore) IsTxHashDuplicate(txhash Uint256) bool {
-	if _, err := cs.st.Get(transactionKey(txhash)); err != nil {
+	if _, err := cs.st.Get(db.TransactionKey(txhash)); err != nil {
 		return false
 	}
 
@@ -136,7 +137,7 @@ func (cs *ChainStore) IsTxHashDuplicate(txhash Uint256) bool {
 }
 
 func (cs *ChainStore) GetBlockHash(height uint32) (Uint256, error) {
-	blockHash, err := cs.st.Get(blockhashKey(height))
+	blockHash, err := cs.st.Get(db.BlockhashKey(height))
 	if err != nil {
 		return EmptyUint256, err
 	}
@@ -154,7 +155,7 @@ func (cs *ChainStore) GetBlockByHeight(height uint32) (*block.Block, error) {
 }
 
 func (cs *ChainStore) GetHeader(hash Uint256) (*block.Header, error) {
-	data, err := cs.st.Get(headerKey(hash))
+	data, err := cs.st.Get(db.HeaderKey(hash))
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +193,7 @@ func (cs *ChainStore) GetTransaction(hash Uint256) (*transaction.Transaction, er
 }
 
 func (cs *ChainStore) getTx(hash Uint256) (*transaction.Transaction, uint32, error) {
-	value, err := cs.st.Get(transactionKey(hash))
+	value, err := cs.st.Get(db.TransactionKey(hash))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -208,7 +209,7 @@ func (cs *ChainStore) getTx(hash Uint256) (*transaction.Transaction, uint32, err
 }
 
 func (cs *ChainStore) GetBlock(hash Uint256) (*block.Block, error) {
-	bHash, err := cs.st.Get(headerKey(hash))
+	bHash, err := cs.st.Get(db.HeaderKey(hash))
 	if err != nil {
 		return nil, err
 	}
@@ -257,14 +258,14 @@ func (cs *ChainStore) persist(b *block.Block) error {
 	//batch put header
 	headerBuffer := bytes.NewBuffer(nil)
 	b.Trim(headerBuffer)
-	if err := cs.st.BatchPut(headerKey(headerHash), headerBuffer.Bytes()); err != nil {
+	if err := cs.st.BatchPut(db.HeaderKey(headerHash), headerBuffer.Bytes()); err != nil {
 		return err
 	}
 
 	//batch put headerhash
 	headerHashBuffer := bytes.NewBuffer(nil)
 	headerHash.Serialize(headerHashBuffer)
-	if err := cs.st.BatchPut(blockhashKey(b.Header.UnsignedHeader.Height), headerHashBuffer.Bytes()); err != nil {
+	if err := cs.st.BatchPut(db.BlockhashKey(b.Header.UnsignedHeader.Height), headerHashBuffer.Bytes()); err != nil {
 		return err
 	}
 
@@ -279,7 +280,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 
 		buffer = append(buffer, dt...)
 
-		if err := cs.st.BatchPut(transactionKey(txn.Hash()), buffer); err != nil {
+		if err := cs.st.BatchPut(db.TransactionKey(txn.Hash()), buffer); err != nil {
 			return err
 		}
 
@@ -313,7 +314,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		return fmt.Errorf("state root not equal:%v, %v", root.ToHexString(), headerRoot.ToHexString())
 	}
 
-	err = cs.st.BatchPut(currentStateTrie(), root.ToArray())
+	err = cs.st.BatchPut(db.CurrentStateTrie(), root.ToArray())
 	if err != nil {
 		return err
 	}
@@ -331,14 +332,14 @@ func (cs *ChainStore) persist(b *block.Block) error {
 			return err
 		}
 
-		if err := cs.st.BatchPut(donationKey(b.Header.UnsignedHeader.Height), w.Bytes()); err != nil {
+		if err := cs.st.BatchPut(db.DonationKey(b.Header.UnsignedHeader.Height), w.Bytes()); err != nil {
 			return err
 		}
 	}
 
 	//batch put currentblockhash
 	serialization.WriteUint32(headerHashBuffer, b.Header.UnsignedHeader.Height)
-	err = cs.st.BatchPut(currentBlockHashKey(), headerHashBuffer.Bytes())
+	err = cs.st.BatchPut(db.CurrentBlockHashKey(), headerHashBuffer.Bytes())
 	if err != nil {
 		return err
 	}
@@ -426,7 +427,7 @@ func (cs *ChainStore) IsDoubleSpend(tx *transaction.Transaction) bool {
 }
 
 func (cs *ChainStore) getCurrentBlockHashFromDB() (Uint256, uint32, error) {
-	data, err := cs.st.Get(currentBlockHashKey())
+	data, err := cs.st.Get(db.CurrentBlockHashKey())
 	if err != nil {
 		return EmptyUint256, 0, err
 	}
@@ -439,7 +440,7 @@ func (cs *ChainStore) getCurrentBlockHashFromDB() (Uint256, uint32, error) {
 }
 
 func (cs *ChainStore) GetCurrentBlockStateRoot() (Uint256, error) {
-	currentState, err := cs.st.Get(currentStateTrie())
+	currentState, err := cs.st.Get(db.CurrentStateTrie())
 	if err != nil {
 		return EmptyUint256, err
 	}
@@ -452,7 +453,7 @@ func (cs *ChainStore) GetCurrentBlockStateRoot() (Uint256, error) {
 	return hash, nil
 }
 
-func (cs *ChainStore) GetDatabase() IStore {
+func (cs *ChainStore) GetDatabase() db.IStore {
 	return cs.st
 }
 
@@ -537,7 +538,7 @@ func (cs *ChainStore) GetDonation() (Fixed64, error) {
 
 func (cs *ChainStore) getDonation() (*Donation, error) {
 	currentDonationHeight := cs.currentBlockHeight / uint32(config.RewardAdjustInterval) * uint32(config.RewardAdjustInterval)
-	data, err := cs.st.Get(donationKey(currentDonationHeight))
+	data, err := cs.st.Get(db.DonationKey(currentDonationHeight))
 	if err != nil {
 		return nil, err
 	}
