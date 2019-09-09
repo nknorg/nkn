@@ -1,6 +1,7 @@
-package db
+package store
 
 import (
+	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/chain/trie"
 	. "github.com/nknorg/nkn/common"
 )
@@ -19,11 +20,11 @@ type ITrie interface {
 }
 
 type cachingDB struct {
-	db        IStore
+	db        db.IStore
 	pastTries []*trie.Trie
 }
 
-func NewTrieStore(db IStore) *cachingDB {
+func NewTrieStore(db db.IStore) *cachingDB {
 	return &cachingDB{db: db}
 }
 

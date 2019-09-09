@@ -23,45 +23,52 @@ const (
 
 	//CONFIG
 	CFG_Version DataEntryPrefix = 0xf0
+
+	//TRIE NODE
+	TRIE_Node DataEntryPrefix = 0xa0
 )
 
 func paddingKey(prefix DataEntryPrefix, key []byte) []byte {
 	return append([]byte{byte(prefix)}, key...)
 }
 
-func versionKey() []byte {
+func VersionKey() []byte {
 	return paddingKey(CFG_Version, nil)
 }
 
-func currentBlockHashKey() []byte {
+func CurrentBlockHashKey() []byte {
 	return paddingKey(SYS_CurrentBlock, nil)
 }
 
-func donationKey(height uint32) []byte {
+func DonationKey(height uint32) []byte {
 	heightBuffer := make([]byte, 4)
 	binary.LittleEndian.PutUint32(heightBuffer[:], height)
 	return paddingKey(SYS_Donations, heightBuffer)
 }
 
-func currentStateTrie() []byte {
+func CurrentStateTrie() []byte {
 	return paddingKey(ST_StateTrie, nil)
 }
 
-func prepaidKey(programHash common.Uint160) []byte {
+func PrepaidKey(programHash common.Uint160) []byte {
 	return paddingKey(ST_Prepaid, programHash.ToArray())
 }
 
-func blockhashKey(height uint32) []byte {
+func BlockhashKey(height uint32) []byte {
 	heightBuffer := make([]byte, 4)
 	binary.LittleEndian.PutUint32(heightBuffer[:], height)
 
 	return paddingKey(DATA_BlockHash, heightBuffer)
 }
 
-func headerKey(blockHash common.Uint256) []byte {
+func HeaderKey(blockHash common.Uint256) []byte {
 	return paddingKey(DATA_Header, blockHash.ToArray())
 }
 
-func transactionKey(txHash common.Uint256) []byte {
+func TransactionKey(txHash common.Uint256) []byte {
 	return paddingKey(DATA_Transaction, txHash.ToArray())
+}
+
+func TrieNodeKey(key []byte) []byte {
+	return paddingKey(TRIE_Node, key)
 }

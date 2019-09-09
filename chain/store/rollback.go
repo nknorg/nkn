@@ -1,11 +1,11 @@
-package db
+package store
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 
 	"github.com/nknorg/nkn/block"
+	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/util/config"
@@ -60,13 +60,13 @@ func (cs *ChainStore) Rollback(b *block.Block) error {
 
 func (cs *ChainStore) rollbackHeader(b *block.Block) error {
 	blockHash := b.Hash()
-	return cs.st.BatchDelete(append([]byte{byte(DATA_Header)}, blockHash[:]...))
+	return cs.st.BatchDelete(db.HeaderKey(blockHash))
 }
 
 func (cs *ChainStore) rollbackTransaction(b *block.Block) error {
 	for _, txn := range b.Transactions {
 		txHash := txn.Hash()
-		if err := cs.st.BatchDelete(append([]byte{byte(DATA_Transaction)}, txHash[:]...)); err != nil {
+		if err := cs.st.BatchDelete(db.TransactionKey(txHash)); err != nil {
 			return err
 		}
 	}
@@ -75,9 +75,7 @@ func (cs *ChainStore) rollbackTransaction(b *block.Block) error {
 }
 
 func (cs *ChainStore) rollbackBlockHash(b *block.Block) error {
-	height := make([]byte, 4)
-	binary.LittleEndian.PutUint32(height[:], b.Header.UnsignedHeader.Height)
-	return cs.st.BatchDelete(append([]byte{byte(DATA_BlockHash)}, height...))
+	return cs.st.BatchDelete(db.BlockhashKey(b.Header.UnsignedHeader.Height))
 }
 
 func (cs *ChainStore) rollbackCurrentBlockHash(b *block.Block) error {
@@ -90,7 +88,7 @@ func (cs *ChainStore) rollbackCurrentBlockHash(b *block.Block) error {
 		return err
 	}
 
-	return cs.st.BatchPut([]byte{byte(SYS_CurrentBlock)}, value.Bytes())
+	return cs.st.BatchPut(db.CurrentBlockHashKey(), value.Bytes())
 }
 
 func (cs *ChainStore) rollbackStates(b *block.Block) error {
@@ -114,7 +112,7 @@ func (cs *ChainStore) rollbackStates(b *block.Block) error {
 		return err
 	}
 
-	err = cs.st.BatchPut(currentStateTrie(), root.ToArray())
+	err = cs.st.BatchPut(db.CurrentStateTrie(), root.ToArray())
 	if err != nil {
 		return err
 	}
@@ -132,6 +130,6 @@ func (cs *ChainStore) rollbackDonation(b *block.Block) error {
 		return nil
 	}
 
-	cs.st.BatchDelete(donationKey(b.Header.UnsignedHeader.Height))
+	cs.st.BatchDelete(db.DonationKey(b.Header.UnsignedHeader.Height))
 	return nil
 }
