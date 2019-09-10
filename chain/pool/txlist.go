@@ -100,23 +100,28 @@ func (nst *NonceSortedTxs) Push(tx *transaction.Transaction) error {
 	return nil
 }
 
-func (nst *NonceSortedTxs) Pop() (*transaction.Transaction, error) {
+func (nst *NonceSortedTxs) PopN(n uint16) ([]*transaction.Transaction, error) {
 	nst.mu.Lock()
 	defer nst.mu.Unlock()
 
 	if nst.empty() {
-		return nil, ErrNonceSortedTxsEmpty
+		return []*transaction.Transaction{}, ErrNonceSortedTxsEmpty
 	}
 
-	hash := nst.idx[0]
-	nst.idx = nst.idx[1:]
-	tx, ok := nst.txs[hash]
-	if !ok {
-		log.Errorf("%s txList consistency error. Missing idx %s in txs", nst.account.ToHexString(), hash.ToHexString())
-	}
-	delete(nst.txs, hash)
+	ret := make([]*transaction.Transaction, 0)
+	hashLst := nst.idx[0:n]
+	nst.idx = nst.idx[n:]
 
-	return tx, nil
+	for _, hash := range hashLst {
+		if tx, ok := nst.txs[hash]; ok {
+			ret = append(ret, tx)
+		} else {
+			log.Errorf("%s txList consistency error. Missing idx %s in txs", nst.account.ToHexString(), hash.ToHexString())
+		}
+		delete(nst.txs, hash)
+	}
+
+	return ret, nil
 }
 
 func (nst *NonceSortedTxs) Drop(hashToDrop common.Uint256) (*transaction.Transaction, bool, error) {

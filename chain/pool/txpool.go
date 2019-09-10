@@ -545,11 +545,9 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 				if list, ok := v.(*NonceSortedTxs); ok {
 					if _, err := list.GetByNonce(txNonce); err == nil {
 						nonce := list.getNonce(list.idx[0])
-						for i := 0; uint64(i) <= txNonce-nonce; i++ {
-							t, err := list.Pop()
-							if err == nil {
-								txnsToRemove = append(txnsToRemove, t)
-							}
+						txLst, err := list.PopN(uint16(txNonce - nonce + 1))
+						if err == nil {
+							txnsToRemove = append(txnsToRemove, txLst...)
 						}
 					}
 				}
