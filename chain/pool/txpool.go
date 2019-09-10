@@ -122,12 +122,9 @@ func (tp *TxnPool) DropTxns() {
 	tp.TxLists.Range(func(_, v interface{}) bool {
 		if list, ok := v.(*NonceSortedTxs); ok {
 			if listSize := list.Len(); listSize != 0 {
-				nonce, err := list.GetLatestNonce()
+				txn, err := list.GetLatestTxn()
 				if err == nil {
-					txn, err := list.GetByNonce(nonce)
-					if err == nil {
-						dropList = append(dropList, txn)
-					}
+					dropList = append(dropList, txn)
 				}
 			}
 		}
@@ -177,11 +174,7 @@ func (tp *TxnPool) DropTxns() {
 			}
 
 			if list.Len() > 0 {
-				nonce, err := list.GetLatestNonce()
-				if err != nil {
-					continue
-				}
-				nextTxn, err := list.GetByNonce(nonce)
+				nextTxn, err := list.GetLatestTxn()
 				if err != nil {
 					continue
 				}

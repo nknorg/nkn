@@ -2,6 +2,7 @@ package pool
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/nknorg/nkn/common"
@@ -109,7 +110,10 @@ func (nst *NonceSortedTxs) Pop() (*transaction.Transaction, error) {
 
 	hash := nst.idx[0]
 	nst.idx = nst.idx[1:]
-	tx := nst.txs[hash]
+	tx, ok := nst.txs[hash]
+	if !ok {
+		log.Errorf("%s txList consistency error. Missing idx %s in txs", nst.account.ToHexString(), hash.ToHexString())
+	}
 	delete(nst.txs, hash)
 
 	return tx, nil
@@ -206,7 +210,22 @@ func (nst *NonceSortedTxs) GetAllTransactions() []*transaction.Transaction {
 	return txns
 }
 
-// TODO: GetLatestTxn for better performance
+func (nst *NonceSortedTxs) GetLatestTxn() (*transaction.Transaction, error) {
+	nst.mu.RLock()
+	defer nst.mu.RUnlock()
+
+	if nst.empty() {
+		return nil, ErrNonceSortedTxsEmpty
+	}
+
+	hash := nst.idx[nst.len()-1]
+	tx, ok := nst.txs[hash]
+	if !ok {
+		panic(fmt.Errorf("%s txList consistency error. Missing idx %s in txs", nst.account.ToHexString(), hash.ToHexString()))
+	}
+	return tx, nil
+}
+
 func (nst *NonceSortedTxs) GetLatestNonce() (uint64, error) {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
