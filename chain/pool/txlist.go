@@ -67,13 +67,13 @@ func (nst *NonceSortedTxs) Empty() bool {
 	return nst.empty()
 }
 
-func (nst *NonceSortedTxs) CleanIfEmpty() (ret bool) {
+func (nst *NonceSortedTxs) CleanIfEmpty() (isEmpty bool) {
 	nst.mu.Lock()
 	defer nst.mu.Unlock()
-	if ret = nst.empty(); ret {
+	if isEmpty = nst.empty(); isEmpty {
 		nst.txs = nil
 	}
-	return ret
+	return isEmpty
 }
 
 func (nst *NonceSortedTxs) full() bool {
@@ -105,10 +105,10 @@ func (nst *NonceSortedTxs) PopN(n uint16) ([]*transaction.Transaction, error) {
 	defer nst.mu.Unlock()
 
 	if nst.empty() {
-		return []*transaction.Transaction{}, ErrNonceSortedTxsEmpty
+		return nil, ErrNonceSortedTxsEmpty
 	}
 
-	ret := make([]*transaction.Transaction, 0)
+	ret := make([]*transaction.Transaction, 0, n)
 	hashLst := nst.idx[0:n]
 	nst.idx = nst.idx[n:]
 
@@ -116,7 +116,7 @@ func (nst *NonceSortedTxs) PopN(n uint16) ([]*transaction.Transaction, error) {
 		if tx, ok := nst.txs[hash]; ok {
 			ret = append(ret, tx)
 		} else {
-			log.Errorf("%s txList consistency error. Missing idx %s in txs", nst.account.ToHexString(), hash.ToHexString())
+			panic(fmt.Errorf("%s txList consistency error. Missing idx %s in txs", nst.account.ToHexString(), hash.ToHexString()))
 		}
 		delete(nst.txs, hash)
 	}
@@ -205,7 +205,7 @@ func (nst *NonceSortedTxs) GetAllTransactions() []*transaction.Transaction {
 	nst.mu.RLock()
 	defer nst.mu.RUnlock()
 
-	txns := make([]*transaction.Transaction, 0)
+	txns := make([]*transaction.Transaction, 0, nst.len())
 	if !nst.empty() {
 		for _, txnHash := range nst.idx {
 			txns = append(txns, nst.txs[txnHash])
