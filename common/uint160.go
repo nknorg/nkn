@@ -163,3 +163,7 @@ func BigToUint160(b *big.Int) Uint160 {
 func (u *Uint160) Big() *big.Int {
 	return new(big.Int).SetBytes(u.ToArray()[:])
 }
+
+func (u *Uint160) ToHexString() string {
+	return fmt.Sprintf("%x", u[:])
+}
