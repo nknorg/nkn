@@ -13,7 +13,13 @@ import (
 type Database interface {
 	Get(key []byte) ([]byte, error)
 	Has(key []byte) (bool, error)
+	Delete(key []byte) error
+	Compact() error
+	NewBatch() error
 	BatchPut(key, value []byte) error
+	BatchDelete(key []byte) error
+	BatchCommit() error
+	NewIterator(prefix []byte) database.IIterator
 }
 
 type Trie struct {
@@ -25,7 +31,7 @@ type Trie struct {
 func New(hash common.Uint256, db Database) (*Trie, error) {
 	trie := &Trie{db: db, originalRoot: hash}
 	if hash != common.EmptyUint256 && db != nil {
-		root, err := trie.resolveHash(hash.ToArray())
+		root, err := trie.resolveHash(hash.ToArray(), false)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +91,7 @@ func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newNode
 		n.Children[key[pos]] = newNode
 		return value, n, nil
 	case hashNode:
-		child, err := t.resolveHash(n)
+		child, err := t.resolveHash(n, false)
 		if err != nil {
 			return nil, n, err
 		}
@@ -157,7 +163,7 @@ func (t *Trie) insert(n node, key []byte, value node) (node, error) {
 	case nil:
 		return &shortNode{Key: key, Val: value, flags: nodeFlag{dirty: true}}, nil
 	case hashNode:
-		rn, err := t.resolveHash(n)
+		rn, err := t.resolveHash(n, false)
 		if err != nil {
 			return nil, err
 		}
@@ -245,7 +251,7 @@ func (t *Trie) delete(n node, key []byte) (node, error) {
 	case nil:
 		return nil, nil
 	case hashNode:
-		rn, err := t.resolveHash(n)
+		rn, err := t.resolveHash(n, false)
 		if err != nil {
 			return nil, err
 		}
@@ -300,17 +306,17 @@ func (t *Trie) hashRoot(db Database) (node, node, error) {
 
 func (t *Trie) resolve(n node) (node, error) {
 	if n, ok := n.(hashNode); ok {
-		return t.resolveHash(n)
+		return t.resolveHash(n, false)
 	}
 	return n, nil
 }
 
-func (t *Trie) resolveHash(n hashNode) (node, error) {
+func (t *Trie) resolveHash(n hashNode, needFlags bool) (node, error) {
 	enc, err := t.db.Get(database.TrieNodeKey([]byte(n)))
 	if err != nil {
 		return nil, err
 	}
-	dec := mustDecodeNode(n, enc)
+	dec := mustDecodeNode(n, enc, needFlags)
 	return dec, nil
 }
 
@@ -324,4 +330,49 @@ func concat(s1 []byte, s2 ...byte) []byte {
 func (t *Trie) Copy() *Trie {
 	cpy := *t
 	return &cpy
+}
+
+func (t *Trie) TryTraverse() error {
+	return t.traverse(t.root)
+}
+
+func (t *Trie) traverse(n node) error {
+	switch n := n.(type) {
+	case *shortNode:
+		if err := t.traverse(n.Val); err != nil {
+			return err
+		}
+
+		return nil
+	case *fullNode:
+		for i := 0; i < 17; i++ {
+			if n.Children[i] != nil {
+				err := t.traverse(n.Children[i])
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	case hashNode:
+		child, err := t.resolveHash(n, false)
+		if err != nil {
+			return err
+		}
+		return t.traverse(child)
+	case nil:
+		return nil
+	case valueNode:
+		return nil
+	default:
+		panic(fmt.Sprintf("invalid node type : %v, %v", reflect.TypeOf(n), n))
+
+	}
+
+	return nil
+}
+
+func (t *Trie) NewRefCounts(targetRefCountHeight, targetPruningHeight uint32) *RefCounts {
+	return NewRefCounts(t, targetRefCountHeight, targetPruningHeight)
 }

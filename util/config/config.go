@@ -175,6 +175,7 @@ var (
 		WebGuiPort:                   30000,
 		WebGuiCreateWallet:           false,
 		PasswordFile:                 "",
+		RecentStateCount:             1000,
 	}
 )
 
@@ -228,6 +229,7 @@ type Configuration struct {
 	WebGuiPort                   uint16        `json:"WebGuiPort"`
 	WebGuiCreateWallet           bool          `json:"WebGuiCreateWallet"`
 	PasswordFile                 string        `json:"PasswordFile"`
+	RecentStateCount             uint32        `json:"RecentStateCount"`
 }
 
 func Init() error {

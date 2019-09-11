@@ -426,6 +426,10 @@ func (cs *ChainStore) IsDoubleSpend(tx *transaction.Transaction) bool {
 	return false
 }
 
+func (cs *ChainStore) GetCurrentBlockHashFromDB() (Uint256, uint32, error) {
+	return cs.getCurrentBlockHashFromDB()
+}
+
 func (cs *ChainStore) getCurrentBlockHashFromDB() (Uint256, uint32, error) {
 	data, err := cs.st.Get(db.CurrentBlockHashKey())
 	if err != nil {
@@ -579,4 +583,130 @@ func (cs *ChainStore) CalcNextDonation(height uint32) (*Donation, error) {
 	d := NewDonation(height, Fixed64(donationPerBlock))
 
 	return d, nil
+}
+
+func (cs *ChainStore) GetStateRoots(fromHeight, toHeight uint32) ([]Uint256, error) {
+	if toHeight < fromHeight {
+		return nil, fmt.Errorf("toHeight(%v) is less than fromHeight(%v)\n", toHeight, fromHeight)
+	}
+	roots := make([]Uint256, 0, toHeight-fromHeight+1)
+
+	for i := fromHeight; i <= toHeight; i++ {
+		headerHash, err := cs.GetBlockHash(i)
+		if err != nil {
+			return nil, err
+		}
+		header, err := cs.GetHeader(headerHash)
+		if err != nil {
+			return nil, err
+		}
+		stateRoot, err := Uint256ParseFromBytes(header.UnsignedHeader.StateRoot)
+		if err != nil {
+			return nil, err
+		}
+
+		roots = append(roots, stateRoot)
+	}
+
+	return roots, nil
+}
+
+func (cs *ChainStore) getPruningStartHeight() (uint32, uint32) {
+	var pruningStartHeight, refCountStartHeight uint32
+
+	heightBuffer, err := cs.st.Get(db.TrieRefCountHeightKey())
+	if err != nil {
+		log.Info("get height of trie counted error:", err)
+		refCountStartHeight = 0
+	} else {
+		refCountStartHeight = binary.LittleEndian.Uint32(heightBuffer) + 1
+	}
+
+	heightBuffer, err = cs.st.Get(db.TriePrunedHeightKey())
+	if err != nil {
+		log.Info("get height of trie pruned error:", err)
+		pruningStartHeight = 0
+	} else {
+		pruningStartHeight = binary.LittleEndian.Uint32(heightBuffer) + 1
+	}
+
+	return refCountStartHeight, pruningStartHeight
+}
+
+func (cs *ChainStore) PruneStates() error {
+	state, err := NewStateDB(EmptyUint256, NewTrieStore(cs.GetDatabase()))
+	if err != nil {
+		return err
+	}
+
+	refCountStartHeight, pruningStartHeight := cs.getPruningStartHeight()
+
+	_, refCountTargetHeight, err := cs.getCurrentBlockHashFromDB()
+	if err != nil {
+		return err
+	}
+
+	if refCountStartHeight < pruningStartHeight || refCountTargetHeight < (refCountStartHeight+config.Parameters.RecentStateCount-1) {
+		return fmt.Errorf("not enough height to prune, refCountStartHeight:%v, refCountTargetHeight:%v\n", refCountStartHeight, refCountTargetHeight)
+	}
+
+	pruningTargetHeight := refCountTargetHeight - config.Parameters.RecentStateCount
+
+	refStateRoots, err := cs.GetStateRoots(refCountStartHeight, refCountTargetHeight)
+	if err != nil {
+		return err
+	}
+
+	pruningStateRoots, err := cs.GetStateRoots(pruningStartHeight, pruningTargetHeight)
+	if err != nil {
+		return err
+	}
+
+	return state.PruneStates(refStateRoots, pruningStateRoots, refCountTargetHeight, pruningTargetHeight)
+}
+
+func (cs *ChainStore) SequentialPrune() error {
+	state, err := NewStateDB(EmptyUint256, NewTrieStore(cs.GetDatabase()))
+	if err != nil {
+		return err
+	}
+
+	refCountStartHeight, pruningStartHeight := cs.getPruningStartHeight()
+
+	_, refCountTargetHeight, err := cs.getCurrentBlockHashFromDB()
+	if err != nil {
+		return err
+	}
+
+	if refCountStartHeight < pruningStartHeight || refCountTargetHeight < (pruningStartHeight+config.Parameters.RecentStateCount-1) {
+		return fmt.Errorf("not enough height to prune, pruningStartHeight:%v, refCountTargetHeight:%v\n", pruningStartHeight, refCountTargetHeight)
+	}
+
+	pruningTargetHeight := refCountTargetHeight - config.Parameters.RecentStateCount
+
+	refStateRoots, err := cs.GetStateRoots(pruningTargetHeight+1, refCountTargetHeight)
+	if err != nil {
+		return err
+	}
+
+	return state.SequentialPrune(refStateRoots, refCountTargetHeight, pruningTargetHeight)
+}
+
+func (cs *ChainStore) TrieTraverse() error {
+	_, currentHeight, err := cs.getCurrentBlockHashFromDB()
+	if err != nil {
+		return err
+	}
+
+	roots, err := cs.GetStateRoots(currentHeight, currentHeight)
+	if err != nil {
+		return err
+	}
+
+	states, err := NewStateDB(roots[0], NewTrieStore(cs.GetDatabase()))
+	if err != nil {
+		return err
+	}
+
+	return states.TrieTraverse()
 }

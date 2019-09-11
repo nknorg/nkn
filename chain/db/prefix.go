@@ -24,8 +24,11 @@ const (
 	//CONFIG
 	CFG_Version DataEntryPrefix = 0xf0
 
-	//TRIE NODE
-	TRIE_Node DataEntryPrefix = 0xa0
+	//TRIE
+	TRIE_Node           DataEntryPrefix = 0xa0
+	TRIE_RefCount       DataEntryPrefix = 0xa1
+	TRIE_RefCountHeight DataEntryPrefix = 0xa2
+	TRIE_PrunedHeight   DataEntryPrefix = 0xa3
 )
 
 func paddingKey(prefix DataEntryPrefix, key []byte) []byte {
@@ -71,4 +74,16 @@ func TransactionKey(txHash common.Uint256) []byte {
 
 func TrieNodeKey(key []byte) []byte {
 	return paddingKey(TRIE_Node, key)
+}
+
+func TrieRefCountKey(key []byte) []byte {
+	return paddingKey(TRIE_RefCount, key)
+}
+
+func TrieRefCountHeightKey() []byte {
+	return paddingKey(TRIE_RefCountHeight, nil)
+}
+
+func TriePrunedHeightKey() []byte {
+	return paddingKey(TRIE_PrunedHeight, nil)
 }
