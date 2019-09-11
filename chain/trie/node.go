@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 )
 
@@ -66,13 +67,16 @@ func (n *fullNode) fString(ind string) string {
 }
 
 func (n *shortNode) fString(ind string) string {
-	return fmt.Sprintf("{%v: %v} ", n.Key, n.Val.fString(ind+"  "))
+	return fmt.Sprintf("{%v: %v} ", common.BytesToHexString(n.Key), n.Val.fString(ind+"  "))
+
 }
 func (n hashNode) fString(ind string) string {
-	return fmt.Sprintf("<%x>", []byte(n))
+	return fmt.Sprintf("<%s>", common.BytesToHexString(n))
+
 }
 func (n valueNode) fString(ind string) string {
-	return fmt.Sprintf("%s", string(n))
+	return fmt.Sprintf("%s", common.BytesToHexString(n))
+
 }
 
 func (n *fullNode) String() string {
@@ -93,21 +97,21 @@ type nodeFlag struct {
 	dirty bool
 }
 
-func mustDecodeNode(hash, buf []byte) node {
-	n, err := decodeNode(hash, buf)
+func mustDecodeNode(hash, buf []byte, needFlags bool) node {
+	n, err := decodeNode(hash, buf, needFlags)
 	if err != nil {
 		panic(fmt.Sprintf("node %x, %v", hash, err))
 	}
 	return n
 }
 
-func decodeNode(hash, buf []byte) (node, error) {
+func decodeNode(hash, buf []byte, needFlags bool) (node, error) {
 	if len(buf) == 0 {
 		return nil, io.ErrUnexpectedEOF
 	}
 
 	buff := bytes.NewBuffer(buf)
-	return Deserialize(buff)
+	return Deserialize(hash, buff, needFlags)
 }
 
 func (n *fullNode) Serialize(w io.Writer) error {
@@ -187,7 +191,7 @@ func (n valueNode) Serialize(w io.Writer) error {
 	return nil
 }
 
-func Deserialize(r io.Reader) (node, error) {
+func Deserialize(hash []byte, r io.Reader, needFlags bool) (node, error) {
 	count, err := serialization.ReadVarUint(r, 20)
 	if err != nil {
 		return nil, err
@@ -219,10 +223,15 @@ func Deserialize(r io.Reader) (node, error) {
 		}
 		s.Key = compactToHex(key)
 
-		s.Val, err = Deserialize(r)
+		s.Val, err = Deserialize(hash, r, needFlags)
 		if err != nil {
 			return nil, err
 		}
+		if needFlags {
+			s.flags.hash = hashNode(hash)
+			s.flags.dirty = false
+		}
+
 		return &s, nil
 	case 17:
 		var f fullNode
@@ -234,11 +243,15 @@ func Deserialize(r io.Reader) (node, error) {
 			if int(idx) != i {
 				return nil, errors.New("idex error")
 			}
-			n, err := Deserialize(r)
+			n, err := Deserialize(hash, r, needFlags)
 			if err != nil {
 				return nil, err
 			}
 			f.Children[i] = n
+		}
+		if needFlags {
+			f.flags.hash = hashNode(hash)
+			f.flags.dirty = false
 		}
 
 		return &f, nil

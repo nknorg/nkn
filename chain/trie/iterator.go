@@ -3,6 +3,7 @@ package trie
 import (
 	"bytes"
 	"errors"
+
 	"github.com/nknorg/nkn/common"
 )
 
@@ -205,7 +206,7 @@ func (it *nodeIterator) peek(descend bool) (*nodeIteratorState, *int, []byte, er
 
 func (st *nodeIteratorState) resolve(tr *Trie) error {
 	if hashNode, ok := st.node.(hashNode); ok {
-		resolved, err := tr.resolveHash(hashNode)
+		resolved, err := tr.resolveHash(hashNode, false)
 		if err != nil {
 			return err
 		}

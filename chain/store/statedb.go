@@ -65,3 +65,114 @@ func (sdb *StateDB) IntermediateRoot() common.Uint256 {
 	sdb.Finalize(false)
 	return sdb.trie.Hash()
 }
+
+func (sdb *StateDB) PruneStates(refStateRoots, pruningStateRoots []common.Uint256, refCountTargetHeight, pruningTargetHeight uint32) error {
+	refCounts := sdb.trie.NewRefCounts(refCountTargetHeight, pruningTargetHeight)
+	refCounts.RebuildRefCount()
+
+	for idx, hash := range refStateRoots {
+		err := refCounts.CreateRefCounts(hash)
+		if err != nil {
+			return err
+		}
+		refCounts.DumpInfo(uint32(idx), false)
+	}
+
+	err := sdb.db.db.NewBatch()
+	if err != nil {
+		return err
+	}
+
+	for idx, hash := range pruningStateRoots {
+		err := refCounts.Prune(hash)
+		if err != nil {
+			return nil
+		}
+		refCounts.DumpInfo(uint32(idx), true)
+	}
+
+	err = refCounts.PersistRefCounts()
+	if err != nil {
+		return err
+	}
+
+	err = refCounts.PersistPruningHeights()
+	if err != nil {
+		return err
+	}
+
+	err = sdb.db.db.BatchCommit()
+	if err != nil {
+		return err
+	}
+
+	err = sdb.db.db.Compact()
+	if err != nil {
+		return err
+	}
+
+	latestStateRoot := refStateRoots[len(refStateRoots)-1]
+	err = refCounts.Verify(latestStateRoot)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (sdb *StateDB) TrieTraverse() error {
+	return sdb.trie.TryTraverse()
+}
+
+func (sdb *StateDB) SequentialPrune(refStateRoots []common.Uint256, refCountTargetHeight, pruningTargetHeight uint32) error {
+	refCounts := sdb.trie.NewRefCounts(refCountTargetHeight, pruningTargetHeight)
+
+	for idx, hash := range refStateRoots {
+		err := refCounts.CreateRefCounts(hash)
+		if err != nil {
+			return err
+		}
+
+		refCounts.DumpInfo(uint32(idx), false)
+	}
+
+	err := sdb.db.db.NewBatch()
+	if err != nil {
+		return err
+	}
+
+	err = refCounts.SequentialPrune()
+	if err != nil {
+		return err
+	}
+
+	refCounts.DumpInfo(uint32(0), true)
+
+	err = refCounts.PersistRefCounts()
+	if err != nil {
+		return err
+	}
+
+	err = refCounts.PersistPruningHeights()
+	if err != nil {
+		return err
+	}
+
+	err = sdb.db.db.BatchCommit()
+	if err != nil {
+		return err
+	}
+
+	err = sdb.db.db.Compact()
+	if err != nil {
+		return err
+	}
+
+	latestStateRoot := refStateRoots[len(refStateRoots)-1]
+	err = refCounts.Verify(latestStateRoot)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

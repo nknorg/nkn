@@ -18,6 +18,7 @@ type IStore interface {
 	BatchPut(key []byte, value []byte) error
 	BatchDelete(key []byte) error
 	BatchCommit() error
+	Compact() error
 	Close() error
 	NewIterator(prefix []byte) IIterator
 }
@@ -93,6 +94,14 @@ func (self *LevelDBStore) BatchCommit() error {
 		return err
 	}
 	return nil
+}
+
+func (self *LevelDBStore) Compact() error {
+	r := util.Range{
+		Start: nil,
+		Limit: nil,
+	}
+	return self.db.CompactRange(r)
 }
 
 func (self *LevelDBStore) Close() error {
