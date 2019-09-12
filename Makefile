@@ -23,14 +23,19 @@ yarn:
 
 .PHONY: build
 build: web
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd nknd.go
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc nknc.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd$(EXT) nknd.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc$(EXT) nknc.go
 
 .PHONY: crossbuild
 crossbuild: web
 	mkdir -p build/$(IDENTIFIER)
 	make build FLAGS="build/$(IDENTIFIER)"
+	cp config.mainnet.json build/$(IDENTIFIER)/config.json
 	@cp -a dashboard/web/dist build/$(IDENTIFIER)/web
+ifeq ($(GOOS), windows)
+	echo "nknd.exe --web-gui-create-wallet" > build/$(IDENTIFIER)/start-gui.bat
+	chmod +x build/$(IDENTIFIER)/start-gui.bat
+endif
 
 .PHONY: all
 all: ## Build binaries for all available architectures
@@ -43,8 +48,8 @@ all: ## Build binaries for all available architectures
 	make crossbuild GOOS=linux GOARCH=mipsle
 	make crossbuild GOOS=darwin GOARCH=amd64
 	make crossbuild GOOS=darwin GOARCH=386
-	make crossbuild GOOS=windows GOARCH=amd64
-	make crossbuild GOOS=windows GOARCH=386
+	make crossbuild GOOS=windows GOARCH=amd64 EXT=.exe
+	make crossbuild GOOS=windows GOARCH=386 EXT=.exe
 
 .PHONY: no_web
 no_web:
