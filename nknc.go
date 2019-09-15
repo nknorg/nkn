@@ -13,10 +13,18 @@ import (
 	"github.com/nknorg/nkn/cli/name"
 	"github.com/nknorg/nkn/cli/pubsub"
 	"github.com/nknorg/nkn/cli/wallet"
+	"github.com/nknorg/nnet/log"
 	"github.com/urfave/cli"
 )
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Panic: %+v", r)
+			os.Exit(1)
+		}
+	}()
+
 	app := cli.NewApp()
 	app.Name = "nknc"
 	app.Version = Version

@@ -30,10 +30,11 @@ build: web
 crossbuild: web
 	mkdir -p build/$(IDENTIFIER)
 	make build FLAGS="build/$(IDENTIFIER)"
-	cp config.mainnet.json build/$(IDENTIFIER)/config.json
+	cp config.mainnet.json build/$(IDENTIFIER)/default.json
 	@cp -a dashboard/web/dist build/$(IDENTIFIER)/web
 ifeq ($(GOOS), windows)
-	echo "nknd.exe --web-gui-create-wallet" > build/$(IDENTIFIER)/start-gui.bat
+	echo "IF NOT EXIST config.json COPY default.json config.json" > build/$(IDENTIFIER)/start-gui.bat
+	echo "nknd.exe --web-gui-create-wallet" >> build/$(IDENTIFIER)/start-gui.bat
 	chmod +x build/$(IDENTIFIER)/start-gui.bat
 endif
 

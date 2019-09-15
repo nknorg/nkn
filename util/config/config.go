@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net"
 	"os"
 	"strconv"
@@ -33,6 +34,10 @@ const (
 	MaxRollbackBlocks            = 180
 	SigChainBlockDelay           = 1
 	SigChainPropogationTime      = 2
+	GossipSampleChordNeighbor    = 0.1
+	GossipSampleRandomNeighbor   = 1.0
+	VotingSampleChordNeighbor    = 0.5
+	VotingSampleRandomNeighbor   = 0.0
 	HeaderVersion                = 1
 	DBVersion                    = 0x01
 	InitialIssueAddress          = "NKNFCrUMFPkSeDRMG2ME21hD6wBCA2poc347"
@@ -92,11 +97,11 @@ var (
 	}
 	MaxSubscribeIdentifierLen = HeightDependentInt32{
 		heights: []uint32{133400, 0},
-		values:  []int32{64, common.MaxInt32},
+		values:  []int32{64, math.MaxInt32},
 	}
 	MaxSubscribeMetaLen = HeightDependentInt32{
 		heights: []uint32{133400, 0},
-		values:  []int32{1024, common.MaxInt32},
+		values:  []int32{1024, math.MaxInt32},
 	}
 	MaxSubscribeBucket = HeightDependentInt32{
 		heights: []uint32{245000, 0},
