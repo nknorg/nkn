@@ -164,7 +164,7 @@ func (consensus *Consensus) startElection(height uint32, elc *election.Election)
 		}
 	}
 
-	result, err := elc.GetResult()
+	result, absWeight, relWeight, err := elc.GetResult()
 	if err != nil {
 		return common.EmptyUint256, err
 	}
@@ -174,7 +174,7 @@ func (consensus *Consensus) startElection(height uint32, elc *election.Election)
 		return common.EmptyUint256, fmt.Errorf("Convert election result to block hash error")
 	}
 
-	log.Infof("Elected block hash %s got %d/%d neighbor votes", electedBlockHash.ToHexString(), len(elc.GetNeighborIDsByVote(electedBlockHash)), elc.NeighborVoteCount())
+	log.Infof("Elected block hash %s got %d/%d neighbor votes, weight: %d (%.2f%%)", electedBlockHash.ToHexString(), len(elc.GetNeighborIDsByVote(electedBlockHash)), elc.NeighborVoteCount(), absWeight, relWeight*100)
 
 	return electedBlockHash, nil
 }
@@ -192,12 +192,24 @@ func (consensus *Consensus) loadOrCreateElection(height uint32) (*election.Elect
 		}
 	}
 
+	votingNeighbors := consensus.localNode.GetVotingNeighbors(nil)
+	weights := make(map[interface{}]uint32, len(votingNeighbors)+1)
+	for _, neighbor := range votingNeighbors {
+		weights[neighbor.GetID()] = 1
+	}
+	weights[nil] = 1
+
+	getWeight := func(neighborID interface{}) uint32 {
+		return weights[neighborID]
+	}
+
 	config := &election.Config{
 		Duration:                    electionDuration,
 		MinVotingInterval:           minVotingInterval,
 		MaxVotingInterval:           maxVotingInterval,
 		ChangeVoteMinRelativeWeight: changeVoteMinRelativeWeight,
 		ConsensusMinRelativeWeight:  consensusMinRelativeWeight,
+		GetWeight:                   getWeight,
 	}
 
 	elc, err := election.NewElection(config)
@@ -367,7 +379,7 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 			return fmt.Errorf("Convert election at height %d from cache error", height)
 		}
 
-		result, err := elc.GetResult()
+		result, _, _, err := elc.GetResult()
 		if err != nil {
 			return err
 		}

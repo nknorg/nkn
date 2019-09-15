@@ -148,25 +148,25 @@ func (election *Election) GetTxVoteChan() <-chan interface{} {
 	return election.txVoteChan
 }
 
-// GetResult returns the winner vote if the election is stopped, otherwise
-// returns error.
-func (election *Election) GetResult() (interface{}, error) {
+// GetResult returns the winner vote, its absolute and relative weight if the
+// election is stopped otherwise returns error.
+func (election *Election) GetResult() (interface{}, uint32, float32, error) {
 	if !election.IsStopped() {
-		return nil, errors.New("election has not stopped yet")
+		return nil, 0, 0, errors.New("election has not stopped yet")
 	}
 
 	result, absWeight, relWeight := election.getLeadingVote()
 	if absWeight < election.ConsensusMinAbsoluteWeight {
-		return nil, fmt.Errorf("leading vote %v only got %d weight, which is less than threshold %d", result, absWeight, election.ConsensusMinAbsoluteWeight)
+		return nil, 0, 0, fmt.Errorf("leading vote %v only got %d weight, which is less than threshold %d", result, absWeight, election.ConsensusMinAbsoluteWeight)
 	}
 	if relWeight < election.ConsensusMinRelativeWeight {
-		return nil, fmt.Errorf("leading vote %v only got %f%% weight, which is less than threshold %f%%", result, relWeight*100, election.ConsensusMinRelativeWeight*100)
+		return nil, 0, 0, fmt.Errorf("leading vote %v only got %f%% weight, which is less than threshold %f%%", result, relWeight*100, election.ConsensusMinRelativeWeight*100)
 	}
 	if result == nil {
-		return nil, errors.New("election result is nil")
+		return nil, 0, 0, errors.New("election result is nil")
 	}
 
-	return result, nil
+	return result, absWeight, relWeight, nil
 }
 
 // GetNeighborIDsByVote get neighbor id list that vote for a certain vote
