@@ -1,6 +1,7 @@
 package pruning
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/nknorg/nkn/chain/store"
@@ -17,26 +18,41 @@ func pruningAction(c *cli.Context) error {
 	case c.Bool("currentheight"):
 		cs, err := store.NewLedgerStore()
 		if err != nil {
+			fmt.Println(err)
 			return err
 		}
-		_, h, _ := cs.GetCurrentBlockHashFromDB()
+		_, h, err := cs.GetCurrentBlockHashFromDB()
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
 		fmt.Println(h)
+	case c.Bool("startheight"):
+		cs, err := store.NewLedgerStore()
+		if err != nil {
+			return err
+		}
+		refCountStartHeight, pruningStartHeight := cs.GetPruningStartHeight()
+		fmt.Println(refCountStartHeight, pruningStartHeight)
 	case c.Bool("pruning"):
 		cs, err := store.NewLedgerStore()
 		if err != nil {
 			return err
 		}
 
-		if c.Bool("sequential") {
+		refCountStartHeight, pruningStartHeight := cs.GetPruningStartHeight()
+		if refCountStartHeight == 0 && pruningStartHeight == 0 {
 			err := cs.SequentialPrune()
 			if err != nil {
 				return err
 			}
-		} else {
+		} else if refCountStartHeight > 0 && pruningStartHeight > 0 {
 			err := cs.PruneStates()
 			if err != nil {
 				return err
 			}
+		} else {
+			return errors.New("get start height of pruning error")
 		}
 	case c.Bool("traverse"):
 		cs, err := store.NewLedgerStore()
@@ -71,8 +87,8 @@ func NewCommand() *cli.Command {
 				Usage: "prune state trie",
 			},
 			cli.BoolFlag{
-				Name:  "sequential, seq",
-				Usage: "sequential mode",
+				Name:  "startheight",
+				Usage: "start height",
 			},
 			cli.BoolFlag{
 				Name:  "traverse",

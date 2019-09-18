@@ -74,6 +74,7 @@ const (
 
 var (
 	Debug            = false
+	Pruning          = false
 	PprofPort        = "127.0.0.1:8080"
 	ShortHashSalt    = util.RandomBytes(32)
 	GenesisTimestamp = time.Date(2019, time.June, 29, 13, 10, 13, 0, time.UTC).Unix()
