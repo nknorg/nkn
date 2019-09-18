@@ -420,6 +420,11 @@ func main() {
 			Usage:       "Provide runtime profiling data of NKN",
 			Destination: &config.Debug,
 		},
+		cli.BoolFlag{
+			Name:        "pruning",
+			Usage:       "prune nodes of trie",
+			Destination: &config.Pruning,
+		},
 		cli.StringFlag{
 			Name:        "pprof-port",
 			Usage:       "The port used for pprof in debug mode",

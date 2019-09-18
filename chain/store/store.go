@@ -98,6 +98,23 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 			return 0, err
 		}
 
+		if config.Pruning {
+			refCountStartHeight, pruningStartHeight := cs.GetPruningStartHeight()
+			if refCountStartHeight == 0 && pruningStartHeight == 0 {
+				err := cs.SequentialPrune()
+				if err != nil {
+					return 0, err
+				}
+			} else if refCountStartHeight > 0 && pruningStartHeight > 0 {
+				err := cs.PruneStates()
+				if err != nil {
+					return 0, err
+				}
+			} else {
+				return 0, errors.New("get Start Height of pruning error")
+			}
+		}
+
 		return cs.currentBlockHeight, nil
 
 	} else {
@@ -609,6 +626,9 @@ func (cs *ChainStore) GetStateRoots(fromHeight, toHeight uint32) ([]Uint256, err
 	}
 
 	return roots, nil
+}
+func (cs *ChainStore) GetPruningStartHeight() (uint32, uint32) {
+	return cs.getPruningStartHeight()
 }
 
 func (cs *ChainStore) getPruningStartHeight() (uint32, uint32) {
