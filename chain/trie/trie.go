@@ -333,21 +333,31 @@ func (t *Trie) Copy() *Trie {
 }
 
 func (t *Trie) TryTraverse() error {
-	return t.traverse(t.root)
+	return t.traverse(t.root, true)
 }
 
-func (t *Trie) traverse(n node) error {
+func (t *Trie) traverse(n node, needPrint bool) error {
 	switch n := n.(type) {
 	case *shortNode:
-		if err := t.traverse(n.Val); err != nil {
+		if needPrint {
+			hash, _ := n.cache()
+			hs, _ := common.Uint256ParseFromBytes(hash)
+			fmt.Println(hs.ToHexString())
+		}
+		if err := t.traverse(n.Val, needPrint); err != nil {
 			return err
 		}
 
 		return nil
 	case *fullNode:
+		if needPrint {
+			hash, _ := n.cache()
+			hs, _ := common.Uint256ParseFromBytes(hash)
+			fmt.Println(hs.ToHexString())
+		}
 		for i := 0; i < 17; i++ {
 			if n.Children[i] != nil {
-				err := t.traverse(n.Children[i])
+				err := t.traverse(n.Children[i], needPrint)
 				if err != nil {
 					return err
 				}
@@ -356,14 +366,25 @@ func (t *Trie) traverse(n node) error {
 
 		return nil
 	case hashNode:
-		child, err := t.resolveHash(n, false)
+		if needPrint {
+			hs, _ := common.Uint256ParseFromBytes(n)
+			fmt.Println(hs.ToHexString())
+		}
+		child, err := t.resolveHash(n, needPrint)
 		if err != nil {
 			return err
 		}
-		return t.traverse(child)
+		return t.traverse(child, needPrint)
 	case nil:
+		if needPrint {
+			fmt.Println("<nil>")
+		}
 		return nil
 	case valueNode:
+		if needPrint {
+			hs, _ := common.Uint256ParseFromBytes(n)
+			fmt.Println(hs.ToHexString())
+		}
 		return nil
 	default:
 		panic(fmt.Sprintf("invalid node type : %v, %v", reflect.TypeOf(n), n))
@@ -373,6 +394,6 @@ func (t *Trie) traverse(n node) error {
 	return nil
 }
 
-func (t *Trie) NewRefCounts(targetRefCountHeight, targetPruningHeight uint32) *RefCounts {
+func (t *Trie) NewRefCounts(targetRefCountHeight, targetPruningHeight uint32) (*RefCounts, error) {
 	return NewRefCounts(t, targetRefCountHeight, targetPruningHeight)
 }

@@ -1,9 +1,12 @@
 package store
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 )
 
 var (
@@ -18,6 +21,7 @@ var (
 )
 
 type StateDB struct {
+	cs              *ChainStore
 	db              *cachingDB
 	trie            ITrie
 	accounts        sync.Map
@@ -30,12 +34,14 @@ type StateDB struct {
 	assets          sync.Map
 }
 
-func NewStateDB(root common.Uint256, db *cachingDB) (*StateDB, error) {
+func NewStateDB(root common.Uint256, cs *ChainStore) (*StateDB, error) {
+	db := NewTrieStore(cs.GetDatabase())
 	trie, err := db.OpenTrie(root)
 	if err != nil {
 		return nil, err
 	}
 	return &StateDB{
+		cs:   cs,
 		db:   db,
 		trie: trie,
 	}, nil
@@ -66,29 +72,51 @@ func (sdb *StateDB) IntermediateRoot() common.Uint256 {
 	return sdb.trie.Hash()
 }
 
-func (sdb *StateDB) PruneStates(refStateRoots, pruningStateRoots []common.Uint256, refCountTargetHeight, pruningTargetHeight uint32) error {
-	refCounts := sdb.trie.NewRefCounts(refCountTargetHeight, pruningTargetHeight)
-	refCounts.RebuildRefCount()
+func (sdb *StateDB) PruneStates() error {
+	refCountStartHeight, pruningStartHeight := sdb.cs.getPruningStartHeight()
 
-	for idx, hash := range refStateRoots {
-		err := refCounts.CreateRefCounts(hash)
-		if err != nil {
-			return err
-		}
-		refCounts.DumpInfo(uint32(idx), false)
-	}
-
-	err := sdb.db.db.NewBatch()
+	_, refCountTargetHeight, err := sdb.cs.getCurrentBlockHashFromDB()
 	if err != nil {
 		return err
 	}
 
-	for idx, hash := range pruningStateRoots {
-		err := refCounts.Prune(hash)
+	if refCountStartHeight < pruningStartHeight || refCountTargetHeight < (refCountStartHeight+config.Parameters.RecentStateCount-1) {
+		return fmt.Errorf("not enough height to prune, refCountStartHeight:%v, refCountTargetHeight:%v\n", refCountStartHeight, refCountTargetHeight)
+	}
+
+	pruningTargetHeight := refCountTargetHeight - config.Parameters.RecentStateCount
+
+	refStateRoots, err := sdb.cs.GetStateRoots(refCountStartHeight, refCountTargetHeight)
+	if err != nil {
+		return err
+	}
+
+	pruningStateRoots, err := sdb.cs.GetStateRoots(pruningStartHeight, pruningTargetHeight)
+	if err != nil {
+		return err
+	}
+
+	refCounts, err := sdb.trie.NewRefCounts(refCountTargetHeight, pruningTargetHeight)
+	if err != nil {
+		return err
+	}
+
+	refCounts.RebuildRefCount()
+
+	for idx, hash := range refStateRoots {
+		err = refCounts.CreateRefCounts(hash, true)
 		if err != nil {
-			return nil
+			return err
 		}
-		refCounts.DumpInfo(uint32(idx), true)
+		log.Info("refcount height:", refCountStartHeight+uint32(idx), "length of refCounts:", refCounts.LengthOfCounts())
+	}
+
+	for idx, hash := range pruningStateRoots {
+		err = refCounts.Prune(hash, true)
+		if err != nil {
+			return err
+		}
+		log.Info("pruning height:", pruningStartHeight+uint32(idx), "length of refCounts:", refCounts.LengthOfCounts())
 	}
 
 	err = refCounts.PersistRefCounts()
@@ -96,17 +124,198 @@ func (sdb *StateDB) PruneStates(refStateRoots, pruningStateRoots []common.Uint25
 		return err
 	}
 
-	err = refCounts.PersistPruningHeights()
+	err = refCounts.PersistRefCountHeights()
 	if err != nil {
 		return err
 	}
 
-	err = sdb.db.db.BatchCommit()
+	err = refCounts.PersistPrunedHeights()
 	if err != nil {
 		return err
 	}
 
-	err = sdb.db.db.Compact()
+	err = refCounts.Commit()
+	if err != nil {
+		return err
+	}
+
+	err = refCounts.Compact()
+	if err != nil {
+		return err
+	}
+
+	latestStateRoot := refStateRoots[len(refStateRoots)-1]
+	err = refCounts.Verify(latestStateRoot)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (sdb *StateDB) PruneStatesLowMemory() error {
+	refCountStartHeight, pruningStartHeight := sdb.cs.getPruningStartHeight()
+
+	_, refCountTargetHeight, err := sdb.cs.getCurrentBlockHashFromDB()
+	if err != nil {
+		return err
+	}
+
+	if refCountStartHeight < pruningStartHeight || refCountTargetHeight < (refCountStartHeight+config.Parameters.RecentStateCount-1) {
+		return fmt.Errorf("not enough height to prune, refCountStartHeight:%v, refCountTargetHeight:%v\n", refCountStartHeight, refCountTargetHeight)
+	}
+
+	pruningTargetHeight := refCountTargetHeight - config.Parameters.RecentStateCount
+
+	for i := refCountStartHeight; i <= refCountTargetHeight; i++ {
+		refStateRoots, err := sdb.cs.GetStateRoots(i, i)
+		if err != nil {
+			return err
+		}
+		refCounts, err := sdb.trie.NewRefCounts(i, 0)
+		if err != nil {
+			return err
+		}
+
+		err = refCounts.CreateRefCounts(refStateRoots[0], false)
+		if err != nil {
+			return err
+		}
+
+		err = refCounts.PersistRefCounts()
+		if err != nil {
+			return err
+		}
+
+		err = refCounts.PersistRefCountHeights()
+		if err != nil {
+			return err
+		}
+
+		err = refCounts.Commit()
+		if err != nil {
+			return err
+		}
+
+		log.Info("refcount height:", uint32(i), "length of refCounts:", refCounts.LengthOfCounts())
+	}
+
+	for i := pruningStartHeight; i <= pruningTargetHeight; i++ {
+		pruningStateRoots, err := sdb.cs.GetStateRoots(i, i)
+		if err != nil {
+			return err
+		}
+		refCounts, err := sdb.trie.NewRefCounts(0, i)
+		if err != nil {
+			return err
+		}
+
+		err = refCounts.Prune(pruningStateRoots[0], false)
+		if err != nil {
+			return err
+		}
+
+		err = refCounts.PersistRefCounts()
+		if err != nil {
+			return err
+		}
+
+		err = refCounts.PersistPrunedHeights()
+		if err != nil {
+			return err
+		}
+
+		err = refCounts.Commit()
+		if err != nil {
+			return err
+		}
+
+		log.Info("pruning height:", uint32(i), "length of refCounts:", refCounts.LengthOfCounts())
+	}
+
+	log.Info("start compact database...")
+	refCounts, err := sdb.trie.NewRefCounts(0, 0)
+	if err != nil {
+		return err
+	}
+	err = refCounts.Compact()
+	if err != nil {
+		return err
+	}
+
+	log.Info("start verify database...")
+	latestStateRoots, err := sdb.cs.GetStateRoots(refCountTargetHeight, refCountTargetHeight)
+	if err != nil {
+		return err
+	}
+	err = refCounts.Verify(latestStateRoots[0])
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (sdb *StateDB) SequentialPrune() error {
+	refCountStartHeight, pruningStartHeight := sdb.cs.getPruningStartHeight()
+
+	_, refCountTargetHeight, err := sdb.cs.getCurrentBlockHashFromDB()
+	if err != nil {
+		return err
+	}
+
+	if refCountStartHeight < pruningStartHeight || refCountTargetHeight < (pruningStartHeight+config.Parameters.RecentStateCount-1) {
+		return fmt.Errorf("not enough height to prune, pruningStartHeight:%v, refCountTargetHeight:%v\n", pruningStartHeight, refCountTargetHeight)
+	}
+
+	pruningTargetHeight := refCountTargetHeight - config.Parameters.RecentStateCount
+
+	refStateRoots, err := sdb.cs.GetStateRoots(pruningTargetHeight+1, refCountTargetHeight)
+	if err != nil {
+		return err
+	}
+
+	refCounts, err := sdb.trie.NewRefCounts(refCountTargetHeight, pruningTargetHeight)
+	if err != nil {
+		return err
+	}
+
+	for idx, hash := range refStateRoots {
+		err := refCounts.CreateRefCounts(hash, true)
+		if err != nil {
+			return err
+		}
+
+		log.Info("refcount height:", pruningTargetHeight+1+uint32(idx), "length of refCounts:", refCounts.LengthOfCounts())
+	}
+
+	err = refCounts.SequentialPrune()
+	if err != nil {
+		return err
+	}
+
+	log.Info("pruning height:", pruningTargetHeight, "length of refCounts:", refCounts.LengthOfCounts())
+
+	err = refCounts.PersistRefCounts()
+	if err != nil {
+		return err
+	}
+
+	err = refCounts.PersistRefCountHeights()
+	if err != nil {
+		return err
+	}
+	err = refCounts.PersistPrunedHeights()
+	if err != nil {
+		return err
+	}
+
+	err = refCounts.Commit()
+	if err != nil {
+		return err
+	}
+
+	err = refCounts.Compact()
 	if err != nil {
 		return err
 	}
@@ -122,57 +331,4 @@ func (sdb *StateDB) PruneStates(refStateRoots, pruningStateRoots []common.Uint25
 
 func (sdb *StateDB) TrieTraverse() error {
 	return sdb.trie.TryTraverse()
-}
-
-func (sdb *StateDB) SequentialPrune(refStateRoots []common.Uint256, refCountTargetHeight, pruningTargetHeight uint32) error {
-	refCounts := sdb.trie.NewRefCounts(refCountTargetHeight, pruningTargetHeight)
-
-	for idx, hash := range refStateRoots {
-		err := refCounts.CreateRefCounts(hash)
-		if err != nil {
-			return err
-		}
-
-		refCounts.DumpInfo(uint32(idx), false)
-	}
-
-	err := sdb.db.db.NewBatch()
-	if err != nil {
-		return err
-	}
-
-	err = refCounts.SequentialPrune()
-	if err != nil {
-		return err
-	}
-
-	refCounts.DumpInfo(uint32(0), true)
-
-	err = refCounts.PersistRefCounts()
-	if err != nil {
-		return err
-	}
-
-	err = refCounts.PersistPruningHeights()
-	if err != nil {
-		return err
-	}
-
-	err = sdb.db.db.BatchCommit()
-	if err != nil {
-		return err
-	}
-
-	err = sdb.db.db.Compact()
-	if err != nil {
-		return err
-	}
-
-	latestStateRoot := refStateRoots[len(refStateRoots)-1]
-	err = refCounts.Verify(latestStateRoot)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

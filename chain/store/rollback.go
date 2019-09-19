@@ -107,7 +107,7 @@ func (cs *ChainStore) rollbackStates(b *block.Block) error {
 		return err
 	}
 
-	cs.States, err = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+	cs.States, err = NewStateDB(root, cs)
 	if err != nil {
 		return err
 	}

@@ -423,7 +423,7 @@ func main() {
 		cli.BoolFlag{
 			Name:        "pruning",
 			Usage:       "prune nodes of trie",
-			Destination: &config.Pruning,
+			Destination: &config.StatePruning,
 		},
 		cli.StringFlag{
 			Name:        "pprof-port",

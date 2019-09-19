@@ -1,7 +1,6 @@
 package pruning
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/nknorg/nkn/chain/store"
@@ -40,19 +39,24 @@ func pruningAction(c *cli.Context) error {
 			return err
 		}
 
-		refCountStartHeight, pruningStartHeight := cs.GetPruningStartHeight()
-		if refCountStartHeight == 0 && pruningStartHeight == 0 {
+		if c.Bool("seq") {
 			err := cs.SequentialPrune()
 			if err != nil {
+				panic(err)
 				return err
 			}
-		} else if refCountStartHeight > 0 && pruningStartHeight > 0 {
-			err := cs.PruneStates()
+		} else if c.Bool("lowmem") {
+			err := cs.PruneStatesLowMemory()
 			if err != nil {
+				panic(err)
 				return err
 			}
 		} else {
-			return errors.New("get start height of pruning error")
+			err := cs.PruneStates()
+			if err != nil {
+				panic(err)
+				return err
+			}
 		}
 	case c.Bool("traverse"):
 		cs, err := store.NewLedgerStore()
@@ -85,6 +89,14 @@ func NewCommand() *cli.Command {
 			cli.BoolFlag{
 				Name:  "pruning",
 				Usage: "prune state trie",
+			},
+			cli.BoolFlag{
+				Name:  "seq",
+				Usage: "prune state trie sequential mode",
+			},
+			cli.BoolFlag{
+				Name:  "lowmem",
+				Usage: "prune state trie low memory mode",
 			},
 			cli.BoolFlag{
 				Name:  "startheight",

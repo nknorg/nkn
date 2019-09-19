@@ -190,7 +190,7 @@ func (cs *ChainStore) generateStateRoot(ctx context.Context, b *block.Block, gen
 			return nil, EmptyUint256, err
 		}
 	}
-	states, err := NewStateDB(stateRoot, NewTrieStore(cs.GetDatabase()))
+	states, err := NewStateDB(stateRoot, cs)
 	if err != nil {
 		return nil, EmptyUint256, err
 	}
