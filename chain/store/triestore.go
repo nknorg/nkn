@@ -18,7 +18,7 @@ type ITrie interface {
 	Hash() Uint256
 	CommitTo() (Uint256, error)
 	NodeIterator(start []byte) trie.NodeIterator
-	NewRefCounts(refCountTargetHeight, pruningTargetHeight uint32) *trie.RefCounts
+	NewRefCounts(refCountTargetHeight, pruningTargetHeight uint32) (*trie.RefCounts, error)
 }
 
 type cachingDB struct {

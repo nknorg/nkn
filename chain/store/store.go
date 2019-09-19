@@ -93,25 +93,20 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 		}
 
 		log.Info("state root:", root.ToHexString())
-		cs.States, err = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+		cs.States, err = NewStateDB(root, cs)
 		if err != nil {
 			return 0, err
 		}
 
-		if config.Pruning {
-			refCountStartHeight, pruningStartHeight := cs.GetPruningStartHeight()
-			if refCountStartHeight == 0 && pruningStartHeight == 0 {
-				err := cs.SequentialPrune()
-				if err != nil {
-					return 0, err
-				}
-			} else if refCountStartHeight > 0 && pruningStartHeight > 0 {
-				err := cs.PruneStates()
-				if err != nil {
-					return 0, err
-				}
-			} else {
-				return 0, errors.New("get Start Height of pruning error")
+		if config.StatePruning {
+			log.Info("start pruning....")
+			refCountStartHeight, pruningStartHeight := cs.getPruningStartHeight()
+			if refCountStartHeight == 0 || pruningStartHeight == 0 {
+				return 0, fmt.Errorf("can not get pruned height: refCountStartHeight=%d, pruningStartHeight=%d\n", refCountStartHeight, pruningStartHeight)
+			}
+			err := cs.PruneStatesLowMemory()
+			if err != nil {
+				return 0, err
 			}
 		}
 
@@ -123,7 +118,7 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 		}
 
 		root := EmptyUint256
-		cs.States, err = NewStateDB(root, NewTrieStore(cs.GetDatabase()))
+		cs.States, err = NewStateDB(root, cs)
 		if err != nil {
 			return 0, err
 		}
@@ -654,62 +649,30 @@ func (cs *ChainStore) getPruningStartHeight() (uint32, uint32) {
 }
 
 func (cs *ChainStore) PruneStates() error {
-	state, err := NewStateDB(EmptyUint256, NewTrieStore(cs.GetDatabase()))
+	state, err := NewStateDB(EmptyUint256, cs)
 	if err != nil {
 		return err
 	}
 
-	refCountStartHeight, pruningStartHeight := cs.getPruningStartHeight()
+	return state.PruneStates()
+}
 
-	_, refCountTargetHeight, err := cs.getCurrentBlockHashFromDB()
+func (cs *ChainStore) PruneStatesLowMemory() error {
+	state, err := NewStateDB(EmptyUint256, cs)
 	if err != nil {
 		return err
 	}
 
-	if refCountStartHeight < pruningStartHeight || refCountTargetHeight < (refCountStartHeight+config.Parameters.RecentStateCount-1) {
-		return fmt.Errorf("not enough height to prune, refCountStartHeight:%v, refCountTargetHeight:%v\n", refCountStartHeight, refCountTargetHeight)
-	}
-
-	pruningTargetHeight := refCountTargetHeight - config.Parameters.RecentStateCount
-
-	refStateRoots, err := cs.GetStateRoots(refCountStartHeight, refCountTargetHeight)
-	if err != nil {
-		return err
-	}
-
-	pruningStateRoots, err := cs.GetStateRoots(pruningStartHeight, pruningTargetHeight)
-	if err != nil {
-		return err
-	}
-
-	return state.PruneStates(refStateRoots, pruningStateRoots, refCountTargetHeight, pruningTargetHeight)
+	return state.PruneStatesLowMemory()
 }
 
 func (cs *ChainStore) SequentialPrune() error {
-	state, err := NewStateDB(EmptyUint256, NewTrieStore(cs.GetDatabase()))
+	state, err := NewStateDB(EmptyUint256, cs)
 	if err != nil {
 		return err
 	}
 
-	refCountStartHeight, pruningStartHeight := cs.getPruningStartHeight()
-
-	_, refCountTargetHeight, err := cs.getCurrentBlockHashFromDB()
-	if err != nil {
-		return err
-	}
-
-	if refCountStartHeight < pruningStartHeight || refCountTargetHeight < (pruningStartHeight+config.Parameters.RecentStateCount-1) {
-		return fmt.Errorf("not enough height to prune, pruningStartHeight:%v, refCountTargetHeight:%v\n", pruningStartHeight, refCountTargetHeight)
-	}
-
-	pruningTargetHeight := refCountTargetHeight - config.Parameters.RecentStateCount
-
-	refStateRoots, err := cs.GetStateRoots(pruningTargetHeight+1, refCountTargetHeight)
-	if err != nil {
-		return err
-	}
-
-	return state.SequentialPrune(refStateRoots, refCountTargetHeight, pruningTargetHeight)
+	return state.SequentialPrune()
 }
 
 func (cs *ChainStore) TrieTraverse() error {
@@ -723,7 +686,7 @@ func (cs *ChainStore) TrieTraverse() error {
 		return err
 	}
 
-	states, err := NewStateDB(roots[0], NewTrieStore(cs.GetDatabase()))
+	states, err := NewStateDB(roots[0], cs)
 	if err != nil {
 		return err
 	}
