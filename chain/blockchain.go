@@ -57,6 +57,7 @@ func (bc *Blockchain) AddBlock(block *block.Block, fastAdd bool) error {
 
 	err := bc.SaveBlock(block, fastAdd)
 	if err != nil {
+		log.Error("AddBlock error, ", err)
 		return err
 	}
 
@@ -72,6 +73,18 @@ func (bc *Blockchain) GetHeader(hash Uint256) (*block.Header, error) {
 }
 
 func (bc *Blockchain) SaveBlock(block *block.Block, fastAdd bool) error {
+	if !fastAdd {
+		err := HeaderCheck(block)
+		if err != nil {
+			return err
+		}
+
+		err = TransactionCheck(context.Background(), block)
+		if err != nil {
+			return err
+		}
+	}
+
 	err := DefaultLedger.Store.SaveBlock(block, fastAdd)
 	if err != nil {
 		log.Warning("Save Block failure , ", err)

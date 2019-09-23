@@ -50,6 +50,10 @@ func (iterable TransactionArray) Iterate(handler func(item *transaction.Transact
 }
 
 func TransactionCheck(ctx context.Context, block *block.Block) error {
+	if block.IsTxnsChecked {
+		return nil
+	}
+
 	if block.Transactions == nil {
 		return errors.New("empty block")
 	}
@@ -165,6 +169,8 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 	if ok := root.CompareTo(headerRoot); ok != 0 {
 		return fmt.Errorf("[TransactionCheck]state root not equal:%v, %v", root, headerRoot)
 	}
+
+	block.IsTxnsChecked = true
 
 	return nil
 }
@@ -330,7 +336,13 @@ func SignerCheck(header *block.Header) error {
 	return nil
 }
 
-func HeaderCheck(header *block.Header) error {
+func HeaderCheck(b *block.Block) error {
+	if b.IsHeaderChecked {
+		return nil
+	}
+
+	header := b.Header
+
 	if header.UnsignedHeader.Height == 0 {
 		return nil
 	}
@@ -384,6 +396,8 @@ func HeaderCheck(header *block.Header) error {
 	if !crypto.VerifyVrf(*rawPubKey, prevVrf, vrf, proof) {
 		return fmt.Errorf("invalid header RandomBeacon %x", header.UnsignedHeader.RandomBeacon)
 	}
+
+	b.IsHeaderChecked = true
 
 	return nil
 }
