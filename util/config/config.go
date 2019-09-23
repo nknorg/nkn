@@ -119,7 +119,11 @@ var (
 			common.MaxUint256,
 		},
 	}
-	MaxTxnAttributesLen = 100
+	MaxTxnAttributesLen  = 100
+	AllowTxnRegisterName = HeightDependentBool{
+		heights: []uint32{7500, 0},
+		values:  []bool{false, true},
+	}
 )
 
 var (

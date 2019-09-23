@@ -16,8 +16,10 @@ import (
 )
 
 type Block struct {
-	Header       *Header
-	Transactions []*transaction.Transaction
+	Header          *Header
+	Transactions    []*transaction.Transaction
+	IsHeaderChecked bool
+	IsTxnsChecked   bool
 }
 
 func (b *Block) FromMsgBlock(msgBlock *pb.Block) {

@@ -135,7 +135,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				if err = chain.TimestampCheck(proposal.Header, true); err != nil {
 					log.Warningf("Proposal fails to pass soft timestamp check: %v", err)
 					acceptProposal = false
-				} else if err = chain.HeaderCheck(proposal.Header); err != nil {
+				} else if err = chain.HeaderCheck(proposal); err != nil {
 					log.Warningf("Proposal fails to pass header check: %v", err)
 					acceptProposal = false
 				} else if err = chain.NextBlockProposerCheck(proposal.Header); err != nil {

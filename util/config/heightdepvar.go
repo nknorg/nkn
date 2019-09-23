@@ -29,3 +29,17 @@ func (hdi *HeightDependentUint256) GetValueAtHeight(height uint32) common.Uint25
 	}
 	return common.EmptyUint256
 }
+
+type HeightDependentBool struct {
+	heights []uint32
+	values  []bool
+}
+
+func (hdi *HeightDependentBool) GetValueAtHeight(height uint32) bool {
+	for i, h := range hdi.heights {
+		if height >= h {
+			return hdi.values[i]
+		}
+	}
+	return false
+}
