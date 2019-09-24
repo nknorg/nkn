@@ -34,7 +34,9 @@
                                 :to="switchLocalePath(locale.code)"
                                 @click="reload"
                         >
-                            <v-list-tile-title>{{ locale.name }}</v-list-tile-title>
+                            <v-list-item-content>
+                                <v-list-item-title>{{locale.name}}</v-list-item-title>
+                            </v-list-item-content>
                         </v-list-item>
 
                     </v-list>
