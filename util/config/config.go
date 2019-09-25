@@ -67,6 +67,7 @@ const (
 	GASAssetSymbol               = "nnc"
 	GASAssetPrecision            = uint32(8)
 	DumpMemInterval              = 30 * time.Second
+	MaxClientMessageSize         = 4 * 1024 * 1024
 )
 
 const (

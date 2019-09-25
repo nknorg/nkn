@@ -29,7 +29,7 @@ build: web
 .PHONY: crossbuild
 crossbuild: web
 	mkdir -p build/$(IDENTIFIER)
-	make build FLAGS="build/$(IDENTIFIER)"
+	${MAKE} build FLAGS="build/$(IDENTIFIER)"
 	cp config.mainnet.json build/$(IDENTIFIER)/default.json
 	@cp -a dashboard/web/dist build/$(IDENTIFIER)/web
 ifeq ($(GOOS), windows)
@@ -41,16 +41,16 @@ endif
 .PHONY: all
 all: ## Build binaries for all available architectures
 	@rm -rf web
-	make crossbuild GOOS=linux GOARCH=arm
-	make crossbuild GOOS=linux GOARCH=386
-	make crossbuild GOOS=linux GOARCH=arm64
-	make crossbuild GOOS=linux GOARCH=amd64
-	make crossbuild GOOS=linux GOARCH=mips
-	make crossbuild GOOS=linux GOARCH=mipsle
-	make crossbuild GOOS=darwin GOARCH=amd64
-	make crossbuild GOOS=darwin GOARCH=386
-	make crossbuild GOOS=windows GOARCH=amd64 EXT=.exe
-	make crossbuild GOOS=windows GOARCH=386 EXT=.exe
+	${MAKE} crossbuild GOOS=linux GOARCH=arm
+	${MAKE} crossbuild GOOS=linux GOARCH=386
+	${MAKE} crossbuild GOOS=linux GOARCH=arm64
+	${MAKE} crossbuild GOOS=linux GOARCH=amd64
+	${MAKE} crossbuild GOOS=linux GOARCH=mips
+	${MAKE} crossbuild GOOS=linux GOARCH=mipsle
+	${MAKE} crossbuild GOOS=darwin GOARCH=amd64
+	${MAKE} crossbuild GOOS=darwin GOARCH=386
+	${MAKE} crossbuild GOOS=windows GOARCH=amd64 EXT=.exe
+	${MAKE} crossbuild GOOS=windows GOARCH=386 EXT=.exe
 
 .PHONY: no_web
 no_web:

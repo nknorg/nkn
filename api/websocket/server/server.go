@@ -1,10 +1,14 @@
 package server
 
 import (
+	"bytes"
+	"compress/zlib"
 	"context"
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
+	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -308,10 +312,35 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 			return false
 		}
 
+		var r io.Reader = bytes.NewReader(msg.Message)
+		switch msg.CompressionType {
+		case pb.COMPRESSION_NONE:
+		case pb.COMPRESSION_ZLIB:
+			r, err = zlib.NewReader(r)
+			if err != nil {
+				log.Errorf("Create zlib reader error: %v", err)
+				return false
+			}
+			defer r.(io.ReadCloser).Close()
+		default:
+			log.Errorf("Unsupported message compression type %v", msg.CompressionType)
+			return false
+		}
+
+		b, err := ioutil.ReadAll(io.LimitReader(r, config.MaxClientMessageSize+1))
+		if err != nil {
+			log.Errorf("ReadAll from reader error: %v", err)
+			return false
+		}
+		if len(b) > config.MaxClientMessageSize {
+			log.Errorf("Max client message size reached.")
+			return false
+		}
+
 		switch msg.MessageType {
 		case pb.OUTBOUND_MESSAGE:
 			outboundMsg := &pb.OutboundMessage{}
-			err = proto.Unmarshal(msg.Message, outboundMsg)
+			err = proto.Unmarshal(b, outboundMsg)
 			if err != nil {
 				log.Errorf("Unmarshal outbound message error: %v", err)
 				return false
@@ -319,7 +348,7 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 			ws.sendOutboundRelayMessage(curSession.GetAddrStr(), outboundMsg)
 		case pb.RECEIPT:
 			receipt := &pb.Receipt{}
-			err = proto.Unmarshal(msg.Message, receipt)
+			err = proto.Unmarshal(b, receipt)
 			if err != nil {
 				log.Errorf("Unmarshal receipt error: %v", err)
 				return false

@@ -49,10 +49,30 @@ func (ws *WsServer) sendOutboundRelayMessage(srcAddrStrPtr *string, msg *pb.Outb
 		return
 	}
 
+	payloads := msg.Payloads
+	if len(payloads) == 0 && len(msg.Payload) > 0 {
+		payloads = append(payloads, msg.Payload)
+	}
+
+	if len(payloads) == 0 {
+		log.Warningf("no payload")
+		return
+	}
+
+	if len(payloads) > 1 && len(payloads) != len(dests) {
+		log.Warningf("payloads length %d is different from dests length %d", len(payloads), len(dests))
+		return
+	}
+
+	var payload []byte
 	for i, dest := range dests {
 		dest = ResolveDest(dest)
-
-		err := ws.localNode.SendRelayMessage(*srcAddrStrPtr, dest, msg.Payload, msg.Signatures[i], msg.BlockHash, msg.Nonce, msg.MaxHoldingSeconds)
+		if len(payloads) > 1 {
+			payload = payloads[i]
+		} else {
+			payload = payloads[0]
+		}
+		err := ws.localNode.SendRelayMessage(*srcAddrStrPtr, dest, payload, msg.Signatures[i], msg.BlockHash, msg.Nonce, msg.MaxHoldingSeconds)
 		if err != nil {
 			log.Error("Send relay message error:", err)
 		}

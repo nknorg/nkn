@@ -21,9 +21,15 @@ enum ClientMessageType {
   RECEIPT = 2;
 }
 
+enum CompressionType {
+  COMPRESSION_NONE = 0;
+  COMPRESSION_ZLIB = 1;
+}
+
 message ClientMessage {
   ClientMessageType message_type = 1;
   bytes message = 2;
+  CompressionType compression_type = 3;
 }
 
 message OutboundMessage {
@@ -34,6 +40,7 @@ message OutboundMessage {
   uint32 nonce = 5;
   bytes block_hash = 6;
   repeated bytes signatures = 7;
+  repeated bytes payloads = 8;
 }
 
 message InboundMessage {
