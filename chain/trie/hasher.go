@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"sync"
 
-	database "github.com/nknorg/nkn/chain/db"
+	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/common"
 )
 
@@ -84,7 +84,7 @@ func (h *hasher) hasChildren(original node, db Database) (node, node, error) {
 	}
 }
 
-func (h *hasher) store(n node, db Database, force bool) (node, error) {
+func (h *hasher) store(n node, st Database, force bool) (node, error) {
 	if _, isHash := n.(hashNode); n == nil || isHash {
 		return n, nil
 	}
@@ -102,8 +102,8 @@ func (h *hasher) store(n node, db Database, force bool) (node, error) {
 		u256 := hash256(h.tmp.Bytes())
 		hs = hashNode(u256[:])
 	}
-	if db != nil {
-		return hs, db.BatchPut(database.TrieNodeKey([]byte(hs)), h.tmp.Bytes())
+	if st != nil {
+		return hs, st.BatchPut(db.TrieNodeKey([]byte(hs)), h.tmp.Bytes())
 	}
 	return hs, nil
 }
