@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	database "github.com/nknorg/nkn/chain/db"
+	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -19,7 +19,7 @@ type Database interface {
 	BatchPut(key, value []byte) error
 	BatchDelete(key []byte) error
 	BatchCommit() error
-	NewIterator(prefix []byte) database.IIterator
+	NewIterator(prefix []byte) db.IIterator
 }
 
 type Trie struct {
@@ -312,7 +312,7 @@ func (t *Trie) resolve(n node) (node, error) {
 }
 
 func (t *Trie) resolveHash(n hashNode, needFlags bool) (node, error) {
-	enc, err := t.db.Get(database.TrieNodeKey([]byte(n)))
+	enc, err := t.db.Get(db.TrieNodeKey([]byte(n)))
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +355,7 @@ func (t *Trie) traverse(n node, needPrint bool) error {
 			hs, _ := common.Uint256ParseFromBytes(hash)
 			fmt.Println(hs.ToHexString())
 		}
-		for i := 0; i < 17; i++ {
+		for i := 0; i < LenOfChildrenNodes; i++ {
 			if n.Children[i] != nil {
 				err := t.traverse(n.Children[i], needPrint)
 				if err != nil {

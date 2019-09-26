@@ -10,6 +10,14 @@ import (
 	"github.com/nknorg/nkn/common/serialization"
 )
 
+const (
+	TagHashNode        = 0
+	TagValueNode       = 1
+	TagShortNode       = 2
+	TagFullNode        = 17
+	LenOfChildrenNodes = 17
+)
+
 var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "[17]"}
 
 type node interface {
@@ -20,7 +28,7 @@ type node interface {
 
 type (
 	fullNode struct {
-		Children [17]node // Actual trie node data to encode/decode (needs custom encoder)
+		Children [LenOfChildrenNodes]node // Actual trie node data to encode/decode (needs custom encoder)
 		flags    nodeFlag
 	}
 	shortNode struct {
@@ -115,7 +123,7 @@ func decodeNode(hash, buf []byte, needFlags bool) (node, error) {
 }
 
 func (n *fullNode) Serialize(w io.Writer) error {
-	if err := serialization.WriteVarUint(w, uint64(17)); err != nil {
+	if err := serialization.WriteVarUint(w, uint64(TagFullNode)); err != nil {
 		return err
 	}
 
@@ -144,7 +152,7 @@ func (n *fullNode) Serialize(w io.Writer) error {
 }
 
 func (n *shortNode) Serialize(w io.Writer) error {
-	if err := serialization.WriteVarUint(w, uint64(2)); err != nil {
+	if err := serialization.WriteVarUint(w, uint64(TagShortNode)); err != nil {
 		return err
 	}
 	if err := serialization.WriteVarBytes(w, n.Key); err != nil {
@@ -169,7 +177,7 @@ func (n *shortNode) Serialize(w io.Writer) error {
 }
 
 func (n hashNode) Serialize(w io.Writer) error {
-	if err := serialization.WriteVarUint(w, uint64(0)); err != nil {
+	if err := serialization.WriteVarUint(w, uint64(TagHashNode)); err != nil {
 		return err
 	}
 	if err := serialization.WriteVarBytes(w, []byte(n)); err != nil {
@@ -180,7 +188,7 @@ func (n hashNode) Serialize(w io.Writer) error {
 }
 
 func (n valueNode) Serialize(w io.Writer) error {
-	if err := serialization.WriteVarUint(w, uint64(1)); err != nil {
+	if err := serialization.WriteVarUint(w, uint64(TagValueNode)); err != nil {
 		return err
 	}
 
@@ -198,13 +206,13 @@ func Deserialize(hash []byte, r io.Reader, needFlags bool) (node, error) {
 	}
 
 	switch count {
-	case 0:
+	case TagHashNode:
 		buff, err := serialization.ReadVarBytes(r)
 		if err != nil {
 			return nil, err
 		}
 		return hashNode(buff), nil
-	case 1:
+	case TagValueNode:
 		buff, err := serialization.ReadVarBytes(r)
 		if err != nil {
 			return nil, err
@@ -215,7 +223,7 @@ func Deserialize(hash []byte, r io.Reader, needFlags bool) (node, error) {
 		}
 
 		return valueNode(buff), nil
-	case 2:
+	case TagShortNode:
 		var s shortNode
 		key, err := serialization.ReadVarBytes(r)
 		if err != nil {
@@ -233,9 +241,9 @@ func Deserialize(hash []byte, r io.Reader, needFlags bool) (node, error) {
 		}
 
 		return &s, nil
-	case 17:
+	case TagFullNode:
 		var f fullNode
-		for i := 0; i < 17; i++ {
+		for i := 0; i < LenOfChildrenNodes; i++ {
 			idx, err := serialization.ReadVarUint(r, 20)
 			if err != nil {
 				return nil, err

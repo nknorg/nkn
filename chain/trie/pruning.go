@@ -111,7 +111,7 @@ func (ref *RefCounts) createRefCounts(n node, inMemory bool) error {
 			ref.counts[hs] = count
 		}
 		if count == 0 {
-			for i := 0; i < 17; i++ {
+			for i := 0; i < LenOfChildrenNodes; i++ {
 				if n.Children[i] != nil {
 					err := ref.createRefCounts(n.Children[i], inMemory)
 					if err != nil {
@@ -231,7 +231,7 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 		if !inMemory {
 			ref.trie.db.BatchDelete(db.TrieRefCountKey([]byte(hash)))
 		}
-		for i := 0; i < 17; i++ {
+		for i := 0; i < LenOfChildrenNodes; i++ {
 			if n.Children[i] != nil {
 				if err := ref.prune(n.Children[i], inMemory); err != nil {
 					return err
