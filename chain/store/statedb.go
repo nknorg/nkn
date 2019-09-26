@@ -176,6 +176,8 @@ func (sdb *StateDB) PruneStatesLowMemory() error {
 		return nil
 	}
 
+	log.Infof("Creating refCount from height %d to %d", refCountStartHeight, refCountTargetHeight)
+
 	for i := refCountStartHeight; i <= refCountTargetHeight; i++ {
 		refStateRoots, err := sdb.cs.GetStateRoots(i, i)
 		if err != nil {
@@ -208,6 +210,8 @@ func (sdb *StateDB) PruneStatesLowMemory() error {
 
 		log.Info("refcount height:", uint32(i), "length of refCounts:", refCounts.LengthOfCounts())
 	}
+
+	log.Infof("Pruning from height %d to %d", pruningStartHeight, pruningTargetHeight)
 
 	for i := pruningStartHeight; i <= pruningTargetHeight; i++ {
 		pruningStateRoots, err := sdb.cs.GetStateRoots(i, i)

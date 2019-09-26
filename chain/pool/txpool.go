@@ -535,8 +535,10 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 		case pb.SIG_CHAIN_TXN_TYPE:
 			continue
 		case pb.NANO_PAY_TYPE:
-			tp.NanoPayTxs.Delete(txn.Hash())
-			txnsToRemove = append(txnsToRemove, txn)
+			if _, ok := tp.NanoPayTxs.Load(txn.Hash()); ok {
+				tp.NanoPayTxs.Delete(txn.Hash())
+				txnsToRemove = append(txnsToRemove, txn)
+			}
 		default:
 			sender, _ := common.ToCodeHash(txn.Programs[0].Code)
 			txNonce := txn.UnsignedTx.Nonce
