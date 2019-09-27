@@ -79,7 +79,6 @@ const (
 
 var (
 	Debug            = false
-	StatePruning     = false
 	PprofPort        = "127.0.0.1:8080"
 	ShortHashSalt    = util.RandomBytes(32)
 	GenesisTimestamp = time.Date(2019, time.June, 29, 13, 10, 13, 0, time.UTC).Unix()
@@ -147,6 +146,7 @@ var (
 	WebGuiListenAddress          string
 	WebGuiCreateWallet           bool
 	PasswordFile                 string
+	StatePruningMode             string
 	Parameters                   = &Configuration{
 		Version:                      1,
 		Transport:                    "tcp",
@@ -185,7 +185,8 @@ var (
 		WebGuiPort:                   30000,
 		WebGuiCreateWallet:           false,
 		PasswordFile:                 "",
-		RecentStateCount:             1000,
+		RecentStateCount:             1024,
+		StatePruningMode:             "none",
 	}
 )
 
@@ -240,6 +241,7 @@ type Configuration struct {
 	WebGuiCreateWallet           bool          `json:"WebGuiCreateWallet"`
 	PasswordFile                 string        `json:"PasswordFile"`
 	RecentStateCount             uint32        `json:"RecentStateCount"`
+	StatePruningMode             string        `json:"StatePruningMode"`
 }
 
 func Init() error {
@@ -295,6 +297,10 @@ func Init() error {
 
 	if len(PasswordFile) > 0 {
 		Parameters.PasswordFile = PasswordFile
+	}
+
+	if len(StatePruningMode) > 0 {
+		Parameters.StatePruningMode = StatePruningMode
 	}
 
 	if Parameters.SyncBatchWindowSize == 0 {
@@ -437,6 +443,13 @@ func (config *Configuration) verify() error {
 
 	if config.MaxLogFileSize <= 0 {
 		return fmt.Errorf("MaxLogFileSize should be >= 1 (MB)")
+	}
+
+	switch config.StatePruningMode {
+	case "lowmem":
+	case "none":
+	default:
+		return fmt.Errorf("unknown state pruning mode %v", config.StatePruningMode)
 	}
 
 	return nil

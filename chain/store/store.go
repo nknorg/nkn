@@ -98,20 +98,20 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 			return 0, err
 		}
 
-		if config.StatePruning {
-			log.Info("start pruning....")
-			refCountStartHeight, pruningStartHeight := cs.getPruningStartHeight()
-			if refCountStartHeight == 0 || pruningStartHeight == 0 {
-				return 0, fmt.Errorf("can not get pruned height: refCountStartHeight=%d, pruningStartHeight=%d\n", refCountStartHeight, pruningStartHeight)
-			}
-			err := cs.PruneStatesLowMemory()
-			if err != nil {
-				return 0, err
-			}
+		switch config.Parameters.StatePruningMode {
+		case "lowmem":
+			err = cs.PruneStatesLowMemory()
+		case "none":
+			err = nil
+		default:
+			return 0, fmt.Errorf("unknown state pruning mode %v", config.Parameters.StatePruningMode)
+		}
+
+		if err != nil {
+			return 0, err
 		}
 
 		return cs.currentBlockHeight, nil
-
 	} else {
 		if err := cs.ResetDB(); err != nil {
 			return 0, fmt.Errorf("InitLedgerStoreWithGenesisBlock, ResetDB error: %v", err)

@@ -154,18 +154,27 @@ func (sdb *StateDB) PruneStates() error {
 }
 
 func (sdb *StateDB) PruneStatesLowMemory() error {
+	log.Infof("Start pruning...")
+
 	refCountStartHeight, pruningStartHeight := sdb.cs.getPruningStartHeight()
 
-	_, refCountTargetHeight, err := sdb.cs.getCurrentBlockHashFromDB()
+	_, currentHeight, err := sdb.cs.getCurrentBlockHashFromDB()
 	if err != nil {
 		return err
 	}
 
-	if refCountStartHeight < pruningStartHeight || refCountTargetHeight < (refCountStartHeight+config.Parameters.RecentStateCount-1) {
-		return fmt.Errorf("not enough height to prune, refCountStartHeight:%v, refCountTargetHeight:%v\n", refCountStartHeight, refCountTargetHeight)
+	refCountTargetHeight := currentHeight
+
+	if refCountTargetHeight <= config.Parameters.RecentStateCount {
+		return nil
 	}
 
 	pruningTargetHeight := refCountTargetHeight - config.Parameters.RecentStateCount
+
+	if pruningTargetHeight < pruningStartHeight+config.Parameters.RecentStateCount {
+		log.Infof("No need to prune from height %d to %d", pruningStartHeight, pruningTargetHeight)
+		return nil
+	}
 
 	for i := refCountStartHeight; i <= refCountTargetHeight; i++ {
 		refStateRoots, err := sdb.cs.GetStateRoots(i, i)
@@ -233,11 +242,12 @@ func (sdb *StateDB) PruneStatesLowMemory() error {
 		log.Info("pruning height:", uint32(i), "length of refCounts:", refCounts.LengthOfCounts())
 	}
 
-	log.Info("start compact database...")
 	refCounts, err := sdb.trie.NewRefCounts(0, 0)
 	if err != nil {
 		return err
 	}
+
+	log.Info("start compact database...")
 	err = refCounts.Compact()
 	if err != nil {
 		return err
