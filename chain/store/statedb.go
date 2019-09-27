@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -101,6 +102,11 @@ func (sdb *StateDB) PruneStates() error {
 		return err
 	}
 
+	err = refCounts.NewBatch()
+	if err != nil {
+		return err
+	}
+
 	refCounts.RebuildRefCount()
 
 	for idx, hash := range refStateRoots {
@@ -186,6 +192,11 @@ func (sdb *StateDB) PruneStatesLowMemory() error {
 			return err
 		}
 
+		err = refCounts.NewBatch()
+		if err != nil {
+			return err
+		}
+
 		err = refCounts.CreateRefCounts(refStateRoots[0], false)
 		if err != nil {
 			return err
@@ -215,6 +226,11 @@ func (sdb *StateDB) PruneStatesLowMemory() error {
 			return err
 		}
 		refCounts, err := sdb.trie.NewRefCounts(0, i)
+		if err != nil {
+			return err
+		}
+
+		err = refCounts.NewBatch()
 		if err != nil {
 			return err
 		}
@@ -290,6 +306,11 @@ func (sdb *StateDB) SequentialPrune() error {
 		return err
 	}
 
+	err = refCounts.NewBatch()
+	if err != nil {
+		return err
+	}
+
 	for idx, hash := range refStateRoots {
 		err := refCounts.CreateRefCounts(hash, true)
 		if err != nil {
@@ -341,4 +362,47 @@ func (sdb *StateDB) SequentialPrune() error {
 
 func (sdb *StateDB) TrieTraverse() error {
 	return sdb.trie.TryTraverse()
+}
+
+func (sdb *StateDB) RollbackPruning(b *block.Block) error {
+	refCountStartHeight, pruningStartHeight := sdb.cs.getPruningStartHeight()
+	if refCountStartHeight < pruningStartHeight {
+		return fmt.Errorf("pruningStartHeight(%v)is larger than refCountStartHeight(%v)\n", pruningStartHeight, refCountStartHeight)
+	}
+
+	if refCountStartHeight == 0 {
+		return nil
+	}
+
+	refCountedHeight := refCountStartHeight - 1
+	blockHeight := b.Header.UnsignedHeader.Height
+
+	if refCountedHeight < blockHeight {
+		return nil
+	}
+
+	if refCountedHeight > blockHeight {
+		return fmt.Errorf("refCountedHeight(%v) is larger than blockHeight(%v)\n", refCountedHeight, blockHeight)
+	}
+
+	refCounts, err := sdb.trie.NewRefCounts(refCountedHeight-1, 0)
+	root, err := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
+	if err != nil {
+		return err
+	}
+	err = refCounts.Prune(root, false)
+	if err != nil {
+		return err
+	}
+	err = refCounts.PersistRefCounts()
+	if err != nil {
+		return err
+	}
+
+	err = refCounts.PersistRefCountHeights()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

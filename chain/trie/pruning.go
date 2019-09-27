@@ -26,12 +26,11 @@ func NewRefCounts(t *Trie, refCountTargetHeight, pruningTargetHeight uint32) (*R
 		targetPruningHeight:  pruningTargetHeight,
 	}
 
-	err := ref.trie.db.NewBatch()
-	if err != nil {
-		return nil, err
-	}
-
 	return ref, nil
+}
+
+func (ref *RefCounts) NewBatch() error {
+	return ref.trie.db.NewBatch()
 }
 
 func (ref *RefCounts) Commit() error {
