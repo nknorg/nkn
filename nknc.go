@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"sort"
+	"syscall"
 
 	_ "github.com/nknorg/nkn/cli"
 	"github.com/nknorg/nkn/cli/asset"
@@ -17,6 +18,10 @@ import (
 	"github.com/nknorg/nnet/log"
 	"github.com/urfave/cli"
 )
+
+func Err2Errno(err error) int {
+	return 1 // TODO: github.com/nknorg/nkn/errno package.
+}
 
 func main() {
 	defer func() {
@@ -53,5 +58,12 @@ func main() {
 	sort.Sort(cli.CommandsByName(app.Commands))
 	sort.Sort(cli.FlagsByName(app.Flags))
 
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		switch err.(type) {
+		case syscall.Errno:
+			os.Exit(int(err.(syscall.Errno)))
+		default:
+			os.Exit(Err2Errno(err))
+		}
+	}
 }
