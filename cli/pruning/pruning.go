@@ -17,16 +17,14 @@ func pruningAction(c *cli.Context) error {
 	case c.Bool("currentheight"):
 		cs, err := store.NewLedgerStore()
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 		_, h, err := cs.GetCurrentBlockHashFromDB()
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 		fmt.Println(h)
-	case c.Bool("startheight"):
+	case c.Bool("startheights"):
 		cs, err := store.NewLedgerStore()
 		if err != nil {
 			return err
@@ -58,12 +56,21 @@ func pruningAction(c *cli.Context) error {
 				return err
 			}
 		}
-	case c.Bool("traverse"):
+	case c.Bool("dumpnodes"):
 		cs, err := store.NewLedgerStore()
 		if err != nil {
 			return err
 		}
 		err = cs.TrieTraverse()
+		if err != nil {
+			return err
+		}
+	case c.Bool("verifystate"):
+		cs, err := store.NewLedgerStore()
+		if err != nil {
+			return err
+		}
+		err = cs.VerifyState()
 		if err != nil {
 			return err
 		}
@@ -87,6 +94,10 @@ func NewCommand() *cli.Command {
 				Usage: "current block height of offline db",
 			},
 			cli.BoolFlag{
+				Name:  "startheights",
+				Usage: "start heights of refcount and pruning",
+			},
+			cli.BoolFlag{
 				Name:  "pruning",
 				Usage: "prune state trie",
 			},
@@ -99,12 +110,12 @@ func NewCommand() *cli.Command {
 				Usage: "prune state trie low memory mode",
 			},
 			cli.BoolFlag{
-				Name:  "startheight",
-				Usage: "start height",
+				Name:  "dumpnodes",
+				Usage: "dump nodes of trie",
 			},
 			cli.BoolFlag{
-				Name:  "traverse",
-				Usage: "traverse trie",
+				Name:  "verifystate",
+				Usage: "verify state of ledger",
 			},
 		},
 		Action: pruningAction,
