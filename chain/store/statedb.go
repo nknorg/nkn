@@ -374,6 +374,10 @@ func (sdb *StateDB) RollbackPruning(b *block.Block) error {
 		return nil
 	}
 
+	if refCountStartHeight == pruningStartHeight {
+		return fmt.Errorf("Cannot rollback, no more full state available in db, pruningStartHeight(%v)is equal to refCountStartHeight(%v)\n", pruningStartHeight, refCountStartHeight)
+	}
+
 	refCountedHeight := refCountStartHeight - 1
 	blockHeight := b.Header.UnsignedHeader.Height
 
@@ -400,6 +404,29 @@ func (sdb *StateDB) RollbackPruning(b *block.Block) error {
 	}
 
 	err = refCounts.PersistRefCountHeights()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (sdb *StateDB) VerifyState() error {
+	_, refCountTargetHeight, err := sdb.cs.getCurrentBlockHashFromDB()
+	if err != nil {
+		return err
+	}
+
+	refCounts, err := sdb.trie.NewRefCounts(0, 0)
+	if err != nil {
+		return err
+	}
+
+	latestStateRoots, err := sdb.cs.GetStateRoots(refCountTargetHeight, refCountTargetHeight)
+	if err != nil {
+		return err
+	}
+	err = refCounts.Verify(latestStateRoots[0])
 	if err != nil {
 		return err
 	}

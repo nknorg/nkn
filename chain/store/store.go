@@ -693,3 +693,12 @@ func (cs *ChainStore) TrieTraverse() error {
 
 	return states.TrieTraverse()
 }
+
+func (cs *ChainStore) VerifyState() error {
+	state, err := NewStateDB(EmptyUint256, cs)
+	if err != nil {
+		return err
+	}
+
+	return state.VerifyState()
+}
