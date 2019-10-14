@@ -161,7 +161,7 @@ func (ws *WsServer) handleReceipt(receipt *pb.Receipt) error {
 		return nil
 	}
 
-	destSigChainElem := pb.NewSigChainElem(nil, nil, receipt.Signature, nil, nil, false)
+	destSigChainElem := pb.NewSigChainElem(nil, nil, receipt.Signature, nil, nil, false, pb.SIGNATURE)
 	por.GetPorServer().AddDestSigChainElem(
 		sci.blockHash,
 		receipt.PrevSignature,

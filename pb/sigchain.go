@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	sigAlgo                    = VRF
 	bitShiftPerSigChainElement = 4
 )
 
@@ -102,7 +101,7 @@ func NewSigChainWithSignature(nonce, dataSize uint32, blockHash, srcID, srcPubke
 	return sc, nil
 }
 
-func NewSigChainElem(id, nextPubkey, signature, vrf, proof []byte, mining bool) *SigChainElem {
+func NewSigChainElem(id, nextPubkey, signature, vrf, proof []byte, mining bool, sigAlgo SigAlgo) *SigChainElem {
 	return &SigChainElem{
 		Id:         id,
 		SigAlgo:    sigAlgo,
@@ -115,7 +114,7 @@ func NewSigChainElem(id, nextPubkey, signature, vrf, proof []byte, mining bool) 
 }
 
 func ComputeSignature(secret, lastSignature, id, nextPubkey []byte, mining bool) ([]byte, error) {
-	elem := NewSigChainElem(id, nextPubkey, nil, nil, nil, mining)
+	elem := NewSigChainElem(id, nextPubkey, nil, nil, nil, mining, VRF)
 	buff := bytes.NewBuffer(lastSignature)
 	err := elem.SerializationUnsigned(buff)
 	if err != nil {
@@ -130,12 +129,67 @@ func ComputeSignature(secret, lastSignature, id, nextPubkey []byte, mining bool)
 }
 
 func (sc *SigChain) Verify() error {
+	if err := sc.VerifyMeta(); err != nil {
+		return err
+	}
+
 	if err := sc.VerifyPath(); err != nil {
 		return err
 	}
 
 	if err := sc.VerifySignatures(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (sc *SigChain) VerifyMeta() error {
+	if sc.Length() < 3 {
+		return fmt.Errorf("sigchain should have at least 3 elements, but only has %d", sc.Length())
+	}
+
+	if len(sc.Elems[0].Id) > 0 && !bytes.Equal(sc.SrcId, sc.Elems[0].Id) {
+		return fmt.Errorf("sigchain has wrong src id")
+	}
+
+	if !sc.IsComplete() {
+		return fmt.Errorf("sigchain is not complete")
+	}
+
+	if bytes.Equal(sc.Elems[0].Id, sc.Elems[1].Id) {
+		return fmt.Errorf("sender and relayer 1 has the same ID")
+	}
+
+	if len(sc.Elems[sc.Length()-1].NextPubkey) > 0 {
+		return fmt.Errorf("next pubkey in last sigchain elem should be empty")
+	}
+
+	if sc.Elems[0].Mining {
+		return fmt.Errorf("first sigchain element should have mining set to false")
+	}
+
+	if sc.Elems[sc.Length()-1].Mining {
+		return fmt.Errorf("last sigchain element should have mining set to false")
+	}
+
+	for i, e := range sc.Elems {
+		if i == 0 || i == sc.Length()-1 {
+			// Will be enabled in the next version
+			// if e.SigAlgo != SIGNATURE {
+			// 	return fmt.Errorf("sigchain elem %d sig algo should be %v", i, SIGNATURE)
+			// }
+			if len(e.Vrf) > 0 {
+				return fmt.Errorf("sigchain elem %d vrf should be empty", i)
+			}
+			if len(e.Proof) > 0 {
+				return fmt.Errorf("sigchain elem %d proof should be empty", i)
+			}
+		} else {
+			if e.SigAlgo != VRF {
+				return fmt.Errorf("sigchain elem %d sig algo should be %v", i, VRF)
+			}
+		}
 	}
 
 	return nil
@@ -156,7 +210,7 @@ func (sc *SigChain) VerifySignatures() error {
 		if i == 0 || (sc.IsComplete() && i == sc.Length()-1) {
 			lastSignatureHash := sha256.Sum256(prevSig)
 			buff := bytes.NewBuffer(lastSignatureHash[:])
-			elem := NewSigChainElem(e.Id, e.NextPubkey, nil, nil, nil, e.Mining)
+			elem := NewSigChainElem(e.Id, e.NextPubkey, nil, nil, nil, e.Mining, e.SigAlgo)
 			err = elem.SerializationUnsigned(buff)
 			if err != nil {
 				return fmt.Errorf("serialize sigchain elem error: %v", err)
@@ -194,22 +248,6 @@ func (sc *SigChain) VerifySignatures() error {
 }
 
 func (sc *SigChain) VerifyPath() error {
-	if sc.Length() < 3 {
-		return fmt.Errorf("sigchain should have at least 3 elements, but only has %d", sc.Length())
-	}
-
-	if len(sc.Elems[0].Id) > 0 && !bytes.Equal(sc.SrcId, sc.Elems[0].Id) {
-		return fmt.Errorf("sigchain has wrong src id")
-	}
-
-	if !sc.IsComplete() {
-		return fmt.Errorf("sigchain is not complete")
-	}
-
-	if bytes.Equal(sc.Elems[0].Id, sc.Elems[1].Id) {
-		return fmt.Errorf("sender and relayer 1 has the same ID")
-	}
-
 	var t big.Int
 	lastNodeID := sc.Elems[sc.Length()-2].Id
 	prevDistance := chord.Distance(sc.Elems[1].Id, lastNodeID, config.NodeIDBytes*8)
