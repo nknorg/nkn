@@ -400,7 +400,7 @@ func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, signature, send
 		return nil, nil, nil, fmt.Errorf("get or compute VRF error: %v", err)
 	}
 
-	sce := pb.NewSigChainElem(ps.id, scei.nextPubkey, signature, vrf, proof, scei.mining)
+	sce := pb.NewSigChainElem(ps.id, scei.nextPubkey, signature, vrf, proof, scei.mining, pb.VRF)
 
 	elems = append([]*pb.SigChainElem{sce}, elems...)
 
