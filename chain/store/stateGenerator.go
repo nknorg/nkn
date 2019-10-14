@@ -170,6 +170,26 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		}
 
 		states.IncrNonce(pg[0])
+	case pb.PAY_FEE_TYPE:
+		pg, err := txn.GetProgramHashes()
+		if err != nil {
+			return err
+		}
+
+		if err = states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
+			return err
+		}
+		states.IncrNonce(pg[0])
+
+		pay := pl.(*pb.PayFee)
+		txn = &transaction.Transaction{
+			Transaction: pay.Transaction,
+		}
+		pl, err = transaction.Unpack(txn.UnsignedTx.Payload)
+		if err != nil {
+			return err
+		}
+		return cs.spendTransaction(states, txn, totalFee, genesis, height)
 	}
 
 	return nil

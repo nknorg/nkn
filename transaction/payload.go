@@ -132,3 +132,10 @@ func NewIssueAsset(sender common.Uint160, name, symbol string, precision uint32,
 		Precision:   precision,
 	}
 }
+
+func NewPayFee(payer common.Uint160, tx *Transaction) IPayload {
+	return &pb.PayFee{
+		Payer:       payer.ToArray(),
+		Transaction: tx.Transaction,
+	}
+}

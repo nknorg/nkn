@@ -213,3 +213,29 @@ func MakeIssueAssetTransaction(wallet vault.Wallet, name, symbol string, totalSu
 
 	return txn, nil
 }
+
+func MakePayFeeTransaction(wallet vault.Wallet, tx *transaction.Transaction, nonce uint64, fee Fixed64) (*transaction.Transaction, error) {
+	account, err := wallet.GetDefaultAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// construct transaction
+	txn, err := transaction.NewPayFeeTransaction(account.ProgramHash, tx, nonce, fee)
+	if err != nil {
+		return nil, err
+	}
+
+	// sign transaction contract
+	err = wallet.Sign(txn)
+	if err != nil {
+		return nil, err
+	}
+
+	programs := txn.GetPrograms()
+	internalPrograms := tx.GetPrograms()
+	programs = append(programs, internalPrograms...)
+	txn.SetPrograms(programs)
+
+	return txn, nil
+}

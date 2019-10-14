@@ -44,6 +44,7 @@ enum PayloadType {
 	GENERATE_ID_TYPE    = 8;
 	NANO_PAY_TYPE       = 9;
 	ISSUE_ASSET_TYPE    = 10;
+	PAY_FEE_TYPE        = 11;
 }
 
 message Payload {
@@ -113,4 +114,9 @@ message IssueAsset {
 	string symbol      = 3;
 	int64 total_supply = 4;
 	uint32 precision   = 5;
+}
+
+message PayFee {
+	bytes payer             = 1;
+	Transaction transaction = 2;
 }

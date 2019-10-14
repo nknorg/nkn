@@ -257,6 +257,15 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		if pld.Precision > config.MaxAssetPrecision {
 			return fmt.Errorf("Precision %v should less than %v", pld.Precision, config.MaxAssetPrecision)
 		}
+	case pb.PAY_FEE_TYPE:
+		pld := payload.(*pb.PayFee)
+		if len(pld.Payer) != UINT160SIZE {
+			return errors.New("length of programhash error")
+		}
+		return CheckTransactionPayload(
+			&transaction.Transaction{Transaction: pld.Transaction},
+			height,
+		)
 	default:
 		return fmt.Errorf("invalid transaction payload type %v", txn.UnsignedTx.Payload.Type)
 	}
@@ -433,6 +442,14 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 		if err == nil {
 			return ErrDuplicateIssueAssetTxn
 		}
+	case pb.PAY_FEE_TYPE:
+		if err := checkNonce(); err != nil {
+			return err
+		}
+		pld := payload.(*pb.PayFee)
+		return VerifyTransactionWithLedger(
+			&transaction.Transaction{Transaction: pld.Transaction},
+		)
 	default:
 		return fmt.Errorf("invalid transaction payload type %v", txn.UnsignedTx.Payload.Type)
 	}
@@ -727,6 +744,14 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		}()
 
 	case pb.ISSUE_ASSET_TYPE:
+	case pb.PAY_FEE_TYPE:
+		pld := payload.(*pb.PayFee)
+		if err := bvs.VerifyTransactionWithBlock(
+			&transaction.Transaction{Transaction: pld.Transaction},
+			height,
+		); err != nil {
+			return err
+		}
 	}
 
 	if amount > 0 || fee > 0 {
@@ -820,6 +845,13 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Id}
 			delete(bvs.nanoPays, key)
 		case pb.ISSUE_ASSET_TYPE:
+		case pb.PAY_FEE_TYPE:
+			pld := payload.(*pb.PayFee)
+			if err := bvs.CleanSubmittedTransactions([]*transaction.Transaction{{
+				Transaction: pld.Transaction,
+			}}); err != nil {
+				return err
+			}
 		}
 
 		if amount > 0 || fee > 0 {

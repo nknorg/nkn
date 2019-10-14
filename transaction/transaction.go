@@ -186,6 +186,17 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	case pb.ISSUE_ASSET_TYPE:
 		sender := payload.(*pb.IssueAsset).Sender
 		hashes = append(hashes, BytesToUint160(sender))
+	case pb.PAY_FEE_TYPE:
+		pld := payload.(*pb.PayFee)
+		hashes = append(hashes, BytesToUint160(pld.Payer))
+		internalTxn := &Transaction{
+			Transaction: pld.Transaction,
+		}
+		internalHashes, err := internalTxn.GetProgramHashes()
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, internalHashes...)
 	default:
 		return nil, errors.New("unsupport transaction type")
 	}

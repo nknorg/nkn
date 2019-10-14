@@ -135,3 +135,15 @@ func NewIssueAssetTransaction(sender Uint160, name, symbol string, totalSupply F
 		Transaction: tx,
 	}, nil
 }
+
+func NewPayFeeTransaction(payer Uint160, tx *Transaction, nonce uint64, fee Fixed64) (*Transaction, error) {
+	payload := NewPayFee(payer, tx)
+	pl, err := Pack(pb.PAY_FEE_TYPE, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Transaction{
+		Transaction: NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength)),
+	}, nil
+}

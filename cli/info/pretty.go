@@ -69,6 +69,8 @@ func TxnUnmarshal(m map[string]interface{}) (interface{}, error) {
 		fallthrough //TODO
 	case pb.PayloadType_name[int32(pb.ISSUE_ASSET_TYPE)]:
 		fallthrough //TODO
+	case pb.PayloadType_name[int32(pb.PAY_FEE_TYPE)]:
+		fallthrough //TODO
 	default:
 		return nil, fmt.Errorf("Unknow txType[%s] for pretty print", typ)
 	}
