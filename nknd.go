@@ -155,7 +155,7 @@ func nknMain(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer config.Parameters.CleanPortMapping()
+	defer config.Parameters.ClearPortMapping()
 
 	err = log.Init()
 	if err != nil {
