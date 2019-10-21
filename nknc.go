@@ -14,6 +14,7 @@ import (
 	"github.com/nknorg/nkn/cli/name"
 	"github.com/nknorg/nkn/cli/pruning"
 	"github.com/nknorg/nkn/cli/pubsub"
+	"github.com/nknorg/nkn/cli/service"
 	"github.com/nknorg/nkn/cli/wallet"
 	"github.com/nknorg/nnet/log"
 	"github.com/urfave/cli"
@@ -54,6 +55,7 @@ func main() {
 		*pubsub.NewCommand(),
 		*id.NewCommand(),
 		*pruning.NewCommand(),
+		*service.NewCommand(),
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 	sort.Sort(cli.FlagsByName(app.Flags))
