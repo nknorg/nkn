@@ -6,7 +6,7 @@ import (
 )
 
 type Serverer interface {
-	GetNetNode() (*node.LocalNode, error)
+	GetNetNode() (*node.LocalNode, ErrorWithCode)
 	GetWallet() (vault.Wallet, error)
 }
 
