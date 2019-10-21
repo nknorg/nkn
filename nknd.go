@@ -167,21 +167,6 @@ func nknMain(c *cli.Context) error {
 
 	log.Infof("Node version: %v", config.Version)
 
-	if config.Parameters.Hostname == "" { // Skip query self extIP via set "HostName" in config.json
-		log.Info("Getting my IP address...")
-		var extIP string
-		if createMode { // There is no seed available in create mode, used ipify
-			extIP, err = ipify.GetIp()
-		} else {
-			extIP, err = AskMyIP(config.Parameters.SeedList)
-		}
-		if err != nil {
-			return err
-		}
-		log.Infof("My IP address is %s", extIP)
-		config.Parameters.Hostname = extIP
-	}
-
 	var wallet vault.Wallet
 	var account *vault.Account
 	if config.Parameters.WebGuiCreateWallet {
@@ -211,6 +196,44 @@ func nknMain(c *cli.Context) error {
 		}
 	}
 
+	// initialize ledger
+	err = InitLedger(account)
+	if err != nil {
+		return fmt.Errorf("chain.initialization error: %v", err)
+	}
+
+	// if InitLedger return err, chain.DefaultLedger is uninitialized.
+	defer chain.DefaultLedger.Store.Close()
+
+	// init web service
+	dashboard.Init(nil, wallet, nil)
+
+	if config.Parameters.Hostname == "" { // Skip query self extIP via set "HostName" in config.json
+		log.Info("Getting my IP address...")
+		var extIP string
+		if createMode { // There is no seed available in create mode, used ipify
+			extIP, err = ipify.GetIp()
+		} else {
+			extIP, err = AskMyIP(config.Parameters.SeedList)
+		}
+		if err != nil {
+			return err
+		}
+		log.Infof("My IP address is %s", extIP)
+		config.Parameters.Hostname = extIP
+	}
+
+	// start JsonRPC
+	rpcServer := httpjson.NewServer(nil, wallet)
+	go rpcServer.Start()
+
+	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDRegFee), Fixed64(config.Parameters.RegisterIDTxnFee))
+	if err != nil {
+		panic(fmt.Errorf("Get or create id error: %v", err))
+	}
+
+	log.Info("current chord ID: ", BytesToHexString(id))
+
 	conf := &nnet.Config{
 		Transport:        config.Parameters.Transport,
 		Hostname:         config.Parameters.Hostname,
@@ -223,24 +246,6 @@ func nknMain(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
-	// initialize ledger
-	err = InitLedger(account)
-	if err != nil {
-		return fmt.Errorf("chain.initialization error: %v", err)
-	}
-	// if InitLedger return err, chain.DefaultLedger is uninitialized.
-	defer chain.DefaultLedger.Store.Close()
-
-	//init web service
-	dashboard.Init(nil, wallet, nil)
-
-	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDRegFee), Fixed64(config.Parameters.RegisterIDTxnFee))
-	if err != nil {
-		panic(fmt.Errorf("Get or create id error: %v", err))
-	}
-
-	log.Info("current chord ID: ", BytesToHexString(id))
 
 	nn, err := nnet.NewNNet(id, conf)
 	if err != nil {
@@ -270,11 +275,11 @@ func nknMain(c *cli.Context) error {
 		return err
 	}
 
-	//init web service
-	dashboard.Init(localNode, nil, id)
+	// set JsonRPC server localnode
+	rpcServer.SetLocalNode(localNode)
 
-	//start JsonRPC
-	rpcServer := httpjson.NewServer(localNode, wallet)
+	// set web service localnode
+	dashboard.Init(localNode, nil, id)
 
 	// start websocket server
 	ws := websocket.NewServer(localNode, wallet)
@@ -312,8 +317,6 @@ func nknMain(c *cli.Context) error {
 	}
 
 	defer nn.Stop(nil)
-
-	go rpcServer.Start()
 
 	go ws.Start()
 

@@ -123,7 +123,7 @@ func getBlockCount(s Serverer, params map[string]interface{}) map[string]interfa
 func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]interface{} {
 	localNode, err := s.GetNetNode()
 	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
+		return respPacking(err.Code(), err.Error())
 	}
 	return respPacking(SUCCESS, localNode.GetChordInfo())
 }
@@ -189,7 +189,7 @@ func getBlockTxsByHeight(s Serverer, params map[string]interface{}) map[string]i
 func getConnectionCount(s Serverer, params map[string]interface{}) map[string]interface{} {
 	localNode, err := s.GetNetNode()
 	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
+		return respPacking(err.Code(), err.Error())
 	}
 
 	return respPacking(SUCCESS, localNode.GetConnectionCnt())
@@ -210,7 +210,7 @@ func getRawMemPool(s Serverer, params map[string]interface{}) map[string]interfa
 
 	localNode, err := s.GetNetNode()
 	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
+		return respPacking(err.Code(), err.Error())
 	}
 
 	txpool := localNode.GetTxnPool()
@@ -314,7 +314,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 
 	localNode, err := s.GetNetNode()
 	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
+		return respPacking(err.Code(), err.Error())
 	}
 
 	var hash common.Uint256
@@ -345,7 +345,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 func getNeighbor(s Serverer, params map[string]interface{}) map[string]interface{} {
 	localNode, err := s.GetNetNode()
 	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
+		return respPacking(err.Code(), err.Error())
 	}
 
 	return respPacking(SUCCESS, localNode.GetNeighborInfo())
@@ -357,7 +357,7 @@ func getNeighbor(s Serverer, params map[string]interface{}) map[string]interface
 func getNodeState(s Serverer, params map[string]interface{}) map[string]interface{} {
 	localNode, err := s.GetNetNode()
 	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
+		return respPacking(err.Code(), err.Error())
 	}
 
 	return respPacking(SUCCESS, localNode)
@@ -411,9 +411,13 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 	}
 
 	clientID, _, _, err := address.ParseClientAddress(str)
-	localNode, err := s.GetNetNode()
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+
+	localNode, e := s.GetNetNode()
+	if e != nil {
+		return respPacking(e.Code(), e.Error())
 	}
 
 	addr, pubkey, id, err := localNode.FindWsAddr(clientID)
@@ -507,14 +511,14 @@ func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interf
 		return respPacking(INVALID_PARAMS, "length of params is less than 1")
 	}
 
-	localNode, err := s.GetNetNode()
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
+	localNode, e := s.GetNetNode()
+	if e != nil {
+		return respPacking(e.Code(), e.Error())
 	}
 
 	addr, ok := params["address"].(string)
 	if !ok {
-		return respPacking(INVALID_PARAMS, err.Error())
+		return respPacking(INVALID_PARAMS, "invalid address")
 	}
 
 	pg, err := common.ToScriptHash(addr)
@@ -719,13 +723,14 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 
 	txPool, _ := params["txPool"].(bool)
 
-	localNode, err := s.GetNetNode()
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
+	localNode, e := s.GetNetNode()
+	if e != nil {
+		return respPacking(e.Code(), e.Error())
 	}
 
 	response := make(map[string]interface{})
 
+	var err error
 	meta, _ := params["meta"].(bool)
 	var subscribers interface{}
 	if !meta {
@@ -858,10 +863,10 @@ func findSuccessorAddrs(s Serverer, params map[string]interface{}) map[string]in
 		return respPacking(INVALID_PARAMS, err.Error())
 	}
 
-	localNode, err := s.GetNetNode()
-	if err != nil {
-		log.Error("Cannot get node:", err)
-		return respPacking(INTERNAL_ERROR, err.Error())
+	localNode, e := s.GetNetNode()
+	if e != nil {
+		log.Error("Cannot get node:", e)
+		return respPacking(e.Code(), e.Error())
 	}
 
 	addrs, err := localNode.FindSuccessorAddrs(key, config.MinNumSuccessors)
@@ -890,10 +895,10 @@ func findSuccessorAddr(s Serverer, params map[string]interface{}) map[string]int
 		return respPacking(INVALID_PARAMS, err.Error())
 	}
 
-	localNode, err := s.GetNetNode()
-	if err != nil {
-		log.Error("Cannot get node:", err)
-		return respPacking(INTERNAL_ERROR, err.Error())
+	localNode, e := s.GetNetNode()
+	if e != nil {
+		log.Error("Cannot get node:", e)
+		return respPacking(e.Code(), e.Error())
 	}
 
 	addrs, err := localNode.FindSuccessorAddrs(key, 1)

@@ -239,8 +239,24 @@ func (s *RPCServer) Start() {
 	httpServer.Serve(listener)
 }
 
-func (s *RPCServer) GetNetNode() (*node.LocalNode, error) {
-	return s.localNode, nil
+func (s *RPCServer) GetLocalNode() *node.LocalNode {
+	s.mainMux.RLock()
+	defer s.mainMux.RUnlock()
+	return s.localNode
+}
+
+func (s *RPCServer) SetLocalNode(ln *node.LocalNode) {
+	s.mainMux.Lock()
+	defer s.mainMux.Unlock()
+	s.localNode = ln
+}
+
+func (s *RPCServer) GetNetNode() (*node.LocalNode, common.ErrorWithCode) {
+	ln := s.GetLocalNode()
+	if ln == nil {
+		return nil, common.NewError(common.ErrNullID)
+	}
+	return ln, nil
 }
 
 func (s *RPCServer) GetWallet() (vault.Wallet, error) {

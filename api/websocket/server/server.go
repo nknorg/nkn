@@ -507,7 +507,7 @@ func (ws *WsServer) GetClientsById(cliendID []byte) []*session.Session {
 	return sessions
 }
 
-func (ws *WsServer) GetNetNode() (*node.LocalNode, error) {
+func (ws *WsServer) GetNetNode() (*node.LocalNode, common.ErrorWithCode) {
 	return ws.localNode, nil
 }
 
@@ -527,9 +527,9 @@ func (ws *WsServer) NotifyWrongClients() {
 			return
 		}
 
-		addr, pubkey, id, err := localNode.FindWsAddr(clientID)
-		if err != nil {
-			log.Errorf("Find websocket address error: %v", err)
+		addr, pubkey, id, e := localNode.FindWsAddr(clientID)
+		if e != nil {
+			log.Errorf("Find websocket address error: %v", e)
 			return
 		}
 

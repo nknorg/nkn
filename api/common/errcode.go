@@ -85,3 +85,34 @@ var ErrMessage = map[ErrCode]string{
 	ErrNullID:               "INTERNAL ERROR, there is no ID in account",
 	ErrZeroID:               "INTERNAL ERROR, it's zero ID in account",
 }
+
+type ErrorWithCode interface {
+	error
+	Code() ErrCode
+}
+
+type Error struct {
+	code    ErrCode
+	message string
+}
+
+func NewError(code ErrCode, msg ...string) ErrorWithCode {
+	var errMsg string
+	if len(msg) > 0 {
+		errMsg = msg[0]
+	} else {
+		errMsg = ErrMessage[code]
+	}
+	return &Error{
+		code:    code,
+		message: errMsg,
+	}
+}
+
+func (e *Error) Code() ErrCode {
+	return e.code
+}
+
+func (e *Error) Error() string {
+	return e.message
+}
