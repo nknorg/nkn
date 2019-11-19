@@ -3,6 +3,7 @@ package httpjson
 import (
 	"crypto/tls"
 	"encoding/json"
+	"github.com/nknorg/nkn/pb"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -63,7 +64,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	//CORS headers
 	w.Header().Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 	w.Header().Set("content-type", "application/json;charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Origin", "*") // add cli parameter to set it
 	if r.Method == "POST" {
 		//read the body of the request
 		body, err := ioutil.ReadAll(r.Body)
@@ -120,6 +121,25 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			default:
 				log.Warningf("RemoteAddr unsupport type for %v", addr)
 			}
+		}
+
+		if s.localNode != nil && s.localNode.GetSyncState() == pb.UNAVAILABLE{
+			result := map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    common.ErrNullID,
+					"message": common.ErrMessage[common.ErrNullID],
+					"data":    "RPC service is temporarily unavailable",
+				},
+				"id": id,
+			}
+			data, err := json.Marshal(result)
+			if err != nil {
+				log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
+				return
+			}
+			w.Write(data)
+			return
 		}
 
 		//get the corresponding function

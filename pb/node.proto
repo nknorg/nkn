@@ -20,6 +20,7 @@ enum SyncState {
   SYNC_STARTED = 1;
   SYNC_FINISHED = 2;
   PERSIST_FINISHED = 3;
+  UNAVAILABLE = 4;
 }
 
 message NodeData {
