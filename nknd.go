@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/nknorg/nkn/api/httpjson"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -17,7 +18,6 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/api/common"
-	"github.com/nknorg/nkn/api/httpjson"
 	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/api/websocket"
 	"github.com/nknorg/nkn/chain"
@@ -196,17 +196,23 @@ func nknMain(c *cli.Context) error {
 		}
 	}
 
+	// init web service
+	dashboard.Init(nil, wallet, nil)
+
+	// start JsonRPC
+	rpcServer := httpjson.NewServer(nil, wallet)
+	go rpcServer.Start()
+
 	// initialize ledger
 	err = InitLedger(account)
 	if err != nil {
 		return fmt.Errorf("chain.initialization error: %v", err)
 	}
 
+	rpcServer.SetLedgerStatus(true)
+
 	// if InitLedger return err, chain.DefaultLedger is uninitialized.
 	defer chain.DefaultLedger.Store.Close()
-
-	// init web service
-	dashboard.Init(nil, wallet, nil)
 
 	if config.Parameters.Hostname == "" { // Skip query self extIP via set "HostName" in config.json
 		log.Info("Getting my IP address...")
@@ -222,10 +228,6 @@ func nknMain(c *cli.Context) error {
 		log.Infof("My IP address is %s", extIP)
 		config.Parameters.Hostname = extIP
 	}
-
-	// start JsonRPC
-	rpcServer := httpjson.NewServer(nil, wallet)
-	go rpcServer.Start()
 
 	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDRegFee), Fixed64(config.Parameters.RegisterIDTxnFee))
 	if err != nil {
