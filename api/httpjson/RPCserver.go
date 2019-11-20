@@ -29,6 +29,9 @@ type RPCServer struct {
 
 	//the reference of Wallet
 	wallet vault.Wallet
+
+	//true if ledger initialization complete
+	ledgerInit bool
 }
 
 type ServeMux struct {
@@ -50,6 +53,7 @@ func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
 		listeners: []string{":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
 		localNode: localNode,
 		wallet:    wallet,
+		ledgerInit:   false,
 	}
 
 	return server
@@ -254,6 +258,9 @@ func (s *RPCServer) SetLocalNode(ln *node.LocalNode) {
 func (s *RPCServer) GetNetNode() (*node.LocalNode, common.ErrorWithCode) {
 	ln := s.GetLocalNode()
 	if ln == nil {
+		if s.GetLedgerStatus() == false && config.Parameters.StatePruningMode == "lowmem" {
+			return nil, common.NewError(common.ErrNullDB)
+		}
 		return nil, common.NewError(common.ErrNullID)
 	}
 	return ln, nil
@@ -261,4 +268,12 @@ func (s *RPCServer) GetNetNode() (*node.LocalNode, common.ErrorWithCode) {
 
 func (s *RPCServer) GetWallet() (vault.Wallet, error) {
 	return s.wallet, nil
+}
+
+func (s *RPCServer) SetLedgerStatus(status bool) {
+	s.ledgerInit = status
+}
+
+func (s *RPCServer) GetLedgerStatus() bool {
+	return s.ledgerInit
 }
