@@ -50,10 +50,10 @@ func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
 		mainMux: ServeMux{
 			m: make(map[string]common.Handler),
 		},
-		listeners: []string{":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
-		localNode: localNode,
-		wallet:    wallet,
-		ledgerInit:   false,
+		listeners:  []string{":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
+		localNode:  localNode,
+		wallet:     wallet,
+		ledgerInit: false,
 	}
 
 	return server
@@ -258,7 +258,7 @@ func (s *RPCServer) SetLocalNode(ln *node.LocalNode) {
 func (s *RPCServer) GetNetNode() (*node.LocalNode, common.ErrorWithCode) {
 	ln := s.GetLocalNode()
 	if ln == nil {
-		if s.GetLedgerStatus() == false && config.Parameters.StatePruningMode == "lowmem" {
+		if s.GetLedgerStatus() == false {
 			return nil, common.NewError(common.ErrNullDB)
 		}
 		return nil, common.NewError(common.ErrNullID)
