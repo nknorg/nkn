@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nknorg/nkn/api/httpjson"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/api/common"
+	"github.com/nknorg/nkn/api/httpjson"
 	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/api/websocket"
 	"github.com/nknorg/nkn/chain"
@@ -209,10 +209,10 @@ func nknMain(c *cli.Context) error {
 		return fmt.Errorf("chain.initialization error: %v", err)
 	}
 
-	rpcServer.SetLedgerStatus(true)
-
 	// if InitLedger return err, chain.DefaultLedger is uninitialized.
 	defer chain.DefaultLedger.Store.Close()
+
+	rpcServer.SetLedgerStatus(true)
 
 	if config.Parameters.Hostname == "" { // Skip query self extIP via set "HostName" in config.json
 		log.Info("Getting my IP address...")
