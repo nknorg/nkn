@@ -154,7 +154,9 @@ var (
 		Transport:                    "tcp",
 		NodePort:                     30001,
 		HttpWsPort:                   30002,
+		HttpWssPort:                  30004,
 		HttpJsonPort:                 30003,
+		HttpsJsonPort:                30005,
 		NAT:                          true,
 		Mining:                       true,
 		MiningDebug:                  true,
@@ -170,6 +172,7 @@ var (
 		RPCKeepAlivesEnabled:         false,
 		NATPortMappingTimeout:        365 * 86400,
 		NumTxnPerBlock:               256,
+		TlsDomain:                    "{{.DashedIP}}.ipv4.nknlabs.io",
 		TxPoolPerAccountTxCap:        32,
 		TxPoolTotalTxCap:             0,
 		TxPoolMaxMemorySize:          0,
@@ -178,6 +181,10 @@ var (
 		LogPath:                      "Log",
 		ChainDBPath:                  "ChainDB",
 		WalletFile:                   "wallet.json",
+		HttpWssCert:                  "certs/*.ipv4.nknlabs.io.cert",
+		HttpWssKey:                   "certs/*.ipv4.nknlabs.io.key",
+		HttpsJsonCert:                "certs/*.ipv4.nknlabs.io.cert",
+		HttpsJsonKey:                 "certs/*.ipv4.nknlabs.io.key",
 		MaxGetIDSeeds:                3,
 		DBFilesCacheCapacity:         100,
 		NumLowFeeTxnPerBlock:         0,
@@ -196,19 +203,18 @@ var (
 type Configuration struct {
 	Version                      int           `json:"Version"`
 	SeedList                     []string      `json:"SeedList"`
-	RestCertPath                 string        `json:"RestCertPath"`
-	RestKeyPath                  string        `json:"RestKeyPath"`
-	RPCCert                      string        `json:"RPCCert"`
-	RPCKey                       string        `json:"RPCKey"`
+	HttpWssCert                  string        `json:"HttpWssCert"`
+	HttpWssKey                   string        `json:"HttpWssKey"`
 	HttpWsPort                   uint16        `json:"HttpWsPort"`
+	HttpWssPort                  uint32        `json:"HttpWssPort"`
 	HttpJsonPort                 uint16        `json:"HttpJsonPort"`
+	HttpsJsonCert                string        `json:"HttpsJsonCert"`
+	HttpsJsonKey                 string        `json:"HttpsJsonKey"`
+	HttpsJsonPort                uint16        `json:"HttpsJsonPort"`
 	NodePort                     uint16        `json:"-"`
 	LogLevel                     int           `json:"LogLevel"`
 	MaxLogFileSize               uint32        `json:"MaxLogSize"`
 	IsTLS                        bool          `json:"IsTLS"`
-	CertPath                     string        `json:"CertPath"`
-	KeyPath                      string        `json:"KeyPath"`
-	CAPath                       string        `json:"CAPath"`
 	GenesisBlockProposer         string        `json:"GenesisBlockProposer"`
 	NumLowFeeTxnPerBlock         uint32        `json:"NumLowFeeTxnPerBlock"`
 	LowFeeTxnSizePerBlock        uint32        `json:"LowFeeTxnSizePerBlock"` // in bytes
@@ -216,6 +222,7 @@ type Configuration struct {
 	RegisterIDRegFee             int64         `json:"RegisterIDRegFee"`
 	RegisterIDTxnFee             int64         `json:"RegisterIDTxnFee"`
 	Hostname                     string        `json:"Hostname"`
+	TlsDomain                    string        `json:"TlsDomain"`
 	Transport                    string        `json:"Transport"`
 	NAT                          bool          `json:"NAT"`
 	Mining                       bool          `json:"Mining"`
