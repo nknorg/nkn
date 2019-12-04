@@ -201,7 +201,7 @@ func nknMain(c *cli.Context) error {
 
 	// start JsonRPC
 	rpcServer := httpjson.NewServer(nil, wallet)
-	go rpcServer.Start()
+	rpcServer.Start()
 
 	// initialize ledger
 	err = InitLedger(account)
@@ -320,7 +320,7 @@ func nknMain(c *cli.Context) error {
 
 	defer nn.Stop(nil)
 
-	go ws.Start()
+	ws.Start()
 
 	consensus, err := consensus.NewConsensus(account, localNode)
 	if err != nil {

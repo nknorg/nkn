@@ -48,7 +48,9 @@ type WsServer struct {
 	sync.RWMutex
 	Upgrader      websocket.Upgrader
 	listener      net.Listener
+	tlsListener   net.Listener
 	server        *http.Server
+	tlsServer     *http.Server
 	SessionList   *session.SessionList
 	ActionMap     map[string]Handler
 	TxHashMap     map[string]string //key: txHash   value:sessionid
@@ -81,38 +83,30 @@ func (ws *WsServer) Start() error {
 		return true
 	}
 
-	tlsFlag := false
-	if tlsFlag || config.Parameters.HttpWsPort%1000 == TlsPort {
-		var err error
-		ws.listener, err = ws.initTlsListen()
-		if err != nil {
-			log.Error("Https Cert: ", err.Error())
-			return err
-		}
-	} else {
-		var err error
-		ws.listener, err = net.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWsPort)))
-		if err != nil {
-			log.Error("net.Listen: ", err.Error())
-			return err
-		}
+	var err error
+	ws.tlsListener, err = ws.initTlsListen()
+	if err != nil {
+		log.Error("Https Cert: ", err.Error())
+		return err
+	}
+
+	ws.listener, err = net.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWsPort)))
+	if err != nil {
+		log.Error("net.Listen: ", err.Error())
+		return err
 	}
 
 	event.Queue.Subscribe(event.SendInboundMessageToClient, ws.sendInboundRelayMessageToClient)
 
-	var done = make(chan bool)
-	go ws.checkSessionsTimeout(done)
+	go ws.checkSessionsTimeout()
 
 	ws.server = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler)}
-	err := ws.server.Serve(ws.listener)
+	go ws.server.Serve(ws.listener)
 
-	done <- true
-	if err != nil {
-		log.Error("ListenAndServe: ", err.Error())
-		return err
-	}
+	ws.tlsServer = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler)}
+	go ws.tlsServer.Serve(ws.tlsListener)
+
 	return nil
-
 }
 
 func (ws *WsServer) registryMethod() {
@@ -229,7 +223,7 @@ func (ws *WsServer) Restart() {
 	}()
 }
 
-func (ws *WsServer) checkSessionsTimeout(done chan bool) {
+func (ws *WsServer) checkSessionsTimeout() {
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 	for {
@@ -246,9 +240,6 @@ func (ws *WsServer) checkSessionsTimeout(done chan bool) {
 			for _, s := range closeList {
 				ws.SessionList.CloseSession(s)
 			}
-
-		case <-done:
-			return
 		}
 	}
 
@@ -479,8 +470,8 @@ func (ws *WsServer) Broadcast(data []byte) error {
 
 func (ws *WsServer) initTlsListen() (net.Listener, error) {
 
-	CertPath := config.Parameters.RestCertPath
-	KeyPath := config.Parameters.RestKeyPath
+	CertPath := config.Parameters.HttpWssCert
+	KeyPath := config.Parameters.HttpWssKey
 
 	// load cert
 	cert, err := tls.LoadX509KeyPair(CertPath, KeyPath)
@@ -493,8 +484,8 @@ func (ws *WsServer) initTlsListen() (net.Listener, error) {
 		Certificates: []tls.Certificate{cert},
 	}
 
-	log.Info("TLS listen port is ", strconv.Itoa(int(config.Parameters.HttpWsPort)))
-	listener, err := tls.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWsPort)), tlsConfig)
+	log.Info("TLS listen port is ", strconv.Itoa(int(config.Parameters.HttpWssPort)))
+	listener, err := tls.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWssPort)), tlsConfig)
 	if err != nil {
 		log.Error(err)
 		return nil, err
