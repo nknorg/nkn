@@ -428,6 +428,34 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 	return respPacking(SUCCESS, NodeInfo(addr, pubkey, id))
 }
 
+func getWssAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(INVALID_PARAMS, "length of params is less than 1")
+	}
+
+	str, ok := params["address"].(string)
+	if !ok {
+		return respPacking(INTERNAL_ERROR, "address should be a string")
+	}
+
+	clientID, _, _, err := address.ParseClientAddress(str)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+
+	localNode, e := s.GetNetNode()
+	if e != nil {
+		return respPacking(e.Code(), e.Error())
+	}
+
+	addr, pubkey, id, err := localNode.FindWssAddr(clientID)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+
+	return respPacking(SUCCESS, NodeInfo(addr, pubkey, id))
+}
+
 // getBalanceByAddr gets balance by address
 // params: {"address":<address>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
@@ -921,6 +949,7 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
 	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
 	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
+	"getwssaddr":           {Handler: getWssAddr, AccessCtrl: BIT_JSONRPC},
 	"getversion":           {Handler: getVersion, AccessCtrl: BIT_JSONRPC},
 	"getneighbor":          {Handler: getNeighbor, AccessCtrl: BIT_JSONRPC},
 	"getnodestate":         {Handler: getNodeState, AccessCtrl: BIT_JSONRPC},
