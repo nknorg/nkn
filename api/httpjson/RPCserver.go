@@ -21,8 +21,11 @@ type RPCServer struct {
 	//keeps track of every function to be called on specific rpc call
 	mainMux ServeMux
 
-	//defines a slice of listeners for RPCServer, such as "127.0.0.1:30004"
-	listeners []string
+	//defines http listener for RPCServer, such as "127.0.0.1:30004"
+	httpListener string
+
+	//defines https listener for RPCServer
+	httpsListener string
 
 	//the reference of local node
 	localNode *node.LocalNode
@@ -50,10 +53,11 @@ func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
 		mainMux: ServeMux{
 			m: make(map[string]common.Handler),
 		},
-		listeners:  []string{":" + strconv.Itoa(int(config.Parameters.HttpJsonPort))},
-		localNode:  localNode,
-		wallet:     wallet,
-		ledgerInit: false,
+		httpListener:  ":" + strconv.Itoa(int(config.Parameters.HttpJsonPort)),
+		httpsListener: ":" + strconv.Itoa(int(config.Parameters.HttpsJsonPort)),
+		localNode:     localNode,
+		wallet:        wallet,
+		ledgerInit:    false,
 	}
 
 	return server
@@ -201,7 +205,7 @@ func (s *RPCServer) initTlsListen(cert, key string) (net.Listener, error) {
 		Certificates: []tls.Certificate{pair},
 	}
 
-	listener, err := tls.Listen("tcp", s.listeners[0], tlsConfig)
+	listener, err := tls.Listen("tcp", s.httpsListener, tlsConfig)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -216,20 +220,18 @@ func (s *RPCServer) Start() {
 		}
 	}
 
-	var listener net.Listener
+	var listener, tlsListener net.Listener
 	var err error
-	if config.Parameters.IsTLS {
-		listener, err = s.initTlsListen(config.Parameters.RPCCert, config.Parameters.RPCKey)
-		if err != nil {
-			log.Error("Https Cert: ", err.Error())
-			return
-		}
-	} else {
-		listener, err = net.Listen("tcp", s.listeners[0])
-		if err != nil {
-			log.Error("net.Listen: ", err.Error())
-			return
-		}
+	tlsListener, err = s.initTlsListen(config.Parameters.HttpsJsonCert, config.Parameters.HttpsJsonKey)
+	if err != nil {
+		log.Error("Https Cert: ", err.Error())
+		return
+	}
+
+	listener, err = net.Listen("tcp", s.httpListener)
+	if err != nil {
+		log.Error("net.Listen: ", err.Error())
+		return
 	}
 
 	rpcServeMux := http.NewServeMux()
@@ -240,8 +242,11 @@ func (s *RPCServer) Start() {
 		WriteTimeout: config.Parameters.RPCWriteTimeout * time.Second,
 		IdleTimeout:  config.Parameters.RPCIdleTimeout * time.Second,
 	}
+
 	httpServer.SetKeepAlivesEnabled(config.Parameters.RPCKeepAlivesEnabled)
-	httpServer.Serve(listener)
+
+	go httpServer.Serve(listener)
+	go httpServer.Serve(tlsListener)
 }
 
 func (s *RPCServer) GetLocalNode() *node.LocalNode {
