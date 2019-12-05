@@ -7,7 +7,8 @@ VERSION:=$(shell git describe --abbrev=4 --dirty --always --tags)
 Minversion:=$(shell date)
 BUILD_NKND_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/util/config.Version=$(VERSION)"
 BUILD_NKNC_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/cli/common.Version=$(VERSION)"
-IDENTIFIER=$(GOOS)-$(GOARCH)
+BUILD_DIR=build
+BIN_DIR=$(GOOS)-$(GOARCH)
 
 help:  ## Show available options with this Makefile
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -v grep | awk 'BEGIN { FS = ":.*?##" }; { printf "%-15s  %s\n", $$1,$$2 }'
@@ -23,20 +24,29 @@ yarn:
 
 .PHONY: build
 build: web
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKND_PARAM) -o $(FLAGS)/nknd$(EXT) nknd.go
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKNC_PARAM) -o $(FLAGS)/nknc$(EXT) nknc.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKND_PARAM) -o $(BUILD_DIR)/$(BIN_DIR)/nknd$(EXT) nknd.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKNC_PARAM) -o $(BUILD_DIR)/$(BIN_DIR)/nknc$(EXT) nknc.go
 
 .PHONY: crossbuild
 crossbuild: web
-	mkdir -p build/$(IDENTIFIER)
-	${MAKE} build FLAGS="build/$(IDENTIFIER)"
-	cp config.mainnet.json build/$(IDENTIFIER)/default.json
-	@cp -a dashboard/web/dist build/$(IDENTIFIER)/web
+	mkdir -p $(BUILD_DIR)/$(BIN_DIR)
+	${MAKE} build
+	cp config.mainnet.json $(BUILD_DIR)/$(BIN_DIR)/default.json
+	@cp -a dashboard/web/dist $(BUILD_DIR)/$(BIN_DIR)/web
 ifeq ($(GOOS), windows)
-	echo "IF NOT EXIST config.json COPY default.json config.json" > build/$(IDENTIFIER)/start-gui.bat
-	echo "nknd.exe --web-gui-create-wallet" >> build/$(IDENTIFIER)/start-gui.bat
-	chmod +x build/$(IDENTIFIER)/start-gui.bat
+	echo "IF NOT EXIST config.json COPY default.json config.json" > $(BUILD_DIR)/$(BIN_DIR)/start-gui.bat
+	echo "nknd.exe --web-gui-create-wallet" >> $(BUILD_DIR)/$(BIN_DIR)/start-gui.bat
+	chmod +x $(BUILD_DIR)/$(BIN_DIR)/start-gui.bat
 endif
+	${MAKE} zip
+
+.PHONY: tar
+tar:
+	cd $(BUILD_DIR) && rm -f $(BIN_DIR).tar.gz && tar --exclude ".DS_Store" --exclude "__MACOSX" -czvf $(BIN_DIR).tar.gz $(BIN_DIR)
+
+.PHONY: zip
+zip:
+	cd $(BUILD_DIR) && rm -f $(BIN_DIR).zip && zip --exclude "*.DS_Store*" --exclude "*__MACOSX*" -r $(BIN_DIR).zip $(BIN_DIR)
 
 .PHONY: all
 all: ## Build binaries for all available architectures
