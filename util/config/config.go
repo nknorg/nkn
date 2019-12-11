@@ -166,7 +166,8 @@ var (
 		SyncBlocksMaxMemorySize:      0,
 		RPCReadTimeout:               5,
 		RPCWriteTimeout:              10,
-		KeepAliveTimeout:             15,
+		RPCIdleTimeout:               0,
+		RPCKeepAlivesEnabled:         false,
 		NATPortMappingTimeout:        365 * 86400,
 		NumTxnPerBlock:               256,
 		TxPoolPerAccountTxCap:        32,
@@ -227,10 +228,11 @@ type Configuration struct {
 	NumTxnPerBlock               uint32        `json:"NumTxnPerBlock"`
 	TxPoolPerAccountTxCap        uint32        `json:"TxPoolPerAccountTxCap"`
 	TxPoolTotalTxCap             uint32        `json:"TxPoolTotalTxCap"`
-	TxPoolMaxMemorySize          uint32        `json:"TxPoolMaxMemorySize"`   // in megabytes (MB)
-	RPCReadTimeout               time.Duration `json:"RPCReadTimeout"`        // in seconds
-	RPCWriteTimeout              time.Duration `json:"RPCWriteTimeout"`       // in seconds
-	KeepAliveTimeout             time.Duration `json:"KeepAliveTimeout"`      // in seconds
+	TxPoolMaxMemorySize          uint32        `json:"TxPoolMaxMemorySize"` // in megabytes (MB)
+	RPCReadTimeout               time.Duration `json:"RPCReadTimeout"`      // in seconds
+	RPCWriteTimeout              time.Duration `json:"RPCWriteTimeout"`     // in seconds
+	RPCIdleTimeout               time.Duration `json:"RPCIdleTimeout"`      // in seconds
+	RPCKeepAlivesEnabled         bool          `json:"RPCKeepAlivesEnabled"`
 	NATPortMappingTimeout        time.Duration `json:"NATPortMappingTimeout"` // in seconds
 	LogPath                      string        `json:"LogPath"`
 	ChainDBPath                  string        `json:"ChainDBPath"`
