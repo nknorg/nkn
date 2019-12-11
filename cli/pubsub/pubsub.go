@@ -81,6 +81,23 @@ func subscribeAction(c *cli.Context) error {
 		txn, _ := MakeUnsubscribeTransaction(myWallet, id, topic, nonce, txnFee)
 		buff, _ := txn.Marshal()
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+	case c.Bool("get"):
+		topic := c.String("topic")
+		if topic == "" {
+			fmt.Println("topic is required with [--topic]")
+			return nil
+		}
+
+		params := map[string]interface{}{"topic": topic}
+		subscriber := c.String("subscriber")
+		if subscriber == "" { // get list of topic
+			params["offset"] = c.Uint64("offset")
+			params["limit"] = c.Uint64("limit")
+			resp, err = client.Call(Address(), "getsubscribers", 0, params)
+		} else { // get details of specified subscriber
+			params["subscriber"] = subscriber
+			resp, err = client.Call(Address(), "getsubscription", 0, params)
+		}
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -109,6 +126,10 @@ func NewCommand() *cli.Command {
 				Name:  "unsub, u",
 				Usage: "unsubscribe from topic",
 			},
+			cli.BoolFlag{
+				Name:  "get, g",
+				Usage: "get subscribes list of specified topic or get details info of a specified subscriber",
+			},
 			cli.StringFlag{
 				Name:  "identifier, id",
 				Usage: "identifier",
@@ -120,6 +141,18 @@ func NewCommand() *cli.Command {
 			cli.Uint64Flag{
 				Name:  "duration",
 				Usage: "duration",
+			},
+			cli.Uint64Flag{
+				Name:  "offset",
+				Usage: "get subscribes skip previous offset items",
+			},
+			cli.Uint64Flag{
+				Name:  "limit",
+				Usage: "limit subscribes amount which start from offset",
+			},
+			cli.StringFlag{
+				Name:  "subscriber",
+				Usage: "specified subscriber which you want details",
 			},
 			cli.StringFlag{
 				Name:  "meta",
