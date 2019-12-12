@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/api/common"
+	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -32,9 +33,6 @@ type RPCServer struct {
 
 	//the reference of Wallet
 	wallet vault.Wallet
-
-	//true if ledger initialization complete
-	ledgerInit bool
 }
 
 type ServeMux struct {
@@ -57,7 +55,6 @@ func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
 		httpsListener: ":" + strconv.Itoa(int(config.Parameters.HttpsJsonPort)),
 		localNode:     localNode,
 		wallet:        wallet,
-		ledgerInit:    false,
 	}
 
 	return server
@@ -66,6 +63,28 @@ func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
 //this is the funciton that should be called in order to answer an rpc call
 //should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
 func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Errorf("HTTP JSON RPC handler panic: %v", err)
+			data, err := json.Marshal(map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    -common.INTERNAL_ERROR,
+					"message": common.ErrMessage[common.INTERNAL_ERROR],
+				},
+				"id": "1",
+			})
+			if err != nil {
+				log.Error("HTTP JSON RPC JSON Marshal error: ", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write(data)
+		}
+	}()
+
 	s.mainMux.RLock()
 	defer s.mainMux.RUnlock()
 	//CORS headers
@@ -111,6 +130,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			})
 			if err != nil {
 				log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			w.Write(data)
@@ -133,6 +153,33 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		//get the corresponding function
 		function, ok := s.mainMux.m[method]
 		if ok {
+			defer func() {
+				err := recover()
+				if err != nil {
+					var errcode common.ErrCode
+					if _, err = chain.GetDefaultLedger(); err != nil {
+						errcode = common.ErrNullDB
+					} else if s.GetNetNode() == nil {
+						errcode = common.ErrNullID
+					} else {
+						panic(err)
+					}
+					data, err := json.Marshal(map[string]interface{}{
+						"jsonrpc": "2.0",
+						"error": map[string]interface{}{
+							"code":    -errcode,
+							"message": common.ErrMessage[errcode],
+						},
+						"id": id,
+					})
+					if err != nil {
+						log.Error("HTTP JSON RPC JSON Marshal error: ", err)
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					w.Write(data)
+				}
+			}()
 			var data []byte
 			var err error
 			response := function(s, params)
@@ -157,6 +204,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			}
 			if err != nil {
 				log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			w.Write(data)
@@ -174,6 +222,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			})
 			if err != nil {
 				log.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			w.Write(data)
@@ -261,25 +310,6 @@ func (s *RPCServer) SetLocalNode(ln *node.LocalNode) {
 	s.localNode = ln
 }
 
-func (s *RPCServer) GetNetNode() (*node.LocalNode, common.ErrorWithCode) {
-	ln := s.GetLocalNode()
-	if ln == nil {
-		if s.GetLedgerStatus() == false {
-			return nil, common.NewError(common.ErrNullDB)
-		}
-		return nil, common.NewError(common.ErrNullID)
-	}
-	return ln, nil
-}
-
-func (s *RPCServer) GetWallet() (vault.Wallet, error) {
-	return s.wallet, nil
-}
-
-func (s *RPCServer) SetLedgerStatus(status bool) {
-	s.ledgerInit = status
-}
-
-func (s *RPCServer) GetLedgerStatus() bool {
-	return s.ledgerInit
+func (s *RPCServer) GetNetNode() *node.LocalNode {
+	return s.GetLocalNode()
 }

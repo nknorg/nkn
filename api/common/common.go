@@ -2,12 +2,10 @@ package common
 
 import (
 	"github.com/nknorg/nkn/node"
-	"github.com/nknorg/nkn/vault"
 )
 
 type Serverer interface {
-	GetNetNode() (*node.LocalNode, ErrorWithCode)
-	GetWallet() (vault.Wallet, error)
+	GetNetNode() *node.LocalNode
 }
 
 // Response for json API.

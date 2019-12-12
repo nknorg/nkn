@@ -145,11 +145,7 @@ func (ws *WsServer) registryMethod() {
 
 		// TODO: use signature (or better, with one-time challange) to verify identity
 
-		localNode, err := s.GetNetNode()
-		if err != nil {
-			return common.RespPacking(nil, common.INTERNAL_ERROR)
-		}
-
+		localNode := s.GetNetNode()
 		addr, pubkey, id, err := localNode.FindWsAddr(clientID)
 		if err != nil {
 			log.Errorf("Find websocket address error: %v", err)
@@ -498,12 +494,8 @@ func (ws *WsServer) GetClientsById(cliendID []byte) []*session.Session {
 	return sessions
 }
 
-func (ws *WsServer) GetNetNode() (*node.LocalNode, common.ErrorWithCode) {
-	return ws.localNode, nil
-}
-
-func (ws *WsServer) GetWallet() (vault.Wallet, error) {
-	return ws.wallet, nil
+func (ws *WsServer) GetNetNode() *node.LocalNode {
+	return ws.localNode
 }
 
 func (ws *WsServer) NotifyWrongClients() {
@@ -513,11 +505,7 @@ func (ws *WsServer) NotifyWrongClients() {
 			return
 		}
 
-		localNode, err := ws.GetNetNode()
-		if err != nil {
-			return
-		}
-
+		localNode := ws.GetNetNode()
 		addr, pubkey, id, e := localNode.FindWsAddr(clientID)
 		if e != nil {
 			log.Errorf("Find websocket address error: %v", e)
