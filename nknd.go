@@ -212,8 +212,6 @@ func nknMain(c *cli.Context) error {
 	// if InitLedger return err, chain.DefaultLedger is uninitialized.
 	defer chain.DefaultLedger.Store.Close()
 
-	rpcServer.SetLedgerStatus(true)
-
 	if config.Parameters.Hostname == "" { // Skip query self extIP via set "HostName" in config.json
 		log.Info("Getting my IP address...")
 		var extIP string
