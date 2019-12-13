@@ -29,9 +29,11 @@ build: web
 
 .PHONY: crossbuild
 crossbuild: web
+	rm -rf $(BUILD_DIR)/$(BIN_DIR)
 	mkdir -p $(BUILD_DIR)/$(BIN_DIR)
 	${MAKE} build
 	cp config.mainnet.json $(BUILD_DIR)/$(BIN_DIR)/default.json
+	cp -a certs $(BUILD_DIR)/$(BIN_DIR)/certs
 	@cp -a dashboard/web/dist $(BUILD_DIR)/$(BIN_DIR)/web
 ifeq ($(GOOS), windows)
 	echo "IF NOT EXIST config.json COPY default.json config.json" > $(BUILD_DIR)/$(BIN_DIR)/start-gui.bat
