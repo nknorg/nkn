@@ -175,10 +175,9 @@ func (sc *SigChain) VerifyMeta() error {
 
 	for i, e := range sc.Elems {
 		if i == 0 || i == sc.Length()-1 {
-			// Will be enabled in the next version
-			// if e.SigAlgo != SIGNATURE {
-			// 	return fmt.Errorf("sigchain elem %d sig algo should be %v", i, SIGNATURE)
-			// }
+			if e.SigAlgo != SIGNATURE {
+				return fmt.Errorf("sigchain elem %d sig algo should be %v", i, SIGNATURE)
+			}
 			if len(e.Vrf) > 0 {
 				return fmt.Errorf("sigchain elem %d vrf should be empty", i)
 			}
