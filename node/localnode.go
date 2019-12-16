@@ -396,7 +396,7 @@ func (localNode *LocalNode) findAddr(key []byte, tls bool) (string, []byte, []by
 		return "", nil, nil, errors.New("Hostname is empty")
 	}
 
-	var port uint32
+	var port uint16
 	if tls == true {
 		if nodeData.TlsWebsocketDomain != "" {
 			host = nodeData.TlsWebsocketDomain
@@ -405,7 +405,7 @@ func (localNode *LocalNode) findAddr(key []byte, tls bool) (string, []byte, []by
 			return "", nil, nil, errors.New("Predecessor node didn't support WSS protocol yet")
 		}
 	} else {
-		port = nodeData.WebsocketPort
+		port = uint16(nodeData.WebsocketPort)
 	}
 	wsAddr := fmt.Sprintf("%s:%d", host, port)
 

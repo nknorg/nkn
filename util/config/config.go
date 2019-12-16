@@ -206,7 +206,7 @@ type Configuration struct {
 	HttpWssCert                  string        `json:"HttpWssCert"`
 	HttpWssKey                   string        `json:"HttpWssKey"`
 	HttpWsPort                   uint16        `json:"HttpWsPort"`
-	HttpWssPort                  uint32        `json:"HttpWssPort"`
+	HttpWssPort                  uint16        `json:"HttpWssPort"`
 	HttpJsonPort                 uint16        `json:"HttpJsonPort"`
 	HttpsJsonCert                string        `json:"HttpsJsonCert"`
 	HttpsJsonKey                 string        `json:"HttpsJsonKey"`
@@ -374,11 +374,23 @@ func (config *Configuration) SetupPortMapping() error {
 		}
 		log.Printf("Mapped external port %d to internal port %d", config.HttpWsPort, config.HttpWsPort)
 
+		err = upnp.Forward(config.HttpWssPort, "NKN Node")
+		if err != nil {
+			return err
+		}
+		log.Printf("Mapped external port %d to internal port %d", config.HttpWssPort, config.HttpWssPort)
+
 		err = upnp.Forward(config.HttpJsonPort, "NKN Node")
 		if err != nil {
 			return err
 		}
 		log.Printf("Mapped external port %d to internal port %d", config.HttpJsonPort, config.HttpJsonPort)
+
+		err = upnp.Forward(config.HttpsJsonPort, "NKN Node")
+		if err != nil {
+			return err
+		}
+		log.Printf("Mapped external port %d to internal port %d", config.HttpsJsonPort, config.HttpsJsonPort)
 	} else {
 		log.Printf("No UPnP gateway discovered, trying go-nat...")
 
@@ -409,7 +421,19 @@ func (config *Configuration) SetupPortMapping() error {
 		}
 		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
 
+		externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpWssPort), int(config.HttpWssPort), "NKN Node", config.NATPortMappingTimeout*time.Second)
+		if err != nil {
+			return err
+		}
+		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
 		externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpJsonPort), int(config.HttpJsonPort), "NKN Node", config.NATPortMappingTimeout*time.Second)
+		if err != nil {
+			return err
+		}
+		log.Printf("Mapped external port %d to internal port %d", externalPort, internalPort)
+
+		externalPort, internalPort, err = nat.AddPortMapping(transport.GetNetwork(), int(config.HttpsJsonPort), int(config.HttpsJsonPort), "NKN Node", config.NATPortMappingTimeout*time.Second)
 		if err != nil {
 			return err
 		}
@@ -444,11 +468,23 @@ func (config *Configuration) ClearPortMapping() error {
 		}
 		log.Printf("Removed port mapping at external port %d", config.HttpWsPort)
 
+		err = device.Clear(config.HttpWssPort)
+		if err != nil {
+			return err
+		}
+		log.Printf("Removed port mapping at external port %d", config.HttpWssPort)
+
 		err = device.Clear(config.HttpJsonPort)
 		if err != nil {
 			return err
 		}
 		log.Printf("Removed port mapping at external port %d", config.HttpJsonPort)
+
+		err = device.Clear(config.HttpsJsonPort)
+		if err != nil {
+			return err
+		}
+		log.Printf("Removed port mapping at external port %d", config.HttpsJsonPort)
 	case gonat.NAT:
 		transport, err := transport.NewTransport(config.Transport)
 		if err != nil {
@@ -467,11 +503,23 @@ func (config *Configuration) ClearPortMapping() error {
 		}
 		log.Printf("Removed port mapping at external port %d", config.HttpWsPort)
 
+		err = device.DeletePortMapping(transport.GetNetwork(), int(config.HttpWssPort))
+		if err != nil {
+			return err
+		}
+		log.Printf("Removed port mapping at external port %d", config.HttpWssPort)
+
 		err = device.DeletePortMapping(transport.GetNetwork(), int(config.HttpJsonPort))
 		if err != nil {
 			return err
 		}
 		log.Printf("Removed port mapping at external port %d", config.HttpJsonPort)
+
+		err = device.DeletePortMapping(transport.GetNetwork(), int(config.HttpsJsonPort))
+		if err != nil {
+			return err
+		}
+		log.Printf("Removed port mapping at external port %d", config.HttpsJsonPort)
 	default:
 		return fmt.Errorf("Unknown NAT gateway type")
 	}
@@ -540,6 +588,8 @@ func (config *Configuration) incrementPort() {
 		config.NodePort,
 		config.HttpWsPort,
 		config.HttpJsonPort,
+		config.HttpWssPort,
+		config.HttpsJsonPort,
 	}
 	minPort, maxPort := findMinMaxPort(allPorts)
 	step := maxPort - minPort + 1
@@ -570,7 +620,9 @@ func (config *Configuration) incrementPort() {
 	}
 	config.NodePort += delta
 	config.HttpWsPort += delta
+	config.HttpWssPort += delta
 	config.HttpJsonPort += delta
+	config.HttpsJsonPort += delta
 	if delta > 0 {
 		log.Println("Port in use! All ports are automatically increased by", delta)
 	}
