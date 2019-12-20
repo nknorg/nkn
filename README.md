@@ -213,7 +213,7 @@ $ ./nknd
 If you are using Docker then you should run the following command instead:
 
 ```shell
-$ docker run -p 30001-30003:30001-30003 -v ${PWD}:/nkn/data --name nkn --rm -it nknorg/nkn nknd
+$ docker run -p 30001-30005:30001-30005 -v ${PWD}:/nkn/data --name nkn --rm -it nknorg/nkn nknd
 ```
 
 If you get an error saying `docker: Error response from daemon: Conflict. The
@@ -260,7 +260,7 @@ You can add `--no-nat` flag when starting nknd OR add `"NAT": false` in
 `config.json` to disable automatic port forwarding. If your router does not
 support such protocol, you **have to** setup port forwarding on your router for
 port 30001 as well as **all** other ports specified in `config.json`
-(30001-30003 by default), otherwise other nodes cannot establish connections to
+(30001-30005 by default), otherwise other nodes cannot establish connections to
 you and you will **NOT** be able to mine token even though your node can still
 run and sync blocks.
 
