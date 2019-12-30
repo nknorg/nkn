@@ -97,9 +97,10 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	nodeData := &pb.NodeData{
 		PublicKey:          publicKey,
 		WebsocketPort:      uint32(config.Parameters.HttpWsPort),
-		TlsWebsocketDomain: host,
 		JsonRpcPort:        uint32(config.Parameters.HttpJsonPort),
 		ProtocolVersion:    uint32(config.ProtocolVersion),
+		TlsWebsocketDomain: host,
+		TlsWebsocketPort:   uint32(config.Parameters.HttpWssPort),
 	}
 
 	node, err := NewNode(nn.GetLocalNode().Node.Node, nodeData)
@@ -343,6 +344,10 @@ func (localNode *LocalNode) GetWsAddr() string {
 	return fmt.Sprintf("%s:%d", localNode.GetHostname(), localNode.GetWebsocketPort())
 }
 
+func (localNode *LocalNode) GetWssAddr() string {
+	return fmt.Sprintf("%s:%d", localNode.GetTlsWebsocketDomain(), localNode.GetTlsWebsocketPort())
+}
+
 func (localNode *LocalNode) FindSuccessorAddrs(key []byte, numSucc int) ([]string, error) {
 	c, ok := localNode.nnet.Network.(*chord.Chord)
 	if !ok {
@@ -400,9 +405,9 @@ func (localNode *LocalNode) findAddr(key []byte, tls bool) (string, []byte, []by
 	if tls == true {
 		if nodeData.TlsWebsocketDomain != "" {
 			host = nodeData.TlsWebsocketDomain
-			port = config.Parameters.HttpWssPort
+			port = uint16(nodeData.TlsWebsocketPort)
 		} else {
-			return "", nil, nil, errors.New("Predecessor node didn't support WSS protocol yet")
+			return "", nil, nil, errors.New("Predecessor node doesn't support WSS protocol")
 		}
 	} else {
 		port = uint16(nodeData.WebsocketPort)
