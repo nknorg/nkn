@@ -17,6 +17,7 @@ type Session struct {
 	clientChordID []byte
 	clientPubKey  []byte
 	clientAddrStr *string
+	isTlsClient   bool
 }
 
 const sessionTimeOut int64 = 120
@@ -85,12 +86,13 @@ func (s *Session) SetSessionId(sessionId string) {
 	s.sSessionId = sessionId
 }
 
-func (s *Session) SetClient(chordID, pubKey []byte, addrStr *string) {
+func (s *Session) SetClient(chordID, pubKey []byte, addrStr *string, isTls bool) {
 	s.Lock()
 	defer s.Unlock()
 	s.clientChordID = chordID
 	s.clientPubKey = pubKey
 	s.clientAddrStr = addrStr
+	s.isTlsClient = isTls
 }
 
 func (s *Session) IsClient() bool {
@@ -116,4 +118,8 @@ func (s *Session) GetAddrStr() *string {
 		return nil
 	}
 	return s.clientAddrStr
+}
+
+func (s *Session) IsTlsClient() bool {
+	return s.isTlsClient
 }

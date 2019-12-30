@@ -146,13 +146,24 @@ func (ws *WsServer) registryMethod() {
 		// TODO: use signature (or better, with one-time challange) to verify identity
 
 		localNode := s.GetNetNode()
-		addr, pubkey, id, err := localNode.FindWsAddr(clientID)
+
+		isTlsClient := cmd["IsTls"].(bool)
+		var addr, localAddr string
+		var pubkey, id []byte
+
+		if isTlsClient {
+			addr, pubkey, id, err = localNode.FindWssAddr(clientID)
+			localAddr = localNode.GetWssAddr()
+		} else {
+			addr, pubkey, id, err = localNode.FindWsAddr(clientID)
+			localAddr = localNode.GetWsAddr()
+		}
 		if err != nil {
 			log.Errorf("Find websocket address error: %v", err)
 			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
 
-		if addr != localNode.GetWsAddr() {
+		if addr != localAddr {
 			return common.RespPacking(common.NodeInfo(addr, pubkey, id), common.WRONG_NODE)
 		}
 
@@ -162,7 +173,7 @@ func (ws *WsServer) registryMethod() {
 			log.Error("Change session id error: ", err)
 			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
-		session.SetClient(clientID, pubKey, &addrStr)
+		session.SetClient(clientID, pubKey, &addrStr, isTlsClient)
 
 		go func() {
 			messages := ws.messageBuffer.PopMessages(clientID)
@@ -385,6 +396,7 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 		req["Raw"] = strconv.FormatInt(int64(raw), 10)
 	}
 	req["Userid"] = curSession.GetSessionId()
+	req["IsTls"] = r.TLS != nil
 	ret := action.handler(ws, req)
 	resp := common.ResponsePack(ret["error"].(common.ErrCode))
 	resp["Action"] = actionName
@@ -480,7 +492,6 @@ func (ws *WsServer) initTlsListen() (net.Listener, error) {
 		Certificates: []tls.Certificate{cert},
 	}
 
-	log.Info("TLS listen port is ", strconv.Itoa(int(config.Parameters.HttpWssPort)))
 	listener, err := tls.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWssPort)), tlsConfig)
 	if err != nil {
 		log.Error(err)
@@ -506,13 +517,24 @@ func (ws *WsServer) NotifyWrongClients() {
 		}
 
 		localNode := ws.GetNetNode()
-		addr, pubkey, id, e := localNode.FindWsAddr(clientID)
-		if e != nil {
-			log.Errorf("Find websocket address error: %v", e)
+
+		var addr, localAddr string
+		var pubkey, id []byte
+		var err error
+
+		if client.IsTlsClient() {
+			addr, pubkey, id, err = localNode.FindWssAddr(clientID)
+			localAddr = localNode.GetWssAddr()
+		} else {
+			addr, pubkey, id, err = localNode.FindWsAddr(clientID)
+			localAddr = localNode.GetWsAddr()
+		}
+		if err != nil {
+			log.Errorf("Find websocket address error: %v", err)
 			return
 		}
 
-		if addr != localNode.GetWsAddr() {
+		if addr != localAddr {
 			resp := common.ResponsePack(common.WRONG_NODE)
 			resp["Result"] = common.NodeInfo(addr, pubkey, id)
 			ws.respondToSession(client, resp)
