@@ -14,11 +14,13 @@ var (
 	AccountPrefix        = []byte{0x00}
 	NanoPayPrefix        = []byte{0x01}
 	NanoPayCleanupPrefix = []byte{0x02}
-	NamePrefix           = []byte{0x03}
+	NamePrefix_legacy    = []byte{0x03}
 	NameRegistrantPrefix = []byte{0x04}
 	PubSubPrefix         = []byte{0x05}
 	PubSubCleanupPrefix  = []byte{0x06}
 	IssueAssetPrefix     = []byte{0x07}
+	NamePrefix           = []byte{0x08}
+	NameCleanupPrefix    = []byte{0x09}
 )
 
 type StateDB struct {
@@ -30,6 +32,7 @@ type StateDB struct {
 	nanoPayCleanup  sync.Map
 	names           sync.Map
 	nameRegistrants sync.Map
+	namesCleanup    sync.Map
 	pubSub          sync.Map
 	pubSubCleanup   sync.Map
 	assets          sync.Map

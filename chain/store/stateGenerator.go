@@ -63,7 +63,24 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		states.IncrNonce(pg[0])
 
 		registerNamePayload := pl.(*pb.RegisterName)
-		states.setName(registerNamePayload.Registrant, registerNamePayload.Name)
+		if config.LegacyNameService.GetValueAtHeight(height) {
+			states.setName_legacy(registerNamePayload.Registrant, registerNamePayload.Name)
+		} else {
+			if err = states.registerName(registerNamePayload.Name, registerNamePayload.Registrant, config.MaxNameDuration+height); err != nil {
+				return err
+			}
+			donationAddress, err := ToScriptHash(config.DonationAddress)
+			if err != nil {
+				return err
+			}
+			if err = states.UpdateBalance(pg[0], config.NKNAssetID, config.NameRegistrationFee, Subtraction); err != nil {
+				return err
+			}
+			if err = states.UpdateBalance(donationAddress, config.NKNAssetID, config.NameRegistrationFee, Addition); err != nil {
+				return err
+			}
+			states.setName_legacy(registerNamePayload.Registrant, registerNamePayload.Name)
+		}
 	case pb.DELETE_NAME_TYPE:
 		pg, err := txn.GetProgramHashes()
 		if err != nil {
@@ -76,7 +93,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		states.IncrNonce(pg[0])
 
 		deleteNamePayload := pl.(*pb.DeleteName)
-		states.deleteNameForRegistrant(deleteNamePayload.Registrant, deleteNamePayload.Name)
+		states.deleteNameForRegistrant_legacy(deleteNamePayload.Registrant, deleteNamePayload.Name)
 	case pb.SUBSCRIBE_TYPE:
 		pg, err := txn.GetProgramHashes()
 		if err != nil {
@@ -305,6 +322,10 @@ func (cs *ChainStore) generateStateRoot(ctx context.Context, b *block.Block, gen
 		}
 
 		if err = states.CleanupPubSub(b.Header.UnsignedHeader.Height); err != nil {
+			return nil, EmptyUint256, err
+		}
+
+		if err = states.CleanupNames(b.Header.UnsignedHeader.Height); err != nil {
 			return nil, EmptyUint256, err
 		}
 	}
