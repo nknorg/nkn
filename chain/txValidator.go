@@ -145,12 +145,13 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return errors.New("Register name transaction is not supported yet")
 		}
 		pld := payload.(*pb.RegisterName)
-		match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)", pld.Name)
+		regexPattern := config.AllowNameRegex.GetValueAtHeight(height)
+		match, err := regexp.MatchString(regexPattern, pld.Name)
 		if err != nil {
 			return err
 		}
 		if !match {
-			return fmt.Errorf("name %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", pld.Name)
+			fmt.Errorf("name should match regex %s", regexPattern)
 		}
 	case pb.DELETE_NAME_TYPE:
 	case pb.SUBSCRIBE_TYPE:
@@ -321,7 +322,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 		}
 
 		pld := payload.(*pb.RegisterName)
-		name, err := DefaultLedger.Store.GetName(pld.Registrant)
+		name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
 		if name != "" {
 			return fmt.Errorf("pubKey %+v already has registered name %s", pld.Registrant, name)
 		}
@@ -329,7 +330,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 			return err
 		}
 
-		registrant, err := DefaultLedger.Store.GetRegistrant(pld.Name)
+		registrant, err := DefaultLedger.Store.GetRegistrant_legacy(pld.Name)
 		if registrant != nil {
 			return fmt.Errorf("name %s is already registered for pubKey %+v", pld.Name, registrant)
 		}
@@ -342,7 +343,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction) error {
 		}
 
 		pld := payload.(*pb.DeleteName)
-		name, err := DefaultLedger.Store.GetName(pld.Registrant)
+		name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
 		if err != nil {
 			return err
 		}

@@ -23,7 +23,7 @@ func ResolveDest(Dest string) string {
 	substrings := strings.Split(Dest, ".")
 	pubKeyOrName := substrings[len(substrings)-1]
 
-	registrant, err := chain.DefaultLedger.Store.GetRegistrant(pubKeyOrName)
+	registrant, _, err := chain.DefaultLedger.Store.GetRegistrant(pubKeyOrName)
 	if err != nil || registrant == nil {
 		return Dest
 	}
