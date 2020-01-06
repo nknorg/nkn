@@ -43,3 +43,17 @@ func (hdi *HeightDependentBool) GetValueAtHeight(height uint32) bool {
 	}
 	return false
 }
+
+type HeightDependentString struct {
+	heights []uint32
+	values  []string
+}
+
+func (hdi *HeightDependentString) GetValueAtHeight(height uint32) string {
+	for i, h := range hdi.heights {
+		if height >= h {
+			return hdi.values[i]
+		}
+	}
+	return ""
+}
