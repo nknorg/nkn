@@ -60,6 +60,13 @@ func nameAction(c *cli.Context) error {
 		txn, _ := MakeDeleteNameTransaction(myWallet, name, nonce, txnFee)
 		buff, _ := txn.Marshal()
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+	case c.Bool("get"):
+		name := c.String("name")
+		if name == "" {
+			fmt.Println("name is required with [--name]")
+			return nil
+		}
+		resp, err = client.Call(Address(), "getregistrant", 0, map[string]interface{}{"name": name})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -87,6 +94,10 @@ func NewCommand() *cli.Command {
 			cli.BoolFlag{
 				Name:  "del, d",
 				Usage: "delete name of your address",
+			},
+			cli.BoolFlag{
+				Name:  "get, g",
+				Usage: "get register name info",
 			},
 			cli.StringFlag{
 				Name:  "name",

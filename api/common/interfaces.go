@@ -12,7 +12,6 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/node"
-	"github.com/nknorg/nkn/program"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/address"
 	"github.com/nknorg/nkn/util/config"
@@ -585,45 +584,6 @@ func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) (E
 	return ErrNoError, nil
 }
 
-// getAddressByName get address by name
-// params: {"name":<name>}
-// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getAddressByName(s Serverer, params map[string]interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return respPacking(INVALID_PARAMS, "length of params is less than 1")
-	}
-
-	name, ok := params["name"].(string)
-	if !ok {
-		return respPacking(INVALID_PARAMS, "name should be a string")
-	}
-
-	publicKey, err := chain.DefaultLedger.Store.GetRegistrant(name)
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
-	}
-	if publicKey == nil {
-		return respPacking(INTERNAL_ERROR, "no such name registered")
-	}
-
-	pubKey, err := crypto.NewPubKeyFromBytes(publicKey)
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
-	}
-
-	programHash, err := program.CreateProgramHash(pubKey)
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
-	}
-
-	address, err := programHash.ToAddress()
-	if err != nil {
-		return respPacking(INTERNAL_ERROR, err.Error())
-	}
-
-	return respPacking(SUCCESS, address)
-}
-
 // getSubscription get subscription
 // params: {"topic":<topic>, "bucket":<bucket>, "subscriber":<subscriber>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
@@ -666,6 +626,27 @@ func getSubscription(s Serverer, params map[string]interface{}) map[string]inter
 		meta,
 		expiresAt,
 	})
+}
+
+func getRegistrant(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(INVALID_PARAMS, "length of params is less than 1")
+	}
+
+	name, ok := params["name"].(string)
+	if !ok {
+		return respPacking(INVALID_PARAMS, "name should be a string")
+	}
+
+	registrant, expiresAt, err := chain.DefaultLedger.Store.GetRegistrant(name)
+	if err != nil {
+		return respPacking(INTERNAL_ERROR, err.Error())
+	}
+	reg := hex.EncodeToString(registrant)
+	response := make(map[string]interface{})
+	response["registrant"] = reg
+	response["expiresAt"] = expiresAt
+	return respPacking(SUCCESS, response)
 }
 
 // getSubscribers get subscribers by topic
@@ -900,7 +881,6 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getbalancebyassetid":  {Handler: GetBalanceByAssetID, AccessCtrl: BIT_JSONRPC},
 	"getnoncebyaddr":       {Handler: getNonceByAddr, AccessCtrl: BIT_JSONRPC},
 	"getid":                {Handler: getId, AccessCtrl: BIT_JSONRPC},
-	"getaddressbyname":     {Handler: getAddressByName, AccessCtrl: BIT_JSONRPC},
 	"getsubscription":      {Handler: getSubscription, AccessCtrl: BIT_JSONRPC},
 	"getsubscribers":       {Handler: getSubscribers, AccessCtrl: BIT_JSONRPC},
 	"getsubscriberscount":  {Handler: getSubscribersCount, AccessCtrl: BIT_JSONRPC},
@@ -908,4 +888,5 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getmyextip":           {Handler: getMyExtIP, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddr":    {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddrs":   {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},
+	"getregistrant":        {Handler: getRegistrant, AccessCtrl: BIT_JSONRPC},
 }
