@@ -115,7 +115,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 			txnCollection.Pop()
 			continue
 		}
-		if err := VerifyTransactionWithLedger(txn); err != nil {
+		if err := VerifyTransactionWithLedger(txn, height); err != nil {
 			log.Warningf("invalid transaction: %v", err)
 			txnCollection.Pop()
 			continue

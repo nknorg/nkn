@@ -74,7 +74,7 @@ var MessageType_name = map[int32]string{
 	18: "REQUEST_SIGNATURE_CHAIN_TRANSACTION_REPLY",
 }
 var MessageType_value = map[string]int32{
-	"MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE": 0,
+	"MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE":       0,
 	"VOTE":                                      1,
 	"I_HAVE_BLOCK_PROPOSAL":                     2,
 	"REQUEST_BLOCK_PROPOSAL":                    3,

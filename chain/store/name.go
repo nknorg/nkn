@@ -101,7 +101,7 @@ func (sdb *StateDB) getNameInfo(nameId []byte) (*nameInfo, error) {
 
 	sdb.names.Store(string(nameId), ni)
 
-	return &nameInfo{}, nil
+	return ni, nil
 }
 
 func (sdb *StateDB) registerName(name string, registrant []byte, expiresAt uint32) error {

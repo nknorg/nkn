@@ -67,8 +67,8 @@ const (
 	GASAssetPrecision            = uint32(8)
 	DumpMemInterval              = 30 * time.Second
 	MaxClientMessageSize         = 4 * 1024 * 1024
-	NameRegistrationFee          = common.Fixed64(10 * common.StorageFactor)
-	MaxNameDuration              = 5
+	MinGenNameRegistrationFee    = 10 * common.StorageFactor
+	MaxNameDuration              = 10
 )
 
 const (
