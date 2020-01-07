@@ -91,7 +91,6 @@ func (sdb *StateDB) getNameInfo(nameId []byte) (*nameInfo, error) {
 	}
 	ni := new(nameInfo)
 	if len(enc) > 0 {
-		ni := new(nameInfo)
 		buff := bytes.NewBuffer(enc)
 		if err := ni.Deserialize(buff); err != nil {
 			return nil, err

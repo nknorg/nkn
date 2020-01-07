@@ -353,6 +353,11 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			if err != nil {
 				return err
 			}
+
+			balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Registrant))
+			if int64(balance) < pld.RegistrationFee {
+				return errors.New("not sufficient funds")
+			}
 		}
 	case pb.DELETE_NAME_TYPE:
 		if err := checkNonce(); err != nil {
