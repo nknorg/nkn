@@ -38,8 +38,8 @@ func NewSigChainTransaction(sigChain []byte, submitter Uint160, nonce uint64) (*
 	}, nil
 }
 
-func NewRegisterNameTransaction(registrant []byte, name string, nonce uint64, fee Fixed64) (*Transaction, error) {
-	payload := NewRegisterName(registrant, name)
+func NewRegisterNameTransaction(registrant []byte, name string, nonce uint64, regFee Fixed64, fee Fixed64) (*Transaction, error) {
+	payload := NewRegisterName(registrant, name, int64(regFee))
 	pl, err := Pack(pb.REGISTER_NAME_TYPE, payload)
 	if err != nil {
 		return nil, err

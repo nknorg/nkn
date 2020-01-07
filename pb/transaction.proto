@@ -63,8 +63,9 @@ message SigChainTxn {
 }
 
 message RegisterName {
-	bytes  registrant = 1;
-	string name       = 2;
+	bytes  registrant      = 1;
+	string name            = 2;
+	int64 registration_fee = 3;
 }
 
 message DeleteName {

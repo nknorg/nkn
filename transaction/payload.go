@@ -73,10 +73,11 @@ func NewSigChainTxn(sigChain []byte, submitter common.Uint160) IPayload {
 		Submitter: submitter.ToArray(),
 	}
 }
-func NewRegisterName(registrant []byte, name string) IPayload {
+func NewRegisterName(registrant []byte, name string, fee int64) IPayload {
 	return &pb.RegisterName{
-		Registrant: registrant,
-		Name:       name,
+		Registrant:      registrant,
+		Name:            name,
+		RegistrationFee: fee,
 	}
 }
 

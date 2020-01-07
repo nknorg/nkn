@@ -57,29 +57,28 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 			return err
 		}
 
-		if err := states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
-			return err
-		}
 		states.IncrNonce(pg[0])
 
 		registerNamePayload := pl.(*pb.RegisterName)
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			states.setName_legacy(registerNamePayload.Registrant, registerNamePayload.Name)
+			if err := states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
+				return err
+			}
 		} else {
 			if err = states.registerName(registerNamePayload.Name, registerNamePayload.Registrant, config.MaxNameDuration+height); err != nil {
+				return err
+			}
+			if err = states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(registerNamePayload.RegistrationFee)+Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
 				return err
 			}
 			donationAddress, err := ToScriptHash(config.DonationAddress)
 			if err != nil {
 				return err
 			}
-			if err = states.UpdateBalance(pg[0], config.NKNAssetID, config.NameRegistrationFee, Subtraction); err != nil {
+			if err = states.UpdateBalance(donationAddress, config.NKNAssetID, Fixed64(registerNamePayload.RegistrationFee), Addition); err != nil {
 				return err
 			}
-			if err = states.UpdateBalance(donationAddress, config.NKNAssetID, config.NameRegistrationFee, Addition); err != nil {
-				return err
-			}
-			states.setName_legacy(registerNamePayload.Registrant, registerNamePayload.Name)
 		}
 	case pb.DELETE_NAME_TYPE:
 		pg, err := txn.GetProgramHashes()
