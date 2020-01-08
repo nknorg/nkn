@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/nknorg/nkn/util/config"
+
 	"github.com/nknorg/nkn/common/serialization"
 )
 
@@ -139,6 +141,11 @@ func (sdb *StateDB) deleteNameInfo(nameId string) error {
 }
 
 func (sdb *StateDB) FinalizeNames(commit bool) {
+	_, height, _ := sdb.cs.getCurrentBlockHashFromDB()
+	if config.LegacyNameService.GetValueAtHeight(height) {
+		sdb.FinalizeNames_legacy(commit)
+		return
+	}
 	sdb.names.Range(func(key, value interface{}) bool {
 		if nameId, ok := key.(string); ok {
 			if info, ok := value.(*nameInfo); ok && !info.Empty() {
