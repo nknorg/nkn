@@ -110,8 +110,6 @@ func (sdb *StateDB) registerName(name string, registrant []byte, expiresAt uint3
 	}
 
 	if !ni.Empty() {
-		return fmt.Errorf("name is already registered")
-	} else {
 		if err := sdb.cancelNameCleanupAtHeight(ni.expiresAt, name); err != nil {
 			return err
 		}
