@@ -58,6 +58,24 @@ func nameAction(c *cli.Context) error {
 		txn, _ := MakeRegisterNameTransaction(myWallet, name, nonce, regFee, txnFee)
 		buff, _ := txn.Marshal()
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+	case c.Bool("transfer"):
+		name := c.String("name")
+		if name == "" {
+			fmt.Println("name is required with [--name]")
+			return nil
+		}
+		to := c.String("to")
+		if to == "" {
+			fmt.Println("transfer is required with [--to]")
+			return nil
+		}
+		toBytes, err := hex.DecodeString(to)
+		if err != nil {
+			return err
+		}
+		txn, _ := MakeTransferNameTransaction(myWallet, name, nonce, txnFee, toBytes)
+		buff, _ := txn.Marshal()
+		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	case c.Bool("del"):
 		name := c.String("name")
 		if name == "" {
@@ -107,6 +125,10 @@ func NewCommand() *cli.Command {
 				Name:  "get, g",
 				Usage: "get register name info",
 			},
+			cli.BoolFlag{
+				Name:  "transfer, t",
+				Usage: "transfer name to another address",
+			},
 			cli.StringFlag{
 				Name:  "name",
 				Usage: "name",
@@ -132,6 +154,10 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "regfee",
 				Usage: "regfee",
+			},
+			cli.StringFlag{
+				Name:  "to",
+				Usage: "transfer name to addr",
 			},
 		},
 		Action: nameAction,

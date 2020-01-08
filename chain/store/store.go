@@ -302,6 +302,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		case pb.TRANSFER_ASSET_TYPE:
 		case pb.ISSUE_ASSET_TYPE:
 		case pb.REGISTER_NAME_TYPE:
+		case pb.TRANSFER_NAME_TYPE:
 		case pb.DELETE_NAME_TYPE:
 		case pb.SUBSCRIBE_TYPE:
 		case pb.UNSUBSCRIBE_TYPE:

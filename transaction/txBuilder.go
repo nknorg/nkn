@@ -52,6 +52,20 @@ func NewRegisterNameTransaction(registrant []byte, name string, nonce uint64, re
 	}, nil
 }
 
+func NewTransferNameTransaction(registrant []byte, to []byte, name string, nonce uint64, fee Fixed64) (*Transaction, error) {
+	payload := NewTransferName(registrant, to, name)
+	pl, err := Pack(pb.TRANSFER_NAME_TYPE, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := NewMsgTx(pl, nonce, fee, util.RandomBytes(TransactionNonceLength))
+
+	return &Transaction{
+		Transaction: tx,
+	}, nil
+}
+
 func NewDeleteNameTransaction(registrant []byte, name string, nonce uint64, fee Fixed64) (*Transaction, error) {
 	payload := NewDeleteName(registrant, name)
 	pl, err := Pack(pb.DELETE_NAME_TYPE, payload)

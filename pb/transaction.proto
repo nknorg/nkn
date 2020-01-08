@@ -68,6 +68,12 @@ message RegisterName {
 	int64 registration_fee = 3;
 }
 
+message TransferName {
+	string name            = 1;
+	bytes registrant       = 2;
+	bytes recipient        = 3;
+}
+
 message DeleteName {
 	bytes  registrant  = 1;
 	string name        = 2;
