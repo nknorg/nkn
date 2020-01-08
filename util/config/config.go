@@ -99,7 +99,7 @@ var (
 	}
 	AllowNameRegex = HeightDependentString{
 		heights: []uint32{7500, 0},
-		values:  []string{"(^[A-Za-z][A-Za-z0-9-_.+]{5,64}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
+		values:  []string{"(^[A-Za-z][A-Za-z0-9-_.+]{5,63}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
 	}
 	LegacyNameService = HeightDependentBool{
 		heights: []uint32{7500, 0},
