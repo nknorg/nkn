@@ -161,6 +161,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		if !match {
 			fmt.Errorf("name should match regex %s", regexPattern)
 		}
+	case pb.TRANSFER_NAME_TYPE:
 	case pb.DELETE_NAME_TYPE:
 	case pb.SUBSCRIBE_TYPE:
 		pld := payload.(*pb.Subscribe)
@@ -361,6 +362,23 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 				return errors.New("not sufficient funds")
 			}
 		}
+	case pb.TRANSFER_NAME_TYPE:
+		if err := checkNonce(); err != nil {
+			return err
+		}
+		pld := payload.(*pb.TransferName)
+
+		registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
+		if err != nil {
+			return err
+		}
+		if bytes.Equal(registrant, pld.Recipient) {
+			return fmt.Errorf("can not transfer names to its owner")
+		}
+		if !bytes.Equal(registrant, pld.Registrant) {
+			return fmt.Errorf("can not transfer names which did not belongs to you")
+		}
+
 	case pb.DELETE_NAME_TYPE:
 		if err := checkNonce(); err != nil {
 			return err

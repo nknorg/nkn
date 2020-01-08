@@ -122,6 +122,17 @@ func (sdb *StateDB) registerName(name string, registrant []byte, expiresAt uint3
 	return sdb.cleanupNamesAtHeight(expiresAt, nameId)
 }
 
+func (sdb *StateDB) transferName(name string, to []byte) error {
+	nameId := getNameId(name)
+
+	ni, err := sdb.getNameInfo(nameId)
+	if err != nil {
+		return err
+	}
+	ni.registrant = to
+	return nil
+}
+
 func (sdb *StateDB) updateNameInfo(nameId string, ni *nameInfo) error {
 	nibytes, err := ni.Bytes()
 	if err != nil {

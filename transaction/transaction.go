@@ -135,6 +135,17 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
+	case pb.TRANSFER_NAME_TYPE:
+		pubkey := payload.(*pb.TransferName).Registrant
+		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
+		if err != nil {
+			return nil, err
+		}
+		programhash, err := program.CreateProgramHash(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, programhash)
 	case pb.DELETE_NAME_TYPE:
 		pubkey := payload.(*pb.DeleteName).Registrant
 		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)

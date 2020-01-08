@@ -74,11 +74,23 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			states.setName_legacy(registerNamePayload.Registrant, registerNamePayload.Name)
 		} else {
-			if err = states.registerName(registerNamePayload.Name, registerNamePayload.Registrant, config.MaxNameDuration+height); err != nil {
-				return err
-			}
+			return states.registerName(registerNamePayload.Name, registerNamePayload.Registrant, config.MaxNameDuration+height)
+		}
+
+	case pb.TRANSFER_NAME_TYPE:
+		pg, err := txn.GetProgramHashes()
+		if err != nil {
+			return err
+		}
+
+		transferNamePayload := pl.(*pb.TransferName)
+		if err := states.UpdateBalance(pg[0], config.NKNAssetID, Fixed64(txn.UnsignedTx.Fee), Subtraction); err != nil {
+			return err
 		}
 		states.IncrNonce(pg[0])
+
+		return states.transferName(transferNamePayload.Name, transferNamePayload.Recipient)
+
 	case pb.DELETE_NAME_TYPE:
 		pg, err := txn.GetProgramHashes()
 		if err != nil {
