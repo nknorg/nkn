@@ -429,7 +429,6 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			return err
 		}
 
-		height := DefaultLedger.Store.GetHeight()
 		if height > pld.TxnExpiration {
 			return errors.New("nano pay txn has expired")
 		}
