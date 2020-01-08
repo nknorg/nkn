@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/nknorg/nkn/program"
+
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
@@ -346,15 +348,15 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 				return err
 			}
 		} else {
-			registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
-			if registrant != nil && bytes.Compare(registrant, pld.Registrant) != 0 {
-				return fmt.Errorf("name %s is already registered for pubKey %+v", pld.Name, registrant)
-			}
+			pk, err := crypto.DecodePoint(pld.Registrant)
 			if err != nil {
 				return err
 			}
-
-			balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Registrant))
+			addrHash, err := program.CreateProgramHash(pk)
+			if err != nil {
+				return err
+			}
+			balance := DefaultLedger.Store.GetBalance(addrHash)
 			if int64(balance) < pld.RegistrationFee {
 				return errors.New("not sufficient funds")
 			}
