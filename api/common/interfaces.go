@@ -643,9 +643,11 @@ func getRegistrant(s Serverer, params map[string]interface{}) map[string]interfa
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 	reg := hex.EncodeToString(registrant)
-	response := make(map[string]interface{})
-	response["registrant"] = reg
-	response["expiresAt"] = expiresAt
+	response := map[string]interface{}{
+		"registrant": reg,
+		"expiresAt":  expiresAt,
+	}
+
 	return respPacking(SUCCESS, response)
 }
 
