@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/nknorg/nkn/crypto/ed25519"
+
 	"github.com/nknorg/nkn/program"
 
 	. "github.com/nknorg/nkn/common"
@@ -162,7 +164,15 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			fmt.Errorf("name should match regex %s", regexPattern)
 		}
 	case pb.TRANSFER_NAME_TYPE:
+		pld := payload.(*pb.TransferName)
+		if len(pld.Registrant) != ed25519.PublicKeySize {
+			return fmt.Errorf("registrant invalid")
+		}
 	case pb.DELETE_NAME_TYPE:
+		pld := payload.(*pb.DeleteName)
+		if len(pld.Registrant) != ed25519.PublicKeySize {
+			return fmt.Errorf("registrant invalid")
+		}
 	case pb.SUBSCRIBE_TYPE:
 		pld := payload.(*pb.Subscribe)
 
@@ -358,7 +368,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 				return err
 			}
 			balance := DefaultLedger.Store.GetBalance(addrHash)
-			if int64(balance) < pld.RegistrationFee {
+			if int64(balance) < pld.RegistrationFee+txn.UnsignedTx.Fee {
 				return errors.New("not sufficient funds")
 			}
 		}
@@ -401,7 +411,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 				return err
 			}
 			if len(registrant) == 0 {
-				fmt.Errorf("name doesn't exist")
+				return fmt.Errorf("name doesn't exist")
 			}
 			if !bytes.Equal(registrant, pld.Registrant) {
 				return fmt.Errorf("can not delete name which did not belongs to you")
@@ -598,7 +608,7 @@ func (bvs *BlockValidationState) GetSubscribersWithMeta(topic string) map[string
 	return subscribers
 }
 
-// VerifyTransactionWithBlock verifys a transaction with current transaction pool in memory
+// VerifyTransactionWithBlock verifies a transaction with current transaction pool in memory
 func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, height uint32) (e error) {
 	//1.check weather have duplicate transaction.
 	if _, exist := bvs.txnlist[txn.Hash()]; exist {
@@ -649,15 +659,29 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		}
 
 		registrant := BytesToHexString(namePayload.Registrant)
-		if _, ok := bvs.nameRegistrants[registrant]; ok {
-			return errors.New("[VerifyTransactionWithBlock] duplicate registrant exist in block")
+		if config.LegacyNameService.GetValueAtHeight(height) {
+			if _, ok := bvs.nameRegistrants[registrant]; ok {
+				return errors.New("[VerifyTransactionWithBlock] duplicate registrant exist in block")
+			}
 		}
+		amount = Fixed64(namePayload.RegistrationFee)
 
 		defer func() {
 			if e == nil {
 				bvs.addChange(func() {
 					bvs.registeredNames[name] = struct{}{}
 					bvs.nameRegistrants[registrant] = struct{}{}
+				})
+			}
+		}()
+	case pb.TRANSFER_NAME_TYPE:
+		namePayload := payload.(*pb.TransferName)
+		name := namePayload.Name
+
+		defer func() {
+			if e == nil {
+				bvs.addChange(func() {
+					bvs.registeredNames[name] = struct{}{}
 				})
 			}
 		}()
@@ -670,8 +694,10 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		}
 
 		registrant := BytesToHexString(namePayload.Registrant)
-		if _, ok := bvs.nameRegistrants[registrant]; ok {
-			return errors.New("[VerifyTransactionWithBlock] duplicate registrant exist in block")
+		if config.LegacyNameService.GetValueAtHeight(height) {
+			if _, ok := bvs.nameRegistrants[registrant]; ok {
+				return errors.New("[VerifyTransactionWithBlock] duplicate registrant exist in block")
+			}
 		}
 
 		defer func() {
@@ -827,12 +853,18 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			amount = Fixed64(transfer.Amount)
 		case pb.REGISTER_NAME_TYPE:
 			namePayload := payload.(*pb.RegisterName)
+			amount = Fixed64(namePayload.RegistrationFee)
 
 			name := namePayload.Name
 			delete(bvs.registeredNames, name)
 
 			registrant := BytesToHexString(namePayload.Registrant)
 			delete(bvs.nameRegistrants, registrant)
+
+		case pb.TRANSFER_NAME_TYPE:
+			namePayload := payload.(*pb.TransferName)
+			name := namePayload.Name
+			delete(bvs.registeredNames, name)
 
 		case pb.DELETE_NAME_TYPE:
 			namePayload := payload.(*pb.DeleteName)
