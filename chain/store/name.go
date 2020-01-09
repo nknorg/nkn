@@ -69,7 +69,7 @@ func (sdb *StateDB) getRegistrant(name string) ([]byte, uint32, error) {
 	nameId := getNameId(name)
 	ni, err := sdb.getNameInfo(nameId)
 	if err != nil {
-		return nil, 0, fmt.Errorf("name registration info not found, %v", err)
+		return nil, 0, err
 	}
 
 	return ni.registrant, ni.expiresAt, nil
@@ -133,6 +133,23 @@ func (sdb *StateDB) transferName(name string, to []byte) error {
 	return nil
 }
 
+func (sdb *StateDB) deleteName(name string) error {
+	nameId := getNameId(name)
+
+	ni, err := sdb.getNameInfo(nameId)
+	if err != nil {
+		return err
+	}
+	if !ni.Empty() {
+		if err := sdb.cancelNameCleanupAtHeight(ni.expiresAt, name); err != nil {
+			return err
+		}
+		ni.registrant = nil
+		ni.expiresAt = 0
+	}
+	return nil
+}
+
 func (sdb *StateDB) updateNameInfo(nameId string, ni *nameInfo) error {
 	nibytes, err := ni.Bytes()
 	if err != nil {
@@ -153,7 +170,7 @@ func (sdb *StateDB) deleteNameInfo(nameId string) error {
 
 func (sdb *StateDB) FinalizeNames(commit bool) {
 	_, height, _ := sdb.cs.getCurrentBlockHashFromDB()
-	if config.LegacyNameService.GetValueAtHeight(height) {
+	if config.LegacyNameService.GetValueAtHeight(height + 1) {
 		sdb.FinalizeNames_legacy(commit)
 		return
 	}

@@ -385,15 +385,29 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		}
 
 		pld := payload.(*pb.DeleteName)
-		name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
-		if err != nil {
-			return err
+		if config.LegacyNameService.GetValueAtHeight(height) {
+			name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
+			if err != nil {
+				return err
+			}
+			if name == "" {
+				return fmt.Errorf("no name registered for pubKey %+v", pld.Registrant)
+			} else if name != pld.Name {
+				return fmt.Errorf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant)
+			}
+		} else {
+			registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
+			if err != nil {
+				return err
+			}
+			if len(registrant) == 0 {
+				fmt.Errorf("name doesn't exist")
+			}
+			if !bytes.Equal(registrant, pld.Registrant) {
+				return fmt.Errorf("can not delete name which did not belongs to you")
+			}
 		}
-		if name == "" {
-			return fmt.Errorf("no name registered for pubKey %+v", pld.Registrant)
-		} else if name != pld.Name {
-			return fmt.Errorf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant)
-		}
+
 	case pb.SUBSCRIBE_TYPE:
 		if err := checkNonce(); err != nil {
 			return err
