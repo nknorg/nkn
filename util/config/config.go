@@ -68,7 +68,7 @@ const (
 	DumpMemInterval              = 30 * time.Second
 	MaxClientMessageSize         = 4 * 1024 * 1024
 	MinGenNameRegistrationFee    = 10 * common.StorageFactor
-	MaxNameDuration              = 10
+	MaxNameDuration              = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
 )
 
 const (
@@ -99,7 +99,7 @@ var (
 	}
 	AllowNameRegex = HeightDependentString{
 		heights: []uint32{7500, 0},
-		values:  []string{"(^[A-Za-z][A-Za-z0-9-_.+]{5,63}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
+		values:  []string{"(^[A-Za-z][A-Za-z0-9-_.+]{5,62}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
 	}
 	LegacyNameService = HeightDependentBool{
 		heights: []uint32{7500, 0},
