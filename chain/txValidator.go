@@ -2,6 +2,7 @@ package chain
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -345,7 +346,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
 			if name != "" {
-				return fmt.Errorf("pubKey %+v already has registered name %s", pld.Registrant, name)
+				return fmt.Errorf("pubKey %s already has registered name %s", hex.EncodeToString(pld.Registrant), name)
 			}
 			if err != nil {
 				return err
