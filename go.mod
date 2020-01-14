@@ -12,14 +12,15 @@ require (
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/itchyny/base58-go v0.0.5
+	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jpillora/backoff v0.0.0-20180909062703-3050d21c67d7 // indirect
 	github.com/klauspost/cpuid v1.2.2 // indirect
 	github.com/klauspost/reedsolomon v1.9.3 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a
-	github.com/nknorg/go-nat v1.0.1
 	github.com/nknorg/go-portscanner v0.0.0-20181002101859-8493ef01db79
 	github.com/nknorg/nnet v0.0.0-20191227203626-cd40f91ceda2
+	github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -34,8 +35,6 @@ require (
 	github.com/xtaci/kcp-go v5.4.20+incompatible // indirect
 	github.com/xtaci/lossyconn v0.0.0-20190602105132-8df528c0c9ae // indirect
 	github.com/xtaci/smux v2.0.1+incompatible // indirect
-	gitlab.com/NebulousLabs/fastrand v0.0.0-20181126182046-603482d69e40 // indirect
-	gitlab.com/NebulousLabs/go-upnp v0.0.0-20181011194642-3a71999ed0d3
 	golang.org/x/crypto v0.0.0-20200109152110-61a87790db17
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sys v0.0.0-20200113162924-86b910548bc1 // indirect
