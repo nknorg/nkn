@@ -198,9 +198,10 @@ func (tp *TxnPool) DropTxns() {
 		}
 	}
 
-	tp.blockValidationState.Lock()
-	tp.CleanBlockValidationState(txnsDropped)
-	tp.blockValidationState.Unlock()
+	err := tp.CleanBlockValidationState(txnsDropped)
+	if err != nil {
+		log.Errorf("CleanBlockValidationState error: %v", err)
+	}
 
 	bytesDropped := int64(0)
 	for _, txn := range txnsDropped {
@@ -313,8 +314,6 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	default:
 		if oldTxn, err := list.GetByNonce(txn.UnsignedTx.Nonce); err == nil {
 			log.Debug("replace old tx")
-			tp.blockValidationState.Lock()
-			defer tp.blockValidationState.Unlock()
 			if err := tp.CleanBlockValidationState([]*transaction.Transaction{oldTxn}); err != nil {
 				return err
 			}
@@ -522,7 +521,7 @@ func (tp *TxnPool) GetAllTransactionLists() map[common.Uint160][]*transaction.Tr
 	return txs
 }
 
-func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) error {
+func (tp *TxnPool) removeTransactions(txns []*transaction.Transaction) []*transaction.Transaction {
 	txnsRemoved := make([]*transaction.Transaction, 0)
 
 	// clean submitted txs
@@ -571,8 +570,11 @@ func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) e
 		return true
 	})
 
-	tp.blockValidationState.Lock()
-	defer tp.blockValidationState.Unlock()
+	return txnsRemoved
+}
+
+func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) error {
+	txnsRemoved := tp.removeTransactions(txns)
 	return tp.CleanBlockValidationState(txnsRemoved)
 }
 
@@ -587,9 +589,24 @@ func (tp *TxnPool) deleteTransactionFromMap(txn *transaction.Transaction) {
 }
 
 func (tp *TxnPool) CleanBlockValidationState(txns []*transaction.Transaction) error {
+	tp.blockValidationState.Lock()
+	defer tp.blockValidationState.Unlock()
+
 	if err := tp.blockValidationState.CleanSubmittedTransactions(txns); err != nil {
 		log.Errorf("[CleanBlockValidationState] couldn't clean txn from block validation state: %v", err)
-		return tp.blockValidationState.RefreshBlockValidationState(tp.GetAllTransactions())
+		errMap := tp.blockValidationState.RefreshBlockValidationState(tp.GetAllTransactions())
+		if len(errMap) > 0 {
+			for txnHash, err := range errMap {
+				log.Errorf("RefreshBlockValidationState error for txn %x: %v", txnHash, err)
+			}
+			invalidTxns := make([]*transaction.Transaction, len(errMap))
+			for _, txn := range txns {
+				if _, ok := errMap[txn.Hash()]; ok {
+					invalidTxns = append(invalidTxns, txn)
+				}
+			}
+			tp.removeTransactions(invalidTxns)
+		}
 	}
 
 	return nil

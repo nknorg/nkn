@@ -519,6 +519,8 @@ func (localNode *LocalNode) requestSignatureChainTransaction(neighbor *RemoteNod
 
 func (localNode *LocalNode) cleanupTransactions(v interface{}) {
 	if block, ok := v.(*block.Block); ok {
-		localNode.TxnPool.CleanSubmittedTransactions(block.Transactions)
+		if err := localNode.TxnPool.CleanSubmittedTransactions(block.Transactions); err != nil {
+			log.Errorf("CleanSubmittedTransactions error: %v", err)
+		}
 	}
 }
