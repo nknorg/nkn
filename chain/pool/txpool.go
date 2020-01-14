@@ -198,7 +198,9 @@ func (tp *TxnPool) DropTxns() {
 		}
 	}
 
+	tp.blockValidationState.Lock()
 	err := tp.CleanBlockValidationState(txnsDropped)
+	tp.blockValidationState.Unlock()
 	if err != nil {
 		log.Errorf("CleanBlockValidationState error: %v", err)
 	}
@@ -296,6 +298,9 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		return err
 	}
 
+	tp.blockValidationState.Lock()
+	defer tp.blockValidationState.Unlock()
+
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.COINBASE_TYPE:
 		return fmt.Errorf("Invalid txn type %v", txn.UnsignedTx.Payload.Type)
@@ -303,14 +308,11 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		// sigchain txn should not be added to txn pool
 		return nil
 	case pb.NANO_PAY_TYPE:
-		tp.blockValidationState.Lock()
-		defer tp.blockValidationState.Unlock()
 		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, 0); err != nil {
 			tp.blockValidationState.Reset()
 			return err
 		}
 		tp.NanoPayTxs.Store(txn.Hash(), txn)
-		tp.blockValidationState.Commit()
 	default:
 		if oldTxn, err := list.GetByNonce(txn.UnsignedTx.Nonce); err == nil {
 			log.Debug("replace old tx")
@@ -347,8 +349,6 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 				return errors.New("nonce is not continuous")
 			}
 
-			tp.blockValidationState.Lock()
-			defer tp.blockValidationState.Unlock()
 			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, 0); err != nil {
 				tp.blockValidationState.Reset()
 				return err
@@ -357,9 +357,9 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 				return err
 			}
 		}
-
-		tp.blockValidationState.Commit()
 	}
+
+	tp.blockValidationState.Commit()
 
 	tp.addTransactionToMap(txn)
 	atomic.AddInt32(&tp.txnCount, 1)
@@ -484,10 +484,14 @@ func (tp *TxnPool) GetAllTransactions() []*transaction.Transaction {
 }
 
 func (tp *TxnPool) GetSubscribers(topic string) []string {
+	tp.blockValidationState.RLock()
+	defer tp.blockValidationState.RUnlock()
 	return tp.blockValidationState.GetSubscribers(topic)
 }
 
 func (tp *TxnPool) GetSubscribersWithMeta(topic string) map[string]string {
+	tp.blockValidationState.RLock()
+	defer tp.blockValidationState.RUnlock()
 	return tp.blockValidationState.GetSubscribersWithMeta(topic)
 }
 
@@ -575,6 +579,8 @@ func (tp *TxnPool) removeTransactions(txns []*transaction.Transaction) []*transa
 
 func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) error {
 	txnsRemoved := tp.removeTransactions(txns)
+	tp.blockValidationState.Lock()
+	defer tp.blockValidationState.Unlock()
 	return tp.CleanBlockValidationState(txnsRemoved)
 }
 
@@ -589,9 +595,6 @@ func (tp *TxnPool) deleteTransactionFromMap(txn *transaction.Transaction) {
 }
 
 func (tp *TxnPool) CleanBlockValidationState(txns []*transaction.Transaction) error {
-	tp.blockValidationState.Lock()
-	defer tp.blockValidationState.Unlock()
-
 	if err := tp.blockValidationState.CleanSubmittedTransactions(txns); err != nil {
 		log.Errorf("[CleanBlockValidationState] couldn't clean txn from block validation state: %v", err)
 		errMap := tp.blockValidationState.RefreshBlockValidationState(tp.GetAllTransactions())
