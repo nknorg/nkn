@@ -458,7 +458,7 @@ type nanoPay struct {
 }
 
 type BlockValidationState struct {
-	sync.Mutex
+	sync.RWMutex
 	txnlist                 map[Uint256]struct{}
 	totalAmount             map[Uint160]Fixed64
 	registeredNames         map[string]struct{}
@@ -846,5 +846,6 @@ func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction
 			errMap[tx.Hash()] = err
 		}
 	}
+	bvs.Commit()
 	return errMap
 }
