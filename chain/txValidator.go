@@ -838,13 +838,13 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 	return nil
 }
 
-func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction.Transaction) error {
+func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction.Transaction) map[Uint256]error {
 	bvs.initBlockValidationState()
+	errMap := make(map[Uint256]error, 0)
 	for _, tx := range txns {
 		if err := bvs.VerifyTransactionWithBlock(tx, 0); err != nil {
-			return err
+			errMap[tx.Hash()] = err
 		}
 	}
-
-	return nil
+	return errMap
 }
