@@ -55,28 +55,25 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 **Q:** I want to run this node, but have no idea about programming or terminal.
 What should I do?
 
-**A:** Easiest for you will be to follow [docker instructions](#building-using-docker) below. Docker will take care of quite a lot of things for you.
-If you are asked to run or issue command (usually formatted like this:)
+**A:** Easiest for you will be to follow [docker
+instructions](#building-using-docker) below. Docker will take care of quite a
+lot of things for you. If you are asked to run or issue command (usually
+formatted like this:)
+
 ```shell
 $ cd change/active/directory/to/this/one
 ```
+
 open a terminal (or cmd on windows - start -> run/search -> cmd.exe) and write
 the command there. (Without the `$ ` symbol)
 
 ### Use pre-built binaries
 
-You need to download a few things:
-1. `nknd` and `nknc` binaries from
-[github releases](https://github.com/nknorg/nkn/releases). You just need the one
-matches your architecture.
-2. A config file corresponding to the network you want to connect to. For
-mainnet you need to download [config.mainnet.json](config.mainnet.json) and
-rename it to `config.json`
+You just need to download and decompress the correct version matching your OS
+and architecture from [github releases](https://github.com/nknorg/nkn/releases).
 
-Then you need to put `nknd`, `nknc`, and `config.json` in the same directory.
-
-Now you can see [configuration](#configuration) for how to configure and run a
-node.
+Now you can jump to [configuration](#configuration) for how to configure and run
+a node.
 
 ### Use pre-built Docker image
 
@@ -92,8 +89,8 @@ it by
 $ docker pull nknorg/nkn
 ```
 
-Now you can see [configuration](#configuration) for how to configure and run a
-node.
+Now you can jump to [configuration](#configuration) for how to configure and run
+a node.
 
 ### Building using Docker
 
@@ -146,17 +143,19 @@ resulting binaries are stored in `build` directory.
 
 ### Configuration
 
-When starting a NKN node (i.e. running `nknd`), it will reads two files:
-`config.json` and `wallet.json`. By default `nknd` assumes these two files are
-located in the current working directory, but it can be changed by passing
-`--config` and `--wallet` arguments to `nknd`.
+When starting a NKN node (i.e. running `nknd`), it will reads a few configurable
+files: `config.json` for configuration, `wallet.json` for wallet, and `certs/*`
+for certificates. By default `nknd` assumes they are located in the current
+working directory, but it can be changed by passing arguments to `nknd` and/or
+specifying in `config.json`.
 
-a directory with configuration files
-containing `config.json` (see [configuration](#configuration)) and `wallet.json`
-(if exists) should be mapped to `/nkn/data` directory in the container.  The
-path of config file, wallet file, database directory and log directory can be
-specified by passing arguments to `nknd`, run `nknd --help` for more
+A directory containing `config.json`, `wallet.json` (if exists) and `certs/`
+should be mapped to `/nkn/data` directory in the container.  The path of config
+file, wallet file, database directory and log directory can be specified by
+passing arguments to `nknd` or in `config.json`, run `nknd --help` for more
 information.
+
+#### `config.json`:
 
 We provide a few sample `config.json`:
 
@@ -166,10 +165,15 @@ We provide a few sample `config.json`:
 
 You can copy the one you want to `config.json` or write your own.
 
+For convenience, we ship a copy of `config.mainnet.json` in docker image (under
+`/nkn/`) and in release version (as `default.json`).
+
+#### `wallet.json`:
+
 Before starting the node, you need to create a new wallet first. Wallet
 information will be saved at `wallet.json` and it's encrypted with the password
-you provided when creating the wallet. So please make sure you pick a
-strong password and remember it!
+you provided when creating the wallet. So please make sure you pick a strong
+password and remember it!
 
 ``` shell
 $ ./nknc wallet -c
@@ -188,10 +192,18 @@ directory, you need to change `${PWD}` to that directory.
 **[IMPORTANT] Each node needs to use a unique wallet. If you use share wallet
 among multiple nodes, only one of them will be able to join the network!**
 
+#### `certs/`
+
+The default `certs/` can be found in repo, in docker image (under `/nkn/`) and
+in release version. You should use the default one unless you want to use your
+own custom domain and certificates for RPC and websockets.
+
+#### Data and Logs
+
 After `nknd` starts, it will creates two directories: `ChainDB` to store
 blockchain data, and `Log` to store logs. By default `nknd` will creates these
 directories in the current working directory, but it can be changed by passing
-`--chaindb` and `--log` arguments to `nknd`.
+`--chaindb` and `--log` arguments to `nknd` or specify in config.json.
 
 Now you can [join the mainnet](#join-the-mainnet), [join the
 testnet](#join-the-testnet) or [create a private
