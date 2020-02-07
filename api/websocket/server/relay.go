@@ -4,10 +4,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/util/address"
@@ -17,20 +15,6 @@ import (
 type sigChainInfo struct {
 	blockHash   []byte
 	sigChainLen int
-}
-
-func ResolveDest(Dest string) string {
-	substrings := strings.Split(Dest, ".")
-	pubKeyOrName := substrings[len(substrings)-1]
-
-	registrant, _, err := chain.DefaultLedger.Store.GetRegistrant(pubKeyOrName)
-	if err != nil || registrant == nil {
-		return Dest
-	}
-	pubKeyStr := hex.EncodeToString(registrant)
-
-	substrings[len(substrings)-1] = pubKeyStr
-	return strings.Join(substrings, ".")
 }
 
 func (ws *WsServer) sendOutboundRelayMessage(srcAddrStrPtr *string, msg *pb.OutboundMessage) {
@@ -66,7 +50,6 @@ func (ws *WsServer) sendOutboundRelayMessage(srcAddrStrPtr *string, msg *pb.Outb
 
 	var payload []byte
 	for i, dest := range dests {
-		dest = ResolveDest(dest)
 		if len(payloads) > 1 {
 			payload = payloads[i]
 		} else {
