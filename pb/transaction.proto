@@ -58,7 +58,7 @@ message Coinbase {
 }
 
 message SigChainTxn {
-	bytes sigChain     = 1;
+	bytes sig_chain    = 1;
 	bytes submitter    = 2;
 }
 
