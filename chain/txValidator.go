@@ -372,6 +372,10 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			if int64(balance) < pld.RegistrationFee+txn.UnsignedTx.Fee {
 				return errors.New("not sufficient funds")
 			}
+			registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
+			if len(registrant) > 0 && !bytes.Equal(registrant, pld.Registrant) {
+				return fmt.Errorf("this name got registered")
+			}
 		}
 	case pb.TRANSFER_NAME_TYPE:
 		if err := checkNonce(); err != nil {

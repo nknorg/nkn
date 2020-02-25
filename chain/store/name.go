@@ -295,7 +295,7 @@ func (sdb *StateDB) updateNamesCleanup(height uint32, nc namesCleanup) error {
 }
 
 func (sdb *StateDB) cancelNameCleanupAtHeight(height uint32, name string) error {
-	ids, err := sdb.getPubSubCleanup(height)
+	ids, err := sdb.getNamesCleanup(height)
 	if err != nil {
 		return err
 	}
