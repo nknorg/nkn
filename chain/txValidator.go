@@ -387,10 +387,20 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		if err != nil {
 			return err
 		}
+		if len(registrant) == 0 {
+			return fmt.Errorf("can not transfer unregistered name")
+		}
 		if bytes.Equal(registrant, pld.Recipient) {
 			return fmt.Errorf("can not transfer names to its owner")
 		}
 		if !bytes.Equal(registrant, pld.Registrant) {
+			return fmt.Errorf("registrant incorrect")
+		}
+		senderPubkey, err := program.GetPublicKeyFromCode(txn.Programs[0].Code)
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(registrant, senderPubkey) {
 			return fmt.Errorf("can not transfer names which did not belongs to you")
 		}
 

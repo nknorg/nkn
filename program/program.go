@@ -21,7 +21,7 @@ const (
 
 type ProgramContext struct {
 
-	//the program code,which will be run on VM or specific envrionment
+	//the program code,which will be run on VM or specific environment
 	Code []byte
 
 	//the ProgramContext Parameter type list
@@ -130,7 +130,7 @@ func CreateSignatureProgramCode(pubkey *crypto.PubKey) ([]byte, error) {
 	code := bytes.NewBuffer(nil)
 	code.WriteByte(byte(len(encodedPublicKey)))
 	code.Write(encodedPublicKey)
-	code.WriteByte(byte(CHECKSIG))
+	code.WriteByte(CHECKSIG)
 
 	return code.Bytes(), nil
 }
