@@ -80,7 +80,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			states.setName_legacy(registerNamePayload.Registrant, registerNamePayload.Name)
 		} else {
-			err = states.registerName(registerNamePayload.Name, registerNamePayload.Registrant, uint32(config.MaxNameDuration)+height)
+			err = states.registerName(registerNamePayload.Name, registerNamePayload.Registrant, uint32(config.DefaultNameDuration)+height)
 			if err != nil {
 				return err
 			}

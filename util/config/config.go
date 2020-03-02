@@ -67,8 +67,8 @@ const (
 	GASAssetPrecision            = uint32(8)
 	DumpMemInterval              = 30 * time.Second
 	MaxClientMessageSize         = 4 * 1024 * 1024
-	MinGenNameRegistrationFee    = 10 * common.StorageFactor
-	MaxNameDuration              = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
+	MinNameRegistrationFee       = 10 * common.StorageFactor
+	DefaultNameDuration          = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
 )
 
 const (
@@ -97,12 +97,16 @@ var (
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 	}
+	AllowSubscribeTopicRegex = HeightDependentString{
+		heights: []uint32{980000, 0},
+		values:  []string{"(^[A-Za-z0-9][A-Za-z0-9-_.+]{2,254}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
+	}
 	AllowNameRegex = HeightDependentString{
-		heights: []uint32{7500, 0},
-		values:  []string{"(^[A-Za-z][A-Za-z0-9-_.+]{5,62}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
+		heights: []uint32{980000, 0},
+		values:  []string{"(^[A-Za-z0-9][A-Za-z0-9-_+]{5,62}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
 	}
 	LegacyNameService = HeightDependentBool{
-		heights: []uint32{7500, 0},
+		heights: []uint32{980000, 0},
 		values:  []bool{false, true},
 	}
 	MaxSubscribeIdentifierLen = HeightDependentInt32{
@@ -136,7 +140,7 @@ var (
 	}
 	MaxTxnAttributesLen  = 100
 	AllowTxnRegisterName = HeightDependentBool{
-		heights: []uint32{700000, 7500, 0},
+		heights: []uint32{980000, 7500, 0},
 		values:  []bool{true, false, true},
 	}
 )
