@@ -1,21 +1,23 @@
-[![Go Report Card](https://nkn.org/badge/nkn.svg)](https://goreportcard.com/report/github.com/nknorg/nkn)
-[![Build Status](https://travis-ci.org/nknorg/nkn.svg?branch=master)](https://travis-ci.org/nknorg/nkn)
+# NKN Full Node [![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/nknorg/nkn)](https://goreportcard.com/report/github.com/nknorg/nkn) [![Build Status](https://travis-ci.org/nknorg/nkn.svg?branch=master)](https://travis-ci.org/nknorg/nkn) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
 [![NKN](https://github.com/nknorg/nkn/wiki/img/nkn_logo.png)](https://nkn.org)
 
-# NKN: a Scalable Self-Evolving and Self-Incentivized Decentralized Network
+Official Go implementation of NKN full node.
 
 > NKN, short for New Kind of Network, is a project aiming to rebuild the
 > Internet that will be truly open, decentralized, dynamic, safe, shared and
 > owned by the community.
 
 Official website: [https://nkn.org/](https://nkn.org/)
-Technical discussion: [https://forum.nkn.org/](https://forum.nkn.org/)
 
-Note: This is a **node** version of the NKN protocol, which relays data for
-clients and earn mining rewards. For **client** implementation which can send
-and receive data (currently for free!), please refer to
-[nkn-client-js](https://github.com/nknorg/nkn-client-js/).
+Note: This is the official **full node** implementation of the NKN protocol,
+which relays data for clients and earn mining rewards. For **client**
+implementation which can send and receive data (currently for free!), please
+refer to:
+
+* [nkn-sdk-go](https://github.com/nknorg/nkn-sdk-go)
+* [nkn-sdk-js](https://github.com/nknorg/nkn-sdk-js)
+* [nkn-java-sdk](https://github.com/nknorg/nkn-java-sdk)
 
 ## Introduction
 
@@ -42,30 +44,13 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 
 ## Technical Highlights
 
-* Transmit any data to any node/client without any centralized server. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Distributed-Data-Transmission-Network-%28DDTN%29)
-* Proof-of-Relay, a useful proof of work: mining is relaying data. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Proof-of-Relay-%28PoR%29)
-* Extremely scalable consensus algorithm (millions or even billions of nodes). [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Consensus-and-Blockchain)
-* Strong consistency rather than eventual consistency. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Consensus-and-Blockchain)
-* Dynamic, large-scale network. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Distributed-Data-Transmission-Network-%28DDTN%29)
-* Verifiable topology and routes. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-Relay-Path-Validation)
-* Secure address scheme with public key embedded. [Related tech design doc](https://github.com/nknorg/nkn/wiki/Tech-Design-Doc%3A-NKN-Address-Scheme)
-
-## Deployment
-
-**Q:** I want to run this node, but have no idea about programming or terminal.
-What should I do?
-
-**A:** Easiest for you will be to follow [docker
-instructions](#building-using-docker) below. Docker will take care of quite a
-lot of things for you. If you are asked to run or issue command (usually
-formatted like this:)
-
-```shell
-$ cd change/active/directory/to/this/one
-```
-
-open a terminal (or cmd on windows - start -> run/search -> cmd.exe) and write
-the command there. (Without the `$ ` symbol)
+* Transmit any data to any node/client without any centralized server.
+* Proof-of-Relay, a useful proof of work: mining is relaying data.
+* Extremely scalable consensus algorithm (billions of nodes within seconds).
+* Strong consistency rather than eventual consistency.
+* Dynamic, large-scale network.
+* Verifiable topology and routes.
+* Secure address scheme with public key embedded.
 
 ### Use pre-built binaries
 
@@ -320,6 +305,7 @@ git commit -s
 
 ## Community
 
+* [Forum](https://forum.nkn.org/)
 * [Discord](https://discord.gg/c7mTynX)
 * [Telegram](https://t.me/nknorg)
 * [Reddit](https://www.reddit.com/r/nknblockchain/)
