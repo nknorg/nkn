@@ -93,13 +93,14 @@ func checkAmountPrecise(amount Fixed64, precision byte) bool {
 	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
 }
 
-func verifyPubSubTopic(topic string) error {
-	match, err := regexp.MatchString("(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)", topic)
+func verifyPubSubTopic(topic string, height uint32) error {
+	regexPattern := config.AllowSubscribeTopicRegex.GetValueAtHeight(height)
+	match, err := regexp.MatchString(regexPattern, topic)
 	if err != nil {
 		return err
 	}
 	if !match {
-		return fmt.Errorf("topic %s should start with a letter, contain A-Za-z0-9-_.+ and have length 3-255", topic)
+		return fmt.Errorf("topic %s should match %s", topic, regexPattern)
 	}
 	return nil
 
@@ -152,8 +153,8 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 
 		pld := payload.(*pb.RegisterName)
 		if !config.LegacyNameService.GetValueAtHeight(height) {
-			if Fixed64(pld.RegistrationFee) < Fixed64(config.MinGenNameRegistrationFee) {
-				return errors.New("registration fee is lower than MinGenNameRegistrationFee")
+			if Fixed64(pld.RegistrationFee) < Fixed64(config.MinNameRegistrationFee) {
+				return errors.New("registration fee is lower than MinNameRegistrationFee")
 			}
 		}
 		regexPattern := config.AllowNameRegex.GetValueAtHeight(height)
@@ -191,7 +192,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return fmt.Errorf("subscribe duration %d is greater than %d", pld.Duration, maxDuration)
 		}
 
-		if err = verifyPubSubTopic(pld.Topic); err != nil {
+		if err = verifyPubSubTopic(pld.Topic, height); err != nil {
 			return err
 		}
 
@@ -207,7 +208,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 	case pb.UNSUBSCRIBE_TYPE:
 		pld := payload.(*pb.Unsubscribe)
 
-		if err := verifyPubSubTopic(pld.Topic); err != nil {
+		if err := verifyPubSubTopic(pld.Topic, height); err != nil {
 			return err
 		}
 	case pb.GENERATE_ID_TYPE:
