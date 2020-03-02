@@ -154,7 +154,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		pld := payload.(*pb.RegisterName)
 		if !config.LegacyNameService.GetValueAtHeight(height) {
 			if Fixed64(pld.RegistrationFee) < Fixed64(config.MinNameRegistrationFee) {
-				return errors.New("registration fee is lower than MinNameRegistrationFee")
+				return fmt.Errorf("registration fee %s is lower than MinNameRegistrationFee %d", string(pld.Registrant), config.MinNameRegistrationFee)
 			}
 		}
 		regexPattern := config.AllowNameRegex.GetValueAtHeight(height)
@@ -163,7 +163,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return err
 		}
 		if !match {
-			fmt.Errorf("name should match regex %s", regexPattern)
+			return fmt.Errorf("name %s should match regex %s", pld.Name, regexPattern)
 		}
 	case pb.TRANSFER_NAME_TYPE:
 		pld := payload.(*pb.TransferName)
