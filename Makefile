@@ -100,3 +100,19 @@ pb:
 .PHONY: test
 test:
 	go test -v ./chain/store
+
+.PHONY: docker
+docker:
+	docker build -f docker/Dockerfile -t nknorg/nkn:latest-amd64 .
+	docker build -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=arm BUILD_DIR=. BIN_DIR=." --build-arg base="arm32v6/" -t nknorg/nkn:latest-arm32v6 .
+	docker build -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=arm64 BUILD_DIR=. BIN_DIR=." --build-arg base="arm64v8/" -t nknorg/nkn:latest-arm64v8 .
+
+.PHONY: docker_publish
+docker_publish:
+	docker push nknorg/nkn:latest-amd64
+	docker push nknorg/nkn:latest-arm32v6
+	docker push nknorg/nkn:latest-arm64v8
+	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create nknorg/nkn:latest nknorg/nkn:latest-amd64 nknorg/nkn:latest-arm32v6 nknorg/nkn:latest-arm64v8 --amend
+	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-arm32v6 --os linux --arch arm
+	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-arm64v8 --os linux --arch arm64
+	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push -p nknorg/nkn:latest
