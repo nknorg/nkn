@@ -17,11 +17,6 @@ web: dashboard
 	@rm -rf web
 	-@cd dashboard/web && yarn install && yarn build && cp -a ./dist ../../web
 
-.PHONY: yarn
-yarn:
-	@rm -rf web
-	@cd dashboard/web && yarn install && yarn build && cp -a ./dist ../../web
-
 .PHONY: build
 build: web
 	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(BUILD_NKND_PARAM) -o $(BUILD_DIR)/$(BIN_DIR)/nknd$(EXT) nknd.go
@@ -52,7 +47,6 @@ zip:
 
 .PHONY: all
 all: ## Build binaries for all available architectures
-	@rm -rf web
 	${MAKE} crossbuild GOOS=linux GOARCH=arm
 	${MAKE} crossbuild GOOS=linux GOARCH=386
 	${MAKE} crossbuild GOOS=linux GOARCH=arm64
