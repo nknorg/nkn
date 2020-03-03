@@ -19,7 +19,6 @@ wallet.pswd
 config.json
 ChainDB
 
-/web/
 # Editor directories and files
 .vscode
 *.suo
