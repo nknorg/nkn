@@ -86,18 +86,10 @@ docs](https://docs.docker.com/install/#supported-platforms)
 Build and tag Docker image
 
 ```shell
-$ docker build -t nknorg/nkn .
+$ docker build -f docker/Dockerfile -t nknorg/nkn .
 ```
 
 This command should be run once every time you update the code base.
-
-When starting the container, a directory with configuration files containing
-`config.json` (see [configuration](#configuration)) and `wallet.json` (if
-exists) should be mapped to `/nkn/data` directory in the container. This
-directory will also be used for blockhain data and logs storage by default. The
-path of config file, wallet file, database directory and log directory can be
-specified by passing arguments to `nknd`, run `nknd --help` for more
-information.
 
 ### Building from source
 
@@ -130,15 +122,19 @@ resulting binaries are stored in `build` directory.
 
 When starting a NKN node (i.e. running `nknd`), it will reads a few configurable
 files: `config.json` for configuration, `wallet.json` for wallet, and `certs/*`
-for certificates. By default `nknd` assumes they are located in the current
-working directory, but it can be changed by passing arguments to `nknd` and/or
-specifying in `config.json`.
+for certificates. Additionally, it will read directory `web` for web GUI
+interface static assets. By default `nknd` assumes they are located in the
+current working directory.
 
-A directory containing `config.json`, `wallet.json` (if exists) and `certs/`
-should be mapped to `/nkn/data` directory in the container.  The path of config
-file, wallet file, database directory and log directory can be specified by
-passing arguments to `nknd` or in `config.json`, run `nknd --help` for more
-information.
+For Docker, a directory containing `config.json`, `wallet.json` (if exists) and
+`certs/` should be mapped to `/nkn/data` directory in the container. If not
+provided, the default config and certs will be copied to `/nkn/data/`, and a
+wallet and random password will be generated and saved to `/nkn/data/` on nknd
+launch.
+
+The path of config file, wallet file, database directory and log directory can
+be specified by passing arguments to `nknd` or in `config.json`, run `nknd
+--help` for more information.
 
 #### `config.json`:
 
@@ -150,8 +146,9 @@ We provide a few sample `config.json`:
 
 You can copy the one you want to `config.json` or write your own.
 
-For convenience, we ship a copy of `config.mainnet.json` in docker image (under
-`/nkn/`) and in release version (as `default.json`).
+For convenience, we ship a copy of `config.mainnet.json` in release version (as
+`default.json`) and in docker image (under `/nkn/`). The docker container will
+copy this default one to `/nkn/data/config.json` if not exists on nknd launch.
 
 #### `wallet.json`:
 
@@ -169,19 +166,25 @@ Address                                Public Key
 NKNRQxosmUixL8bvLAS5G79m1XNx3YqPsFPW   35db285ea2f91499164cd3e19203ab5e525df6216d1eba3ac6bcef00503407ce
 ```
 
+**[IMPORTANT] Each node needs to use a unique wallet. If you use share wallet
+among multiple nodes, only one of them will be able to join the network!**
+
 If you are using Docker, it should be `docker run -it -v ${PWD}:/nkn/data
 nknorg/nkn nknc wallet -c` instead, assuming you want to store the `wallet.json`
 in your current working directory. If you want it to be saved to another
 directory, you need to change `${PWD}` to that directory.
 
-**[IMPORTANT] Each node needs to use a unique wallet. If you use share wallet
-among multiple nodes, only one of them will be able to join the network!**
+The docker container will create a wallet saved to `/nkn/data/wallet.json` and a
+random password saved to `/nkn/data/wallet.pswd` if not exists on nknd launch.
 
 #### `certs/`
 
-The default `certs/` can be found in repo, in docker image (under `/nkn/`) and
-in release version. You should use the default one unless you want to use your
-own custom domain and certificates for RPC and websockets.
+The default `certs/` can be found in repo, in release version, and in docker
+image (under `/nkn/`). You should use the default one unless you want to use
+your own custom domain and certificates for RPC and websockets.
+
+The docker container will copy the default certificates to `/nkn/data/certs/` if
+not exists on nknd launch.
 
 #### Data and Logs
 
@@ -196,9 +199,9 @@ chain](https://github.com/nknorg/nkn/wiki/Create-a-Private-Chain).
 
 ### Join the MainNet
 
-**[IMPORTANT] Currently, in order to join the MainNet, you need to have a public
-IP address, or set up [port forwarding](#port-forwarding) on your router
-properly so that other people can establish connection to you.**
+**[IMPORTANT] In order to join the MainNet, you need to have a public IP
+*address, or set up [port forwarding](#port-forwarding) on your router properly
+*so that other people can establish connection to you.**
 
 If you have done the previous steps correctly (`config.json`, create wallet,
 public IP or port forwarding), joining the MainNet is as simple as running:
@@ -210,8 +213,11 @@ $ ./nknd
 If you are using Docker then you should run the following command instead:
 
 ```shell
-$ docker run -p 30001-30005:30001-30005 -v ${PWD}:/nkn/data --name nkn --rm -it nknorg/nkn nknd
+$ docker run -p 30001-30005:30001-30005 -v ${PWD}:/nkn/data --name nkn --rm -it nknorg/nkn
 ```
+
+If you would like to enable web GUI interface from outside of the container, you
+need to replace `-p 30001-30005:30001-30005` with `-p 30000-30005:30000-30005`.
 
 If you get an error saying `docker: Error response from daemon: Conflict. The
 container name "/nkn" is already in use by container ...`, you should run
