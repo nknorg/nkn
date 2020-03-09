@@ -3,7 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/nknorg/nkn/cli/common"
+	. "github.com/nknorg/nkn/cmd/nknc/common"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/urfave/cli"
 	"io/ioutil"
