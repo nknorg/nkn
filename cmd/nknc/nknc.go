@@ -1,24 +1,29 @@
 package main
 
 import (
+	"math/rand"
 	"os"
 	"sort"
 	"syscall"
+	"time"
 
-	_ "github.com/nknorg/nkn/cli"
-	"github.com/nknorg/nkn/cli/asset"
-	. "github.com/nknorg/nkn/cli/common"
-	"github.com/nknorg/nkn/cli/debug"
-	"github.com/nknorg/nkn/cli/id"
-	"github.com/nknorg/nkn/cli/info"
-	"github.com/nknorg/nkn/cli/name"
-	"github.com/nknorg/nkn/cli/pruning"
-	"github.com/nknorg/nkn/cli/pubsub"
-	"github.com/nknorg/nkn/cli/service"
-	"github.com/nknorg/nkn/cli/wallet"
+	"github.com/nknorg/nkn/cmd/nknc/asset"
+	"github.com/nknorg/nkn/cmd/nknc/common"
+	"github.com/nknorg/nkn/cmd/nknc/debug"
+	"github.com/nknorg/nkn/cmd/nknc/id"
+	"github.com/nknorg/nkn/cmd/nknc/info"
+	"github.com/nknorg/nkn/cmd/nknc/name"
+	"github.com/nknorg/nkn/cmd/nknc/pruning"
+	"github.com/nknorg/nkn/cmd/nknc/pubsub"
+	"github.com/nknorg/nkn/cmd/nknc/service"
+	"github.com/nknorg/nkn/cmd/nknc/wallet"
 	"github.com/nknorg/nnet/log"
 	"github.com/urfave/cli"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func Err2Errno(err error) int {
 	return 1 // TODO: github.com/nknorg/nkn/errno package.
@@ -34,7 +39,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "nknc"
-	app.Version = Version
+	app.Version = common.Version
 	app.HelpName = "nknc"
 	app.Usage = "command line tool for blockchain"
 	app.UsageText = "nknc [global options] command [command options] [args]"
@@ -42,8 +47,8 @@ func main() {
 	app.HideVersion = false
 	//global options
 	app.Flags = []cli.Flag{
-		NewIpFlag(),
-		NewPortFlag(),
+		common.NewIpFlag(),
+		common.NewPortFlag(),
 	}
 	//commands
 	app.Commands = []cli.Command{

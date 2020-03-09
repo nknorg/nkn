@@ -271,7 +271,7 @@ func (sdb *StateDB) getSubscribers(topic string, bucket, offset, limit uint32) (
 		if i < offset {
 			continue
 		}
-		if limit > 0 && i >= offset + limit {
+		if limit > 0 && i >= offset+limit {
 			break
 		}
 

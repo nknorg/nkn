@@ -200,8 +200,8 @@ chain](https://github.com/nknorg/nkn/wiki/Create-a-Private-Chain).
 ### Join the MainNet
 
 **[IMPORTANT] In order to join the MainNet, you need to have a public IP
-*address, or set up [port forwarding](#port-forwarding) on your router properly
-*so that other people can establish connection to you.**
+address, or set up [port forwarding](#port-forwarding) on your router properly
+so that other people can establish connection to you.**
 
 If you have done the previous steps correctly (`config.json`, create wallet,
 public IP or port forwarding), joining the MainNet is as simple as running:

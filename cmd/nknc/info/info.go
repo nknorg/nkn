@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/nknorg/nkn/api/httpjson/client"
-	. "github.com/nknorg/nkn/cli/common"
+	. "github.com/nknorg/nkn/cmd/nknc/common"
 
 	"github.com/urfave/cli"
 )

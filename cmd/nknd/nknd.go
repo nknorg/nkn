@@ -16,13 +16,13 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/nknorg/nkn/api/common"
+	api "github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/httpjson"
 	"github.com/nknorg/nkn/api/httpjson/client"
 	"github.com/nknorg/nkn/api/websocket"
 	"github.com/nknorg/nkn/chain"
 	"github.com/nknorg/nkn/chain/store"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/dashboard"
@@ -232,12 +232,12 @@ func nknMain(c *cli.Context) error {
 		config.Parameters.Hostname = extIP
 	}
 
-	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, Fixed64(config.Parameters.RegisterIDRegFee), Fixed64(config.Parameters.RegisterIDTxnFee))
+	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, common.Fixed64(config.Parameters.RegisterIDRegFee), common.Fixed64(config.Parameters.RegisterIDTxnFee))
 	if err != nil {
 		panic(fmt.Errorf("Get or create id error: %v", err))
 	}
 
-	log.Info("current chord ID: ", BytesToHexString(id))
+	log.Info("current chord ID: ", common.BytesToHexString(id))
 
 	conf := &nnet.Config{
 		Transport:        config.Parameters.Transport,
@@ -541,7 +541,7 @@ func GetID(seeds []string, publickey []byte) ([]byte, error) {
 	return nil, fmt.Errorf("failed to get ID from majority of %d seeds", n)
 }
 
-func CreateID(seeds []string, wallet vault.Wallet, regFee, txnFee Fixed64) error {
+func CreateID(seeds []string, wallet vault.Wallet, regFee, txnFee common.Fixed64) error {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return err
@@ -568,7 +568,7 @@ func CreateID(seeds []string, wallet vault.Wallet, regFee, txnFee Fixed64) error
 
 		if txn == nil || nonce != prevNonce {
 			log.Info("Creating generate ID txn. This process may take quite a few minutes...")
-			txn, err = common.MakeGenerateIDTransaction(context.Background(), wallet, regFee, nonce, txnFee, config.MaxGenerateIDTxnHash.GetValueAtHeight(height+1))
+			txn, err = api.MakeGenerateIDTransaction(context.Background(), wallet, regFee, nonce, txnFee, config.MaxGenerateIDTxnHash.GetValueAtHeight(height+1))
 			if err != nil {
 				return err
 			}
@@ -592,7 +592,7 @@ func CreateID(seeds []string, wallet vault.Wallet, regFee, txnFee Fixed64) error
 	return errors.New("create ID failed")
 }
 
-func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee, txnFee Fixed64) ([]byte, error) {
+func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee, txnFee common.Fixed64) ([]byte, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
