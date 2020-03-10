@@ -148,9 +148,9 @@ func (ref *RefCounts) createRefCounts(n node, inMemory bool) error {
 	case valueNode:
 		return nil
 	default:
-		panic(fmt.Sprintf("invalid node type : %v, %v", reflect.TypeOf(n), n))
-
+		log.Fatalf("Invalid node type : %v, %v", reflect.TypeOf(n), n)
 	}
+	return nil
 }
 
 func (ref *RefCounts) Prune(hash common.Uint256, inMemory bool) error {
@@ -181,12 +181,12 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 					count = binary.LittleEndian.Uint32(v)
 					ref.counts[hs] = count
 				} else {
-					panic(err)
+					log.Fatal("Trie get error: %v", err)
 				}
 			}
 		}
 		if count == 0 {
-			panic(fmt.Sprintf("refCount cannot be zero, %v", hs.ToHexString()))
+			log.Fatalf("RefCount cannot be zero, %v", hs.ToHexString())
 		}
 
 		if count > 1 {
@@ -212,12 +212,12 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 					count = binary.LittleEndian.Uint32(v)
 					ref.counts[hs] = count
 				} else {
-					panic(err)
+					log.Fatal("Trie get error: %v", err)
 				}
 			}
 		}
 		if count == 0 {
-			panic(fmt.Sprintf("refCount cannot be zero, %v", hs.ToHexString()))
+			log.Fatalf("RefCount cannot be zero, %v", hs.ToHexString())
 		}
 
 		if count > 1 {
@@ -249,12 +249,12 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 					count = binary.LittleEndian.Uint32(v)
 					ref.counts[hs] = count
 				} else {
-					panic(err)
+					log.Fatal("Trie get error: %v", err)
 				}
 			}
 		}
 		if count == 0 {
-			panic(fmt.Sprintf("refCount cannot be zero, %v", hs.ToHexString()))
+			log.Fatalf("RefCount cannot be zero, %v", hs.ToHexString())
 		}
 
 		if count > 1 {
@@ -272,9 +272,9 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 	case valueNode:
 		return nil
 	default:
-		panic(fmt.Sprintf("invalid node type : %v, %v", reflect.TypeOf(n), n))
-
+		log.Fatalf("Invalid node type : %v, %v", reflect.TypeOf(n), n)
 	}
+	return nil
 }
 
 func (ref *RefCounts) SequentialPrune() error {
@@ -340,7 +340,7 @@ func (ref *RefCounts) Verify(hash common.Uint256) error {
 
 	err = ref.trie.traverse(ref.trie.root, false)
 	if err != nil {
-		panic(err)
+		log.Fatal("Trie traverse error: %v", err)
 	}
 
 	hs := ref.trie.Hash()
@@ -348,7 +348,7 @@ func (ref *RefCounts) Verify(hash common.Uint256) error {
 		return fmt.Errorf("state root not equal:%v, %v", hash.ToHexString(), hs.ToHexString())
 	}
 
-	log.Info("verification has done.")
+	log.Info("Verification finished.")
 
 	return nil
 }

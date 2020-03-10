@@ -6,6 +6,7 @@ import (
 
 	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type hasher struct {
@@ -89,9 +90,8 @@ func (h *hasher) store(n node, st Database, force bool) (node, error) {
 		return n, nil
 	}
 	h.tmp.Reset()
-	//if err := rlp.Encode(h.tmp, n); err != nil {
 	if err := n.Serialize(h.tmp); err != nil {
-		panic("enocde error:" + err.Error())
+		log.Fatalf("Trie node enocde error: %v", err)
 	}
 
 	if h.tmp.Len() < 32 && !force {

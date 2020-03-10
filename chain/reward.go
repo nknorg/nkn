@@ -3,6 +3,7 @@ package chain
 import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/util/log"
 )
 
 var (
@@ -17,7 +18,7 @@ func init() {
 
 func GetRewardByHeight(height uint32) common.Fixed64 {
 	if height == 0 {
-		panic("invalid height")
+		log.Fatalf("Invalid height %d", height)
 	}
 	duration := (height - 1) / uint32(config.RewardAdjustInterval)
 	if duration >= config.TotalRewardDuration {

@@ -2,7 +2,6 @@ package pool
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/nknorg/nkn/common"
@@ -116,7 +115,7 @@ func (nst *NonceSortedTxs) PopN(n uint16) ([]*transaction.Transaction, error) {
 		if tx, ok := nst.txs[hash]; ok {
 			ret = append(ret, tx)
 		} else {
-			panic(fmt.Errorf("%s txList consistency error. Missing idx %s in txs", nst.account.ToHexString(), hash.ToHexString()))
+			log.Fatalf("TxList %s pop error: missing txn %s in txs", nst.account.ToHexString(), hash.ToHexString())
 		}
 		delete(nst.txs, hash)
 	}
@@ -160,7 +159,8 @@ func (nst *NonceSortedTxs) getNonce(hash common.Uint256) uint64 {
 		return tx.UnsignedTx.Nonce
 	}
 
-	panic("no such tx in NonceSortedTxs")
+	log.Fatalf("TxList %s get error: missing hash %s in txs", nst.account.ToHexString(), hash)
+	return 0
 }
 
 func (nst *NonceSortedTxs) Replace(tx *transaction.Transaction) error {
@@ -226,7 +226,7 @@ func (nst *NonceSortedTxs) GetLatestTxn() (*transaction.Transaction, error) {
 	hash := nst.idx[nst.len()-1]
 	tx, ok := nst.txs[hash]
 	if !ok {
-		panic(fmt.Errorf("%s txList consistency error. Missing idx %s in txs", nst.account.ToHexString(), hash.ToHexString()))
+		log.Fatalf("TxList %s get latest error: missing hash %s in txs", nst.account.ToHexString(), hash)
 	}
 	return tx, nil
 }

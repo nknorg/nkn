@@ -51,29 +51,45 @@ func NewStateDB(root common.Uint256, cs *ChainStore) (*StateDB, error) {
 	}, nil
 }
 
-func (sdb *StateDB) Finalize(commit bool) (root common.Uint256, err error) {
-	sdb.FinalizeAccounts(commit)
+func (sdb *StateDB) Finalize(commit bool) (common.Uint256, error) {
+	err := sdb.FinalizeAccounts(commit)
+	if err != nil {
+		return common.EmptyUint256, err
+	}
 
-	sdb.FinalizeNanoPay(commit)
+	err = sdb.FinalizeNanoPay(commit)
+	if err != nil {
+		return common.EmptyUint256, err
+	}
 
-	sdb.FinalizeNames(commit)
+	err = sdb.FinalizeNames(commit)
+	if err != nil {
+		return common.EmptyUint256, err
+	}
 
-	sdb.FinalizePubSub(commit)
+	err = sdb.FinalizePubSub(commit)
+	if err != nil {
+		return common.EmptyUint256, err
+	}
 
-	sdb.FinalizeIssueAsset(commit)
+	err = sdb.FinalizeIssueAsset(commit)
+	if err != nil {
+		return common.EmptyUint256, err
+	}
 
 	if commit {
-		root, err = sdb.trie.CommitTo()
-
-		return root, err
+		return sdb.trie.CommitTo()
 	}
 
 	return common.EmptyUint256, nil
 }
 
-func (sdb *StateDB) IntermediateRoot() common.Uint256 {
-	sdb.Finalize(false)
-	return sdb.trie.Hash()
+func (sdb *StateDB) IntermediateRoot() (common.Uint256, error) {
+	_, err := sdb.Finalize(false)
+	if err != nil {
+		return common.EmptyUint256, err
+	}
+	return sdb.trie.Hash(), nil
 }
 
 func (sdb *StateDB) PruneStates() error {

@@ -40,19 +40,16 @@ func pruningAction(c *cli.Context) error {
 		if c.Bool("seq") {
 			err := cs.SequentialPrune()
 			if err != nil {
-				panic(err)
 				return err
 			}
 		} else if c.Bool("lowmem") {
 			err := cs.PruneStatesLowMemory()
 			if err != nil {
-				panic(err)
 				return err
 			}
 		} else {
 			err := cs.PruneStates()
 			if err != nil {
-				panic(err)
 				return err
 			}
 		}

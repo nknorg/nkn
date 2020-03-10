@@ -157,13 +157,17 @@ func (sdb *StateDB) deleteAsset(assetID common.Uint256) error {
 	return nil
 }
 
-func (sdb *StateDB) FinalizeIssueAsset(commit bool) {
+func (sdb *StateDB) FinalizeIssueAsset(commit bool) error {
+	var err error
 	sdb.assets.Range(func(key, value interface{}) bool {
 		if assetID, ok := key.(common.Uint256); ok {
 			if asset, ok := value.(*Asset); ok && !asset.Empty() {
-				sdb.updateAsset(assetID, asset)
+				err = sdb.updateAsset(assetID, asset)
 			} else {
-				sdb.deleteAsset(assetID)
+				err = sdb.deleteAsset(assetID)
+			}
+			if err != nil {
+				return false
 			}
 			if commit {
 				sdb.assets.Delete(assetID)
@@ -171,6 +175,7 @@ func (sdb *StateDB) FinalizeIssueAsset(commit bool) {
 		}
 		return true
 	})
+	return err
 }
 
 func (cs *ChainStore) GetAsset(assetID common.Uint256) (name, symbol string, totalSupply common.Fixed64, precision uint32, err error) {

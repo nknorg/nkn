@@ -10,7 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/block"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/pb"
@@ -71,7 +71,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		return errors.New("first transaction in block is not Coinbase")
 	}
 
-	txnsHash := make([]Uint256, len(block.Transactions))
+	txnsHash := make([]common.Uint256, len(block.Transactions))
 	for i, txn := range block.Transactions {
 		select {
 		case <-ctx.Done():
@@ -82,11 +82,11 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		txnsHash[i] = txn.Hash()
 	}
 
-	winnerHash, err := Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
+	winnerHash, err := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
 	if err != nil {
 		return err
 	}
-	if winnerHash != EmptyUint256 {
+	if winnerHash != common.EmptyUint256 {
 		found := false
 		for _, txnHash := range txnsHash {
 			if txnHash == winnerHash {
@@ -111,7 +111,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 
 	bvs := NewBlockValidationState()
 
-	nonces := make(map[Uint160]uint64, 0)
+	nonces := make(map[common.Uint160]uint64, 0)
 	for i, txn := range block.Transactions {
 		select {
 		case <-ctx.Done():
@@ -139,7 +139,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		case pb.SIG_CHAIN_TXN_TYPE:
 		case pb.NANO_PAY_TYPE:
 		default:
-			addr, err := ToCodeHash(txn.Programs[0].Code)
+			addr, err := common.ToCodeHash(txn.Programs[0].Code)
 			if err != nil {
 				return err
 			}
@@ -159,13 +159,13 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 
 	bvs.Close()
 
-	//state root check
+	// state root check
 	root, err := DefaultLedger.Store.GenerateStateRoot(ctx, block, true, false)
 	if err != nil {
 		return err
 	}
 
-	headerRoot, _ := Uint256ParseFromBytes(block.Header.UnsignedHeader.StateRoot)
+	headerRoot, _ := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.StateRoot)
 	if ok := root.CompareTo(headerRoot); ok != 0 {
 		return fmt.Errorf("[TransactionCheck]state root not equal:%v, %v", root, headerRoot)
 	}
@@ -250,7 +250,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 
 		switch winnerType {
 		case pb.TXN_SIGNER:
-			whash, _ := Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
+			whash, _ := common.Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
 			txn, err := DefaultLedger.Store.GetTransaction(whash)
 			if err != nil {
 				return nil, nil, 0, err
@@ -281,18 +281,18 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 
 // GetWinner returns the winner hash and winner type of a block height using
 // sigchain from PoR server.
-func GetNextMiningSigChainTxnHash(height uint32) (Uint256, pb.WinnerType, error) {
+func GetNextMiningSigChainTxnHash(height uint32) (common.Uint256, pb.WinnerType, error) {
 	if height < NumGenesisBlocks {
-		return EmptyUint256, pb.GENESIS_SIGNER, nil
+		return common.EmptyUint256, pb.GENESIS_SIGNER, nil
 	}
 
 	nextMiningSigChainTxnHash, err := por.GetPorServer().GetMiningSigChainTxnHash(height + 1)
 	if err != nil {
-		return EmptyUint256, pb.TXN_SIGNER, err
+		return common.EmptyUint256, pb.TXN_SIGNER, err
 	}
 
-	if nextMiningSigChainTxnHash == EmptyUint256 {
-		return EmptyUint256, pb.BLOCK_SIGNER, nil
+	if nextMiningSigChainTxnHash == common.EmptyUint256 {
+		return common.EmptyUint256, pb.BLOCK_SIGNER, nil
 	}
 
 	return nextMiningSigChainTxnHash, pb.TXN_SIGNER, nil
@@ -358,7 +358,7 @@ func HeaderCheck(b *block.Block) error {
 	}
 
 	currentHash := DefaultLedger.Store.GetCurrentBlockHash()
-	prevHash, err := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+	prevHash, err := common.Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
 	if err != nil {
 		return fmt.Errorf("parse prev block hash %x error: %v", header.UnsignedHeader.PrevBlockHash, err)
 	}
@@ -445,7 +445,7 @@ func NextBlockProposerCheck(header *block.Header) error {
 	}
 
 	winnerType := header.UnsignedHeader.WinnerType
-	winnerHash, err := Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
+	winnerHash, err := common.Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
 	if err != nil {
 		return err
 	}
@@ -470,7 +470,7 @@ func VerifyHeader(header *block.Header) bool {
 		log.Error("[VerifyHeader] failed, header height error.")
 		return false
 	}
-	prevHash, _ := Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
+	prevHash, _ := common.Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
 	prevHeader, err := DefaultLedger.Store.GetHeaderWithCache(prevHash)
 	if err != nil || prevHeader == nil {
 		log.Error("[VerifyHeader] failed, not found prevHeader.")

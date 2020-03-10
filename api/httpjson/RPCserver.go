@@ -19,29 +19,29 @@ import (
 )
 
 type RPCServer struct {
-	//keeps track of every function to be called on specific rpc call
+	// keeps track of every function to be called on specific rpc call
 	mainMux ServeMux
 
-	//defines http listener for RPCServer, such as "127.0.0.1:30004"
+	// defines http listener for RPCServer, such as "127.0.0.1:30004"
 	httpListener string
 
-	//defines https listener for RPCServer
+	// defines https listener for RPCServer
 	httpsListener string
 
-	//the reference of local node
+	// the reference of local node
 	localNode *node.LocalNode
 
-	//the reference of Wallet
+	// the reference of Wallet
 	wallet vault.Wallet
 }
 
 type ServeMux struct {
 	sync.RWMutex
 
-	//collection of Handlers
+	// collection of Handlers
 	m map[string]common.Handler
 
-	//will be called when the request of rpc client contains no implemented functions.
+	// will be called when the request of rpc client contains no implemented functions.
 	defaultFunction func(http.ResponseWriter, *http.Request)
 }
 
@@ -60,8 +60,8 @@ func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
 	return server
 }
 
-//this is the funciton that should be called in order to answer an rpc call
-//should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
+// this is the funciton that should be called in order to answer an rpc call
+// should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
 func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		err := recover()
@@ -87,12 +87,12 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 
 	s.mainMux.RLock()
 	defer s.mainMux.RUnlock()
-	//CORS headers
+	// CORS headers
 	w.Header().Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 	w.Header().Set("content-type", "application/json;charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	if r.Method == "POST" {
-		//read the body of the request
+		// read the body of the request
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("HTTP JSON RPC Handle - ioutil.ReadAll: ", err)
@@ -109,7 +109,8 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		errcode := common.SUCCESS
 		id, ok := request["id"].(string)
 		if !ok {
-			id = "1" // set default if not in request
+			// set default if not in request
+			id = "1"
 		}
 		method, ok := request["method"].(string)
 		if !ok {
@@ -140,17 +141,17 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		if addr, ok := params["RemoteAddr"]; ok {
 			switch addr.(type) {
 			case []byte, string:
-				if len(addr.(string)) == 0 { // empty string
+				if len(addr.(string)) == 0 {
 					params["RemoteAddr"] = r.RemoteAddr
 				}
-			case bool: // save remoteAddr whatever true or false
+			case bool: // set remoteAddr if it's true or false
 				params["RemoteAddr"] = r.RemoteAddr
 			default:
 				log.Warningf("RemoteAddr unsupport type for %v", addr)
 			}
 		}
 
-		//get the corresponding function
+		// get the corresponding function
 		function, ok := s.mainMux.m[method]
 		if ok {
 			defer func() {
@@ -162,6 +163,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 					} else if s.GetNetNode() == nil {
 						errcode = common.ErrNullID
 					} else {
+						// This panic will be recovered by handler
 						panic(err)
 					}
 					data, err := json.Marshal(map[string]interface{}{
@@ -209,7 +211,6 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			}
 			w.Write(data)
 		} else {
-			//if the function does not exist
 			log.Warning("HTTP JSON RPC Handle - No function to call for ", method)
 			errcode := common.INVALID_METHOD
 			data, err := json.Marshal(map[string]interface{}{
@@ -230,14 +231,14 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//a function to register functions to be called for specific rpc calls
+// function to register functions to be called for specific rpc calls
 func (s *RPCServer) HandleFunc(pattern string, handler common.Handler) {
 	s.mainMux.Lock()
 	defer s.mainMux.Unlock()
 	s.mainMux.m[pattern] = handler
 }
 
-//a function to be called if the request is not a HTTP JSON RPC call
+// function to be called if the request is not a HTTP JSON RPC call
 func (s *RPCServer) SetDefaultFunc(def func(http.ResponseWriter, *http.Request)) {
 	s.mainMux.defaultFunction = def
 }

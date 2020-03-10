@@ -168,18 +168,22 @@ func (sdb *StateDB) deleteNameInfo(nameId string) error {
 	return nil
 }
 
-func (sdb *StateDB) FinalizeNames(commit bool) {
+func (sdb *StateDB) FinalizeNames(commit bool) error {
 	_, height, _ := sdb.cs.getCurrentBlockHashFromDB()
 	if config.LegacyNameService.GetValueAtHeight(height + 1) {
-		sdb.FinalizeNames_legacy(commit)
-		return
+		return sdb.FinalizeNames_legacy(commit)
 	}
+
+	var err error
 	sdb.names.Range(func(key, value interface{}) bool {
 		if nameId, ok := key.(string); ok {
 			if info, ok := value.(*nameInfo); ok && !info.Empty() {
-				sdb.updateNameInfo(nameId, info)
+				err = sdb.updateNameInfo(nameId, info)
 			} else {
-				sdb.deleteNameInfo(nameId)
+				err = sdb.deleteNameInfo(nameId)
+			}
+			if err != nil {
+				return false
 			}
 			if commit {
 				sdb.names.Delete(nameId)
@@ -187,13 +191,19 @@ func (sdb *StateDB) FinalizeNames(commit bool) {
 		}
 		return true
 	})
+	if err != nil {
+		return err
+	}
 
 	sdb.namesCleanup.Range(func(key, value interface{}) bool {
 		if height, ok := key.(uint32); ok {
 			if nc, ok := value.(namesCleanup); ok && len(nc) > 0 {
-				sdb.updateNamesCleanup(height, nc)
+				err = sdb.updateNamesCleanup(height, nc)
 			} else {
-				sdb.deleteNamesCleanup(height)
+				err = sdb.deleteNamesCleanup(height)
+			}
+			if err != nil {
+				return false
 			}
 			if commit {
 				sdb.namesCleanup.Delete(height)
@@ -201,6 +211,7 @@ func (sdb *StateDB) FinalizeNames(commit bool) {
 		}
 		return true
 	})
+	return err
 }
 
 func (sdb *StateDB) getNamesCleanup(height uint32) (namesCleanup, error) {
@@ -278,7 +289,7 @@ func (sdb *StateDB) updateNamesCleanup(height uint32, nc namesCleanup) error {
 	buff := bytes.NewBuffer(nil)
 
 	if err := serialization.WriteVarUint(buff, uint64(len(nc))); err != nil {
-		panic(fmt.Errorf("can't encode names cleanup %v: %v", nc, err))
+		return fmt.Errorf("can't encode names cleanup %v: %v", nc, err)
 	}
 	ncs := make([]string, 0, len(nc))
 	for id := range nc {
@@ -287,7 +298,7 @@ func (sdb *StateDB) updateNamesCleanup(height uint32, nc namesCleanup) error {
 	sort.Strings(ncs)
 	for _, id := range ncs {
 		if err := serialization.WriteVarString(buff, id); err != nil {
-			panic(fmt.Errorf("can't encode names cleanup %v: %v", nc, err))
+			return fmt.Errorf("can't encode names cleanup %v: %v", nc, err)
 		}
 	}
 

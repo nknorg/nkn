@@ -242,7 +242,7 @@ func (cs *ChainStore) generateStateRoot(ctx context.Context, b *block.Block, gen
 		return nil, EmptyUint256, err
 	}
 
-	//process previous block
+	// process previous block
 	height := b.Header.UnsignedHeader.Height
 	if height == 0 {
 		var pk *crypto.PubKey
@@ -363,11 +363,11 @@ func (cs *ChainStore) generateStateRoot(ctx context.Context, b *block.Block, gen
 	var root Uint256
 	if needBeCommitted {
 		root, err = states.Finalize(true)
-		if err != nil {
-			return nil, EmptyUint256, err
-		}
 	} else {
-		root = states.IntermediateRoot()
+		root, err = states.IntermediateRoot()
+	}
+	if err != nil {
+		return nil, EmptyUint256, err
 	}
 
 	return states, root, nil

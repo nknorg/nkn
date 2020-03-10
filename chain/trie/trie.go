@@ -64,8 +64,6 @@ func (t *Trie) TryGet(key []byte) ([]byte, error) {
 }
 
 func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newNode node, err error) {
-	//fmt.Printf("=====tryGet node type : %v, %v\n", reflect.TypeOf(origNode), origNode)
-
 	switch n := origNode.(type) {
 	case nil:
 		return nil, nil, nil
@@ -97,8 +95,9 @@ func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newNode
 		}
 		return t.tryGet(child, key, pos)
 	default:
-		panic(fmt.Sprintf("invalid find node type: %v", origNode))
+		log.Fatalf("Invalid find node type: %v", origNode)
 	}
+	return nil, nil, nil
 }
 
 func (t *Trie) Update(key, value []byte) {
@@ -118,7 +117,6 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 }
 
 func (t *Trie) insert(n node, key []byte, value node) (node, error) {
-	//log.Infof("=====insert node type : %v,%v\n", reflect.TypeOf(n), common.BytesToHexString(key))
 	if len(key) == 0 {
 		return value, nil
 	}
@@ -173,8 +171,9 @@ func (t *Trie) insert(n node, key []byte, value node) (node, error) {
 		}
 		return nn, nil
 	default:
-		panic(fmt.Sprintf("invalid insert node type : %v,, %v", reflect.TypeOf(n), n))
+		log.Fatalf("Invalid insert node type : %v,, %v", reflect.TypeOf(n), n)
 	}
+	return nil, nil
 }
 
 func (t *Trie) Delete(key []byte) {
@@ -261,13 +260,14 @@ func (t *Trie) delete(n node, key []byte) (node, error) {
 		}
 		return nn, nil
 	default:
-		panic(fmt.Sprintf("Invalid Delete Node Type: %v", n))
+		log.Fatalf("Invalid Delete Node Type: %v", n)
 	}
+	return nil, nil
 }
 
 func (t *Trie) Commit() (common.Uint256, error) {
 	if t.db == nil {
-		panic("Commit data to trie whit nil database")
+		log.Fatal("Commit data to trie whit nil database")
 	}
 	return t.CommitTo(t.db)
 }
@@ -347,7 +347,6 @@ func (t *Trie) traverse(n node, needPrint bool) error {
 		if err := t.traverse(n.Val, needPrint); err != nil {
 			return err
 		}
-
 		return nil
 	case *fullNode:
 		if needPrint {
@@ -363,7 +362,6 @@ func (t *Trie) traverse(n node, needPrint bool) error {
 				}
 			}
 		}
-
 		return nil
 	case hashNode:
 		if needPrint {
@@ -387,10 +385,8 @@ func (t *Trie) traverse(n node, needPrint bool) error {
 		}
 		return nil
 	default:
-		panic(fmt.Sprintf("invalid node type : %v, %v", reflect.TypeOf(n), n))
-
+		log.Fatalf("Invalid node type : %v, %v", reflect.TypeOf(n), n)
 	}
-
 	return nil
 }
 

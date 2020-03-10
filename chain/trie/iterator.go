@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/log"
 )
 
 type Iterator struct {
@@ -105,7 +106,8 @@ func (it *nodeIterator) LeafKey() []byte {
 			return hexToKeyBytes(it.path)
 		}
 	}
-	panic("not at leaf")
+	log.Fatal("Node iterator not at leaf")
+	return nil
 }
 
 func (it *nodeIterator) LeafBlob() []byte {
@@ -114,7 +116,8 @@ func (it *nodeIterator) LeafBlob() []byte {
 			return []byte(node)
 		}
 	}
-	panic("not at leaf")
+	log.Fatal("Node iterator not at leaf")
+	return nil
 }
 
 func (it *nodeIterator) Path() []byte {

@@ -17,7 +17,7 @@ import (
 	"github.com/nknorg/nkn/cmd/nknc/pubsub"
 	"github.com/nknorg/nkn/cmd/nknc/service"
 	"github.com/nknorg/nkn/cmd/nknc/wallet"
-	"github.com/nknorg/nnet/log"
+	"github.com/nknorg/nkn/util/log"
 	"github.com/urfave/cli"
 )
 
@@ -25,15 +25,10 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func Err2Errno(err error) int {
-	return 1 // TODO: github.com/nknorg/nkn/errno package.
-}
-
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("Panic: %+v", r)
-			os.Exit(1)
+			log.Fatalf("Panic: %+v", r)
 		}
 	}()
 
@@ -70,7 +65,7 @@ func main() {
 		case syscall.Errno:
 			os.Exit(int(err.(syscall.Errno)))
 		default:
-			os.Exit(Err2Errno(err))
+			os.Exit(1)
 		}
 	}
 }
