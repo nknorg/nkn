@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-
 	"github.com/nknorg/consequential"
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
@@ -331,7 +330,7 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 		var rollbacked bool
 		rollbacked, err = localNode.maybeRollback(neighbors)
 		if err != nil {
-			panic(fmt.Errorf("Rollback error: %v", err))
+			log.Fatalf("Rollback error: %v", err)
 		}
 		if rollbacked {
 			currentHeight = chain.DefaultLedger.Store.GetHeight()

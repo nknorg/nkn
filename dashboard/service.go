@@ -1,6 +1,10 @@
 package dashboard
 
 import (
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -13,9 +17,6 @@ import (
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
 	"github.com/pborman/uuid"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 var (

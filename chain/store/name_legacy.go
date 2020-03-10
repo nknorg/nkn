@@ -121,21 +121,28 @@ func (cs *ChainStore) GetRegistrant_legacy(name string) ([]byte, error) {
 	return cs.States.getRegistrant_legacy(name)
 }
 
-func (sdb *StateDB) FinalizeNames_legacy(commit bool) {
+func (sdb *StateDB) FinalizeNames_legacy(commit bool) error {
+	var err error
 	sdb.names.Range(func(key, value interface{}) bool {
 		if registrantId, ok := key.(string); ok {
 			if name, ok := value.(string); ok && len(name) > 0 {
 				nameId := getNameId_legacy(name)
 				if v, ok := sdb.nameRegistrants.Load(nameId); ok {
 					if registrant, ok := v.([]byte); ok {
-						sdb.updateName_legacy(registrant, name)
+						err = sdb.updateName_legacy(registrant, name)
+						if err != nil {
+							return false
+						}
 						if commit {
 							sdb.nameRegistrants.Delete(nameId)
 						}
 					}
 				}
 			} else {
-				sdb.deleteName_legacy(registrantId)
+				err = sdb.deleteName_legacy(registrantId)
+				if err != nil {
+					return false
+				}
 			}
 			if commit {
 				sdb.names.Delete(registrantId)
@@ -143,4 +150,5 @@ func (sdb *StateDB) FinalizeNames_legacy(commit bool) {
 		}
 		return true
 	})
+	return err
 }

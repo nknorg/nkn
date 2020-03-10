@@ -210,17 +210,16 @@ func (l *Logger) Fatalf(format string, a ...interface{}) {
 }
 
 func callerLocation() string {
-	pc := make([]uintptr, 10)
-	runtime.Callers(2, pc)
-	f := runtime.FuncForPC(pc[0])
-	file, line := f.FileLine(pc[0])
+	pc, file, line, ok := runtime.Caller(2)
+	if !ok {
+		return "[cannot recover runtime info]"
+	}
+
+	f := runtime.FuncForPC(pc)
 	fileName := filepath.Base(file)
+	funcName := strings.TrimPrefix(filepath.Ext(f.Name()), ".")
 
-	nameFull := f.Name()
-	nameEnd := filepath.Ext(nameFull)
-	funcName := strings.TrimPrefix(nameEnd, ".")
-
-	return fileName + ":L" + strconv.Itoa(line) + " " + funcName + "()"
+	return fmt.Sprintf("[%s:L%d %s()]", fileName, line, funcName)
 }
 
 func Debug(a ...interface{}) {

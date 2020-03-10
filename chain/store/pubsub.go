@@ -339,7 +339,7 @@ func (sdb *StateDB) updatePubSub(id string, pubSub *pubSub) error {
 	buff := bytes.NewBuffer(nil)
 	err := pubSub.Serialize(buff)
 	if err != nil {
-		panic(fmt.Errorf("can't encode pub sub %v: %v", pubSub, err))
+		return fmt.Errorf("can't encode pub sub %v: %v", pubSub, err)
 	}
 
 	return sdb.trie.TryUpdate(append(PubSubPrefix, id...), buff.Bytes())
@@ -359,7 +359,7 @@ func (sdb *StateDB) updatePubSubCleanup(height uint32, psc pubSubCleanup) error 
 	buff := bytes.NewBuffer(nil)
 
 	if err := serialization.WriteVarUint(buff, uint64(len(psc))); err != nil {
-		panic(fmt.Errorf("can't encode pub sub cleanup %v: %v", psc, err))
+		return fmt.Errorf("can't encode pub sub cleanup %v: %v", psc, err)
 	}
 	pscs := make([]string, 0)
 	for id := range psc {
@@ -368,7 +368,7 @@ func (sdb *StateDB) updatePubSubCleanup(height uint32, psc pubSubCleanup) error 
 	sort.Strings(pscs)
 	for _, id := range pscs {
 		if err := serialization.WriteVarString(buff, id); err != nil {
-			panic(fmt.Errorf("can't encode pub sub cleanup %v: %v", psc, err))
+			return fmt.Errorf("can't encode pub sub cleanup %v: %v", psc, err)
 		}
 	}
 
@@ -388,13 +388,17 @@ func (sdb *StateDB) CleanupPubSub(height uint32) error {
 	return nil
 }
 
-func (sdb *StateDB) FinalizePubSub(commit bool) {
+func (sdb *StateDB) FinalizePubSub(commit bool) error {
+	var err error
 	sdb.pubSub.Range(func(key, value interface{}) bool {
 		if id, ok := key.(string); ok {
 			if ps, ok := value.(*pubSub); ok && !ps.Empty() {
-				sdb.updatePubSub(id, ps)
+				err = sdb.updatePubSub(id, ps)
 			} else {
-				sdb.deletePubSub(id)
+				err = sdb.deletePubSub(id)
+			}
+			if err != nil {
+				return false
 			}
 			if commit {
 				sdb.pubSub.Delete(id)
@@ -402,13 +406,19 @@ func (sdb *StateDB) FinalizePubSub(commit bool) {
 		}
 		return true
 	})
+	if err != nil {
+		return err
+	}
 
 	sdb.pubSubCleanup.Range(func(key, value interface{}) bool {
 		if height, ok := key.(uint32); ok {
 			if psc, ok := value.(pubSubCleanup); ok && len(psc) > 0 {
-				sdb.updatePubSubCleanup(height, psc)
+				err = sdb.updatePubSubCleanup(height, psc)
 			} else {
-				sdb.deletePubSubCleanup(height)
+				err = sdb.deletePubSubCleanup(height)
+			}
+			if err != nil {
+				return false
 			}
 			if commit {
 				sdb.pubSubCleanup.Delete(height)
@@ -416,4 +426,5 @@ func (sdb *StateDB) FinalizePubSub(commit bool) {
 		}
 		return true
 	})
+	return err
 }

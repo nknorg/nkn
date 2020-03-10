@@ -93,7 +93,7 @@ func (localNode *LocalNode) startConnectingToRandomNeighbors() {
 
 	c, ok := localNode.nnet.Network.(*chord.Chord)
 	if !ok {
-		panic("Overlay is not chord")
+		log.Fatal("Overlay is not chord")
 	}
 
 	for {
@@ -135,7 +135,7 @@ func (localNode *LocalNode) startConnectingToRandomNeighbors() {
 func (localNode *LocalNode) splitNeighbors(filter func(*RemoteNode) bool) ([]*RemoteNode, []*RemoteNode) {
 	c, ok := localNode.nnet.Network.(*chord.Chord)
 	if !ok {
-		panic("Overlay is not chord")
+		log.Fatal("Overlay is not chord")
 	}
 
 	allNeighbors := localNode.GetNeighbors(filter)

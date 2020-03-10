@@ -234,7 +234,7 @@ func nknMain(c *cli.Context) error {
 
 	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, common.Fixed64(config.Parameters.RegisterIDRegFee), common.Fixed64(config.Parameters.RegisterIDTxnFee))
 	if err != nil {
-		panic(fmt.Errorf("Get or create id error: %v", err))
+		log.Fatalf("Get or create id error: %v", err)
 	}
 
 	log.Info("current chord ID: ", common.BytesToHexString(id))
@@ -312,10 +312,10 @@ func nknMain(c *cli.Context) error {
 			for {
 				time.Sleep(time.Minute)
 				if localNode.GetConnectionCnt() == 0 {
-					panic(errors.New(errMsg))
+					log.Fatal(errMsg)
 				}
 				if nnetNeighbors, err := nn.GetLocalNode().GetNeighbors(nil); err == nil && len(nnetNeighbors) == 0 {
-					panic(errors.New(errMsg))
+					log.Fatal(errMsg)
 				}
 			}
 		}()
@@ -375,8 +375,7 @@ func netVersion(timer *time.Timer) {
 				break
 			}
 			if verNum > NetVersionNum {
-				log.Error("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
-				panic("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
+				log.Fatal("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
 			}
 
 			timer.Reset(30 * time.Minute)
@@ -387,8 +386,7 @@ func netVersion(timer *time.Timer) {
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("Panic: %+v", r)
-			os.Exit(1)
+			log.Fatalf("Panic: %+v", r)
 		}
 	}()
 

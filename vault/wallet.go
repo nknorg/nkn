@@ -307,7 +307,7 @@ func GetWallet() (Wallet, error) {
 	walletFileName := config.Parameters.WalletFile
 	if !FileExisted(walletFileName) {
 		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_NO_WALLET_FILE
-		return nil, fmt.Errorf("wallet file %s does not exist, please create a wallet using nknc.", walletFileName)
+		return nil, fmt.Errorf("wallet file %s does not exist, please create a wallet using nknc", walletFileName)
 	} else {
 		serviceConfig.Status = serviceConfig.Status &^ serviceConfig.SERVICE_STATUS_NO_WALLET_FILE
 	}

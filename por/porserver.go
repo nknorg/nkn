@@ -114,8 +114,7 @@ func InitPorServer(account *vault.Account, id []byte) error {
 
 func GetPorServer() *PorServer {
 	if porServer == nil {
-		log.Error("PorServer not initialized")
-		panic("PorServer not initialized")
+		log.Fatal("PorServer not initialized")
 	}
 	return porServer
 }
