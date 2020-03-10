@@ -25,10 +25,11 @@ const (
 )
 
 const (
-	Red    = "0;31"
-	Green  = "0;32"
-	Yellow = "0;33"
-	Pink   = "1;35"
+	Red     = "0;31"
+	Green   = "0;32"
+	Yellow  = "0;33"
+	Magenta = "0;35"
+	Cyan    = "0;36"
 )
 
 const (
@@ -36,15 +37,17 @@ const (
 	infoLog
 	warnLog
 	errorLog
+	fatalLog
 	maxLevelLog
 )
 
 var (
 	levels = map[int]string{
-		debugLog: Color(Pink, "[DEBUG]"),
+		debugLog: Color(Cyan, "[DEBUG]"),
 		infoLog:  Color(Green, "[INFO ]"),
 		warnLog:  Color(Yellow, "[WARN ]"),
 		errorLog: Color(Red, "[ERROR]"),
+		fatalLog: Color(Magenta, "[FATAL]"),
 	}
 	Stdout = os.Stdout
 )
@@ -108,6 +111,12 @@ func (l *Logger) reset(out io.Writer, prefix string, flag, level int, file *os.F
 	l.level = level
 	l.logger = log.New(out, prefix, flag)
 	l.logFile = file
+}
+
+func (l *Logger) GetLevel() int {
+	l.RLock()
+	defer l.RUnlock()
+	return l.level
 }
 
 func (l *Logger) SetDebugLevel(level int) error {
@@ -192,14 +201,15 @@ func (l *Logger) Errorf(format string, a ...interface{}) {
 	l.Outputf(errorLog, format, a...)
 }
 
-func Debug(a ...interface{}) {
-	Log.RLock()
-	defer Log.RUnlock()
+func (l *Logger) Fatal(a ...interface{}) {
+	l.Output(fatalLog, a...)
+}
 
-	if debugLog < Log.level {
-		return
-	}
+func (l *Logger) Fatalf(format string, a ...interface{}) {
+	l.Outputf(fatalLog, format, a...)
+}
 
+func callerLocation() string {
 	pc := make([]uintptr, 10)
 	runtime.Callers(2, pc)
 	f := runtime.FuncForPC(pc[0])
@@ -210,56 +220,55 @@ func Debug(a ...interface{}) {
 	nameEnd := filepath.Ext(nameFull)
 	funcName := strings.TrimPrefix(nameEnd, ".")
 
-	a = append([]interface{}{funcName + "()", fileName + ":" + strconv.Itoa(line)}, a...)
+	return fileName + ":L" + strconv.Itoa(line) + " " + funcName + "()"
+}
 
-	Log.Debug(a...)
+func Debug(a ...interface{}) {
+	if Log.GetLevel() > debugLog {
+		return
+	}
+	Log.Debug(append([]interface{}{callerLocation()}, a...)...)
 }
 
 func Debugf(format string, a ...interface{}) {
-	Log.RLock()
-	defer Log.RUnlock()
-
-	if debugLog < Log.level {
+	if Log.GetLevel() > debugLog {
 		return
 	}
-
-	pc := make([]uintptr, 10)
-	runtime.Callers(2, pc)
-	f := runtime.FuncForPC(pc[0])
-	file, line := f.FileLine(pc[0])
-	fileName := filepath.Base(file)
-
-	nameFull := f.Name()
-	nameEnd := filepath.Ext(nameFull)
-	funcName := strings.TrimPrefix(nameEnd, ".")
-
-	a = append([]interface{}{funcName + "()", fileName, line}, a...)
-
-	Log.Debugf("%s %s:%d "+format, a...)
+	Log.Debugf("%s "+format, append([]interface{}{callerLocation()}, a...)...)
 }
 
 func Info(a ...interface{}) {
 	Log.Info(a...)
 }
 
-func Warning(a ...interface{}) {
-	Log.Warning(a...)
-}
-
-func Error(a ...interface{}) {
-	Log.Error(a...)
-}
-
 func Infof(format string, a ...interface{}) {
 	Log.Infof(format, a...)
+}
+
+func Warning(a ...interface{}) {
+	Log.Warning(a...)
 }
 
 func Warningf(format string, a ...interface{}) {
 	Log.Warningf(format, a...)
 }
 
+func Error(a ...interface{}) {
+	Log.Error(a...)
+}
+
 func Errorf(format string, a ...interface{}) {
 	Log.Errorf(format, a...)
+}
+
+func Fatal(a ...interface{}) {
+	Log.Fatal(append([]interface{}{callerLocation()}, a...)...)
+	os.Exit(1)
+}
+
+func Fatalf(format string, a ...interface{}) {
+	Log.Fatalf("%s "+format, append([]interface{}{callerLocation()}, a...)...)
+	os.Exit(1)
 }
 
 func FileOpen(path string, name string) (*os.File, error) {
@@ -331,14 +340,16 @@ func Init() error {
 				if Log.needNewLogFile() {
 					writter, file, err = getWritterAndFile("LOG", config.Parameters.LogPath, Stdout)
 					if err != nil {
-						panic(err)
+						log.Println(err)
+						os.Exit(1)
 					}
 					Log.reset(writter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, file)
 				}
 				if WebLog.needNewLogFile() {
 					writter, file, err = getWritterAndFile("WEBLOG", config.Parameters.LogPath)
 					if err != nil {
-						panic(err)
+						log.Println(err)
+						os.Exit(1)
 					}
 					WebLog.reset(writter, "", log.Ldate|log.Lmicroseconds, config.Parameters.LogLevel, file)
 				}
