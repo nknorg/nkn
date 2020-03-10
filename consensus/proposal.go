@@ -350,6 +350,10 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		}
 	}
 
+	if err = chain.SignatureCheck(b.Header); err != nil {
+		return nil, fmt.Errorf("Proposal fails to pass signature check: %v", err)
+	}
+
 	var txnsRoot common.Uint256
 	poolTxns := make([]*transaction.Transaction, 0, len(replyMsg.TransactionsHash))
 	missingTxnsHash := make([][]byte, 0, len(replyMsg.TransactionsHash))

@@ -309,6 +309,11 @@ func SignerCheck(header *block.Header) error {
 		return fmt.Errorf("invalid block signer public key %x, should be %x", header.UnsignedHeader.SignerPk, publicKey)
 	}
 
+	_, err = crypto.DecodePoint(header.UnsignedHeader.SignerPk)
+	if err != nil {
+		return fmt.Errorf("decode public key error: %v", err)
+	}
+
 	if len(chordID) > 0 && !bytes.Equal(header.UnsignedHeader.SignerId, chordID) {
 		return fmt.Errorf("invalid block signer chord ID %x, should be %x", header.UnsignedHeader.SignerId, chordID)
 	}
@@ -324,10 +329,15 @@ func SignerCheck(header *block.Header) error {
 		return fmt.Errorf("ID of signer %x should be %x, got %x", publicKey, id, header.UnsignedHeader.SignerId)
 	}
 
-	rawPubKey, err := crypto.DecodePoint(publicKey)
+	return nil
+}
+
+func SignatureCheck(header *block.Header) error {
+	rawPubKey, err := crypto.DecodePoint(header.UnsignedHeader.SignerPk)
 	if err != nil {
 		return fmt.Errorf("decode public key error: %v", err)
 	}
+
 	err = crypto.Verify(*rawPubKey, signature.GetHashForSigning(header), header.Signature)
 	if err != nil {
 		return fmt.Errorf("invalid header signature %x: %v", header.Signature, err)
@@ -355,6 +365,11 @@ func HeaderCheck(b *block.Block) error {
 	err := SignerCheck(header)
 	if err != nil {
 		return fmt.Errorf("signer check failed: %v", err)
+	}
+
+	err = SignatureCheck(header)
+	if err != nil {
+		return fmt.Errorf("signature check failed: %v", err)
 	}
 
 	currentHash := DefaultLedger.Store.GetCurrentBlockHash()
