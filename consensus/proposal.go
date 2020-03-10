@@ -272,6 +272,10 @@ func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32
 		return nil
 	}
 
+	if _, ok := consensus.neighborBlacklist.Load(neighborID); ok {
+		return fmt.Errorf("ignore block hash %s from blacklist neighbor %s", blockHash.ToHexString(), neighborID)
+	}
+
 	expectedHeight := consensus.GetExpectedHeight()
 	if height != expectedHeight {
 		return fmt.Errorf("Receive invalid block hash height %d instead of %d", height, expectedHeight)
@@ -351,7 +355,10 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 	}
 
 	if err = chain.SignatureCheck(b.Header); err != nil {
-		return nil, fmt.Errorf("Proposal fails to pass signature check: %v", err)
+		err = fmt.Errorf("Proposal fails to pass signature check: %v", err)
+		consensus.neighborBlacklist.Store(neighbor.GetID(), err)
+		log.Infof("Add neighbor %s to blacklist because: %v", neighbor.GetID(), err)
+		return nil, err
 	}
 
 	var txnsRoot common.Uint256
