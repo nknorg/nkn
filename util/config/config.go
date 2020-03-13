@@ -174,6 +174,7 @@ var (
 		MiningDebug:                  true,
 		LogLevel:                     1,
 		MaxLogFileSize:               20,
+		MaxLogFileTotalSize:          100,
 		SyncBatchWindowSize:          0,
 		SyncBlockHeadersBatchSize:    128,
 		SyncBlocksBatchSize:          4,
@@ -226,6 +227,7 @@ type Configuration struct {
 	NodePort                     uint16        `json:"-"`
 	LogLevel                     int           `json:"LogLevel"`
 	MaxLogFileSize               uint32        `json:"MaxLogSize"`
+	MaxLogFileTotalSize          uint32        `json:"MaxLogFileTotalSize"`
 	IsTLS                        bool          `json:"IsTLS"`
 	GenesisBlockProposer         string        `json:"GenesisBlockProposer"`
 	NumLowFeeTxnPerBlock         uint32        `json:"NumLowFeeTxnPerBlock"`
@@ -450,6 +452,10 @@ func (config *Configuration) verify() error {
 
 	if config.MaxLogFileSize <= 0 {
 		return fmt.Errorf("MaxLogFileSize should be >= 1 (MB)")
+	}
+
+	if config.MaxLogFileTotalSize <= 0 {
+		return fmt.Errorf("MaxLogFileTotalSize should be >= 1 (MB)")
 	}
 
 	switch config.StatePruningMode {
