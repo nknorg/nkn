@@ -19,6 +19,7 @@ import (
 )
 
 const (
+	LogFileExt = ".log"
 	namePrefix = "LEVEL"
 	callDepth  = 2
 	mb         = 1024 * 1024
@@ -270,7 +271,46 @@ func Fatalf(format string, a ...interface{}) {
 	os.Exit(1)
 }
 
-func FileOpen(path string, name string) (*os.File, error) {
+func PruneLogFiles(logPath string) error {
+	files, err := ioutil.ReadDir(logPath)
+	if err != nil {
+		return err
+	}
+
+	logFiles := make([]os.FileInfo, 0, len(files))
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == LogFileExt {
+			logFiles = append(logFiles, file)
+		}
+	}
+
+	for left, right := 0, len(logFiles)-1; left < right; left, right = left+1, right-1 {
+		logFiles[left], logFiles[right] = logFiles[right], logFiles[left]
+	}
+
+	maxSize := int64(config.Parameters.MaxLogFileTotalSize) * mb
+	var totalSize int64
+	i := 0
+	for ; i < len(logFiles); i++ {
+		totalSize += logFiles[i].Size()
+		if totalSize > maxSize {
+			break
+		}
+	}
+
+	if i < len(logFiles) {
+		for j := i; j < len(logFiles); j++ {
+			err = os.Remove(filepath.Join(config.Parameters.LogPath, logFiles[j].Name()))
+			if err != nil {
+				log.Println("Remove old log file error:", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func OpenLogFile(path string, name string) (*os.File, error) {
 	if fi, err := os.Stat(path); err == nil {
 		if !fi.IsDir() {
 			return nil, fmt.Errorf("%s is not a directory", path)
@@ -281,9 +321,14 @@ func FileOpen(path string, name string) (*os.File, error) {
 		}
 	}
 
-	var currenttime string = time.Now().Format("2006-01-02_15.04.05")
+	err := PruneLogFiles(path)
+	if err != nil {
+		return nil, err
+	}
 
-	logfile, err := os.OpenFile(filepath.Join(path, currenttime+"_"+name+".log"), os.O_RDWR|os.O_CREATE, 0666)
+	var currentTime string = time.Now().Format("2006-01-02_15.04.05")
+
+	logfile, err := os.OpenFile(filepath.Join(path, currentTime+"_"+name+LogFileExt), os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +345,7 @@ func getWritterAndFile(name string, outputs ...interface{}) (io.Writer, *os.File
 		for _, o := range outputs {
 			switch o.(type) {
 			case string:
-				logFile, err = FileOpen(o.(string), name)
+				logFile, err = OpenLogFile(o.(string), name)
 				if err != nil {
 					return nil, nil, fmt.Errorf("open log file %v failed: %v", o, err)
 				}
