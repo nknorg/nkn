@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -34,9 +35,12 @@ import (
 )
 
 const (
-	TlsPort                      uint16 = 443
-	sigChainCacheExpiration             = config.ConsensusTimeout
-	sigChainCacheCleanupInterval        = time.Second
+	TlsPort                      = 443
+	sigChainCacheExpiration      = config.ConsensusTimeout
+	sigChainCacheCleanupInterval = time.Second
+	pingInterval                 = 8 * time.Second
+	pongTimeout                  = 10 * time.Second // should be greater than pingInterval
+	maxMessageSize               = config.MaxClientMessageSize
 )
 
 type Handler struct {
@@ -97,8 +101,6 @@ func (ws *WsServer) Start() error {
 	}
 
 	event.Queue.Subscribe(event.SendInboundMessageToClient, ws.sendInboundRelayMessageToClient)
-
-	go ws.checkSessionsTimeout()
 
 	ws.server = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler)}
 	go ws.server.Serve(ws.listener)
@@ -230,48 +232,52 @@ func (ws *WsServer) Restart() {
 	}()
 }
 
-func (ws *WsServer) checkSessionsTimeout() {
-	ticker := time.NewTicker(time.Second * 10)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			var closeList []*session.Session
-			ws.SessionList.ForEachSession(func(s *session.Session) {
-				if s.SessionTimeoverCheck() {
-					resp := common.ResponsePack(common.SESSION_EXPIRED)
-					ws.respondToSession(s, resp)
-					closeList = append(closeList, s)
-				}
-			})
-			for _, s := range closeList {
-				ws.SessionList.CloseSession(s)
-			}
-		}
-	}
-
-}
-
 //websocketHandler
 func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	wsConn, err := ws.Upgrader.Upgrade(w, r, nil)
-
 	if err != nil {
 		log.Error("websocket Upgrader: ", err)
 		return
 	}
 	defer wsConn.Close()
-	nsSession, err := ws.SessionList.NewSession(wsConn)
+
+	sess, err := ws.SessionList.NewSession(wsConn)
 	if err != nil {
 		log.Error("websocket NewSession:", err)
 		return
 	}
 
 	defer func() {
-		ws.deleteTxHashs(nsSession.GetSessionId())
-		ws.SessionList.CloseSession(nsSession)
+		ws.deleteTxHashs(sess.GetSessionId())
+		ws.SessionList.CloseSession(sess)
 		if err := recover(); err != nil {
 			log.Error("websocket recover:", err)
+		}
+	}()
+
+	wsConn.SetReadLimit(maxMessageSize)
+	wsConn.SetReadDeadline(time.Now().Add(pongTimeout))
+	wsConn.SetPongHandler(func(string) error {
+		wsConn.SetReadDeadline(time.Now().Add(pongTimeout))
+		return nil
+	})
+
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		ticker := time.NewTicker(pingInterval)
+		defer ticker.Stop()
+		var err error
+		for {
+			select {
+			case <-ticker.C:
+				err = sess.Ping()
+				if err != nil {
+					return
+				}
+			case <-done:
+				return
+			}
 		}
 	}()
 
@@ -282,8 +288,11 @@ func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		if ws.OnDataHandle(nsSession, messageType, bysMsg, r) {
-			nsSession.UpdateActiveTime()
+		wsConn.SetReadDeadline(time.Now().Add(pongTimeout))
+
+		err = ws.OnDataHandle(sess, messageType, bysMsg, r)
+		if err != nil {
+			log.Error(err)
 		}
 	}
 }
@@ -301,13 +310,12 @@ func (ws *WsServer) IsValidMsg(reqMsg map[string]interface{}) bool {
 	return true
 }
 
-func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, bysMsg []byte, r *http.Request) bool {
+func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, bysMsg []byte, r *http.Request) error {
 	if messageType == websocket.BinaryMessage {
 		msg := &pb.ClientMessage{}
 		err := proto.Unmarshal(bysMsg, msg)
 		if err != nil {
-			log.Error("Parse client message error:", err)
-			return false
+			return fmt.Errorf("Parse client message error: %v", err)
 		}
 
 		var r io.Reader = bytes.NewReader(msg.Message)
@@ -316,23 +324,19 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 		case pb.COMPRESSION_ZLIB:
 			r, err = zlib.NewReader(r)
 			if err != nil {
-				log.Errorf("Create zlib reader error: %v", err)
-				return false
+				return fmt.Errorf("Create zlib reader error: %v", err)
 			}
 			defer r.(io.ReadCloser).Close()
 		default:
-			log.Errorf("Unsupported message compression type %v", msg.CompressionType)
-			return false
+			return fmt.Errorf("Unsupported message compression type %v", msg.CompressionType)
 		}
 
 		b, err := ioutil.ReadAll(io.LimitReader(r, config.MaxClientMessageSize+1))
 		if err != nil {
-			log.Errorf("ReadAll from reader error: %v", err)
-			return false
+			return fmt.Errorf("ReadAll from reader error: %v", err)
 		}
 		if len(b) > config.MaxClientMessageSize {
-			log.Errorf("Max client message size reached.")
-			return false
+			return fmt.Errorf("Max client message size reached.")
 		}
 
 		switch msg.MessageType {
@@ -340,28 +344,24 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 			outboundMsg := &pb.OutboundMessage{}
 			err = proto.Unmarshal(b, outboundMsg)
 			if err != nil {
-				log.Errorf("Unmarshal outbound message error: %v", err)
-				return false
+				return fmt.Errorf("Unmarshal outbound message error: %v", err)
 			}
 			ws.sendOutboundRelayMessage(curSession.GetAddrStr(), outboundMsg)
 		case pb.RECEIPT:
 			receipt := &pb.Receipt{}
 			err = proto.Unmarshal(b, receipt)
 			if err != nil {
-				log.Errorf("Unmarshal receipt error: %v", err)
-				return false
+				return fmt.Errorf("Unmarshal receipt error: %v", err)
 			}
 			err = ws.handleReceipt(receipt)
 			if err != nil {
-				log.Errorf("Handle receipt error: %v", err)
-				return false
+				return fmt.Errorf("Handle receipt error: %v", err)
 			}
 		default:
-			log.Errorf("unsupported client message type %v", msg.MessageType)
-			return false
+			return fmt.Errorf("unsupported client message type %v", msg.MessageType)
 		}
 
-		return true
+		return nil
 	}
 
 	var req = make(map[string]interface{})
@@ -369,25 +369,24 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 	if err := json.Unmarshal(bysMsg, &req); err != nil {
 		resp := common.ResponsePack(common.ILLEGAL_DATAFORMAT)
 		ws.respondToSession(curSession, resp)
-		log.Error("websocket OnDataHandle:", err)
-		return false
+		return fmt.Errorf("websocket OnDataHandle: %v", err)
 	}
 	actionName, ok := req["Action"].(string)
 	if !ok {
 		resp := common.ResponsePack(common.INVALID_METHOD)
 		ws.respondToSession(curSession, resp)
-		return false
+		return nil
 	}
 	action, ok := ws.ActionMap[actionName]
 	if !ok {
 		resp := common.ResponsePack(common.INVALID_METHOD)
 		ws.respondToSession(curSession, resp)
-		return false
+		return nil
 	}
 	if !ws.IsValidMsg(req) {
 		resp := common.ResponsePack(common.INVALID_PARAMS)
 		ws.respondToSession(curSession, resp)
-		return true
+		return nil
 	}
 	if height, ok := req["Height"].(float64); ok {
 		req["Height"] = strconv.FormatInt(int64(height), 10)
@@ -408,7 +407,7 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 	}
 	ws.respondToSession(curSession, resp)
 
-	return true
+	return nil
 }
 
 func (ws *WsServer) SetTxHashMap(txhash string, sessionid string) {

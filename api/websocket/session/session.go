@@ -9,18 +9,19 @@ import (
 	"github.com/pborman/uuid"
 )
 
+const (
+	writeTimeout = 10 * time.Second
+)
+
 type Session struct {
 	sync.Mutex
-	mConnection   *websocket.Conn
-	nLastActive   int64
+	ws            *websocket.Conn
 	sSessionId    string
 	clientChordID []byte
 	clientPubKey  []byte
 	clientAddrStr *string
 	isTlsClient   bool
 }
-
-const sessionTimeOut int64 = 120
 
 func (s *Session) GetSessionId() string {
 	return s.sSessionId
@@ -29,9 +30,8 @@ func (s *Session) GetSessionId() string {
 func newSession(wsConn *websocket.Conn) (session *Session, err error) {
 	sSessionId := uuid.NewUUID().String()
 	session = &Session{
-		mConnection: wsConn,
-		nLastActive: time.Now().Unix(),
-		sSessionId:  sSessionId,
+		ws:         wsConn,
+		sSessionId: sSessionId,
 	}
 	return session, nil
 }
@@ -39,26 +39,21 @@ func newSession(wsConn *websocket.Conn) (session *Session, err error) {
 func (s *Session) close() {
 	s.Lock()
 	defer s.Unlock()
-	if s.mConnection != nil {
-		s.mConnection.Close()
-		s.mConnection = nil
+	if s.ws != nil {
+		s.ws.Close()
+		s.ws = nil
 	}
 	s.sSessionId = ""
-}
-
-func (s *Session) UpdateActiveTime() {
-	s.Lock()
-	defer s.Unlock()
-	s.nLastActive = time.Now().Unix()
 }
 
 func (s *Session) Send(msgType int, data []byte) error {
 	s.Lock()
 	defer s.Unlock()
-	if s.mConnection == nil {
+	if s.ws == nil {
 		return errors.New("Websocket is null")
 	}
-	return s.mConnection.WriteMessage(msgType, data)
+	s.ws.SetWriteDeadline(time.Now().Add(writeTimeout))
+	return s.ws.WriteMessage(msgType, data)
 }
 
 func (s *Session) SendText(data []byte) error {
@@ -69,15 +64,8 @@ func (s *Session) SendBinary(data []byte) error {
 	return s.Send(websocket.BinaryMessage, data)
 }
 
-func (s *Session) SessionTimeoverCheck() bool {
-	if s.IsClient() {
-		return false
-	}
-	nCurTime := time.Now().Unix()
-	if nCurTime-s.nLastActive > sessionTimeOut { //sec
-		return true
-	}
-	return false
+func (s *Session) Ping() error {
+	return s.Send(websocket.PingMessage, nil)
 }
 
 func (s *Session) SetSessionId(sessionId string) {
