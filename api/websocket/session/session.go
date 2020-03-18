@@ -14,14 +14,16 @@ const (
 )
 
 type Session struct {
-	ws        *websocket.Conn
-	sessionID string
-
 	sync.RWMutex
+	sessionID     string
 	clientChordID []byte
 	clientPubKey  []byte
 	clientAddrStr *string
 	isTlsClient   bool
+	lastReadTime  time.Time
+
+	wsLock sync.Mutex
+	ws     *websocket.Conn
 }
 
 func (s *Session) GetSessionId() string {
@@ -31,8 +33,9 @@ func (s *Session) GetSessionId() string {
 func newSession(wsConn *websocket.Conn) (session *Session, err error) {
 	sessionID := uuid.NewUUID().String()
 	session = &Session{
-		ws:        wsConn,
-		sessionID: sessionID,
+		ws:           wsConn,
+		sessionID:    sessionID,
+		lastReadTime: time.Now(),
 	}
 	return session, nil
 }
@@ -48,8 +51,8 @@ func (s *Session) close() {
 }
 
 func (s *Session) Send(msgType int, data []byte) error {
-	s.RLock()
-	defer s.RUnlock()
+	s.wsLock.Lock()
+	defer s.wsLock.Unlock()
 	if s.ws == nil {
 		return errors.New("Websocket is null")
 	}
@@ -125,4 +128,16 @@ func (s *Session) IsTlsClient() bool {
 	s.RLock()
 	defer s.RUnlock()
 	return s.isTlsClient
+}
+
+func (s *Session) GetLastReadTime() time.Time {
+	s.RLock()
+	defer s.RUnlock()
+	return s.lastReadTime
+}
+
+func (s *Session) UpdateLastReadTime() {
+	s.Lock()
+	s.lastReadTime = time.Now()
+	s.Unlock()
 }
