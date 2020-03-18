@@ -41,6 +41,7 @@ const (
 	pingInterval                 = 8 * time.Second
 	pongTimeout                  = 10 * time.Second // should be greater than pingInterval
 	maxMessageSize               = config.MaxClientMessageSize
+	messageDeliveredCacheSize    = 65536
 )
 
 type Handler struct {
@@ -50,29 +51,31 @@ type Handler struct {
 
 type WsServer struct {
 	sync.RWMutex
-	Upgrader      websocket.Upgrader
-	listener      net.Listener
-	tlsListener   net.Listener
-	server        *http.Server
-	tlsServer     *http.Server
-	SessionList   *session.SessionList
-	ActionMap     map[string]Handler
-	TxHashMap     map[string]string //key: txHash   value:sessionid
-	localNode     *node.LocalNode
-	wallet        vault.Wallet
-	messageBuffer *messagebuffer.MessageBuffer
-	sigChainCache Cache
+	Upgrader              websocket.Upgrader
+	listener              net.Listener
+	tlsListener           net.Listener
+	server                *http.Server
+	tlsServer             *http.Server
+	SessionList           *session.SessionList
+	ActionMap             map[string]Handler
+	TxHashMap             map[string]string //key: txHash   value:sessionid
+	localNode             *node.LocalNode
+	wallet                vault.Wallet
+	messageBuffer         *messagebuffer.MessageBuffer
+	messageDeliveredCache *DelayedChan
+	sigChainCache         Cache
 }
 
 func InitWsServer(localNode *node.LocalNode, wallet vault.Wallet) *WsServer {
 	ws := &WsServer{
-		Upgrader:      websocket.Upgrader{},
-		SessionList:   session.NewSessionList(),
-		TxHashMap:     make(map[string]string),
-		localNode:     localNode,
-		wallet:        wallet,
-		messageBuffer: messagebuffer.NewMessageBuffer(),
-		sigChainCache: NewGoCache(sigChainCacheExpiration, sigChainCacheCleanupInterval),
+		Upgrader:              websocket.Upgrader{},
+		SessionList:           session.NewSessionList(),
+		TxHashMap:             make(map[string]string),
+		localNode:             localNode,
+		wallet:                wallet,
+		messageBuffer:         messagebuffer.NewMessageBuffer(),
+		messageDeliveredCache: NewDelayedChan(messageDeliveredCacheSize, pongTimeout),
+		sigChainCache:         NewGoCache(sigChainCacheExpiration, sigChainCacheCleanupInterval),
 	}
 	return ws
 }
@@ -107,6 +110,8 @@ func (ws *WsServer) Start() error {
 
 	ws.tlsServer = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler)}
 	go ws.tlsServer.Serve(ws.tlsListener)
+
+	go ws.startCheckingLostMessages()
 
 	return nil
 }
@@ -259,6 +264,7 @@ func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	wsConn.SetReadDeadline(time.Now().Add(pongTimeout))
 	wsConn.SetPongHandler(func(string) error {
 		wsConn.SetReadDeadline(time.Now().Add(pongTimeout))
+		sess.UpdateLastReadTime()
 		return nil
 	})
 
@@ -289,6 +295,7 @@ func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		wsConn.SetReadDeadline(time.Now().Add(pongTimeout))
+		sess.UpdateLastReadTime()
 
 		err = ws.OnDataHandle(sess, messageType, bysMsg, r)
 		if err != nil {
