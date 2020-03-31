@@ -250,7 +250,7 @@ func (sc *SigChain) VerifyPath() error {
 	var t big.Int
 	lastNodeID := sc.Elems[sc.Length()-2].Id
 	prevDistance := chord.Distance(sc.Elems[1].Id, lastNodeID, config.NodeIDBytes*8)
-	for i := 2; i < sc.Length()-2; i++ {
+	for i := 2; i < sc.Length()-1; i++ {
 		dist := chord.Distance(sc.Elems[i].Id, lastNodeID, config.NodeIDBytes*8)
 		if dist.Cmp(prevDistance) == 0 {
 			return fmt.Errorf("relayer %d and %d has the same ID", i-1, i)
