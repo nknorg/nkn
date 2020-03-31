@@ -143,6 +143,10 @@ var (
 		heights: []uint32{980000, 7500, 0},
 		values:  []bool{true, false, true},
 	}
+	ChargeNanoPayTxnFee = HeightDependentBool{
+		heights: []uint32{1072500, 0},
+		values:  []bool{true, false},
+	}
 )
 
 var (
