@@ -193,7 +193,6 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	case pb.NANO_PAY_TYPE:
 		sender := payload.(*pb.NanoPay).Sender
 		hashes = append(hashes, BytesToUint160(sender))
-
 	case pb.ISSUE_ASSET_TYPE:
 		sender := payload.(*pb.IssueAsset).Sender
 		hashes = append(hashes, BytesToUint160(sender))

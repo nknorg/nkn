@@ -300,19 +300,21 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		return errors.New("unpack transactiion's payload error")
 	}
 
-	checkNonce := func() error {
-		sender, err := ToCodeHash(txn.Programs[0].Code)
-		if err != nil {
-			return err
-		}
-		nonce := DefaultLedger.Store.GetNonce(sender)
+	pg, err := txn.GetProgramHashes()
+	if err != nil {
+		return err
+	}
 
-		if txn.UnsignedTx.Nonce < nonce {
+	switch txn.UnsignedTx.Payload.Type {
+	case pb.NANO_PAY_TYPE:
+	case pb.SIG_CHAIN_TXN_TYPE:
+	default:
+		if txn.UnsignedTx.Nonce < DefaultLedger.Store.GetNonce(pg[0]) {
 			return errors.New("nonce is too low")
 		}
-
-		return nil
 	}
+
+	var amount int64
 
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.COINBASE_TYPE:
@@ -327,23 +329,11 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			return errors.New("not sufficient funds in doation account")
 		}
 	case pb.TRANSFER_ASSET_TYPE:
-		if err := checkNonce(); err != nil {
-			return err
-		}
-
 		pld := payload.(*pb.TransferAsset)
-		balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Sender))
-		if int64(balance) < pld.Amount {
-			return errors.New("not sufficient funds")
-		}
+		amount += pld.Amount
 	case pb.SIG_CHAIN_TXN_TYPE:
 	case pb.REGISTER_NAME_TYPE:
-		if err := checkNonce(); err != nil {
-			return err
-		}
-
 		pld := payload.(*pb.RegisterName)
-
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
 			if name != "" {
@@ -354,34 +344,23 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			}
 
 			registrant, err := DefaultLedger.Store.GetRegistrant_legacy(pld.Name)
+			if err != nil {
+				return err
+			}
 			if registrant != nil {
 				return fmt.Errorf("name %s is already registered for pubKey %+v", pld.Name, registrant)
 			}
-			if err != nil {
-				return err
-			}
 		} else {
-			pk, err := crypto.DecodePoint(pld.Registrant)
-			if err != nil {
-				return err
-			}
-			addrHash, err := program.CreateProgramHash(pk)
-			if err != nil {
-				return err
-			}
-			balance := DefaultLedger.Store.GetBalance(addrHash)
-			if int64(balance) < pld.RegistrationFee+txn.UnsignedTx.Fee {
-				return errors.New("not sufficient funds")
-			}
 			registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
-			if len(registrant) > 0 && !bytes.Equal(registrant, pld.Registrant) {
-				return fmt.Errorf("this name got registered")
+			if err != nil {
+				return err
 			}
+			if len(registrant) > 0 && !bytes.Equal(registrant, pld.Registrant) {
+				return fmt.Errorf("name %s is already registered for pubKey %+v", pld.Name, registrant)
+			}
+			amount += pld.RegistrationFee
 		}
 	case pb.TRANSFER_NAME_TYPE:
-		if err := checkNonce(); err != nil {
-			return err
-		}
 		pld := payload.(*pb.TransferName)
 
 		registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
@@ -406,10 +385,6 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		}
 
 	case pb.DELETE_NAME_TYPE:
-		if err := checkNonce(); err != nil {
-			return err
-		}
-
 		pld := payload.(*pb.DeleteName)
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
@@ -435,10 +410,6 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		}
 
 	case pb.SUBSCRIBE_TYPE:
-		if err := checkNonce(); err != nil {
-			return err
-		}
-
 		pld := payload.(*pb.Subscribe)
 		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Topic, pld.Bucket, pld.Subscriber, pld.Identifier)
 		if err != nil {
@@ -452,10 +423,6 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			}
 		}
 	case pb.UNSUBSCRIBE_TYPE:
-		if err := checkNonce(); err != nil {
-			return err
-		}
-
 		pld := payload.(*pb.Unsubscribe)
 		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Topic, 0, pld.Subscriber, pld.Identifier)
 		if err != nil {
@@ -465,10 +432,6 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			return fmt.Errorf("subscription to %s doesn't exist", pld.Topic)
 		}
 	case pb.GENERATE_ID_TYPE:
-		if err := checkNonce(); err != nil {
-			return err
-		}
-
 		pld := payload.(*pb.GenerateID)
 		id, err := DefaultLedger.Store.GetID(pld.PublicKey)
 		if err != nil {
@@ -477,6 +440,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		if len(id) != 0 {
 			return ErrIDRegistered
 		}
+		amount += pld.RegistrationFee
 	case pb.NANO_PAY_TYPE:
 		pld := payload.(*pb.NanoPay)
 
@@ -496,20 +460,12 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			return errors.New("nano pay has expired")
 		}
 
-		balance := DefaultLedger.Store.GetBalance(BytesToUint160(pld.Sender))
 		balanceToClaim := pld.Amount - int64(channelBalance)
 		if balanceToClaim <= 0 {
 			return errors.New("invalid amount")
 		}
-		if int64(balance) < balanceToClaim {
-			return errors.New("not sufficient funds")
-		}
-
+		amount += balanceToClaim
 	case pb.ISSUE_ASSET_TYPE:
-		if err := checkNonce(); err != nil {
-			return err
-		}
-
 		assetID := txn.Hash()
 		_, _, _, _, err := DefaultLedger.Store.GetAsset(assetID)
 		if err == nil {
@@ -518,6 +474,12 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 	default:
 		return fmt.Errorf("invalid transaction payload type %v", txn.UnsignedTx.Payload.Type)
 	}
+
+	balance := DefaultLedger.Store.GetBalance(pg[0])
+	if int64(balance) < amount+txn.UnsignedTx.Fee {
+		return errors.New("not sufficient funds")
+	}
+
 	return nil
 }
 

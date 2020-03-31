@@ -46,7 +46,7 @@ func Unpack(payload *pb.Payload) (IPayload, error) {
 	case pb.ISSUE_ASSET_TYPE:
 		pl = new(pb.IssueAsset)
 	default:
-		return nil, errors.New("invalid payload type.")
+		return nil, errors.New("invalid payload type")
 	}
 
 	err := pl.Unmarshal(payload.Data)
