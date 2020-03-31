@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
 	"regexp"
 	"sync"
 
@@ -33,8 +32,8 @@ func VerifyTransaction(txn *transaction.Transaction, height uint32) error {
 		return fmt.Errorf("[VerifyTransaction] %v", err)
 	}
 
-	if err := CheckTransactionFee(txn); err != nil {
-		return fmt.Errorf("[VerifyTransaction] %v", err)
+	if err := CheckAmount(txn.UnsignedTx.Fee); err != nil {
+		return fmt.Errorf("[VerifyTransaction] fee %v", err)
 	}
 
 	if err := CheckTransactionNonce(txn); err != nil {
@@ -65,13 +64,13 @@ func CheckTransactionSize(txn *transaction.Transaction) error {
 	return nil
 }
 
-func CheckTransactionFee(txn *transaction.Transaction) error {
-	if checkAmountPrecise(Fixed64(txn.UnsignedTx.Fee), 8) {
-		return errors.New("the precision of fee is incorrect")
+func CheckAmount(amount int64) error {
+	if amount < 0 {
+		return fmt.Errorf("amount %d is less than 0", amount)
 	}
 
-	if txn.UnsignedTx.Fee < 0 {
-		return errors.New("tx fee should be greater than 0")
+	if amount > config.InitialIssueAmount+config.TotalMiningRewards {
+		return fmt.Errorf("amount %d is greater than max supply", amount)
 	}
 
 	return nil
@@ -87,10 +86,6 @@ func CheckTransactionAttribute(txn *transaction.Transaction) error {
 		return fmt.Errorf("attributes len %d is greater than %d", len(txn.UnsignedTx.Attributes), maxAttrsLen)
 	}
 	return nil
-}
-
-func checkAmountPrecise(amount Fixed64, precision byte) bool {
-	return amount.GetData()%int64(math.Pow(10, 8-float64(precision))) != 0
 }
 
 func verifyPubSubTopic(topic string, height uint32) error {
@@ -124,8 +119,8 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return errors.New("invalid sender")
 		}
 
-		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
-			return errors.New("the precision of amount is incorrect")
+		if err = CheckAmount(pld.Amount); err != nil {
+			return err
 		}
 	case pb.TRANSFER_ASSET_TYPE:
 		pld := payload.(*pb.TransferAsset)
@@ -138,12 +133,8 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return errors.New("illegal transaction sender")
 		}
 
-		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
-			return errors.New("the precision of amount is incorrect")
-		}
-
-		if pld.Amount < 0 {
-			return errors.New("transfer amount error")
+		if err = CheckAmount(pld.Amount); err != nil {
+			return err
 		}
 	case pb.SIG_CHAIN_TXN_TYPE:
 	case pb.REGISTER_NAME_TYPE:
@@ -153,6 +144,9 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 
 		pld := payload.(*pb.RegisterName)
 		if !config.LegacyNameService.GetValueAtHeight(height) {
+			if err = CheckAmount(pld.RegistrationFee); err != nil {
+				return err
+			}
 			if Fixed64(pld.RegistrationFee) < Fixed64(config.MinNameRegistrationFee) {
 				return fmt.Errorf("registration fee %s is lower than MinNameRegistrationFee %d", string(pld.Registrant), config.MinNameRegistrationFee)
 			}
@@ -218,6 +212,10 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return fmt.Errorf("decode pubkey error: %v", err)
 		}
 
+		if err = CheckAmount(pld.RegistrationFee); err != nil {
+			return err
+		}
+
 		if Fixed64(pld.RegistrationFee) < Fixed64(config.MinGenIDRegistrationFee) {
 			return errors.New("registration fee is lower than MinGenIDRegistrationFee")
 		}
@@ -238,12 +236,8 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return errors.New("illegal transaction sender")
 		}
 
-		if checkAmountPrecise(Fixed64(pld.Amount), 8) {
-			return errors.New("The precision of amount is incorrect")
-		}
-
-		if pld.Amount < 0 {
-			return errors.New("transfer amount error")
+		if err = CheckAmount(pld.Amount); err != nil {
+			return err
 		}
 
 		if pld.TxnExpiration > pld.NanoPayExpiration {

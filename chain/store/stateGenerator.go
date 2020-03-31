@@ -187,7 +187,6 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 
 func (cs *ChainStore) GenerateStateRoot(ctx context.Context, b *block.Block, genesisBlockInitialized, needBeCommitted bool) (common.Uint256, error) {
 	_, root, err := cs.generateStateRoot(ctx, b, genesisBlockInitialized, needBeCommitted)
-
 	return root, err
 }
 
