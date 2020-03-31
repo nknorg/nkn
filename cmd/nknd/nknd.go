@@ -25,6 +25,7 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
+	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/dashboard"
 	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/node"
@@ -89,13 +90,12 @@ func JoinNet(nn *nnet.NNet) error {
 	})
 
 	for _, seed := range seeds {
-		succAddrs, err := client.FindSuccessorAddrs(seed, nn.GetLocalNode().Id)
+		succAddrs, err := client.FindSuccessorAddrs(seed, util.RandomBytes(config.NodeIDBytes))
 		if err != nil {
 			log.Warningf("Can't get successor address from [%s]", seed)
 			continue
 		}
 
-		success := false
 		for _, succAddr := range succAddrs {
 			if succAddr == nn.GetLocalNode().Addr {
 				log.Warning("Skipping self...")
@@ -106,10 +106,6 @@ func JoinNet(nn *nnet.NNet) error {
 				log.Error(err)
 				continue
 			}
-			success = true
-		}
-
-		if success {
 			return nil
 		}
 	}
