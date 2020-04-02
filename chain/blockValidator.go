@@ -12,11 +12,11 @@ import (
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/util"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -309,9 +309,9 @@ func SignerCheck(header *block.Header) error {
 		return fmt.Errorf("invalid block signer public key %x, should be %x", header.UnsignedHeader.SignerPk, publicKey)
 	}
 
-	_, err = crypto.DecodePoint(header.UnsignedHeader.SignerPk)
+	err = crypto.CheckPublicKey(header.UnsignedHeader.SignerPk)
 	if err != nil {
-		return fmt.Errorf("decode public key error: %v", err)
+		return fmt.Errorf("invalid public key: %v", err)
 	}
 
 	if len(chordID) > 0 && !bytes.Equal(header.UnsignedHeader.SignerId, chordID) {
@@ -333,12 +333,7 @@ func SignerCheck(header *block.Header) error {
 }
 
 func SignatureCheck(header *block.Header) error {
-	rawPubKey, err := crypto.DecodePoint(header.UnsignedHeader.SignerPk)
-	if err != nil {
-		return fmt.Errorf("decode public key error: %v", err)
-	}
-
-	err = crypto.Verify(*rawPubKey, signature.GetHashForSigning(header), header.Signature)
+	err := crypto.Verify(header.UnsignedHeader.SignerPk, signature.GetHashForSigning(header), header.Signature)
 	if err != nil {
 		return fmt.Errorf("invalid header signature %x: %v", header.Signature, err)
 	}
@@ -401,14 +396,10 @@ func HeaderCheck(b *block.Block) error {
 		return fmt.Errorf("invalid header RandomBeacon length %d, expecting %d", len(header.UnsignedHeader.RandomBeacon), config.RandomBeaconLength)
 	}
 
-	rawPubKey, err := crypto.DecodePoint(header.UnsignedHeader.SignerPk)
-	if err != nil {
-		return err
-	}
 	vrf := header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength]
 	proof := header.UnsignedHeader.RandomBeacon[config.RandomBeaconUniqueLength:]
 	prevVrf := prevHeader.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength]
-	if !crypto.VerifyVrf(*rawPubKey, prevVrf, vrf, proof) {
+	if !crypto.VerifyVrf(header.UnsignedHeader.SignerPk, prevVrf, vrf, proof) {
 		return fmt.Errorf("invalid header RandomBeacon %x", header.UnsignedHeader.RandomBeacon)
 	}
 

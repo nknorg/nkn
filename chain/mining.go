@@ -6,11 +6,11 @@ import (
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/signature"
 	"github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/util"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
@@ -174,7 +174,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 				TransactionsRoot: txnRoot.ToArray(),
 				WinnerHash:       winnerHash.ToArray(),
 				WinnerType:       winnerType,
-				SignerPk:         bm.account.PublicKey.EncodePoint(),
+				SignerPk:         bm.account.PublicKey,
 				SignerId:         chordID,
 			},
 			Signature: nil,

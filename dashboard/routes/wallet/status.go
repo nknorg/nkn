@@ -2,6 +2,8 @@ package wallet
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/nknorg/nkn/chain"
 	. "github.com/nknorg/nkn/common"
@@ -10,7 +12,6 @@ import (
 	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
-	"net/http"
 )
 
 func StatusRouter(router *gin.RouterGroup) {
@@ -44,7 +45,7 @@ func StatusRouter(router *gin.RouterGroup) {
 			data := helpers.EncryptData(context, true, gin.H{
 				"balance":   balance.String(),
 				"address":   address,
-				"publicKey": BytesToHexString(account.PublicKey.EncodePoint()),
+				"publicKey": BytesToHexString(account.PublicKey),
 			})
 
 			context.JSON(http.StatusOK, gin.H{

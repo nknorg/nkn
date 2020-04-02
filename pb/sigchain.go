@@ -201,7 +201,7 @@ func (sc *SigChain) VerifySignatures() error {
 	sc.SerializationMetadata(buff)
 	prevSig := buff.Bytes()
 	for i, e := range sc.Elems {
-		pk, err := crypto.DecodePoint(prevNextPubkey)
+		err := crypto.CheckPublicKey(prevNextPubkey)
 		if err != nil {
 			return fmt.Errorf("invalid pubkey %x: %v", prevNextPubkey, err)
 		}
@@ -216,7 +216,7 @@ func (sc *SigChain) VerifySignatures() error {
 			}
 			digest := sha256.Sum256(buff.Bytes())
 
-			err = crypto.Verify(*pk, digest[:], e.Signature)
+			err = crypto.Verify(prevNextPubkey, digest[:], e.Signature)
 			if err != nil {
 				return fmt.Errorf("signature %x is invalid: %v", e.Signature, err)
 			}
@@ -230,7 +230,7 @@ func (sc *SigChain) VerifySignatures() error {
 				return fmt.Errorf("signature %x is different from expected value %x", e.Signature, expectedSignature)
 			}
 
-			ok := crypto.VerifyVrf(*pk, sc.BlockHash, e.Vrf, e.Proof)
+			ok := crypto.VerifyVrf(prevNextPubkey, sc.BlockHash, e.Vrf, e.Proof)
 			if !ok {
 				return fmt.Errorf("invalid vrf or proof")
 			}

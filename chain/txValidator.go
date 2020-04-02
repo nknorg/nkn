@@ -207,7 +207,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		}
 	case pb.GENERATE_ID_TYPE:
 		pld := payload.(*pb.GenerateID)
-		_, err := crypto.NewPubKeyFromBytes(pld.PublicKey)
+		err := crypto.CheckPublicKey(pld.PublicKey)
 		if err != nil {
 			return fmt.Errorf("decode pubkey error: %v", err)
 		}

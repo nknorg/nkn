@@ -25,12 +25,12 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/consensus"
 	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/dashboard"
 	serviceConfig "github.com/nknorg/nkn/dashboard/config"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/por"
 	"github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/util"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/util/password"
@@ -591,7 +591,7 @@ func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee, txnFee common.Fi
 	if err != nil {
 		return nil, err
 	}
-	pk := account.PubKey().EncodePoint()
+	pk := account.PubKey()
 
 	id, err := GetID(seeds, pk)
 	if err != nil || id == nil {

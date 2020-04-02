@@ -9,7 +9,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/program"
 	"github.com/nknorg/nkn/signature"
@@ -125,66 +124,42 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		sender := payload.(*pb.Coinbase).Sender
 		hashes = append(hashes, BytesToUint160(sender))
 	case pb.REGISTER_NAME_TYPE:
-		pubkey := payload.(*pb.RegisterName).Registrant
-		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
-		if err != nil {
-			return nil, err
-		}
+		publicKey := payload.(*pb.RegisterName).Registrant
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
 	case pb.TRANSFER_NAME_TYPE:
-		pubkey := payload.(*pb.TransferName).Registrant
-		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
-		if err != nil {
-			return nil, err
-		}
+		publicKey := payload.(*pb.TransferName).Registrant
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
 	case pb.DELETE_NAME_TYPE:
-		pubkey := payload.(*pb.DeleteName).Registrant
-		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
-		if err != nil {
-			return nil, err
-		}
+		publicKey := payload.(*pb.DeleteName).Registrant
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
 	case pb.SUBSCRIBE_TYPE:
-		pubkey := payload.(*pb.Subscribe).Subscriber
-		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
-		if err != nil {
-			return nil, err
-		}
+		publicKey := payload.(*pb.Subscribe).Subscriber
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
 	case pb.UNSUBSCRIBE_TYPE:
-		pubkey := payload.(*pb.Unsubscribe).Subscriber
-		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
-		if err != nil {
-			return nil, err
-		}
+		publicKey := payload.(*pb.Unsubscribe).Subscriber
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
 	case pb.GENERATE_ID_TYPE:
-		pubkey := payload.(*pb.GenerateID).PublicKey
-		publicKey, err := crypto.NewPubKeyFromBytes(pubkey)
-		if err != nil {
-			return nil, err
-		}
+		publicKey := payload.(*pb.GenerateID).PublicKey
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err

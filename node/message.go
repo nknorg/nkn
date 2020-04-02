@@ -150,7 +150,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 			}
 
 			hash := sha256.Sum256(signedMsg.Message)
-			err = crypto.Verify(*pubKey, hash[:], signedMsg.Signature)
+			err = crypto.Verify(pubKey, hash[:], signedMsg.Signature)
 			if err != nil {
 				log.Errorf("Verify signature error: %v", err)
 				return nil, nil, nil, false

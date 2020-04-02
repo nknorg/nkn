@@ -15,7 +15,7 @@ import (
 type Node struct {
 	*nnetpb.Node
 	*pb.NodeData
-	publicKey *crypto.PubKey
+	publicKey []byte
 
 	sync.RWMutex
 	syncState           pb.SyncState
@@ -57,7 +57,7 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 }
 
 func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
-	publicKey, err := crypto.DecodePoint(nodeData.PublicKey)
+	err := crypto.CheckPublicKey(nodeData.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
 	node := &Node{
 		Node:      nnetNode,
 		NodeData:  nodeData,
-		publicKey: publicKey,
+		publicKey: nodeData.PublicKey,
 		syncState: pb.WAIT_FOR_SYNCING,
 	}
 
@@ -80,7 +80,7 @@ func (n *Node) GetID() string {
 	return chordIDToNodeID(n.GetChordID())
 }
 
-func (n *Node) GetPubKey() *crypto.PubKey {
+func (n *Node) GetPubKey() []byte {
 	return n.publicKey
 }
 

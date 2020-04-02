@@ -169,7 +169,7 @@ func (ps *PorServer) Sign(relayMessage *pb.Relay, nextPubkey, prevNodeID []byte,
 }
 
 func (ps *PorServer) CreateSigChainForClient(nonce, dataSize uint32, blockHash []byte, srcID, srcPubkey, destID, destPubkey, signature []byte, sigAlgo pb.SigAlgo) (*pb.SigChain, error) {
-	pubKey := ps.account.PubKey().EncodePoint()
+	pubKey := ps.account.PubKey()
 	sigChain, err := pb.NewSigChainWithSignature(
 		nonce,
 		dataSize,

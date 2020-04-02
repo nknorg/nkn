@@ -79,8 +79,6 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return nil, err
 	}
 
-	publicKey := account.PublicKey.EncodePoint()
-
 	address, err := url.Parse(nn.GetLocalNode().Node.Addr)
 	if err != nil {
 		return nil, err
@@ -95,7 +93,7 @@ func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	}
 
 	nodeData := &pb.NodeData{
-		PublicKey:          publicKey,
+		PublicKey:          account.PublicKey,
 		WebsocketPort:      uint32(config.Parameters.HttpWsPort),
 		JsonRpcPort:        uint32(config.Parameters.HttpJsonPort),
 		ProtocolVersion:    uint32(config.ProtocolVersion),

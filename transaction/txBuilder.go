@@ -2,8 +2,8 @@ package transaction
 
 import (
 	. "github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/util"
 )
 
 const (

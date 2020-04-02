@@ -13,7 +13,6 @@ import (
 	"github.com/nknorg/nkn/chain/db"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/program"
 	"github.com/nknorg/nkn/transaction"
@@ -487,12 +486,7 @@ func (cs *ChainStore) GetNonce(addr Uint160) uint64 {
 }
 
 func (cs *ChainStore) GetID(publicKey []byte) ([]byte, error) {
-	pubKey, err := crypto.NewPubKeyFromBytes(publicKey)
-	if err != nil {
-		return nil, fmt.Errorf("GetID error: %v", err)
-	}
-
-	programHash, err := program.CreateProgramHash(pubKey)
+	programHash, err := program.CreateProgramHash(publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("GetID error: %v", err)
 	}
