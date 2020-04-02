@@ -28,7 +28,7 @@ const (
 
 type Wallet interface {
 	Sign(txn *transaction.Transaction) error
-	GetAccount(pubKey *crypto.PubKey) (*Account, error)
+	GetAccount(pubKey []byte) (*Account, error)
 	GetDefaultAccount() (*Account, error)
 }
 
@@ -220,7 +220,7 @@ func (w *WalletImpl) GetDefaultAccount() (*Account, error) {
 	return w.account, nil
 }
 
-func (w *WalletImpl) GetAccount(pubKey *crypto.PubKey) (*Account, error) {
+func (w *WalletImpl) GetAccount(pubKey []byte) (*Account, error) {
 	redeemHash, err := program.CreateProgramHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("%v\n%s", err, "[Account] GetAccount redeemhash generated failed")

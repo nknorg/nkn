@@ -32,7 +32,7 @@ func VerifySignableData(signableData SignableData) error {
 			return err
 		}
 
-		pubkey, err := crypto.NewPubKeyFromBytes(pk)
+		err = crypto.CheckPublicKey(pk)
 		if err != nil {
 			return err
 		}
@@ -42,7 +42,7 @@ func VerifySignableData(signableData SignableData) error {
 			return err
 		}
 
-		_, err = VerifySignature(signableData, pubkey, signature)
+		_, err = VerifySignature(signableData, pk, signature)
 		if err != nil {
 			return err
 		}
@@ -51,8 +51,8 @@ func VerifySignableData(signableData SignableData) error {
 	return nil
 }
 
-func VerifySignature(signableData SignableData, pubkey *crypto.PubKey, signature []byte) (bool, error) {
-	err := crypto.Verify(*pubkey, GetHashForSigning(signableData), signature)
+func VerifySignature(signableData SignableData, pubKey, signature []byte) (bool, error) {
+	err := crypto.Verify(pubKey, GetHashForSigning(signableData), signature)
 	if err != nil {
 		return false, fmt.Errorf("verify signature error: %v", err)
 	} else {

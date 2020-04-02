@@ -8,7 +8,6 @@ import (
 
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 )
 
@@ -101,13 +100,12 @@ func ByteToProgramContextParameterType(b []byte) []ProgramContextParameterType {
 }
 
 //create a Single Singature program context for owner
-func CreateSignatureProgramContext(ownerPubKey *crypto.PubKey) (*ProgramContext, error) {
-	temp := ownerPubKey.EncodePoint()
+func CreateSignatureProgramContext(ownerPubKey []byte) (*ProgramContext, error) {
 	code, err := CreateSignatureProgramCode(ownerPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("[ProgramContext],CreateSignatureProgramContext failed: %v", err)
 	}
-	hash, err := ToCodeHash(temp)
+	hash, err := ToCodeHash(ownerPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("[ProgramContext],CreateSignatureProgramContext failed: %v", err)
 	}
@@ -124,19 +122,17 @@ func CreateSignatureProgramContext(ownerPubKey *crypto.PubKey) (*ProgramContext,
 }
 
 //CODE: len(publickey) + publickey + CHECKSIG
-func CreateSignatureProgramCode(pubkey *crypto.PubKey) ([]byte, error) {
-	encodedPublicKey := pubkey.EncodePoint()
-
+func CreateSignatureProgramCode(pubKey []byte) ([]byte, error) {
 	code := bytes.NewBuffer(nil)
-	code.WriteByte(byte(len(encodedPublicKey)))
-	code.Write(encodedPublicKey)
+	code.WriteByte(byte(len(pubKey)))
+	code.Write(pubKey)
 	code.WriteByte(CHECKSIG)
 
 	return code.Bytes(), nil
 }
 
-func CreateProgramHash(pubkey *crypto.PubKey) (Uint160, error) {
-	code, err := CreateSignatureProgramCode(pubkey)
+func CreateProgramHash(pubKey []byte) (Uint160, error) {
+	code, err := CreateSignatureProgramCode(pubKey)
 	if err != nil {
 		return Uint160{}, errors.New("CreateSignatureProgramCode failed")
 	}

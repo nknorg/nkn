@@ -55,7 +55,7 @@ func MakeRegisterNameTransaction(wallet vault.Wallet, name string, nonce uint64,
 	if err != nil {
 		return nil, err
 	}
-	registrant := account.PubKey().EncodePoint()
+	registrant := account.PubKey()
 	txn, err := transaction.NewRegisterNameTransaction(registrant, name, nonce, regFee, fee)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func MakeTransferNameTransaction(wallet vault.Wallet, name string, nonce uint64,
 	if err != nil {
 		return nil, err
 	}
-	registrant := account.PubKey().EncodePoint()
+	registrant := account.PubKey()
 	txn, err := transaction.NewTransferNameTransaction(registrant, to, name, nonce, fee)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func MakeDeleteNameTransaction(wallet vault.Wallet, name string, nonce uint64, f
 	if err != nil {
 		return nil, err
 	}
-	registrant := account.PubKey().EncodePoint()
+	registrant := account.PubKey()
 	txn, err := transaction.NewDeleteNameTransaction(registrant, name, nonce, fee)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func MakeSubscribeTransaction(wallet vault.Wallet, identifier string, topic stri
 	if err != nil {
 		return nil, err
 	}
-	subscriber := account.PubKey().EncodePoint()
+	subscriber := account.PubKey()
 	txn, err := transaction.NewSubscribeTransaction(subscriber, identifier, topic, duration, meta, nonce, fee)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func MakeUnsubscribeTransaction(wallet vault.Wallet, identifier string, topic st
 	if err != nil {
 		return nil, err
 	}
-	subscriber := account.PubKey().EncodePoint()
+	subscriber := account.PubKey()
 	txn, err := transaction.NewUnsubscribeTransaction(subscriber, identifier, topic, nonce, fee)
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func MakeGenerateIDTransaction(ctx context.Context, wallet vault.Wallet, regFee 
 	if err != nil {
 		return nil, err
 	}
-	pubkey := account.PubKey().EncodePoint()
+	pubkey := account.PubKey()
 
 	var txn *transaction.Transaction
 	var txnHash Uint256

@@ -207,14 +207,8 @@ func (cs *ChainStore) generateStateRoot(ctx context.Context, b *block.Block, gen
 	// process previous block
 	height := b.Header.UnsignedHeader.Height
 	if height == 0 {
-		var pk *crypto.PubKey
-		pk, err = crypto.NewPubKeyFromBytes(b.Header.UnsignedHeader.SignerPk)
-		if err != nil {
-			return nil, common.EmptyUint256, err
-		}
-
 		var programHash common.Uint160
-		programHash, err = program.CreateProgramHash(pk)
+		programHash, err = program.CreateProgramHash(b.Header.UnsignedHeader.SignerPk)
 		if err != nil {
 			return nil, common.EmptyUint256, err
 		}

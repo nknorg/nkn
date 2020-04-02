@@ -9,7 +9,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/program"
 	"github.com/nknorg/nkn/signature"
@@ -65,12 +64,7 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 func (h *Header) GetProgramHashes() ([]Uint160, error) {
 	programHashes := []Uint160{}
 
-	pubKey, err := crypto.NewPubKeyFromBytes(h.UnsignedHeader.SignerPk)
-	if err != nil {
-		return nil, fmt.Errorf("[Header], Get publick key failed: %v", err)
-	}
-
-	programHash, err := program.CreateProgramHash(pubKey)
+	programHash, err := program.CreateProgramHash(h.UnsignedHeader.SignerPk)
 	if err != nil {
 		return nil, fmt.Errorf("[Header], GetProgramHashes failed: %v", err)
 	}

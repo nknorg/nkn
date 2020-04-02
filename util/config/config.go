@@ -18,7 +18,7 @@ import (
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto/ed25519"
 	"github.com/nknorg/nkn/crypto/ed25519/vrf"
-	"github.com/nknorg/nkn/crypto/util"
+	"github.com/nknorg/nkn/util"
 	"github.com/nknorg/portmapper"
 	"github.com/pbnjay/memory"
 )

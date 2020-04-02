@@ -10,26 +10,32 @@ import (
 
 type Account struct {
 	PrivateKey  []byte
-	PublicKey   *crypto.PubKey
+	PublicKey   []byte
 	ProgramHash Uint160
 }
 
 func NewAccount() (*Account, error) {
-	priKey, pubKey, _ := crypto.GenKeyPair()
+	privateKey, publicKey, err := crypto.GenKeyPair()
+	if err != nil {
+		return nil, err
+	}
 
-	programHash, err := program.CreateProgramHash(&pubKey)
+	programHash, err := program.CreateProgramHash(publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("%v\n%s", err, "New account redeemhash generated failed")
 	}
-	return &Account{
-		PrivateKey:  priKey,
-		PublicKey:   &pubKey,
+
+	account := &Account{
+		PrivateKey:  privateKey,
+		PublicKey:   publicKey,
 		ProgramHash: programHash,
-	}, nil
+	}
+
+	return account, nil
 }
 
 func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
-	pubKey := crypto.NewPubKey(privateKey)
+	pubKey := crypto.GetPublicKeyFromPrivateKey(privateKey)
 	programHash, err := program.CreateProgramHash(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("%v\n%s", err, "New account redeemhash generated failed")
@@ -46,6 +52,6 @@ func (a *Account) PrivKey() []byte {
 	return a.PrivateKey
 }
 
-func (a *Account) PubKey() *crypto.PubKey {
+func (a *Account) PubKey() []byte {
 	return a.PublicKey
 }

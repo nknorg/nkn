@@ -138,15 +138,16 @@ func (ws *WsServer) registryMethod() {
 		if !ok {
 			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
+
 		clientID, pubKey, _, err := address.ParseClientAddress(addrStr)
 		if err != nil {
 			log.Error("Parse client address error:", err)
 			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 
-		_, err = crypto.DecodePoint(pubKey)
+		err = crypto.CheckPublicKey(pubKey)
 		if err != nil {
-			log.Error("Invalid public key hex decoding to point:", err)
+			log.Error("Invalid public key hex:", err)
 			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 

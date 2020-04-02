@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	cryptoUtil "github.com/nknorg/nkn/crypto/util"
 	"github.com/nknorg/nkn/util"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
@@ -107,7 +106,7 @@ func (localNode *LocalNode) startConnectingToRandomNeighbors() {
 			localNode.randomNeighbors = localNode.randomNeighbors[1:]
 		}
 
-		randID := cryptoUtil.RandomBytes(config.NodeIDBytes)
+		randID := util.RandomBytes(config.NodeIDBytes)
 
 		succs, err := c.FindSuccessors(randID, 1)
 		if err != nil {

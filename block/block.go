@@ -1,6 +1,7 @@
 package block
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -154,8 +155,8 @@ func (b *Block) Verify() error {
 func ComputeID(preBlockHash, txnHash Uint256, randomBeacon []byte) []byte {
 	data := append(preBlockHash[:], txnHash[:]...)
 	data = append(data, randomBeacon...)
-	id := crypto.Sha256(data)
-	return id
+	id := sha256.Sum256(data)
+	return id[:]
 }
 
 func GenesisBlockInit() (*Block, error) {

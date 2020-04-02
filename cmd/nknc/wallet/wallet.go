@@ -22,7 +22,7 @@ func showAccountInfo(wallet vault.Wallet, verbose bool) {
 	fmt.Printf(format, "Address", "Public Key")
 	fmt.Printf(format, "-------", "----------")
 	address, _ := account.ProgramHash.ToAddress()
-	publicKey := account.PublicKey.EncodePoint()
+	publicKey := account.PublicKey
 	fmt.Printf(format, address, BytesToHexString(publicKey))
 	if verbose {
 		fmt.Printf("\nSecret Seed\n-----------\n%s\n", BytesToHexString(crypto.GetSeedFromPrivateKey(account.PrivateKey)))
@@ -130,7 +130,7 @@ func walletAction(c *cli.Context) error {
 				FormatOutput(resp)
 			case "id":
 				account, _ := wallet.GetDefaultAccount()
-				publicKey := account.PubKey().EncodePoint()
+				publicKey := account.PubKey()
 				pk := hex.EncodeToString(publicKey)
 				resp, err := client.Call(Address(), "getid", 0, map[string]interface{}{"publickey": pk})
 				if err != nil {
