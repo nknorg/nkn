@@ -75,15 +75,20 @@ func (b *Block) GetSigner() ([]byte, []byte, error) {
 
 func (b *Block) Trim(w io.Writer) error {
 	dt, _ := b.Header.Marshal()
-	serialization.WriteVarBytes(w, dt)
-	err := serialization.WriteUint32(w, uint32(len(b.Transactions)))
+	err := serialization.WriteVarBytes(w, dt)
 	if err != nil {
-		return fmt.Errorf("Block item Transactions length serialization failed: %v", err)
+		return err
 	}
-	for _, transaction := range b.Transactions {
-		temp := *transaction
-		hash := temp.Hash()
-		hash.Serialize(w)
+	err = serialization.WriteUint32(w, uint32(len(b.Transactions)))
+	if err != nil {
+		return err
+	}
+	for _, tx := range b.Transactions {
+		hash := tx.Hash()
+		_, err = hash.Serialize(w)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

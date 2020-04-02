@@ -208,7 +208,7 @@ message Relay {
   // It is important to use block hash instead of block height here to allow
   // node in syncing state to be able to sign the sigchain elem.
   bytes block_hash = 7;
-  bytes last_signature = 8;
+  bytes last_hash = 8;
   uint32 sig_chain_len = 9;
 }
 
@@ -218,7 +218,7 @@ message Transactions {
 
 message BacktrackSignatureChain {
   repeated SigChainElem sig_chain_elems = 1;
-  bytes prev_signature = 2;
+  bytes prev_hash = 2;
 }
 
 message IHaveSignatureChainTransaction {
