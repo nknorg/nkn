@@ -46,10 +46,10 @@ message OutboundMessage {
 message InboundMessage {
   string src = 1;
   bytes payload = 2;
-  bytes prev_signature = 3;
+  bytes prev_hash = 3;
 }
 
 message Receipt {
-  bytes prev_signature = 1;
+  bytes prev_hash = 1;
   bytes signature = 2;
 }

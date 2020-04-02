@@ -147,6 +147,10 @@ var (
 		heights: []uint32{1072500, 0},
 		values:  []bool{true, false},
 	}
+	AllowSigChainHashSignature = HeightDependentBool{
+		heights: []uint32{1100000, 0},
+		values:  []bool{false, true},
+	}
 )
 
 var (
@@ -214,6 +218,7 @@ var (
 		PasswordFile:                 "",
 		RecentStateCount:             1024,
 		StatePruningMode:             "none",
+		BlockHeaderCacheSize:         1024,
 	}
 )
 
@@ -271,6 +276,7 @@ type Configuration struct {
 	PasswordFile                 string        `json:"PasswordFile"`
 	RecentStateCount             uint32        `json:"RecentStateCount"`
 	StatePruningMode             string        `json:"StatePruningMode"`
+	BlockHeaderCacheSize         uint32        `json:"BlockHeaderCacheSize"`
 }
 
 func Init() error {

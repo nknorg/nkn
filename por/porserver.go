@@ -64,22 +64,23 @@ type vrfResult struct {
 }
 
 type sigChainElemInfo struct {
-	nextPubkey    []byte
-	prevNodeID    []byte
-	prevSignature []byte
-	mining        bool
-	blockHash     []byte
+	nextPubkey []byte
+	prevNodeID []byte
+	prevHash   []byte
+	blockHash  []byte
+	mining     bool
+	sigAlgo    pb.SigAlgo
 }
 
 type destSigChainElem struct {
-	sigHash       []byte
-	sigChainElem  *pb.SigChainElem
-	prevSignature []byte
+	sigHash      []byte
+	sigChainElem *pb.SigChainElem
+	prevHash     []byte
 }
 
 type BacktrackSigChainInfo struct {
 	DestSigChainElem *pb.SigChainElem
-	PrevSignature    []byte
+	PrevHash         []byte
 }
 
 var porServer *PorServer
@@ -141,28 +142,41 @@ func (ps *PorServer) GetOrComputeVrf(data []byte) ([]byte, []byte, error) {
 	return vrf, proof, nil
 }
 
-func (ps *PorServer) Sign(relayMessage *pb.Relay, nextPubkey, prevNodeID []byte, mining bool) error {
+func (ps *PorServer) UpdateRelayMessage(relayMessage *pb.Relay, nextPubkey, prevNodeID []byte, mining bool) error {
 	vrf, _, err := ps.GetOrComputeVrf(relayMessage.BlockHash)
 	if err != nil {
-		log.Error("Get or compute VRF error:", err)
 		return err
 	}
 
-	signature, err := pb.ComputeSignature(vrf, relayMessage.LastSignature, ps.id, nextPubkey, mining)
+	blockHash, err := common.Uint256ParseFromBytes(relayMessage.BlockHash)
 	if err != nil {
-		log.Error("Computing signature error:", err)
 		return err
 	}
 
-	ps.sigChainElemCache.Add(signature, &sigChainElemInfo{
-		nextPubkey:    nextPubkey,
-		prevNodeID:    prevNodeID,
-		prevSignature: relayMessage.LastSignature,
-		mining:        mining,
-		blockHash:     relayMessage.BlockHash,
+	// TODO: change default sigAlgo to signature after next upgrade phase
+	sigAlgo := pb.HASH
+	if height, err := Store.GetHeightByBlockHash(blockHash); err == nil {
+		if !config.AllowSigChainHashSignature.GetValueAtHeight(height) {
+			sigAlgo = pb.SIGNATURE
+		}
+	}
+
+	sce := pb.NewSigChainElem(ps.id, nextPubkey, nil, vrf, nil, mining, sigAlgo)
+	hash, err := sce.Hash(relayMessage.LastHash)
+	if err != nil {
+		return err
+	}
+
+	ps.sigChainElemCache.Add(hash, &sigChainElemInfo{
+		nextPubkey: nextPubkey,
+		prevNodeID: prevNodeID,
+		prevHash:   relayMessage.LastHash,
+		blockHash:  relayMessage.BlockHash,
+		mining:     mining,
+		sigAlgo:    sigAlgo,
 	})
 
-	relayMessage.LastSignature = signature
+	relayMessage.LastHash = hash
 	relayMessage.SigChainLen++
 
 	return nil
@@ -170,7 +184,7 @@ func (ps *PorServer) Sign(relayMessage *pb.Relay, nextPubkey, prevNodeID []byte,
 
 func (ps *PorServer) CreateSigChainForClient(nonce, dataSize uint32, blockHash []byte, srcID, srcPubkey, destID, destPubkey, signature []byte, sigAlgo pb.SigAlgo) (*pb.SigChain, error) {
 	pubKey := ps.account.PubKey()
-	sigChain, err := pb.NewSigChainWithSignature(
+	sigChain, err := pb.NewSigChain(
 		nonce,
 		dataSize,
 		blockHash,
@@ -184,15 +198,10 @@ func (ps *PorServer) CreateSigChainForClient(nonce, dataSize uint32, blockHash [
 		false,
 	)
 	if err != nil {
-		log.Error("New signature chain with signature error:", err)
 		return nil, err
 	}
 	ps.srcSigChainCache.Add(signature, sigChain)
 	return sigChain, nil
-}
-
-func (ps *PorServer) GetSignature(sc *pb.SigChain) ([]byte, error) {
-	return sc.GetSignature()
 }
 
 func (ps *PorServer) LenOfSigChain(sc *pb.SigChain) int {
@@ -310,7 +319,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 		return nil, err
 	}
 
-	err = porPkg.SigChain.Verify()
+	err = porPkg.SigChain.Verify(porPkg.Height)
 	if err != nil {
 		return nil, err
 	}
@@ -340,13 +349,13 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 	return porPkg, nil
 }
 
-func (ps *PorServer) ShouldSignDestSigChainElem(blockHash, lastSignature []byte, sigChainLen int) bool {
+func (ps *PorServer) ShouldSignDestSigChainElem(blockHash, lastHash []byte, sigChainLen int) bool {
 	if _, ok := ps.finalizedBlockCache.Get(blockHash); ok {
 		return false
 	}
 	if v, ok := ps.destSigChainElemCache.Get(blockHash); ok {
 		if currentDestSigChainElem, ok := v.(*destSigChainElem); ok {
-			sigHash := pb.ComputeSignatureHash(lastSignature, sigChainLen)
+			sigHash := pb.ComputeSignatureHash(lastHash, sigChainLen)
 			if bytes.Compare(sigHash, currentDestSigChainElem.sigHash) >= 0 {
 				return false
 			}
@@ -355,18 +364,18 @@ func (ps *PorServer) ShouldSignDestSigChainElem(blockHash, lastSignature []byte,
 	return true
 }
 
-func (ps *PorServer) AddDestSigChainElem(blockHash, lastSignature []byte, sigChainLen int, destElem *pb.SigChainElem) (bool, error) {
+func (ps *PorServer) AddDestSigChainElem(blockHash, lastHash []byte, sigChainLen int, destElem *pb.SigChainElem) (bool, error) {
 	ps.Lock()
 	defer ps.Unlock()
 
-	if !ps.ShouldSignDestSigChainElem(blockHash, lastSignature, sigChainLen) {
+	if !ps.ShouldSignDestSigChainElem(blockHash, lastHash, sigChainLen) {
 		return false, nil
 	}
 
 	err := ps.destSigChainElemCache.Set(blockHash, &destSigChainElem{
-		sigHash:       pb.ComputeSignatureHash(lastSignature, sigChainLen),
-		sigChainElem:  destElem,
-		prevSignature: lastSignature,
+		sigHash:      pb.ComputeSignatureHash(lastHash, sigChainLen),
+		sigChainElem: destElem,
+		prevHash:     lastHash,
 	})
 	if err != nil {
 		return false, err
@@ -375,10 +384,10 @@ func (ps *PorServer) AddDestSigChainElem(blockHash, lastSignature []byte, sigCha
 	return true, nil
 }
 
-func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, signature, senderPubkey []byte) ([]*pb.SigChainElem, []byte, []byte, error) {
-	v, ok := ps.sigChainElemCache.Get(signature)
+func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, hash, senderPubkey []byte) ([]*pb.SigChainElem, []byte, []byte, error) {
+	v, ok := ps.sigChainElemCache.Get(hash)
 	if !ok {
-		return nil, nil, nil, fmt.Errorf("sigchain element with signature %x not found", signature)
+		return nil, nil, nil, fmt.Errorf("sigchain element with hash %x not found", hash)
 	}
 
 	scei, ok := v.(*sigChainElemInfo)
@@ -399,11 +408,23 @@ func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, signature, send
 		return nil, nil, nil, fmt.Errorf("get or compute VRF error: %v", err)
 	}
 
-	sce := pb.NewSigChainElem(ps.id, scei.nextPubkey, signature, vrf, proof, scei.mining, pb.VRF)
+	var signature []byte
+	switch scei.sigAlgo {
+	case pb.SIGNATURE:
+		signature, err = crypto.Sign(ps.account.PrivKey(), hash)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("sign error: %v", err)
+		}
+	case pb.HASH:
+		signature = hash
+	default:
+		return nil, nil, nil, fmt.Errorf("unknown sigAlgo: %v", scei.sigAlgo)
+	}
 
+	sce := pb.NewSigChainElem(ps.id, scei.nextPubkey, signature, vrf, proof, scei.mining, scei.sigAlgo)
 	elems = append([]*pb.SigChainElem{sce}, elems...)
 
-	return elems, scei.prevSignature, scei.prevNodeID, nil
+	return elems, scei.prevHash, scei.prevNodeID, nil
 }
 
 func (ps *PorServer) GetSrcSigChainFromCache(signature []byte) (*pb.SigChain, error) {
@@ -432,7 +453,7 @@ func (ps *PorServer) FlushSigChain(blockHash []byte) {
 			log.Infof("Start backtracking sigchain with sighash %x", sce.sigHash)
 			event.Queue.Notify(event.BacktrackSigChain, &BacktrackSigChainInfo{
 				DestSigChainElem: sce.sigChainElem,
-				PrevSignature:    sce.prevSignature,
+				PrevHash:         sce.prevHash,
 			})
 		}
 	}

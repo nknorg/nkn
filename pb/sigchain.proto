@@ -17,7 +17,7 @@ option (gogoproto.populate_all) = true;
 
 enum SigAlgo {
   SIGNATURE = 0;
-  VRF       = 1;
+  HASH      = 1;
 }
 
 message SigChainElem {
