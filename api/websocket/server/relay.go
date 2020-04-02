@@ -112,15 +112,15 @@ func (ws *WsServer) sendInboundRelayMessage(relayMessage *pb.Relay) {
 		Payload: relayMessage.Payload,
 	}
 
-	shouldSign := por.GetPorServer().ShouldSignDestSigChainElem(relayMessage.BlockHash, relayMessage.LastSignature, int(relayMessage.SigChainLen))
+	shouldSign := por.GetPorServer().ShouldSignDestSigChainElem(relayMessage.BlockHash, relayMessage.LastHash, int(relayMessage.SigChainLen))
 	if shouldSign {
-		msg.PrevSignature = relayMessage.LastSignature
+		msg.PrevHash = relayMessage.LastHash
 	}
 
 	success := ws.sendInboundMessage(hex.EncodeToString(clientID), msg)
 	if success {
 		if shouldSign {
-			ws.sigChainCache.Add(relayMessage.LastSignature, &sigChainInfo{
+			ws.sigChainCache.Add(relayMessage.LastHash, &sigChainInfo{
 				blockHash:   relayMessage.BlockHash,
 				sigChainLen: int(relayMessage.SigChainLen),
 			})
@@ -164,9 +164,9 @@ func (ws *WsServer) startCheckingLostMessages() {
 }
 
 func (ws *WsServer) handleReceipt(receipt *pb.Receipt) error {
-	v, ok := ws.sigChainCache.Get(receipt.PrevSignature)
+	v, ok := ws.sigChainCache.Get(receipt.PrevHash)
 	if !ok {
-		return fmt.Errorf("sigchain info with last signature %x not found in cache", receipt.PrevSignature)
+		return fmt.Errorf("sigchain info with last hash %x not found in cache", receipt.PrevHash)
 	}
 
 	sci, ok := v.(*sigChainInfo)
@@ -174,14 +174,14 @@ func (ws *WsServer) handleReceipt(receipt *pb.Receipt) error {
 		return errors.New("convert to sigchain info failed")
 	}
 
-	if !por.GetPorServer().ShouldSignDestSigChainElem(sci.blockHash, receipt.PrevSignature, sci.sigChainLen) {
+	if !por.GetPorServer().ShouldSignDestSigChainElem(sci.blockHash, receipt.PrevHash, sci.sigChainLen) {
 		return nil
 	}
 
 	destSigChainElem := pb.NewSigChainElem(nil, nil, receipt.Signature, nil, nil, false, pb.SIGNATURE)
 	por.GetPorServer().AddDestSigChainElem(
 		sci.blockHash,
-		receipt.PrevSignature,
+		receipt.PrevHash,
 		sci.sigChainLen,
 		destSigChainElem,
 	)

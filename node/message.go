@@ -179,9 +179,9 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				}
 			}
 
-			err = localNode.relayer.signRelayMessage(relayMessage, nextHop, senderRemoteNode)
+			err = localNode.relayer.updateRelayMessage(relayMessage, nextHop, senderRemoteNode)
 			if err != nil {
-				log.Errorf("sign relay message error: %v", err)
+				log.Errorf("process relay message error: %v", err)
 				return nil, nil, nil, false
 			}
 

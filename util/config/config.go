@@ -151,6 +151,10 @@ var (
 		heights: []uint32{1072500, 0},
 		values:  []bool{true, false},
 	}
+	AllowSigChainHashSignature = HeightDependentBool{
+		heights: []uint32{1200000, 0},
+		values:  []bool{false, true},
+	}
 )
 
 var (
@@ -225,6 +229,7 @@ var (
 		SyncBlockHeaderRateBurst:     32768,
 		SyncBlockRateLimit:           256,
 		SyncBlockRateBurst:           1024,
+		BlockHeaderCacheSize:         1024,
 	}
 )
 
@@ -288,6 +293,7 @@ type Configuration struct {
 	SyncBlockHeaderRateBurst     uint32        `json:"SyncBlockHeaderRateBurst"`
 	SyncBlockRateLimit           float64       `json:"SyncBlockRateLimit"` // blocks per second
 	SyncBlockRateBurst           uint32        `json:"SyncBlockRateBurst"`
+	BlockHeaderCacheSize         uint32        `json:"BlockHeaderCacheSize"`
 }
 
 func Init() error {

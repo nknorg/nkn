@@ -43,7 +43,7 @@ func (rs *RelayService) Start() error {
 }
 
 // NewRelayMessage creates a RELAY message
-func NewRelayMessage(srcIdentifier string, srcPubkey, destID, payload, blockHash, signature []byte, maxHoldingSeconds uint32) (*pb.UnsignedMessage, error) {
+func NewRelayMessage(srcIdentifier string, srcPubkey, destID, payload, blockHash, lastHash []byte, maxHoldingSeconds uint32) (*pb.UnsignedMessage, error) {
 	msgBody := &pb.Relay{
 		SrcIdentifier:     srcIdentifier,
 		SrcPubkey:         srcPubkey,
@@ -51,7 +51,7 @@ func NewRelayMessage(srcIdentifier string, srcPubkey, destID, payload, blockHash
 		Payload:           payload,
 		MaxHoldingSeconds: maxHoldingSeconds,
 		BlockHash:         blockHash,
-		LastSignature:     signature,
+		LastHash:          lastHash,
 		SigChainLen:       1,
 	}
 
@@ -82,10 +82,10 @@ func (rs *RelayService) relayMessageHandler(remoteMessage *RemoteMessage) ([]byt
 }
 
 // NewBacktrackSigChainMessage creates a BACKTRACK_SIGNATURE_CHAIN message
-func NewBacktrackSigChainMessage(sigChainElems []*pb.SigChainElem, prevSignature []byte) (*pb.UnsignedMessage, error) {
+func NewBacktrackSigChainMessage(sigChainElems []*pb.SigChainElem, prevHash []byte) (*pb.UnsignedMessage, error) {
 	msgBody := &pb.BacktrackSignatureChain{
 		SigChainElems: sigChainElems,
-		PrevSignature: prevSignature,
+		PrevHash:      prevHash,
 	}
 
 	buf, err := proto.Marshal(msgBody)
@@ -109,7 +109,7 @@ func (rs *RelayService) backtrackSigChainMessageHandler(remoteMessage *RemoteMes
 		return nil, false, err
 	}
 
-	err = rs.backtrackSigChain(msgBody.SigChainElems, msgBody.PrevSignature, remoteMessage.Sender.PublicKey)
+	err = rs.backtrackSigChain(msgBody.SigChainElems, msgBody.PrevHash, remoteMessage.Sender.PublicKey)
 	if err != nil {
 		return nil, false, err
 	}
@@ -117,15 +117,15 @@ func (rs *RelayService) backtrackSigChainMessageHandler(remoteMessage *RemoteMes
 	return nil, false, nil
 }
 
-func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, signature, senderPubkey []byte) error {
-	sigChainElems, prevSignature, prevNodeID, err := rs.porServer.BacktrackSigChain(sigChainElems, signature, senderPubkey)
+func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, hash, senderPubkey []byte) error {
+	sigChainElems, prevHash, prevNodeID, err := rs.porServer.BacktrackSigChain(sigChainElems, hash, senderPubkey)
 	if err != nil {
 		return err
 	}
 
 	if prevNodeID == nil {
 		var sigChain *pb.SigChain
-		sigChain, err = rs.porServer.GetSrcSigChainFromCache(prevSignature)
+		sigChain, err = rs.porServer.GetSrcSigChainFromCache(prevHash)
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,7 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, sign
 			return err
 		}
 
-		rs.porServer.BacktrackSigChainSuccess(signature)
+		rs.porServer.BacktrackSigChainSuccess(hash)
 
 		return nil
 	}
@@ -147,7 +147,7 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, sign
 		return fmt.Errorf("cannot find next hop with id %x", prevNodeID)
 	}
 
-	nextMsg, err := NewBacktrackSigChainMessage(sigChainElems, prevSignature)
+	nextMsg, err := NewBacktrackSigChainMessage(sigChainElems, prevHash)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, sign
 		return err
 	}
 
-	rs.porServer.BacktrackSigChainSuccess(signature)
+	rs.porServer.BacktrackSigChainSuccess(hash)
 
 	return nil
 }
@@ -210,7 +210,7 @@ func (rs *RelayService) backtrackDestSigChain(v interface{}) {
 
 	err := rs.backtrackSigChain(
 		[]*pb.SigChainElem{sigChainInfo.DestSigChainElem},
-		sigChainInfo.PrevSignature,
+		sigChainInfo.PrevHash,
 		nil,
 	)
 	if err != nil {
@@ -218,7 +218,7 @@ func (rs *RelayService) backtrackDestSigChain(v interface{}) {
 	}
 }
 
-func (rs *RelayService) signRelayMessage(relayMessage *pb.Relay, nextHop, prevHop *RemoteNode) error {
+func (rs *RelayService) updateRelayMessage(relayMessage *pb.Relay, nextHop, prevHop *RemoteNode) error {
 	var nextPubkey []byte
 	if nextHop != nil {
 		nextPubkey = nextHop.GetPubKey()
@@ -231,7 +231,7 @@ func (rs *RelayService) signRelayMessage(relayMessage *pb.Relay, nextHop, prevHo
 		prevNodeID = prevHop.Id
 	}
 
-	return rs.porServer.Sign(relayMessage, nextPubkey, prevNodeID, mining)
+	return rs.porServer.UpdateRelayMessage(relayMessage, nextPubkey, prevNodeID, mining)
 }
 
 func (localNode *LocalNode) startRelayer() {
