@@ -79,10 +79,10 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 		if elc.NeighborVoteCount() > 0 {
 			timerStartOnce.Do(func() {
 				timer.StopTimer(timeoutTimer)
-				electionStartTimer.Reset(electionStartDelay)
+				electionStartTimer.Reset(electionStartDelay - initialVoteDelay)
 				now := time.Now()
-				verifyDeadline = now.Add(proposalVerificationTimeout)
-				initialVoteDeadline = now.Add(initialVoteDelay)
+				verifyDeadline = now.Add(proposalVerificationTimeout - initialVoteDelay)
+				initialVoteDeadline = now
 			})
 			break
 		}
