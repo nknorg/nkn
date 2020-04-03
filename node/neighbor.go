@@ -1,7 +1,6 @@
 package node
 
 import (
-	"math"
 	"math/rand"
 	"sync"
 	"time"
@@ -179,17 +178,29 @@ func (localNode *LocalNode) splitNeighbors(filter func(*RemoteNode) bool) ([]*Re
 	return chordNeighbors, randomNeighbors
 }
 
-func (localNode *LocalNode) getSampledNeighbors(filter func(*RemoteNode) bool, chordNeighborSampleRate, randomNeighborSampleRate float64) []*RemoteNode {
+func (localNode *LocalNode) getSampledNeighbors(filter func(*RemoteNode) bool, chordNeighborSampleRate float64, chordNeighborMinSample int, randomNeighborSampleRate float64, randomNeighborMinSample int) []*RemoteNode {
 	var sampledNeighbors []*RemoteNode
 	chordNeighbors, randomNeighbors := localNode.splitNeighbors(filter)
 
-	numChordSamples := int(math.Ceil(chordNeighborSampleRate * float64(len(chordNeighbors))))
+	numChordSamples := int(chordNeighborSampleRate * float64(len(chordNeighbors)))
+	if numChordSamples < chordNeighborMinSample {
+		numChordSamples = chordNeighborMinSample
+	}
+	if numChordSamples > len(chordNeighbors) {
+		numChordSamples = len(chordNeighbors)
+	}
 	if numChordSamples > 0 {
 		rand.Shuffle(len(chordNeighbors), func(i, j int) { chordNeighbors[i], chordNeighbors[j] = chordNeighbors[j], chordNeighbors[i] })
 		sampledNeighbors = append(sampledNeighbors, chordNeighbors[:numChordSamples]...)
 	}
 
-	numRandomSamples := int(math.Ceil(randomNeighborSampleRate * float64(len(randomNeighbors))))
+	numRandomSamples := int(randomNeighborSampleRate * float64(len(randomNeighbors)))
+	if numRandomSamples < randomNeighborMinSample {
+		numRandomSamples = randomNeighborMinSample
+	}
+	if numRandomSamples > len(randomNeighbors) {
+		numRandomSamples = len(randomNeighbors)
+	}
 	if numRandomSamples > 0 {
 		rand.Shuffle(len(randomNeighbors), func(i, j int) { randomNeighbors[i], randomNeighbors[j] = randomNeighbors[j], randomNeighbors[i] })
 		sampledNeighbors = append(sampledNeighbors, randomNeighbors[:numRandomSamples]...)
@@ -199,9 +210,9 @@ func (localNode *LocalNode) getSampledNeighbors(filter func(*RemoteNode) bool, c
 }
 
 func (localNode *LocalNode) GetGossipNeighbors(filter func(*RemoteNode) bool) []*RemoteNode {
-	return localNode.getSampledNeighbors(filter, config.GossipSampleChordNeighbor, config.GossipSampleRandomNeighbor)
+	return localNode.getSampledNeighbors(filter, config.GossipSampleChordNeighbor, config.GossipMinChordNeighbor, config.GossipSampleRandomNeighbor, config.GossipMinRandomNeighbor)
 }
 
 func (localNode *LocalNode) GetVotingNeighbors(filter func(*RemoteNode) bool) []*RemoteNode {
-	return localNode.getSampledNeighbors(filter, config.VotingSampleChordNeighbor, config.VotingSampleRandomNeighbor)
+	return localNode.getSampledNeighbors(filter, config.VotingSampleChordNeighbor, config.VotingMinChordNeighbor, config.VotingSampleRandomNeighbor, config.VotingMinRandomNeighbor)
 }

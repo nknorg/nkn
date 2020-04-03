@@ -34,9 +34,13 @@ const (
 	SigChainBlockDelay           = 1
 	SigChainPropogationTime      = 2
 	GossipSampleChordNeighbor    = 0.1
+	GossipMinChordNeighbor       = 3
 	GossipSampleRandomNeighbor   = 1.0
+	GossipMinRandomNeighbor      = 0
 	VotingSampleChordNeighbor    = 0.5
+	VotingMinChordNeighbor       = 4
 	VotingSampleRandomNeighbor   = 0.0
+	VotingMinRandomNeighbor      = 0
 	HeaderVersion                = 1
 	DBVersion                    = 0x01
 	InitialIssueAddress          = "NKNFCrUMFPkSeDRMG2ME21hD6wBCA2poc347"
