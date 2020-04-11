@@ -413,6 +413,9 @@ func (sdb *StateDB) RollbackPruning(b *block.Block) error {
 	}
 
 	refCounts, err := sdb.trie.NewRefCounts(refCountedHeight-1, 0)
+	if err != nil {
+		return err
+	}
 	root, err := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
 	if err != nil {
 		return err

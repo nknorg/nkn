@@ -88,7 +88,7 @@ func (acc *account) Serialize(w io.Writer) error {
 	}
 
 	var ids []common.Uint256
-	for id, _ := range acc.balances {
+	for id := range acc.balances {
 		ids = append(ids, id)
 	}
 	sort.Sort(sortIDs(ids))

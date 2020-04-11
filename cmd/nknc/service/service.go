@@ -3,12 +3,13 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/nknorg/nkn/cmd/nknc/common"
-	"github.com/nknorg/nkn/util/log"
-	"github.com/urfave/cli"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	. "github.com/nknorg/nkn/cmd/nknc/common"
+	"github.com/nknorg/nkn/util/log"
+	"github.com/urfave/cli"
 )
 
 const requestTimeout = 5 * time.Second
@@ -38,6 +39,10 @@ func serviceAction(c *cli.Context) error {
 		}
 		var out = make(map[string]interface{})
 		err = json.Unmarshal(body, &out)
+		if err != nil {
+			log.Errorf("Unmarshal response: %v\n", err)
+			return err
+		}
 
 		fmt.Println(out["post_stream"].(map[string]interface{})["posts"].([]interface{})[0].(map[string]interface{})["raw"])
 	default:

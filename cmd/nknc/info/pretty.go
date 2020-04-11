@@ -20,7 +20,11 @@ func TxnUnmarshal(m map[string]interface{}) (interface{}, error) {
 	if !ok {
 		return m, nil
 	}
+
 	buf, err := hex.DecodeString(pbHexStr.(string))
+	if err != nil {
+		return nil, err
+	}
 
 	switch typ {
 	case pb.PayloadType_name[int32(pb.SIG_CHAIN_TXN_TYPE)]:
@@ -120,7 +124,7 @@ func (resp PrettyPrinter) PrettyBlock() ([]byte, error) {
 			lst = append(lst, t) // append origin txn if TxnUnmarshal fail
 		}
 	}
-	txns = lst
+	m["transactions"] = lst
 
 	return json.Marshal(m)
 }

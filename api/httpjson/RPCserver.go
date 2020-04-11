@@ -60,7 +60,7 @@ func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
 	return server
 }
 
-// this is the funciton that should be called in order to answer an rpc call
+// this is the function that should be called in order to answer an rpc call
 // should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
 func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	defer func() {
