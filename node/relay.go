@@ -137,6 +137,8 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, hash
 			return err
 		}
 
+		rs.porServer.BacktrackSigChainSuccess(hash)
+
 		return nil
 	}
 
@@ -159,6 +161,8 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, hash
 	if err != nil {
 		return err
 	}
+
+	rs.porServer.BacktrackSigChainSuccess(hash)
 
 	return nil
 }

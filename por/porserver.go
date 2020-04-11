@@ -53,6 +53,7 @@ type PorServer struct {
 	destSigChainElemCache common.Cache
 }
 
+// Store interface is used to avoid cyclic dependency
 var Store interface {
 	GetHeightByBlockHash(hash common.Uint256) (uint32, error)
 	GetID(publicKey []byte) ([]byte, error)
@@ -64,12 +65,13 @@ type vrfResult struct {
 }
 
 type sigChainElemInfo struct {
-	nextPubkey []byte
-	prevNodeID []byte
-	prevHash   []byte
-	blockHash  []byte
-	mining     bool
-	sigAlgo    pb.SigAlgo
+	nextPubkey  []byte
+	prevNodeID  []byte
+	prevHash    []byte
+	blockHash   []byte
+	mining      bool
+	sigAlgo     pb.SigAlgo
+	backtracked bool
 }
 
 type destSigChainElem struct {
@@ -168,12 +170,13 @@ func (ps *PorServer) UpdateRelayMessage(relayMessage *pb.Relay, nextPubkey, prev
 	}
 
 	ps.sigChainElemCache.Add(hash, &sigChainElemInfo{
-		nextPubkey: nextPubkey,
-		prevNodeID: prevNodeID,
-		prevHash:   relayMessage.LastHash,
-		blockHash:  relayMessage.BlockHash,
-		mining:     mining,
-		sigAlgo:    sigAlgo,
+		nextPubkey:  nextPubkey,
+		prevNodeID:  prevNodeID,
+		prevHash:    relayMessage.LastHash,
+		blockHash:   relayMessage.BlockHash,
+		mining:      mining,
+		sigAlgo:     sigAlgo,
+		backtracked: false,
 	})
 
 	relayMessage.LastHash = hash
@@ -392,7 +395,11 @@ func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, hash, senderPub
 
 	scei, ok := v.(*sigChainElemInfo)
 	if !ok {
-		return nil, nil, nil, fmt.Errorf("failed to decode cached sigchain element info")
+		return nil, nil, nil, errors.New("failed to decode cached sigchain element info")
+	}
+
+	if scei.backtracked {
+		return nil, nil, nil, errors.New("sigchain has already been backtracked")
 	}
 
 	if senderPubkey != nil && !bytes.Equal(senderPubkey, scei.nextPubkey) {
@@ -425,6 +432,16 @@ func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, hash, senderPub
 	elems = append([]*pb.SigChainElem{sce}, elems...)
 
 	return elems, scei.prevHash, scei.prevNodeID, nil
+}
+
+// BacktrackSigChainSuccess marks a sigchain as backtracked to avoid it being
+// backtracked multiple times.
+func (ps *PorServer) BacktrackSigChainSuccess(hash []byte) {
+	if v, ok := ps.sigChainElemCache.Get(hash); ok {
+		if scei, ok := v.(*sigChainElemInfo); ok {
+			scei.backtracked = true
+		}
+	}
 }
 
 func (ps *PorServer) GetSrcSigChainFromCache(signature []byte) (*pb.SigChain, error) {
