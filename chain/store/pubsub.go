@@ -295,7 +295,7 @@ func (cs *ChainStore) GetSubscribers(topic string, bucket, offset, limit uint32)
 		return nil, err
 	}
 	subscribers := make([]string, 0)
-	for subscriber, _ := range subscribersWithMeta {
+	for subscriber := range subscribersWithMeta {
 		subscribers = append(subscribers, subscriber)
 	}
 	return subscribers, nil

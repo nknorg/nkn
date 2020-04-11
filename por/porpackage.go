@@ -13,13 +13,13 @@ import (
 
 const (
 	// Block proposer of block height X needs to be specified in block X-1, so its
-	// candidate sigchains have to be fully propogated before block X-1 is
+	// candidate sigchains have to be fully propagated before block X-1 is
 	// proposed, i.e. before block X-2 is accepted. In other words, sigchain can
-	// only propogate when block height <= X-3.
+	// only propagate when block height <= X-3.
 	SigChainPropagationHeightOffset = 3
 	// Block proposer of block height X is chosen from sigchain produced during
 	// block X-SigChainPropagationHeightOffset-SigChainPropogationTime because
-	// sigchain can only propogate when block height <=
+	// sigchain can only propagate when block height <=
 	// X-SigChainPropagationHeightOffset, so it has to start propogating when
 	// block height <= X-SigChainPropagationHeightOffset-SigChainPropogationTime.
 	SigChainMiningHeightOffset = config.SigChainPropogationTime + SigChainPropagationHeightOffset

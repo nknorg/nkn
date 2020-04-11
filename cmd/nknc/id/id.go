@@ -73,13 +73,13 @@ func generateIDAction(c *cli.Context) error {
 		txn, _ := MakeGenerateIDTransaction(context.Background(), myWallet, regFee, nonce, txnFee, config.MaxGenerateIDTxnHash.GetValueAtHeight(height+1))
 		buff, _ := txn.Marshal()
 		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
-	}
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
 	}
 	FormatOutput(resp)
 
