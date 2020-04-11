@@ -16,23 +16,17 @@ import (
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
+	"golang.org/x/time/rate"
 )
 
 type RPCServer struct {
 	// keeps track of every function to be called on specific rpc call
-	mainMux ServeMux
-
-	// defines http listener for RPCServer, such as "127.0.0.1:30004"
-	httpListener string
-
-	// defines https listener for RPCServer
+	mainMux       ServeMux
+	httpListener  string
 	httpsListener string
-
-	// the reference of local node
-	localNode *node.LocalNode
-
-	// the reference of Wallet
-	wallet vault.Wallet
+	localNode     *node.LocalNode
+	wallet        vault.Wallet
+	limiter       *rate.Limiter
 }
 
 type ServeMux struct {
@@ -47,7 +41,7 @@ type ServeMux struct {
 
 // NewServer will create a new RPC server instance.
 func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
-	server := &RPCServer{
+	return &RPCServer{
 		mainMux: ServeMux{
 			m: make(map[string]common.Handler),
 		},
@@ -55,14 +49,18 @@ func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
 		httpsListener: ":" + strconv.Itoa(int(config.Parameters.HttpsJsonPort)),
 		localNode:     localNode,
 		wallet:        wallet,
+		limiter:       rate.NewLimiter(rate.Limit(config.Parameters.RPCRateLimit), int(config.Parameters.RPCRateBurst)),
 	}
-
-	return server
 }
 
-// this is the function that should be called in order to answer an rpc call
+// Handle is the funciton that should be called in order to answer an rpc call
 // should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
 func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
+	if !s.limiter.Allow() {
+		w.WriteHeader(http.StatusTooManyRequests)
+		return
+	}
+
 	defer func() {
 		err := recover()
 		if err != nil {

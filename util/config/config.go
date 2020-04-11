@@ -218,6 +218,12 @@ var (
 		PasswordFile:                 "",
 		RecentStateCount:             1024,
 		StatePruningMode:             "none",
+		RPCRateLimit:                 1024,
+		RPCRateBurst:                 4096,
+		SyncBlockHeaderRateLimit:     8192,
+		SyncBlockHeaderRateBurst:     32768,
+		SyncBlockRateLimit:           256,
+		SyncBlockRateBurst:           1024,
 	}
 )
 
@@ -275,6 +281,12 @@ type Configuration struct {
 	PasswordFile                 string        `json:"PasswordFile"`
 	RecentStateCount             uint32        `json:"RecentStateCount"`
 	StatePruningMode             string        `json:"StatePruningMode"`
+	RPCRateLimit                 float64       `json:"RPCRateLimit"` // requests per second
+	RPCRateBurst                 uint32        `json:"RPCRateBurst"`
+	SyncBlockHeaderRateLimit     float64       `json:"SyncBlockHeaderRateLimit"` // headers per second
+	SyncBlockHeaderRateBurst     uint32        `json:"SyncBlockHeaderRateBurst"`
+	SyncBlockRateLimit           float64       `json:"SyncBlockRateLimit"` // blocks per second
+	SyncBlockRateBurst           uint32        `json:"SyncBlockRateBurst"`
 }
 
 func Init() error {

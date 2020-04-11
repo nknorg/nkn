@@ -864,13 +864,13 @@ func findSuccessorAddr(s Serverer, params map[string]interface{}) map[string]int
 
 var InitialAPIHandlers = map[string]APIHandler{
 	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
-	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC},
 	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
-	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC},
 	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
-	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"getconnectioncount":   {Handler: getConnectionCount, AccessCtrl: BIT_JSONRPC},
 	"getrawmempool":        {Handler: getRawMemPool, AccessCtrl: BIT_JSONRPC},
-	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
+	"gettransaction":       {Handler: getTransaction, AccessCtrl: BIT_JSONRPC},
 	"sendrawtransaction":   {Handler: sendRawTransaction, AccessCtrl: BIT_JSONRPC | BIT_WEBSOCKET},
 	"getwsaddr":            {Handler: getWsAddr, AccessCtrl: BIT_JSONRPC},
 	"getwssaddr":           {Handler: getWssAddr, AccessCtrl: BIT_JSONRPC},
