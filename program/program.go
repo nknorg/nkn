@@ -99,7 +99,7 @@ func ByteToProgramContextParameterType(b []byte) []ProgramContextParameterType {
 	return c
 }
 
-//create a Single Singature program context for owner
+//create a single signature program context for owner
 func CreateSignatureProgramContext(ownerPubKey []byte) (*ProgramContext, error) {
 	code, err := CreateSignatureProgramCode(ownerPubKey)
 	if err != nil {

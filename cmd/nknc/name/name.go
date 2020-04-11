@@ -69,7 +69,8 @@ func nameAction(c *cli.Context) error {
 			fmt.Println("transfer is required with [--to]")
 			return nil
 		}
-		toBytes, err := hex.DecodeString(to)
+		var toBytes []byte
+		toBytes, err = hex.DecodeString(to)
 		if err != nil {
 			return err
 		}

@@ -14,7 +14,7 @@ import (
 	"github.com/nknorg/nkn/util/timer"
 )
 
-// startGettingNeighborConsensusState peroidically checks neighbors' majority
+// startGettingNeighborConsensusState periodically checks neighbors' majority
 // consensus height and sets local height if fall behind
 func (consensus *Consensus) startGettingNeighborConsensusState() {
 	consensus.localNode.SetMinVerifiableHeight(chain.DefaultLedger.Store.GetHeight() + por.SigChainMiningHeightOffset)

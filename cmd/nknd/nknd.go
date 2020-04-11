@@ -329,7 +329,7 @@ func nknMain(c *cli.Context) error {
 	consensus.Start()
 
 	signal.Notify(signalChan, os.Interrupt)
-	for _ = range signalChan {
+	for range signalChan {
 		fmt.Println("\nReceived an interrupt, stopping services...\n")
 		return nil
 	}

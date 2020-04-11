@@ -151,7 +151,7 @@ func (ws *WsServer) registryMethod() {
 			return common.RespPacking(nil, common.INVALID_PARAMS)
 		}
 
-		// TODO: use signature (or better, with one-time challange) to verify identity
+		// TODO: use signature (or better, with one-time challenge) to verify identity
 
 		localNode := s.GetNetNode()
 
