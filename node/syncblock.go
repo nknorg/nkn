@@ -143,6 +143,10 @@ func (localNode *LocalNode) getBlockHeadersMessageHandler(remoteMessage *RemoteM
 		return replyBuf, false, nil
 	}
 
+	if !localNode.syncHeaderLimiter.AllowN(time.Now(), int(endHeight-startHeight)) {
+		return replyBuf, false, nil
+	}
+
 	if endHeight > chain.DefaultLedger.Store.GetHeaderHeight() {
 		return replyBuf, false, nil
 	}
@@ -189,6 +193,10 @@ func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *RemoteMessage
 	}
 
 	if endHeight-startHeight > maxSyncBlocksBatchSize {
+		return replyBuf, false, nil
+	}
+
+	if !localNode.syncBlockLimiter.AllowN(time.Now(), int(endHeight-startHeight)) {
 		return replyBuf, false, nil
 	}
 
@@ -307,9 +315,9 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 	var err error
 	started := false
 
-	localNode.RLock()
+	localNode.mu.RLock()
 	syncOnce := localNode.syncOnce
-	localNode.RUnlock()
+	localNode.mu.RUnlock()
 
 	syncOnce.Do(func() {
 		started = true
@@ -371,8 +379,8 @@ func (localNode *LocalNode) StartSyncing(stopHash common.Uint256, stopHeight uin
 
 // ResetSyncing resets syncOnce and allows for future block syncing
 func (localNode *LocalNode) ResetSyncing() {
-	localNode.Lock()
-	defer localNode.Unlock()
+	localNode.mu.Lock()
+	defer localNode.mu.Unlock()
 	localNode.syncOnce = new(sync.Once)
 }
 
