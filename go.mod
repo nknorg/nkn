@@ -19,7 +19,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a
 	github.com/nknorg/go-portscanner v0.0.0-20181002101859-8493ef01db79
-	github.com/nknorg/nnet v0.0.0-20200331223731-e117f8d6e3d3
+	github.com/nknorg/nnet v0.0.0-20200410235204-23cc169e8564
 	github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
@@ -35,8 +35,8 @@ require (
 	github.com/xtaci/kcp-go v5.4.20+incompatible // indirect
 	github.com/xtaci/lossyconn v0.0.0-20190602105132-8df528c0c9ae // indirect
 	github.com/xtaci/smux v2.0.1+incompatible // indirect
-	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
+	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
-	golang.org/x/sys v0.0.0-20200331124033-c3d80250170d // indirect
+	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
