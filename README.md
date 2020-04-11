@@ -14,8 +14,7 @@ Official website: [https://nkn.org/](https://nkn.org/)
 
 Note: This is the official **full node** implementation of the NKN protocol,
 which relays data for clients and earn mining rewards. For **client**
-implementation which can send and receive data (currently for free!), please
-refer to:
+implementation which can send and receive data, please refer to:
 
 * [nkn-sdk-go](https://github.com/nknorg/nkn-sdk-go)
 * [nkn-sdk-js](https://github.com/nknorg/nkn-sdk-js)
