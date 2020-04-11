@@ -215,7 +215,7 @@ func (consensus *Consensus) startRequestingProposal() {
 
 		log.Infof("Request block %s from neighbor %v", requestProposal.blockHash.ToHexString(), neighbor.GetID())
 
-		block, err := consensus.requestProposal(neighbor, requestProposal.blockHash, requestProposal.height, requestTransactionType)
+		block, err := consensus.requestProposal(neighbor, requestProposal.blockHash, requestProposal.height, defaultRequestTransactionType)
 		if err != nil {
 			log.Errorf("Request block %s error: %v", requestProposal.blockHash.ToHexString(), err)
 			continue

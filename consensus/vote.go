@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/pb"
@@ -11,6 +12,13 @@ import (
 // receiveVote is called when a vote from neighbor is received
 func (consensus *Consensus) receiveVote(neighborID string, height uint32, blockHash common.Uint256) error {
 	log.Debugf("Receive vote %s for height %d from neighbor %v", blockHash.ToHexString(), height, neighborID)
+
+	if consensus.localNode.GetSyncState() == pb.PERSIST_FINISHED {
+		expectedHeight := consensus.GetExpectedHeight()
+		if math.Abs(float64(height)-float64(expectedHeight)) > acceptVoteHeightRange {
+			return fmt.Errorf("receive invalid vote height %d, expecting %d +- %d", height, expectedHeight, acceptVoteHeightRange)
+		}
+	}
 
 	if blockHash != common.EmptyUint256 {
 		err := consensus.receiveProposalHash(neighborID, height, blockHash)
