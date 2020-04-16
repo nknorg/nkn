@@ -15,7 +15,7 @@ type Account struct {
 }
 
 func NewAccount() (*Account, error) {
-	privateKey, publicKey, err := crypto.GenKeyPair()
+	publicKey, privateKey, err := crypto.GenKeyPair()
 	if err != nil {
 		return nil, err
 	}
