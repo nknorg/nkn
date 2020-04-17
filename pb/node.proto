@@ -29,4 +29,6 @@ message NodeData {
   uint32 protocol_version = 4;
   string tls_websocket_domain = 5;
   uint32 tls_websocket_port = 6;
+  string tls_json_rpc_domain = 7;
+  uint32 tls_json_rpc_port = 8;
 }

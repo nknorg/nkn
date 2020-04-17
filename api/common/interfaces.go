@@ -361,9 +361,10 @@ func getVersion(s Serverer, params map[string]interface{}) map[string]interface{
 	return respPacking(SUCCESS, config.Version)
 }
 
-func NodeInfo(addr string, pubkey, id []byte) map[string]string {
+func NodeInfo(wsAddr, rpcAddr string, pubkey, id []byte) map[string]string {
 	nodeInfo := make(map[string]string)
-	nodeInfo["addr"] = addr
+	nodeInfo["addr"] = wsAddr
+	nodeInfo["rpcAddr"] = rpcAddr
 	nodeInfo["pubkey"] = common.BytesToHexString(pubkey)
 	nodeInfo["id"] = common.BytesToHexString(id)
 	return nodeInfo
@@ -387,12 +388,12 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	addr, pubkey, id, err := s.GetNetNode().FindWsAddr(clientID)
+	wsAddr, rpcAddr, pubkey, id, err := s.GetNetNode().FindWsAddr(clientID)
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	return respPacking(SUCCESS, NodeInfo(addr, pubkey, id))
+	return respPacking(SUCCESS, NodeInfo(wsAddr, rpcAddr, pubkey, id))
 }
 
 func getWssAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
@@ -410,12 +411,12 @@ func getWssAddr(s Serverer, params map[string]interface{}) map[string]interface{
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	addr, pubkey, id, err := s.GetNetNode().FindWssAddr(clientID)
+	wsAddr, rpcAddr, pubkey, id, err := s.GetNetNode().FindWssAddr(clientID)
 	if err != nil {
 		return respPacking(INTERNAL_ERROR, err.Error())
 	}
 
-	return respPacking(SUCCESS, NodeInfo(addr, pubkey, id))
+	return respPacking(SUCCESS, NodeInfo(wsAddr, rpcAddr, pubkey, id))
 }
 
 // getBalanceByAddr gets balance by address
