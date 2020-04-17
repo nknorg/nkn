@@ -5,25 +5,15 @@ import (
 	"encoding/hex"
 	"strings"
 	"text/template"
-
-	"github.com/nknorg/nkn/util/config"
 )
 
-type WssDomain struct {
+type TlsDomain struct {
 	DashedIP string
 }
 
-func chordIDToNodeID(chordID []byte) string {
-	return hex.EncodeToString(chordID)
-}
-
-func DotToDash(ip string) string {
-	return strings.ReplaceAll(ip, ".", "-")
-}
-
-func (w *WssDomain) IpToDomain() (string, error) {
+func (w *TlsDomain) IpToDomain(domain string) (string, error) {
 	t := template.New("Wss Domain Template")
-	t, err := t.Parse(config.Parameters.TlsDomain)
+	t, err := t.Parse(domain)
 	if err != nil {
 		return "", err
 	}
@@ -33,4 +23,12 @@ func (w *WssDomain) IpToDomain() (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func chordIDToNodeID(chordID []byte) string {
+	return hex.EncodeToString(chordID)
+}
+
+func DotToDash(ip string) string {
+	return strings.ReplaceAll(ip, ".", "-")
 }

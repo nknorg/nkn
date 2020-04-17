@@ -156,14 +156,14 @@ func (ws *WsServer) registryMethod() {
 		localNode := s.GetNetNode()
 
 		isTlsClient := cmd["IsTls"].(bool)
-		var addr, localAddr string
+		var wsAddr, rpcAddr, localAddr string
 		var pubkey, id []byte
 
 		if isTlsClient {
-			addr, pubkey, id, err = localNode.FindWssAddr(clientID)
+			wsAddr, rpcAddr, pubkey, id, err = localNode.FindWssAddr(clientID)
 			localAddr = localNode.GetWssAddr()
 		} else {
-			addr, pubkey, id, err = localNode.FindWsAddr(clientID)
+			wsAddr, rpcAddr, pubkey, id, err = localNode.FindWsAddr(clientID)
 			localAddr = localNode.GetWsAddr()
 		}
 		if err != nil {
@@ -171,8 +171,8 @@ func (ws *WsServer) registryMethod() {
 			return common.RespPacking(nil, common.INTERNAL_ERROR)
 		}
 
-		if addr != localAddr {
-			return common.RespPacking(common.NodeInfo(addr, pubkey, id), common.WRONG_NODE)
+		if wsAddr != localAddr {
+			return common.RespPacking(common.NodeInfo(wsAddr, rpcAddr, pubkey, id), common.WRONG_NODE)
 		}
 
 		newSessionID := hex.EncodeToString(clientID)
@@ -200,7 +200,7 @@ func (ws *WsServer) registryMethod() {
 		}
 
 		res := make(map[string]interface{})
-		res["node"] = common.NodeInfo(addr, pubkey, id)
+		res["node"] = common.NodeInfo(wsAddr, rpcAddr, pubkey, id)
 		res["sigChainBlockHash"] = BytesToHexString(sigChainBlockHash.ToArray())
 
 		return common.RespPacking(res, common.SUCCESS)
@@ -525,15 +525,15 @@ func (ws *WsServer) NotifyWrongClients() {
 
 		localNode := ws.GetNetNode()
 
-		var addr, localAddr string
+		var wsAddr, rpcAddr, localAddr string
 		var pubkey, id []byte
 		var err error
 
 		if client.IsTlsClient() {
-			addr, pubkey, id, err = localNode.FindWssAddr(clientID)
+			wsAddr, rpcAddr, pubkey, id, err = localNode.FindWssAddr(clientID)
 			localAddr = localNode.GetWssAddr()
 		} else {
-			addr, pubkey, id, err = localNode.FindWsAddr(clientID)
+			wsAddr, rpcAddr, pubkey, id, err = localNode.FindWsAddr(clientID)
 			localAddr = localNode.GetWsAddr()
 		}
 		if err != nil {
@@ -541,9 +541,9 @@ func (ws *WsServer) NotifyWrongClients() {
 			return
 		}
 
-		if addr != localAddr {
+		if wsAddr != localAddr {
 			resp := common.ResponsePack(common.WRONG_NODE)
-			resp["Result"] = common.NodeInfo(addr, pubkey, id)
+			resp["Result"] = common.NodeInfo(wsAddr, rpcAddr, pubkey, id)
 			ws.respondToSession(client, resp)
 		}
 	})
