@@ -9,4 +9,5 @@ const (
 	NewBlockProduced
 	SendInboundMessageToClient
 	BacktrackSigChain
+	PinSigChain
 )
