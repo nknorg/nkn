@@ -20,7 +20,9 @@ import (
 )
 
 const (
+	// TODO: reduce sigChainElemCacheExpiration in next version when most nodes support pin sigchain
 	sigChainElemCacheExpiration          = 10 * config.ConsensusTimeout
+	sigChainElemCachePinnedExpiration    = 10 * config.ConsensusTimeout
 	sigChainElemCacheCleanupInterval     = config.ConsensusDuration
 	srcSigChainCacheExpiration           = 10 * config.ConsensusTimeout
 	srcSigChainCacheCleanupInterval      = config.ConsensusDuration
@@ -70,6 +72,7 @@ type sigChainElemInfo struct {
 	prevHash    []byte
 	blockHash   []byte
 	mining      bool
+	pinned      bool
 	backtracked bool
 	sigAlgo     pb.SigAlgo
 }
@@ -78,6 +81,10 @@ type destSigChainElem struct {
 	sigHash      []byte
 	sigChainElem *pb.SigChainElem
 	prevHash     []byte
+}
+
+type PinSigChainInfo struct {
+	PrevHash []byte
 }
 
 type BacktrackSigChainInfo struct {
@@ -383,7 +390,49 @@ func (ps *PorServer) AddDestSigChainElem(blockHash, lastHash []byte, sigChainLen
 		return false, err
 	}
 
+	event.Queue.Notify(event.PinSigChain, &PinSigChainInfo{
+		PrevHash: lastHash,
+	})
+
 	return true, nil
+}
+
+// PinSigChain extends the cache expiration of a key
+func (ps *PorServer) PinSigChain(hash, senderPubkey []byte) ([]byte, []byte, error) {
+	v, ok := ps.sigChainElemCache.Get(hash)
+	if !ok {
+		return nil, nil, fmt.Errorf("sigchain element with hash %x not found", hash)
+	}
+
+	scei, ok := v.(*sigChainElemInfo)
+	if !ok {
+		return nil, nil, errors.New("failed to decode cached sigchain element info")
+	}
+
+	if scei.pinned {
+		return nil, nil, errors.New("sigchain has already been pinned")
+	}
+
+	if senderPubkey != nil && !bytes.Equal(senderPubkey, scei.nextPubkey) {
+		return nil, nil, fmt.Errorf("sender pubkey %x is different from expected value %x", senderPubkey, scei.nextPubkey)
+	}
+
+	err := ps.sigChainElemCache.SetWithExpiration(hash, scei, sigChainElemCachePinnedExpiration)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return scei.prevHash, scei.prevNodeID, nil
+}
+
+// PinSigChainSuccess marks a sigchain as pinned to avoid it being pinned
+// multiple times.
+func (ps *PorServer) PinSigChainSuccess(hash []byte) {
+	if v, ok := ps.sigChainElemCache.Get(hash); ok {
+		if scei, ok := v.(*sigChainElemInfo); ok {
+			scei.pinned = true
+		}
+	}
 }
 
 func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, hash, senderPubkey []byte) ([]*pb.SigChainElem, []byte, []byte, error) {
