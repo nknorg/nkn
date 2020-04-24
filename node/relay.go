@@ -161,27 +161,30 @@ func (rs *RelayService) pinSigChain(hash, senderPubkey []byte) error {
 	}
 
 	if prevNodeID == nil {
-		return nil
-	}
+		err = rs.porServer.PinSrcSigChain(prevHash)
+		if err != nil {
+			return err
+		}
+	} else {
+		nextHop := rs.localNode.GetNbrNode(chordIDToNodeID(prevNodeID))
+		if nextHop == nil {
+			return fmt.Errorf("cannot find next hop with id %x", prevNodeID)
+		}
 
-	nextHop := rs.localNode.GetNbrNode(chordIDToNodeID(prevNodeID))
-	if nextHop == nil {
-		return fmt.Errorf("cannot find next hop with id %x", prevNodeID)
-	}
+		nextMsg, err := NewPinSigChainMessage(prevHash)
+		if err != nil {
+			return err
+		}
 
-	nextMsg, err := NewPinSigChainMessage(prevHash)
-	if err != nil {
-		return err
-	}
+		buf, err := rs.localNode.SerializeMessage(nextMsg, false)
+		if err != nil {
+			return err
+		}
 
-	buf, err := rs.localNode.SerializeMessage(nextMsg, false)
-	if err != nil {
-		return err
-	}
-
-	err = nextHop.SendBytesAsync(buf)
-	if err != nil {
-		return err
+		err = nextHop.SendBytesAsync(buf)
+		if err != nil {
+			return err
+		}
 	}
 
 	rs.porServer.PinSigChainSuccess(hash)
@@ -196,8 +199,7 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, hash
 	}
 
 	if prevNodeID == nil {
-		var sigChain *pb.SigChain
-		sigChain, err = rs.porServer.GetSrcSigChainFromCache(prevHash)
+		sigChain, err := rs.porServer.PopSrcSigChainFromCache(prevHash)
 		if err != nil {
 			return err
 		}
@@ -208,30 +210,26 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, hash
 		if err != nil {
 			return err
 		}
+	} else {
+		nextHop := rs.localNode.GetNbrNode(chordIDToNodeID(prevNodeID))
+		if nextHop == nil {
+			return fmt.Errorf("cannot find next hop with id %x", prevNodeID)
+		}
 
-		rs.porServer.BacktrackSigChainSuccess(hash)
+		nextMsg, err := NewBacktrackSigChainMessage(sigChainElems, prevHash)
+		if err != nil {
+			return err
+		}
 
-		return nil
-	}
+		buf, err := rs.localNode.SerializeMessage(nextMsg, false)
+		if err != nil {
+			return err
+		}
 
-	nextHop := rs.localNode.GetNbrNode(chordIDToNodeID(prevNodeID))
-	if nextHop == nil {
-		return fmt.Errorf("cannot find next hop with id %x", prevNodeID)
-	}
-
-	nextMsg, err := NewBacktrackSigChainMessage(sigChainElems, prevHash)
-	if err != nil {
-		return err
-	}
-
-	buf, err := rs.localNode.SerializeMessage(nextMsg, false)
-	if err != nil {
-		return err
-	}
-
-	err = nextHop.SendBytesAsync(buf)
-	if err != nil {
-		return err
+		err = nextHop.SendBytesAsync(buf)
+		if err != nil {
+			return err
+		}
 	}
 
 	rs.porServer.BacktrackSigChainSuccess(hash)

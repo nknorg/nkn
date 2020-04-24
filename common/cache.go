@@ -12,6 +12,7 @@ type Cache interface {
 	Get(key []byte) (value interface{}, ok bool)
 	Set(key []byte, value interface{}) error
 	SetWithExpiration(key []byte, value interface{}, expiration time.Duration) error
+	Delete(key []byte) error
 }
 
 // GoCache is the caching layer implemented by go-cache.
@@ -50,6 +51,13 @@ func (gc *GoCache) Set(key []byte, value interface{}) error {
 // with a given expiration.
 func (gc *GoCache) SetWithExpiration(key []byte, value interface{}, expiration time.Duration) error {
 	gc.Cache.Set(byteKeyToStringKey(key), value, expiration)
+	return nil
+}
+
+// Delete deletes an item from the cache. Does nothing if the key is not in the
+// cache.
+func (gc *GoCache) Delete(key []byte) error {
+	gc.Cache.Delete(byteKeyToStringKey(key))
 	return nil
 }
 
