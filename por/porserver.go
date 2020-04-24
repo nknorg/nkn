@@ -20,11 +20,12 @@ import (
 )
 
 const (
-	// TODO: reduce sigChainElemCacheExpiration in next version when most nodes support pin sigchain
+	// TODO: reduce sigChainElemCacheExpiration and srcSigChainCacheExpiration in next version when most nodes support pin sigchain
 	sigChainElemCacheExpiration          = 10 * config.ConsensusTimeout
 	sigChainElemCachePinnedExpiration    = 10 * config.ConsensusTimeout
 	sigChainElemCacheCleanupInterval     = config.ConsensusDuration
 	srcSigChainCacheExpiration           = 10 * config.ConsensusTimeout
+	srcSigChainCachePinnedExpiration     = 10 * config.ConsensusTimeout
 	srcSigChainCacheCleanupInterval      = config.ConsensusDuration
 	destSigChainElemCacheExpiration      = 10 * config.ConsensusTimeout
 	destSigChainElemCacheCleanupInterval = config.ConsensusDuration
@@ -75,6 +76,11 @@ type sigChainElemInfo struct {
 	pinned      bool
 	backtracked bool
 	sigAlgo     pb.SigAlgo
+}
+
+type srcSigChain struct {
+	sigChain *pb.SigChain
+	pinned   bool
 }
 
 type destSigChainElem struct {
@@ -209,7 +215,7 @@ func (ps *PorServer) CreateSigChainForClient(nonce, dataSize uint32, blockHash [
 	if err != nil {
 		return nil, err
 	}
-	ps.srcSigChainCache.Add(signature, sigChain)
+	ps.srcSigChainCache.Add(signature, &srcSigChain{sigChain: sigChain})
 	return sigChain, nil
 }
 
@@ -435,6 +441,33 @@ func (ps *PorServer) PinSigChainSuccess(hash []byte) {
 	}
 }
 
+// PinSrcSigChain marks a src sigchain as pinned to avoid it being pinned
+// multiple times.
+func (ps *PorServer) PinSrcSigChain(signature []byte) error {
+	v, ok := ps.srcSigChainCache.Get(signature)
+	if !ok {
+		return fmt.Errorf("src sigchain with signature %x not found", signature)
+	}
+
+	ssc, ok := v.(*srcSigChain)
+	if !ok {
+		return fmt.Errorf("failed to decode cached src sigchain %x", signature)
+	}
+
+	if ssc.pinned {
+		return errors.New("src sigchain has already been pinned")
+	}
+
+	ssc.pinned = true
+
+	err := ps.srcSigChainCache.SetWithExpiration(signature, ssc, srcSigChainCachePinnedExpiration)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, hash, senderPubkey []byte) ([]*pb.SigChainElem, []byte, []byte, error) {
 	v, ok := ps.sigChainElemCache.Get(hash)
 	if !ok {
@@ -492,18 +525,24 @@ func (ps *PorServer) BacktrackSigChainSuccess(hash []byte) {
 	}
 }
 
-func (ps *PorServer) GetSrcSigChainFromCache(signature []byte) (*pb.SigChain, error) {
+// PopSrcSigChainFromCache returns src sigchain and removes it from cache.
+func (ps *PorServer) PopSrcSigChainFromCache(signature []byte) (*pb.SigChain, error) {
 	v, ok := ps.srcSigChainCache.Get(signature)
 	if !ok {
 		return nil, fmt.Errorf("src sigchain with signature %x not found", signature)
 	}
 
-	sigChain, ok := v.(*pb.SigChain)
+	ssc, ok := v.(*srcSigChain)
 	if !ok {
-		return nil, fmt.Errorf("failed to decode cached src sigchain from")
+		return nil, fmt.Errorf("failed to decode cached src sigchain %x", signature)
 	}
 
-	return sigChain, nil
+	err := ps.srcSigChainCache.Delete(signature)
+	if err != nil {
+		return nil, err
+	}
+
+	return ssc.sigChain, nil
 }
 
 func (ps *PorServer) FlushSigChain(blockHash []byte) {
