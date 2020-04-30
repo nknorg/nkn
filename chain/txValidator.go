@@ -8,11 +8,11 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto/ed25519"
 
 	"github.com/nknorg/nkn/program"
 
-	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/transaction"
@@ -110,12 +110,12 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.COINBASE_TYPE:
 		pld := payload.(*pb.Coinbase)
-		if len(pld.Sender) != UINT160SIZE && len(pld.Recipient) != UINT160SIZE {
+		if len(pld.Sender) != common.UINT160SIZE && len(pld.Recipient) != common.UINT160SIZE {
 			return errors.New("length of programhash error")
 		}
 
-		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
-		if BytesToUint160(pld.Sender) != donationProgramhash {
+		donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
+		if common.BytesToUint160(pld.Sender) != donationProgramhash {
 			return errors.New("invalid sender")
 		}
 
@@ -124,11 +124,11 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		}
 	case pb.TRANSFER_ASSET_TYPE:
 		pld := payload.(*pb.TransferAsset)
-		if len(pld.Sender) != UINT160SIZE && len(pld.Recipient) != UINT160SIZE {
+		if len(pld.Sender) != common.UINT160SIZE && len(pld.Recipient) != common.UINT160SIZE {
 			return errors.New("length of programhash error")
 		}
 
-		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+		donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
 		if bytes.Equal(pld.Sender, donationProgramhash[:]) {
 			return errors.New("illegal transaction sender")
 		}
@@ -147,7 +147,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			if err = CheckAmount(pld.RegistrationFee); err != nil {
 				return err
 			}
-			if Fixed64(pld.RegistrationFee) < Fixed64(config.MinNameRegistrationFee) {
+			if common.Fixed64(pld.RegistrationFee) < common.Fixed64(config.MinNameRegistrationFee) {
 				return fmt.Errorf("registration fee %s is lower than MinNameRegistrationFee %d", string(pld.Registrant), config.MinNameRegistrationFee)
 			}
 		}
@@ -216,7 +216,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return err
 		}
 
-		if Fixed64(pld.RegistrationFee) < Fixed64(config.MinGenIDRegistrationFee) {
+		if common.Fixed64(pld.RegistrationFee) < common.Fixed64(config.MinGenIDRegistrationFee) {
 			return errors.New("registration fee is lower than MinGenIDRegistrationFee")
 		}
 
@@ -227,11 +227,11 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 	case pb.NANO_PAY_TYPE:
 		pld := payload.(*pb.NanoPay)
 
-		if len(pld.Sender) != UINT160SIZE && len(pld.Recipient) != UINT160SIZE {
+		if len(pld.Sender) != common.UINT160SIZE && len(pld.Recipient) != common.UINT160SIZE {
 			return errors.New("length of programhash error")
 		}
 
-		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+		donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
 		if bytes.Equal(pld.Sender, donationProgramhash[:]) {
 			return errors.New("illegal transaction sender")
 		}
@@ -246,7 +246,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 
 	case pb.ISSUE_ASSET_TYPE:
 		pld := payload.(*pb.IssueAsset)
-		if len(pld.Sender) != UINT160SIZE {
+		if len(pld.Sender) != common.UINT160SIZE {
 			return errors.New("length of programhash error")
 		}
 
@@ -317,7 +317,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			return err
 		}
 
-		donationProgramhash, _ := ToScriptHash(config.DonationAddress)
+		donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
 		amount := DefaultLedger.Store.GetBalance(donationProgramhash)
 		if amount < donationAmount {
 			return errors.New("not sufficient funds in doation account")
@@ -439,8 +439,8 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		pld := payload.(*pb.NanoPay)
 
 		channelBalance, _, err := DefaultLedger.Store.GetNanoPay(
-			BytesToUint160(pld.Sender),
-			BytesToUint160(pld.Recipient),
+			common.BytesToUint160(pld.Sender),
+			common.BytesToUint160(pld.Recipient),
 			pld.Id,
 		)
 		if err != nil {
@@ -497,8 +497,8 @@ type nanoPay struct {
 
 type BlockValidationState struct {
 	sync.RWMutex
-	txnlist                 map[Uint256]struct{}
-	totalAmount             map[Uint160]Fixed64
+	txnlist                 map[common.Uint256]struct{}
+	totalAmount             map[common.Uint160]common.Fixed64
 	registeredNames         map[string]struct{}
 	nameRegistrants         map[string]struct{}
 	generateIDs             map[string]struct{}
@@ -517,8 +517,8 @@ func NewBlockValidationState() *BlockValidationState {
 }
 
 func (bvs *BlockValidationState) initBlockValidationState() {
-	bvs.txnlist = make(map[Uint256]struct{}, 0)
-	bvs.totalAmount = make(map[Uint160]Fixed64, 0)
+	bvs.txnlist = make(map[common.Uint256]struct{}, 0)
+	bvs.totalAmount = make(map[common.Uint160]common.Fixed64, 0)
 	bvs.registeredNames = make(map[string]struct{}, 0)
 	bvs.nameRegistrants = make(map[string]struct{}, 0)
 	bvs.generateIDs = make(map[string]struct{}, 0)
@@ -606,8 +606,8 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		return err
 	}
 	sender := pg[0]
-	var amount Fixed64
-	fee := Fixed64(txn.UnsignedTx.Fee)
+	var amount common.Fixed64
+	fee := common.Fixed64(txn.UnsignedTx.Fee)
 
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.COINBASE_TYPE:
@@ -616,12 +616,12 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		if err != nil {
 			return err
 		}
-		if Fixed64(coinbase.Amount) != GetRewardByHeight(height)+donationAmount {
+		if common.Fixed64(coinbase.Amount) != GetRewardByHeight(height)+donationAmount {
 			return errors.New("mining reward incorrectly")
 		}
 	case pb.TRANSFER_ASSET_TYPE:
 		transfer := payload.(*pb.TransferAsset)
-		amount = Fixed64(transfer.Amount)
+		amount = common.Fixed64(transfer.Amount)
 	case pb.REGISTER_NAME_TYPE:
 		namePayload := payload.(*pb.RegisterName)
 
@@ -630,13 +630,13 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 			return errors.New("[VerifyTransactionWithBlock] duplicate name exist in block")
 		}
 
-		registrant := BytesToHexString(namePayload.Registrant)
+		registrant := hex.EncodeToString(namePayload.Registrant)
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			if _, ok := bvs.nameRegistrants[registrant]; ok {
 				return errors.New("[VerifyTransactionWithBlock] duplicate registrant exist in block")
 			}
 		}
-		amount = Fixed64(namePayload.RegistrationFee)
+		amount = common.Fixed64(namePayload.RegistrationFee)
 
 		defer func() {
 			if e == nil {
@@ -665,7 +665,7 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 			return errors.New("[VerifyTransactionWithBlock] duplicate name exist in block")
 		}
 
-		registrant := BytesToHexString(namePayload.Registrant)
+		registrant := hex.EncodeToString(namePayload.Registrant)
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			if _, ok := bvs.nameRegistrants[registrant]; ok {
 				return errors.New("[VerifyTransactionWithBlock] duplicate registrant exist in block")
@@ -736,8 +736,8 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		}()
 	case pb.GENERATE_ID_TYPE:
 		generateIDPayload := payload.(*pb.GenerateID)
-		amount = Fixed64(generateIDPayload.RegistrationFee)
-		publicKey := BytesToHexString(generateIDPayload.PublicKey)
+		amount = common.Fixed64(generateIDPayload.RegistrationFee)
+		publicKey := hex.EncodeToString(generateIDPayload.PublicKey)
 		if _, ok := bvs.generateIDs[publicKey]; ok {
 			return ErrDuplicateGenerateIDTxn
 		}
@@ -757,20 +757,20 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		if height > npPayload.NanoPayExpiration {
 			return errors.New("[VerifyTransactionWithBlock] nano pay has expired")
 		}
-		key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Id}
+		key := nanoPay{hex.EncodeToString(npPayload.Sender), hex.EncodeToString(npPayload.Recipient), npPayload.Id}
 		if _, ok := bvs.nanoPays[key]; ok {
 			return errors.New("[VerifyTransactionWithBlock] duplicate payment channel exist in block")
 		}
 
 		channelBalance, _, err := DefaultLedger.Store.GetNanoPay(
-			BytesToUint160(npPayload.Sender),
-			BytesToUint160(npPayload.Recipient),
+			common.BytesToUint160(npPayload.Sender),
+			common.BytesToUint160(npPayload.Recipient),
 			npPayload.Id,
 		)
 		if err != nil {
 			return err
 		}
-		amount = Fixed64(npPayload.Amount) - channelBalance
+		amount = common.Fixed64(npPayload.Amount) - channelBalance
 
 		defer func() {
 			if e == nil {
@@ -816,21 +816,21 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			return err
 		}
 		sender := pg[0]
-		var amount Fixed64
-		fee := Fixed64(txn.UnsignedTx.Fee)
+		var amount common.Fixed64
+		fee := common.Fixed64(txn.UnsignedTx.Fee)
 
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.TRANSFER_ASSET_TYPE:
 			transfer := payload.(*pb.TransferAsset)
-			amount = Fixed64(transfer.Amount)
+			amount = common.Fixed64(transfer.Amount)
 		case pb.REGISTER_NAME_TYPE:
 			namePayload := payload.(*pb.RegisterName)
-			amount = Fixed64(namePayload.RegistrationFee)
+			amount = common.Fixed64(namePayload.RegistrationFee)
 
 			name := namePayload.Name
 			delete(bvs.registeredNames, name)
 
-			registrant := BytesToHexString(namePayload.Registrant)
+			registrant := hex.EncodeToString(namePayload.Registrant)
 			delete(bvs.nameRegistrants, registrant)
 
 		case pb.TRANSFER_NAME_TYPE:
@@ -844,7 +844,7 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			name := namePayload.Name
 			delete(bvs.registeredNames, name)
 
-			registrant := BytesToHexString(namePayload.Registrant)
+			registrant := hex.EncodeToString(namePayload.Registrant)
 			delete(bvs.nameRegistrants, registrant)
 		case pb.SUBSCRIBE_TYPE:
 			subscribePayload := payload.(*pb.Subscribe)
@@ -873,12 +873,12 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			}
 		case pb.GENERATE_ID_TYPE:
 			generateIdPayload := payload.(*pb.GenerateID)
-			amount = Fixed64(generateIdPayload.RegistrationFee)
-			publicKey := BytesToHexString(generateIdPayload.PublicKey)
+			amount = common.Fixed64(generateIdPayload.RegistrationFee)
+			publicKey := hex.EncodeToString(generateIdPayload.PublicKey)
 			delete(bvs.generateIDs, publicKey)
 		case pb.NANO_PAY_TYPE:
 			npPayload := payload.(*pb.NanoPay)
-			key := nanoPay{BytesToHexString(npPayload.Sender), BytesToHexString(npPayload.Recipient), npPayload.Id}
+			key := nanoPay{hex.EncodeToString(npPayload.Sender), hex.EncodeToString(npPayload.Recipient), npPayload.Id}
 			delete(bvs.nanoPays, key)
 		case pb.ISSUE_ASSET_TYPE:
 		}
@@ -899,9 +899,9 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 	return nil
 }
 
-func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction.Transaction) map[Uint256]error {
+func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction.Transaction) map[common.Uint256]error {
 	bvs.initBlockValidationState()
-	errMap := make(map[Uint256]error, 0)
+	errMap := make(map[common.Uint256]error, 0)
 	for _, tx := range txns {
 		if err := bvs.VerifyTransactionWithBlock(tx, 0); err != nil {
 			errMap[tx.Hash()] = err

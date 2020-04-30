@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -462,7 +463,7 @@ func (config *Configuration) verify() error {
 		return errors.New("no GenesisBlockProposer")
 	}
 
-	pk, err := common.HexStringToBytes(config.GenesisBlockProposer)
+	pk, err := hex.DecodeString(config.GenesisBlockProposer)
 	if err != nil {
 		return fmt.Errorf("parse GenesisBlockProposer error: %v", err)
 	}

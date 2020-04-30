@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/log"
 )
 
@@ -44,7 +43,7 @@ func MakeAddressString(pubKey []byte, identifier string) string {
 		result.WriteString(identifier)
 		result.WriteString(".")
 	}
-	result.WriteString(common.BytesToHexString(pubKey))
+	result.WriteString(hex.EncodeToString(pubKey))
 
 	return result.String()
 }

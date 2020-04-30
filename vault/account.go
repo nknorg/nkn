@@ -34,7 +34,12 @@ func NewAccount() (*Account, error) {
 	return account, nil
 }
 
-func NewAccountWithPrivatekey(privateKey []byte) (*Account, error) {
+func NewAccountWithSeed(seed []byte) (*Account, error) {
+	if err := crypto.CheckSeed(seed); err != nil {
+		return nil, err
+	}
+
+	privateKey := crypto.GetPrivateKeyFromSeed(seed)
 	pubKey := crypto.GetPublicKeyFromPrivateKey(privateKey)
 	programHash, err := program.CreateProgramHash(pubKey)
 	if err != nil {

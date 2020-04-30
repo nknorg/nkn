@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/api/common"
-	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -114,7 +113,7 @@ func GetMyExtIP(remote string, ip []byte) (string, error) {
 
 func GetID(remote string, publicKey []byte) ([]byte, error) {
 	resp, err := Call(remote, "getid", 0, map[string]interface{}{
-		"publickey": BytesToHexString(publicKey),
+		"publickey": hex.EncodeToString(publicKey),
 	})
 	if err != nil {
 		return nil, err
@@ -141,7 +140,7 @@ func GetID(remote string, publicKey []byte) ([]byte, error) {
 		return nil, fmt.Errorf("GetID(%s) resp error: %v", remote, string(resp))
 	}
 
-	idSlice, err := HexStringToBytes(ret.Result.Id)
+	idSlice, err := hex.DecodeString(ret.Result.Id)
 	if err != nil {
 		return nil, err
 	}

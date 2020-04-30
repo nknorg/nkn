@@ -19,12 +19,12 @@ import (
 
 type RelayService struct {
 	sync.Mutex
-	wallet    vault.Wallet
+	wallet    *vault.Wallet
 	localNode *LocalNode
 	porServer *por.PorServer
 }
 
-func NewRelayService(wallet vault.Wallet, localNode *LocalNode) *RelayService {
+func NewRelayService(wallet *vault.Wallet, localNode *LocalNode) *RelayService {
 	service := &RelayService{
 		wallet:    wallet,
 		localNode: localNode,
@@ -362,7 +362,7 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 	return nil
 }
 
-func MakeSigChainTransaction(wallet vault.Wallet, sigChain []byte) (*transaction.Transaction, error) {
+func MakeSigChainTransaction(wallet *vault.Wallet, sigChain []byte) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err

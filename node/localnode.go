@@ -51,7 +51,7 @@ type LocalNode struct {
 	proposalSubmitted uint32    // Count of localNode submitted proposal
 }
 
-func NewLocalNode(wallet vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
+func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err

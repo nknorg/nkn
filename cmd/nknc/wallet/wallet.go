@@ -16,16 +16,16 @@ import (
 	"github.com/urfave/cli"
 )
 
-func showAccountInfo(wallet vault.Wallet, verbose bool) {
+func showAccountInfo(wallet *vault.Wallet, verbose bool) {
 	const format = "%-37s  %s\n"
 	account, _ := wallet.GetDefaultAccount()
 	fmt.Printf(format, "Address", "Public Key")
 	fmt.Printf(format, "-------", "----------")
 	address, _ := account.ProgramHash.ToAddress()
 	publicKey := account.PublicKey
-	fmt.Printf(format, address, BytesToHexString(publicKey))
+	fmt.Printf(format, address, hex.EncodeToString(publicKey))
 	if verbose {
-		fmt.Printf("\nSecret Seed\n-----------\n%s\n", BytesToHexString(crypto.GetSeedFromPrivateKey(account.PrivateKey)))
+		fmt.Printf("\nSecret Seed\n-----------\n%s\n", hex.EncodeToString(crypto.GetSeedFromPrivateKey(account.PrivateKey)))
 	}
 }
 
@@ -82,7 +82,7 @@ func walletAction(c *cli.Context) error {
 			fmt.Printf("CAUTION: '%s' already exists!\n", name)
 			os.Exit(1)
 		} else {
-			wallet, err := vault.NewWallet(name, getConfirmedPassword(passwd), true)
+			wallet, err := vault.NewWallet(name, getConfirmedPassword(passwd))
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
@@ -146,15 +146,25 @@ func walletAction(c *cli.Context) error {
 	// change password
 	if c.Bool("changepassword") {
 		fmt.Printf("Wallet File: '%s'\n", name)
-		passwd, _ := password.GetPassword()
+		passwd, err := password.GetPassword()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 		wallet, err := vault.OpenWallet(name, passwd)
 		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 		fmt.Println("# input new password #")
-		newPassword, _ := password.GetConfirmedPassword()
-		if ok := wallet.ChangePassword([]byte(passwd), newPassword); !ok {
-			fmt.Fprintln(os.Stderr, "failed to change password")
+		newPassword, err := password.GetConfirmedPassword()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		err = wallet.ChangePassword([]byte(passwd), newPassword)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 		fmt.Println("password changed")

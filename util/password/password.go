@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/util/config"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/util/config"
 
 	"github.com/howeyc/gopass"
 )

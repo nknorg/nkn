@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/nknorg/nkn/dashboard/auth"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/nknorg/nkn/vault"
-	"net/http"
 )
 
 type DownloadWalletData struct {
@@ -21,12 +22,12 @@ func WalletDownloadRouter(router *gin.RouterGroup) {
 
 		wallet, exists := context.Get("wallet")
 		if !exists {
-			log.WebLog.Error("wallet file not exists.")
-			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet file not exists."))
+			log.WebLog.Error("Wallet file not exists.")
+			context.AbortWithError(http.StatusInternalServerError, errors.New("wallet file not exists"))
 			return
 		}
 
-		bytes, err := json.MarshalIndent(&wallet.(*vault.WalletImpl).Data, "", "    ")
+		bytes, err := json.MarshalIndent(&wallet.(*vault.Wallet).WalletData, "", "    ")
 		if err != nil {
 			log.WebLog.Error(err)
 			context.AbortWithError(http.StatusInternalServerError, err)

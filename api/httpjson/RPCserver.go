@@ -25,7 +25,7 @@ type RPCServer struct {
 	httpListener  string
 	httpsListener string
 	localNode     *node.LocalNode
-	wallet        vault.Wallet
+	wallet        *vault.Wallet
 	limiter       *rate.Limiter
 }
 
@@ -40,7 +40,7 @@ type ServeMux struct {
 }
 
 // NewServer will create a new RPC server instance.
-func NewServer(localNode *node.LocalNode, wallet vault.Wallet) *RPCServer {
+func NewServer(localNode *node.LocalNode, wallet *vault.Wallet) *RPCServer {
 	return &RPCServer{
 		mainMux: ServeMux{
 			m: make(map[string]common.Handler),

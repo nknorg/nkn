@@ -82,7 +82,7 @@ func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} 
 			return respPacking(UNKNOWN_HASH, err.Error())
 		}
 	} else if str, ok := params["hash"].(string); ok {
-		hex, err := common.HexStringToBytes(str)
+		hex, err := hex.DecodeString(str)
 		if err != nil {
 			return respPacking(INVALID_PARAMS, err.Error())
 		}
@@ -134,7 +134,7 @@ func GetBlockTransactions(block *block.Block) interface{} {
 	trans := make([]string, len(block.Transactions))
 	for i := 0; i < len(block.Transactions); i++ {
 		h := block.Transactions[i].Hash()
-		trans[i] = common.BytesToHexString(h.ToArray())
+		trans[i] = hex.EncodeToString(h.ToArray())
 	}
 	hash := block.Hash()
 	type BlockTransactions struct {
@@ -143,7 +143,7 @@ func GetBlockTransactions(block *block.Block) interface{} {
 		Transactions []string
 	}
 	b := BlockTransactions{
-		Hash:         common.BytesToHexString(hash.ToArray()),
+		Hash:         hex.EncodeToString(hash.ToArray()),
 		Height:       block.Header.UnsignedHeader.Height,
 		Transactions: trans,
 	}
@@ -264,7 +264,7 @@ func getTransaction(s Serverer, params map[string]interface{}) map[string]interf
 		return respPacking(INVALID_PARAMS, "hash should be a string")
 	}
 
-	hex, err := common.HexStringToBytes(str)
+	hex, err := hex.DecodeString(str)
 	if err != nil {
 		return respPacking(INVALID_PARAMS, err.Error())
 	}
@@ -301,7 +301,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 
 	var hash common.Uint256
 	if str, ok := params["tx"].(string); ok {
-		hex, err := common.HexStringToBytes(str)
+		hex, err := hex.DecodeString(str)
 		if err != nil {
 			return respPacking(INVALID_PARAMS, err.Error())
 		}
@@ -318,7 +318,7 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 		return respPacking(INVALID_PARAMS, "tx should be a hex string")
 	}
 
-	return respPacking(SUCCESS, common.BytesToHexString(hash.ToArray()))
+	return respPacking(SUCCESS, hex.EncodeToString(hash.ToArray()))
 }
 
 // getNeighbor gets neighbors of this node
@@ -365,8 +365,8 @@ func NodeInfo(wsAddr, rpcAddr string, pubkey, id []byte) map[string]string {
 	nodeInfo := make(map[string]string)
 	nodeInfo["addr"] = wsAddr
 	nodeInfo["rpcAddr"] = rpcAddr
-	nodeInfo["pubkey"] = common.BytesToHexString(pubkey)
-	nodeInfo["id"] = common.BytesToHexString(id)
+	nodeInfo["pubkey"] = hex.EncodeToString(pubkey)
+	nodeInfo["id"] = hex.EncodeToString(id)
 	return nodeInfo
 }
 
@@ -464,7 +464,7 @@ func GetBalanceByAssetID(s Serverer, params map[string]interface{}) map[string]i
 		return respPacking(INVALID_PARAMS, "asset id should be a string")
 	}
 
-	hexAssetID, err := common.HexStringToBytes(id)
+	hexAssetID, err := hex.DecodeString(id)
 	if err != nil {
 		return respPacking(INVALID_PARAMS, err.Error())
 	}
@@ -561,7 +561,7 @@ func getId(s Serverer, params map[string]interface{}) map[string]interface{} {
 	}
 
 	ret := map[string]interface{}{
-		"id": common.BytesToHexString(id),
+		"id": hex.EncodeToString(id),
 	}
 
 	return respPacking(SUCCESS, ret)
@@ -757,7 +757,7 @@ func getAsset(s Serverer, params map[string]interface{}) map[string]interface{} 
 		return respPacking(INVALID_PARAMS, "asset ID should be a string")
 	}
 
-	hexAssetID, err := common.HexStringToBytes(str)
+	hexAssetID, err := hex.DecodeString(str)
 	if err != nil {
 		return respPacking(INVALID_PARAMS, err.Error())
 	}

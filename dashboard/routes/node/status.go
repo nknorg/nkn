@@ -1,14 +1,15 @@
 package node
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/dashboard/helpers"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/log"
-	"net/http"
 )
 
 func StatusRouter(router *gin.RouterGroup) {
@@ -31,7 +32,7 @@ func StatusRouter(router *gin.RouterGroup) {
 				return
 			}
 			id := context.MustGet("id").([]byte)
-			out["id"] = common.BytesToHexString(id)
+			out["id"] = hex.EncodeToString(id)
 		}
 
 		out["beneficiaryAddr"] = config.Parameters.BeneficiaryAddr

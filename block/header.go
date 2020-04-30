@@ -2,6 +2,7 @@ package block
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -122,17 +123,17 @@ func (h *Header) GetInfo() ([]byte, error) {
 	hash := h.Hash()
 	info := &headerInfo{
 		Version:          h.UnsignedHeader.Version,
-		PrevBlockHash:    BytesToHexString(h.UnsignedHeader.PrevBlockHash),
-		TransactionsRoot: BytesToHexString(h.UnsignedHeader.TransactionsRoot),
-		StateRoot:        BytesToHexString(h.UnsignedHeader.StateRoot),
+		PrevBlockHash:    hex.EncodeToString(h.UnsignedHeader.PrevBlockHash),
+		TransactionsRoot: hex.EncodeToString(h.UnsignedHeader.TransactionsRoot),
+		StateRoot:        hex.EncodeToString(h.UnsignedHeader.StateRoot),
 		Timestamp:        h.UnsignedHeader.Timestamp,
 		Height:           h.UnsignedHeader.Height,
-		RandomBeacon:     BytesToHexString(h.UnsignedHeader.RandomBeacon),
-		WinnerHash:       BytesToHexString(h.UnsignedHeader.WinnerHash),
+		RandomBeacon:     hex.EncodeToString(h.UnsignedHeader.RandomBeacon),
+		WinnerHash:       hex.EncodeToString(h.UnsignedHeader.WinnerHash),
 		WinnerType:       h.UnsignedHeader.WinnerType.String(),
-		SignerPk:         BytesToHexString(h.UnsignedHeader.SignerPk),
-		SignerId:         BytesToHexString(h.UnsignedHeader.SignerId),
-		Signature:        BytesToHexString(h.Signature),
+		SignerPk:         hex.EncodeToString(h.UnsignedHeader.SignerPk),
+		SignerId:         hex.EncodeToString(h.UnsignedHeader.SignerId),
+		Signature:        hex.EncodeToString(h.Signature),
 		Hash:             hash.ToHexString(),
 	}
 
