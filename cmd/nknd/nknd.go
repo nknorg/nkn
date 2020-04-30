@@ -168,7 +168,7 @@ func nknMain(c *cli.Context) error {
 
 	log.Infof("Node version: %v", config.Version)
 
-	var wallet vault.Wallet
+	var wallet *vault.Wallet
 	var account *vault.Account
 	if config.Parameters.WebGuiCreateWallet {
 		for wallet == nil || account == nil {
@@ -233,7 +233,7 @@ func nknMain(c *cli.Context) error {
 		log.Fatalf("Get or create id error: %v", err)
 	}
 
-	log.Info("current chord ID: ", common.BytesToHexString(id))
+	log.Infof("current chord ID: %x", id)
 
 	conf := &nnet.Config{
 		Transport:        config.Parameters.Transport,
@@ -535,7 +535,7 @@ func GetID(seeds []string, publickey []byte) ([]byte, error) {
 	return nil, fmt.Errorf("failed to get ID from majority of %d seeds", n)
 }
 
-func CreateID(seeds []string, wallet vault.Wallet, regFee, txnFee common.Fixed64) error {
+func CreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed64) error {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return err
@@ -586,7 +586,7 @@ func CreateID(seeds []string, wallet vault.Wallet, regFee, txnFee common.Fixed64
 	return errors.New("create ID failed")
 }
 
-func GetOrCreateID(seeds []string, wallet vault.Wallet, regFee, txnFee common.Fixed64) ([]byte, error) {
+func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed64) ([]byte, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err

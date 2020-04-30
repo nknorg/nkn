@@ -2,11 +2,11 @@ package trie
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 
-	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/util/log"
 )
@@ -76,15 +76,15 @@ func (n *fullNode) fString(ind string) string {
 }
 
 func (n *shortNode) fString(ind string) string {
-	return fmt.Sprintf("{%v: %v} ", common.BytesToHexString(n.Key), n.Val.fString(ind+"  "))
+	return fmt.Sprintf("{%v: %v} ", hex.EncodeToString(n.Key), n.Val.fString(ind+"  "))
 
 }
 func (n hashNode) fString(ind string) string {
-	return fmt.Sprintf("<%s>", common.BytesToHexString(n))
+	return fmt.Sprintf("<%s>", hex.EncodeToString(n))
 
 }
 func (n valueNode) fString(ind string) string {
-	return fmt.Sprintf("%s", common.BytesToHexString(n))
+	return fmt.Sprintf("%s", hex.EncodeToString(n))
 
 }
 

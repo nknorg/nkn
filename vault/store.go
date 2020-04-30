@@ -10,75 +10,56 @@ import (
 	"runtime"
 	"sync"
 
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 )
 
-type HeaderData struct {
-	PasswordHash string
-	IV           string
-	MasterKey    string
-	Version      int
-}
-
-type AccountData struct {
-	Address       string
-	ProgramHash   string
-	SeedEncrypted string
-	ContractData  string
-}
-
-type WalletData struct {
-	HeaderData
-	AccountData
-}
-
 type WalletStore struct {
-	sync.RWMutex
-
+	*WalletData
 	Path string
-	Data WalletData
+	sync.RWMutex
 }
 
-func NewStore(fullPath string) (*WalletStore, error) {
-	if FileExisted(fullPath) {
+func NewWalletStore(path string, walletData *WalletData) (*WalletStore, error) {
+	if common.FileExisted(path) {
 		return nil, errors.New("wallet store exists")
 	}
 
-	var walletData WalletData
 	jsonBlob, err := json.Marshal(walletData)
 	if err != nil {
 		return nil, err
 	}
 
-	name := fullPath
+	name := path
 	err = ioutil.WriteFile(name, jsonBlob, 0666)
 	if err != nil {
 		return nil, err
 	}
 
 	return &WalletStore{
-		Path: fullPath,
-		Data: walletData,
+		Path:       path,
+		WalletData: walletData,
 	}, nil
 }
 
-func LoadStore(fullPath string) (*WalletStore, error) {
-	if !FileExisted(fullPath) {
+func LoadWalletStore(fullPath string) (*WalletStore, error) {
+	if !common.FileExisted(fullPath) {
 		return nil, errors.New("wallet store doesn't exists")
 	}
+
 	fileData, err := ioutil.ReadFile(fullPath)
 	if err != nil {
 		return nil, err
 	}
 
-	var walletData WalletData
-	err = json.Unmarshal(fileData, &walletData)
+	walletData := &WalletData{}
+	err = json.Unmarshal(fileData, walletData)
 	if err != nil {
 		return nil, err
 	}
+
 	return &WalletStore{
-		Path: fullPath,
-		Data: walletData,
+		Path:       fullPath,
+		WalletData: walletData,
 	}, nil
 }
 
@@ -122,58 +103,12 @@ func (s *WalletStore) write(data []byte) error {
 	return err
 }
 
-func (s *WalletStore) SaveAccountData(programHash []byte, encryptedSeed []byte, contract []byte) error {
-	oldBlob, err := s.read()
-	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(oldBlob, &s.Data); err != nil {
-		return err
-	}
-	pHash, err := Uint160ParseFromBytes(programHash)
-	if err != nil {
-		return err
-	}
-	addr, err := pHash.ToAddress()
-	if err != nil {
-		return err
-	}
-	s.Data.AccountData = AccountData{
-		Address:       addr,
-		ProgramHash:   BytesToHexString(programHash),
-		SeedEncrypted: BytesToHexString(encryptedSeed),
-		ContractData:  BytesToHexString(contract),
-	}
-	newBlob, err := json.Marshal(s.Data)
-	if err != nil {
-		return err
-	}
-	err = s.write(newBlob)
+func (s *WalletStore) Save() error {
+	newBlob, err := json.Marshal(s.WalletData)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (s *WalletStore) SaveBasicData(version int, iv, masterKey, passwordHash []byte) error {
-	oldBlob, err := s.read()
-	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(oldBlob, &s.Data); err != nil {
-		return err
-	}
-
-	s.Data.Version = version
-	s.Data.IV = BytesToHexString(iv)
-	s.Data.MasterKey = BytesToHexString(masterKey)
-	s.Data.PasswordHash = BytesToHexString(passwordHash)
-
-	newBlob, err := json.Marshal(s.Data)
-	if err != nil {
-		return err
-	}
 	err = s.write(newBlob)
 	if err != nil {
 		return err

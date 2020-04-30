@@ -60,17 +60,6 @@ func FormatOutput(o []byte) error {
 	return err
 }
 
-// WalletPassword prompts user to input wallet password when password is not
-// specified from command line
-func WalletPassword(passwd string) []byte {
-	if passwd == "" {
-		tmppasswd, _ := password.GetPassword()
-		return tmppasswd
-	} else {
-		return []byte(passwd)
-	}
-}
-
 func GetPassword(passwd string) []byte {
 	var tmp []byte
 	var err error

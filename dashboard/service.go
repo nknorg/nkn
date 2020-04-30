@@ -21,11 +21,11 @@ import (
 
 var (
 	localNode *node.LocalNode
-	wallet    vault.Wallet
+	wallet    *vault.Wallet
 	id        []byte
 )
 
-func Init(ln *node.LocalNode, w vault.Wallet, d []byte) {
+func Init(ln *node.LocalNode, w *vault.Wallet, d []byte) {
 	if ln != nil {
 		localNode = ln
 		serviceConfig.IsNodeInit = true

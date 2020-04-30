@@ -1,13 +1,13 @@
 package websocket
 
 import (
+	"encoding/hex"
 	"encoding/json"
 
 	"github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket/server"
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain"
-	. "github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/node"
 	"github.com/nknorg/nkn/util/config"
@@ -23,7 +23,7 @@ var (
 	pushBlockTxsFlag bool = false
 )
 
-func NewServer(localNode *node.LocalNode, w vault.Wallet) *server.WsServer {
+func NewServer(localNode *node.LocalNode, w *vault.Wallet) *server.WsServer {
 	//	common.SetNode(n)
 	event.Queue.Subscribe(event.NewBlockProduced, SendBlock2WSclient)
 	ws = server.InitWsServer(localNode, w)
@@ -79,7 +79,7 @@ func PushBlock(v interface{}) {
 	if block, ok := v.(*block.Block); ok {
 		if pushRawBlockFlag {
 			dt, _ := block.Marshal()
-			resp["Result"] = BytesToHexString(dt)
+			resp["Result"] = hex.EncodeToString(dt)
 		} else {
 			info, _ := block.GetInfo()
 			var x interface{}
@@ -118,7 +118,7 @@ func PushSigChainBlockHash(v interface{}) {
 			return
 		}
 		resp["Action"] = "updateSigChainBlockHash"
-		resp["Result"] = BytesToHexString(sigChainBlockHash.ToArray())
+		resp["Result"] = hex.EncodeToString(sigChainBlockHash.ToArray())
 		ws.PushResult(resp)
 	}
 }

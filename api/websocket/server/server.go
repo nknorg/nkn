@@ -60,13 +60,13 @@ type WsServer struct {
 	ActionMap             map[string]Handler
 	TxHashMap             map[string]string //key: txHash   value:sessionid
 	localNode             *node.LocalNode
-	wallet                vault.Wallet
+	wallet                *vault.Wallet
 	messageBuffer         *messagebuffer.MessageBuffer
 	messageDeliveredCache *DelayedChan
 	sigChainCache         Cache
 }
 
-func InitWsServer(localNode *node.LocalNode, wallet vault.Wallet) *WsServer {
+func InitWsServer(localNode *node.LocalNode, wallet *vault.Wallet) *WsServer {
 	ws := &WsServer{
 		Upgrader:              websocket.Upgrader{},
 		SessionList:           session.NewSessionList(),
@@ -201,7 +201,7 @@ func (ws *WsServer) registryMethod() {
 
 		res := make(map[string]interface{})
 		res["node"] = common.NodeInfo(wsAddr, rpcAddr, pubkey, id)
-		res["sigChainBlockHash"] = BytesToHexString(sigChainBlockHash.ToArray())
+		res["sigChainBlockHash"] = hex.EncodeToString(sigChainBlockHash.ToArray())
 
 		return common.RespPacking(res, common.SUCCESS)
 	}

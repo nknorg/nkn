@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -269,18 +270,18 @@ func (tx *Transaction) GetInfo() ([]byte, error) {
 	tx.Hash()
 	info := &txnInfo{
 		TxType:      tx.UnsignedTx.Payload.GetType().String(),
-		PayloadData: BytesToHexString(tx.UnsignedTx.Payload.GetData()),
+		PayloadData: hex.EncodeToString(tx.UnsignedTx.Payload.GetData()),
 		Nonce:       tx.UnsignedTx.Nonce,
 		Fee:         tx.UnsignedTx.Fee,
-		Attributes:  BytesToHexString(tx.UnsignedTx.Attributes),
+		Attributes:  hex.EncodeToString(tx.UnsignedTx.Attributes),
 		Programs:    make([]programInfo, 0),
 		Hash:        tx.hash.ToHexString(),
 	}
 
 	for _, v := range tx.Programs {
 		pgInfo := &programInfo{}
-		pgInfo.Code = BytesToHexString(v.Code)
-		pgInfo.Parameter = BytesToHexString(v.Parameter)
+		pgInfo.Code = hex.EncodeToString(v.Code)
+		pgInfo.Parameter = hex.EncodeToString(v.Parameter)
 		info.Programs = append(info.Programs, *pgInfo)
 	}
 

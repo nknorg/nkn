@@ -23,7 +23,7 @@ func (l *Ledger) IsDoubleSpend(Tx *transaction.Transaction) bool {
 // get the default ledger
 func GetDefaultLedger() (*Ledger, error) {
 	if DefaultLedger == nil {
-		return nil, errors.New("[Ledger], GetDefaultLedger failed, DefaultLedger not Exist.")
+		return nil, errors.New("[Ledger] GetDefaultLedger failed, DefaultLedger not Exist.")
 	}
 	return DefaultLedger, nil
 }
@@ -41,11 +41,11 @@ func GetDefaultLedger() (*Ledger, error) {
 func (l *Ledger) GetBlockWithHeight(height uint32) (*block.Block, error) {
 	temp, err := l.Store.GetBlockHash(height)
 	if err != nil {
-		return nil, errors.New("[Ledger],GetBlockWithHeight failed with height=" + string(height))
+		return nil, errors.New("[Ledger] GetBlockWithHeight failed with height=" + string(height))
 	}
 	bk, err := DefaultLedger.Store.GetBlock(temp)
 	if err != nil {
-		return nil, errors.New("[Ledger],GetBlockWithHeight failed with hash=" + temp.ToString())
+		return nil, errors.New("[Ledger] GetBlockWithHeight failed with hash=" + temp.ToString())
 	}
 	return bk, nil
 }
@@ -54,7 +54,7 @@ func (l *Ledger) GetBlockWithHeight(height uint32) (*block.Block, error) {
 func (l *Ledger) GetBlockWithHash(hash Uint256) (*block.Block, error) {
 	bk, err := l.Store.GetBlock(hash)
 	if err != nil {
-		return nil, errors.New("[Ledger],GetBlockWithHeight failed with hash=" + hash.ToString())
+		return nil, errors.New("[Ledger] GetBlockWithHeight failed with hash=" + hash.ToString())
 	}
 	return bk, nil
 }
@@ -68,7 +68,7 @@ func (l *Ledger) BlockInLedger(hash Uint256) bool {
 func (l *Ledger) GetTransactionWithHash(hash Uint256) (*transaction.Transaction, error) {
 	tx, err := l.Store.GetTransaction(hash)
 	if err != nil {
-		return nil, errors.New("[Ledger],GetTransactionWithHash failed with hash=" + hash.ToString())
+		return nil, errors.New("[Ledger] GetTransactionWithHash failed with hash=" + hash.ToString())
 	}
 	return tx, nil
 }

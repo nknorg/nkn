@@ -2,6 +2,7 @@ package block
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -165,7 +166,7 @@ func ComputeID(preBlockHash, txnHash Uint256, randomBeacon []byte) []byte {
 }
 
 func GenesisBlockInit() (*Block, error) {
-	genesisSignerPk, err := HexStringToBytes(config.Parameters.GenesisBlockProposer)
+	genesisSignerPk, err := hex.DecodeString(config.Parameters.GenesisBlockProposer)
 	if err != nil {
 		return nil, fmt.Errorf("parse GenesisBlockProposer error: %v", err)
 	}
