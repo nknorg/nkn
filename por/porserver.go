@@ -20,13 +20,12 @@ import (
 )
 
 const (
-	// TODO: reduce sigChainElemCacheExpiration and srcSigChainCacheExpiration in next version when most nodes support pin sigchain
-	sigChainElemCacheExpiration          = 10 * config.ConsensusTimeout
+	sigChainElemCacheExpiration          = 10 * time.Second
 	sigChainElemCachePinnedExpiration    = 10 * config.ConsensusTimeout
-	sigChainElemCacheCleanupInterval     = config.ConsensusDuration
-	srcSigChainCacheExpiration           = 10 * config.ConsensusTimeout
+	sigChainElemCacheCleanupInterval     = 2 * time.Second
+	srcSigChainCacheExpiration           = 10 * time.Second
 	srcSigChainCachePinnedExpiration     = 10 * config.ConsensusTimeout
-	srcSigChainCacheCleanupInterval      = config.ConsensusDuration
+	srcSigChainCacheCleanupInterval      = 2 * time.Second
 	destSigChainElemCacheExpiration      = 10 * config.ConsensusTimeout
 	destSigChainElemCacheCleanupInterval = config.ConsensusDuration
 	finalizedBlockCacheExpiration        = 10 * config.ConsensusTimeout
