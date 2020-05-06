@@ -28,7 +28,7 @@ func NewWallet(path string, password []byte) (*Wallet, error) {
 		return nil, err
 	}
 
-	walletData, err := NewWalletData(account, password, nil, nil)
+	walletData, err := NewWalletData(account, password, nil, nil, nil, 0, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (w *Wallet) ChangePassword(oldPassword, newPassword []byte) error {
 		return errors.New("wrong password")
 	}
 
-	w.WalletData, err = NewWalletData(account, newPassword, nil, nil)
+	w.WalletData, err = NewWalletData(account, newPassword, nil, nil, nil, 0, 0, 0)
 	if err != nil {
 		return err
 	}
