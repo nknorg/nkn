@@ -332,7 +332,12 @@ func getNeighbor(s Serverer, params map[string]interface{}) map[string]interface
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
 func getNodeState(s Serverer, params map[string]interface{}) map[string]interface{} {
-	return respPacking(SUCCESS, s.GetNetNode())
+	n := s.GetNetNode()
+	if n == nil {
+		// will be recovered by handler
+		panic(ErrNullID)
+	}
+	return respPacking(SUCCESS, n)
 }
 
 // setDebugInfo sets log level
