@@ -40,7 +40,7 @@ type WalletData struct {
 	Scrypt        *ScryptData
 }
 
-func NewWalletData(account *Account, password, masterKey, iv []byte) (*WalletData, error) {
+func NewWalletData(account *Account, password, masterKey, iv, scryptSalt []byte, scryptN, scryptR, scryptP int) (*WalletData, error) {
 	if len(masterKey) == 0 {
 		masterKey = util.RandomBytes(MasterKeyLength)
 	}
@@ -49,11 +49,27 @@ func NewWalletData(account *Account, password, masterKey, iv []byte) (*WalletDat
 		iv = util.RandomBytes(IVLength)
 	}
 
+	if len(scryptSalt) == 0 {
+		scryptSalt = util.RandomBytes(ScryptSaltLength)
+	}
+
+	if scryptN == 0 {
+		scryptN = ScryptN
+	}
+
+	if scryptR == 0 {
+		scryptR = ScryptR
+	}
+
+	if scryptP == 0 {
+		scryptP = ScryptP
+	}
+
 	scryptData := &ScryptData{
-		Salt: hex.EncodeToString(util.RandomBytes(ScryptSaltLength)),
-		N:    ScryptN,
-		R:    ScryptR,
-		P:    ScryptP,
+		Salt: hex.EncodeToString(scryptSalt),
+		N:    scryptN,
+		R:    scryptR,
+		P:    scryptP,
 	}
 
 	var passwordKey []byte
