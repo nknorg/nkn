@@ -80,7 +80,8 @@ func DecryptData(context *gin.Context, hasSeed bool) string {
 	seed := ""
 	wallet, exists := context.Get("wallet")
 	if exists && hasSeed {
-		seedByte := sha256.Sum256(wallet.(*vault.Wallet).PasswordHash)
+		passwordHashHex := hex.EncodeToString(wallet.(*vault.Wallet).PasswordHash)
+		seedByte := sha256.Sum256([]byte(passwordHashHex))
 		seed = hex.EncodeToString(seedByte[:])
 	}
 
@@ -120,7 +121,8 @@ func EncryptData(context *gin.Context, hasSeed bool, sourceData interface{}) str
 	seed := ""
 	wallet, exists := context.Get("wallet")
 	if exists && hasSeed {
-		seedByte := sha256.Sum256(wallet.(*vault.Wallet).PasswordHash)
+		passwordHashHex := hex.EncodeToString(wallet.(*vault.Wallet).PasswordHash)
+		seedByte := sha256.Sum256([]byte(passwordHashHex))
 		seed = hex.EncodeToString(seedByte[:])
 	}
 
