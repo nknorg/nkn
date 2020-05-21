@@ -14,12 +14,12 @@ require (
 	github.com/itchyny/base58-go v0.0.5
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jpillora/backoff v0.0.0-20180909062703-3050d21c67d7 // indirect
-	github.com/klauspost/cpuid v1.2.3 // indirect
-	github.com/klauspost/reedsolomon v1.9.3 // indirect
+	github.com/klauspost/reedsolomon v1.9.9 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/mmcloughlin/avo v0.0.0-20200504053806-fa88270b07e4 // indirect
 	github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a
 	github.com/nknorg/go-portscanner v0.0.0-20181002101859-8493ef01db79
-	github.com/nknorg/nnet v0.0.0-20200410235204-23cc169e8564
+	github.com/nknorg/nnet v0.0.0-20200521002812-357d1b11179f
 	github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
@@ -30,14 +30,15 @@ require (
 	github.com/rdegges/go-ipify v0.0.0-20150526035502-2d94a6a86c40
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b // indirect
-	github.com/tjfoc/gmsm v1.3.0 // indirect
+	github.com/tjfoc/gmsm v1.3.1 // indirect
 	github.com/urfave/cli v1.21.0
 	github.com/xtaci/kcp-go v5.4.20+incompatible // indirect
 	github.com/xtaci/lossyconn v0.0.0-20190602105132-8df528c0c9ae // indirect
 	github.com/xtaci/smux v2.0.1+incompatible // indirect
-	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71
-	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
-	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa // indirect
+	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	golang.org/x/net v0.0.0-20200520182314-0ba52f642ac2 // indirect
+	golang.org/x/sys v0.0.0-20200519105757-fe76b779f299 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
+	golang.org/x/tools v0.0.0-20200520220537-cf2d1e09c845 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )

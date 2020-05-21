@@ -42,6 +42,7 @@ const (
 	pongTimeout                  = 10 * time.Second // should be greater than pingInterval
 	maxMessageSize               = config.MaxClientMessageSize
 	messageDeliveredCacheSize    = 65536
+	checkWrongClientsInterval    = time.Minute
 )
 
 type Handler struct {
@@ -112,6 +113,8 @@ func (ws *WsServer) Start() error {
 	go ws.tlsServer.Serve(ws.tlsListener)
 
 	go ws.startCheckingLostMessages()
+
+	go ws.startCheckingWrongClients()
 
 	return nil
 }
@@ -547,6 +550,13 @@ func (ws *WsServer) NotifyWrongClients() {
 			ws.respondToSession(client, resp)
 		}
 	})
+}
+
+func (ws *WsServer) startCheckingWrongClients() {
+	for {
+		time.Sleep(checkWrongClientsInterval)
+		ws.NotifyWrongClients()
+	}
 }
 
 func (ws *WsServer) sendInboundRelayMessageToClient(v interface{}) {

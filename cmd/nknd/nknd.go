@@ -90,18 +90,18 @@ func JoinNet(nn *nnet.NNet) error {
 	})
 
 	for _, seed := range seeds {
-		succAddrs, err := client.FindSuccessorAddrs(seed, util.RandomBytes(config.NodeIDBytes))
+		randAddrs, err := client.FindSuccessorAddrs(seed, util.RandomBytes(config.NodeIDBytes))
 		if err != nil {
 			log.Warningf("Can't get successor address from [%s]", seed)
 			continue
 		}
 
-		for _, succAddr := range succAddrs {
-			if succAddr == nn.GetLocalNode().Addr {
+		for _, randAddr := range randAddrs {
+			if randAddr == nn.GetLocalNode().Addr {
 				log.Warning("Skipping self...")
 				continue
 			}
-			err = nn.Join(succAddr)
+			err = nn.Join(randAddr)
 			if err != nil {
 				log.Error(err)
 				continue
