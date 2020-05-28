@@ -191,11 +191,6 @@ func (tx *Transaction) GetMessage() []byte {
 	return signature.GetHashData(tx)
 }
 
-func (tx *Transaction) ToArray() []byte {
-	dt, _ := tx.Marshal()
-	return dt
-}
-
 func (tx *Transaction) Hash() Uint256 {
 	if tx.hash == nil {
 		d := signature.GetHashData(tx)

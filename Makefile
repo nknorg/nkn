@@ -4,7 +4,6 @@ GC=GO111MODULE=on go build
 GO_PROXY=https://goproxy.io
 GOFMT=go fmt
 VERSION:=$(shell git describe --abbrev=4 --dirty --always --tags)
-Minversion:=$(shell date)
 BUILD_DIR=build
 BIN_DIR=$(GOOS)-$(GOARCH)
 NKND_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/util/config.Version=$(VERSION)"
