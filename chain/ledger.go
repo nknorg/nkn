@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/nknorg/nkn/block"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/transaction"
 )
 
@@ -51,7 +51,7 @@ func (l *Ledger) GetBlockWithHeight(height uint32) (*block.Block, error) {
 }
 
 //Get block with block hash.
-func (l *Ledger) GetBlockWithHash(hash Uint256) (*block.Block, error) {
+func (l *Ledger) GetBlockWithHash(hash common.Uint256) (*block.Block, error) {
 	bk, err := l.Store.GetBlock(hash)
 	if err != nil {
 		return nil, errors.New("[Ledger] GetBlockWithHeight failed with hash=" + hash.ToString())
@@ -60,12 +60,12 @@ func (l *Ledger) GetBlockWithHash(hash Uint256) (*block.Block, error) {
 }
 
 //BlockInLedger checks if the block existed in ledger
-func (l *Ledger) BlockInLedger(hash Uint256) bool {
+func (l *Ledger) BlockInLedger(hash common.Uint256) bool {
 	return l.Store.IsBlockInStore(hash)
 }
 
 //Get transaction with hash.
-func (l *Ledger) GetTransactionWithHash(hash Uint256) (*transaction.Transaction, error) {
+func (l *Ledger) GetTransactionWithHash(hash common.Uint256) (*transaction.Transaction, error) {
 	tx, err := l.Store.GetTransaction(hash)
 	if err != nil {
 		return nil, errors.New("[Ledger] GetTransactionWithHash failed with hash=" + hash.ToString())

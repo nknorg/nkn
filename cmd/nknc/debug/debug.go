@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/nknorg/nkn/api/httpjson/client"
-	. "github.com/nknorg/nkn/cmd/nknc/common"
+	nknc "github.com/nknorg/nkn/cmd/nknc/common"
 
 	"github.com/urfave/cli"
 )
@@ -17,12 +17,12 @@ func debugAction(c *cli.Context) (err error) {
 	}
 	level := c.Int("level")
 	if level != -1 {
-		resp, err := client.Call(Address(), "setdebuginfo", 0, map[string]interface{}{"level": level})
+		resp, err := client.Call(nknc.Address(), "setdebuginfo", 0, map[string]interface{}{"level": level})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
 		}
-		FormatOutput(resp)
+		nknc.FormatOutput(resp)
 	}
 	return nil
 }
@@ -41,7 +41,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: debugAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "debug")
+			nknc.PrintError(c, err, "debug")
 			return cli.NewExitError("", 1)
 		},
 	}

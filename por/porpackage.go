@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/util/config"
@@ -82,12 +82,12 @@ func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage
 		return nil, errors.New("No miner node in signature chain")
 	}
 
-	blockHash, err := Uint256ParseFromBytes(sigChain.BlockHash)
+	blockHash, err := common.Uint256ParseFromBytes(sigChain.BlockHash)
 	if err != nil {
 		return nil, err
 	}
 
-	if blockHash == EmptyUint256 {
+	if blockHash == common.EmptyUint256 {
 		return nil, errors.New("block hash in sigchain is empty")
 	}
 

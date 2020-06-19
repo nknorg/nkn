@@ -11,7 +11,7 @@ import (
 
 	"github.com/nknorg/nkn/block"
 	"github.com/nknorg/nkn/chain/db"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/program"
@@ -24,11 +24,11 @@ type ChainStore struct {
 	st db.IStore
 
 	mu          sync.RWMutex
-	blockCache  map[Uint256]*block.Block
+	blockCache  map[common.Uint256]*block.Block
 	headerCache *HeaderCache
 	States      *StateDB
 
-	currentBlockHash   Uint256
+	currentBlockHash   common.Uint256
 	currentBlockHeight uint32
 }
 
@@ -40,10 +40,10 @@ func NewLedgerStore() (*ChainStore, error) {
 
 	chain := &ChainStore{
 		st:                 st,
-		blockCache:         map[Uint256]*block.Block{},
+		blockCache:         map[common.Uint256]*block.Block{},
 		headerCache:        NewHeaderCache(),
 		currentBlockHeight: 0,
-		currentBlockHash:   EmptyUint256,
+		currentBlockHash:   common.EmptyUint256,
 	}
 
 	return chain, nil
@@ -116,7 +116,7 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 			return 0, fmt.Errorf("InitLedgerStoreWithGenesisBlock, ResetDB error: %v", err)
 		}
 
-		root := EmptyUint256
+		root := common.EmptyUint256
 		cs.States, err = NewStateDB(root, cs)
 		if err != nil {
 			return 0, err
@@ -139,7 +139,7 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 	}
 }
 
-func (cs *ChainStore) IsTxHashDuplicate(txhash Uint256) bool {
+func (cs *ChainStore) IsTxHashDuplicate(txhash common.Uint256) bool {
 	if _, err := cs.st.Get(db.TransactionKey(txhash)); err != nil {
 		return false
 	}
@@ -147,13 +147,13 @@ func (cs *ChainStore) IsTxHashDuplicate(txhash Uint256) bool {
 	return true
 }
 
-func (cs *ChainStore) GetBlockHash(height uint32) (Uint256, error) {
+func (cs *ChainStore) GetBlockHash(height uint32) (common.Uint256, error) {
 	blockHash, err := cs.st.Get(db.BlockhashKey(height))
 	if err != nil {
-		return EmptyUint256, err
+		return common.EmptyUint256, err
 	}
 
-	return Uint256ParseFromBytes(blockHash)
+	return common.Uint256ParseFromBytes(blockHash)
 }
 
 func (cs *ChainStore) GetBlockByHeight(height uint32) (*block.Block, error) {
@@ -165,7 +165,7 @@ func (cs *ChainStore) GetBlockByHeight(height uint32) (*block.Block, error) {
 	return cs.GetBlock(hash)
 }
 
-func (cs *ChainStore) GetHeader(hash Uint256) (*block.Header, error) {
+func (cs *ChainStore) GetHeader(hash common.Uint256) (*block.Header, error) {
 	data, err := cs.st.Get(db.HeaderKey(hash))
 	if err != nil {
 		return nil, err
@@ -194,7 +194,7 @@ func (cs *ChainStore) GetHeaderByHeight(height uint32) (*block.Header, error) {
 	return cs.GetHeader(hash)
 }
 
-func (cs *ChainStore) GetTransaction(hash Uint256) (*transaction.Transaction, error) {
+func (cs *ChainStore) GetTransaction(hash common.Uint256) (*transaction.Transaction, error) {
 	t, _, err := cs.getTx(hash)
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (cs *ChainStore) GetTransaction(hash Uint256) (*transaction.Transaction, er
 	return t, nil
 }
 
-func (cs *ChainStore) getTx(hash Uint256) (*transaction.Transaction, uint32, error) {
+func (cs *ChainStore) getTx(hash common.Uint256) (*transaction.Transaction, uint32, error) {
 	value, err := cs.st.Get(db.TransactionKey(hash))
 	if err != nil {
 		return nil, 0, err
@@ -219,7 +219,7 @@ func (cs *ChainStore) getTx(hash Uint256) (*transaction.Transaction, uint32, err
 	return &txn, height, nil
 }
 
-func (cs *ChainStore) GetBlock(hash Uint256) (*block.Block, error) {
+func (cs *ChainStore) GetBlock(hash common.Uint256) (*block.Block, error) {
 	bHash, err := cs.st.Get(db.HeaderKey(hash))
 	if err != nil {
 		return nil, err
@@ -239,7 +239,7 @@ func (cs *ChainStore) GetBlock(hash Uint256) (*block.Block, error) {
 	return b, nil
 }
 
-func (cs *ChainStore) GetHeightByBlockHash(hash Uint256) (uint32, error) {
+func (cs *ChainStore) GetHeightByBlockHash(hash common.Uint256) (uint32, error) {
 	header, err := cs.getHeaderWithCache(hash)
 	if err == nil {
 		return header.UnsignedHeader.Height, nil
@@ -253,7 +253,7 @@ func (cs *ChainStore) GetHeightByBlockHash(hash Uint256) (uint32, error) {
 	return block.Header.UnsignedHeader.Height, nil
 }
 
-func (cs *ChainStore) IsBlockInStore(hash Uint256) bool {
+func (cs *ChainStore) IsBlockInStore(hash common.Uint256) bool {
 	if header, err := cs.GetHeader(hash); err != nil || header.UnsignedHeader.Height > cs.currentBlockHeight {
 		return false
 	}
@@ -331,7 +331,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		return err
 	}
 
-	headerRoot, err := Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
+	headerRoot, err := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
 	if err != nil {
 		return err
 	}
@@ -402,7 +402,7 @@ func (cs *ChainStore) SaveBlock(b *block.Block, fastAdd bool) error {
 	return nil
 }
 
-func (cs *ChainStore) GetCurrentBlockHash() Uint256 {
+func (cs *ChainStore) GetCurrentBlockHash() common.Uint256 {
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()
 
@@ -429,25 +429,25 @@ func (cs *ChainStore) GetHeaderHeight() uint32 {
 	return cs.headerCache.GetCurrentCachedHeight()
 }
 
-func (cs *ChainStore) GetCurrentHeaderHash() Uint256 {
+func (cs *ChainStore) GetCurrentHeaderHash() common.Uint256 {
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()
 
 	return cs.headerCache.GetCurrentCacheHeaderHash()
 }
 
-func (cs *ChainStore) GetHeaderHashByHeight(height uint32) Uint256 {
+func (cs *ChainStore) GetHeaderHashByHeight(height uint32) common.Uint256 {
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()
 
 	return cs.headerCache.GetCachedHeaderHashByHeight(height)
 }
 
-func (cs *ChainStore) GetHeaderWithCache(hash Uint256) (*block.Header, error) {
+func (cs *ChainStore) GetHeaderWithCache(hash common.Uint256) (*block.Header, error) {
 	return cs.headerCache.GetCachedHeader(hash)
 }
 
-func (cs *ChainStore) getHeaderWithCache(hash Uint256) (*block.Header, error) {
+func (cs *ChainStore) getHeaderWithCache(hash common.Uint256) (*block.Header, error) {
 	return cs.headerCache.GetCachedHeader(hash)
 }
 
@@ -455,32 +455,32 @@ func (cs *ChainStore) IsDoubleSpend(tx *transaction.Transaction) bool {
 	return false
 }
 
-func (cs *ChainStore) GetCurrentBlockHashFromDB() (Uint256, uint32, error) {
+func (cs *ChainStore) GetCurrentBlockHashFromDB() (common.Uint256, uint32, error) {
 	return cs.getCurrentBlockHashFromDB()
 }
 
-func (cs *ChainStore) getCurrentBlockHashFromDB() (Uint256, uint32, error) {
+func (cs *ChainStore) getCurrentBlockHashFromDB() (common.Uint256, uint32, error) {
 	data, err := cs.st.Get(db.CurrentBlockHashKey())
 	if err != nil {
-		return EmptyUint256, 0, err
+		return common.EmptyUint256, 0, err
 	}
 
-	var blockHash Uint256
+	var blockHash common.Uint256
 	r := bytes.NewReader(data)
 	blockHash.Deserialize(r)
 	currentHeight, err := serialization.ReadUint32(r)
 	return blockHash, currentHeight, err
 }
 
-func (cs *ChainStore) GetCurrentBlockStateRoot() (Uint256, error) {
+func (cs *ChainStore) GetCurrentBlockStateRoot() (common.Uint256, error) {
 	currentState, err := cs.st.Get(db.CurrentStateTrie())
 	if err != nil {
-		return EmptyUint256, err
+		return common.EmptyUint256, err
 	}
 
-	hash, err := Uint256ParseFromBytes(currentState)
+	hash, err := common.Uint256ParseFromBytes(currentState)
 	if err != nil {
-		return EmptyUint256, err
+		return common.EmptyUint256, err
 	}
 
 	return hash, nil
@@ -490,15 +490,15 @@ func (cs *ChainStore) GetDatabase() db.IStore {
 	return cs.st
 }
 
-func (cs *ChainStore) GetBalance(addr Uint160) Fixed64 {
+func (cs *ChainStore) GetBalance(addr common.Uint160) common.Fixed64 {
 	return cs.States.GetBalance(config.NKNAssetID, addr)
 }
 
-func (cs *ChainStore) GetBalanceByAssetID(addr Uint160, assetID Uint256) Fixed64 {
+func (cs *ChainStore) GetBalanceByAssetID(addr common.Uint160, assetID common.Uint256) common.Fixed64 {
 	return cs.States.GetBalance(assetID, addr)
 }
 
-func (cs *ChainStore) GetNonce(addr Uint160) uint64 {
+func (cs *ChainStore) GetNonce(addr common.Uint160) uint64 {
 	return cs.States.GetNonce(addr)
 }
 
@@ -511,16 +511,16 @@ func (cs *ChainStore) GetID(publicKey []byte) ([]byte, error) {
 	return cs.States.GetID(programHash), nil
 }
 
-func (cs *ChainStore) GetNanoPay(addr Uint160, recipient Uint160, nonce uint64) (Fixed64, uint32, error) {
+func (cs *ChainStore) GetNanoPay(addr common.Uint160, recipient common.Uint160, nonce uint64) (common.Fixed64, uint32, error) {
 	return cs.States.GetNanoPay(addr, recipient, nonce)
 }
 
 type Donation struct {
 	Height uint32
-	Amount Fixed64
+	Amount common.Fixed64
 }
 
-func NewDonation(height uint32, amount Fixed64) *Donation {
+func NewDonation(height uint32, amount common.Fixed64) *Donation {
 	return &Donation{
 		Height: height,
 		Amount: amount,
@@ -556,10 +556,10 @@ func (d *Donation) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (cs *ChainStore) GetDonation() (Fixed64, error) {
+func (cs *ChainStore) GetDonation() (common.Fixed64, error) {
 	donation, err := cs.getDonation()
 	if err != nil {
-		return Fixed64(0), err
+		return common.Fixed64(0), err
 	}
 	return donation.Amount, nil
 }
@@ -595,7 +595,7 @@ func (cs *ChainStore) CalcNextDonation(height uint32) (*Donation, error) {
 		return nil, errors.New("invalid height to update donation")
 	}
 
-	donationAddress, err := ToScriptHash(config.DonationAddress)
+	donationAddress, err := common.ToScriptHash(config.DonationAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -604,16 +604,16 @@ func (cs *ChainStore) CalcNextDonation(height uint32) (*Donation, error) {
 	donation := amount * config.DonationAdjustDividendFactor / config.DonationAdjustDivisorFactor
 	donationPerBlock := int64(donation) / int64(config.RewardAdjustInterval)
 
-	d := NewDonation(height, Fixed64(donationPerBlock))
+	d := NewDonation(height, common.Fixed64(donationPerBlock))
 
 	return d, nil
 }
 
-func (cs *ChainStore) GetStateRoots(fromHeight, toHeight uint32) ([]Uint256, error) {
+func (cs *ChainStore) GetStateRoots(fromHeight, toHeight uint32) ([]common.Uint256, error) {
 	if toHeight < fromHeight {
 		return nil, fmt.Errorf("toHeight(%v) is less than fromHeight(%v)\n", toHeight, fromHeight)
 	}
-	roots := make([]Uint256, 0, toHeight-fromHeight+1)
+	roots := make([]common.Uint256, 0, toHeight-fromHeight+1)
 
 	for i := fromHeight; i <= toHeight; i++ {
 		headerHash, err := cs.GetBlockHash(i)
@@ -624,7 +624,7 @@ func (cs *ChainStore) GetStateRoots(fromHeight, toHeight uint32) ([]Uint256, err
 		if err != nil {
 			return nil, err
 		}
-		stateRoot, err := Uint256ParseFromBytes(header.UnsignedHeader.StateRoot)
+		stateRoot, err := common.Uint256ParseFromBytes(header.UnsignedHeader.StateRoot)
 		if err != nil {
 			return nil, err
 		}
@@ -661,7 +661,7 @@ func (cs *ChainStore) getPruningStartHeight() (uint32, uint32) {
 }
 
 func (cs *ChainStore) PruneStates() error {
-	state, err := NewStateDB(EmptyUint256, cs)
+	state, err := NewStateDB(common.EmptyUint256, cs)
 	if err != nil {
 		return err
 	}
@@ -670,7 +670,7 @@ func (cs *ChainStore) PruneStates() error {
 }
 
 func (cs *ChainStore) PruneStatesLowMemory() error {
-	state, err := NewStateDB(EmptyUint256, cs)
+	state, err := NewStateDB(common.EmptyUint256, cs)
 	if err != nil {
 		return err
 	}
@@ -679,7 +679,7 @@ func (cs *ChainStore) PruneStatesLowMemory() error {
 }
 
 func (cs *ChainStore) SequentialPrune() error {
-	state, err := NewStateDB(EmptyUint256, cs)
+	state, err := NewStateDB(common.EmptyUint256, cs)
 	if err != nil {
 		return err
 	}
@@ -707,7 +707,7 @@ func (cs *ChainStore) TrieTraverse() error {
 }
 
 func (cs *ChainStore) VerifyState() error {
-	state, err := NewStateDB(EmptyUint256, cs)
+	state, err := NewStateDB(common.EmptyUint256, cs)
 	if err != nil {
 		return err
 	}

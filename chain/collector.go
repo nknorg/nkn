@@ -3,7 +3,7 @@ package chain
 import (
 	"sort"
 
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/transaction"
 )
 
@@ -13,9 +13,9 @@ const (
 
 // Transaction pool should be a concrete entity of this interface
 type TxnSource interface {
-	GetAllTransactionLists() map[Uint160][]*transaction.Transaction
-	GetTxnByCount(num int) (map[Uint256]*transaction.Transaction, error)
-	GetTransaction(hash Uint256) *transaction.Transaction
+	GetAllTransactionLists() map[common.Uint160][]*transaction.Transaction
+	GetTxnByCount(num int) (map[common.Uint256]*transaction.Transaction, error)
+	GetTransaction(hash common.Uint256) *transaction.Transaction
 	AppendTxnPool(txn *transaction.Transaction) error
 	CleanSubmittedTransactions(txns []*transaction.Transaction) error
 }
@@ -49,7 +49,7 @@ func (tc *TxnCollector) Collect() (*TxnCollection, error) {
 	return collection, nil
 }
 
-func (tc *TxnCollector) GetTransaction(hash Uint256) *transaction.Transaction {
+func (tc *TxnCollector) GetTransaction(hash common.Uint256) *transaction.Transaction {
 	return tc.TxnSource.GetTransaction(hash)
 }
 
@@ -70,11 +70,11 @@ func (s sortTxnsByPriceSize) Less(i, j int) bool {
 }
 
 type TxnCollection struct {
-	txns map[Uint160][]*transaction.Transaction
+	txns map[common.Uint160][]*transaction.Transaction
 	tops []*transaction.Transaction
 }
 
-func NewTxnCollection(txnLists map[Uint160][]*transaction.Transaction) *TxnCollection {
+func NewTxnCollection(txnLists map[common.Uint160][]*transaction.Transaction) *TxnCollection {
 	tops := make([]*transaction.Transaction, 0)
 	for addr, txnList := range txnLists {
 		tops = append(tops, txnList[0])

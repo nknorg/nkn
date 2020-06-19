@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/nknorg/nkn/api/common"
+	api "github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/httpjson/client"
-	. "github.com/nknorg/nkn/cmd/nknc/common"
-	. "github.com/nknorg/nkn/common"
+	nknc "github.com/nknorg/nkn/cmd/nknc/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/password"
 	"github.com/nknorg/nkn/vault"
@@ -20,9 +20,9 @@ const (
 	RANDBYTELEN = 4
 )
 
-func parseAddress(c *cli.Context) Uint160 {
+func parseAddress(c *cli.Context) common.Uint160 {
 	if address := c.String("to"); address != "" {
-		pg, err := ToScriptHash(address)
+		pg, err := common.ToScriptHash(address)
 		if err != nil {
 			fmt.Println("invalid receiver address")
 			os.Exit(1)
@@ -31,7 +31,7 @@ func parseAddress(c *cli.Context) Uint160 {
 	}
 	fmt.Println("missing flag [--to]")
 	os.Exit(1)
-	return EmptyUint160
+	return common.EmptyUint160
 }
 
 func assetAction(c *cli.Context) error {
@@ -46,13 +46,13 @@ func assetAction(c *cli.Context) error {
 		return nil
 	}
 
-	var txnFee Fixed64
+	var txnFee common.Fixed64
 	fee := c.String("fee")
 	var err error
 	if fee == "" {
-		txnFee = Fixed64(0)
+		txnFee = common.Fixed64(0)
 	} else {
-		txnFee, err = StringToFixed64(fee)
+		txnFee, err = common.StringToFixed64(fee)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -84,7 +84,7 @@ func assetAction(c *cli.Context) error {
 			return nil
 		}
 
-		totalSupply, err := StringToFixed64(value)
+		totalSupply, err := common.StringToFixed64(value)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -96,7 +96,7 @@ func assetAction(c *cli.Context) error {
 			fmt.Fprintln(os.Stderr, err)
 			return err
 		}
-		txn, err := MakeIssueAssetTransaction(myWallet, name, symbol, totalSupply, precision, nonce, txnFee)
+		txn, err := api.MakeIssueAssetTransaction(myWallet, name, symbol, totalSupply, precision, nonce, txnFee)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -108,7 +108,7 @@ func assetAction(c *cli.Context) error {
 			return err
 		}
 
-		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		resp, err = client.Call(nknc.Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -122,13 +122,13 @@ func assetAction(c *cli.Context) error {
 			os.Exit(1)
 		}
 		receipt := parseAddress(c)
-		amount, err := StringToFixed64(value)
+		amount, err := common.StringToFixed64(value)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
 		}
 
-		txn, err := MakeTransferTransaction(myWallet, receipt, nonce, amount, txnFee)
+		txn, err := api.MakeTransferTransaction(myWallet, receipt, nonce, amount, txnFee)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -140,7 +140,7 @@ func assetAction(c *cli.Context) error {
 			return err
 		}
 
-		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		resp, err = client.Call(nknc.Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -150,7 +150,7 @@ func assetAction(c *cli.Context) error {
 		return nil
 	}
 
-	FormatOutput(resp)
+	nknc.FormatOutput(resp)
 
 	return nil
 }
@@ -212,7 +212,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: assetAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "asset")
+			nknc.PrintError(c, err, "asset")
 			return cli.NewExitError("", 1)
 		},
 	}

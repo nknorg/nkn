@@ -17,11 +17,11 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/api/common"
+	api "github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/websocket/messagebuffer"
 	"github.com/nknorg/nkn/api/websocket/session"
 	"github.com/nknorg/nkn/chain"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/node"
@@ -46,7 +46,7 @@ const (
 )
 
 type Handler struct {
-	handler  common.Handler
+	handler  api.Handler
 	pushFlag bool
 }
 
@@ -64,7 +64,7 @@ type WsServer struct {
 	wallet                *vault.Wallet
 	messageBuffer         *messagebuffer.MessageBuffer
 	messageDeliveredCache *DelayedChan
-	sigChainCache         Cache
+	sigChainCache         common.Cache
 }
 
 func InitWsServer(localNode *node.LocalNode, wallet *vault.Wallet) *WsServer {
@@ -76,7 +76,7 @@ func InitWsServer(localNode *node.LocalNode, wallet *vault.Wallet) *WsServer {
 		wallet:                wallet,
 		messageBuffer:         messagebuffer.NewMessageBuffer(),
 		messageDeliveredCache: NewDelayedChan(messageDeliveredCacheSize, pongTimeout),
-		sigChainCache:         NewGoCache(sigChainCacheExpiration, sigChainCacheCleanupInterval),
+		sigChainCache:         common.NewGoCache(sigChainCacheExpiration, sigChainCacheCleanupInterval),
 	}
 	return ws
 }
@@ -120,38 +120,38 @@ func (ws *WsServer) Start() error {
 }
 
 func (ws *WsServer) registryMethod() {
-	gettxhashmap := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
+	gettxhashmap := func(s api.Serverer, cmd map[string]interface{}) map[string]interface{} {
 		ws.Lock()
 		defer ws.Unlock()
-		resp := common.RespPacking(len(ws.TxHashMap), common.SUCCESS)
+		resp := api.RespPacking(len(ws.TxHashMap), api.SUCCESS)
 		return resp
 	}
 
-	heartbeat := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
-		return common.RespPacking(cmd["Userid"], common.SUCCESS)
+	heartbeat := func(s api.Serverer, cmd map[string]interface{}) map[string]interface{} {
+		return api.RespPacking(cmd["Userid"], api.SUCCESS)
 
 	}
 
-	getsessioncount := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
-		return common.RespPacking(ws.SessionList.GetSessionCount(), common.SUCCESS)
+	getsessioncount := func(s api.Serverer, cmd map[string]interface{}) map[string]interface{} {
+		return api.RespPacking(ws.SessionList.GetSessionCount(), api.SUCCESS)
 	}
 
-	setClient := func(s common.Serverer, cmd map[string]interface{}) map[string]interface{} {
+	setClient := func(s api.Serverer, cmd map[string]interface{}) map[string]interface{} {
 		addrStr, ok := cmd["Addr"].(string)
 		if !ok {
-			return common.RespPacking(nil, common.INVALID_PARAMS)
+			return api.RespPacking(nil, api.INVALID_PARAMS)
 		}
 
 		clientID, pubKey, _, err := address.ParseClientAddress(addrStr)
 		if err != nil {
 			log.Error("Parse client address error:", err)
-			return common.RespPacking(nil, common.INVALID_PARAMS)
+			return api.RespPacking(nil, api.INVALID_PARAMS)
 		}
 
 		err = crypto.CheckPublicKey(pubKey)
 		if err != nil {
 			log.Error("Invalid public key hex:", err)
-			return common.RespPacking(nil, common.INVALID_PARAMS)
+			return api.RespPacking(nil, api.INVALID_PARAMS)
 		}
 
 		// TODO: use signature (or better, with one-time challenge) to verify identity
@@ -171,18 +171,18 @@ func (ws *WsServer) registryMethod() {
 		}
 		if err != nil {
 			log.Errorf("Find websocket address error: %v", err)
-			return common.RespPacking(nil, common.INTERNAL_ERROR)
+			return api.RespPacking(nil, api.INTERNAL_ERROR)
 		}
 
 		if wsAddr != localAddr {
-			return common.RespPacking(common.NodeInfo(wsAddr, rpcAddr, pubkey, id), common.WRONG_NODE)
+			return api.RespPacking(api.NodeInfo(wsAddr, rpcAddr, pubkey, id), api.WRONG_NODE)
 		}
 
 		newSessionID := hex.EncodeToString(clientID)
 		session, err := ws.SessionList.ChangeSessionToClient(cmd["Userid"].(string), newSessionID)
 		if err != nil {
 			log.Error("Change session id error: ", err)
-			return common.RespPacking(nil, common.INTERNAL_ERROR)
+			return api.RespPacking(nil, api.INTERNAL_ERROR)
 		}
 		session.SetClient(clientID, pubKey, &addrStr, isTlsClient)
 
@@ -203,10 +203,10 @@ func (ws *WsServer) registryMethod() {
 		}
 
 		res := make(map[string]interface{})
-		res["node"] = common.NodeInfo(wsAddr, rpcAddr, pubkey, id)
+		res["node"] = api.NodeInfo(wsAddr, rpcAddr, pubkey, id)
 		res["sigChainBlockHash"] = hex.EncodeToString(sigChainBlockHash.ToArray())
 
-		return common.RespPacking(res, common.SUCCESS)
+		return api.RespPacking(res, api.SUCCESS)
 	}
 
 	actionMap := map[string]Handler{
@@ -216,7 +216,7 @@ func (ws *WsServer) registryMethod() {
 		"setClient":       {handler: setClient},
 	}
 
-	for name, handler := range common.InitialAPIHandlers {
+	for name, handler := range api.InitialAPIHandlers {
 		if handler.IsAccessableByWebsocket() {
 			actionMap[name] = Handler{handler: handler.Handler}
 		}
@@ -378,24 +378,24 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 	var req = make(map[string]interface{})
 
 	if err := json.Unmarshal(bysMsg, &req); err != nil {
-		resp := common.ResponsePack(common.ILLEGAL_DATAFORMAT)
+		resp := api.ResponsePack(api.ILLEGAL_DATAFORMAT)
 		ws.respondToSession(curSession, resp)
 		return fmt.Errorf("websocket OnDataHandle: %v", err)
 	}
 	actionName, ok := req["Action"].(string)
 	if !ok {
-		resp := common.ResponsePack(common.INVALID_METHOD)
+		resp := api.ResponsePack(api.INVALID_METHOD)
 		ws.respondToSession(curSession, resp)
 		return nil
 	}
 	action, ok := ws.ActionMap[actionName]
 	if !ok {
-		resp := common.ResponsePack(common.INVALID_METHOD)
+		resp := api.ResponsePack(api.INVALID_METHOD)
 		ws.respondToSession(curSession, resp)
 		return nil
 	}
 	if !ws.IsValidMsg(req) {
-		resp := common.ResponsePack(common.INVALID_PARAMS)
+		resp := api.ResponsePack(api.INVALID_PARAMS)
 		ws.respondToSession(curSession, resp)
 		return nil
 	}
@@ -408,7 +408,7 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 	req["Userid"] = curSession.GetSessionId()
 	req["IsTls"] = r.TLS != nil
 	ret := action.handler(ws, req)
-	resp := common.ResponsePack(ret["error"].(common.ErrCode))
+	resp := api.ResponsePack(ret["error"].(api.ErrCode))
 	resp["Action"] = actionName
 	resp["Result"] = ret["resultOrData"]
 	if txHash, ok := resp["Result"].(string); ok && action.pushFlag {
@@ -438,7 +438,7 @@ func (ws *WsServer) deleteTxHashs(sSessionId string) {
 }
 
 func (ws *WsServer) respondToSession(session *session.Session, resp map[string]interface{}) {
-	resp["Desc"] = common.ErrMessage[resp["Error"].(common.ErrCode)]
+	resp["Desc"] = api.ErrMessage[resp["Error"].(api.ErrCode)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Error("Websocket response:", err)
@@ -470,7 +470,7 @@ func (ws *WsServer) PushTxResult(txHashStr string, resp map[string]interface{}) 
 }
 
 func (ws *WsServer) PushResult(resp map[string]interface{}) {
-	resp["Desc"] = common.ErrMessage[resp["Error"].(common.ErrCode)]
+	resp["Desc"] = api.ErrMessage[resp["Error"].(api.ErrCode)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Error("Websocket PushResult:", err)
@@ -545,8 +545,8 @@ func (ws *WsServer) NotifyWrongClients() {
 		}
 
 		if wsAddr != localAddr {
-			resp := common.ResponsePack(common.WRONG_NODE)
-			resp["Result"] = common.NodeInfo(wsAddr, rpcAddr, pubkey, id)
+			resp := api.ResponsePack(api.WRONG_NODE)
+			resp["Result"] = api.NodeInfo(wsAddr, rpcAddr, pubkey, id)
 			ws.respondToSession(client, resp)
 		}
 	})

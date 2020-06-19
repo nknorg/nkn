@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/nknorg/nkn/api/httpjson/client"
-	. "github.com/nknorg/nkn/cmd/nknc/common"
-	. "github.com/nknorg/nkn/common"
+	nknc "github.com/nknorg/nkn/cmd/nknc/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/util/password"
@@ -78,7 +78,7 @@ func walletAction(c *cli.Context) error {
 
 	// create wallet
 	if c.Bool("create") {
-		if FileExisted(name) {
+		if common.FileExisted(name) {
 			fmt.Printf("CAUTION: '%s' already exists!\n", name)
 			os.Exit(1)
 		} else {
@@ -113,31 +113,31 @@ func walletAction(c *cli.Context) error {
 			case "balance":
 				account, _ := wallet.GetDefaultAccount()
 				address, _ := account.ProgramHash.ToAddress()
-				resp, err := client.Call(Address(), "getbalancebyaddr", 0, map[string]interface{}{"address": address})
+				resp, err := client.Call(nknc.Address(), "getbalancebyaddr", 0, map[string]interface{}{"address": address})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					return err
 				}
-				FormatOutput(resp)
+				nknc.FormatOutput(resp)
 			case "nonce":
 				account, _ := wallet.GetDefaultAccount()
 				address, _ := account.ProgramHash.ToAddress()
-				resp, err := client.Call(Address(), "getnoncebyaddr", 0, map[string]interface{}{"address": address})
+				resp, err := client.Call(nknc.Address(), "getnoncebyaddr", 0, map[string]interface{}{"address": address})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					return err
 				}
-				FormatOutput(resp)
+				nknc.FormatOutput(resp)
 			case "id":
 				account, _ := wallet.GetDefaultAccount()
 				publicKey := account.PubKey()
 				pk := hex.EncodeToString(publicKey)
-				resp, err := client.Call(Address(), "getid", 0, map[string]interface{}{"publickey": pk})
+				resp, err := client.Call(nknc.Address(), "getid", 0, map[string]interface{}{"publickey": pk})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					return err
 				}
-				FormatOutput(resp)
+				nknc.FormatOutput(resp)
 			}
 		}
 		return nil
@@ -210,7 +210,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: walletAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "wallet")
+			nknc.PrintError(c, err, "wallet")
 			return cli.NewExitError("", 1)
 		},
 	}

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/nknorg/nkn/api/common"
+	api "github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/httpjson/client"
-	. "github.com/nknorg/nkn/cmd/nknc/common"
-	. "github.com/nknorg/nkn/common"
+	nknc "github.com/nknorg/nkn/cmd/nknc/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 
@@ -23,18 +23,18 @@ func subscribeAction(c *cli.Context) error {
 
 	walletName := c.String("wallet")
 	passwd := c.String("password")
-	myWallet, err := vault.OpenWallet(walletName, GetPassword(passwd))
+	myWallet, err := vault.OpenWallet(walletName, nknc.GetPassword(passwd))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	var txnFee Fixed64
+	var txnFee common.Fixed64
 	fee := c.String("fee")
 	if fee == "" {
-		txnFee = Fixed64(0)
+		txnFee = common.Fixed64(0)
 	} else {
-		txnFee, _ = StringToFixed64(fee)
+		txnFee, _ = common.StringToFixed64(fee)
 	}
 
 	nonce := c.Uint64("nonce")
@@ -62,9 +62,9 @@ func subscribeAction(c *cli.Context) error {
 			return nil
 		}
 
-		txn, _ := MakeSubscribeTransaction(myWallet, id, topic, uint32(duration), meta, nonce, txnFee)
+		txn, _ := api.MakeSubscribeTransaction(myWallet, id, topic, uint32(duration), meta, nonce, txnFee)
 		buff, _ := txn.Marshal()
-		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		resp, err = client.Call(nknc.Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	case c.Bool("unsub"):
 		id := c.String("identifier")
 		if id == "" {
@@ -78,9 +78,9 @@ func subscribeAction(c *cli.Context) error {
 			return nil
 		}
 
-		txn, _ := MakeUnsubscribeTransaction(myWallet, id, topic, nonce, txnFee)
+		txn, _ := api.MakeUnsubscribeTransaction(myWallet, id, topic, nonce, txnFee)
 		buff, _ := txn.Marshal()
-		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		resp, err = client.Call(nknc.Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	case c.Bool("get"):
 		topic := c.String("topic")
 		if topic == "" {
@@ -93,10 +93,10 @@ func subscribeAction(c *cli.Context) error {
 		if subscriber == "" { // get list of topic
 			params["offset"] = c.Uint64("offset")
 			params["limit"] = c.Uint64("limit")
-			resp, err = client.Call(Address(), "getsubscribers", 0, params)
+			resp, err = client.Call(nknc.Address(), "getsubscribers", 0, params)
 		} else { // get details of specified subscriber
 			params["subscriber"] = subscriber
-			resp, err = client.Call(Address(), "getsubscription", 0, params)
+			resp, err = client.Call(nknc.Address(), "getsubscription", 0, params)
 		}
 	default:
 		cli.ShowSubcommandHelp(c)
@@ -106,7 +106,7 @@ func subscribeAction(c *cli.Context) error {
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
-	FormatOutput(resp)
+	nknc.FormatOutput(resp)
 
 	return nil
 }
@@ -179,7 +179,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: subscribeAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "pubsub")
+			nknc.PrintError(c, err, "pubsub")
 			return cli.NewExitError("", 1)
 		},
 	}

@@ -424,7 +424,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "pruning",
-			Usage:       "state pruning mode: none, lowmem, inmem",
+			Usage:       "state pruning mode: none, lowmem",
 			Destination: &config.StatePruningMode,
 		},
 		cli.StringFlag{
