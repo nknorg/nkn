@@ -223,7 +223,7 @@ var (
 		WebGuiCreateWallet:           false,
 		PasswordFile:                 "",
 		RecentStateCount:             1024,
-		StatePruningMode:             "none",
+		StatePruningMode:             "lowmem",
 		RPCRateLimit:                 1024,
 		RPCRateBurst:                 4096,
 		SyncBlockHeaderRateLimit:     8192,
