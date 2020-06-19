@@ -308,7 +308,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		// sigchain txn should not be added to txn pool
 		return nil
 	case pb.NANO_PAY_TYPE:
-		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, 0); err != nil {
+		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
 			tp.blockValidationState.Reset()
 			return err
 		}
@@ -319,7 +319,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 			if err := tp.CleanBlockValidationState([]*transaction.Transaction{oldTxn}); err != nil {
 				return err
 			}
-			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, 0); err != nil {
+			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
 				tp.blockValidationState.Reset()
 				return err
 			}
@@ -349,7 +349,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 				return errors.New("nonce is not continuous")
 			}
 
-			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, 0); err != nil {
+			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
 				tp.blockValidationState.Reset()
 				return err
 			}

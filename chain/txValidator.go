@@ -582,7 +582,6 @@ func (bvs *BlockValidationState) GetSubscribersWithMeta(topic string) map[string
 
 // VerifyTransactionWithBlock verifies a transaction with current transaction pool in memory
 func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Transaction, height uint32) (e error) {
-	//1.check weather have duplicate transaction.
 	if _, exist := bvs.txnlist[txn.Hash()]; exist {
 		return errors.New("[VerifyTransactionWithBlock] duplicate transaction exist in block")
 	} else {
@@ -595,7 +594,6 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		}()
 	}
 
-	//3.check issue amount
 	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
 		return errors.New("[VerifyTransactionWithBlock] payload unpack error")
@@ -804,6 +802,10 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 
 func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.Transaction) error {
 	for _, txn := range txns {
+		if _, exist := bvs.txnlist[txn.Hash()]; !exist {
+			continue
+		}
+
 		delete(bvs.txnlist, txn.Hash())
 
 		payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
@@ -903,7 +905,7 @@ func (bvs *BlockValidationState) RefreshBlockValidationState(txns []*transaction
 	bvs.initBlockValidationState()
 	errMap := make(map[common.Uint256]error, 0)
 	for _, tx := range txns {
-		if err := bvs.VerifyTransactionWithBlock(tx, 0); err != nil {
+		if err := bvs.VerifyTransactionWithBlock(tx, DefaultLedger.Store.GetHeight()+1); err != nil {
 			errMap[tx.Hash()] = err
 		}
 	}
