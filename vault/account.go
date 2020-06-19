@@ -3,7 +3,7 @@ package vault
 import (
 	"fmt"
 
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/program"
 )
@@ -11,7 +11,7 @@ import (
 type Account struct {
 	PrivateKey  []byte
 	PublicKey   []byte
-	ProgramHash Uint160
+	ProgramHash common.Uint160
 }
 
 func NewAccount() (*Account, error) {

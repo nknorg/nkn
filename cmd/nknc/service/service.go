@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/nknorg/nkn/cmd/nknc/common"
+	nknc "github.com/nknorg/nkn/cmd/nknc/common"
 	"github.com/nknorg/nkn/util/log"
 	"github.com/urfave/cli"
 )
@@ -67,7 +67,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: serviceAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "service")
+			nknc.PrintError(c, err, "service")
 			return cli.NewExitError("", 1)
 		},
 	}

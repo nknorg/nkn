@@ -5,24 +5,24 @@ import (
 	"sync"
 
 	"github.com/nknorg/nkn/block"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/event"
 	"github.com/nknorg/nkn/util/log"
 )
 
 type Blockchain struct {
 	BlockHeight      uint32
-	AssetID          Uint256
-	BlockPersistTime map[Uint256]int64
+	AssetID          common.Uint256
+	BlockPersistTime map[common.Uint256]int64
 	mutex            sync.Mutex
 	muTime           sync.Mutex
 }
 
-func NewBlockchain(height uint32, asset Uint256) *Blockchain {
+func NewBlockchain(height uint32, asset common.Uint256) *Blockchain {
 	return &Blockchain{
 		BlockHeight:      height,
 		AssetID:          asset,
-		BlockPersistTime: make(map[Uint256]int64),
+		BlockPersistTime: make(map[common.Uint256]int64),
 	}
 }
 
@@ -64,7 +64,7 @@ func (bc *Blockchain) AddBlock(block *block.Block, fastAdd bool) error {
 	return nil
 }
 
-func (bc *Blockchain) GetHeader(hash Uint256) (*block.Header, error) {
+func (bc *Blockchain) GetHeader(hash common.Uint256) (*block.Header, error) {
 	header, err := DefaultLedger.Store.GetHeader(hash)
 	if err != nil {
 		return nil, err

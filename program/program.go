@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/pb"
 )
@@ -28,10 +28,10 @@ type ProgramContext struct {
 	Parameters []ProgramContextParameterType
 
 	//The program hash as address
-	ProgramHash Uint160
+	ProgramHash common.Uint160
 
 	//owner's pubkey hash indicate the owner of program
-	OwnerPubkeyHash Uint160
+	OwnerPubkeyHash common.Uint160
 }
 
 func (c *ProgramContext) Deserialize(r io.Reader) error {
@@ -105,11 +105,11 @@ func CreateSignatureProgramContext(ownerPubKey []byte) (*ProgramContext, error) 
 	if err != nil {
 		return nil, fmt.Errorf("[ProgramContext],CreateSignatureProgramContext failed: %v", err)
 	}
-	hash, err := ToCodeHash(ownerPubKey)
+	hash, err := common.ToCodeHash(ownerPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("[ProgramContext],CreateSignatureProgramContext failed: %v", err)
 	}
-	programHash, err := ToCodeHash(code)
+	programHash, err := common.ToCodeHash(code)
 	if err != nil {
 		return nil, fmt.Errorf("[ProgramContext],CreateSignatureProgramContext failed: %v", err)
 	}
@@ -131,14 +131,14 @@ func CreateSignatureProgramCode(pubKey []byte) ([]byte, error) {
 	return code.Bytes(), nil
 }
 
-func CreateProgramHash(pubKey []byte) (Uint160, error) {
+func CreateProgramHash(pubKey []byte) (common.Uint160, error) {
 	code, err := CreateSignatureProgramCode(pubKey)
 	if err != nil {
-		return Uint160{}, errors.New("CreateSignatureProgramCode failed")
+		return common.Uint160{}, errors.New("CreateSignatureProgramCode failed")
 	}
-	programHash, err := ToCodeHash(code)
+	programHash, err := common.ToCodeHash(code)
 	if err != nil {
-		return Uint160{}, errors.New("ToCodeHash failed")
+		return common.Uint160{}, errors.New("ToCodeHash failed")
 	}
 
 	return programHash, err
@@ -152,7 +152,7 @@ func GetPublicKeyFromCode(code []byte) ([]byte, error) {
 		return nil, fmt.Errorf("code length error, need 34, but got %v", len(code))
 	}
 
-	if code[0] != 32 && code[33] != 0xAC {
+	if code[0] != 32 && code[33] != CHECKSIG {
 		return nil, fmt.Errorf("code format error, need code[0]=32, code[33]=0xac, but got %v and %x", code[0], code[33])
 	}
 

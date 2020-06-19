@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/nknorg/nkn/api/httpjson/client"
-	. "github.com/nknorg/nkn/cmd/nknc/common"
+	nknc "github.com/nknorg/nkn/cmd/nknc/common"
 
 	"github.com/urfave/cli"
 )
@@ -33,7 +33,7 @@ func infoAction(c *cli.Context) (err error) {
 	var resp []byte
 	var output [][]byte
 	if height != -1 {
-		resp, err = client.Call(Address(), "getblock", 0, map[string]interface{}{"height": height})
+		resp, err = client.Call(nknc.Address(), "getblock", 0, map[string]interface{}{"height": height})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -49,7 +49,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if c.String("blockhash") != "" {
-		resp, err = client.Call(Address(), "getblock", 0, map[string]interface{}{"hash": blockhash})
+		resp, err = client.Call(nknc.Address(), "getblock", 0, map[string]interface{}{"hash": blockhash})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -65,7 +65,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if latestblockhash {
-		resp, err = client.Call(Address(), "getlatestblockhash", 0, map[string]interface{}{})
+		resp, err = client.Call(nknc.Address(), "getlatestblockhash", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -74,7 +74,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if blockcount {
-		resp, err = client.Call(Address(), "getblockcount", 0, map[string]interface{}{})
+		resp, err = client.Call(nknc.Address(), "getblockcount", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -83,7 +83,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if connections {
-		resp, err = client.Call(Address(), "getconnectioncount", 0, map[string]interface{}{})
+		resp, err = client.Call(nknc.Address(), "getconnectioncount", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -92,7 +92,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if neighbor {
-		resp, err := client.Call(Address(), "getneighbor", 0, map[string]interface{}{})
+		resp, err := client.Call(nknc.Address(), "getneighbor", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -101,7 +101,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if ring {
-		resp, err := client.Call(Address(), "getchordringinfo", 0, map[string]interface{}{})
+		resp, err := client.Call(nknc.Address(), "getchordringinfo", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -110,7 +110,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if state {
-		resp, err := client.Call(Address(), "getnodestate", 0, map[string]interface{}{})
+		resp, err := client.Call(nknc.Address(), "getnodestate", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -119,7 +119,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if txhash != "" {
-		resp, err = client.Call(Address(), "gettransaction", 0, map[string]interface{}{"hash": txhash})
+		resp, err = client.Call(nknc.Address(), "gettransaction", 0, map[string]interface{}{"hash": txhash})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -135,7 +135,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if version {
-		resp, err = client.Call(Address(), "getversion", 0, map[string]interface{}{})
+		resp, err = client.Call(nknc.Address(), "getversion", 0, map[string]interface{}{})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -145,7 +145,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if balance != "" {
-		resp, err := client.Call(Address(), "getbalancebyaddr", 0, map[string]interface{}{"address": balance})
+		resp, err := client.Call(nknc.Address(), "getbalancebyaddr", 0, map[string]interface{}{"address": balance})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -154,7 +154,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if nonce != "" {
-		resp, err := client.Call(Address(), "getnoncebyaddr", 0, map[string]interface{}{"address": nonce})
+		resp, err := client.Call(nknc.Address(), "getnoncebyaddr", 0, map[string]interface{}{"address": nonce})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -163,7 +163,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	if id != "" {
-		resp, err := client.Call(Address(), "getid", 0, map[string]interface{}{"publickey": id})
+		resp, err := client.Call(nknc.Address(), "getid", 0, map[string]interface{}{"publickey": id})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -172,7 +172,7 @@ func infoAction(c *cli.Context) (err error) {
 	}
 
 	for _, v := range output {
-		FormatOutput(v)
+		nknc.FormatOutput(v)
 	}
 
 	return nil
@@ -245,7 +245,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: infoAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "info")
+			nknc.PrintError(c, err, "info")
 			return cli.NewExitError("", 1)
 		},
 	}

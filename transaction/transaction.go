@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/program"
@@ -17,7 +17,7 @@ import (
 
 type Transaction struct {
 	*pb.Transaction
-	hash                *Uint256
+	hash                *common.Uint256
 	size                uint32
 	isSignatureVerified bool
 }
@@ -33,7 +33,7 @@ func (tx *Transaction) Unmarshal(buf []byte) error {
 	return proto.Unmarshal(buf, tx.Transaction)
 }
 
-func NewMsgTx(payload *pb.Payload, nonce uint64, fee Fixed64, attrs []byte) *pb.Transaction {
+func NewMsgTx(payload *pb.Payload, nonce uint64, fee common.Fixed64, attrs []byte) *pb.Transaction {
 	unsigned := &pb.UnsignedTx{
 		Payload:    payload,
 		Nonce:      nonce,
@@ -106,8 +106,8 @@ func (tx *Transaction) GetSize() uint32 {
 	return tx.size
 }
 
-func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
-	hashes := []Uint160{}
+func (tx *Transaction) GetProgramHashes() ([]common.Uint160, error) {
+	hashes := []common.Uint160{}
 
 	payload, err := Unpack(tx.UnsignedTx.Payload)
 	if err != nil {
@@ -117,13 +117,13 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 	switch tx.UnsignedTx.Payload.Type {
 	case pb.SIG_CHAIN_TXN_TYPE:
 		sender := payload.(*pb.SigChainTxn).Submitter
-		hashes = append(hashes, BytesToUint160(sender))
+		hashes = append(hashes, common.BytesToUint160(sender))
 	case pb.TRANSFER_ASSET_TYPE:
 		sender := payload.(*pb.TransferAsset).Sender
-		hashes = append(hashes, BytesToUint160(sender))
+		hashes = append(hashes, common.BytesToUint160(sender))
 	case pb.COINBASE_TYPE:
 		sender := payload.(*pb.Coinbase).Sender
-		hashes = append(hashes, BytesToUint160(sender))
+		hashes = append(hashes, common.BytesToUint160(sender))
 	case pb.REGISTER_NAME_TYPE:
 		publicKey := payload.(*pb.RegisterName).Registrant
 		programhash, err := program.CreateProgramHash(publicKey)
@@ -168,10 +168,10 @@ func (tx *Transaction) GetProgramHashes() ([]Uint160, error) {
 		hashes = append(hashes, programhash)
 	case pb.NANO_PAY_TYPE:
 		sender := payload.(*pb.NanoPay).Sender
-		hashes = append(hashes, BytesToUint160(sender))
+		hashes = append(hashes, common.BytesToUint160(sender))
 	case pb.ISSUE_ASSET_TYPE:
 		sender := payload.(*pb.IssueAsset).Sender
-		hashes = append(hashes, BytesToUint160(sender))
+		hashes = append(hashes, common.BytesToUint160(sender))
 	default:
 		return nil, errors.New("unsupport transaction type")
 	}
@@ -191,17 +191,17 @@ func (tx *Transaction) GetMessage() []byte {
 	return signature.GetHashData(tx)
 }
 
-func (tx *Transaction) Hash() Uint256 {
+func (tx *Transaction) Hash() common.Uint256 {
 	if tx.hash == nil {
 		d := signature.GetHashData(tx)
 		temp := sha256.Sum256([]byte(d))
-		f := Uint256(sha256.Sum256(temp[:]))
+		f := common.Uint256(sha256.Sum256(temp[:]))
 		tx.hash = &f
 	}
 	return *tx.hash
 }
 
-func HashToShortHash(hash Uint256, salt []byte, size uint32) []byte {
+func HashToShortHash(hash common.Uint256, salt []byte, size uint32) []byte {
 	shortHash := sha256.Sum256(append(hash[:], salt...))
 	if size > sha256.Size {
 		return shortHash[:]
@@ -213,7 +213,7 @@ func (tx *Transaction) ShortHash(salt []byte, size uint32) []byte {
 	return HashToShortHash(tx.Hash(), salt, size)
 }
 
-func (tx *Transaction) SetHash(hash Uint256) {
+func (tx *Transaction) SetHash(hash common.Uint256) {
 	tx.hash = &hash
 }
 
@@ -235,7 +235,7 @@ func (txn *Transaction) VerifySignature() error {
 	return nil
 }
 
-type byProgramHashes []Uint160
+type byProgramHashes []common.Uint160
 
 func (a byProgramHashes) Len() int      { return len(a) }
 func (a byProgramHashes) Swap(i, j int) { a[i], a[j] = a[j], a[i] }

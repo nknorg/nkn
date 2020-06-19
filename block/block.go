@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/crypto"
 	"github.com/nknorg/nkn/pb"
@@ -108,8 +108,8 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	var txhash Uint256
-	var tharray []Uint256
+	var txhash common.Uint256
+	var tharray []common.Uint256
 	for i = 0; i < Len; i++ {
 		txhash.Deserialize(r)
 		transaction := new(transaction.Transaction)
@@ -136,7 +136,7 @@ func (b *Block) ToArray() []byte {
 	return dt
 }
 
-func (b *Block) GetProgramHashes() ([]Uint160, error) {
+func (b *Block) GetProgramHashes() ([]common.Uint160, error) {
 
 	return b.Header.GetProgramHashes()
 }
@@ -150,7 +150,7 @@ func (b *Block) GetPrograms() []*pb.Program {
 	return b.Header.GetPrograms()
 }
 
-func (b *Block) Hash() Uint256 {
+func (b *Block) Hash() common.Uint256 {
 	return b.Header.Hash()
 }
 
@@ -158,7 +158,7 @@ func (b *Block) Verify() error {
 	return nil
 }
 
-func ComputeID(preBlockHash, txnHash Uint256, randomBeacon []byte) []byte {
+func ComputeID(preBlockHash, txnHash common.Uint256, randomBeacon []byte) []byte {
 	data := append(preBlockHash[:], txnHash[:]...)
 	data = append(data, randomBeacon...)
 	id := sha256.Sum256(data)
@@ -171,14 +171,14 @@ func GenesisBlockInit() (*Block, error) {
 		return nil, fmt.Errorf("parse GenesisBlockProposer error: %v", err)
 	}
 
-	genesisSignerID := ComputeID(EmptyUint256, EmptyUint256, config.GenesisBeacon[:config.RandomBeaconUniqueLength])
+	genesisSignerID := ComputeID(common.EmptyUint256, common.EmptyUint256, config.GenesisBeacon[:config.RandomBeaconUniqueLength])
 
 	// block header
 	genesisBlockHeader := &Header{
 		Header: &pb.Header{
 			UnsignedHeader: &pb.UnsignedHeader{
 				Version:       config.HeaderVersion,
-				PrevBlockHash: EmptyUint256.ToArray(),
+				PrevBlockHash: common.EmptyUint256.ToArray(),
 				Timestamp:     config.GenesisTimestamp,
 				Height:        uint32(0),
 				RandomBeacon:  config.GenesisBeacon,
@@ -188,15 +188,15 @@ func GenesisBlockInit() (*Block, error) {
 		},
 	}
 
-	rewardAddress, err := ToScriptHash(config.InitialIssueAddress)
+	rewardAddress, err := common.ToScriptHash(config.InitialIssueAddress)
 	if err != nil {
 		return nil, fmt.Errorf("parse InitialIssueAddress error: %v", err)
 	}
-	donationProgramhash, err := ToScriptHash(config.DonationAddress)
+	donationProgramhash, err := common.ToScriptHash(config.DonationAddress)
 	if err != nil {
 		return nil, fmt.Errorf("parse DonationAddress error: %v", err)
 	}
-	payload := transaction.NewCoinbase(donationProgramhash, rewardAddress, Fixed64(0))
+	payload := transaction.NewCoinbase(donationProgramhash, rewardAddress, common.Fixed64(0))
 	pl, err := transaction.Pack(pb.COINBASE_TYPE, payload)
 	if err != nil {
 		return nil, err
@@ -224,7 +224,7 @@ func GenesisBlockInit() (*Block, error) {
 
 func (b *Block) RebuildMerkleRoot() error {
 	txs := b.Transactions
-	transactionHashes := []Uint256{}
+	transactionHashes := []common.Uint256{}
 	for _, tx := range txs {
 		transactionHashes = append(transactionHashes, tx.Hash())
 	}

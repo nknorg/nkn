@@ -787,7 +787,7 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		balance := DefaultLedger.Store.GetBalance(sender)
 		totalAmount := bvs.totalAmount[sender]
 		if balance < totalAmount+amount+fee {
-			return errors.New("[VerifyTransactionWithBlock] not sufficient funds")
+			return fmt.Errorf("[VerifyTransactionWithBlock] not sufficient funds %v %v %v %v", balance, totalAmount, amount, fee)
 		}
 
 		defer func() {

@@ -5,12 +5,12 @@ import (
 	"errors"
 
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/transaction"
 	"github.com/nknorg/nkn/vault"
 )
 
-func MakeTransferTransaction(wallet *vault.Wallet, receipt Uint160, nonce uint64, value, fee Fixed64) (*transaction.Transaction, error) {
+func MakeTransferTransaction(wallet *vault.Wallet, receipt common.Uint160, nonce uint64, value, fee common.Fixed64) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func MakeSigChainTransaction(wallet *vault.Wallet, sigChain []byte, nonce uint64
 	return txn, nil
 }
 
-func MakeRegisterNameTransaction(wallet *vault.Wallet, name string, nonce uint64, regFee Fixed64, fee Fixed64) (*transaction.Transaction, error) {
+func MakeRegisterNameTransaction(wallet *vault.Wallet, name string, nonce uint64, regFee common.Fixed64, fee common.Fixed64) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func MakeRegisterNameTransaction(wallet *vault.Wallet, name string, nonce uint64
 	return txn, nil
 }
 
-func MakeTransferNameTransaction(wallet *vault.Wallet, name string, nonce uint64, fee Fixed64, to []byte) (*transaction.Transaction, error) {
+func MakeTransferNameTransaction(wallet *vault.Wallet, name string, nonce uint64, fee common.Fixed64, to []byte) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func MakeTransferNameTransaction(wallet *vault.Wallet, name string, nonce uint64
 	return txn, nil
 }
 
-func MakeDeleteNameTransaction(wallet *vault.Wallet, name string, nonce uint64, fee Fixed64) (*transaction.Transaction, error) {
+func MakeDeleteNameTransaction(wallet *vault.Wallet, name string, nonce uint64, fee common.Fixed64) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func MakeDeleteNameTransaction(wallet *vault.Wallet, name string, nonce uint64, 
 	return txn, nil
 }
 
-func MakeSubscribeTransaction(wallet *vault.Wallet, identifier string, topic string, duration uint32, meta string, nonce uint64, fee Fixed64) (*transaction.Transaction, error) {
+func MakeSubscribeTransaction(wallet *vault.Wallet, identifier string, topic string, duration uint32, meta string, nonce uint64, fee common.Fixed64) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -130,7 +130,7 @@ func MakeSubscribeTransaction(wallet *vault.Wallet, identifier string, topic str
 	return txn, nil
 }
 
-func MakeUnsubscribeTransaction(wallet *vault.Wallet, identifier string, topic string, nonce uint64, fee Fixed64) (*transaction.Transaction, error) {
+func MakeUnsubscribeTransaction(wallet *vault.Wallet, identifier string, topic string, nonce uint64, fee common.Fixed64) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func MakeUnsubscribeTransaction(wallet *vault.Wallet, identifier string, topic s
 	return txn, nil
 }
 
-func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee Fixed64, nonce uint64, txnFee Fixed64, maxTxnHash Uint256) (*transaction.Transaction, error) {
+func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee common.Fixed64, nonce uint64, txnFee common.Fixed64, maxTxnHash common.Uint256) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee
 	pubkey := account.PubKey()
 
 	var txn *transaction.Transaction
-	var txnHash Uint256
+	var txnHash common.Uint256
 	var i uint64
 	maxUint64 := ^uint64(0)
 	for i = uint64(0); i < maxUint64; i++ {
@@ -192,7 +192,7 @@ func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee
 	return txn, nil
 }
 
-func MakeNanoPayTransaction(wallet *vault.Wallet, recipient Uint160, id uint64, amount Fixed64, txnExpiration, nanoPayExpiration uint32) (*transaction.Transaction, error) {
+func MakeNanoPayTransaction(wallet *vault.Wallet, recipient common.Uint160, id uint64, amount common.Fixed64, txnExpiration, nanoPayExpiration uint32) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -213,7 +213,7 @@ func MakeNanoPayTransaction(wallet *vault.Wallet, recipient Uint160, id uint64, 
 	return txn, nil
 }
 
-func MakeIssueAssetTransaction(wallet *vault.Wallet, name, symbol string, totalSupply Fixed64, precision uint32, nonce uint64, fee Fixed64) (*transaction.Transaction, error) {
+func MakeIssueAssetTransaction(wallet *vault.Wallet, name, symbol string, totalSupply common.Fixed64, precision uint32, nonce uint64, fee common.Fixed64) (*transaction.Transaction, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err

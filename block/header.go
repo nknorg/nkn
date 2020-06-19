@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/proto"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/common/serialization"
 	"github.com/nknorg/nkn/pb"
 	"github.com/nknorg/nkn/program"
@@ -17,7 +17,7 @@ import (
 
 type Header struct {
 	*pb.Header
-	hash *Uint256
+	hash *common.Uint256
 }
 
 func (h *Header) Marshal() (buf []byte, err error) {
@@ -62,8 +62,8 @@ func (h *Header) DeserializeUnsigned(r io.Reader) error {
 	return nil
 }
 
-func (h *Header) GetProgramHashes() ([]Uint160, error) {
-	programHashes := []Uint160{}
+func (h *Header) GetProgramHashes() ([]common.Uint160, error) {
+	programHashes := []common.Uint160{}
 
 	programHash, err := program.CreateProgramHash(h.UnsignedHeader.SignerPk)
 	if err != nil {
@@ -82,14 +82,14 @@ func (h *Header) GetPrograms() []*pb.Program {
 	return nil
 }
 
-func (h *Header) Hash() Uint256 {
+func (h *Header) Hash() common.Uint256 {
 	if h.hash != nil {
 		return *h.hash
 	}
 	d := signature.GetHashData(h)
 	temp := sha256.Sum256([]byte(d))
 	f := sha256.Sum256(temp[:])
-	hash := Uint256(f)
+	hash := common.Uint256(f)
 	h.hash = &hash
 	return hash
 }

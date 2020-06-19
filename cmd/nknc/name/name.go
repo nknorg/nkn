@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/nknorg/nkn/api/common"
+	api "github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/httpjson/client"
-	. "github.com/nknorg/nkn/cmd/nknc/common"
-	. "github.com/nknorg/nkn/common"
+	nknc "github.com/nknorg/nkn/cmd/nknc/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 
@@ -23,26 +23,26 @@ func nameAction(c *cli.Context) error {
 
 	walletName := c.String("wallet")
 	passwd := c.String("password")
-	myWallet, err := vault.OpenWallet(walletName, GetPassword(passwd))
+	myWallet, err := vault.OpenWallet(walletName, nknc.GetPassword(passwd))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	var txnFee Fixed64
+	var txnFee common.Fixed64
 	fee := c.String("fee")
 	if fee == "" {
-		txnFee = Fixed64(0)
+		txnFee = common.Fixed64(0)
 	} else {
-		txnFee, _ = StringToFixed64(fee)
+		txnFee, _ = common.StringToFixed64(fee)
 	}
 
 	regFeeString := c.String("regfee")
-	var regFee Fixed64
+	var regFee common.Fixed64
 	if regFeeString == "" {
-		regFee = Fixed64(0)
+		regFee = common.Fixed64(0)
 	} else {
-		regFee, _ = StringToFixed64(regFeeString)
+		regFee, _ = common.StringToFixed64(regFeeString)
 	}
 
 	nonce := c.Uint64("nonce")
@@ -55,9 +55,9 @@ func nameAction(c *cli.Context) error {
 			fmt.Println("name is required with [--name]")
 			return nil
 		}
-		txn, _ := MakeRegisterNameTransaction(myWallet, name, nonce, regFee, txnFee)
+		txn, _ := api.MakeRegisterNameTransaction(myWallet, name, nonce, regFee, txnFee)
 		buff, _ := txn.Marshal()
-		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		resp, err = client.Call(nknc.Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	case c.Bool("transfer"):
 		name := c.String("name")
 		if name == "" {
@@ -74,9 +74,9 @@ func nameAction(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		txn, _ := MakeTransferNameTransaction(myWallet, name, nonce, txnFee, toBytes)
+		txn, _ := api.MakeTransferNameTransaction(myWallet, name, nonce, txnFee, toBytes)
 		buff, _ := txn.Marshal()
-		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		resp, err = client.Call(nknc.Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	case c.Bool("del"):
 		name := c.String("name")
 		if name == "" {
@@ -84,16 +84,16 @@ func nameAction(c *cli.Context) error {
 			return nil
 		}
 
-		txn, _ := MakeDeleteNameTransaction(myWallet, name, nonce, txnFee)
+		txn, _ := api.MakeDeleteNameTransaction(myWallet, name, nonce, txnFee)
 		buff, _ := txn.Marshal()
-		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		resp, err = client.Call(nknc.Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 	case c.Bool("get"):
 		name := c.String("name")
 		if name == "" {
 			fmt.Println("name is required with [--name]")
 			return nil
 		}
-		resp, err = client.Call(Address(), "getregistrant", 0, map[string]interface{}{"name": name})
+		resp, err = client.Call(nknc.Address(), "getregistrant", 0, map[string]interface{}{"name": name})
 	default:
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -102,7 +102,7 @@ func nameAction(c *cli.Context) error {
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
-	FormatOutput(resp)
+	nknc.FormatOutput(resp)
 
 	return nil
 }
@@ -163,7 +163,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: nameAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "name")
+			nknc.PrintError(c, err, "name")
 			return cli.NewExitError("", 1)
 		},
 	}

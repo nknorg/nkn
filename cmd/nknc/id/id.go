@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/nknorg/nkn/api/common"
+	api "github.com/nknorg/nkn/api/common"
 	"github.com/nknorg/nkn/api/httpjson/client"
-	. "github.com/nknorg/nkn/cmd/nknc/common"
-	. "github.com/nknorg/nkn/common"
+	nknc "github.com/nknorg/nkn/cmd/nknc/common"
+	"github.com/nknorg/nkn/common"
 	"github.com/nknorg/nkn/util/config"
 	"github.com/nknorg/nkn/vault"
 
@@ -24,26 +24,26 @@ func generateIDAction(c *cli.Context) error {
 
 	walletName := c.String("wallet")
 	passwd := c.String("password")
-	myWallet, err := vault.OpenWallet(walletName, GetPassword(passwd))
+	myWallet, err := vault.OpenWallet(walletName, nknc.GetPassword(passwd))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	var txnFee Fixed64
+	var txnFee common.Fixed64
 	fee := c.String("fee")
 	if fee == "" {
-		txnFee = Fixed64(0)
+		txnFee = common.Fixed64(0)
 	} else {
-		txnFee, _ = StringToFixed64(fee)
+		txnFee, _ = common.StringToFixed64(fee)
 	}
 
-	var regFee Fixed64
+	var regFee common.Fixed64
 	fee = c.String("regfee")
 	if fee == "" {
-		regFee = Fixed64(0)
+		regFee = common.Fixed64(0)
 	} else {
-		regFee, _ = StringToFixed64(fee)
+		regFee, _ = common.StringToFixed64(fee)
 	}
 
 	nonce := c.Uint64("nonce")
@@ -61,7 +61,7 @@ func generateIDAction(c *cli.Context) error {
 			return err
 		}
 
-		remoteNonce, height, err := client.GetNonceByAddr(Address(), walletAddr)
+		remoteNonce, height, err := client.GetNonceByAddr(nknc.Address(), walletAddr)
 		if err != nil {
 			return err
 		}
@@ -70,9 +70,9 @@ func generateIDAction(c *cli.Context) error {
 			nonce = remoteNonce
 		}
 
-		txn, _ := MakeGenerateIDTransaction(context.Background(), myWallet, regFee, nonce, txnFee, config.MaxGenerateIDTxnHash.GetValueAtHeight(height+1))
+		txn, _ := api.MakeGenerateIDTransaction(context.Background(), myWallet, regFee, nonce, txnFee, config.MaxGenerateIDTxnHash.GetValueAtHeight(height+1))
 		buff, _ := txn.Marshal()
-		resp, err = client.Call(Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
+		resp, err = client.Call(nknc.Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -81,7 +81,7 @@ func generateIDAction(c *cli.Context) error {
 		cli.ShowSubcommandHelp(c)
 		return nil
 	}
-	FormatOutput(resp)
+	nknc.FormatOutput(resp)
 
 	return nil
 }
@@ -123,7 +123,7 @@ func NewCommand() *cli.Command {
 		},
 		Action: generateIDAction,
 		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			PrintError(c, err, "id")
+			nknc.PrintError(c, err, "id")
 			return cli.NewExitError("", 1)
 		},
 	}

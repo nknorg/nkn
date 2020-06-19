@@ -3,7 +3,7 @@ package store
 import (
 	"github.com/nknorg/nkn/chain/db"
 	"github.com/nknorg/nkn/chain/trie"
-	. "github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/common"
 )
 
 const (
@@ -15,8 +15,8 @@ type ITrie interface {
 	TryUpdate(key, value []byte) error
 	TryDelete(key []byte) error
 	TryTraverse() error
-	Hash() Uint256
-	CommitTo() (Uint256, error)
+	Hash() common.Uint256
+	CommitTo() (common.Uint256, error)
 	NodeIterator(start []byte) trie.NodeIterator
 	NewRefCounts(refCountTargetHeight, pruningTargetHeight uint32) (*trie.RefCounts, error)
 }
@@ -30,7 +30,7 @@ func NewTrieStore(db db.IStore) *cachingDB {
 	return &cachingDB{db: db}
 }
 
-func (db *cachingDB) OpenTrie(root Uint256) (ITrie, error) {
+func (db *cachingDB) OpenTrie(root common.Uint256) (ITrie, error) {
 	for i := len(db.pastTries) - 1; i >= 0; i-- {
 		h := db.pastTries[i].Hash()
 		if h.CompareTo(root) == 0 {
@@ -58,10 +58,10 @@ type cachedTrie struct {
 	*cachingDB
 }
 
-func (c cachedTrie) CommitTo() (Uint256, error) {
+func (c cachedTrie) CommitTo() (common.Uint256, error) {
 	root, err := c.Trie.CommitTo(c.cachingDB.db)
 	if err != nil {
-		return Uint256{}, err
+		return common.Uint256{}, err
 	}
 	c.cachingDB.pushTrie(c.Trie)
 	return root, nil
