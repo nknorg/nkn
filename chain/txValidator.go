@@ -506,6 +506,8 @@ type BlockValidationState struct {
 	subscriptionCount       map[string]int
 	subscriptionCountChange map[string]int
 	nanoPays                map[nanoPay]struct{}
+	nanoPayAmount           map[common.Uint160]common.Fixed64
+	nanoPayPayloads         map[common.Uint256]*pb.NanoPay
 
 	changes []func()
 }
@@ -526,6 +528,8 @@ func (bvs *BlockValidationState) initBlockValidationState() {
 	bvs.subscriptionCount = make(map[string]int, 0)
 	bvs.subscriptionCountChange = make(map[string]int, 0)
 	bvs.nanoPays = make(map[nanoPay]struct{}, 0)
+	bvs.nanoPayAmount = make(map[common.Uint160]common.Fixed64, 0)
+	bvs.nanoPayPayloads = make(map[common.Uint256]*pb.NanoPay, 0)
 }
 
 func (bvs *BlockValidationState) Close() {
@@ -537,6 +541,8 @@ func (bvs *BlockValidationState) Close() {
 	bvs.subscriptions = nil
 	bvs.subscriptionCount = nil
 	bvs.nanoPays = nil
+	bvs.nanoPayAmount = nil
+	bvs.nanoPayPayloads = nil
 }
 
 func (bvs *BlockValidationState) addChange(change func()) {
@@ -604,7 +610,8 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		return err
 	}
 	sender := pg[0]
-	var amount common.Fixed64
+
+	var amount, npAmount common.Fixed64
 	fee := common.Fixed64(txn.UnsignedTx.Fee)
 
 	switch txn.UnsignedTx.Payload.Type {
@@ -768,12 +775,18 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		if err != nil {
 			return err
 		}
-		amount = common.Fixed64(npPayload.Amount) - channelBalance
+
+		if common.Fixed64(npPayload.Amount) <= channelBalance {
+			return errors.New("invalid nanopay amount")
+		}
+
+		npAmount = common.Fixed64(npPayload.Amount) - channelBalance
 
 		defer func() {
 			if e == nil {
 				bvs.addChange(func() {
 					bvs.nanoPays[key] = struct{}{}
+					bvs.nanoPayPayloads[txn.Hash()] = npPayload
 				})
 			}
 		}()
@@ -781,17 +794,17 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 	case pb.ISSUE_ASSET_TYPE:
 	}
 
-	if amount > 0 || fee > 0 {
+	if amount+npAmount+fee > 0 {
 		balance := DefaultLedger.Store.GetBalance(sender)
-		totalAmount := bvs.totalAmount[sender]
-		if balance < totalAmount+amount+fee {
-			return fmt.Errorf("[VerifyTransactionWithBlock] not sufficient funds %v %v %v %v", balance, totalAmount, amount, fee)
+		if balance < bvs.totalAmount[sender]+bvs.nanoPayAmount[sender]+amount+npAmount+fee {
+			return errors.New("not sufficient funds")
 		}
 
 		defer func() {
 			if e == nil {
 				bvs.addChange(func() {
-					bvs.totalAmount[sender] = totalAmount + amount + fee
+					bvs.totalAmount[sender] += amount + fee
+					bvs.nanoPayAmount[sender] += npAmount
 				})
 			}
 		}()
@@ -834,12 +847,10 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 
 			registrant := hex.EncodeToString(namePayload.Registrant)
 			delete(bvs.nameRegistrants, registrant)
-
 		case pb.TRANSFER_NAME_TYPE:
 			namePayload := payload.(*pb.TransferName)
 			name := namePayload.Name
 			delete(bvs.registeredNames, name)
-
 		case pb.DELETE_NAME_TYPE:
 			namePayload := payload.(*pb.DeleteName)
 
@@ -874,27 +885,47 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 				bvs.subscriptionCount[topic]++
 			}
 		case pb.GENERATE_ID_TYPE:
-			generateIdPayload := payload.(*pb.GenerateID)
-			amount = common.Fixed64(generateIdPayload.RegistrationFee)
-			publicKey := hex.EncodeToString(generateIdPayload.PublicKey)
+			generateIDPayload := payload.(*pb.GenerateID)
+			amount = common.Fixed64(generateIDPayload.RegistrationFee)
+			publicKey := hex.EncodeToString(generateIDPayload.PublicKey)
 			delete(bvs.generateIDs, publicKey)
 		case pb.NANO_PAY_TYPE:
 			npPayload := payload.(*pb.NanoPay)
 			key := nanoPay{hex.EncodeToString(npPayload.Sender), hex.EncodeToString(npPayload.Recipient), npPayload.Id}
 			delete(bvs.nanoPays, key)
+			delete(bvs.nanoPayPayloads, txn.Hash())
 		case pb.ISSUE_ASSET_TYPE:
 		}
 
 		if amount > 0 || fee > 0 {
 			if _, ok := bvs.totalAmount[sender]; ok && bvs.totalAmount[sender] >= amount+fee {
 				bvs.totalAmount[sender] -= amount + fee
-
 				if bvs.totalAmount[sender] == 0 {
 					delete(bvs.totalAmount, sender)
 				}
 			} else {
-				return errors.New("[CleanSubmittedTransactions] inconsistent block validation state")
+				return errors.New("inconsistent block validation state")
 			}
+		}
+	}
+
+	if len(bvs.nanoPayAmount) > 0 {
+		bvs.nanoPayAmount = make(map[common.Uint160]common.Fixed64, len(bvs.nanoPayAmount))
+		for _, npPayload := range bvs.nanoPayPayloads {
+			channelBalance, _, err := DefaultLedger.Store.GetNanoPay(
+				common.BytesToUint160(npPayload.Sender),
+				common.BytesToUint160(npPayload.Recipient),
+				npPayload.Id,
+			)
+			if err != nil {
+				return err
+			}
+
+			if common.Fixed64(npPayload.Amount) <= channelBalance {
+				return errors.New("inconsistent block validation state")
+			}
+
+			bvs.nanoPayAmount[common.BytesToUint160(npPayload.Sender)] += common.Fixed64(npPayload.Amount) - channelBalance
 		}
 	}
 
