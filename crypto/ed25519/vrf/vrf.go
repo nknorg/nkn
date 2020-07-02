@@ -24,8 +24,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/nknorg/nkn/crypto/ed25519/edwards25519"
-	"github.com/nknorg/nkn/crypto/ed25519/extra25519"
+	"github.com/nknorg/nkn/v2/crypto/ed25519/edwards25519"
+	"github.com/nknorg/nkn/v2/crypto/ed25519/extra25519"
 
 	"golang.org/x/crypto/ed25519"
 )

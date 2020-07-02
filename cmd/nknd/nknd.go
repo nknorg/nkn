@@ -16,25 +16,25 @@ import (
 	"runtime"
 	"time"
 
-	api "github.com/nknorg/nkn/api/common"
-	"github.com/nknorg/nkn/api/httpjson"
-	"github.com/nknorg/nkn/api/httpjson/client"
-	"github.com/nknorg/nkn/api/websocket"
-	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/chain/store"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/consensus"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/dashboard"
-	serviceConfig "github.com/nknorg/nkn/dashboard/config"
-	"github.com/nknorg/nkn/node"
-	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/transaction"
-	"github.com/nknorg/nkn/util"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/util/password"
-	"github.com/nknorg/nkn/vault"
+	api "github.com/nknorg/nkn/v2/api/common"
+	"github.com/nknorg/nkn/v2/api/httpjson"
+	"github.com/nknorg/nkn/v2/api/httpjson/client"
+	"github.com/nknorg/nkn/v2/api/websocket"
+	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/chain/store"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/consensus"
+	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/dashboard"
+	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
+	"github.com/nknorg/nkn/v2/node"
+	"github.com/nknorg/nkn/v2/por"
+	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/nknorg/nkn/v2/util"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/nknorg/nkn/v2/util/password"
+	"github.com/nknorg/nkn/v2/vault"
 	"github.com/nknorg/nnet"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay"
@@ -371,7 +371,7 @@ func netVersion(timer *time.Timer) {
 				break
 			}
 			if verNum > NetVersionNum {
-				log.Fatal("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
+				log.Fatal("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/v2/releases")
 			}
 
 			timer.Reset(30 * time.Minute)

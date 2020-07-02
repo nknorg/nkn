@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/util/address"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/por"
+	"github.com/nknorg/nkn/v2/util/address"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 type sigChainInfo struct {

@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/dashboard/auth"
-	"github.com/nknorg/nkn/dashboard/helpers"
-	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/dashboard/auth"
+	"github.com/nknorg/nkn/v2/dashboard/helpers"
+	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/nknorg/nkn/v2/vault"
 )
 
 func StatusRouter(router *gin.RouterGroup) {

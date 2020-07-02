@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/transaction"
-	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/nknorg/nkn/v2/vault"
 )
 
 func MakeTransferTransaction(wallet *vault.Wallet, receipt common.Uint160, nonce uint64, value, fee common.Fixed64) (*transaction.Transaction, error) {

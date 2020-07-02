@@ -4,15 +4,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/nknorg/nkn/api/common"
-	"github.com/nknorg/nkn/api/websocket/server"
-	"github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/event"
-	"github.com/nknorg/nkn/node"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nkn/v2/api/common"
+	"github.com/nknorg/nkn/v2/api/websocket/server"
+	"github.com/nknorg/nkn/v2/block"
+	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/event"
+	"github.com/nknorg/nkn/v2/node"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/nknorg/nkn/v2/vault"
 )
 
 var ws *server.WsServer

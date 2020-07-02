@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 var privateIPBlocks []*net.IPNet

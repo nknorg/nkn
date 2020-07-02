@@ -1,6 +1,6 @@
 package config
 
-import "github.com/nknorg/nkn/common"
+import "github.com/nknorg/nkn/v2/common"
 
 type HeightDependentInt32 struct {
 	heights []uint32

@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/v2/common"
 )
 
 type WalletStore struct {

@@ -3,7 +3,7 @@ package consensus
 import (
 	"encoding/binary"
 
-	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/v2/common"
 )
 
 // heiheightToKey convert block height to byte array

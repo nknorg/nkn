@@ -3,7 +3,7 @@ package trie
 import (
 	"crypto/sha256"
 
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 func hexToCompact(hex []byte) []byte {

@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nknorg/nkn/dashboard/helpers"
-	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/util/password"
-	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nkn/v2/dashboard/helpers"
+	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/nknorg/nkn/v2/util/password"
+	"github.com/nknorg/nkn/v2/vault"
 )
 
 type OpenWalletData struct {

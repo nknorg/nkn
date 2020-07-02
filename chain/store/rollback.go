@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/chain/db"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/block"
+	"github.com/nknorg/nkn/v2/chain/db"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/common/serialization"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 func (cs *ChainStore) Rollback(b *block.Block) error {

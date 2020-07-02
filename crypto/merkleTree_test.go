@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/v2/common"
 )
 
 func TestHash(t *testing.T) {

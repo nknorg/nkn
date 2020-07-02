@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/node"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/por"
-	"github.com/nknorg/nkn/util"
-	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/util/timer"
+	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/node"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/por"
+	"github.com/nknorg/nkn/v2/util"
+	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/nknorg/nkn/v2/util/timer"
 )
 
 // startGettingNeighborConsensusState periodically checks neighbors' majority

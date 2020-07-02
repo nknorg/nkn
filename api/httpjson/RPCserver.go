@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/api/common"
-	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/node"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/vault"
+	"github.com/nknorg/nkn/v2/api/common"
+	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/node"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/nknorg/nkn/v2/vault"
 	"golang.org/x/time/rate"
 )
 

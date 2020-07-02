@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	api "github.com/nknorg/nkn/api/common"
-	"github.com/nknorg/nkn/api/httpjson/client"
-	nknc "github.com/nknorg/nkn/cmd/nknc/common"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/vault"
+	api "github.com/nknorg/nkn/v2/api/common"
+	"github.com/nknorg/nkn/v2/api/httpjson/client"
+	nknc "github.com/nknorg/nkn/v2/cmd/nknc/common"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/vault"
 
 	"github.com/urfave/cli"
 )

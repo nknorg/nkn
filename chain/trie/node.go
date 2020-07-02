@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/common/serialization"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 const (

@@ -3,9 +3,9 @@ package signature
 import (
 	"fmt"
 
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/program"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/program"
 )
 
 func VerifySignableData(signableData SignableData) error {

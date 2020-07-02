@@ -3,9 +3,9 @@ package chain
 import (
 	"errors"
 
-	"github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/transaction"
+	"github.com/nknorg/nkn/v2/block"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/transaction"
 )
 
 var DefaultLedger *Ledger

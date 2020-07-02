@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/nknorg/nkn/chain/db"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/chain/db"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 type hasher struct {

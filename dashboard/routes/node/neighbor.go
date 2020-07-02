@@ -2,8 +2,8 @@ package node
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/nknorg/nkn/dashboard/helpers"
-	"github.com/nknorg/nkn/node"
+	"github.com/nknorg/nkn/v2/dashboard/helpers"
+	"github.com/nknorg/nkn/v2/node"
 	"net/http"
 )
 

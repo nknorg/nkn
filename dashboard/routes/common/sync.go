@@ -2,8 +2,8 @@ package common
 
 import (
 	"github.com/gin-gonic/gin"
-	serviceConfig "github.com/nknorg/nkn/dashboard/config"
-	"github.com/nknorg/nkn/util/config"
+	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
+	"github.com/nknorg/nkn/v2/util/config"
 	"net/http"
 	"time"
 )

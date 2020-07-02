@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nknorg/nkn/crypto/ed25519/extra25519"
-	"github.com/nknorg/nkn/crypto/ed25519/vrf"
+	"github.com/nknorg/nkn/v2/crypto/ed25519/extra25519"
+	"github.com/nknorg/nkn/v2/crypto/ed25519/vrf"
 
 	"golang.org/x/crypto/ed25519"
 )

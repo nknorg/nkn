@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/nknorg/nkn/node"
+	"github.com/nknorg/nkn/v2/node"
 )
 
 type Serverer interface {
