@@ -3,8 +3,8 @@ package transaction
 import (
 	"errors"
 
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/pb"
 )
 
 type IPayload interface {

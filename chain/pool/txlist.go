@@ -4,9 +4,9 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/transaction"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 var (

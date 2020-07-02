@@ -8,11 +8,11 @@ import (
 	"io"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/program"
-	"github.com/nknorg/nkn/signature"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/common/serialization"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/program"
+	"github.com/nknorg/nkn/v2/signature"
 )
 
 type Header struct {

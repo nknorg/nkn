@@ -3,10 +3,10 @@ package node
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
-	"github.com/nknorg/nkn/dashboard/auth"
-	"github.com/nknorg/nkn/dashboard/helpers"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/dashboard/auth"
+	"github.com/nknorg/nkn/v2/dashboard/helpers"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/log"
 	"net/http"
 )
 

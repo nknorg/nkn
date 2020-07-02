@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/v2/pb"
 )
 
 type PrettyPrinter []byte

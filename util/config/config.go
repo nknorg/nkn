@@ -16,10 +16,10 @@ import (
 	"time"
 
 	portscanner "github.com/nknorg/go-portscanner"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto/ed25519"
-	"github.com/nknorg/nkn/crypto/ed25519/vrf"
-	"github.com/nknorg/nkn/util"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/crypto/ed25519"
+	"github.com/nknorg/nkn/v2/crypto/ed25519/vrf"
+	"github.com/nknorg/nkn/v2/util"
 	"github.com/nknorg/portmapper"
 	"github.com/pbnjay/memory"
 )

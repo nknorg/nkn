@@ -5,11 +5,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
-	"github.com/nknorg/nkn/util/timer"
+	"github.com/nknorg/nkn/v2/block"
+	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/nknorg/nkn/v2/util/timer"
 )
 
 // startProposing starts the proposing routing

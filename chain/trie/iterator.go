@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 type Iterator struct {

@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/v2/pb"
 )
 
 // Base64ToHex convert base64 string input to hex string output

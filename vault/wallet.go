@@ -4,15 +4,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto"
-	serviceConfig "github.com/nknorg/nkn/dashboard/config"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/program"
-	"github.com/nknorg/nkn/signature"
-	"github.com/nknorg/nkn/transaction"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/password"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/crypto"
+	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/program"
+	"github.com/nknorg/nkn/v2/signature"
+	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/password"
 )
 
 type Wallet struct {

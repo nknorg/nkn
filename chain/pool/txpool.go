@@ -9,12 +9,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/transaction"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 func compareTxnPriority(txn1, txn2 *transaction.Transaction) int {

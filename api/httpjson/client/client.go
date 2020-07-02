@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nknorg/nkn/api/common"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/api/common"
+	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 const requestTimeout = 5 * time.Second

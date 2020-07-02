@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/util"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/util"
 	"golang.org/x/crypto/scrypt"
 )
 

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	nknc "github.com/nknorg/nkn/cmd/nknc/common"
-	"github.com/nknorg/nkn/util/log"
+	nknc "github.com/nknorg/nkn/v2/cmd/nknc/common"
+	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/urfave/cli"
 )
 

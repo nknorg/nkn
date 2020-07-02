@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/util/config"
 
 	"github.com/howeyc/gopass"
 )

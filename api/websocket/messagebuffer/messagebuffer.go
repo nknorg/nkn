@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"sync"
 
-	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/v2/pb"
 )
 
 // MessageBuffer is the buffer to hold message for clients not online

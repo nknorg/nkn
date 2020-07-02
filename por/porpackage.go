@@ -5,10 +5,10 @@ import (
 	"errors"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/transaction"
-	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/nknorg/nkn/v2/util/config"
 )
 
 const (

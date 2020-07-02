@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/pb"
+	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/pb"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 

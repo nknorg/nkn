@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/v2/util/config"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"

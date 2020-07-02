@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 // receiveVote is called when a vote from neighbor is received

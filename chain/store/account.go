@@ -7,8 +7,8 @@ import (
 	"io"
 	"sort"
 
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/serialization"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/common/serialization"
 )
 
 type Operation int

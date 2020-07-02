@@ -3,7 +3,7 @@ package node
 import (
 	"time"
 
-	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/v2/common"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"errors"
 
-	"github.com/nknorg/nkn/common"
+	"github.com/nknorg/nkn/v2/common"
 )
 
 func PasswordHash(password []byte) []byte {

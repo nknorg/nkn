@@ -3,7 +3,7 @@ package pruning
 import (
 	"fmt"
 
-	"github.com/nknorg/nkn/chain/store"
+	"github.com/nknorg/nkn/v2/chain/store"
 	"github.com/urfave/cli"
 )
 

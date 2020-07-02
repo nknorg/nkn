@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/chain"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/program"
-	"github.com/nknorg/nkn/transaction"
-	"github.com/nknorg/nkn/util/config"
+	"github.com/nknorg/nkn/v2/block"
+	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/program"
+	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/nknorg/nkn/v2/util/config"
 )
 
 func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transaction, totalFee common.Fixed64, genesis bool, height uint32) error {

@@ -9,15 +9,15 @@ import (
 	"io"
 	"sync"
 
-	"github.com/nknorg/nkn/block"
-	"github.com/nknorg/nkn/chain/db"
-	"github.com/nknorg/nkn/common"
-	"github.com/nknorg/nkn/common/serialization"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/program"
-	"github.com/nknorg/nkn/transaction"
-	"github.com/nknorg/nkn/util/config"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/block"
+	"github.com/nknorg/nkn/v2/chain/db"
+	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/common/serialization"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/program"
+	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 type ChainStore struct {

@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/nknorg/nkn/crypto"
-	"github.com/nknorg/nkn/pb"
-	"github.com/nknorg/nkn/util/log"
+	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
