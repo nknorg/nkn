@@ -5,7 +5,11 @@ GO_PROXY=https://goproxy.io
 GOFMT=go fmt
 VERSION:=$(shell git describe --abbrev=4 --dirty --always --tags)
 BUILD_DIR=build
+ifdef GOARM
+BIN_DIR=$(GOOS)-$(GOARCH)v$(GOARM)
+else
 BIN_DIR=$(GOOS)-$(GOARCH)
+endif
 NKND_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/util/config.Version=$(VERSION)"
 NKNC_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/cmd/nknc/common.Version=$(VERSION)"
 NKND_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknd$(EXT)
@@ -22,8 +26,8 @@ web: $(shell find dashboard/web -type f -not -path "dashboard/web/node_modules/*
 
 .PHONY: build
 build: web
-	GOPROXY=$(GOPROXY) GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(NKND_BUILD_PARAM) -o $(NKND_OUTPUT) $(NKND_MAIN)
-	GOPROXY=$(GOPROXY) GOOS=$(GOOS) GOARCH=$(GOARCH) $(GC) $(NKNC_BUILD_PARAM) -o $(NKNC_OUTPUT) $(NKNC_MAIN)
+	GOPROXY=$(GOPROXY) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(GC) $(NKND_BUILD_PARAM) -o $(NKND_OUTPUT) $(NKND_MAIN)
+	GOPROXY=$(GOPROXY) GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(GC) $(NKNC_BUILD_PARAM) -o $(NKNC_OUTPUT) $(NKNC_MAIN)
 
 .PHONY: crossbuild
 crossbuild: web
@@ -50,7 +54,9 @@ zip:
 
 .PHONY: all
 all: ## Build binaries for all available architectures
-	${MAKE} crossbuild GOOS=linux GOARCH=arm
+	${MAKE} crossbuild GOOS=linux GOARCH=arm GOARM=5
+	${MAKE} crossbuild GOOS=linux GOARCH=arm GOARM=6
+	${MAKE} crossbuild GOOS=linux GOARCH=arm GOARM=7
 	${MAKE} crossbuild GOOS=linux GOARCH=386
 	${MAKE} crossbuild GOOS=linux GOARCH=arm64
 	${MAKE} crossbuild GOOS=linux GOARCH=amd64
@@ -97,7 +103,7 @@ test:
 .PHONY: docker
 docker:
 	docker build -f docker/Dockerfile -t nknorg/nkn:latest-amd64 .
-	docker build -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=arm BUILD_DIR=. BIN_DIR=." --build-arg base="arm32v6/" -t nknorg/nkn:latest-arm32v6 .
+	docker build -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=arm GOARM=6 BUILD_DIR=. BIN_DIR=." --build-arg base="arm32v6/" -t nknorg/nkn:latest-arm32v6 .
 	docker build -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=arm64 BUILD_DIR=. BIN_DIR=." --build-arg base="arm64v8/" -t nknorg/nkn:latest-arm64v8 .
 
 .PHONY: docker_publish
