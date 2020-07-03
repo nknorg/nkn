@@ -305,30 +305,19 @@ func (ref *RefCounts) PersistRefCounts() error {
 			return err
 		}
 	}
-
 	return nil
 }
 
 func (ref *RefCounts) PersistRefCountHeights() error {
 	heightBuffer := make([]byte, 4)
 	binary.LittleEndian.PutUint32(heightBuffer[:], ref.targetRefCountHeight)
-	err := ref.trie.db.BatchPut(db.TrieRefCountHeightKey(), heightBuffer)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ref.trie.db.BatchPut(db.TrieRefCountHeightKey(), heightBuffer)
 }
 
 func (ref *RefCounts) PersistPrunedHeights() error {
 	heightBuffer := make([]byte, 4)
 	binary.LittleEndian.PutUint32(heightBuffer[:], ref.targetPruningHeight)
-	err := ref.trie.db.BatchPut(db.TriePrunedHeightKey(), heightBuffer)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ref.trie.db.BatchPut(db.TriePrunedHeightKey(), heightBuffer)
 }
 
 func (ref *RefCounts) Verify(hash common.Uint256) error {
@@ -336,6 +325,7 @@ func (ref *RefCounts) Verify(hash common.Uint256) error {
 	if err != nil {
 		return err
 	}
+
 	ref.trie.root = root
 
 	err = ref.trie.traverse(ref.trie.root, false)
@@ -345,10 +335,8 @@ func (ref *RefCounts) Verify(hash common.Uint256) error {
 
 	hs := ref.trie.Hash()
 	if hash.CompareTo(hs) != 0 {
-		return fmt.Errorf("state root not equal:%v, %v", hash.ToHexString(), hs.ToHexString())
+		return fmt.Errorf("state root not equal: %v, %v", hash.ToHexString(), hs.ToHexString())
 	}
-
-	log.Info("Verification finished.")
 
 	return nil
 }

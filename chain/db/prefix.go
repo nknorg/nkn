@@ -29,6 +29,7 @@ const (
 	TRIE_RefCount       DataEntryPrefix = 0xa1
 	TRIE_RefCountHeight DataEntryPrefix = 0xa2
 	TRIE_PrunedHeight   DataEntryPrefix = 0xa3
+	TRIE_CompactHeight  DataEntryPrefix = 0xa4
 )
 
 func paddingKey(prefix DataEntryPrefix, key []byte) []byte {
@@ -86,4 +87,8 @@ func TrieRefCountHeightKey() []byte {
 
 func TriePrunedHeightKey() []byte {
 	return paddingKey(TRIE_PrunedHeight, nil)
+}
+
+func TrieCompactHeightKey() []byte {
+	return paddingKey(TRIE_CompactHeight, nil)
 }
