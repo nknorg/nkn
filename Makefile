@@ -10,8 +10,8 @@ BIN_DIR=$(GOOS)-$(GOARCH)v$(GOARM)
 else
 BIN_DIR=$(GOOS)-$(GOARCH)
 endif
-NKND_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/util/config.Version=$(VERSION)"
-NKNC_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/cmd/nknc/common.Version=$(VERSION)"
+NKND_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/v2/util/config.Version=$(VERSION)"
+NKNC_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/v2/cmd/nknc/common.Version=$(VERSION)"
 NKND_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknd$(EXT)
 NKNC_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknc$(EXT)
 NKND_MAIN=cmd/nknd/nknd.go
