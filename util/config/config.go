@@ -222,8 +222,9 @@ var (
 		WebGuiPort:                   30000,
 		WebGuiCreateWallet:           false,
 		PasswordFile:                 "",
-		RecentStateCount:             1024,
 		StatePruningMode:             "lowmem",
+		RecentStateCount:             1024,
+		MinPruningCompactHeights:     4096,
 		RPCRateLimit:                 1024,
 		RPCRateBurst:                 4096,
 		SyncBlockHeaderRateLimit:     8192,
@@ -286,8 +287,9 @@ type Configuration struct {
 	WebGuiPort                   uint16        `json:"WebGuiPort"`
 	WebGuiCreateWallet           bool          `json:"WebGuiCreateWallet"`
 	PasswordFile                 string        `json:"PasswordFile"`
-	RecentStateCount             uint32        `json:"RecentStateCount"`
 	StatePruningMode             string        `json:"StatePruningMode"`
+	RecentStateCount             uint32        `json:"RecentStateCount"`
+	MinPruningCompactHeights     uint32        `json:"MinPruningCompactHeights"`
 	RPCRateLimit                 float64       `json:"RPCRateLimit"` // requests per second
 	RPCRateBurst                 uint32        `json:"RPCRateBurst"`
 	SyncBlockHeaderRateLimit     float64       `json:"SyncBlockHeaderRateLimit"` // headers per second

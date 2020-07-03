@@ -43,7 +43,7 @@ func pruningAction(c *cli.Context) error {
 				return err
 			}
 		} else if c.Bool("lowmem") {
-			err := cs.PruneStatesLowMemory()
+			err := cs.PruneStatesLowMemory(true)
 			if err != nil {
 				return err
 			}

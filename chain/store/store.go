@@ -71,47 +71,8 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 	}
 
 	log.Info("database Version:", config.DBVersion)
-	if version[0] == config.DBVersion {
-		if !cs.IsBlockInStore(genesisBlock.Hash()) {
-			return 0, errors.New("genesisBlock is NOT in BlockStore.")
-		}
 
-		if cs.currentBlockHash, cs.currentBlockHeight, err = cs.getCurrentBlockHashFromDB(); err != nil {
-			return 0, err
-		}
-		currentHeader, err := cs.GetHeader(cs.currentBlockHash)
-		if err != nil {
-			return 0, err
-		}
-
-		cs.headerCache.AddHeaderToCache(currentHeader)
-
-		root, err := cs.GetCurrentBlockStateRoot()
-		if err != nil {
-			return 0, nil
-		}
-
-		log.Info("state root:", root.ToHexString())
-		cs.States, err = NewStateDB(root, cs)
-		if err != nil {
-			return 0, err
-		}
-
-		switch config.Parameters.StatePruningMode {
-		case "lowmem":
-			err = cs.PruneStatesLowMemory()
-		case "none":
-			err = nil
-		default:
-			return 0, fmt.Errorf("unknown state pruning mode %v", config.Parameters.StatePruningMode)
-		}
-
-		if err != nil {
-			return 0, err
-		}
-
-		return cs.currentBlockHeight, nil
-	} else {
+	if version[0] != config.DBVersion {
 		if err := cs.ResetDB(); err != nil {
 			return 0, fmt.Errorf("InitLedgerStoreWithGenesisBlock, ResetDB error: %v", err)
 		}
@@ -126,7 +87,6 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 			return 0, err
 		}
 
-		// put version to db
 		if err = cs.st.Put(db.VersionKey(), []byte{config.DBVersion}); err != nil {
 			return 0, err
 		}
@@ -137,6 +97,48 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 
 		return 0, nil
 	}
+
+	if !cs.IsBlockInStore(genesisBlock.Hash()) {
+		return 0, errors.New("genesisBlock is NOT in BlockStore")
+	}
+
+	if cs.currentBlockHash, cs.currentBlockHeight, err = cs.getCurrentBlockHashFromDB(); err != nil {
+		return 0, err
+	}
+
+	currentHeader, err := cs.GetHeader(cs.currentBlockHash)
+	if err != nil {
+		return 0, err
+	}
+
+	cs.headerCache.AddHeaderToCache(currentHeader)
+
+	root, err := cs.GetCurrentBlockStateRoot()
+	if err != nil {
+		return 0, nil
+	}
+
+	log.Info("State root:", root.ToHexString())
+
+	cs.States, err = NewStateDB(root, cs)
+	if err != nil {
+		return 0, err
+	}
+
+	switch config.Parameters.StatePruningMode {
+	case "lowmem":
+		err = cs.PruneStatesLowMemory(true)
+	case "none":
+		err = nil
+	default:
+		err = fmt.Errorf("unknown state pruning mode %v", config.Parameters.StatePruningMode)
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	return cs.currentBlockHeight, nil
 }
 
 func (cs *ChainStore) IsTxHashDuplicate(txhash common.Uint256) bool {
@@ -384,8 +386,9 @@ func (cs *ChainStore) persist(b *block.Block) error {
 }
 
 func (cs *ChainStore) SaveBlock(b *block.Block, fastAdd bool) error {
-	if err := cs.persist(b); err != nil {
-		log.Error("error to persist block:", err.Error())
+	err := cs.persist(b)
+	if err != nil {
+		log.Errorf("error to persist block: %v", err)
 		return err
 	}
 
@@ -398,6 +401,15 @@ func (cs *ChainStore) SaveBlock(b *block.Block, fastAdd bool) error {
 		cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - config.Parameters.BlockHeaderCacheSize)
 	}
 	cs.headerCache.AddHeaderToCache(b.Header)
+
+	switch config.Parameters.StatePruningMode {
+	case "lowmem":
+		err = cs.PruneStatesLowMemory(false)
+		if err != nil {
+			log.Errorf("Pruning error: %v", err)
+			return err
+		}
+	}
 
 	return nil
 }
@@ -634,6 +646,7 @@ func (cs *ChainStore) GetStateRoots(fromHeight, toHeight uint32) ([]common.Uint2
 
 	return roots, nil
 }
+
 func (cs *ChainStore) GetPruningStartHeight() (uint32, uint32) {
 	return cs.getPruningStartHeight()
 }
@@ -660,6 +673,32 @@ func (cs *ChainStore) getPruningStartHeight() (uint32, uint32) {
 	return refCountStartHeight, pruningStartHeight
 }
 
+func (cs *ChainStore) getCompactHeight() uint32 {
+	heightBuffer, err := cs.st.Get(db.TrieCompactHeightKey())
+	if err != nil {
+		log.Info("get compact height error:", err)
+		return 0
+	}
+	return binary.LittleEndian.Uint32(heightBuffer)
+}
+
+func (cs *ChainStore) persistCompactHeight(height uint32) error {
+	heightBuffer := make([]byte, 4)
+	binary.LittleEndian.PutUint32(heightBuffer[:], height)
+	return cs.st.Put(db.TrieCompactHeightKey(), heightBuffer)
+}
+
+func (cs *ChainStore) PruneStatesLowMemory(full bool) error {
+	state, err := NewStateDB(common.EmptyUint256, cs)
+	if err != nil {
+		return err
+	}
+
+	return state.PruneStatesLowMemory(full)
+}
+
+// PruneStates is not in use due to high memory usage. Use PruneStatesLowMemory
+// instead.
 func (cs *ChainStore) PruneStates() error {
 	state, err := NewStateDB(common.EmptyUint256, cs)
 	if err != nil {
@@ -669,15 +708,8 @@ func (cs *ChainStore) PruneStates() error {
 	return state.PruneStates()
 }
 
-func (cs *ChainStore) PruneStatesLowMemory() error {
-	state, err := NewStateDB(common.EmptyUint256, cs)
-	if err != nil {
-		return err
-	}
-
-	return state.PruneStatesLowMemory()
-}
-
+// SequentialPrune is not in use due to high memory usage. Use
+// PruneStatesLowMemory instead.
 func (cs *ChainStore) SequentialPrune() error {
 	state, err := NewStateDB(common.EmptyUint256, cs)
 	if err != nil {

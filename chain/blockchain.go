@@ -57,7 +57,7 @@ func (bc *Blockchain) AddBlock(block *block.Block, fastAdd bool) error {
 
 	err := bc.SaveBlock(block, fastAdd)
 	if err != nil {
-		log.Error("AddBlock error, ", err)
+		log.Errorf("AddBlock error: %v", err)
 		return err
 	}
 
@@ -91,9 +91,11 @@ func (bc *Blockchain) SaveBlock(block *block.Block, fastAdd bool) error {
 		return err
 	}
 
+	log.Infof("# current block height: %d, block hash: %x", block.Header.UnsignedHeader.Height, block.Hash())
+
 	bc.BlockHeight = block.Header.UnsignedHeader.Height
+
 	event.Queue.Notify(event.BlockPersistCompleted, block)
-	log.Infof("# current block height: %d, block hash: %x", bc.BlockHeight, block.Hash())
 
 	return nil
 }
