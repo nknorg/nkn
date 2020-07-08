@@ -602,7 +602,7 @@ func (tp *TxnPool) CleanBlockValidationState(txns []*transaction.Transaction) er
 			for txnHash, err := range errMap {
 				log.Errorf("RefreshBlockValidationState error for txn %x: %v", txnHash, err)
 			}
-			invalidTxns := make([]*transaction.Transaction, len(errMap))
+			invalidTxns := make([]*transaction.Transaction, 0, len(errMap))
 			for _, txn := range txns {
 				if _, ok := errMap[txn.Hash()]; ok {
 					invalidTxns = append(invalidTxns, txn)
