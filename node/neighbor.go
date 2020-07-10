@@ -14,7 +14,7 @@ import (
 
 const (
 	maxNumRandomNeighbors         = 16
-	randomNeighborConnectInterval = 5 * config.ConsensusTimeout
+	randomNeighborConnectInterval = 4 * config.ConsensusTimeout
 )
 
 // The neighbor node list
@@ -95,14 +95,16 @@ func (localNode *LocalNode) startConnectingToRandomNeighbors() {
 	}
 
 	for {
-		time.Sleep(util.RandDuration(randomNeighborConnectInterval, 1.0/3.0))
-
 		if len(localNode.randomNeighbors) >= maxNumRandomNeighbors {
+			time.Sleep(util.RandDuration(randomNeighborConnectInterval, 1.0/3.0))
+
 			nbr := localNode.GetNbrNode(localNode.randomNeighbors[0])
 			if nbr != nil && !nbr.nnetNode.IsStopped() {
 				c.MaybeStopRemoteNode(nbr.nnetNode)
 			}
 			localNode.randomNeighbors = localNode.randomNeighbors[1:]
+		} else {
+			time.Sleep(time.Second)
 		}
 
 		randID := util.RandomBytes(config.NodeIDBytes)
