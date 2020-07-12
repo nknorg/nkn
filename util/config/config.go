@@ -74,6 +74,7 @@ const (
 	MaxClientMessageSize         = 4 * 1024 * 1024
 	MinNameRegistrationFee       = 10 * common.StorageFactor
 	DefaultNameDuration          = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
+	LivePruning                  = false
 )
 
 const (
