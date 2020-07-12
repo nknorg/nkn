@@ -402,12 +402,14 @@ func (cs *ChainStore) SaveBlock(b *block.Block, fastAdd bool) error {
 	}
 	cs.headerCache.AddHeaderToCache(b.Header)
 
-	switch config.Parameters.StatePruningMode {
-	case "lowmem":
-		err = cs.PruneStatesLowMemory(false)
-		if err != nil {
-			log.Errorf("Pruning error: %v", err)
-			return err
+	if config.LivePruning {
+		switch config.Parameters.StatePruningMode {
+		case "lowmem":
+			err = cs.PruneStatesLowMemory(false)
+			if err != nil {
+				log.Errorf("Pruning error: %v", err)
+				return err
+			}
 		}
 	}
 
