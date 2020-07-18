@@ -17,7 +17,7 @@
     "@nuxtjs/vuetify": "^1.11.2",
     "crypto-js": "^3.3.0",
     "decimal.js": "^10.2.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "nuxt": "^2.13.3",
     "nuxt-i18n": "^6.13.1",
     "vue-clipboard2": "^0.3.1"
