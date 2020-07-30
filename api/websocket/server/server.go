@@ -81,7 +81,7 @@ func InitWsServer(localNode *node.LocalNode, wallet *vault.Wallet) *WsServer {
 	return ws
 }
 
-func (ws *WsServer) Start() error {
+func (ws *WsServer) Start(wssCertReady chan struct{}) error {
 	if config.Parameters.HttpWsPort == 0 {
 		log.Error("Not configure HttpWsPort port ")
 		return nil
@@ -92,11 +92,6 @@ func (ws *WsServer) Start() error {
 	}
 
 	var err error
-	ws.tlsListener, err = ws.initTlsListen()
-	if err != nil {
-		log.Error("Https Cert: ", err.Error())
-		return err
-	}
 
 	ws.listener, err = net.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWsPort)))
 	if err != nil {
@@ -109,8 +104,26 @@ func (ws *WsServer) Start() error {
 	ws.server = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler)}
 	go ws.server.Serve(ws.listener)
 
-	ws.tlsServer = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler)}
-	go ws.tlsServer.Serve(ws.tlsListener)
+	go func(wssCertReady chan struct{}) {
+		for {
+			select {
+			case <-wssCertReady:
+				log.Info("wss cert received")
+				ws.tlsListener, err = ws.initTlsListen()
+				if err != nil {
+					log.Error("Https Cert: ", err.Error())
+				}
+				err = ws.server.Serve(ws.tlsListener)
+				if err != nil {
+					log.Error(err)
+				}
+				return
+			case <-time.After(300 * time.Second):
+				log.Info("wss server is unavailable yet")
+
+			}
+		}
+	}(wssCertReady)
 
 	go ws.startCheckingLostMessages()
 
@@ -230,15 +243,6 @@ func (ws *WsServer) Stop() {
 		ws.server.Shutdown(context.Background())
 		log.Error("Close websocket ")
 	}
-}
-
-func (ws *WsServer) Restart() {
-	go func() {
-		time.Sleep(time.Second)
-		ws.Stop()
-		time.Sleep(time.Second)
-		go ws.Start()
-	}()
 }
 
 //websocketHandler
@@ -487,19 +491,8 @@ func (ws *WsServer) Broadcast(data []byte) error {
 }
 
 func (ws *WsServer) initTlsListen() (net.Listener, error) {
-
-	CertPath := config.Parameters.HttpWssCert
-	KeyPath := config.Parameters.HttpWssKey
-
-	// load cert
-	cert, err := tls.LoadX509KeyPair(CertPath, KeyPath)
-	if err != nil {
-		log.Error("load keys fail", err)
-		return nil, err
-	}
-
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
+		GetCertificate: api.GetWssCertificate,
 	}
 
 	listener, err := tls.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWssPort)), tlsConfig)
