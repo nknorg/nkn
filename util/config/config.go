@@ -207,12 +207,10 @@ var (
 		LogPath:                      "Log",
 		ChainDBPath:                  "ChainDB",
 		WalletFile:                   "wallet.json",
-		HttpWssDomain:                "{{.DashedIP}}.ipv4.nknlabs.io",
-		HttpWssCert:                  "certs/STAR.ipv4.nknlabs.io.cert",
-		HttpWssKey:                   "certs/STAR.ipv4.nknlabs.io.key",
-		HttpsJsonDomain:              "{{.DashedIP}}.ipv4.nknlabs.io",
-		HttpsJsonCert:                "certs/STAR.ipv4.nknlabs.io.cert",
-		HttpsJsonKey:                 "certs/STAR.ipv4.nknlabs.io.key",
+		DefaultTlsDomainTmpl:         "{{.DashedIP}}.ipv4.nknlabs.io",
+		CertDirectory:                "certs",
+		CertRenewBefore:              720,
+		CertCheckInterval:            86400,
 		MaxGetIDSeeds:                3,
 		DBFilesCacheCapacity:         100,
 		NumLowFeeTxnPerBlock:         0,
@@ -249,6 +247,14 @@ type Configuration struct {
 	HttpsJsonCert                string        `json:"HttpsJsonCert"`
 	HttpsJsonKey                 string        `json:"HttpsJsonKey"`
 	HttpsJsonPort                uint16        `json:"HttpsJsonPort"`
+	DefaultTlsCert               string        `json:"DefaultTlsCert"`
+	DefaultTlsKey                string        `json:"DefaultTlsKey"`
+	DefaultTlsDomainTmpl         string        `json:"DefaultTlsDomainTmpl"`
+	ACMEUserFile                 string        `json:"ACMEUserFile"`
+	ACMEResourceFile             string        `json:"ACMEResourceFile"`
+	CertRenewBefore              uint16        `json:"CertRenewBefore"`   //in hours
+	CertCheckInterval            time.Duration `json:"CertCheckInterval"` // in seconds
+	CertDirectory                string        `json:"CertDirectory"`
 	NodePort                     uint16        `json:"-"`
 	LogLevel                     int           `json:"LogLevel"`
 	MaxLogFileSize               uint32        `json:"MaxLogSize"`
