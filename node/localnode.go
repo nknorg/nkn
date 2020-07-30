@@ -57,20 +57,16 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return nil, err
 	}
 
-	address, err := url.Parse(nn.GetLocalNode().Node.Addr)
+	addr, err := url.Parse(nn.GetLocalNode().Node.Addr)
 	if err != nil {
 		return nil, err
 	}
 
-	host := address.Hostname()
-	tlsDomain := &TlsDomain{DotToDash(host)}
-
-	wssDomain, err := tlsDomain.IpToDomain(config.Parameters.HttpWssDomain)
+	httpsDomain, err := GetDefaultDomainFromIP(addr.Hostname(), config.Parameters.HttpsJsonDomain)
 	if err != nil {
 		return nil, err
 	}
-
-	httpsDomain, err := tlsDomain.IpToDomain(config.Parameters.HttpsJsonDomain)
+	wssDomain, err := GetDefaultDomainFromIP(addr.Hostname(), config.Parameters.HttpWssDomain)
 	if err != nil {
 		return nil, err
 	}
