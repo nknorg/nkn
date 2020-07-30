@@ -1,7 +1,11 @@
 package common
 
 import (
+	"crypto/tls"
+
 	"github.com/nknorg/nkn/v2/node"
+	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/util/log"
 )
 
 type Serverer interface {
@@ -33,4 +37,22 @@ func ResponsePack(errCode ErrCode) map[string]interface{} {
 		"Version": 1,
 	}
 	return resp
+}
+
+func GetHttpsCertificate(h *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	cert, err := tls.LoadX509KeyPair(config.Parameters.HttpsJsonCert, config.Parameters.HttpsJsonKey)
+	if err != nil {
+		log.Error("load https json keys fail", err)
+		return nil, err
+	}
+	return &cert, nil
+}
+
+func GetWssCertificate(h *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	cert, err := tls.LoadX509KeyPair(config.Parameters.HttpWssCert, config.Parameters.HttpWssKey)
+	if err != nil {
+		log.Error("load https wss keys fail", err)
+		return nil, err
+	}
+	return &cert, nil
 }

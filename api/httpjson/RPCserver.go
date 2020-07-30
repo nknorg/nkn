@@ -27,6 +27,7 @@ type RPCServer struct {
 	localNode     *node.LocalNode
 	wallet        *vault.Wallet
 	limiter       *rate.Limiter
+	httpServer    *http.Server
 }
 
 type ServeMux struct {
@@ -241,16 +242,9 @@ func (s *RPCServer) SetDefaultFunc(def func(http.ResponseWriter, *http.Request))
 	s.mainMux.defaultFunction = def
 }
 
-func (s *RPCServer) initTlsListen(cert, key string) (net.Listener, error) {
-
-	pair, err := tls.LoadX509KeyPair(cert, key)
-	if err != nil {
-		log.Error("load keys fail", err)
-		return nil, err
-	}
-
+func (s *RPCServer) initTlsListen() (net.Listener, error) {
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{pair},
+		GetCertificate: common.GetHttpsCertificate,
 	}
 
 	listener, err := tls.Listen("tcp", s.httpsListener, tlsConfig)
@@ -261,25 +255,11 @@ func (s *RPCServer) initTlsListen(cert, key string) (net.Listener, error) {
 	return listener, nil
 }
 
-func (s *RPCServer) Start() {
+func (s *RPCServer) Start(httpsCertReady chan struct{}) {
 	for name, handler := range common.InitialAPIHandlers {
 		if handler.IsAccessableByJsonrpc() {
 			s.HandleFunc(name, handler.Handler)
 		}
-	}
-
-	var listener, tlsListener net.Listener
-	var err error
-	tlsListener, err = s.initTlsListen(config.Parameters.HttpsJsonCert, config.Parameters.HttpsJsonKey)
-	if err != nil {
-		log.Error("Https Cert: ", err.Error())
-		return
-	}
-
-	listener, err = net.Listen("tcp", s.httpListener)
-	if err != nil {
-		log.Error("net.Listen: ", err.Error())
-		return
 	}
 
 	rpcServeMux := http.NewServeMux()
@@ -292,9 +272,34 @@ func (s *RPCServer) Start() {
 	}
 
 	httpServer.SetKeepAlivesEnabled(config.Parameters.RPCKeepAlivesEnabled)
+	s.httpServer = httpServer
+	listener, err := net.Listen("tcp", s.httpListener)
+	if err != nil {
+		log.Error("net.Listen: ", err.Error())
+		return
+	}
+	go s.httpServer.Serve(listener)
 
-	go httpServer.Serve(listener)
-	go httpServer.Serve(tlsListener)
+	go func(httpsCertReady chan struct{}) {
+		for {
+			select {
+			case <-httpsCertReady:
+				log.Info("https cert received")
+				tlsListener, err := s.initTlsListen()
+				if err != nil {
+					log.Errorf("Https Cert: %v", err.Error())
+					return
+				}
+				err = s.httpServer.Serve(tlsListener)
+				if err != nil {
+					log.Error(err)
+				}
+				return
+			case <-time.After(300 * time.Second):
+				log.Info("https server is unavailable yet")
+			}
+		}
+	}(httpsCertReady)
 }
 
 func (s *RPCServer) GetLocalNode() *node.LocalNode {
