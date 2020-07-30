@@ -16,6 +16,9 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/rdegges/go-ipify"
+
+	"github.com/nknorg/nkn/v2/api/certs"
 	api "github.com/nknorg/nkn/v2/api/common"
 	"github.com/nknorg/nkn/v2/api/httpjson"
 	"github.com/nknorg/nkn/v2/api/httpjson/client"
@@ -39,7 +42,6 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay"
 	"github.com/nknorg/nnet/overlay/chord"
-	ipify "github.com/rdegges/go-ipify"
 	"github.com/urfave/cli"
 )
 
@@ -197,22 +199,6 @@ func nknMain(c *cli.Context) error {
 		}
 	}
 
-	// init web service
-	dashboard.Init(nil, wallet, nil)
-
-	// start JsonRPC
-	rpcServer := httpjson.NewServer(nil, wallet)
-	rpcServer.Start()
-
-	// initialize ledger
-	err = InitLedger(account)
-	if err != nil {
-		return fmt.Errorf("chain.initialization error: %v", err)
-	}
-
-	// if InitLedger return err, chain.DefaultLedger is uninitialized.
-	defer chain.DefaultLedger.Store.Close()
-
 	if config.Parameters.Hostname == "" { // Skip query self extIP via set "HostName" in config.json
 		log.Info("Getting my IP address...")
 		var extIP string
@@ -227,6 +213,24 @@ func nknMain(c *cli.Context) error {
 		log.Infof("My IP address is %s", extIP)
 		config.Parameters.Hostname = extIP
 	}
+
+	wssCertReady, httpsCertReady := certs.PrepareCerts()
+
+	// init web service
+	dashboard.Init(nil, wallet, nil)
+
+	// start JsonRPC
+	rpcServer := httpjson.NewServer(nil, wallet)
+	rpcServer.Start(httpsCertReady)
+
+	// initialize ledger
+	err = InitLedger(account)
+	if err != nil {
+		return fmt.Errorf("chain.initialization error: %v", err)
+	}
+
+	// if InitLedger return err, chain.DefaultLedger is uninitialized.
+	defer chain.DefaultLedger.Store.Close()
 
 	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, common.Fixed64(config.Parameters.RegisterIDRegFee), common.Fixed64(config.Parameters.RegisterIDTxnFee))
 	if err != nil {
@@ -319,7 +323,7 @@ func nknMain(c *cli.Context) error {
 
 	defer nn.Stop(nil)
 
-	ws.Start()
+	ws.Start(wssCertReady)
 
 	consensus, err := consensus.NewConsensus(account, localNode)
 	if err != nil {
