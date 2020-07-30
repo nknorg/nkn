@@ -120,7 +120,6 @@ func (ws *WsServer) Start(wssCertReady chan struct{}) error {
 				return
 			case <-time.After(300 * time.Second):
 				log.Info("wss server is unavailable yet")
-
 			}
 		}
 	}(wssCertReady)
