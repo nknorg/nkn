@@ -24,17 +24,6 @@ func NewWalletStore(path string, walletData *WalletData) (*WalletStore, error) {
 		return nil, errors.New("wallet store exists")
 	}
 
-	jsonBlob, err := json.Marshal(walletData)
-	if err != nil {
-		return nil, err
-	}
-
-	name := path
-	err = ioutil.WriteFile(name, jsonBlob, 0666)
-	if err != nil {
-		return nil, err
-	}
-
 	return &WalletStore{
 		Path:       path,
 		WalletData: walletData,
