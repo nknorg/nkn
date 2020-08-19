@@ -35,7 +35,7 @@ func getPassword(passwd string) []byte {
 	if passwd != "" {
 		tmp = []byte(passwd)
 	} else {
-		tmp, err = password.GetPassword()
+		tmp, err = password.GetPassword("")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -137,7 +137,7 @@ func walletAction(c *cli.Context) error {
 	// change password
 	if c.Bool("changepassword") {
 		fmt.Printf("Wallet File: '%s'\n", name)
-		passwd, err := password.GetPassword()
+		passwd, err := password.GetPassword("")
 		if err != nil {
 			return err
 		}

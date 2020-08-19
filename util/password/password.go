@@ -19,8 +19,11 @@ var (
 )
 
 // GetPassword gets password from user input
-func GetPassword() ([]byte, error) {
-	fmt.Printf("Password:")
+func GetPassword(prompts string) ([]byte, error) {
+	if prompts == "" {
+		prompts = "Password" // Default prompts
+	}
+	fmt.Printf("%s:", prompts)
 	passwd, err := gopass.GetPasswd()
 	if err != nil {
 		return nil, err
@@ -78,7 +81,7 @@ func GetAccountPassword() ([]byte, error) {
 	}
 	if !config.Parameters.WebGuiCreateWallet {
 		if Passwd == "" {
-			return GetPassword()
+			return GetPassword("")
 		}
 	}
 	if Passwd == "" {
