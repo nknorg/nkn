@@ -66,7 +66,7 @@ func GetPassword(passwd string) []byte {
 	if passwd != "" {
 		tmp = []byte(passwd)
 	} else {
-		tmp, err = password.GetPassword()
+		tmp, err = password.GetPassword("")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
