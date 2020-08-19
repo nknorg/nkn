@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
 	"sort"
@@ -65,6 +66,7 @@ func main() {
 		case syscall.Errno:
 			os.Exit(int(err.(syscall.Errno)))
 		default:
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 	}
