@@ -22,6 +22,39 @@ type Wallet struct {
 	contract     *program.ProgramContext
 }
 
+func RestoreWallet(path string, password, seed []byte) (*Wallet, error) {
+	if common.FileExisted(path) {
+		return nil, errors.New("wallet store exists")
+	}
+
+	account, err := NewAccountWithSeed(seed)
+	if err != nil {
+		return nil, err
+	}
+
+	contract, err := program.CreateSignatureProgramContext(account.PubKey())
+	if err != nil {
+		return nil, err
+	}
+
+	walletData, err := NewWalletData(account, password, nil, nil, nil, 0, 0, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	ws := &WalletStore{Path: path, WalletData: walletData}
+	if err = ws.Save(); err != nil {
+		return nil, err
+	}
+
+	return &Wallet{
+		WalletStore:  ws,
+		PasswordHash: crypto.PasswordHash(password),
+		account:      account,
+		contract:     contract,
+	}, nil
+}
+
 func NewWallet(path string, password []byte) (*Wallet, error) {
 	account, err := NewAccount()
 	if err != nil {
