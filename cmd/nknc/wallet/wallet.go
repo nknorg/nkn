@@ -88,6 +88,39 @@ func walletAction(c *cli.Context) error {
 		return nil
 	}
 
+	var hexFmt bool
+	switch format := c.String("restore"); format {
+	case "": // Not restore mode
+		break
+	case "hex":
+		hexFmt = true
+		fallthrough
+	case "bin":
+		if common.FileExisted(name) {
+			return fmt.Errorf("CAUTION: '%s' already exists!\n", name)
+		}
+
+		key, err := password.GetPassword("Input you Secret Seed")
+		if err != nil {
+			return err
+		}
+
+		if hexFmt {
+			if key, err = hex.DecodeString(string(key)); err != nil {
+				return fmt.Errorf("Invalid hex. %v\n", err)
+			}
+		}
+		wallet, err := vault.RestoreWallet(name, getPassword(passwd), key)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Restore %s wallet to %s\n", wallet.Address, name)
+		return nil
+	default:
+		return fmt.Errorf("--restore [hex | bin]")
+	}
+
 	// list wallet info
 	if item := c.String("list"); item != "" {
 		if item != "account" && item != "balance" && item != "verbose" && item != "nonce" && item != "id" {
@@ -176,6 +209,10 @@ func NewCommand() *cli.Command {
 			cli.StringFlag{
 				Name:  "list, l",
 				Usage: "list wallet information [account, balance, verbose, nonce]",
+			},
+			cli.StringFlag{
+				Name:  "restore, r",
+				Usage: "restore wallet with [hex, bin] format PrivateKey",
 			},
 			cli.BoolFlag{
 				Name:  "changepassword",
