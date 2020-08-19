@@ -67,8 +67,7 @@ func walletAction(c *cli.Context) error {
 	// wallet file name
 	name := c.String("name")
 	if name == "" {
-		fmt.Fprintln(os.Stderr, "invalid wallet name")
-		os.Exit(1)
+		return fmt.Errorf("invalid wallet name")
 	}
 	// get password from the command line or from environment variable
 	passwd := c.String("password")
@@ -79,29 +78,24 @@ func walletAction(c *cli.Context) error {
 	// create wallet
 	if c.Bool("create") {
 		if common.FileExisted(name) {
-			fmt.Printf("CAUTION: '%s' already exists!\n", name)
-			os.Exit(1)
-		} else {
-			wallet, err := vault.NewWallet(name, getConfirmedPassword(passwd))
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-			showAccountInfo(wallet, false)
+			return fmt.Errorf("CAUTION: '%s' already exists!\n", name)
 		}
+		wallet, err := vault.NewWallet(name, getConfirmedPassword(passwd))
+		if err != nil {
+			return err
+		}
+		showAccountInfo(wallet, false)
 		return nil
 	}
 
 	// list wallet info
 	if item := c.String("list"); item != "" {
 		if item != "account" && item != "balance" && item != "verbose" && item != "nonce" && item != "id" {
-			fmt.Fprintln(os.Stderr, "--list [account | balance | verbose | nonce | id]")
-			os.Exit(1)
+			return fmt.Errorf("--list [account | balance | verbose | nonce | id]")
 		} else {
 			wallet, err := vault.OpenWallet(name, getPassword(passwd))
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				return err
 			}
 			var vbs bool
 			switch item {
@@ -115,7 +109,6 @@ func walletAction(c *cli.Context) error {
 				address, _ := account.ProgramHash.ToAddress()
 				resp, err := client.Call(nknc.Address(), "getbalancebyaddr", 0, map[string]interface{}{"address": address})
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
 					return err
 				}
 				nknc.FormatOutput(resp)
@@ -124,7 +117,6 @@ func walletAction(c *cli.Context) error {
 				address, _ := account.ProgramHash.ToAddress()
 				resp, err := client.Call(nknc.Address(), "getnoncebyaddr", 0, map[string]interface{}{"address": address})
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
 					return err
 				}
 				nknc.FormatOutput(resp)
@@ -134,7 +126,6 @@ func walletAction(c *cli.Context) error {
 				pk := hex.EncodeToString(publicKey)
 				resp, err := client.Call(nknc.Address(), "getid", 0, map[string]interface{}{"publickey": pk})
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
 					return err
 				}
 				nknc.FormatOutput(resp)
@@ -148,24 +139,20 @@ func walletAction(c *cli.Context) error {
 		fmt.Printf("Wallet File: '%s'\n", name)
 		passwd, err := password.GetPassword()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return err
 		}
 		wallet, err := vault.OpenWallet(name, passwd)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return err
 		}
 		fmt.Println("# input new password #")
 		newPassword, err := password.GetConfirmedPassword()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return err
 		}
 		err = wallet.ChangePassword([]byte(passwd), newPassword)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return err
 		}
 		fmt.Println("password changed")
 
