@@ -109,15 +109,14 @@ func (f *Uint160) ToAddress() (string, error) {
 	return string(encoded), nil
 }
 
+// Uint160ParseFromBytes create an Uint160 from f slice
 func Uint160ParseFromBytes(f []byte) (Uint160, error) {
 	if len(f) != UINT160SIZE {
 		return EmptyUint160, errors.New("[Common]: Uint160ParseFromBytes err, len != 20")
 	}
 
 	var hash [UINT160SIZE]uint8
-	for i := 0; i < UINT160SIZE; i++ {
-		hash[i] = f[i]
-	}
+	copy(hash[:], f) // builtin copy performance better than loop
 	return Uint160(hash), nil
 }
 
@@ -142,11 +141,19 @@ func ToScriptHash(address string) (Uint160, error) {
 	return Uint160ParseFromBytes(hex[PREFIXLEN : PREFIXLEN+UINT160SIZE])
 }
 
+// SetBytes u itself with b slice.
+// 1. Drop high-order bytes if b overflow 160bits
+// 2. Keep leading zero if b not enough 160bits
 func (u *Uint160) SetBytes(b []byte) *Uint160 {
 	if len(b) > len(u) {
 		b = b[len(b)-UINT160SIZE:]
 	}
-	copy(u[UINT160SIZE-len(b):], b)
+	leadingLen := UINT160SIZE - len(b)
+	// make sure lead bytes is zero if UINT160SIZE > len(b)
+	for i := range u[:leadingLen] {
+		u[i] = 0
+	}
+	copy(u[leadingLen:], b)
 	return u
 }
 
