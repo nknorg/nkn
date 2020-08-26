@@ -371,7 +371,7 @@ func netVersion(timer *time.Timer) {
 				break
 			}
 			if verNum > NetVersionNum {
-				log.Fatal("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/v2/releases")
+				log.Fatal("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
 			}
 
 			timer.Reset(30 * time.Minute)
