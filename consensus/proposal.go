@@ -95,9 +95,11 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 		}
 	}
 
+	proposalCount := 0
 	for {
 		select {
 		case proposal := <-proposalChan:
+			proposalCount++
 			blockHash := proposal.Hash()
 
 			if !consensus.canVerifyHeight(consensusHeight) {
@@ -180,10 +182,13 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			}
 
 		case <-electionStartTimer.C:
-			return elc, nil
+			if proposalCount > 0 {
+				return elc, nil
+			}
+			return nil, errors.New("election wait for proposal timeout")
 
 		case <-timeoutTimer.C:
-			return nil, errors.New("Wait for proposal timeout")
+			return nil, errors.New("wait for proposal timeout")
 		}
 	}
 }
