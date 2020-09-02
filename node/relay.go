@@ -166,7 +166,7 @@ func (rs *RelayService) pinSigChain(hash, senderPubkey []byte) error {
 			return err
 		}
 	} else {
-		nextHop := rs.localNode.GetNbrNode(chordIDToNodeID(prevNodeID))
+		nextHop := rs.localNode.GetNeighborNode(chordIDToNodeID(prevNodeID))
 		if nextHop == nil {
 			return fmt.Errorf("cannot find next hop with id %x", prevNodeID)
 		}
@@ -211,7 +211,7 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, hash
 			return err
 		}
 	} else {
-		nextHop := rs.localNode.GetNbrNode(chordIDToNodeID(prevNodeID))
+		nextHop := rs.localNode.GetNeighborNode(chordIDToNodeID(prevNodeID))
 		if nextHop == nil {
 			return fmt.Errorf("cannot find next hop with id %x", prevNodeID)
 		}

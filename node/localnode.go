@@ -1,11 +1,9 @@
 package node
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"net/url"
 	"sync"
 	"sync/atomic"
@@ -14,10 +12,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/pool"
-	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/event"
 	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util/address"
 	"github.com/nknorg/nkn/v2/util/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
@@ -31,9 +27,9 @@ import (
 
 type LocalNode struct {
 	*Node
-	nbrNodes      // neighbor nodes
-	*pool.TxnPool // transaction pool of local node
-	*hashCache    // txn hash cache
+	*neighborNodes // neighbor nodes
+	*pool.TxnPool  // transaction pool of local node
+	*hashCache     // txn hash cache
 	*messageHandlerStore
 	account            *vault.Account // local node wallet account
 	nnet               *nnet.NNet     // nnet instance
@@ -93,7 +89,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	localNode := &LocalNode{
 		Node:                node,
-		nbrNodes:            newNbrNodes(),
+		neighborNodes:       newNeighborNodes(),
 		account:             account,
 		TxnPool:             pool.NewTxPool(),
 		quit:                make(chan bool, 1),
@@ -136,7 +132,9 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return true
 	}, 1000})
 
+	var startOnce sync.Once
 	nn.MustApplyMiddleware(chord.NeighborAdded{func(remoteNode *nnetnode.RemoteNode, index int) bool {
+		startOnce.Do(localNode.startConnectingToRandomNeighbors)
 		err := localNode.maybeAddRemoteNode(remoteNode)
 		if err != nil {
 			remoteNode.Stop(err)
@@ -146,9 +144,9 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	}, 0})
 
 	nn.MustApplyMiddleware(chord.NeighborRemoved{func(remoteNode *nnetnode.RemoteNode) bool {
-		nbr := localNode.getNbrByNNetNode(remoteNode)
+		nbr := localNode.getNeighborByNNetNode(remoteNode)
 		if nbr != nil {
-			localNode.DelNbrNode(nbr.GetID())
+			localNode.removeNeighborNode(nbr.GetID())
 		}
 		return true
 	}, 0})
@@ -160,7 +158,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	nn.MustApplyMiddleware(nnetnode.MessageWillDecode{func(rn *nnetnode.RemoteNode, msg []byte) ([]byte, bool) {
 		decrypted, err := localNode.decryptMessage(msg, rn)
 		if err != nil {
-			if localNode.getNbrByNNetNode(rn) != nil {
+			if localNode.getNeighborByNNetNode(rn) != nil {
 				rn.Stop(err)
 			} else {
 				log.Warningf("Decrypt message from %v error: %v", rn, err)
@@ -204,94 +202,6 @@ func (localNode *LocalNode) Start() error {
 	localNode.startRelayer()
 	localNode.initSyncing()
 	localNode.initTxnHandlers()
-	go localNode.startConnectingToRandomNeighbors()
-	return nil
-}
-
-func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
-	if n.GetData() != nil {
-		nodeData := &pb.NodeData{}
-		err := proto.Unmarshal(n.Data, nodeData)
-		if err != nil {
-			return err
-		}
-
-		if nodeData.ProtocolVersion < config.MinCompatibleProtocolVersion || nodeData.ProtocolVersion > config.MaxCompatibleProtocolVersion {
-			return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol version %d", nodeData.ProtocolVersion, config.ProtocolVersion)
-		}
-
-		id, err := chain.DefaultLedger.Store.GetID(nodeData.PublicKey)
-		if err != nil || len(id) == 0 || bytes.Equal(id, crypto.Sha256ZeroHash) {
-			if localNode.GetSyncState() == pb.PERSIST_FINISHED {
-				return fmt.Errorf("Remote node id can not be found in local ledger: err-%v, id-%v", err, id)
-			}
-		} else {
-			if !bytes.Equal(id, n.GetId()) {
-				return fmt.Errorf("Remote node id should be %x instead of %x", id, n.GetId())
-			}
-		}
-	}
-
-	if address.ShouldRejectAddr(localNode.GetAddr(), n.GetAddr()) {
-		return errors.New("Remote port is different from local port")
-	}
-
-	return nil
-}
-
-func (localNode *LocalNode) verifyRemoteNode(remoteNode *nnetnode.RemoteNode) error {
-	if remoteNode.GetId() == nil {
-		return errors.New("Remote node id is nil")
-	}
-
-	if remoteNode.GetData() == nil {
-		return errors.New("Remote node data is nil")
-	}
-
-	err := localNode.shouldConnectToNode(remoteNode.Node.Node)
-	if err != nil {
-		return err
-	}
-
-	addr, err := url.Parse(remoteNode.GetAddr())
-	if err != nil {
-		return err
-	}
-
-	connHost, connPort, err := net.SplitHostPort(remoteNode.GetConn().RemoteAddr().String())
-	if err != nil {
-		return err
-	}
-
-	if !address.IsPrivateIP(net.ParseIP(connHost)) && addr.Hostname() != connHost {
-		return fmt.Errorf("Remote node host %s is different from its connection host %s", addr.Hostname(), connHost)
-	}
-
-	if remoteNode.IsOutbound && addr.Port() != connPort {
-		return fmt.Errorf("Remote node port %v is different from its connection port %v", addr.Port(), connPort)
-	}
-
-	return nil
-}
-
-func (localNode *LocalNode) addRemoteNode(nnetNode *nnetnode.RemoteNode) error {
-	remoteNode, err := NewRemoteNode(localNode, nnetNode)
-	if err != nil {
-		return err
-	}
-
-	err = localNode.AddNbrNode(remoteNode)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (localNode *LocalNode) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
-	if remoteNode != nil && localNode.getNbrByNNetNode(remoteNode) == nil {
-		return localNode.addRemoteNode(remoteNode)
-	}
 	return nil
 }
 
@@ -330,15 +240,6 @@ func (localNode *LocalNode) SetSyncState(s pb.SyncState) bool {
 		localNode.verifyNeighbors()
 	}
 	return changed
-}
-
-func (localNode *LocalNode) verifyNeighbors() {
-	for _, nbr := range localNode.GetNeighbors(nil) {
-		err := localNode.verifyRemoteNode(nbr.nnetNode)
-		if err != nil {
-			nbr.nnetNode.Stop(err)
-		}
-	}
 }
 
 func (localNode *LocalNode) GetSyncState() pb.SyncState {

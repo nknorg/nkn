@@ -43,7 +43,7 @@ func (localNode *LocalNode) computeSharedKey(remotePublicKey []byte) (*[sharedKe
 
 func (localNode *LocalNode) encryptMessage(msg []byte, rn *nnetnode.RemoteNode) []byte {
 	var sharedKey *[sharedKeySize]byte
-	if remoteNode := localNode.getNbrByNNetNode(rn); remoteNode != nil {
+	if remoteNode := localNode.getNeighborByNNetNode(rn); remoteNode != nil {
 		sharedKey = remoteNode.sharedKey
 	}
 	return encryptMessage(msg, sharedKey)
@@ -51,7 +51,7 @@ func (localNode *LocalNode) encryptMessage(msg []byte, rn *nnetnode.RemoteNode) 
 
 func (localNode *LocalNode) decryptMessage(msg []byte, rn *nnetnode.RemoteNode) ([]byte, error) {
 	var sharedKey *[sharedKeySize]byte
-	if remoteNode := localNode.getNbrByNNetNode(rn); remoteNode != nil {
+	if remoteNode := localNode.getNeighborByNNetNode(rn); remoteNode != nil {
 		sharedKey = remoteNode.sharedKey
 	} else if rn.Data != nil {
 		nodeData := &pb.NodeData{}

@@ -1,70 +1,108 @@
 package node
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"math/rand"
+	"net"
+	"net/url"
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util"
+	"github.com/nknorg/nkn/v2/util/address"
 	"github.com/nknorg/nkn/v2/util/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
+	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
 const (
-	maxNumRandomNeighbors         = 16
-	randomNeighborConnectInterval = 4 * config.ConsensusTimeout
+	randomNeighborsConnectDelay    = config.ConsensusTimeout / 2
+	gossipNeighborsConnectInterval = 4 * config.ConsensusTimeout
+	votingNeighborsConnectInterval = 1 * config.ConsensusTimeout
+	removeChanSize                 = 1024
 )
 
-// The neighbor node list
-type nbrNodes struct {
-	List            sync.Map
-	randomNeighbors []string
+type randomNeighbors struct {
+	maxNumNodes     int
+	connectInterval time.Duration
+	removeChan      chan string
+
+	sync.RWMutex
+	ids []string
 }
 
-func newNbrNodes() nbrNodes {
-	return nbrNodes{
-		randomNeighbors: make([]string, 0),
+func newRandomNeighbors(maxNumNodes int, connectInterval time.Duration) *randomNeighbors {
+	return &randomNeighbors{
+		maxNumNodes:     maxNumNodes,
+		connectInterval: connectInterval,
+		removeChan:      make(chan string, removeChanSize),
+		ids:             make([]string, 0, maxNumNodes),
 	}
 }
 
-func (nm *nbrNodes) GetNbrNode(id string) *RemoteNode {
-	v, ok := nm.List.Load(id)
-	if !ok {
-		return nil
+func (rn *randomNeighbors) maybeRemove(id string) {
+	select {
+	case rn.removeChan <- id:
+	default:
 	}
-	n, ok := v.(*RemoteNode)
-	if ok {
-		return n
+}
+
+type neighborNodes struct {
+	nodes           sync.Map
+	gossipNeighbors *randomNeighbors
+	votingNeighbors *randomNeighbors
+}
+
+func newNeighborNodes() *neighborNodes {
+	return &neighborNodes{
+		gossipNeighbors: newRandomNeighbors(config.MaxNumRandomGossipNeighbors, gossipNeighborsConnectInterval),
+		votingNeighbors: newRandomNeighbors(config.MaxNumRandomVotingNeighbors, votingNeighborsConnectInterval),
+	}
+}
+
+func (nm *neighborNodes) GetNeighborNode(id string) *RemoteNode {
+	if v, ok := nm.nodes.Load(id); ok {
+		if n, ok := v.(*RemoteNode); ok {
+			return n
+		}
 	}
 	return nil
 }
 
-func (nm *nbrNodes) AddNbrNode(remoteNode *RemoteNode) error {
-	nm.List.LoadOrStore(remoteNode.GetID(), remoteNode)
-	return nil
+func (nm *neighborNodes) addNeighborNode(remoteNode *RemoteNode) {
+	nm.nodes.LoadOrStore(remoteNode.GetID(), remoteNode)
 }
 
-func (nm *nbrNodes) DelNbrNode(id string) {
-	nm.List.Delete(id)
+func (nm *neighborNodes) removeNeighborNode(id string) {
+	nm.nodes.Delete(id)
+	nm.gossipNeighbors.maybeRemove(id)
+	nm.votingNeighbors.maybeRemove(id)
 }
 
-func (nm *nbrNodes) GetConnectionCnt() uint {
+func (nm *neighborNodes) GetConnectionCnt() uint {
 	return uint(len(nm.GetNeighbors(nil)))
 }
 
-func (nm *nbrNodes) GetNeighborHeights() ([]uint32, uint) {
-	heights := []uint32{}
-	for _, n := range nm.GetNeighbors(nil) {
+func (nm *neighborNodes) GetNeighborHeights() ([]uint32, uint) {
+	neighbors := nm.GetNeighbors(nil)
+	heights := make([]uint32, 0, len(neighbors))
+	for _, n := range neighbors {
 		heights = append(heights, n.GetHeight())
 	}
 	return heights, uint(len(heights))
 }
 
-func (nm *nbrNodes) GetNeighbors(filter func(*RemoteNode) bool) []*RemoteNode {
+func (nm *neighborNodes) GetNeighbors(filter func(*RemoteNode) bool) []*RemoteNode {
 	neighbors := make([]*RemoteNode, 0)
-	nm.List.Range(func(key, value interface{}) bool {
+	nm.nodes.Range(func(key, value interface{}) bool {
 		if rn, ok := value.(*RemoteNode); ok {
 			if filter == nil || filter(rn) {
 				neighbors = append(neighbors, rn)
@@ -75,17 +113,16 @@ func (nm *nbrNodes) GetNeighbors(filter func(*RemoteNode) bool) []*RemoteNode {
 	return neighbors
 }
 
-func (localNode *LocalNode) getNbrByNNetNode(nnetRemoteNode *nnetnode.RemoteNode) *RemoteNode {
+func (localNode *LocalNode) getNeighborByNNetNode(nnetRemoteNode *nnetnode.RemoteNode) *RemoteNode {
 	if nnetRemoteNode == nil {
 		return nil
 	}
-
-	nbr := localNode.GetNbrNode(chordIDToNodeID(nnetRemoteNode.Id))
+	nbr := localNode.GetNeighborNode(chordIDToNodeID(nnetRemoteNode.Id))
 	return nbr
 }
 
-func (localNode *LocalNode) startConnectingToRandomNeighbors() {
-	if maxNumRandomNeighbors == 0 {
+func (localNode *LocalNode) connectToRandomNeighbors(rn *randomNeighbors) {
+	if rn.maxNumNodes <= 0 {
 		return
 	}
 
@@ -95,16 +132,38 @@ func (localNode *LocalNode) startConnectingToRandomNeighbors() {
 	}
 
 	for {
-		if len(localNode.randomNeighbors) >= maxNumRandomNeighbors {
-			time.Sleep(util.RandDuration(randomNeighborConnectInterval, 1.0/3.0))
+		connectTimer := time.After(rn.connectInterval)
+		for {
+			rn.RLock()
+			n := len(rn.ids)
+			rn.RUnlock()
 
-			nbr := localNode.GetNbrNode(localNode.randomNeighbors[0])
-			if nbr != nil && !nbr.nnetNode.IsStopped() {
-				c.MaybeStopRemoteNode(nbr.nnetNode)
+			if n < rn.maxNumNodes {
+				break
 			}
-			localNode.randomNeighbors = localNode.randomNeighbors[1:]
-		} else {
-			time.Sleep(time.Second)
+
+			select {
+			case id := <-rn.removeChan:
+				rn.Lock()
+				for i := 0; i < len(rn.ids); i++ {
+					if rn.ids[i] == id {
+						rn.ids = append(rn.ids[:i], rn.ids[i+1:]...)
+						i--
+					}
+				}
+				rn.Unlock()
+			case <-connectTimer:
+				rn.Lock()
+				if len(rn.ids) >= rn.maxNumNodes {
+					nbr := localNode.GetNeighborNode(rn.ids[0])
+					if nbr != nil {
+						c.MaybeStopRemoteNode(nbr.nnetNode)
+					}
+					rn.ids = rn.ids[1:]
+				}
+				rn.Unlock()
+				connectTimer = time.After(rn.connectInterval)
+			}
 		}
 
 		randID := util.RandomBytes(config.NodeIDBytes)
@@ -112,27 +171,55 @@ func (localNode *LocalNode) startConnectingToRandomNeighbors() {
 		succs, err := c.FindSuccessors(randID, 1)
 		if err != nil {
 			log.Errorf("Find random neighbor at key %x error: %v", randID, err)
+			time.Sleep(time.Second)
 			continue
 		}
 
 		if len(succs) == 0 {
 			log.Errorf("Find no random neighbor at key %x", randID)
+			time.Sleep(time.Second)
 			continue
 		}
 
 		err = c.Connect(succs[0])
 		if err != nil {
 			log.Errorf("Connect to random neighbor at key %x error: %v", randID, err)
+			time.Sleep(time.Second)
 			continue
 		}
 
-		localNode.randomNeighbors = append(localNode.randomNeighbors, chordIDToNodeID(succs[0].Id))
-
 		log.Infof("Connect to random neighbor %x@%s", succs[0].Id, succs[0].Addr)
+
+		rn.Lock()
+		rn.ids = append(rn.ids, chordIDToNodeID(succs[0].Id))
+		rn.Unlock()
 	}
 }
 
-func (localNode *LocalNode) splitNeighbors(filter func(*RemoteNode) bool) ([]*RemoteNode, []*RemoteNode) {
+func (localNode *LocalNode) startConnectingToRandomNeighbors() {
+	time.Sleep(randomNeighborsConnectDelay)
+	go localNode.connectToRandomNeighbors(localNode.gossipNeighbors)
+	go localNode.connectToRandomNeighbors(localNode.votingNeighbors)
+}
+
+func (localNode *LocalNode) getRandomNeighbors(rn *randomNeighbors, filter func(*RemoteNode) bool) []*RemoteNode {
+	rn.RLock()
+	defer rn.RUnlock()
+
+	neighbors := make([]*RemoteNode, 0, len(rn.ids))
+	for _, id := range rn.ids {
+		nbr := localNode.GetNeighborNode(id)
+		if nbr != nil {
+			if filter == nil || filter(nbr) {
+				neighbors = append(neighbors, nbr)
+			}
+		}
+	}
+
+	return neighbors
+}
+
+func (localNode *LocalNode) getChordNeighbors(filter func(*RemoteNode) bool) []*RemoteNode {
 	c, ok := localNode.nnet.Network.(*chord.Chord)
 	if !ok {
 		log.Fatal("Overlay is not chord")
@@ -156,7 +243,6 @@ func (localNode *LocalNode) splitNeighbors(filter func(*RemoteNode) bool) ([]*Re
 	}
 
 	chordNeighbors := make([]*RemoteNode, 0, len(allNeighbors))
-	randomNeighbors := make([]*RemoteNode, 0, len(allNeighbors))
 
 	for _, neighbor := range allNeighbors {
 		if neighbor.Id == nil {
@@ -172,48 +258,129 @@ func (localNode *LocalNode) splitNeighbors(filter func(*RemoteNode) bool) ([]*Re
 			chordNeighbors = append(chordNeighbors, neighbor)
 			continue
 		}
-
-		randomNeighbors = append(randomNeighbors, neighbor)
 	}
 
-	return chordNeighbors, randomNeighbors
+	return chordNeighbors
 }
 
-func (localNode *LocalNode) getSampledNeighbors(filter func(*RemoteNode) bool, chordNeighborSampleRate float64, chordNeighborMinSample int, randomNeighborSampleRate float64, randomNeighborMinSample int) []*RemoteNode {
-	var sampledNeighbors []*RemoteNode
-	chordNeighbors, randomNeighbors := localNode.splitNeighbors(filter)
+func (localNode *LocalNode) getSampledNeighbors(rn *randomNeighbors, chordNeighborSampleRate float64, chordNeighborMinSample int, filter func(*RemoteNode) bool) []*RemoteNode {
+	sampledNeighbors := localNode.getRandomNeighbors(rn, filter)
 
-	numChordSamples := int(chordNeighborSampleRate * float64(len(chordNeighbors)))
-	if numChordSamples < chordNeighborMinSample {
-		numChordSamples = chordNeighborMinSample
-	}
-	if numChordSamples > len(chordNeighbors) {
-		numChordSamples = len(chordNeighbors)
-	}
-	if numChordSamples > 0 {
-		rand.Shuffle(len(chordNeighbors), func(i, j int) { chordNeighbors[i], chordNeighbors[j] = chordNeighbors[j], chordNeighbors[i] })
-		sampledNeighbors = append(sampledNeighbors, chordNeighbors[:numChordSamples]...)
-	}
-
-	numRandomSamples := int(randomNeighborSampleRate * float64(len(randomNeighbors)))
-	if numRandomSamples < randomNeighborMinSample {
-		numRandomSamples = randomNeighborMinSample
-	}
-	if numRandomSamples > len(randomNeighbors) {
-		numRandomSamples = len(randomNeighbors)
-	}
-	if numRandomSamples > 0 {
-		rand.Shuffle(len(randomNeighbors), func(i, j int) { randomNeighbors[i], randomNeighbors[j] = randomNeighbors[j], randomNeighbors[i] })
-		sampledNeighbors = append(sampledNeighbors, randomNeighbors[:numRandomSamples]...)
+	if chordNeighborSampleRate > 0 || chordNeighborMinSample > 0 {
+		chordNeighbors := localNode.getChordNeighbors(filter)
+		numChordSamples := int(chordNeighborSampleRate * float64(len(chordNeighbors)))
+		if numChordSamples < chordNeighborMinSample {
+			numChordSamples = chordNeighborMinSample
+		}
+		if numChordSamples > len(chordNeighbors) {
+			numChordSamples = len(chordNeighbors)
+		}
+		if numChordSamples > 0 {
+			rand.Shuffle(len(chordNeighbors), func(i, j int) { chordNeighbors[i], chordNeighbors[j] = chordNeighbors[j], chordNeighbors[i] })
+			sampledNeighbors = append(sampledNeighbors, chordNeighbors[:numChordSamples]...)
+		}
 	}
 
 	return sampledNeighbors
 }
 
 func (localNode *LocalNode) GetGossipNeighbors(filter func(*RemoteNode) bool) []*RemoteNode {
-	return localNode.getSampledNeighbors(filter, config.GossipSampleChordNeighbor, config.GossipMinChordNeighbor, config.GossipSampleRandomNeighbor, config.GossipMinRandomNeighbor)
+	return localNode.getSampledNeighbors(localNode.gossipNeighbors, config.GossipSampleChordNeighbor, config.GossipMinChordNeighbor, filter)
 }
 
 func (localNode *LocalNode) GetVotingNeighbors(filter func(*RemoteNode) bool) []*RemoteNode {
-	return localNode.getSampledNeighbors(filter, config.VotingSampleChordNeighbor, config.VotingMinChordNeighbor, config.VotingSampleRandomNeighbor, config.VotingMinRandomNeighbor)
+	return localNode.getSampledNeighbors(localNode.votingNeighbors, config.VotingSampleChordNeighbor, config.VotingMinChordNeighbor, filter)
+}
+
+func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
+	if n.GetData() != nil {
+		nodeData := &pb.NodeData{}
+		err := proto.Unmarshal(n.Data, nodeData)
+		if err != nil {
+			return err
+		}
+
+		if nodeData.ProtocolVersion < config.MinCompatibleProtocolVersion || nodeData.ProtocolVersion > config.MaxCompatibleProtocolVersion {
+			return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol version %d", nodeData.ProtocolVersion, config.ProtocolVersion)
+		}
+
+		id, err := chain.DefaultLedger.Store.GetID(nodeData.PublicKey)
+		if err != nil || len(id) == 0 || bytes.Equal(id, crypto.Sha256ZeroHash) {
+			if localNode.GetSyncState() == pb.PERSIST_FINISHED {
+				return fmt.Errorf("Remote node id can not be found in local ledger: err-%v, id-%v", err, id)
+			}
+		} else {
+			if !bytes.Equal(id, n.GetId()) {
+				return fmt.Errorf("Remote node id should be %x instead of %x", id, n.GetId())
+			}
+		}
+	}
+
+	if address.ShouldRejectAddr(localNode.GetAddr(), n.GetAddr()) {
+		return errors.New("Remote port is different from local port")
+	}
+
+	return nil
+}
+
+func (localNode *LocalNode) verifyRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+	if remoteNode.GetId() == nil {
+		return errors.New("Remote node id is nil")
+	}
+
+	if remoteNode.GetData() == nil {
+		return errors.New("Remote node data is nil")
+	}
+
+	err := localNode.shouldConnectToNode(remoteNode.Node.Node)
+	if err != nil {
+		return err
+	}
+
+	addr, err := url.Parse(remoteNode.GetAddr())
+	if err != nil {
+		return err
+	}
+
+	connHost, connPort, err := net.SplitHostPort(remoteNode.GetConn().RemoteAddr().String())
+	if err != nil {
+		return err
+	}
+
+	if !address.IsPrivateIP(net.ParseIP(connHost)) && addr.Hostname() != connHost {
+		return fmt.Errorf("Remote node host %s is different from its connection host %s", addr.Hostname(), connHost)
+	}
+
+	if remoteNode.IsOutbound && addr.Port() != connPort {
+		return fmt.Errorf("Remote node port %v is different from its connection port %v", addr.Port(), connPort)
+	}
+
+	return nil
+}
+
+func (localNode *LocalNode) verifyNeighbors() {
+	for _, nbr := range localNode.GetNeighbors(nil) {
+		err := localNode.verifyRemoteNode(nbr.nnetNode)
+		if err != nil {
+			nbr.nnetNode.Stop(err)
+		}
+	}
+}
+
+func (localNode *LocalNode) addRemoteNode(nnetNode *nnetnode.RemoteNode) error {
+	remoteNode, err := NewRemoteNode(localNode, nnetNode)
+	if err != nil {
+		return err
+	}
+
+	localNode.addNeighborNode(remoteNode)
+
+	return nil
+}
+
+func (localNode *LocalNode) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
+	if remoteNode != nil && localNode.getNeighborByNNetNode(remoteNode) == nil {
+		return localNode.addRemoteNode(remoteNode)
+	}
+	return nil
 }

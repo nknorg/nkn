@@ -213,7 +213,7 @@ func (consensus *Consensus) startRequestingProposal() {
 			continue
 		}
 
-		neighbor := consensus.localNode.GetNbrNode(requestProposal.neighborID)
+		neighbor := consensus.localNode.GetNeighborNode(requestProposal.neighborID)
 		if neighbor == nil {
 			continue
 		}
