@@ -186,7 +186,7 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 					continue
 				}
 
-				neighbor = localNode.GetNbrNode(info.neighborID)
+				neighbor = localNode.GetNeighborNode(info.neighborID)
 				if neighbor == nil {
 					continue
 				}

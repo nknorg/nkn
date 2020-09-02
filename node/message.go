@@ -46,7 +46,7 @@ func (remoteNode *RemoteNode) SendBytesAsync(buf []byte) error {
 	if err != nil {
 		log.Errorf("Error sending async messge to node %v, removing node.", err.Error())
 		remoteNode.CloseConn()
-		remoteNode.localNode.DelNbrNode(remoteNode.GetID())
+		remoteNode.localNode.removeNeighborNode(remoteNode.GetID())
 	}
 	return err
 }
@@ -68,7 +68,7 @@ func (remoteNode *RemoteNode) SendBytesReply(replyToID, buf []byte) error {
 	if err != nil {
 		log.Errorf("Error sending async messge to node: %v, removing node.", err.Error())
 		remoteNode.CloseConn()
-		remoteNode.localNode.DelNbrNode(remoteNode.GetID())
+		remoteNode.localNode.removeNeighborNode(remoteNode.GetID())
 	}
 	return err
 }
@@ -88,7 +88,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 		}
 
 		var senderNode *Node
-		senderRemoteNode := localNode.getNbrByNNetNode(remoteMessage.RemoteNode)
+		senderRemoteNode := localNode.getNeighborByNNetNode(remoteMessage.RemoteNode)
 		if senderRemoteNode != nil {
 			senderNode = senderRemoteNode.Node
 		} else if remoteMessage.RemoteNode == nil {
@@ -172,7 +172,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 
 			var nextHop *RemoteNode
 			if len(remoteNodes) > 0 {
-				nextHop = localNode.getNbrByNNetNode(remoteNodes[0])
+				nextHop = localNode.getNeighborByNNetNode(remoteNodes[0])
 				if nextHop == nil {
 					log.Errorf("cannot get next hop neighbor node")
 					return nil, nil, nil, false

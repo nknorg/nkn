@@ -19,7 +19,7 @@ const (
 	proposingTimeout              = chain.ProposingTimeTolerance * 4 / 5
 	cacheExpiration               = 3600 * time.Second
 	cacheCleanupInterval          = 600 * time.Second
-	proposingStartDelay           = config.ConsensusTimeout + time.Second
+	proposingStartDelay           = 2*config.ConsensusTimeout + time.Second
 	proposalPropagationDelay      = time.Second
 	getConsensusStateInterval     = config.ConsensusDuration / 4
 	getConsensusStateRetries      = 3

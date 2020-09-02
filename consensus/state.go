@@ -88,10 +88,12 @@ func (consensus *Consensus) getNeighborConsensusState(neighbor *node.RemoteNode)
 
 // getAllNeighborsConsensusState returns the latest block info of all neighbors
 // by calling getNeighborConsensusState on all of them concurrently.
-func (consensus *Consensus) getAllNeighborsConsensusState() (*sync.Map, error) {
-	var allInfo sync.Map
+func (consensus *Consensus) getAllNeighborsConsensusState() (map[string]*pb.GetConsensusStateReply, error) {
+	allNeighbors := consensus.localNode.GetNeighbors(nil)
+	allStates := make(map[string]*pb.GetConsensusStateReply, len(allNeighbors))
 	var wg sync.WaitGroup
-	for _, neighbor := range consensus.localNode.GetNeighbors(nil) {
+	var lock sync.Mutex
+	for _, neighbor := range allNeighbors {
 		wg.Add(1)
 		go func(neighbor *node.RemoteNode) {
 			defer wg.Done()
@@ -100,11 +102,13 @@ func (consensus *Consensus) getAllNeighborsConsensusState() (*sync.Map, error) {
 				log.Warningf("Get consensus state from neighbor %v error: %v", neighbor.GetID(), err)
 				return
 			}
-			allInfo.Store(neighbor.GetID(), consensusState)
+			lock.Lock()
+			allStates[neighbor.GetID()] = consensusState
+			lock.Unlock()
 		}(neighbor)
 	}
 	wg.Wait()
-	return &allInfo, nil
+	return allStates, nil
 }
 
 // getNeighborsMajorConsensusHeight returns the majority of neighbors' nonzero
@@ -115,7 +119,7 @@ func (consensus *Consensus) getNeighborsMajorityConsensusHeight() uint32 {
 			time.Sleep(getConsensusStateRetryDelay)
 		}
 
-		allInfo, err := consensus.getAllNeighborsConsensusState()
+		allStates, err := consensus.getAllNeighborsConsensusState()
 		if err != nil {
 			log.Warningf("Get neighbors latest block info error: %v", err)
 			continue
@@ -123,18 +127,13 @@ func (consensus *Consensus) getNeighborsMajorityConsensusHeight() uint32 {
 
 		counter := make(map[uint32]int)
 		totalCount := 0
-		allInfo.Range(func(key, value interface{}) bool {
-			if consensusState, ok := value.(*pb.GetConsensusStateReply); ok && consensusState != nil {
+		for _, neighbor := range consensus.localNode.GetVotingNeighbors(nil) {
+			if consensusState, ok := allStates[neighbor.GetID()]; ok {
 				if consensusState.SyncState != pb.WAIT_FOR_SYNCING && consensusState.ConsensusHeight > 0 {
 					counter[consensusState.ConsensusHeight]++
 					totalCount++
 				}
 			}
-			return true
-		})
-
-		if totalCount == 0 {
-			continue
 		}
 
 		for consensusHeight, count := range counter {
