@@ -32,7 +32,7 @@ func NewCertManager() (*certManager, error) {
 	}
 
 	c := lego.NewConfig(u)
-	c.CADirURL = lego.LEDirectoryStaging
+	c.CADirURL = lego.LEDirectoryProduction
 	c.Certificate.KeyType = certcrypto.RSA2048
 
 	// A client facilitates communication with the CA server.
