@@ -25,7 +25,7 @@ type Consensus struct {
 	startOnce           sync.Once
 	proposals           common.Cache
 	requestProposalChan chan *requestProposalInfo
-	neighborBlacklist   sync.Map
+	neighborBlocklist   sync.Map
 	mining              chain.Mining
 	txnCollector        *chain.TxnCollector
 
