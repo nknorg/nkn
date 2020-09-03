@@ -126,8 +126,8 @@ func (localNode *LocalNode) computeNumRandomNeighbors(numRandomNeighborsFactor, 
 	}
 
 	numRandomNeighbors := 0
-	for _, nodes := range c.FingerTable() {
-		if len(nodes) > 0 {
+	for _, finger := range c.FingerTable() {
+		if len(finger) > 0 {
 			numRandomNeighbors += numRandomNeighborsFactor
 		}
 	}
@@ -233,7 +233,7 @@ func (localNode *LocalNode) getRandomNeighbors(rn *randomNeighbors, filter func(
 	return neighbors
 }
 
-func (localNode *LocalNode) getChordNeighbors(filter func(*RemoteNode) bool) []*RemoteNode {
+func (localNode *LocalNode) splitNeighbors(filter func(*RemoteNode) bool) ([]*RemoteNode, []*RemoteNode) {
 	c, ok := localNode.nnet.Network.(*chord.Chord)
 	if !ok {
 		log.Fatal("Overlay is not chord")
@@ -257,6 +257,7 @@ func (localNode *LocalNode) getChordNeighbors(filter func(*RemoteNode) bool) []*
 	}
 
 	chordNeighbors := make([]*RemoteNode, 0, len(allNeighbors))
+	randomNeighbors := make([]*RemoteNode, 0, len(allNeighbors))
 
 	for _, neighbor := range allNeighbors {
 		if neighbor.Id == nil {
@@ -272,16 +273,18 @@ func (localNode *LocalNode) getChordNeighbors(filter func(*RemoteNode) bool) []*
 			chordNeighbors = append(chordNeighbors, neighbor)
 			continue
 		}
+
+		randomNeighbors = append(randomNeighbors, neighbor)
 	}
 
-	return chordNeighbors
+	return chordNeighbors, randomNeighbors
 }
 
 func (localNode *LocalNode) getSampledNeighbors(rn *randomNeighbors, chordNeighborSampleRate float64, chordNeighborMinSample int, filter func(*RemoteNode) bool) []*RemoteNode {
 	sampledNeighbors := localNode.getRandomNeighbors(rn, filter)
 
 	if chordNeighborSampleRate > 0 || chordNeighborMinSample > 0 {
-		chordNeighbors := localNode.getChordNeighbors(filter)
+		chordNeighbors, _ := localNode.splitNeighbors(filter)
 		numChordSamples := int(chordNeighborSampleRate * float64(len(chordNeighbors)))
 		if numChordSamples < chordNeighborMinSample {
 			numChordSamples = chordNeighborMinSample
@@ -321,17 +324,17 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 		id, err := chain.DefaultLedger.Store.GetID(nodeData.PublicKey)
 		if err != nil || len(id) == 0 || bytes.Equal(id, crypto.Sha256ZeroHash) {
 			if localNode.GetSyncState() == pb.PERSIST_FINISHED {
-				return fmt.Errorf("Remote node id can not be found in local ledger: err-%v, id-%v", err, id)
+				return fmt.Errorf("remote node id can not be found in local ledger: err-%v, id-%v", err, id)
 			}
 		} else {
 			if !bytes.Equal(id, n.GetId()) {
-				return fmt.Errorf("Remote node id should be %x instead of %x", id, n.GetId())
+				return fmt.Errorf("remote node id should be %x instead of %x", id, n.GetId())
 			}
 		}
 	}
 
 	if address.ShouldRejectAddr(localNode.GetAddr(), n.GetAddr()) {
-		return errors.New("Remote port is different from local port")
+		return errors.New("remote port is different from local port")
 	}
 
 	return nil
@@ -339,11 +342,11 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 
 func (localNode *LocalNode) verifyRemoteNode(remoteNode *nnetnode.RemoteNode) error {
 	if remoteNode.GetId() == nil {
-		return errors.New("Remote node id is nil")
+		return errors.New("remote node id is nil")
 	}
 
 	if remoteNode.GetData() == nil {
-		return errors.New("Remote node data is nil")
+		return errors.New("remote node data is nil")
 	}
 
 	err := localNode.shouldConnectToNode(remoteNode.Node.Node)
@@ -362,11 +365,11 @@ func (localNode *LocalNode) verifyRemoteNode(remoteNode *nnetnode.RemoteNode) er
 	}
 
 	if !address.IsPrivateIP(net.ParseIP(connHost)) && addr.Hostname() != connHost {
-		return fmt.Errorf("Remote node host %s is different from its connection host %s", addr.Hostname(), connHost)
+		return fmt.Errorf("remote node host %s is different from its connection host %s", addr.Hostname(), connHost)
 	}
 
 	if remoteNode.IsOutbound && addr.Port() != connPort {
-		return fmt.Errorf("Remote node port %v is different from its connection port %v", addr.Port(), connPort)
+		return fmt.Errorf("remote node port %v is different from its connection port %v", addr.Port(), connPort)
 	}
 
 	return nil
@@ -393,8 +396,31 @@ func (localNode *LocalNode) addRemoteNode(nnetNode *nnetnode.RemoteNode) error {
 }
 
 func (localNode *LocalNode) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) error {
-	if remoteNode != nil && localNode.getNeighborByNNetNode(remoteNode) == nil {
-		return localNode.addRemoteNode(remoteNode)
+	if remoteNode == nil {
+		return nil
 	}
+
+	if localNode.getNeighborByNNetNode(remoteNode) != nil {
+		return nil
+	}
+
+	err := localNode.addRemoteNode(remoteNode)
+	if err != nil {
+		return err
+	}
+
+	if !remoteNode.IsOutbound {
+		_, inboundRandomNeighbors := localNode.splitNeighbors(func(rn *RemoteNode) bool {
+			return !rn.nnetNode.IsOutbound
+		})
+		if len(inboundRandomNeighbors) > config.MaxNumInboundRandomNeighbors {
+			for _, inboundRandomNeighbor := range inboundRandomNeighbors {
+				if bytes.Equal(inboundRandomNeighbor.Id, remoteNode.Id) {
+					return fmt.Errorf("node has %d/%d inbound random neighbors", len(inboundRandomNeighbors), config.MaxNumInboundRandomNeighbors)
+				}
+			}
+		}
+	}
+
 	return nil
 }
