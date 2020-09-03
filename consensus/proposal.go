@@ -34,12 +34,12 @@ type requestProposalInfo struct {
 func (consensus *Consensus) getBlockProposal(blockHash common.Uint256) (*block.Block, error) {
 	value, ok := consensus.proposals.Get(blockHash.ToArray())
 	if !ok {
-		return nil, fmt.Errorf("Block %s not found in local cache", blockHash.ToHexString())
+		return nil, fmt.Errorf("block %s not found in local cache", blockHash.ToHexString())
 	}
 
 	block, ok := value.(*block.Block)
 	if !ok {
-		return nil, fmt.Errorf("Convert block %s from proposal cache error", blockHash.ToHexString())
+		return nil, fmt.Errorf("convert block %s from proposal cache error", blockHash.ToHexString())
 	}
 
 	return block, nil
@@ -89,7 +89,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 
 		select {
 		case <-timeoutTimer.C:
-			return nil, errors.New("Wait for neighbor vote timeout")
+			return nil, errors.New("wait for neighbor vote timeout")
 		default:
 			time.Sleep(50 * time.Millisecond)
 		}
@@ -250,13 +250,13 @@ func (consensus *Consensus) receiveProposal(block *block.Block) error {
 	receivedHeight := block.Header.UnsignedHeader.Height
 	expectedHeight := consensus.expectedHeight
 	if receivedHeight != expectedHeight {
-		return fmt.Errorf("Receive invalid proposal height %d instead of %d", receivedHeight, expectedHeight)
+		return fmt.Errorf("receive invalid proposal height %d instead of %d", receivedHeight, expectedHeight)
 	}
 
 	select {
 	case consensus.proposalChan <- block:
 	default:
-		return errors.New("Prososal chan full, discarding proposal")
+		return errors.New("prososal chan full, discarding proposal")
 	}
 
 	consensus.proposals.Set(blockHash.ToArray(), block)
@@ -270,20 +270,20 @@ func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32
 	log.Debugf("Receive block hash %s for height %d from neighbor %v", blockHash.ToHexString(), height, neighborID)
 
 	if blockHash == common.EmptyUint256 {
-		return errors.New("Receive empty block hash")
+		return errors.New("receive empty block hash")
 	}
 
 	if _, ok := consensus.proposals.Get(blockHash.ToArray()); ok {
 		return nil
 	}
 
-	if _, ok := consensus.neighborBlacklist.Load(neighborID); ok {
-		return fmt.Errorf("ignore block hash %s from blacklist neighbor %s", blockHash.ToHexString(), neighborID)
+	if _, ok := consensus.neighborBlocklist.Load(neighborID); ok {
+		return fmt.Errorf("ignore block hash %s from blocklist neighbor %s", blockHash.ToHexString(), neighborID)
 	}
 
 	expectedHeight := consensus.GetExpectedHeight()
 	if height != expectedHeight {
-		return fmt.Errorf("Receive invalid block hash height %d instead of %d", height, expectedHeight)
+		return fmt.Errorf("receive invalid block hash height %d instead of %d", height, expectedHeight)
 	}
 
 	if _, ok := consensus.proposals.Get(blockHash.ToArray()); !ok {
@@ -296,7 +296,7 @@ func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32
 		select {
 		case consensus.requestProposalChan <- requestProposal:
 		default:
-			return errors.New("Request prososal chan full")
+			return errors.New("request prososal chan full")
 		}
 	}
 
@@ -338,12 +338,12 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 	b.FromMsgBlock(replyMsg.Block)
 
 	if b.Header.UnsignedHeader.Height != height {
-		return nil, fmt.Errorf("Received block height %d is different from expected height %d", b.Header.UnsignedHeader.Height, height)
+		return nil, fmt.Errorf("received block height %d is different from expected height %d", b.Header.UnsignedHeader.Height, height)
 	}
 
 	receivedBlockHash := b.Hash()
 	if receivedBlockHash != blockHash {
-		return nil, fmt.Errorf("Received block hash %s is different from requested hash %s", receivedBlockHash.ToHexString(), blockHash.ToHexString())
+		return nil, fmt.Errorf("received block hash %s is different from requested hash %s", receivedBlockHash.ToHexString(), blockHash.ToHexString())
 	}
 
 	if consensus.canVerifyHeight(b.Header.UnsignedHeader.Height) {
@@ -351,24 +351,23 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		// timestamp to be propagated
 		if err = chain.TimestampCheck(b.Header, false); err != nil {
 			consensus.proposals.Set(blockHash.ToArray(), b)
-			return nil, fmt.Errorf("Proposal fails to pass hard timestamp check: %v", err)
+			return nil, fmt.Errorf("proposal fails to pass hard timestamp check: %v", err)
 		}
 		if err = chain.SignerCheck(b.Header); err != nil {
 			consensus.proposals.Set(blockHash.ToArray(), b)
-			return nil, fmt.Errorf("Proposal fails to pass signer check: %v", err)
+			return nil, fmt.Errorf("proposal fails to pass signer check: %v", err)
 		}
 	}
 
 	if err = chain.SignatureCheck(b.Header); err != nil {
-		err = fmt.Errorf("Proposal fails to pass signature check: %v", err)
-		consensus.neighborBlacklist.Store(neighbor.GetID(), err)
-		log.Infof("Add neighbor %s to blacklist because: %v", neighbor.GetID(), err)
+		err = fmt.Errorf("proposal fails to pass signature check: %v", err)
+		consensus.neighborBlocklist.Store(neighbor.GetID(), err)
+		log.Infof("Add neighbor %s to blocklist because: %v", neighbor.GetID(), err)
 		return nil, err
 	}
 
-	var txnsRoot common.Uint256
-	poolTxns := make([]*transaction.Transaction, 0, len(replyMsg.TransactionsHash))
-	missingTxnsHash := make([][]byte, 0, len(replyMsg.TransactionsHash))
+	existingTxns := make([]*transaction.Transaction, 0, len(replyMsg.TransactionsHash))
+	missingTxnsHash := make([][]byte, 0)
 
 	switch requestType {
 	case pb.REQUEST_FULL_TRANSACTION:
@@ -377,17 +376,9 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 			txnsHash[i] = txn.Hash()
 		}
 
-		if hasDuplicateHash(txnsHash) {
-			return nil, fmt.Errorf("Block txn list contains duplicate")
-		}
-
-		txnsRoot, err = crypto.ComputeRoot(txnsHash)
+		err = crypto.VerifyRoot(txnsHash, b.Header.UnsignedHeader.TransactionsRoot)
 		if err != nil {
 			return nil, err
-		}
-
-		if !bytes.Equal(txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot) {
-			return nil, fmt.Errorf("Computed txn root %x is different from txn root in header %x", txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot)
 		}
 
 		return b, nil
@@ -400,73 +391,76 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 			}
 		}
 
-		if hasDuplicateHash(txnsHash) {
-			return nil, fmt.Errorf("Txn hash list contains duplicate")
-		}
-
-		txnsRoot, err = crypto.ComputeRoot(txnsHash)
+		err = crypto.VerifyRoot(txnsHash, b.Header.UnsignedHeader.TransactionsRoot)
 		if err != nil {
 			return nil, err
 		}
 
-		if !bytes.Equal(txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot) {
-			return nil, fmt.Errorf("Computed txn root %x is different from txn root in header %x", txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot)
+		blockTxns := make(map[common.Uint256]*transaction.Transaction, len(b.Transactions))
+		for _, txn := range b.Transactions {
+			blockTxns[txn.Hash()] = txn
 		}
 
 		for i := range txnsHash {
-			if txn := consensus.localNode.TxnPool.GetTxnByHash(txnsHash[i]); txn != nil {
-				poolTxns = append(poolTxns, txn)
+			if txn := blockTxns[txnsHash[i]]; txn != nil {
+				existingTxns = append(existingTxns, txn)
+			} else if txn = consensus.localNode.TxnPool.GetTxnByHash(txnsHash[i]); txn != nil {
+				existingTxns = append(existingTxns, txn)
 			} else if txn, err = por.GetPorServer().GetSigChainTxn(txnsHash[i]); err == nil && txn != nil {
-				poolTxns = append(poolTxns, txn)
+				existingTxns = append(existingTxns, txn)
 			} else {
 				missingTxnsHash = append(missingTxnsHash, txnsHash[i].ToArray())
 			}
 		}
 	case pb.REQUEST_TRANSACTION_SHORT_HASH:
+		blockTxns := make(map[string]*transaction.Transaction, len(b.Transactions))
+		for _, txn := range b.Transactions {
+			blockTxns[string(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize))] = txn
+		}
+
 		for i := range replyMsg.TransactionsHash {
-			if txn := consensus.localNode.TxnPool.GetTxnByShortHash(replyMsg.TransactionsHash[i]); txn != nil {
-				poolTxns = append(poolTxns, txn)
+			if txn := blockTxns[string(replyMsg.TransactionsHash[i])]; txn != nil {
+				existingTxns = append(existingTxns, txn)
+			} else if txn := consensus.localNode.TxnPool.GetTxnByShortHash(replyMsg.TransactionsHash[i]); txn != nil {
+				existingTxns = append(existingTxns, txn)
 			} else if txn, err = por.GetPorServer().GetSigChainTxnByShortHash(replyMsg.TransactionsHash[i]); err == nil && txn != nil {
-				poolTxns = append(poolTxns, txn)
+				existingTxns = append(existingTxns, txn)
 			} else {
 				missingTxnsHash = append(missingTxnsHash, replyMsg.TransactionsHash[i])
 			}
 		}
 	default:
-		return nil, fmt.Errorf("Unsupported request type %v", requestType)
+		return nil, fmt.Errorf("unsupported request type %v", requestType)
 	}
 
-	log.Infof("Receive block info %s, %d txn found in pool, %d txn to request", blockHash.ToHexString(), len(poolTxns), len(missingTxnsHash))
+	log.Infof("Receive block info %s, %d txn found, %d txn to request", blockHash.ToHexString(), len(existingTxns), len(missingTxnsHash))
 
-	requestedTxns, err := consensus.requestProposalTransactions(neighbor, blockHash, requestType, missingTxnsHash)
-	if err != nil {
-		return nil, err
-	}
-
-	mergedTxns := make([]*transaction.Transaction, len(replyMsg.TransactionsHash))
-
-	err = mergeTxns(poolTxns, requestedTxns, mergedTxns, replyMsg.TransactionsHash, requestType)
-	if err != nil {
-		return nil, err
-	}
-
-	if requestType == pb.REQUEST_TRANSACTION_SHORT_HASH {
-		txnsHash := make([]common.Uint256, len(replyMsg.TransactionsHash))
-		for i, txn := range mergedTxns {
-			txnsHash[i] = txn.Hash()
-		}
-
-		if hasDuplicateHash(txnsHash) {
-			return nil, fmt.Errorf("Txn list contains duplicate")
-		}
-
-		txnsRoot, err = crypto.ComputeRoot(txnsHash)
+	var mergedTxns []*transaction.Transaction
+	if len(missingTxnsHash) > 0 {
+		requestedTxns, err := consensus.requestProposalTransactions(neighbor, blockHash, requestType, missingTxnsHash)
 		if err != nil {
 			return nil, err
 		}
 
-		if !bytes.Equal(txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot) {
-			log.Warningf("Computed txn root %x is different from txn root in header %x, fall back to request full txn hash.", txnsRoot.ToArray(), b.Header.UnsignedHeader.TransactionsRoot)
+		mergedTxns = make([]*transaction.Transaction, len(replyMsg.TransactionsHash))
+
+		err = mergeTxns(existingTxns, requestedTxns, mergedTxns, replyMsg.TransactionsHash, requestType)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		mergedTxns = existingTxns
+	}
+
+	if requestType == pb.REQUEST_TRANSACTION_SHORT_HASH {
+		txnsHash := make([]common.Uint256, len(mergedTxns))
+		for i, txn := range mergedTxns {
+			txnsHash[i] = txn.Hash()
+		}
+
+		err = crypto.VerifyRoot(txnsHash, b.Header.UnsignedHeader.TransactionsRoot)
+		if err != nil {
+			log.Warningf("Short hash verify root error: %v, fallback to full transaction hash", err)
 			return consensus.requestProposal(neighbor, blockHash, height, pb.REQUEST_TRANSACTION_HASH)
 		}
 	}
@@ -485,17 +479,17 @@ func getTxnHash(txn *transaction.Transaction, requestType pb.RequestTransactionT
 	case pb.REQUEST_TRANSACTION_SHORT_HASH:
 		txnHashBytes = txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)
 	default:
-		return nil, fmt.Errorf("Unsupported request type %v", requestType)
+		return nil, fmt.Errorf("unsupported request type %v", requestType)
 	}
 	return txnHashBytes, nil
 }
 
-func mergeTxns(poolTxns, requestedTxns, mergedTxns []*transaction.Transaction, txnsHash [][]byte, requestType pb.RequestTransactionType) error {
+func mergeTxns(existingTxns, requestedTxns, mergedTxns []*transaction.Transaction, txnsHash [][]byte, requestType pb.RequestTransactionType) error {
 	if len(mergedTxns) != len(txnsHash) {
-		return fmt.Errorf("Merged txn array len %d is different from txn hash array len %d", len(mergedTxns), len(txnsHash))
+		return fmt.Errorf("merged txn array len %d is different from txn hash array len %d", len(mergedTxns), len(txnsHash))
 	}
-	if len(poolTxns)+len(requestedTxns) != len(txnsHash) {
-		return fmt.Errorf("Sum of pool txn array len %d and requested txn array len %d is different from txn hash array len %d", len(poolTxns), len(requestedTxns), len(txnsHash))
+	if len(existingTxns)+len(requestedTxns) != len(txnsHash) {
+		return fmt.Errorf("sum of existing txn array len %d and requested txn array len %d is different from txn hash array len %d", len(existingTxns), len(requestedTxns), len(txnsHash))
 	}
 
 	i, j := 0, 0
@@ -504,13 +498,13 @@ func mergeTxns(poolTxns, requestedTxns, mergedTxns []*transaction.Transaction, t
 			break
 		}
 
-		if i < len(poolTxns) {
-			txnHashBytes, err := getTxnHash(poolTxns[i], requestType)
+		if i < len(existingTxns) {
+			txnHashBytes, err := getTxnHash(existingTxns[i], requestType)
 			if err != nil {
 				return err
 			}
 			if bytes.Equal(txnHashBytes, txnsHash[i+j]) {
-				mergedTxns[i+j] = poolTxns[i]
+				mergedTxns[i+j] = existingTxns[i]
 				i++
 				continue
 			}
@@ -528,7 +522,7 @@ func mergeTxns(poolTxns, requestedTxns, mergedTxns []*transaction.Transaction, t
 			}
 		}
 
-		return errors.New("Merge pool and requested txn array error: txn hash mismatch")
+		return errors.New("merge txn error: hash mismatch")
 	}
 
 	return nil
@@ -564,7 +558,7 @@ func (consensus *Consensus) requestProposalTransactions(neighbor *node.RemoteNod
 	}
 
 	if len(replyMsg.Transactions) != len(txnsHash) {
-		return nil, fmt.Errorf("Returned txn count %d is different from requested count %d", len(replyMsg.Transactions), len(txnsHash))
+		return nil, fmt.Errorf("returned txn count %d is different from requested count %d", len(replyMsg.Transactions), len(txnsHash))
 	}
 
 	txns := make([]*transaction.Transaction, len(replyMsg.Transactions))
@@ -578,7 +572,7 @@ func (consensus *Consensus) requestProposalTransactions(neighbor *node.RemoteNod
 			return nil, err
 		}
 		if !bytes.Equal(txnHash, txnsHash[i]) {
-			return nil, fmt.Errorf("The %dth txn hash %x is different from expected %x", i, txnHash, txnsHash[i])
+			return nil, fmt.Errorf("the %dth txn hash %x is different from expected %x", i, txnHash, txnsHash[i])
 		}
 	}
 

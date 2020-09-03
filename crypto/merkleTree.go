@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 
 	"github.com/nknorg/nkn/v2/common"
 )
@@ -108,4 +109,32 @@ func ComputeRoot(hashes []common.Uint256) (common.Uint256, error) {
 	}
 	tree, _ := NewMerkleTree(hashes)
 	return tree.Root.Hash, nil
+}
+
+func VerifyRoot(txnsHash []common.Uint256, txnsRoot []byte) error {
+	if hasDuplicateHash(txnsHash) {
+		return fmt.Errorf("transactions contain duplicate hash")
+	}
+
+	computedRoot, err := ComputeRoot(txnsHash)
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(computedRoot.ToArray(), txnsRoot) {
+		return fmt.Errorf("computed txn root %x is different from txn root in header %x", computedRoot.ToArray(), txnsRoot)
+	}
+
+	return nil
+}
+
+func hasDuplicateHash(txnsHash []common.Uint256) bool {
+	count := make(map[common.Uint256]int, len(txnsHash))
+	for _, txnHash := range txnsHash {
+		if count[txnHash] > 0 {
+			return true
+		}
+		count[txnHash]++
+	}
+	return false
 }
