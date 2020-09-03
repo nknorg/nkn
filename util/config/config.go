@@ -39,8 +39,8 @@ const (
 	MinNumRandomGossipNeighbors    = 8
 	MinNumRandomVotingNeighbors    = 24
 	MaxNumInboundRandomNeighbors   = 256
-	GossipSampleChordNeighbor      = 0.1
-	GossipMinChordNeighbor         = 3
+	GossipSampleChordNeighbor      = 0.15
+	GossipMinChordNeighbor         = 8
 	VotingSampleChordNeighbor      = 0.0
 	VotingMinChordNeighbor         = 0
 	HeaderVersion                  = 1
