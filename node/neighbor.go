@@ -31,7 +31,6 @@ const (
 )
 
 type randomNeighbors struct {
-	maxNumNodes     int
 	connectInterval time.Duration
 	removeChan      chan string
 
@@ -39,12 +38,11 @@ type randomNeighbors struct {
 	ids []string
 }
 
-func newRandomNeighbors(maxNumNodes int, connectInterval time.Duration) *randomNeighbors {
+func newRandomNeighbors(connectInterval time.Duration) *randomNeighbors {
 	return &randomNeighbors{
-		maxNumNodes:     maxNumNodes,
 		connectInterval: connectInterval,
 		removeChan:      make(chan string, removeChanSize),
-		ids:             make([]string, 0, maxNumNodes),
+		ids:             make([]string, 0),
 	}
 }
 
@@ -63,8 +61,8 @@ type neighborNodes struct {
 
 func newNeighborNodes() *neighborNodes {
 	return &neighborNodes{
-		gossipNeighbors: newRandomNeighbors(config.MaxNumRandomGossipNeighbors, gossipNeighborsConnectInterval),
-		votingNeighbors: newRandomNeighbors(config.MaxNumRandomVotingNeighbors, votingNeighborsConnectInterval),
+		gossipNeighbors: newRandomNeighbors(gossipNeighborsConnectInterval),
+		votingNeighbors: newRandomNeighbors(votingNeighborsConnectInterval),
 	}
 }
 
@@ -121,11 +119,27 @@ func (localNode *LocalNode) getNeighborByNNetNode(nnetRemoteNode *nnetnode.Remot
 	return nbr
 }
 
-func (localNode *LocalNode) connectToRandomNeighbors(rn *randomNeighbors) {
-	if rn.maxNumNodes <= 0 {
-		return
+func (localNode *LocalNode) computeNumRandomNeighbors(numRandomNeighborsFactor, minNumRandomNeighbors int) int {
+	c, ok := localNode.nnet.Network.(*chord.Chord)
+	if !ok {
+		log.Fatal("Overlay is not chord")
 	}
 
+	numRandomNeighbors := 0
+	for _, nodes := range c.FingerTable() {
+		if len(nodes) > 0 {
+			numRandomNeighbors += numRandomNeighborsFactor
+		}
+	}
+
+	if numRandomNeighbors > minNumRandomNeighbors {
+		return numRandomNeighbors
+	}
+
+	return minNumRandomNeighbors
+}
+
+func (localNode *LocalNode) connectToRandomNeighbors(rn *randomNeighbors, numRandomNeighborsFactor, minNumRandomNeighbors int) {
 	c, ok := localNode.nnet.Network.(*chord.Chord)
 	if !ok {
 		log.Fatal("Overlay is not chord")
@@ -138,7 +152,7 @@ func (localNode *LocalNode) connectToRandomNeighbors(rn *randomNeighbors) {
 			n := len(rn.ids)
 			rn.RUnlock()
 
-			if n < rn.maxNumNodes {
+			if n < localNode.computeNumRandomNeighbors(numRandomNeighborsFactor, minNumRandomNeighbors) {
 				break
 			}
 
@@ -154,7 +168,7 @@ func (localNode *LocalNode) connectToRandomNeighbors(rn *randomNeighbors) {
 				rn.Unlock()
 			case <-connectTimer:
 				rn.Lock()
-				if len(rn.ids) >= rn.maxNumNodes {
+				if len(rn.ids) >= localNode.computeNumRandomNeighbors(numRandomNeighborsFactor, minNumRandomNeighbors) {
 					nbr := localNode.GetNeighborNode(rn.ids[0])
 					if nbr != nil {
 						c.MaybeStopRemoteNode(nbr.nnetNode)
@@ -198,8 +212,8 @@ func (localNode *LocalNode) connectToRandomNeighbors(rn *randomNeighbors) {
 
 func (localNode *LocalNode) startConnectingToRandomNeighbors() {
 	time.Sleep(randomNeighborsConnectDelay)
-	go localNode.connectToRandomNeighbors(localNode.gossipNeighbors)
-	go localNode.connectToRandomNeighbors(localNode.votingNeighbors)
+	go localNode.connectToRandomNeighbors(localNode.gossipNeighbors, config.NumRandomGossipNeighborsFactor, config.MinNumRandomGossipNeighbors)
+	go localNode.connectToRandomNeighbors(localNode.votingNeighbors, config.NumRandomVotingNeighborsFactor, config.MinNumRandomVotingNeighbors)
 }
 
 func (localNode *LocalNode) getRandomNeighbors(rn *randomNeighbors, filter func(*RemoteNode) bool) []*RemoteNode {
