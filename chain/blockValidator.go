@@ -54,9 +54,10 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		return nil
 	}
 
-	if block.Transactions == nil {
+	if len(block.Transactions) == 0 {
 		return errors.New("empty block")
 	}
+
 	numTxn := len(block.Transactions)
 	if numTxn > config.MaxNumTxnPerBlock {
 		return errors.New("block contains too many transactions")

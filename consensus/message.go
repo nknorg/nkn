@@ -282,9 +282,9 @@ func (consensus *Consensus) requestBlockProposalMessageHandler(remoteMessage *no
 	case pb.REQUEST_FULL_TRANSACTION:
 		b = fullBlock
 	case pb.REQUEST_TRANSACTION_HASH:
-		b = &block.Block{
-			Header:       fullBlock.Header,
-			Transactions: []*transaction.Transaction{fullBlock.Transactions[0]},
+		b = &block.Block{Header: fullBlock.Header}
+		if len(fullBlock.Transactions) > 0 {
+			b.Transactions = []*transaction.Transaction{fullBlock.Transactions[0]}
 		}
 		txnsHash = make([][]byte, len(fullBlock.Transactions))
 		for i, txn := range fullBlock.Transactions {
@@ -295,9 +295,9 @@ func (consensus *Consensus) requestBlockProposalMessageHandler(remoteMessage *no
 		if msgBody.ShortHashSize > sha256.Size {
 			return replyBuf, false, fmt.Errorf("hash size %d is greater than %d", msgBody.ShortHashSize, sha256.Size)
 		}
-		b = &block.Block{
-			Header:       fullBlock.Header,
-			Transactions: []*transaction.Transaction{fullBlock.Transactions[0]},
+		b = &block.Block{Header: fullBlock.Header}
+		if len(fullBlock.Transactions) > 0 {
+			b.Transactions = []*transaction.Transaction{fullBlock.Transactions[0]}
 		}
 		txnsHash = make([][]byte, len(fullBlock.Transactions))
 		for i, txn := range fullBlock.Transactions {
