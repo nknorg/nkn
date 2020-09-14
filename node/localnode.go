@@ -233,6 +233,7 @@ func (localNode *LocalNode) SetSyncState(s pb.SyncState) bool {
 	log.Infof("Set sync state to %s", s.String())
 	changed := localNode.Node.SetSyncState(s)
 	if changed && s == pb.PERSIST_FINISHED {
+		config.SyncPruning = config.LivePruning
 		localNode.verifyNeighbors()
 	}
 	return changed

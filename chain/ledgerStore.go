@@ -10,7 +10,7 @@ import (
 
 // ILedgerStore provides func with store package.
 type ILedgerStore interface {
-	SaveBlock(b *block.Block, fastAdd bool) error
+	SaveBlock(b *block.Block, pruning bool) error
 	GetBlock(hash common.Uint256) (*block.Block, error)
 	GetBlockByHeight(height uint32) (*block.Block, error)
 	GetBlockHash(height uint32) (common.Uint256, error)

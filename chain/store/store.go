@@ -385,7 +385,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 	return nil
 }
 
-func (cs *ChainStore) SaveBlock(b *block.Block, fastAdd bool) error {
+func (cs *ChainStore) SaveBlock(b *block.Block, pruning bool) error {
 	err := cs.persist(b)
 	if err != nil {
 		log.Errorf("error to persist block: %v", err)
@@ -402,7 +402,7 @@ func (cs *ChainStore) SaveBlock(b *block.Block, fastAdd bool) error {
 	}
 	cs.headerCache.AddHeaderToCache(b.Header)
 
-	if config.LivePruning {
+	if pruning {
 		switch config.Parameters.StatePruningMode {
 		case "lowmem":
 			err = cs.PruneStatesLowMemory(false)
