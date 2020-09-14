@@ -299,7 +299,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		if syncState == pb.WAIT_FOR_SYNCING {
 			consensus.localNode.SetSyncState(pb.PERSIST_FINISHED)
 		}
-		err = chain.DefaultLedger.Blockchain.AddBlock(block, false)
+		err = chain.DefaultLedger.Blockchain.AddBlock(block, config.LivePruning)
 		if err != nil {
 			return err
 		}
@@ -395,7 +395,7 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 			return err
 		}
 
-		err = chain.DefaultLedger.Blockchain.AddBlock(block, false)
+		err = chain.DefaultLedger.Blockchain.AddBlock(block, config.LivePruning)
 		if err != nil {
 			return err
 		}

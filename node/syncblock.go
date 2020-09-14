@@ -511,7 +511,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchS
 				return false
 			}
 
-			err := chain.DefaultLedger.Blockchain.AddBlock(block, false)
+			err := chain.DefaultLedger.Blockchain.AddBlock(block, config.SyncPruning)
 			if err != nil {
 				return false
 			}

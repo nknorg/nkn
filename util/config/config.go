@@ -75,7 +75,6 @@ const (
 	MaxClientMessageSize           = 4 * 1024 * 1024
 	MinNameRegistrationFee         = 10 * common.StorageFactor
 	DefaultNameDuration            = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
-	LivePruning                    = false
 )
 
 const (
@@ -87,6 +86,8 @@ const (
 )
 
 var (
+	SyncPruning      = true
+	LivePruning      = false
 	Debug            = false
 	PprofPort        = "127.0.0.1:8080"
 	ShortHashSalt    = util.RandomBytes(32)
@@ -161,9 +162,9 @@ var (
 )
 
 var (
+	gateway                      *portmapper.PortMapper
 	Version                      string
 	SkipNAT                      bool
-	gateway                      *portmapper.PortMapper
 	ConfigFile                   string
 	LogPath                      string
 	ChainDBPath                  string
@@ -224,7 +225,7 @@ var (
 		PasswordFile:                 "",
 		StatePruningMode:             "lowmem",
 		RecentStateCount:             1024,
-		MinPruningCompactHeights:     4096,
+		MinPruningCompactHeights:     32768,
 		RPCRateLimit:                 1024,
 		RPCRateBurst:                 4096,
 		SyncBlockHeaderRateLimit:     8192,
