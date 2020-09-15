@@ -78,11 +78,14 @@ const (
 )
 
 const (
-	defaultConfigFile             = "config.json"
-	defaultSyncMaxMemoryPercent   = 25
-	defaultSyncBatchWindowSize    = 64
-	defaultTxPoolMaxMemoryPercent = 0.4
-	defaultTxPoolMaxMemorySize    = 32
+	defaultConfigFile                 = "config.json"
+	estimatedHeaderSize               = 418
+	defaultSyncHeaderMaxMemoryPercent = 0.5
+	defaultSyncHeaderMaxSize          = 32768
+	defaultSyncMaxMemoryPercent       = 25
+	defaultSyncBatchWindowSize        = 64
+	defaultTxPoolMaxMemoryPercent     = 0.4
+	defaultTxPoolMaxMemorySize        = 32
 )
 
 var (
@@ -191,6 +194,8 @@ var (
 		LogLevel:                     1,
 		MaxLogFileSize:               20,
 		MaxLogFileTotalSize:          100,
+		SyncHeaderMaxSize:            0,
+		SyncHeaderMaxMemorySize:      0,
 		SyncBatchWindowSize:          0,
 		SyncBlockHeadersBatchSize:    128,
 		SyncBlocksBatchSize:          4,
@@ -273,6 +278,8 @@ type Configuration struct {
 	Mining                       bool          `json:"Mining"`
 	MiningDebug                  bool          `json:"MiningDebug"`
 	BeneficiaryAddr              string        `json:"BeneficiaryAddr"`
+	SyncHeaderMaxSize            uint32        `json:"SyncHeaderMaxSize"`
+	SyncHeaderMaxMemorySize      uint32        `json:"SyncHeaderMaxMemorySize"`
 	SyncBatchWindowSize          uint32        `json:"SyncBatchWindowSize"`
 	SyncBlockHeadersBatchSize    uint32        `json:"SyncBlockHeadersBatchSize"`
 	SyncBlocksBatchSize          uint32        `json:"SyncBlocksBatchSize"`
@@ -367,12 +374,23 @@ func Init() error {
 		Parameters.StatePruningMode = StatePruningMode
 	}
 
+	if Parameters.SyncHeaderMaxSize == 0 {
+		syncHeaderMaxMemorySize := uint64(Parameters.SyncHeaderMaxMemorySize) * 1024 * 1024
+		if syncHeaderMaxMemorySize == 0 {
+			syncHeaderMaxMemorySize = uint64(float64(memory.TotalMemory()) * defaultSyncHeaderMaxMemoryPercent / 100.0)
+		}
+		Parameters.SyncHeaderMaxSize = uint32(syncHeaderMaxMemorySize / estimatedHeaderSize)
+		if Parameters.SyncHeaderMaxSize == 0 {
+			Parameters.SyncHeaderMaxSize = defaultSyncHeaderMaxSize
+		}
+		log.Printf("Set SyncHeaderMaxSize to %v", Parameters.SyncHeaderMaxSize)
+	}
+
 	if Parameters.SyncBatchWindowSize == 0 {
 		syncBlocksMaxMemorySize := uint64(Parameters.SyncBlocksMaxMemorySize) * 1024 * 1024
 		if syncBlocksMaxMemorySize == 0 {
 			syncBlocksMaxMemorySize = uint64(float64(memory.TotalMemory()) * defaultSyncMaxMemoryPercent / 100.0)
 		}
-
 		Parameters.SyncBatchWindowSize = uint32(syncBlocksMaxMemorySize/MaxBlockSize) / Parameters.SyncBlocksBatchSize
 		if Parameters.SyncBatchWindowSize == 0 {
 			Parameters.SyncBatchWindowSize = defaultSyncBatchWindowSize
