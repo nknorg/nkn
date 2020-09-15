@@ -13,14 +13,14 @@ import (
 )
 
 func (cs *ChainStore) Rollback(b *block.Block) error {
-	log.Warning("start rollback.")
+	log.Warning("Start rollback.")
 
 	if err := cs.st.NewBatch(); err != nil {
 		return err
 	}
 
 	if b.Header.UnsignedHeader.Height == 0 {
-		return errors.New("the genesis block need not be rolled back.")
+		return errors.New("the genesis block need not be rolled back")
 	}
 
 	if err := cs.rollbackHeader(b); err != nil {
@@ -59,6 +59,16 @@ func (cs *ChainStore) Rollback(b *block.Block) error {
 		return err
 	}
 
+	prevHash, err := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
+	if err != nil {
+		return err
+	}
+
+	cs.mu.Lock()
+	cs.currentBlockHeight = b.Header.UnsignedHeader.Height - 1
+	cs.currentBlockHash = prevHash
+	cs.mu.Unlock()
+
 	return nil
 }
 
@@ -84,7 +94,10 @@ func (cs *ChainStore) rollbackBlockHash(b *block.Block) error {
 
 func (cs *ChainStore) rollbackCurrentBlockHash(b *block.Block) error {
 	value := new(bytes.Buffer)
-	prevHash, _ := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
+	prevHash, err := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.PrevBlockHash)
+	if err != nil {
+		return err
+	}
 	if _, err := prevHash.Serialize(value); err != nil {
 		return err
 	}
