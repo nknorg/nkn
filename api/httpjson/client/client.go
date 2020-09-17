@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nknorg/nkn/v2/api/common"
+	"github.com/nknorg/nkn/v2/api/common/errcode"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/util/log"
 )
@@ -133,7 +133,7 @@ func GetID(remote string, publicKey []byte) ([]byte, error) {
 		if !ok {
 			return nil, fmt.Errorf("GetID resp error,interface conversion faild")
 		}
-		if int64(code) == -int64(common.ErrZeroID) {
+		if int64(code) == -int64(errcode.ErrZeroID) {
 			return crypto.Sha256ZeroHash, nil
 		}
 
@@ -175,7 +175,7 @@ func CreateID(remote string, genIdTxn string) (string, error) {
 			return "", fmt.Errorf("CreateID resp error,interface conversion faild")
 		}
 
-		if int64(code) == -int64(common.ErrDuplicatedTx) {
+		if int64(code) == -int64(errcode.ErrDuplicatedTx) {
 			return "", nil
 		}
 		return "", fmt.Errorf("CreateID(%s) resp error: %v", remote, string(resp))
