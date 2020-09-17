@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 )
 
 const (

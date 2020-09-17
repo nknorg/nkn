@@ -14,8 +14,8 @@ NKND_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/v2/util/config.Version
 NKNC_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/v2/cmd/nknc/common.Version=$(VERSION)"
 NKND_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknd$(EXT)
 NKNC_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknc$(EXT)
-NKND_MAIN=cmd/nknd/nknd.go
-NKNC_MAIN=cmd/nknc/nknc.go
+NKND_MAIN=./cmd/nknd/
+NKNC_MAIN=./cmd/nknc/
 
 help:  ## Show available options with this Makefile
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -v grep | awk 'BEGIN { FS = ":.*?##" }; { printf "%-15s  %s\n", $$1,$$2 }'

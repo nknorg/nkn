@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
 	"github.com/nknorg/nkn/v2/dashboard/helpers"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/util/password"
 	"github.com/nknorg/nkn/v2/vault"

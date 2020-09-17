@@ -17,7 +17,7 @@ import (
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util/address"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 )
 
 var (

@@ -249,8 +249,6 @@ github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a h1:DXTCQnVV2E
 github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a/go.mod h1:H7XeI/XOPpWVmqM+ScT75RLMn7jWnlZDwHRahSxNxo0=
 github.com/nknorg/go-nat v1.0.1 h1:4dFK0oDyqkIE0it03Y4pMgBQpl1Y0mrYHEp+j/nZ910=
 github.com/nknorg/go-nat v1.0.1/go.mod h1:dblX1Ac2j08rTUGs5CKCAfjHGN5eDFhbeqt2rccSP3Y=
-github.com/nknorg/go-portscanner v0.0.0-20181002101859-8493ef01db79 h1:AT5YRim0696HFnGSvFg0uOmSuo1X11roGBQhKB25PHE=
-github.com/nknorg/go-portscanner v0.0.0-20181002101859-8493ef01db79/go.mod h1:lTev9/EZpc4U3w/sp95T8UPeaav/0Hk+JjykVDuPaQs=
 github.com/nknorg/nnet v0.0.0-20200521002812-357d1b11179f h1:JvDKr6D9LdnsdScND+8NcZ9UjXq9qi+Y1ZXbdQiXxkk=
 github.com/nknorg/nnet v0.0.0-20200521002812-357d1b11179f/go.mod h1:4DHEQEMhlRGIKGSyhATdjeusdqaHafDatadtpeHBpvI=
 github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283 h1:uS3/DvxCbi0zZau66ggQAgEjyGmql2mj77UQFgumq1I=

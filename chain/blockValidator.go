@@ -17,7 +17,7 @@ import (
 	"github.com/nknorg/nkn/v2/signature"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 )
 

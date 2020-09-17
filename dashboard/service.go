@@ -13,7 +13,7 @@ import (
 	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
 	"github.com/nknorg/nkn/v2/dashboard/routes"
 	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 	"github.com/pborman/uuid"

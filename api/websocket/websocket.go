@@ -10,7 +10,7 @@ import (
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/event"
 	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 )

@@ -5,7 +5,7 @@ import (
 
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 )
 
 const (

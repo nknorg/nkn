@@ -3,7 +3,7 @@ package common
 import (
 	"github.com/gin-gonic/gin"
 	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 	"net/http"
 	"time"
 )

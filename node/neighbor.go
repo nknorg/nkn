@@ -16,7 +16,7 @@ import (
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util"
 	"github.com/nknorg/nkn/v2/util/address"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"

@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 
 	"github.com/go-acme/lego/v3/registration"
 )
