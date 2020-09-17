@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/event"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 )
@@ -333,7 +333,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 		return nil, err
 	}
 
-	err = porPkg.SigChain.Verify(porPkg.Height)
+	err = VerifySigChain(porPkg.SigChain, porPkg.Height)
 	if err != nil {
 		return nil, err
 	}
