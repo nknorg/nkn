@@ -6,9 +6,9 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/config"
 )
 
 const (
@@ -102,7 +102,7 @@ func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage
 			return nil, err
 		}
 
-		err = sigChain.Verify(height)
+		err = VerifySigChain(sigChain, height)
 		if err != nil {
 			return nil, err
 		}
