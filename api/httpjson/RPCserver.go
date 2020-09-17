@@ -11,9 +11,10 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/v2/api/common"
+	"github.com/nknorg/nkn/v2/api/common/errcode"
 	"github.com/nknorg/nkn/v2/chain"
-	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 	"golang.org/x/time/rate"
@@ -69,8 +70,8 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			data, err := json.Marshal(map[string]interface{}{
 				"jsonrpc": "2.0",
 				"error": map[string]interface{}{
-					"code":    -common.INTERNAL_ERROR,
-					"message": common.ErrMessage[common.INTERNAL_ERROR],
+					"code":    -errcode.INTERNAL_ERROR,
+					"message": errcode.ErrMessage[errcode.INTERNAL_ERROR],
 				},
 				"id": "1",
 			})
@@ -105,7 +106,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Check the input request
-		errcode := common.SUCCESS
+		code := errcode.SUCCESS
 		id, ok := request["id"].(string)
 		if !ok {
 			// set default if not in request
@@ -113,18 +114,18 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 		method, ok := request["method"].(string)
 		if !ok {
-			errcode = common.INVALID_METHOD
+			code = errcode.INVALID_METHOD
 		}
 		params, ok := request["params"].(map[string]interface{})
 		if !ok {
-			errcode = common.INVALID_PARAMS
+			code = errcode.INVALID_PARAMS
 		}
-		if errcode != common.SUCCESS {
+		if code != errcode.SUCCESS {
 			data, err := json.Marshal(map[string]interface{}{
 				"jsonrpc": "2.0",
 				"error": map[string]interface{}{
-					"code":    -errcode,
-					"message": common.ErrMessage[errcode],
+					"code":    -code,
+					"message": errcode.ErrMessage[code],
 				},
 				"id": id,
 			})
@@ -156,11 +157,11 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				err := recover()
 				if err != nil {
-					var errcode common.ErrCode
+					var code errcode.ErrCode
 					if _, err = chain.GetDefaultLedger(); err != nil {
-						errcode = common.ErrNullDB
+						code = errcode.ErrNullDB
 					} else if s.GetNetNode() == nil {
-						errcode = common.ErrNullID
+						code = errcode.ErrNullID
 					} else {
 						// This panic will be recovered by handler
 						panic(err)
@@ -168,8 +169,8 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 					data, err := json.Marshal(map[string]interface{}{
 						"jsonrpc": "2.0",
 						"error": map[string]interface{}{
-							"code":    -errcode,
-							"message": common.ErrMessage[errcode],
+							"code":    -code,
+							"message": errcode.ErrMessage[code],
 						},
 						"id": id,
 					})
@@ -184,13 +185,13 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			var data []byte
 			var err error
 			response := function(s, params)
-			errcode := response["error"].(common.ErrCode)
-			if errcode != common.SUCCESS {
+			code := response["error"].(errcode.ErrCode)
+			if code != errcode.SUCCESS {
 				result := map[string]interface{}{
 					"jsonrpc": "2.0",
 					"error": map[string]interface{}{
-						"code":    -errcode,
-						"message": common.ErrMessage[errcode],
+						"code":    -code,
+						"message": errcode.ErrMessage[code],
 						"data":    response["resultOrData"],
 					},
 					"id": id,
@@ -211,12 +212,12 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			w.Write(data)
 		} else {
 			log.Warning("HTTP JSON RPC Handle - No function to call for ", method)
-			errcode := common.INVALID_METHOD
+			code := errcode.INVALID_METHOD
 			data, err := json.Marshal(map[string]interface{}{
 				"jsonrpc": "2.0",
 				"error": map[string]interface{}{
-					"code":    -errcode,
-					"message": common.ErrMessage[errcode],
+					"code":    -code,
+					"message": errcode.ErrMessage[code],
 				},
 				"id": id,
 			})

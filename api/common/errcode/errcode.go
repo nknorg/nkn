@@ -1,4 +1,4 @@
-package common
+package errcode
 
 type ErrCode int64
 

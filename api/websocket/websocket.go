@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 
 	"github.com/nknorg/nkn/v2/api/common"
+	"github.com/nknorg/nkn/v2/api/common/errcode"
 	"github.com/nknorg/nkn/v2/api/websocket/server"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/event"
 	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 )
@@ -75,7 +76,7 @@ func PushBlock(v interface{}) {
 	if ws == nil {
 		return
 	}
-	resp := common.ResponsePack(common.SUCCESS)
+	resp := common.ResponsePack(errcode.SUCCESS)
 	if block, ok := v.(*block.Block); ok {
 		if pushRawBlockFlag {
 			dt, _ := block.Marshal()
@@ -95,7 +96,7 @@ func PushBlockTransactions(v interface{}) {
 	if ws == nil {
 		return
 	}
-	resp := common.ResponsePack(common.SUCCESS)
+	resp := common.ResponsePack(errcode.SUCCESS)
 	if block, ok := v.(*block.Block); ok {
 		if pushBlockTxsFlag {
 			resp["Result"] = common.GetBlockTransactions(block)
@@ -109,7 +110,7 @@ func PushSigChainBlockHash(v interface{}) {
 	if ws == nil {
 		return
 	}
-	resp := common.ResponsePack(common.SUCCESS)
+	resp := common.ResponsePack(errcode.SUCCESS)
 	if block, ok := v.(*block.Block); ok {
 		sigChainBlockHeight := block.Header.UnsignedHeader.Height - config.SigChainBlockDelay
 		sigChainBlockHash, err := chain.DefaultLedger.Store.GetBlockHash(sigChainBlockHeight)
