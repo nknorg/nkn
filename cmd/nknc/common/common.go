@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/password"
 
 	"github.com/urfave/cli"

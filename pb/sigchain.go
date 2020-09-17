@@ -11,7 +11,7 @@ import (
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/common/serialization"
 	"github.com/nknorg/nkn/v2/crypto"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nnet/overlay/chord"
 )
 

@@ -12,7 +12,7 @@ import (
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/program"
 	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 )
 
 func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transaction, totalFee common.Fixed64, genesis bool, height uint32) error {

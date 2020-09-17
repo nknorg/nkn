@@ -26,6 +26,7 @@ import (
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/store"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/consensus"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/dashboard"
@@ -34,7 +35,6 @@ import (
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/util/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/util/password"
 	"github.com/nknorg/nkn/v2/vault"
@@ -153,8 +153,13 @@ func nknMain(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if err := SetupPortMapping(); err != nil {
+		log.Errorf("Error setting up port mapping: %v. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.", err)
+	}
+
 	defer func() {
-		err := config.Parameters.ClearPortMapping()
+		err := ClearPortMapping()
 		if err != nil {
 			log.Errorf("Error clear port mapping: %v", err)
 		}

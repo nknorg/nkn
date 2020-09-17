@@ -10,7 +10,7 @@ import (
 	"github.com/nknorg/nkn/v2/api/httpjson/client"
 	nknc "github.com/nknorg/nkn/v2/cmd/nknc/common"
 	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/vault"
 
 	"github.com/urfave/cli"

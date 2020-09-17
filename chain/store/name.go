@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/nknorg/nkn/v2/util/config"
+	"github.com/nknorg/nkn/v2/config"
 
 	"github.com/nknorg/nkn/v2/common/serialization"
 )

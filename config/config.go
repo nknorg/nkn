@@ -15,16 +15,15 @@ import (
 	"strings"
 	"time"
 
-	portscanner "github.com/nknorg/go-portscanner"
 	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/crypto/ed25519"
-	"github.com/nknorg/nkn/v2/crypto/ed25519/vrf"
 	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/portmapper"
 	"github.com/pbnjay/memory"
 )
 
 const (
+	PublicKeySize                  = 32
+	VRFSize                        = 32
+	VRFProofSize                   = 96
 	MaxNumTxnPerBlock              = 4096
 	MaxBlockSize                   = 1 * 1024 * 1024 // in bytes
 	ConsensusDuration              = 20 * time.Second
@@ -57,8 +56,8 @@ const (
 	DonationAdjustDivisorFactor    = 2
 	MinGenIDRegistrationFee        = 0
 	GenerateIDBlockDelay           = 8
-	RandomBeaconUniqueLength       = vrf.Size
-	RandomBeaconLength             = vrf.Size + vrf.ProofSize
+	RandomBeaconUniqueLength       = VRFSize
+	RandomBeaconLength             = VRFSize + VRFProofSize
 	ProtocolVersion                = 30
 	MinCompatibleProtocolVersion   = 30
 	MaxCompatibleProtocolVersion   = 39
@@ -165,7 +164,6 @@ var (
 )
 
 var (
-	gateway                      *portmapper.PortMapper
 	Version                      string
 	SkipNAT                      bool
 	ConfigFile                   string
@@ -411,72 +409,7 @@ func Init() error {
 		return err
 	}
 
-	if err := Parameters.SetupPortMapping(); err != nil {
-		log.Printf("Error setting up port mapping: %v. If this problem persists, you can use --no-nat flag to bypass automatic port forwarding and set it up yourself.", err)
-	}
-
 	return nil
-}
-
-func (config *Configuration) SetupPortMapping() error {
-	if SkipNAT || !config.NAT {
-		log.Printf("Skip automatic port forwading. You need to set up port forwarding and firewall yourself.")
-		return nil
-	}
-
-	log.Println("Discovering NAT gateway...")
-
-	var err error
-	gateway, err = portmapper.Discover()
-	if err == portmapper.NoGatewayFound {
-		log.Printf("No NAT gateway discovered, skip automatic port forwading. You need to set up port forwarding and firewall yourself.")
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	err = gateway.Add(config.NodePort, "NKN Node")
-	if err != nil {
-		return err
-	}
-	log.Printf("Mapped external port %d to internal port %d", config.NodePort, config.NodePort)
-
-	err = gateway.Add(config.HttpWsPort, "NKN Node")
-	if err != nil {
-		return err
-	}
-	log.Printf("Mapped external port %d to internal port %d", config.HttpWsPort, config.HttpWsPort)
-
-	err = gateway.Add(config.HttpWssPort, "NKN Node")
-	if err != nil {
-		return err
-	}
-	log.Printf("Mapped external port %d to internal port %d", config.HttpWssPort, config.HttpWssPort)
-
-	err = gateway.Add(config.HttpJsonPort, "NKN Node")
-	if err != nil {
-		return err
-	}
-	log.Printf("Mapped external port %d to internal port %d", config.HttpJsonPort, config.HttpJsonPort)
-
-	err = gateway.Add(config.HttpsJsonPort, "NKN Node")
-	if err != nil {
-		return err
-	}
-	log.Printf("Mapped external port %d to internal port %d", config.HttpsJsonPort, config.HttpsJsonPort)
-
-	return nil
-}
-
-func (config *Configuration) ClearPortMapping() error {
-	if gateway == nil {
-		return nil
-	}
-
-	log.Println("Removing added port mapping...")
-
-	return gateway.DeleteAll()
 }
 
 func (config *Configuration) verify() error {
@@ -496,8 +429,8 @@ func (config *Configuration) verify() error {
 	if err != nil {
 		return fmt.Errorf("parse GenesisBlockProposer error: %v", err)
 	}
-	if len(pk) != ed25519.PublicKeySize {
-		return fmt.Errorf("invalid GenesisBlockProposer length %d bytes, expecting %d bytes", len(pk), ed25519.PublicKeySize)
+	if len(pk) != PublicKeySize {
+		return fmt.Errorf("invalid GenesisBlockProposer length %d bytes, expecting %d bytes", len(pk), PublicKeySize)
 	}
 
 	if len(config.BeneficiaryAddr) > 0 {
@@ -584,37 +517,6 @@ func (config *Configuration) incrementPort() {
 	}
 }
 
-func checkPort(host string, port uint16) (bool, error) {
-	conn, err := net.Listen("tcp", ":"+strconv.Itoa(int(port)))
-	if err != nil {
-		return false, fmt.Errorf("Port %d is in use", port)
-	}
-	defer conn.Close()
-
-	isOpen, err := portscanner.CheckTCP(host, port)
-	return isOpen, err
-}
-
-func (config *Configuration) CheckPorts(myIP string) (bool, error) {
-	allPorts := []uint16{
-		config.NodePort,
-		config.HttpWsPort,
-		config.HttpJsonPort,
-	}
-	for _, port := range allPorts {
-		log.Printf("Checking TCP port %d", port)
-		isOpen, err := checkPort(myIP, port)
-		if err != nil {
-			return false, err
-		}
-		if !isOpen {
-			return false, fmt.Errorf("Port %d is not open", port)
-		}
-		log.Printf("Port %d is open", port)
-	}
-	return true, nil
-}
-
 func GetConfigFile() string {
 	configFile := ConfigFile
 	if configFile == "" {
@@ -654,14 +556,14 @@ func WriteConfigFile(configuration map[string]interface{}) error {
 func SetBeneficiaryAddr(addr string, allowEmpty bool) error {
 	if !allowEmpty {
 		if addr == "" {
-			return errors.New("beneficiary address is empty.")
+			return errors.New("beneficiary address is empty")
 		}
 	}
 
 	if addr != "" {
 		_, err := common.ToScriptHash(addr)
 		if err != nil {
-			return errors.New(fmt.Sprintf("parse BeneficiaryAddr error: %v", err))
+			return fmt.Errorf("parse BeneficiaryAddr error: %v", err)
 		}
 	}
 
@@ -675,7 +577,6 @@ func SetBeneficiaryAddr(addr string, allowEmpty bool) error {
 		return err
 	}
 
-	// set beneficiary address
 	configuration["BeneficiaryAddr"] = addr
 
 	err = WriteConfigFile(configuration)
