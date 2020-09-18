@@ -8,12 +8,12 @@ import (
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/consensus/election"
 	"github.com/nknorg/nkn/v2/event"
 	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 )
@@ -129,7 +129,7 @@ func (consensus *Consensus) prefillNeighborVotes(elc *election.Election, height 
 	neighbors := consensus.localNode.GetNeighbors(nil)
 	neighborIDs := make([]interface{}, 0, len(neighbors))
 	for _, rn := range neighbors {
-		if rn.GetSyncState() != pb.PERSIST_FINISHED {
+		if rn.GetSyncState() != pb.SyncState_PERSIST_FINISHED {
 			continue
 		}
 		// This is for nodes who just finished syncing but cannot verify block yet
@@ -296,8 +296,8 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 
 	syncState := consensus.localNode.GetSyncState()
 	if block.Header.UnsignedHeader.Height == chain.DefaultLedger.Store.GetHeight()+1 {
-		if syncState == pb.WAIT_FOR_SYNCING {
-			consensus.localNode.SetSyncState(pb.PERSIST_FINISHED)
+		if syncState == pb.SyncState_WAIT_FOR_SYNCING {
+			consensus.localNode.SetSyncState(pb.SyncState_PERSIST_FINISHED)
 		}
 		err = chain.DefaultLedger.Blockchain.AddBlock(block, config.LivePruning)
 		if err != nil {
@@ -307,7 +307,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		return nil
 	}
 
-	if syncState == pb.SYNC_STARTED || syncState == pb.SYNC_FINISHED {
+	if syncState == pb.SyncState_SYNC_STARTED || syncState == pb.SyncState_SYNC_FINISHED {
 		return nil
 	}
 
@@ -351,13 +351,13 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		err = consensus.saveBlocksAcceptedDuringSync(block.Header.UnsignedHeader.Height)
 		if err != nil {
 			log.Errorf("Error saving blocks accepted during sync: %v", err)
-			consensus.localNode.SetSyncState(pb.WAIT_FOR_SYNCING)
+			consensus.localNode.SetSyncState(pb.SyncState_WAIT_FOR_SYNCING)
 			return
 		}
 
 		consensus.localNode.SetMinVerifiableHeight(chain.DefaultLedger.Store.GetHeight() + por.SigChainMiningHeightOffset)
 
-		consensus.localNode.SetSyncState(pb.PERSIST_FINISHED)
+		consensus.localNode.SetSyncState(pb.SyncState_PERSIST_FINISHED)
 	}()
 
 	return nil

@@ -167,10 +167,10 @@ func (ps *PorServer) UpdateRelayMessage(relayMessage *pb.Relay, nextPubkey, prev
 		return err
 	}
 
-	sigAlgo := pb.HASH
+	sigAlgo := pb.SigAlgo_HASH
 	if height, err := Store.GetHeightByBlockHash(blockHash); err == nil {
 		if !config.AllowSigChainHashSignature.GetValueAtHeight(height) {
-			sigAlgo = pb.SIGNATURE
+			sigAlgo = pb.SigAlgo_SIGNATURE
 		}
 	}
 
@@ -497,12 +497,12 @@ func (ps *PorServer) BacktrackSigChain(elems []*pb.SigChainElem, hash, senderPub
 
 	var signature []byte
 	switch scei.sigAlgo {
-	case pb.SIGNATURE:
+	case pb.SigAlgo_SIGNATURE:
 		signature, err = crypto.Sign(ps.account.PrivKey(), hash)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("sign error: %v", err)
 		}
-	case pb.HASH:
+	case pb.SigAlgo_HASH:
 		signature = hash
 	default:
 		return nil, nil, nil, fmt.Errorf("unknown sigAlgo: %v", scei.sigAlgo)

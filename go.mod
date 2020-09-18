@@ -6,7 +6,7 @@ require (
 	github.com/gin-contrib/sessions v0.0.0-20190512062852-3cb4c4f2d615
 	github.com/gin-gonic/gin v1.4.0
 	github.com/go-acme/lego/v3 v3.8.0
-	github.com/gogo/protobuf v1.3.1
+	github.com/golang/protobuf v1.4.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/websocket v1.4.0
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c

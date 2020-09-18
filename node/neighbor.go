@@ -10,13 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util"
 	"github.com/nknorg/nkn/v2/util/address"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
@@ -323,7 +323,7 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 
 		id, err := chain.DefaultLedger.Store.GetID(nodeData.PublicKey)
 		if err != nil || len(id) == 0 || bytes.Equal(id, crypto.Sha256ZeroHash) {
-			if localNode.GetSyncState() == pb.PERSIST_FINISHED {
+			if localNode.GetSyncState() == pb.SyncState_PERSIST_FINISHED {
 				return fmt.Errorf("remote node id can not be found in local ledger: err-%v, id-%v", err, id)
 			}
 		} else {

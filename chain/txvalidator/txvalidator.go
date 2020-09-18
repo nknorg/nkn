@@ -97,7 +97,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.COINBASE_TYPE:
+	case pb.PayloadType_COINBASE_TYPE:
 		pld := payload.(*pb.Coinbase)
 		if len(pld.Sender) != common.UINT160SIZE && len(pld.Recipient) != common.UINT160SIZE {
 			return errors.New("length of programhash error")
@@ -111,7 +111,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		if err = CheckAmount(pld.Amount); err != nil {
 			return err
 		}
-	case pb.TRANSFER_ASSET_TYPE:
+	case pb.PayloadType_TRANSFER_ASSET_TYPE:
 		pld := payload.(*pb.TransferAsset)
 		if len(pld.Sender) != common.UINT160SIZE && len(pld.Recipient) != common.UINT160SIZE {
 			return errors.New("length of programhash error")
@@ -125,8 +125,8 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		if err = CheckAmount(pld.Amount); err != nil {
 			return err
 		}
-	case pb.SIG_CHAIN_TXN_TYPE:
-	case pb.REGISTER_NAME_TYPE:
+	case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
+	case pb.PayloadType_REGISTER_NAME_TYPE:
 		if ok := config.AllowTxnRegisterName.GetValueAtHeight(height); !ok {
 			return errors.New("Register name transaction is not supported yet")
 		}
@@ -148,17 +148,17 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		if !match {
 			return fmt.Errorf("name %s should match regex %s", pld.Name, regexPattern)
 		}
-	case pb.TRANSFER_NAME_TYPE:
+	case pb.PayloadType_TRANSFER_NAME_TYPE:
 		pld := payload.(*pb.TransferName)
 		if len(pld.Registrant) != ed25519.PublicKeySize {
 			return fmt.Errorf("registrant invalid")
 		}
-	case pb.DELETE_NAME_TYPE:
+	case pb.PayloadType_DELETE_NAME_TYPE:
 		pld := payload.(*pb.DeleteName)
 		if len(pld.Registrant) != ed25519.PublicKeySize {
 			return fmt.Errorf("registrant invalid")
 		}
-	case pb.SUBSCRIBE_TYPE:
+	case pb.PayloadType_SUBSCRIBE_TYPE:
 		pld := payload.(*pb.Subscribe)
 
 		if pld.Duration == 0 {
@@ -188,13 +188,13 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		if len(pld.Meta) > int(maxMetaLen) {
 			return fmt.Errorf("subscribe meta len %d is greater than %d", len(pld.Meta), maxMetaLen)
 		}
-	case pb.UNSUBSCRIBE_TYPE:
+	case pb.PayloadType_UNSUBSCRIBE_TYPE:
 		pld := payload.(*pb.Unsubscribe)
 
 		if err := verifyPubSubTopic(pld.Topic, height); err != nil {
 			return err
 		}
-	case pb.GENERATE_ID_TYPE:
+	case pb.PayloadType_GENERATE_ID_TYPE:
 		pld := payload.(*pb.GenerateID)
 		err := crypto.CheckPublicKey(pld.PublicKey)
 		if err != nil {
@@ -213,7 +213,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		if txnHash.CompareTo(config.MaxGenerateIDTxnHash.GetValueAtHeight(height)) > 0 {
 			return errors.New("txn hash is greater than MaxGenerateIDTxnHash")
 		}
-	case pb.NANO_PAY_TYPE:
+	case pb.PayloadType_NANO_PAY_TYPE:
 		pld := payload.(*pb.NanoPay)
 
 		if len(pld.Sender) != common.UINT160SIZE && len(pld.Recipient) != common.UINT160SIZE {
@@ -233,7 +233,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return errors.New("txn expiration should be no later than nano pay expiration")
 		}
 
-	case pb.ISSUE_ASSET_TYPE:
+	case pb.PayloadType_ISSUE_ASSET_TYPE:
 		pld := payload.(*pb.IssueAsset)
 		if len(pld.Sender) != common.UINT160SIZE {
 			return errors.New("length of programhash error")

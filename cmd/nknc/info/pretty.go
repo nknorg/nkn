@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/pb"
 )
 
@@ -27,51 +28,51 @@ func TxnUnmarshal(m map[string]interface{}) (interface{}, error) {
 	}
 
 	switch typ {
-	case pb.PayloadType_name[int32(pb.SIG_CHAIN_TXN_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_SIG_CHAIN_TXN_TYPE)]:
 		sigChainTxn := &pb.SigChainTxn{}
-		if err = sigChainTxn.Unmarshal(buf); err == nil { // bin to pb struct of SigChainTxnType txn
+		if err = proto.Unmarshal(buf, sigChainTxn); err == nil { // bin to pb struct of SigChainTxnType txn
 			m["payloadData"] = sigChainTxn.ToMap()
 		}
-	case pb.PayloadType_name[int32(pb.COINBASE_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_COINBASE_TYPE)]:
 		coinBaseTxn := &pb.Coinbase{}
-		if err = coinBaseTxn.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
+		if err = proto.Unmarshal(buf, coinBaseTxn); err == nil { // bin to pb struct of Coinbase txn
 			m["payloadData"] = coinBaseTxn.ToMap()
 		}
-	case pb.PayloadType_name[int32(pb.TRANSFER_ASSET_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_TRANSFER_ASSET_TYPE)]:
 		trans := &pb.TransferAsset{}
-		if err = trans.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
+		if err = proto.Unmarshal(buf, trans); err == nil { // bin to pb struct of Coinbase txn
 			m["payloadData"] = trans.ToMap()
 		}
-	case pb.PayloadType_name[int32(pb.GENERATE_ID_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_GENERATE_ID_TYPE)]:
 		genID := &pb.GenerateID{}
-		if err = genID.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
+		if err = proto.Unmarshal(buf, genID); err == nil { // bin to pb struct of Coinbase txn
 			m["payloadData"] = genID.ToMap()
 		}
-	case pb.PayloadType_name[int32(pb.REGISTER_NAME_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_REGISTER_NAME_TYPE)]:
 		regName := &pb.RegisterName{}
-		if err = regName.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
+		if err = proto.Unmarshal(buf, regName); err == nil { // bin to pb struct of Coinbase txn
 			m["payloadData"] = regName.ToMap()
 		}
-	case pb.PayloadType_name[int32(pb.SUBSCRIBE_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_SUBSCRIBE_TYPE)]:
 		sub := &pb.Subscribe{}
-		if err = sub.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
+		if err = proto.Unmarshal(buf, sub); err == nil { // bin to pb struct of Coinbase txn
 			m["payloadData"] = sub.ToMap()
 		}
-	case pb.PayloadType_name[int32(pb.UNSUBSCRIBE_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_UNSUBSCRIBE_TYPE)]:
 		sub := &pb.Unsubscribe{}
-		if err = sub.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
+		if err = proto.Unmarshal(buf, sub); err == nil { // bin to pb struct of Coinbase txn
 			m["payloadData"] = sub.ToMap()
 		}
-	case pb.PayloadType_name[int32(pb.NANO_PAY_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_NANO_PAY_TYPE)]:
 		pay := &pb.NanoPay{}
-		if err = pay.Unmarshal(buf); err == nil { // bin to pb struct of Coinbase txn
+		if err = proto.Unmarshal(buf, pay); err == nil { // bin to pb struct of Coinbase txn
 			m["payloadData"] = pay.ToMap()
 		}
-	case pb.PayloadType_name[int32(pb.TRANSFER_NAME_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_TRANSFER_NAME_TYPE)]:
 		fallthrough //TODO
-	case pb.PayloadType_name[int32(pb.DELETE_NAME_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_DELETE_NAME_TYPE)]:
 		fallthrough //TODO
-	case pb.PayloadType_name[int32(pb.ISSUE_ASSET_TYPE)]:
+	case pb.PayloadType_name[int32(pb.PayloadType_ISSUE_ASSET_TYPE)]:
 		fallthrough //TODO
 	default:
 		return nil, fmt.Errorf("Unknow txType[%s] for pretty print", typ)

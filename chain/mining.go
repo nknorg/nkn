@@ -69,7 +69,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 	totalTxCount := uint32(1)
 	var lowFeeTxCount, lowFeeTxSize uint32
 
-	if winnerType == pb.TXN_SIGNER {
+	if winnerType == pb.WinnerType_TXN_SIGNER {
 		if _, err = DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
 			var miningSigChainTxn *transaction.Transaction
 			miningSigChainTxn, err = por.GetPorServer().GetSigChainTxn(winnerHash)
@@ -223,7 +223,7 @@ func (bm *BuiltinMining) CreateCoinbaseTransaction(reward common.Fixed64) *trans
 
 	donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
 	payload := transaction.NewCoinbase(donationProgramhash, redeemHash, reward)
-	pl, err := transaction.Pack(pb.COINBASE_TYPE, payload)
+	pl, err := transaction.Pack(pb.PayloadType_COINBASE_TYPE, payload)
 	if err != nil {
 		return nil
 	}

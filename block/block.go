@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/common/serialization"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/signature"
 	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/config"
 )
 
 type Block struct {
@@ -197,7 +197,7 @@ func GenesisBlockInit() (*Block, error) {
 		return nil, fmt.Errorf("parse DonationAddress error: %v", err)
 	}
 	payload := transaction.NewCoinbase(donationProgramhash, rewardAddress, common.Fixed64(0))
-	pl, err := transaction.Pack(pb.COINBASE_TYPE, payload)
+	pl, err := transaction.Pack(pb.PayloadType_COINBASE_TYPE, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func (b *Block) GetInfo() ([]byte, error) {
 	info := &blockInfo{
 		Header:       unmarshaledHeader,
 		Transactions: make([]interface{}, 0),
-		Size:         b.ToMsgBlock().Size(),
+		Size:         proto.Size(b.ToMsgBlock()),
 		Hash:         hash.ToHexString(),
 	}
 

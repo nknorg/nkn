@@ -9,7 +9,7 @@ import (
 	"hash/fnv"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain/txvalidator"
 	"github.com/nknorg/nkn/v2/common"
@@ -76,7 +76,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		return errors.New("serialized block is too big")
 	}
 
-	if block.Transactions[0].UnsignedTx.Payload.Type != pb.COINBASE_TYPE {
+	if block.Transactions[0].UnsignedTx.Payload.Type != pb.PayloadType_COINBASE_TYPE {
 		return errors.New("first transaction in block is not Coinbase")
 	}
 
@@ -128,7 +128,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		default:
 		}
 
-		if i != 0 && txn.UnsignedTx.Payload.Type == pb.COINBASE_TYPE {
+		if i != 0 && txn.UnsignedTx.Payload.Type == pb.PayloadType_COINBASE_TYPE {
 			return errors.New("Coinbase transaction order is incorrect")
 		}
 		if err := txvalidator.VerifyTransaction(txn, block.Header.UnsignedHeader.Height); err != nil {
@@ -144,9 +144,9 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		}
 
 		switch txn.UnsignedTx.Payload.Type {
-		case pb.COINBASE_TYPE:
-		case pb.SIG_CHAIN_TXN_TYPE:
-		case pb.NANO_PAY_TYPE:
+		case pb.PayloadType_COINBASE_TYPE:
+		case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
+		case pb.PayloadType_NANO_PAY_TYPE:
 		default:
 			addr, err := common.ToCodeHash(txn.Programs[0].Code)
 			if err != nil {
@@ -202,7 +202,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 	var chordID []byte
 	winnerType := header.UnsignedHeader.WinnerType
 
-	if winnerType == pb.GENESIS_SIGNER {
+	if winnerType == pb.WinnerType_GENESIS_SIGNER {
 		genesisBlockHash, err := DefaultLedger.Store.GetBlockHash(0)
 		if err != nil {
 			return nil, nil, 0, err
@@ -218,7 +218,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 			return nil, nil, 0, err
 		}
 
-		return publicKey, chordID, pb.GENESIS_SIGNER, nil
+		return publicKey, chordID, pb.WinnerType_GENESIS_SIGNER, nil
 	}
 
 	if timestamp <= header.UnsignedHeader.Timestamp {
@@ -233,7 +233,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 			return nil, nil, 0, nil
 		}
 
-		winnerType = pb.BLOCK_SIGNER
+		winnerType = pb.WinnerType_BLOCK_SIGNER
 
 		proposerBlockHeight := int64(DefaultLedger.Store.GetHeight()) - timeSinceLastBlock/proposerChangeTime
 		if proposerBlockHeight < 0 {
@@ -258,14 +258,14 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 		}
 
 		switch winnerType {
-		case pb.TXN_SIGNER:
+		case pb.WinnerType_TXN_SIGNER:
 			whash, _ := common.Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
 			txn, err := DefaultLedger.Store.GetTransaction(whash)
 			if err != nil {
 				return nil, nil, 0, err
 			}
 
-			if txn.UnsignedTx.Payload.Type != pb.SIG_CHAIN_TXN_TYPE {
+			if txn.UnsignedTx.Payload.Type != pb.PayloadType_SIG_CHAIN_TXN_TYPE {
 				return nil, nil, 0, errors.New("invalid transaction type")
 			}
 
@@ -281,7 +281,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 			if err != nil {
 				return nil, nil, 0, err
 			}
-		case pb.BLOCK_SIGNER:
+		case pb.WinnerType_BLOCK_SIGNER:
 		}
 	}
 
@@ -292,19 +292,19 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 // sigchain from PoR server.
 func GetNextMiningSigChainTxnHash(height uint32) (common.Uint256, pb.WinnerType, error) {
 	if height < NumGenesisBlocks {
-		return common.EmptyUint256, pb.GENESIS_SIGNER, nil
+		return common.EmptyUint256, pb.WinnerType_GENESIS_SIGNER, nil
 	}
 
 	nextMiningSigChainTxnHash, err := por.GetPorServer().GetMiningSigChainTxnHash(height + 1)
 	if err != nil {
-		return common.EmptyUint256, pb.TXN_SIGNER, err
+		return common.EmptyUint256, pb.WinnerType_TXN_SIGNER, err
 	}
 
 	if nextMiningSigChainTxnHash == common.EmptyUint256 {
-		return common.EmptyUint256, pb.BLOCK_SIGNER, nil
+		return common.EmptyUint256, pb.WinnerType_BLOCK_SIGNER, nil
 	}
 
-	return nextMiningSigChainTxnHash, pb.TXN_SIGNER, nil
+	return nextMiningSigChainTxnHash, pb.WinnerType_TXN_SIGNER, nil
 }
 
 func SignerCheck(header *block.Header) error {
@@ -397,8 +397,8 @@ func HeaderCheck(b *block.Block) error {
 		return fmt.Errorf("header timestamp %d is not greater than prev timestamp %d", header.UnsignedHeader.Timestamp, prevHeader.UnsignedHeader.Timestamp)
 	}
 
-	if header.UnsignedHeader.WinnerType == pb.GENESIS_SIGNER && header.UnsignedHeader.Height >= NumGenesisBlocks {
-		return fmt.Errorf("invalid winner type %v for height %d", pb.GENESIS_SIGNER, header.UnsignedHeader.Height)
+	if header.UnsignedHeader.WinnerType == pb.WinnerType_GENESIS_SIGNER && header.UnsignedHeader.Height >= NumGenesisBlocks {
+		return fmt.Errorf("invalid winner type %v for height %d", pb.WinnerType_GENESIS_SIGNER, header.UnsignedHeader.Height)
 	}
 
 	if len(header.UnsignedHeader.RandomBeacon) != config.RandomBeaconLength {
@@ -526,8 +526,8 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.NANO_PAY_TYPE:
-	case pb.SIG_CHAIN_TXN_TYPE:
+	case pb.PayloadType_NANO_PAY_TYPE:
+	case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
 	default:
 		if txn.UnsignedTx.Nonce < DefaultLedger.Store.GetNonce(pg[0]) {
 			return errors.New("nonce is too low")
@@ -537,7 +537,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 	var amount int64
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.COINBASE_TYPE:
+	case pb.PayloadType_COINBASE_TYPE:
 		donationAmount, err := DefaultLedger.Store.GetDonation()
 		if err != nil {
 			return err
@@ -548,11 +548,11 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		if amount < donationAmount {
 			return errors.New("not sufficient funds in doation account")
 		}
-	case pb.TRANSFER_ASSET_TYPE:
+	case pb.PayloadType_TRANSFER_ASSET_TYPE:
 		pld := payload.(*pb.TransferAsset)
 		amount += pld.Amount
-	case pb.SIG_CHAIN_TXN_TYPE:
-	case pb.REGISTER_NAME_TYPE:
+	case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
+	case pb.PayloadType_REGISTER_NAME_TYPE:
 		pld := payload.(*pb.RegisterName)
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
@@ -580,7 +580,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			}
 			amount += pld.RegistrationFee
 		}
-	case pb.TRANSFER_NAME_TYPE:
+	case pb.PayloadType_TRANSFER_NAME_TYPE:
 		pld := payload.(*pb.TransferName)
 
 		registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
@@ -604,7 +604,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			return fmt.Errorf("can not transfer names which did not belongs to you")
 		}
 
-	case pb.DELETE_NAME_TYPE:
+	case pb.PayloadType_DELETE_NAME_TYPE:
 		pld := payload.(*pb.DeleteName)
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
@@ -629,7 +629,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			}
 		}
 
-	case pb.SUBSCRIBE_TYPE:
+	case pb.PayloadType_SUBSCRIBE_TYPE:
 		pld := payload.(*pb.Subscribe)
 		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Topic, pld.Bucket, pld.Subscriber, pld.Identifier)
 		if err != nil {
@@ -642,7 +642,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 				return fmt.Errorf("subscription count to %s can't be more than %d", pld.Topic, maxSubscriptionCount)
 			}
 		}
-	case pb.UNSUBSCRIBE_TYPE:
+	case pb.PayloadType_UNSUBSCRIBE_TYPE:
 		pld := payload.(*pb.Unsubscribe)
 		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Topic, 0, pld.Subscriber, pld.Identifier)
 		if err != nil {
@@ -651,7 +651,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		if !subscribed {
 			return fmt.Errorf("subscription to %s doesn't exist", pld.Topic)
 		}
-	case pb.GENERATE_ID_TYPE:
+	case pb.PayloadType_GENERATE_ID_TYPE:
 		pld := payload.(*pb.GenerateID)
 		id, err := DefaultLedger.Store.GetID(pld.PublicKey)
 		if err != nil {
@@ -661,7 +661,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			return ErrIDRegistered
 		}
 		amount += pld.RegistrationFee
-	case pb.NANO_PAY_TYPE:
+	case pb.PayloadType_NANO_PAY_TYPE:
 		pld := payload.(*pb.NanoPay)
 
 		channelBalance, _, err := DefaultLedger.Store.GetNanoPay(
@@ -685,7 +685,7 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			return errors.New("invalid amount")
 		}
 		amount += balanceToClaim
-	case pb.ISSUE_ASSET_TYPE:
+	case pb.PayloadType_ISSUE_ASSET_TYPE:
 		assetID := txn.Hash()
 		_, _, _, _, err := DefaultLedger.Store.GetAsset(assetID)
 		if err == nil {

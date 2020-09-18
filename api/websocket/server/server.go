@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	api "github.com/nknorg/nkn/v2/api/common"
 	"github.com/nknorg/nkn/v2/api/common/errcode"
 	"github.com/nknorg/nkn/v2/api/websocket/messagebuffer"
@@ -335,8 +335,8 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 
 		var r io.Reader = bytes.NewReader(msg.Message)
 		switch msg.CompressionType {
-		case pb.COMPRESSION_NONE:
-		case pb.COMPRESSION_ZLIB:
+		case pb.CompressionType_COMPRESSION_NONE:
+		case pb.CompressionType_COMPRESSION_ZLIB:
 			r, err = zlib.NewReader(r)
 			if err != nil {
 				return fmt.Errorf("Create zlib reader error: %v", err)
@@ -355,14 +355,14 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 		}
 
 		switch msg.MessageType {
-		case pb.OUTBOUND_MESSAGE:
+		case pb.ClientMessageType_OUTBOUND_MESSAGE:
 			outboundMsg := &pb.OutboundMessage{}
 			err = proto.Unmarshal(b, outboundMsg)
 			if err != nil {
 				return fmt.Errorf("Unmarshal outbound message error: %v", err)
 			}
 			ws.sendOutboundRelayMessage(curSession.GetAddrStr(), outboundMsg)
-		case pb.RECEIPT:
+		case pb.ClientMessageType_RECEIPT:
 			receipt := &pb.Receipt{}
 			err = proto.Unmarshal(b, receipt)
 			if err != nil {

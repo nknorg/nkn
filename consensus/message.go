@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
@@ -26,7 +26,7 @@ func NewVoteMessage(height uint32, blockHash common.Uint256) (*pb.UnsignedMessag
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.VOTE,
+		MessageType: pb.MessageType_VOTE,
 		Message:     buf,
 	}
 
@@ -46,7 +46,7 @@ func NewIHaveBlockProposalMessage(height uint32, blockHash common.Uint256) (*pb.
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.I_HAVE_BLOCK_PROPOSAL,
+		MessageType: pb.MessageType_I_HAVE_BLOCK_PROPOSAL,
 		Message:     buf,
 	}
 
@@ -69,7 +69,7 @@ func NewRequestBlockProposalMessage(blockHash common.Uint256, requestType pb.Req
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.REQUEST_BLOCK_PROPOSAL,
+		MessageType: pb.MessageType_REQUEST_BLOCK_PROPOSAL,
 		Message:     buf,
 	}
 
@@ -90,7 +90,7 @@ func NewRequestBlockProposalReply(b *block.Block, txnsHash [][]byte) (*pb.Unsign
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.REQUEST_BLOCK_PROPOSAL_REPLY,
+		MessageType: pb.MessageType_REQUEST_BLOCK_PROPOSAL_REPLY,
 		Message:     buf,
 	}
 
@@ -107,7 +107,7 @@ func NewGetConsensusStateMessage() (*pb.UnsignedMessage, error) {
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.GET_CONSENSUS_STATE,
+		MessageType: pb.MessageType_GET_CONSENSUS_STATE,
 		Message:     buf,
 	}
 
@@ -131,7 +131,7 @@ func NewGetConsensusStateReply(ledgerBlockHash common.Uint256, ledgerHeight, con
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.GET_CONSENSUS_STATE_REPLY,
+		MessageType: pb.MessageType_GET_CONSENSUS_STATE_REPLY,
 		Message:     buf,
 	}
 
@@ -155,7 +155,7 @@ func NewRequestProposalTransactionsMessage(blockHash common.Uint256, requestType
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.REQUEST_PROPOSAL_TRANSACTIONS,
+		MessageType: pb.MessageType_REQUEST_PROPOSAL_TRANSACTIONS,
 		Message:     buf,
 	}
 
@@ -181,7 +181,7 @@ func NewRequestProposalTransactionsReply(transactions []*transaction.Transaction
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.REQUEST_PROPOSAL_TRANSACTIONS_REPLY,
+		MessageType: pb.MessageType_REQUEST_PROPOSAL_TRANSACTIONS_REPLY,
 		Message:     buf,
 	}
 
@@ -279,9 +279,9 @@ func (consensus *Consensus) requestBlockProposalMessageHandler(remoteMessage *no
 	var txnsHash [][]byte
 
 	switch msgBody.Type {
-	case pb.REQUEST_FULL_TRANSACTION:
+	case pb.RequestTransactionType_REQUEST_FULL_TRANSACTION:
 		b = fullBlock
-	case pb.REQUEST_TRANSACTION_HASH:
+	case pb.RequestTransactionType_REQUEST_TRANSACTION_HASH:
 		b = &block.Block{Header: fullBlock.Header}
 		if len(fullBlock.Transactions) > 0 {
 			b.Transactions = []*transaction.Transaction{fullBlock.Transactions[0]}
@@ -291,7 +291,7 @@ func (consensus *Consensus) requestBlockProposalMessageHandler(remoteMessage *no
 			txnHash := txn.Hash()
 			txnsHash[i] = txnHash.ToArray()
 		}
-	case pb.REQUEST_TRANSACTION_SHORT_HASH:
+	case pb.RequestTransactionType_REQUEST_TRANSACTION_SHORT_HASH:
 		if msgBody.ShortHashSize > sha256.Size {
 			return replyBuf, false, fmt.Errorf("hash size %d is greater than %d", msgBody.ShortHashSize, sha256.Size)
 		}
@@ -349,7 +349,7 @@ func (consensus *Consensus) requestProposalTransactionsMessageHandler(remoteMess
 	txns := make([]*transaction.Transaction, len(msgBody.TransactionsHash))
 
 	switch msgBody.Type {
-	case pb.REQUEST_TRANSACTION_HASH:
+	case pb.RequestTransactionType_REQUEST_TRANSACTION_HASH:
 		txnMap := make(map[common.Uint256]*transaction.Transaction)
 		for _, txn := range b.Transactions {
 			txnMap[txn.Hash()] = txn
@@ -366,7 +366,7 @@ func (consensus *Consensus) requestProposalTransactionsMessageHandler(remoteMess
 				return replyBuf, false, fmt.Errorf("Transaction %s not found in block", txnHash.ToHexString())
 			}
 		}
-	case pb.REQUEST_TRANSACTION_SHORT_HASH:
+	case pb.RequestTransactionType_REQUEST_TRANSACTION_SHORT_HASH:
 		txnMap := make(map[string]*transaction.Transaction)
 		for _, txn := range b.Transactions {
 			txnMap[string(txn.ShortHash(msgBody.ShortHashSalt, msgBody.ShortHashSize))] = txn
@@ -390,9 +390,9 @@ func (consensus *Consensus) requestProposalTransactionsMessageHandler(remoteMess
 }
 
 func (consensus *Consensus) registerMessageHandler() {
-	consensus.localNode.AddMessageHandler(pb.VOTE, consensus.voteMessageHandler)
-	consensus.localNode.AddMessageHandler(pb.I_HAVE_BLOCK_PROPOSAL, consensus.iHaveBlockProposalMessageHandler)
-	consensus.localNode.AddMessageHandler(pb.GET_CONSENSUS_STATE, consensus.getConsensusStateMessageHandler)
-	consensus.localNode.AddMessageHandler(pb.REQUEST_BLOCK_PROPOSAL, consensus.requestBlockProposalMessageHandler)
-	consensus.localNode.AddMessageHandler(pb.REQUEST_PROPOSAL_TRANSACTIONS, consensus.requestProposalTransactionsMessageHandler)
+	consensus.localNode.AddMessageHandler(pb.MessageType_VOTE, consensus.voteMessageHandler)
+	consensus.localNode.AddMessageHandler(pb.MessageType_I_HAVE_BLOCK_PROPOSAL, consensus.iHaveBlockProposalMessageHandler)
+	consensus.localNode.AddMessageHandler(pb.MessageType_GET_CONSENSUS_STATE, consensus.getConsensusStateMessageHandler)
+	consensus.localNode.AddMessageHandler(pb.MessageType_REQUEST_BLOCK_PROPOSAL, consensus.requestBlockProposalMessageHandler)
+	consensus.localNode.AddMessageHandler(pb.MessageType_REQUEST_PROPOSAL_TRANSACTIONS, consensus.requestProposalTransactionsMessageHandler)
 }

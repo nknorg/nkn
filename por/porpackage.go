@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/pb"
@@ -55,7 +55,7 @@ func (c PorPackages) Less(i, j int) bool {
 }
 
 func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage, error) {
-	if txn.UnsignedTx.Payload.Type != pb.SIG_CHAIN_TXN_TYPE {
+	if txn.UnsignedTx.Payload.Type != pb.PayloadType_SIG_CHAIN_TXN_TYPE {
 		return nil, errors.New("Transaction type should be sigchain")
 	}
 

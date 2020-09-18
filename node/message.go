@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util/log"
@@ -157,7 +157,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 			}
 		}
 
-		if unsignedMsg.MessageType == pb.RELAY {
+		if unsignedMsg.MessageType == pb.MessageType_RELAY {
 			relayMessage := &pb.Relay{}
 			err = proto.Unmarshal(unsignedMsg.Message, relayMessage)
 			if err != nil {
@@ -206,7 +206,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 			localNode.IncrementRelayMessageCount()
 		}
 
-		if unsignedMsg.MessageType == pb.TRANSACTIONS && nnetLocalNode != nil {
+		if unsignedMsg.MessageType == pb.MessageType_TRANSACTIONS && nnetLocalNode != nil {
 			txnMsg := &pb.Transactions{}
 			err = proto.Unmarshal(unsignedMsg.Message, txnMsg)
 			if err != nil {
@@ -281,8 +281,8 @@ func (localNode *LocalNode) receiveMessage(sender *Node, unsignedMsg *pb.Unsigne
 
 // checkMessageType checks if a message type is allowed
 func checkMessageType(messageType pb.MessageType) error {
-	if messageType == pb.MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE {
-		return fmt.Errorf("message type %s should not be used", pb.MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE.String())
+	if messageType == pb.MessageType_MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE {
+		return fmt.Errorf("message type %s should not be used", pb.MessageType_MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE.String())
 	}
 
 	return nil
