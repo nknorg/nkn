@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/chain/txvalidator"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
@@ -241,7 +242,7 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 	}
 
 	// 2. verify txn
-	if err := chain.VerifyTransaction(txn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
+	if err := txvalidator.VerifyTransaction(txn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
 		return err
 	}
 

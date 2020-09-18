@@ -7,12 +7,13 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
+	"github.com/nknorg/nkn/v2/chain/txvalidator"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/event"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util/address"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 )
@@ -250,7 +251,7 @@ func (rs *RelayService) broadcastSigChain(sigChain *pb.SigChain) error {
 
 	currentHeight := chain.DefaultLedger.Store.GetHeight()
 
-	err = chain.VerifyTransaction(txn, currentHeight+1)
+	err = txvalidator.VerifyTransaction(txn, currentHeight+1)
 	if err != nil {
 		return err
 	}
