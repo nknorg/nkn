@@ -181,7 +181,7 @@ func nknMain(c *cli.Context) error {
 		for wallet == nil || account == nil {
 			time.Sleep(time.Second * 3)
 
-			wallet, err = vault.GetWallet()
+			wallet, err = vault.GetWallet(password.GetAccountPassword)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -194,7 +194,7 @@ func nknMain(c *cli.Context) error {
 		}
 	} else {
 		// Get local account
-		wallet, err = vault.GetWallet()
+		wallet, err = vault.GetWallet(password.GetAccountPassword)
 		if err != nil {
 			return err
 		}

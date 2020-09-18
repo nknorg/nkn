@@ -5,14 +5,13 @@ import (
 	"fmt"
 
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/program"
 	"github.com/nknorg/nkn/v2/signature"
 	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/util/password"
 )
 
 type Wallet struct {
@@ -198,7 +197,7 @@ func (w *Wallet) GetContract() (*program.ProgramContext, error) {
 	return w.contract, nil
 }
 
-func GetWallet() (*Wallet, error) {
+func GetWallet(getPasswordFunc func() ([]byte, error)) (*Wallet, error) {
 	walletFileName := config.Parameters.WalletFile
 	if !common.FileExisted(walletFileName) {
 		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_NO_WALLET_FILE
@@ -206,7 +205,7 @@ func GetWallet() (*Wallet, error) {
 	}
 	serviceConfig.Status = serviceConfig.Status &^ serviceConfig.SERVICE_STATUS_NO_WALLET_FILE
 
-	passwd, err := password.GetAccountPassword()
+	passwd, err := getPasswordFunc()
 	defer common.ClearBytes(passwd)
 	if err != nil {
 		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_NO_PASSWORD

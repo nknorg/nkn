@@ -36,7 +36,7 @@ func WalletOpenRouter(router *gin.RouterGroup) {
 			}
 		} else {
 			password.Passwd = data.Password
-			_, err := vault.GetWallet()
+			_, err := vault.GetWallet(password.GetAccountPassword)
 			if err != nil {
 				log.WebLog.Error("open wallet error: ", err)
 				context.AbortWithError(http.StatusForbidden, err)
