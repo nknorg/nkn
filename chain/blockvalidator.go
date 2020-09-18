@@ -33,9 +33,9 @@ const (
 )
 
 var (
-	ErrIDRegistered           = errors.New("ID has be registered")
-	ErrDuplicateGenerateIDTxn = errors.New("[VerifyTransactionWithBlock], duplicate GenerateID txns")
-	ErrDuplicateIssueAssetTxn = errors.New("[VerifyTransactionWithBlock], duplicate IssueAsset txns")
+	ErrIDRegistered           = errors.New("id has been registered")
+	ErrDuplicateGenerateIDTxn = errors.New("duplicate GenerateID txns")
+	ErrDuplicateIssueAssetTxn = errors.New("duplicate IssueAsset txns")
 	timestampToleranceSalt    = util.RandomBytes(32)
 )
 
