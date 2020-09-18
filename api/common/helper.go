@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/vault"

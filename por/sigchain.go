@@ -78,8 +78,8 @@ func VerifySigChainMeta(sc *pb.SigChain, height uint32) error {
 			}
 		}
 		if !config.AllowSigChainHashSignature.GetValueAtHeight(height) {
-			if e.SigAlgo != pb.SIGNATURE {
-				return fmt.Errorf("sigchain elem %d sig algo should be %v", i, pb.SIGNATURE)
+			if e.SigAlgo != pb.SigAlgo_SIGNATURE {
+				return fmt.Errorf("sigchain elem %d sig algo should be %v", i, pb.SigAlgo_SIGNATURE)
 			}
 		}
 	}
@@ -114,12 +114,12 @@ func VerifySigChainSignatures(sc *pb.SigChain) error {
 		}
 
 		switch e.SigAlgo {
-		case pb.SIGNATURE:
+		case pb.SigAlgo_SIGNATURE:
 			err = crypto.Verify(prevNextPubkey, hash, e.Signature)
 			if err != nil {
 				return fmt.Errorf("signature %x is invalid: %v", e.Signature, err)
 			}
-		case pb.HASH:
+		case pb.SigAlgo_HASH:
 			if !bytes.Equal(e.Signature, hash) {
 				return fmt.Errorf("signature %x is different from expected value %x", e.Signature, hash[:])
 			}

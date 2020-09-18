@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/common/serialization"
 	"github.com/nknorg/nkn/v2/pb"
@@ -115,61 +115,61 @@ func (tx *Transaction) GetProgramHashes() ([]common.Uint160, error) {
 	}
 
 	switch tx.UnsignedTx.Payload.Type {
-	case pb.SIG_CHAIN_TXN_TYPE:
+	case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
 		sender := payload.(*pb.SigChainTxn).Submitter
 		hashes = append(hashes, common.BytesToUint160(sender))
-	case pb.TRANSFER_ASSET_TYPE:
+	case pb.PayloadType_TRANSFER_ASSET_TYPE:
 		sender := payload.(*pb.TransferAsset).Sender
 		hashes = append(hashes, common.BytesToUint160(sender))
-	case pb.COINBASE_TYPE:
+	case pb.PayloadType_COINBASE_TYPE:
 		sender := payload.(*pb.Coinbase).Sender
 		hashes = append(hashes, common.BytesToUint160(sender))
-	case pb.REGISTER_NAME_TYPE:
+	case pb.PayloadType_REGISTER_NAME_TYPE:
 		publicKey := payload.(*pb.RegisterName).Registrant
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
-	case pb.TRANSFER_NAME_TYPE:
+	case pb.PayloadType_TRANSFER_NAME_TYPE:
 		publicKey := payload.(*pb.TransferName).Registrant
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
-	case pb.DELETE_NAME_TYPE:
+	case pb.PayloadType_DELETE_NAME_TYPE:
 		publicKey := payload.(*pb.DeleteName).Registrant
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
-	case pb.SUBSCRIBE_TYPE:
+	case pb.PayloadType_SUBSCRIBE_TYPE:
 		publicKey := payload.(*pb.Subscribe).Subscriber
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
-	case pb.UNSUBSCRIBE_TYPE:
+	case pb.PayloadType_UNSUBSCRIBE_TYPE:
 		publicKey := payload.(*pb.Unsubscribe).Subscriber
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
-	case pb.GENERATE_ID_TYPE:
+	case pb.PayloadType_GENERATE_ID_TYPE:
 		publicKey := payload.(*pb.GenerateID).PublicKey
 		programhash, err := program.CreateProgramHash(publicKey)
 		if err != nil {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
-	case pb.NANO_PAY_TYPE:
+	case pb.PayloadType_NANO_PAY_TYPE:
 		sender := payload.(*pb.NanoPay).Sender
 		hashes = append(hashes, common.BytesToUint160(sender))
-	case pb.ISSUE_ASSET_TYPE:
+	case pb.PayloadType_ISSUE_ASSET_TYPE:
 		sender := payload.(*pb.IssueAsset).Sender
 		hashes = append(hashes, common.BytesToUint160(sender))
 	default:
@@ -218,7 +218,7 @@ func (tx *Transaction) SetHash(hash common.Uint256) {
 }
 
 func (txn *Transaction) VerifySignature() error {
-	if txn.UnsignedTx.Payload.Type == pb.COINBASE_TYPE {
+	if txn.UnsignedTx.Payload.Type == pb.PayloadType_COINBASE_TYPE {
 		return nil
 	}
 

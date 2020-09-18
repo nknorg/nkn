@@ -27,12 +27,12 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.NANO_PAY_TYPE:
+	case pb.PayloadType_NANO_PAY_TYPE:
 		if !config.ChargeNanoPayTxnFee.GetValueAtHeight(height) {
 			break
 		}
 		fallthrough
-	case pb.COINBASE_TYPE, pb.SIG_CHAIN_TXN_TYPE:
+	case pb.PayloadType_COINBASE_TYPE, pb.PayloadType_SIG_CHAIN_TXN_TYPE:
 		// For compatibility with existing database, otherwise state root will be different
 		if txn.UnsignedTx.Fee == 0 {
 			break
@@ -45,8 +45,8 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.NANO_PAY_TYPE:
-	case pb.SIG_CHAIN_TXN_TYPE:
+	case pb.PayloadType_NANO_PAY_TYPE:
+	case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
 	default:
 		if err = states.IncrNonce(pg[0]); err != nil {
 			return err
@@ -54,7 +54,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 	}
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.COINBASE_TYPE:
+	case pb.PayloadType_COINBASE_TYPE:
 		coinbase := pl.(*pb.Coinbase)
 		if !genesis {
 			donationAmount, err := cs.GetDonation()
@@ -76,7 +76,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 				return err
 			}
 		}
-	case pb.TRANSFER_ASSET_TYPE:
+	case pb.PayloadType_TRANSFER_ASSET_TYPE:
 		transfer := pl.(*pb.TransferAsset)
 		if err = states.UpdateBalance(common.BytesToUint160(transfer.Sender), config.NKNAssetID, common.Fixed64(transfer.Amount), Subtraction); err != nil {
 			return err
@@ -85,7 +85,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if err = states.UpdateBalance(common.BytesToUint160(transfer.Recipient), config.NKNAssetID, common.Fixed64(transfer.Amount), Addition); err != nil {
 			return err
 		}
-	case pb.REGISTER_NAME_TYPE:
+	case pb.PayloadType_REGISTER_NAME_TYPE:
 		registerNamePayload := pl.(*pb.RegisterName)
 		if err = states.UpdateBalance(pg[0], config.NKNAssetID, common.Fixed64(registerNamePayload.RegistrationFee), Subtraction); err != nil {
 			return err
@@ -107,12 +107,12 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 				return err
 			}
 		}
-	case pb.TRANSFER_NAME_TYPE:
+	case pb.PayloadType_TRANSFER_NAME_TYPE:
 		transferNamePayload := pl.(*pb.TransferName)
 		if err = states.transferName(transferNamePayload.Name, transferNamePayload.Recipient); err != nil {
 			return err
 		}
-	case pb.DELETE_NAME_TYPE:
+	case pb.PayloadType_DELETE_NAME_TYPE:
 		deleteNamePayload := pl.(*pb.DeleteName)
 		if config.LegacyNameService.GetValueAtHeight(height) {
 			states.deleteNameForRegistrant_legacy(deleteNamePayload.Registrant, deleteNamePayload.Name)
@@ -121,17 +121,17 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 				return err
 			}
 		}
-	case pb.SUBSCRIBE_TYPE:
+	case pb.PayloadType_SUBSCRIBE_TYPE:
 		subscribePayload := pl.(*pb.Subscribe)
 		if err = states.subscribe(subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Meta, height+subscribePayload.Duration); err != nil {
 			return err
 		}
-	case pb.UNSUBSCRIBE_TYPE:
+	case pb.PayloadType_UNSUBSCRIBE_TYPE:
 		unsubscribePayload := pl.(*pb.Unsubscribe)
 		if err = states.unsubscribe(unsubscribePayload.Topic, unsubscribePayload.Subscriber, unsubscribePayload.Identifier); err != nil {
 			return err
 		}
-	case pb.GENERATE_ID_TYPE:
+	case pb.PayloadType_GENERATE_ID_TYPE:
 		genID := pl.(*pb.GenerateID)
 
 		if err = states.UpdateBalance(pg[0], config.NKNAssetID, common.Fixed64(genID.RegistrationFee), Subtraction); err != nil {
@@ -150,7 +150,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if err = states.UpdateBalance(donationAddress, config.NKNAssetID, common.Fixed64(genID.RegistrationFee), Addition); err != nil {
 			return err
 		}
-	case pb.NANO_PAY_TYPE:
+	case pb.PayloadType_NANO_PAY_TYPE:
 		nanoPay := pl.(*pb.NanoPay)
 
 		addrRecipient := common.BytesToUint160(nanoPay.Recipient)
@@ -171,7 +171,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if err = states.SetNanoPay(pg[0], addrRecipient, nanoPay.Id, common.Fixed64(nanoPay.Amount), nanoPay.NanoPayExpiration); err != nil {
 			return err
 		}
-	case pb.ISSUE_ASSET_TYPE:
+	case pb.PayloadType_ISSUE_ASSET_TYPE:
 		issue := pl.(*pb.IssueAsset)
 		if err = states.SetAsset(txn.Hash(), issue.Name, issue.Symbol, common.Fixed64(issue.TotalSupply), issue.Precision, pg[0]); err != nil {
 			return err
@@ -248,7 +248,7 @@ func (cs *ChainStore) generateStateRoot(ctx context.Context, b *block.Block, gen
 		preBlockHash := prevBlock.Hash()
 
 		for _, txn := range prevBlock.Transactions {
-			if txn.UnsignedTx.Payload.Type == pb.GENERATE_ID_TYPE {
+			if txn.UnsignedTx.Payload.Type == pb.PayloadType_GENERATE_ID_TYPE {
 				select {
 				case <-ctx.Done():
 					return nil, common.EmptyUint256, errors.New("context deadline exceeded")

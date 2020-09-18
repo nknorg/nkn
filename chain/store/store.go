@@ -311,17 +311,17 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		}
 
 		switch txn.UnsignedTx.Payload.Type {
-		case pb.COINBASE_TYPE:
-		case pb.SIG_CHAIN_TXN_TYPE:
-		case pb.TRANSFER_ASSET_TYPE:
-		case pb.ISSUE_ASSET_TYPE:
-		case pb.REGISTER_NAME_TYPE:
-		case pb.TRANSFER_NAME_TYPE:
-		case pb.DELETE_NAME_TYPE:
-		case pb.SUBSCRIBE_TYPE:
-		case pb.UNSUBSCRIBE_TYPE:
-		case pb.GENERATE_ID_TYPE:
-		case pb.NANO_PAY_TYPE:
+		case pb.PayloadType_COINBASE_TYPE:
+		case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
+		case pb.PayloadType_TRANSFER_ASSET_TYPE:
+		case pb.PayloadType_ISSUE_ASSET_TYPE:
+		case pb.PayloadType_REGISTER_NAME_TYPE:
+		case pb.PayloadType_TRANSFER_NAME_TYPE:
+		case pb.PayloadType_DELETE_NAME_TYPE:
+		case pb.PayloadType_SUBSCRIBE_TYPE:
+		case pb.PayloadType_UNSUBSCRIBE_TYPE:
+		case pb.PayloadType_GENERATE_ID_TYPE:
+		case pb.PayloadType_NANO_PAY_TYPE:
 		default:
 			return errors.New("unsupported transaction type")
 		}

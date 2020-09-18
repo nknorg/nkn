@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
 	nnetpb "github.com/nknorg/nnet/protobuf"
@@ -66,7 +66,7 @@ func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
 		Node:      nnetNode,
 		NodeData:  nodeData,
 		publicKey: nodeData.PublicKey,
-		syncState: pb.WAIT_FOR_SYNCING,
+		syncState: pb.SyncState_WAIT_FOR_SYNCING,
 	}
 
 	return node, nil

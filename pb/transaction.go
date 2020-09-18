@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/common/serialization"
 )
@@ -135,7 +136,7 @@ func (m *NanoPay) ToMap() map[string]interface{} {
 
 func (m *SigChainTxn) ToMap() map[string]interface{} {
 	sc := &SigChain{}
-	if err := sc.Unmarshal(m.SigChain); err != nil {
+	if err := proto.Unmarshal(m.SigChain, sc); err != nil {
 		return map[string]interface{}{}
 	}
 	return map[string]interface{}{

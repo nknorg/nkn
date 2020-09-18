@@ -13,7 +13,7 @@ import (
 func (consensus *Consensus) receiveVote(neighborID string, height uint32, blockHash common.Uint256) error {
 	log.Debugf("Receive vote %s for height %d from neighbor %v", blockHash.ToHexString(), height, neighborID)
 
-	if consensus.localNode.GetSyncState() == pb.PERSIST_FINISHED {
+	if consensus.localNode.GetSyncState() == pb.SyncState_PERSIST_FINISHED {
 		expectedHeight := consensus.GetExpectedHeight()
 		if math.Abs(float64(height)-float64(expectedHeight)) > acceptVoteHeightRange {
 			return fmt.Errorf("receive invalid vote height %d, expecting %d +- %d", height, expectedHeight, acceptVoteHeightRange)
@@ -22,7 +22,7 @@ func (consensus *Consensus) receiveVote(neighborID string, height uint32, blockH
 
 	if blockHash != common.EmptyUint256 {
 		err := consensus.receiveProposalHash(neighborID, height, blockHash)
-		if err != nil && consensus.localNode.GetSyncState() == pb.PERSIST_FINISHED {
+		if err != nil && consensus.localNode.GetSyncState() == pb.SyncState_PERSIST_FINISHED {
 			log.Warningf("Receive block hash error when receive vote: %v", err)
 		}
 	}

@@ -9,17 +9,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/consensus/election"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/util/timer"
 )
@@ -308,7 +308,7 @@ func (consensus *Consensus) receiveProposalHash(neighborID string, height uint32
 func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash common.Uint256, height uint32, requestType pb.RequestTransactionType) (*block.Block, error) {
 	var shortHashSalt []byte
 	var shortHashSize uint32
-	if requestType == pb.REQUEST_TRANSACTION_SHORT_HASH {
+	if requestType == pb.RequestTransactionType_REQUEST_TRANSACTION_SHORT_HASH {
 		shortHashSalt = config.ShortHashSalt
 		shortHashSize = config.ShortHashSize
 	}
@@ -370,7 +370,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 	missingTxnsHash := make([][]byte, 0)
 
 	switch requestType {
-	case pb.REQUEST_FULL_TRANSACTION:
+	case pb.RequestTransactionType_REQUEST_FULL_TRANSACTION:
 		txnsHash := make([]common.Uint256, len(b.Transactions))
 		for i, txn := range b.Transactions {
 			txnsHash[i] = txn.Hash()
@@ -382,7 +382,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		}
 
 		return b, nil
-	case pb.REQUEST_TRANSACTION_HASH:
+	case pb.RequestTransactionType_REQUEST_TRANSACTION_HASH:
 		txnsHash := make([]common.Uint256, len(replyMsg.TransactionsHash))
 		for i, txnHashBytes := range replyMsg.TransactionsHash {
 			txnsHash[i], err = common.Uint256ParseFromBytes(txnHashBytes)
@@ -412,7 +412,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 				missingTxnsHash = append(missingTxnsHash, txnsHash[i].ToArray())
 			}
 		}
-	case pb.REQUEST_TRANSACTION_SHORT_HASH:
+	case pb.RequestTransactionType_REQUEST_TRANSACTION_SHORT_HASH:
 		blockTxns := make(map[string]*transaction.Transaction, len(b.Transactions))
 		for _, txn := range b.Transactions {
 			blockTxns[string(txn.ShortHash(config.ShortHashSalt, config.ShortHashSize))] = txn
@@ -452,7 +452,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		mergedTxns = existingTxns
 	}
 
-	if requestType == pb.REQUEST_TRANSACTION_SHORT_HASH {
+	if requestType == pb.RequestTransactionType_REQUEST_TRANSACTION_SHORT_HASH {
 		txnsHash := make([]common.Uint256, len(mergedTxns))
 		for i, txn := range mergedTxns {
 			txnsHash[i] = txn.Hash()
@@ -461,7 +461,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		err = crypto.VerifyRoot(txnsHash, b.Header.UnsignedHeader.TransactionsRoot)
 		if err != nil {
 			log.Warningf("Short hash verify root error: %v, fallback to full transaction hash", err)
-			return consensus.requestProposal(neighbor, blockHash, height, pb.REQUEST_TRANSACTION_HASH)
+			return consensus.requestProposal(neighbor, blockHash, height, pb.RequestTransactionType_REQUEST_TRANSACTION_HASH)
 		}
 	}
 
@@ -473,10 +473,10 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 func getTxnHash(txn *transaction.Transaction, requestType pb.RequestTransactionType) ([]byte, error) {
 	var txnHashBytes []byte
 	switch requestType {
-	case pb.REQUEST_TRANSACTION_HASH:
+	case pb.RequestTransactionType_REQUEST_TRANSACTION_HASH:
 		txnHash := txn.Hash()
 		txnHashBytes = txnHash.ToArray()
-	case pb.REQUEST_TRANSACTION_SHORT_HASH:
+	case pb.RequestTransactionType_REQUEST_TRANSACTION_SHORT_HASH:
 		txnHashBytes = txn.ShortHash(config.ShortHashSalt, config.ShortHashSize)
 	default:
 		return nil, fmt.Errorf("unsupported request type %v", requestType)
@@ -531,7 +531,7 @@ func mergeTxns(existingTxns, requestedTxns, mergedTxns []*transaction.Transactio
 func (consensus *Consensus) requestProposalTransactions(neighbor *node.RemoteNode, blockHash common.Uint256, requestType pb.RequestTransactionType, txnsHash [][]byte) ([]*transaction.Transaction, error) {
 	var shortHashSalt []byte
 	var shortHashSize uint32
-	if requestType == pb.REQUEST_TRANSACTION_SHORT_HASH {
+	if requestType == pb.RequestTransactionType_REQUEST_TRANSACTION_SHORT_HASH {
 		shortHashSalt = config.ShortHashSalt
 		shortHashSize = config.ShortHashSize
 	}

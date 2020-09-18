@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/util/address"
@@ -77,7 +77,7 @@ func (ws *WsServer) sendInboundMessage(clientID string, inboundMsg *pb.InboundMe
 	}
 
 	msg := &pb.ClientMessage{
-		MessageType: pb.INBOUND_MESSAGE,
+		MessageType: pb.ClientMessageType_INBOUND_MESSAGE,
 		Message:     buf,
 	}
 	buf, err = proto.Marshal(msg)
@@ -178,7 +178,7 @@ func (ws *WsServer) handleReceipt(receipt *pb.Receipt) error {
 		return nil
 	}
 
-	destSigChainElem := pb.NewSigChainElem(nil, nil, receipt.Signature, nil, nil, false, pb.SIGNATURE)
+	destSigChainElem := pb.NewSigChainElem(nil, nil, receipt.Signature, nil, nil, false, pb.SigAlgo_SIGNATURE)
 	por.GetPorServer().AddDestSigChainElem(
 		sci.blockHash,
 		receipt.PrevHash,

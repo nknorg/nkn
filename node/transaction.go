@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/pool"
@@ -154,8 +154,8 @@ func (rt *receiveTxnMsg) receiveTxnMsg(txnMsg *pb.Transactions, remoteMessage *n
 }
 
 func (localNode *LocalNode) initTxnHandlers() {
-	localNode.AddMessageHandler(pb.I_HAVE_SIGNATURE_CHAIN_TRANSACTION, localNode.iHaveSignatureChainTransactionMessageHandler)
-	localNode.AddMessageHandler(pb.REQUEST_SIGNATURE_CHAIN_TRANSACTION, localNode.requestSignatureChainTransactionMessageHandler)
+	localNode.AddMessageHandler(pb.MessageType_I_HAVE_SIGNATURE_CHAIN_TRANSACTION, localNode.iHaveSignatureChainTransactionMessageHandler)
+	localNode.AddMessageHandler(pb.MessageType_REQUEST_SIGNATURE_CHAIN_TRANSACTION, localNode.requestSignatureChainTransactionMessageHandler)
 	localNode.startRequestingSigChainTxn()
 	localNode.startReceivingTxnMsg()
 }
@@ -274,7 +274,7 @@ func NewTransactionsMessage(transactions []*transaction.Transaction) (*pb.Unsign
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.TRANSACTIONS,
+		MessageType: pb.MessageType_TRANSACTIONS,
 		Message:     buf,
 	}
 
@@ -295,7 +295,7 @@ func NewIHaveSignatureChainTransactionMessage(height uint32, sigHash []byte) (*p
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.I_HAVE_SIGNATURE_CHAIN_TRANSACTION,
+		MessageType: pb.MessageType_I_HAVE_SIGNATURE_CHAIN_TRANSACTION,
 		Message:     buf,
 	}
 
@@ -315,7 +315,7 @@ func NewRequestSignatureChainTransactionMessage(sigHash []byte) (*pb.UnsignedMes
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.REQUEST_SIGNATURE_CHAIN_TRANSACTION,
+		MessageType: pb.MessageType_REQUEST_SIGNATURE_CHAIN_TRANSACTION,
 		Message:     buf,
 	}
 
@@ -336,7 +336,7 @@ func NewRequestSignatureChainTransactionReply(transaction *transaction.Transacti
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.REQUEST_SIGNATURE_CHAIN_TRANSACTION_REPLY,
+		MessageType: pb.MessageType_REQUEST_SIGNATURE_CHAIN_TRANSACTION_REPLY,
 		Message:     buf,
 	}
 

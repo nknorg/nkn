@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/nknorg/nkn/v2/chain"
-	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/pb"
 )
 
 const (
@@ -29,6 +29,6 @@ const (
 	changeVoteMinRelativeWeight   = 0.5
 	consensusMinRelativeWeight    = 2.0 / 3.0
 	syncMinRelativeWeight         = 1.0 / 2.0
-	defaultRequestTransactionType = pb.REQUEST_TRANSACTION_SHORT_HASH
+	defaultRequestTransactionType = pb.RequestTransactionType_REQUEST_TRANSACTION_SHORT_HASH
 	acceptVoteHeightRange         = 32
 )

@@ -148,7 +148,7 @@ func (tp *TxnPool) DropTxns() {
 		txn := heap.Pop((*dropTxnsHeap)(&dropList)).(*transaction.Transaction)
 
 		switch txn.UnsignedTx.Payload.Type {
-		case pb.NANO_PAY_TYPE:
+		case pb.PayloadType_NANO_PAY_TYPE:
 			if _, ok := tp.NanoPayTxs.Load(txn.Hash()); !ok {
 				continue
 			}
@@ -303,12 +303,12 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	defer tp.blockValidationState.Unlock()
 
 	switch txn.UnsignedTx.Payload.Type {
-	case pb.COINBASE_TYPE:
+	case pb.PayloadType_COINBASE_TYPE:
 		return fmt.Errorf("Invalid txn type %v", txn.UnsignedTx.Payload.Type)
-	case pb.SIG_CHAIN_TXN_TYPE:
+	case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
 		// sigchain txn should not be added to txn pool
 		return nil
-	case pb.NANO_PAY_TYPE:
+	case pb.PayloadType_NANO_PAY_TYPE:
 		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
 			tp.blockValidationState.Reset()
 			return err
@@ -534,11 +534,11 @@ func (tp *TxnPool) removeTransactions(txns []*transaction.Transaction) []*transa
 		txnsToRemove := make([]*transaction.Transaction, 0)
 
 		switch txn.UnsignedTx.Payload.Type {
-		case pb.COINBASE_TYPE:
+		case pb.PayloadType_COINBASE_TYPE:
 			continue
-		case pb.SIG_CHAIN_TXN_TYPE:
+		case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
 			continue
-		case pb.NANO_PAY_TYPE:
+		case pb.PayloadType_NANO_PAY_TYPE:
 			if _, ok := tp.NanoPayTxs.Load(txn.Hash()); ok {
 				tp.NanoPayTxs.Delete(txn.Hash())
 				txnsToRemove = append(txnsToRemove, txn)

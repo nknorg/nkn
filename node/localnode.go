@@ -9,12 +9,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/pool"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/event"
 	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 	"github.com/nknorg/nnet"
@@ -232,7 +232,7 @@ func (localNode *LocalNode) GetHeight() uint32 {
 func (localNode *LocalNode) SetSyncState(s pb.SyncState) bool {
 	log.Infof("Set sync state to %s", s.String())
 	changed := localNode.Node.SetSyncState(s)
-	if changed && s == pb.PERSIST_FINISHED {
+	if changed && s == pb.SyncState_PERSIST_FINISHED {
 		config.SyncPruning = config.LivePruning
 		localNode.verifyNeighbors()
 	}

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
@@ -44,8 +44,8 @@ func (consensus *Consensus) startGettingNeighborConsensusState() {
 				if majorityConsensusHeight+1 > localLedgerHeight {
 					consensus.setNextConsensusHeight(majorityConsensusHeight + 1)
 					consensus.localNode.SetMinVerifiableHeight(majorityConsensusHeight + 1 + por.SigChainMiningHeightOffset)
-					if consensus.localNode.GetSyncState() == pb.PERSIST_FINISHED {
-						consensus.localNode.SetSyncState(pb.WAIT_FOR_SYNCING)
+					if consensus.localNode.GetSyncState() == pb.SyncState_PERSIST_FINISHED {
+						consensus.localNode.SetSyncState(pb.SyncState_WAIT_FOR_SYNCING)
 					}
 				}
 			}
@@ -129,7 +129,7 @@ func (consensus *Consensus) getNeighborsMajorityConsensusHeight() uint32 {
 		totalCount := 0
 		for _, neighbor := range consensus.localNode.GetVotingNeighbors(nil) {
 			if consensusState, ok := allStates[neighbor.GetID()]; ok {
-				if consensusState.SyncState != pb.WAIT_FOR_SYNCING && consensusState.ConsensusHeight > 0 {
+				if consensusState.SyncState != pb.SyncState_WAIT_FOR_SYNCING && consensusState.ConsensusHeight > 0 {
 					counter[consensusState.ConsensusHeight]++
 					totalCount++
 				}

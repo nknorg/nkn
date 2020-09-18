@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/txvalidator"
@@ -39,9 +39,9 @@ func (rs *RelayService) Start() error {
 	event.Queue.Subscribe(event.NewBlockProduced, rs.flushSigChain)
 	event.Queue.Subscribe(event.PinSigChain, rs.startPinSigChain)
 	event.Queue.Subscribe(event.BacktrackSigChain, rs.backtrackDestSigChain)
-	rs.localNode.AddMessageHandler(pb.RELAY, rs.relayMessageHandler)
-	rs.localNode.AddMessageHandler(pb.PIN_SIGNATURE_CHAIN, rs.pinSigChainMessageHandler)
-	rs.localNode.AddMessageHandler(pb.BACKTRACK_SIGNATURE_CHAIN, rs.backtrackSigChainMessageHandler)
+	rs.localNode.AddMessageHandler(pb.MessageType_RELAY, rs.relayMessageHandler)
+	rs.localNode.AddMessageHandler(pb.MessageType_PIN_SIGNATURE_CHAIN, rs.pinSigChainMessageHandler)
+	rs.localNode.AddMessageHandler(pb.MessageType_BACKTRACK_SIGNATURE_CHAIN, rs.backtrackSigChainMessageHandler)
 	return nil
 }
 
@@ -64,7 +64,7 @@ func NewRelayMessage(srcIdentifier string, srcPubkey, destID, payload, blockHash
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.RELAY,
+		MessageType: pb.MessageType_RELAY,
 		Message:     buf,
 	}
 
@@ -83,7 +83,7 @@ func NewPinSigChainMessage(hash []byte) (*pb.UnsignedMessage, error) {
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.PIN_SIGNATURE_CHAIN,
+		MessageType: pb.MessageType_PIN_SIGNATURE_CHAIN,
 		Message:     buf,
 	}
 
@@ -103,7 +103,7 @@ func NewBacktrackSigChainMessage(sigChainElems []*pb.SigChainElem, hash []byte) 
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.BACKTRACK_SIGNATURE_CHAIN,
+		MessageType: pb.MessageType_BACKTRACK_SIGNATURE_CHAIN,
 		Message:     buf,
 	}
 
@@ -305,7 +305,7 @@ func (rs *RelayService) updateRelayMessage(relayMessage *pb.Relay, nextHop, prev
 		nextPubkey = nextHop.GetPubKey()
 	}
 
-	mining := config.Parameters.Mining && rs.localNode.GetSyncState() == pb.PERSIST_FINISHED
+	mining := config.Parameters.Mining && rs.localNode.GetSyncState() == pb.SyncState_PERSIST_FINISHED
 
 	var prevNodeID []byte
 	if prevHop != nil {
@@ -339,7 +339,7 @@ func (localNode *LocalNode) SendRelayMessage(srcAddr, destAddr string, payload, 
 		destID,
 		destPubkey,
 		signature,
-		pb.SIGNATURE,
+		pb.SigAlgo_SIGNATURE,
 	)
 	if err != nil {
 		return err

@@ -6,13 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/consequential"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
@@ -38,7 +38,7 @@ func NewGetBlockHeadersMessage(startHeight, endHeight uint32) (*pb.UnsignedMessa
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.GET_BLOCK_HEADERS,
+		MessageType: pb.MessageType_GET_BLOCK_HEADERS,
 		Message:     buf,
 	}
 
@@ -63,7 +63,7 @@ func NewGetBlockHeadersReply(headers []*block.Header) (*pb.UnsignedMessage, erro
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.GET_BLOCK_HEADERS_REPLY,
+		MessageType: pb.MessageType_GET_BLOCK_HEADERS_REPLY,
 		Message:     buf,
 	}
 
@@ -83,7 +83,7 @@ func NewGetBlocksMessage(startHeight, endHeight uint32) (*pb.UnsignedMessage, er
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.GET_BLOCKS,
+		MessageType: pb.MessageType_GET_BLOCKS,
 		Message:     buf,
 	}
 
@@ -108,7 +108,7 @@ func NewGetBlocksReply(blocks []*block.Block) (*pb.UnsignedMessage, error) {
 	}
 
 	msg := &pb.UnsignedMessage{
-		MessageType: pb.GET_BLOCKS_REPLY,
+		MessageType: pb.MessageType_GET_BLOCKS_REPLY,
 		Message:     buf,
 	}
 
@@ -359,8 +359,8 @@ func (localNode *LocalNode) getNeighborsMajorityBlockHashByHeight(height uint32,
 
 // initSyncing initializes block syncing state and registers message handler
 func (localNode *LocalNode) initSyncing() {
-	localNode.AddMessageHandler(pb.GET_BLOCK_HEADERS, localNode.getBlockHeadersMessageHandler)
-	localNode.AddMessageHandler(pb.GET_BLOCKS, localNode.getBlocksMessageHandler)
+	localNode.AddMessageHandler(pb.MessageType_GET_BLOCK_HEADERS, localNode.getBlockHeadersMessageHandler)
+	localNode.AddMessageHandler(pb.MessageType_GET_BLOCKS, localNode.getBlocksMessageHandler)
 	localNode.ResetSyncing()
 }
 
@@ -376,7 +376,7 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 
 	syncOnce.Do(func() {
 		started = true
-		localNode.SetSyncState(pb.SYNC_STARTED)
+		localNode.SetSyncState(pb.SyncState_SYNC_STARTED)
 
 		currentHeight := chain.DefaultLedger.Store.GetHeight()
 		if syncStopHeight <= currentHeight {
@@ -442,7 +442,7 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 			}
 		}
 
-		localNode.SetSyncState(pb.SYNC_FINISHED)
+		localNode.SetSyncState(pb.SyncState_SYNC_FINISHED)
 	})
 
 	return started, err
