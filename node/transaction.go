@@ -10,12 +10,13 @@ import (
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/pool"
+	"github.com/nknorg/nkn/v2/chain/txvalidator"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	nnetpb "github.com/nknorg/nnet/protobuf"
@@ -199,7 +200,7 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 
 				requestedHashCache.Set(info.hash, struct{}{})
 
-				err = chain.VerifyTransaction(txn, currentHeight+1)
+				err = txvalidator.VerifyTransaction(txn, currentHeight+1)
 				if err != nil {
 					log.Warningf("Verify sigchain txn error: %v", err)
 					continue

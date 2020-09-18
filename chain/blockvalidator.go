@@ -3,6 +3,7 @@ package chain
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -10,14 +11,16 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
+	"github.com/nknorg/nkn/v2/chain/txvalidator"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
+	"github.com/nknorg/nkn/v2/program"
 	"github.com/nknorg/nkn/v2/signature"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
@@ -29,7 +32,12 @@ const (
 	NumGenesisBlocks           = 4
 )
 
-var timestampToleranceSalt []byte = util.RandomBytes(32)
+var (
+	ErrIDRegistered           = errors.New("ID has be registered")
+	ErrDuplicateGenerateIDTxn = errors.New("[VerifyTransactionWithBlock], duplicate GenerateID txns")
+	ErrDuplicateIssueAssetTxn = errors.New("[VerifyTransactionWithBlock], duplicate IssueAsset txns")
+	timestampToleranceSalt    = util.RandomBytes(32)
+)
 
 type VBlock struct {
 	Block       *block.Block
@@ -123,7 +131,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		if i != 0 && txn.UnsignedTx.Payload.Type == pb.COINBASE_TYPE {
 			return errors.New("Coinbase transaction order is incorrect")
 		}
-		if err := VerifyTransaction(txn, block.Header.UnsignedHeader.Height); err != nil {
+		if err := txvalidator.VerifyTransaction(txn, block.Header.UnsignedHeader.Height); err != nil {
 			return fmt.Errorf("transaction sanity check failed: %v", err)
 		}
 		if err := bvs.VerifyTransactionWithBlock(txn, block.Header.UnsignedHeader.Height); err != nil {
@@ -495,4 +503,202 @@ func VerifyHeader(header *block.Header) bool {
 	}
 
 	return true
+}
+
+// VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
+func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) error {
+	if DefaultLedger.Store.IsDoubleSpend(txn) {
+		return errors.New("[VerifyTransactionWithLedger] IsDoubleSpend check faild")
+	}
+
+	if DefaultLedger.Store.IsTxHashDuplicate(txn.Hash()) {
+		return errors.New("[VerifyTransactionWithLedger] duplicate transaction check faild")
+	}
+
+	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
+	if err != nil {
+		return errors.New("unpack transactiion's payload error")
+	}
+
+	pg, err := txn.GetProgramHashes()
+	if err != nil {
+		return err
+	}
+
+	switch txn.UnsignedTx.Payload.Type {
+	case pb.NANO_PAY_TYPE:
+	case pb.SIG_CHAIN_TXN_TYPE:
+	default:
+		if txn.UnsignedTx.Nonce < DefaultLedger.Store.GetNonce(pg[0]) {
+			return errors.New("nonce is too low")
+		}
+	}
+
+	var amount int64
+
+	switch txn.UnsignedTx.Payload.Type {
+	case pb.COINBASE_TYPE:
+		donationAmount, err := DefaultLedger.Store.GetDonation()
+		if err != nil {
+			return err
+		}
+
+		donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
+		amount := DefaultLedger.Store.GetBalance(donationProgramhash)
+		if amount < donationAmount {
+			return errors.New("not sufficient funds in doation account")
+		}
+	case pb.TRANSFER_ASSET_TYPE:
+		pld := payload.(*pb.TransferAsset)
+		amount += pld.Amount
+	case pb.SIG_CHAIN_TXN_TYPE:
+	case pb.REGISTER_NAME_TYPE:
+		pld := payload.(*pb.RegisterName)
+		if config.LegacyNameService.GetValueAtHeight(height) {
+			name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
+			if name != "" {
+				return fmt.Errorf("pubKey %s already has registered name %s", hex.EncodeToString(pld.Registrant), name)
+			}
+			if err != nil {
+				return err
+			}
+
+			registrant, err := DefaultLedger.Store.GetRegistrant_legacy(pld.Name)
+			if err != nil {
+				return err
+			}
+			if registrant != nil {
+				return fmt.Errorf("name %s is already registered for pubKey %+v", pld.Name, registrant)
+			}
+		} else {
+			registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
+			if err != nil {
+				return err
+			}
+			if len(registrant) > 0 && !bytes.Equal(registrant, pld.Registrant) {
+				return fmt.Errorf("name %s is already registered for pubKey %+v", pld.Name, registrant)
+			}
+			amount += pld.RegistrationFee
+		}
+	case pb.TRANSFER_NAME_TYPE:
+		pld := payload.(*pb.TransferName)
+
+		registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
+		if err != nil {
+			return err
+		}
+		if len(registrant) == 0 {
+			return fmt.Errorf("can not transfer unregistered name")
+		}
+		if bytes.Equal(registrant, pld.Recipient) {
+			return fmt.Errorf("can not transfer names to its owner")
+		}
+		if !bytes.Equal(registrant, pld.Registrant) {
+			return fmt.Errorf("registrant incorrect")
+		}
+		senderPubkey, err := program.GetPublicKeyFromCode(txn.Programs[0].Code)
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(registrant, senderPubkey) {
+			return fmt.Errorf("can not transfer names which did not belongs to you")
+		}
+
+	case pb.DELETE_NAME_TYPE:
+		pld := payload.(*pb.DeleteName)
+		if config.LegacyNameService.GetValueAtHeight(height) {
+			name, err := DefaultLedger.Store.GetName_legacy(pld.Registrant)
+			if err != nil {
+				return err
+			}
+			if name == "" {
+				return fmt.Errorf("no name registered for pubKey %+v", pld.Registrant)
+			} else if name != pld.Name {
+				return fmt.Errorf("no name %s registered for pubKey %+v", pld.Name, pld.Registrant)
+			}
+		} else {
+			registrant, _, err := DefaultLedger.Store.GetRegistrant(pld.Name)
+			if err != nil {
+				return err
+			}
+			if len(registrant) == 0 {
+				return fmt.Errorf("name doesn't exist")
+			}
+			if !bytes.Equal(registrant, pld.Registrant) {
+				return fmt.Errorf("can not delete name which did not belongs to you")
+			}
+		}
+
+	case pb.SUBSCRIBE_TYPE:
+		pld := payload.(*pb.Subscribe)
+		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Topic, pld.Bucket, pld.Subscriber, pld.Identifier)
+		if err != nil {
+			return err
+		}
+		if !subscribed {
+			subscriptionCount := DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
+			maxSubscriptionCount := config.MaxSubscriptionsCount
+			if subscriptionCount >= maxSubscriptionCount {
+				return fmt.Errorf("subscription count to %s can't be more than %d", pld.Topic, maxSubscriptionCount)
+			}
+		}
+	case pb.UNSUBSCRIBE_TYPE:
+		pld := payload.(*pb.Unsubscribe)
+		subscribed, err := DefaultLedger.Store.IsSubscribed(pld.Topic, 0, pld.Subscriber, pld.Identifier)
+		if err != nil {
+			return err
+		}
+		if !subscribed {
+			return fmt.Errorf("subscription to %s doesn't exist", pld.Topic)
+		}
+	case pb.GENERATE_ID_TYPE:
+		pld := payload.(*pb.GenerateID)
+		id, err := DefaultLedger.Store.GetID(pld.PublicKey)
+		if err != nil {
+			return err
+		}
+		if len(id) != 0 {
+			return ErrIDRegistered
+		}
+		amount += pld.RegistrationFee
+	case pb.NANO_PAY_TYPE:
+		pld := payload.(*pb.NanoPay)
+
+		channelBalance, _, err := DefaultLedger.Store.GetNanoPay(
+			common.BytesToUint160(pld.Sender),
+			common.BytesToUint160(pld.Recipient),
+			pld.Id,
+		)
+		if err != nil {
+			return err
+		}
+
+		if height > pld.TxnExpiration {
+			return errors.New("nano pay txn has expired")
+		}
+		if height > pld.NanoPayExpiration {
+			return errors.New("nano pay has expired")
+		}
+
+		balanceToClaim := pld.Amount - int64(channelBalance)
+		if balanceToClaim <= 0 {
+			return errors.New("invalid amount")
+		}
+		amount += balanceToClaim
+	case pb.ISSUE_ASSET_TYPE:
+		assetID := txn.Hash()
+		_, _, _, _, err := DefaultLedger.Store.GetAsset(assetID)
+		if err == nil {
+			return ErrDuplicateIssueAssetTxn
+		}
+	default:
+		return fmt.Errorf("invalid transaction payload type %v", txn.UnsignedTx.Payload.Type)
+	}
+
+	balance := DefaultLedger.Store.GetBalance(pg[0])
+	if int64(balance) < amount+txn.UnsignedTx.Fee {
+		return errors.New("not sufficient funds")
+	}
+
+	return nil
 }

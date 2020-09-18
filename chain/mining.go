@@ -4,14 +4,15 @@ import (
 	"context"
 
 	"github.com/nknorg/nkn/v2/block"
+	"github.com/nknorg/nkn/v2/chain/txvalidator"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/signature"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 )
@@ -110,7 +111,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 			break
 		}
 
-		if err := VerifyTransaction(txn, height); err != nil {
+		if err := txvalidator.VerifyTransaction(txn, height); err != nil {
 			log.Warningf("invalid transaction: %v", err)
 			txnCollection.Pop()
 			continue
