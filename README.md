@@ -180,12 +180,8 @@ random password saved to `/nkn/data/wallet.pswd` if not exists on nknd launch.
 
 #### `certs/`
 
-The default `certs/` can be found in repo, in release version, and in docker
-image (under `/nkn/`). You should use the default one unless you want to use
-your own custom domain and certificates for RPC and websockets.
-
-The docker container will copy the default certificates to `/nkn/data/certs/` if
-not exists on nknd launch.
+`nknd` uses Let's Encrypt to apply and renew TLS certificate and put in into
+`cert/` directory.
 
 #### Data and Logs
 
