@@ -4,14 +4,16 @@
 **/*~
 **/*.DS_Store
 
-Log/
-vendor/
-ChainDB/
 build/
+certs/
+ChainDB/
 dashboard/web/node_modules/
 dashboard/web/dist/
+Log/
+vendor/
 
 nknd
 nknc
 wallet.json
+wallet.pswd
 config.json

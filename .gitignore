@@ -13,12 +13,13 @@ cscope*
 *~
 
 /build/
-/wallet.json
-/wallet.pswd
-/config.json
+/certs/
 /ChainDB/
 /Log/
 /vendor/
+
 /nknd
 /nknc
-/certs
+/wallet.json
+/wallet.pswd
+/config.json
