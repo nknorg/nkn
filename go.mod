@@ -1,6 +1,6 @@
 module github.com/nknorg/nkn/v2
 
-go 1.12
+go 1.13
 
 require (
 	github.com/gin-contrib/sessions v0.0.0-20190512062852-3cb4c4f2d615

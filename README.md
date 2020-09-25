@@ -94,7 +94,7 @@ This command should be run once every time you update the code base.
 
 ### Building from source
 
-To build from source, you need a properly configured Go environment (Go 1.11.4+,
+To build from source, you need a properly configured Go environment (Go 1.13+,
 see [Go Official Installation Documentation](https://golang.org/doc/install) for
 more details).
 
