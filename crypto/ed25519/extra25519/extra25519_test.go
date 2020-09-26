@@ -6,13 +6,13 @@ package extra25519
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha512"
 	"testing"
 
 	"github.com/nknorg/nkn/v2/crypto/ed25519/edwards25519"
 	"golang.org/x/crypto/curve25519"
-	"golang.org/x/crypto/ed25519"
 )
 
 func TestCurve25519Conversion(t *testing.T) {
