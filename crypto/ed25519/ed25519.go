@@ -1,14 +1,13 @@
 package ed25519
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
 	"errors"
 	"fmt"
 
 	"github.com/nknorg/nkn/v2/crypto/ed25519/extra25519"
 	"github.com/nknorg/nkn/v2/crypto/ed25519/vrf"
-
-	"golang.org/x/crypto/ed25519"
 )
 
 const PublicKeySize = ed25519.PublicKeySize
