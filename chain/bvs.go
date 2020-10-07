@@ -247,7 +247,7 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		defer func() {
 			if e == nil {
 				bvs.addChange(func() {
-					bvs.subscriptions[key] = subscriptionInfo{new: !subscribed, meta: subscribePayload.Meta}
+					bvs.subscriptions[key] = subscriptionInfo{new: !subscribed, meta: string(subscribePayload.Meta)}
 				})
 			}
 		}()
