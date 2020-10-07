@@ -105,7 +105,7 @@ func NewSubscribe(subscriber []byte, id, topic string, duration uint32, meta str
 		Identifier: id,
 		Topic:      topic,
 		Duration:   duration,
-		Meta:       meta,
+		Meta:       []byte(meta),
 	}
 }
 

@@ -72,7 +72,7 @@ message Subscribe {
 	string topic       = 3;
 	uint32 bucket      = 4 [deprecated = true];
 	uint32 duration    = 5;
-	string meta        = 6;
+	bytes meta         = 6;
 }
 
 message Unsubscribe {

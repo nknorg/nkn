@@ -111,7 +111,7 @@ func (m *Subscribe) ToMap() map[string]interface{} {
 		"topic":      m.Topic,
 		"bucket":     m.Bucket,
 		"duration":   m.Duration,
-		"meta":       m.Meta,
+		"meta":       string(m.Meta),
 	}
 }
 

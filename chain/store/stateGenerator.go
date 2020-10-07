@@ -8,11 +8,11 @@ import (
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/program"
 	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/config"
 )
 
 func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transaction, totalFee common.Fixed64, genesis bool, height uint32) error {
@@ -123,7 +123,7 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		}
 	case pb.PayloadType_SUBSCRIBE_TYPE:
 		subscribePayload := pl.(*pb.Subscribe)
-		if err = states.subscribe(subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Subscriber, subscribePayload.Identifier, subscribePayload.Meta, height+subscribePayload.Duration); err != nil {
+		if err = states.subscribe(subscribePayload.Topic, subscribePayload.Bucket, subscribePayload.Subscriber, subscribePayload.Identifier, string(subscribePayload.Meta), height+subscribePayload.Duration); err != nil {
 			return err
 		}
 	case pb.PayloadType_UNSUBSCRIBE_TYPE:
