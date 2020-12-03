@@ -6,7 +6,7 @@ require (
 	github.com/gin-contrib/sessions v0.0.0-20190512062852-3cb4c4f2d615
 	github.com/gin-gonic/gin v1.4.0
 	github.com/go-acme/lego/v3 v3.8.0
-	github.com/golang/protobuf v1.4.1
+	github.com/golang/protobuf v1.4.2
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/websocket v1.4.0
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c
@@ -19,8 +19,8 @@ require (
 	github.com/pbnjay/memory v0.0.0-20190104145345-974d429e7ae4
 	github.com/pborman/uuid v1.2.0
 	github.com/rdegges/go-ipify v0.0.0-20150526035502-2d94a6a86c40
-	github.com/syndtr/goleveldb v1.0.0
+	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/urfave/cli v1.22.1
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 )
