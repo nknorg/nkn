@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
@@ -33,7 +32,7 @@ type Consensus struct {
 	elections     common.Cache
 
 	proposalLock   sync.RWMutex
-	proposalChan   chan *block.Block
+	proposalChan   chan *proposalInfo
 	expectedHeight uint32
 
 	nextConsensusHeightLock sync.Mutex
@@ -51,7 +50,7 @@ func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus
 		localNode:           localNode,
 		elections:           common.NewGoCache(cacheExpiration, cacheCleanupInterval),
 		proposals:           common.NewGoCache(cacheExpiration, cacheCleanupInterval),
-		proposalChan:        make(chan *block.Block, proposalChanLen),
+		proposalChan:        make(chan *proposalInfo, proposalChanLen),
 		requestProposalChan: make(chan *requestProposalInfo, requestProposalChanLen),
 		mining:              chain.NewBuiltinMining(account, txnCollector),
 		txnCollector:        txnCollector,
@@ -248,7 +247,7 @@ func (consensus *Consensus) setExpectedHeight(expectedHeight uint32) {
 		}
 
 		consensus.expectedHeight = expectedHeight
-		consensus.proposalChan = make(chan *block.Block, proposalChanLen)
+		consensus.proposalChan = make(chan *proposalInfo, proposalChanLen)
 	}
 	consensus.proposalLock.Unlock()
 }
