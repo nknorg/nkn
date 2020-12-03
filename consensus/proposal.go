@@ -30,6 +30,11 @@ type requestProposalInfo struct {
 	blockHash  common.Uint256
 }
 
+type proposalInfo struct {
+	block        *block.Block
+	receivedTime time.Time
+}
+
 // getBlockProposal gets a proposal from proposal cache and convert to block
 func (consensus *Consensus) getBlockProposal(blockHash common.Uint256) (*block.Block, error) {
 	value, ok := consensus.proposals.Get(blockHash.ToArray())
@@ -98,8 +103,10 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	proposalCount := 0
 	for {
 		select {
-		case proposal := <-proposalChan:
+		case proposalInfo := <-proposalChan:
 			proposalCount++
+			proposal := proposalInfo.block
+			receivedTime := proposalInfo.receivedTime
 			blockHash := proposal.Hash()
 
 			if !consensus.canVerifyHeight(consensusHeight) {
@@ -112,10 +119,9 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 
 			timerStartOnce.Do(func() {
 				timer.StopTimer(timeoutTimer)
-				electionStartTimer.Reset(electionStartDelay)
-				now := time.Now()
-				verifyDeadline = now.Add(proposalVerificationTimeout)
-				initialVoteDeadline = now.Add(initialVoteDelay)
+				electionStartTimer.Reset(electionStartDelay - time.Since(receivedTime))
+				verifyDeadline = receivedTime.Add(proposalVerificationTimeout)
+				initialVoteDeadline = receivedTime.Add(initialVoteDelay)
 			})
 
 			acceptProposal := true
@@ -254,7 +260,7 @@ func (consensus *Consensus) receiveProposal(block *block.Block) error {
 	}
 
 	select {
-	case consensus.proposalChan <- block:
+	case consensus.proposalChan <- &proposalInfo{block: block, receivedTime: time.Now()}:
 	default:
 		return errors.New("prososal chan full, discarding proposal")
 	}
