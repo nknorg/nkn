@@ -635,11 +635,10 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		if err != nil {
 			return err
 		}
-		if !subscribed {
+		if !subscribed && config.MaxSubscriptionsCount > 0 {
 			subscriptionCount := DefaultLedger.Store.GetSubscribersCount(pld.Topic, pld.Bucket)
-			maxSubscriptionCount := config.MaxSubscriptionsCount
-			if subscriptionCount >= maxSubscriptionCount {
-				return fmt.Errorf("subscription count to %s can't be more than %d", pld.Topic, maxSubscriptionCount)
+			if subscriptionCount >= config.MaxSubscriptionsCount {
+				return fmt.Errorf("subscription count to %s can't be more than %d", pld.Topic, config.MaxSubscriptionsCount)
 			}
 		}
 	case pb.PayloadType_UNSUBSCRIBE_TYPE:

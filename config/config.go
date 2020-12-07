@@ -135,7 +135,7 @@ var (
 		heights: []uint32{245000, 0},
 		values:  []int32{400000, 65535},
 	}
-	MaxSubscriptionsCount = 100000
+	MaxSubscriptionsCount = 0 // 0 for unlimited
 	MaxGenerateIDTxnHash  = HeightDependentUint256{
 		heights: []uint32{245000, 0},
 		values: []common.Uint256{
