@@ -237,9 +237,11 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 		subscriptionCount := bvs.subscriptionCount[topic]
 		subscriptionCountChange := bvs.subscriptionCountChange[topic]
 		if !subscribed {
-			ledgerSubscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
-			if ledgerSubscriptionCount+subscriptionCount+subscriptionCountChange >= config.MaxSubscriptionsCount {
-				return errors.New("[VerifyTransactionWithBlock] subscription limit exceeded in block")
+			if config.MaxSubscriptionsCount > 0 {
+				ledgerSubscriptionCount := DefaultLedger.Store.GetSubscribersCount(topic, bucket)
+				if ledgerSubscriptionCount+subscriptionCount+subscriptionCountChange >= config.MaxSubscriptionsCount {
+					return errors.New("[VerifyTransactionWithBlock] subscription limit exceeded in block")
+				}
 			}
 			bvs.subscriptionCountChange[topic]++
 		}
