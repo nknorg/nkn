@@ -92,6 +92,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json;charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	if r.Method == "POST" {
+		defer r.Body.Close()
 		// read the body of the request
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
