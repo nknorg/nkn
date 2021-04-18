@@ -161,6 +161,10 @@ var (
 		heights: []uint32{1200000, 0},
 		values:  []bool{false, true},
 	}
+	SigChainBitShiftMaxLength = HeightDependentInt32{
+		heights: []uint32{2543000, 0},
+		values:  []int32{14, 0},
+	}
 )
 
 var (
