@@ -27,6 +27,11 @@ func init() {
 }
 
 func main() {
+	err := log.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Fatalf("Panic: %+v", r)
