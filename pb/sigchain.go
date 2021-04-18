@@ -10,6 +10,7 @@ import (
 
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/common/serialization"
+	"github.com/nknorg/nkn/v2/config"
 )
 
 const (
@@ -204,7 +205,7 @@ func (sc *SigChain) GetSignerIndex(pubkey []byte) (int, error) {
 	return idx, err
 }
 
-func (sc *SigChain) GetMiner() ([]byte, []byte, error) {
+func (sc *SigChain) GetMiner(height uint32) ([]byte, []byte, error) {
 	if !sc.IsComplete() {
 		return nil, nil, errors.New("sigchain is not complete")
 	}
@@ -233,7 +234,7 @@ func (sc *SigChain) GetMiner() ([]byte, []byte, error) {
 		return nil, nil, errors.New("no mining element")
 	}
 
-	sigHash, err := sc.SignatureHash()
+	sigHash, err := sc.SignatureHash(height)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -281,12 +282,12 @@ func (sc *SigChain) LastRelayHash() ([]byte, error) {
 	return prevHash, nil
 }
 
-func (sc *SigChain) SignatureHash() ([]byte, error) {
+func (sc *SigChain) SignatureHash(height uint32) ([]byte, error) {
 	lastRelayHash, err := sc.LastRelayHash()
 	if err != nil {
 		return nil, err
 	}
-	sigHash := ComputeSignatureHash(lastRelayHash, sc.Length())
+	sigHash := ComputeSignatureHash(lastRelayHash, sc.Length(), height)
 	return sigHash, nil
 }
 
@@ -307,9 +308,13 @@ func (sc *SigChain) ToMap() map[string]interface{} {
 	}
 }
 
-func ComputeSignatureHash(lastRelayHash []byte, sigChainLen int) []byte {
+func ComputeSignatureHash(lastRelayHash []byte, sigChainLen int, height uint32) []byte {
 	h := sha256.Sum256(lastRelayHash)
 	sigHash := h[:]
+	maxSigChainLen := int(config.SigChainBitShiftMaxLength.GetValueAtHeight(height))
+	if maxSigChainLen > 0 && sigChainLen > maxSigChainLen {
+		sigChainLen = maxSigChainLen
+	}
 	rightShiftBytes(sigHash, bitShiftPerSigChainElement*sigChainLen)
 	return sigHash
 }

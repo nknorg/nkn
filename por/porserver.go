@@ -367,9 +367,20 @@ func (ps *PorServer) ShouldSignDestSigChainElem(blockHash, lastHash []byte, sigC
 	if _, ok := ps.finalizedBlockCache.Get(blockHash); ok {
 		return false
 	}
+
+	blockHashUint256, err := common.Uint256ParseFromBytes(blockHash)
+	if err != nil {
+		return false
+	}
+
+	height, err := Store.GetHeightByBlockHash(blockHashUint256)
+	if err != nil {
+		return false
+	}
+
 	if v, ok := ps.destSigChainElemCache.Get(blockHash); ok {
 		if currentDestSigChainElem, ok := v.(*destSigChainElem); ok {
-			sigHash := pb.ComputeSignatureHash(lastHash, sigChainLen)
+			sigHash := pb.ComputeSignatureHash(lastHash, sigChainLen, height)
 			if bytes.Compare(sigHash, currentDestSigChainElem.sigHash) >= 0 {
 				return false
 			}
@@ -386,8 +397,18 @@ func (ps *PorServer) AddDestSigChainElem(blockHash, lastHash []byte, sigChainLen
 		return false, nil
 	}
 
-	err := ps.destSigChainElemCache.Set(blockHash, &destSigChainElem{
-		sigHash:      pb.ComputeSignatureHash(lastHash, sigChainLen),
+	blockHashUint256, err := common.Uint256ParseFromBytes(blockHash)
+	if err != nil {
+		return false, err
+	}
+
+	height, err := Store.GetHeightByBlockHash(blockHashUint256)
+	if err != nil {
+		return false, err
+	}
+
+	err = ps.destSigChainElemCache.Set(blockHash, &destSigChainElem{
+		sigHash:      pb.ComputeSignatureHash(lastHash, sigChainLen, height),
 		sigChainElem: destElem,
 		prevHash:     lastHash,
 	})

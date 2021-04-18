@@ -259,7 +259,11 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 
 		switch winnerType {
 		case pb.WinnerType_TXN_SIGNER:
-			whash, _ := common.Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
+			whash, err := common.Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
+			if err != nil {
+				return nil, nil, 0, err
+			}
+
 			txn, err := DefaultLedger.Store.GetTransaction(whash)
 			if err != nil {
 				return nil, nil, 0, err
@@ -277,7 +281,18 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 			sigChainTxn := payload.(*pb.SigChainTxn)
 			sigChain := &pb.SigChain{}
 			proto.Unmarshal(sigChainTxn.SigChain, sigChain)
-			publicKey, chordID, err = sigChain.GetMiner()
+
+			blockHash, err := common.Uint256ParseFromBytes(sigChain.BlockHash)
+			if err != nil {
+				return nil, nil, 0, err
+			}
+
+			height, err := DefaultLedger.Store.GetHeightByBlockHash(blockHash)
+			if err != nil {
+				return nil, nil, 0, err
+			}
+
+			publicKey, chordID, err = sigChain.GetMiner(height)
 			if err != nil {
 				return nil, nil, 0, err
 			}
