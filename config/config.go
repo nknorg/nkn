@@ -165,6 +165,18 @@ var (
 		heights: []uint32{2543000, 0},
 		values:  []int32{14, 0},
 	}
+	SigChainVerifyFingerTableRange = HeightDependentBool{
+		heights: []uint32{2560000, 0},
+		values:  []bool{true, false},
+	}
+	SigChainVerifySkipNode = HeightDependentBool{
+		heights: []uint32{2560000, 0},
+		values:  []bool{true, false},
+	}
+	SigChainObjection = HeightDependentBool{
+		heights: []uint32{2560000, 0},
+		values:  []bool{true, false},
+	}
 	MinGenIDRegistrationFee = HeightDependentInt64{
 		heights: []uint32{2560000, 0},
 		values:  []int64{10 * common.StorageFactor, 0},

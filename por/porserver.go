@@ -2,6 +2,7 @@ package por
 
 import (
 	"bytes"
+	"container/heap"
 	"errors"
 	"fmt"
 	"strconv"
@@ -37,6 +38,8 @@ const (
 	vrfCacheExpiration                   = (SigChainMiningHeightOffset + config.SigChainBlockDelay + 5) * config.ConsensusTimeout
 	vrfCacheCleanupInterval              = config.ConsensusDuration
 	flushSigChainDelay                   = 500 * time.Millisecond
+	maxNumSigChainInCache                = 8
+	MaxNextHopChoice                     = 4 // should be >= nnet NumFingerSuccessors to avoid false positive
 )
 
 type PorServer struct {
@@ -51,15 +54,25 @@ type PorServer struct {
 	finalizedBlockCache       common.Cache
 
 	sync.RWMutex
-	miningPorPackageCache common.Cache
-	destSigChainElemCache common.Cache
+	miningPorPackageCache  common.Cache
+	destSigChainElemCache  common.Cache
+	sigChainObjectionCache common.Cache
 }
 
 // Store interface is used to avoid cyclic dependency
-var Store interface {
+type Store interface {
 	GetHeightByBlockHash(hash common.Uint256) (uint32, error)
 	GetID(publicKey []byte, height uint32) ([]byte, error)
 }
+
+var store Store
+
+// LocalNode interface is used to avoid cyclic dependency
+type LocalNode interface {
+	VerifySigChainObjection(sc *pb.SigChain, reporterID []byte, height uint32) error
+}
+
+var localNode LocalNode
 
 type vrfResult struct {
 	vrf   []byte
@@ -97,7 +110,29 @@ type BacktrackSigChainInfo struct {
 	PrevHash         []byte
 }
 
+type sigChainObjection struct {
+	reporterPubkey []byte
+	reporterID     []byte
+	isVerified     bool
+}
+
+type sigChainObjections []*sigChainObjection
+
 var porServer *PorServer
+
+type porPackageHeap []*PorPackage
+
+func (s porPackageHeap) Len() int            { return len(s) }
+func (s porPackageHeap) Swap(i, j int)       { s[i], s[j] = s[j], s[i] }
+func (s porPackageHeap) Less(i, j int) bool  { return bytes.Compare(s[i].SigHash, s[j].SigHash) < 0 }
+func (s *porPackageHeap) Push(x interface{}) { *s = append(*s, x.(*PorPackage)) }
+func (s *porPackageHeap) Pop() interface{} {
+	old := *s
+	n := len(old)
+	x := old[n-1]
+	*s = old[0 : n-1]
+	return x
+}
 
 func NewPorServer(account *vault.Account, id []byte) *PorServer {
 	ps := &PorServer{
@@ -112,11 +147,12 @@ func NewPorServer(account *vault.Account, id []byte) *PorServer {
 		finalizedBlockCache:       common.NewGoCache(finalizedBlockCacheExpiration, finalizedBlockCacheCleanupInterval),
 		miningPorPackageCache:     common.NewGoCache(miningPorPackageCacheExpiration, miningPorPackageCacheCleanupInterval),
 		destSigChainElemCache:     common.NewGoCache(destSigChainElemCacheExpiration, destSigChainElemCacheCleanupInterval),
+		sigChainObjectionCache:    common.NewGoCache(miningPorPackageCacheExpiration, miningPorPackageCacheCleanupInterval),
 	}
 	return ps
 }
 
-func InitPorServer(account *vault.Account, id []byte) error {
+func InitPorServer(account *vault.Account, id []byte, s Store, l LocalNode) error {
 	if porServer != nil {
 		return errors.New("PorServer already initialized")
 	}
@@ -124,6 +160,8 @@ func InitPorServer(account *vault.Account, id []byte) error {
 		return errors.New("ID is empty")
 	}
 	porServer = NewPorServer(account, id)
+	store = s
+	localNode = l
 	return nil
 }
 
@@ -168,7 +206,7 @@ func (ps *PorServer) UpdateRelayMessage(relayMessage *pb.Relay, nextPubkey, prev
 	}
 
 	sigAlgo := pb.SigAlgo_HASH
-	if height, err := Store.GetHeightByBlockHash(blockHash); err == nil {
+	if height, err := store.GetHeightByBlockHash(blockHash); err == nil {
 		if !config.AllowSigChainHashSignature.GetValueAtHeight(height) {
 			sigAlgo = pb.SigAlgo_SIGNATURE
 		}
@@ -218,15 +256,48 @@ func (ps *PorServer) CreateSigChainForClient(nonce, dataSize uint32, blockHash [
 	return sigChain, nil
 }
 
-func (ps *PorServer) LenOfSigChain(sc *pb.SigChain) int {
-	return sc.Length()
-}
-
-func (ps *PorServer) GetMiningSigChainTxnHash(height uint32) (common.Uint256, error) {
-	if v, ok := ps.miningPorPackageCache.Get([]byte(strconv.Itoa(int(height)))); ok {
-		if miningPorPackage, ok := v.(*PorPackage); ok {
-			if _, ok := ps.sigChainTxnCache.Get(miningPorPackage.TxHash); ok {
-				return common.Uint256ParseFromBytes(miningPorPackage.TxHash)
+func (ps *PorServer) GetMiningSigChainTxnHash(voteForHeight uint32) (common.Uint256, error) {
+	var height uint32
+	if voteForHeight > SigChainMiningHeightOffset+config.SigChainBlockDelay {
+		height = voteForHeight - SigChainMiningHeightOffset - config.SigChainBlockDelay
+	}
+	if v, ok := ps.miningPorPackageCache.Get([]byte(strconv.Itoa(int(voteForHeight)))); ok {
+		if p, ok := v.(*porPackageHeap); ok {
+			for i := 0; i < p.Len(); i++ {
+				porPkg := (*p)[i]
+				if v, ok := ps.sigChainObjectionCache.Get(porPkg.SigHash); ok {
+					if scos, ok := v.(sigChainObjections); ok {
+						if len(scos) >= MaxNextHopChoice {
+							verifiedCount := 0
+							for _, sco := range scos {
+								if len(sco.reporterID) == 0 {
+									id, err := store.GetID(sco.reporterPubkey, height)
+									if err != nil {
+										continue
+									}
+									sco.reporterID = id
+									err = localNode.VerifySigChainObjection(porPkg.SigChain, id, height)
+									if err != nil {
+										continue
+									}
+									sco.isVerified = true
+								}
+								if sco.isVerified {
+									verifiedCount++
+								}
+								if verifiedCount >= MaxNextHopChoice {
+									break
+								}
+							}
+							if verifiedCount >= MaxNextHopChoice {
+								continue
+							}
+						}
+					}
+				}
+				if _, ok := ps.sigChainTxnCache.Get(porPkg.TxHash); ok {
+					return common.Uint256ParseFromBytes(porPkg.TxHash)
+				}
 			}
 		}
 	}
@@ -276,7 +347,7 @@ func (ps *PorServer) GetSigChainTxnByShortHash(shortHash []byte) (*transaction.T
 	return txn, nil
 }
 
-func (ps *PorServer) ShouldAddSigChainToCache(currentHeight, voteForHeight uint32, sigHash []byte) bool {
+func (ps *PorServer) ShouldAddSigChainToCache(currentHeight, voteForHeight uint32, sigHash []byte, replace bool) bool {
 	if voteForHeight < currentHeight+SigChainPropagationHeightOffset {
 		return false
 	}
@@ -286,8 +357,11 @@ func (ps *PorServer) ShouldAddSigChainToCache(currentHeight, voteForHeight uint3
 	}
 
 	if v, ok := ps.miningPorPackageCache.Get([]byte(strconv.Itoa(int(voteForHeight)))); ok {
-		if currentMiningPorPkg, ok := v.(*PorPackage); ok {
-			return bytes.Compare(sigHash, currentMiningPorPkg.SigHash) < 0
+		if p, ok := v.(*porPackageHeap); ok {
+			if replace {
+				return bytes.Compare(sigHash, (*p)[p.Len()-1].SigHash) <= 0
+			}
+			return bytes.Compare(sigHash, (*p)[p.Len()-1].SigHash) < 0
 		}
 	}
 
@@ -301,7 +375,7 @@ func VerifyID(sc *pb.SigChain, height uint32) error {
 		}
 
 		pk := sc.Elems[i-1].NextPubkey
-		id, err := Store.GetID(pk, height)
+		id, err := store.GetID(pk, height)
 		if err != nil {
 			return fmt.Errorf("get id of pk %x error: %v", pk, err)
 		}
@@ -324,7 +398,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 	ps.Lock()
 	defer ps.Unlock()
 
-	if !ps.ShouldAddSigChainToCache(currentHeight, porPkg.VoteForHeight, porPkg.SigHash) {
+	if !ps.ShouldAddSigChainToCache(currentHeight, porPkg.VoteForHeight, porPkg.SigHash, false) {
 		return nil, nil
 	}
 
@@ -353,7 +427,25 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 		return nil, err
 	}
 
-	err = ps.miningPorPackageCache.Set([]byte(strconv.Itoa(int(porPkg.VoteForHeight))), porPkg)
+	var p *porPackageHeap
+	if v, ok := ps.miningPorPackageCache.Get([]byte(strconv.Itoa(int(porPkg.VoteForHeight)))); ok {
+		var ok bool
+		if p, ok = v.(*porPackageHeap); ok {
+			if p.Len() >= maxNumSigChainInCache {
+				(*p)[p.Len()-1] = porPkg
+				heap.Fix(p, p.Len()-1)
+			} else {
+				heap.Push(p, porPkg)
+			}
+		}
+	}
+
+	if p == nil {
+		p = &porPackageHeap{porPkg}
+		heap.Init(p)
+	}
+
+	err = ps.miningPorPackageCache.Set([]byte(strconv.Itoa(int(porPkg.VoteForHeight))), p)
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +465,7 @@ func (ps *PorServer) ShouldSignDestSigChainElem(blockHash, lastHash []byte, sigC
 		return false
 	}
 
-	height, err := Store.GetHeightByBlockHash(blockHashUint256)
+	height, err := store.GetHeightByBlockHash(blockHashUint256)
 	if err != nil {
 		return false
 	}
@@ -402,7 +494,7 @@ func (ps *PorServer) AddDestSigChainElem(blockHash, lastHash []byte, sigChainLen
 		return false, err
 	}
 
-	height, err := Store.GetHeightByBlockHash(blockHashUint256)
+	height, err := store.GetHeightByBlockHash(blockHashUint256)
 	if err != nil {
 		return false, err
 	}
@@ -581,4 +673,92 @@ func (ps *PorServer) FlushSigChain(blockHash []byte) {
 			})
 		}
 	}
+}
+
+func (ps *PorServer) AddSigChainObjection(currentHeight, voteForHeight uint32, sigHash, reporterPubkey []byte) bool {
+	if !ps.ShouldAddSigChainToCache(currentHeight, voteForHeight, sigHash, true) {
+		return false
+	}
+
+	ps.Lock()
+	defer ps.Unlock()
+
+	sco := &sigChainObjection{reporterPubkey: reporterPubkey}
+
+	var porPkg *PorPackage
+	if v, ok := ps.miningPorPackageCache.Get([]byte(strconv.Itoa(int(voteForHeight)))); ok {
+		if p, ok := v.(*porPackageHeap); ok {
+			for i := 0; i < p.Len(); i++ {
+				if bytes.Compare((*p)[i].SigHash, sigHash) == 0 {
+					porPkg = (*p)[i]
+					break
+				}
+			}
+		}
+	}
+
+	if porPkg != nil {
+		reporterID, err := store.GetID(reporterPubkey, porPkg.Height)
+		if err != nil {
+			return false
+		}
+		sco.reporterID = reporterID
+		err = localNode.VerifySigChainObjection(porPkg.SigChain, reporterID, porPkg.Height)
+		if err != nil {
+			return false
+		}
+		sco.isVerified = true
+	}
+
+	var scos sigChainObjections
+	if v, ok := ps.sigChainObjectionCache.Get(sigHash); ok {
+		var ok bool
+		if scos, ok = v.(sigChainObjections); ok {
+			verifiedCount := 0
+			for _, s := range scos {
+				if bytes.Compare(s.reporterPubkey, reporterPubkey) == 0 {
+					return false
+				}
+				if s.isVerified {
+					verifiedCount++
+				}
+			}
+
+			if verifiedCount >= MaxNextHopChoice {
+				return false
+			}
+
+			if porPkg != nil && len(scos) >= verifiedCount {
+				verifiedScos := sigChainObjections{}
+				for _, s := range scos {
+					reporterID, err := store.GetID(s.reporterPubkey, porPkg.Height)
+					if err != nil {
+						continue
+					}
+					s.reporterID = reporterID
+					err = localNode.VerifySigChainObjection(porPkg.SigChain, reporterID, porPkg.Height)
+					if err != nil {
+						continue
+					}
+					s.isVerified = true
+					verifiedScos = append(verifiedScos, s)
+				}
+				scos = verifiedScos
+				if len(scos) >= MaxNextHopChoice {
+					ps.sigChainObjectionCache.Set(sigHash, scos)
+					return false
+				}
+			}
+
+			scos = append(scos, sco)
+		}
+	}
+
+	if len(scos) == 0 {
+		scos = sigChainObjections{sco}
+	}
+
+	ps.sigChainObjectionCache.Set(sigHash, scos)
+
+	return true
 }

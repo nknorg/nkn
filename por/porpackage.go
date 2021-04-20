@@ -91,7 +91,7 @@ func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage
 		return nil, errors.New("block hash in sigchain is empty")
 	}
 
-	height, err := Store.GetHeightByBlockHash(blockHash)
+	height, err := store.GetHeightByBlockHash(blockHash)
 	if err != nil {
 		return nil, err
 	}

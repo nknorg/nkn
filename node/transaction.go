@@ -183,7 +183,7 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 
 				currentHeight := chain.DefaultLedger.Store.GetHeight()
 
-				if !por.GetPorServer().ShouldAddSigChainToCache(currentHeight, info.height, info.hash) {
+				if !por.GetPorServer().ShouldAddSigChainToCache(currentHeight, info.height, info.hash, false) {
 					continue
 				}
 
@@ -219,6 +219,15 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 				if err != nil {
 					log.Warningf("Send I have sigchain txn error: %v", err)
 					continue
+				}
+
+				err = localNode.VerifySigChain(porPkg.SigChain, porPkg.Height)
+				if err != nil {
+					log.Infof("Local node verify sigchain failed: %v", err)
+					err = localNode.signatureChainObjection(porPkg.VoteForHeight, porPkg.SigHash)
+					if err != nil {
+						log.Warningf("Send sigchain objection error: %v", err)
+					}
 				}
 			}
 		}(ch)
@@ -379,7 +388,7 @@ func (localNode *LocalNode) iHaveSignatureChainTransactionMessageHandler(remoteM
 		return nil, false, err
 	}
 
-	if !por.GetPorServer().ShouldAddSigChainToCache(chain.DefaultLedger.Store.GetHeight(), msgBody.Height, msgBody.SignatureHash) {
+	if !por.GetPorServer().ShouldAddSigChainToCache(chain.DefaultLedger.Store.GetHeight(), msgBody.Height, msgBody.SignatureHash, false) {
 		return nil, false, nil
 	}
 
@@ -470,7 +479,7 @@ func (localNode *LocalNode) iHaveSignatureChainTransaction(height uint32, sigHas
 		}
 		err = neighbor.SendBytesAsync(buf)
 		if err != nil {
-			log.Errorf("Send vote to neighbor %v error: %v", neighbor, err)
+			log.Warningf("Send message to neighbor %v error: %v", neighbor, err)
 			continue
 		}
 	}

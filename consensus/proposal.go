@@ -601,7 +601,7 @@ func (consensus *Consensus) iHaveBlockProposal(height uint32, blockHash common.U
 	for _, neighbor := range consensus.localNode.GetGossipNeighbors(nil) {
 		err = neighbor.SendBytesAsync(buf)
 		if err != nil {
-			log.Errorf("Send vote to neighbor %v error: %v", neighbor, err)
+			log.Warningf("Send message to neighbor %v error: %v", neighbor, err)
 			continue
 		}
 	}

@@ -1,6 +1,7 @@
 package node
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"sync"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/txvalidator"
 	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/event"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
@@ -22,14 +24,12 @@ type RelayService struct {
 	sync.Mutex
 	wallet    *vault.Wallet
 	localNode *LocalNode
-	porServer *por.PorServer
 }
 
 func NewRelayService(wallet *vault.Wallet, localNode *LocalNode) *RelayService {
 	service := &RelayService{
 		wallet:    wallet,
 		localNode: localNode,
-		porServer: por.GetPorServer(),
 	}
 	return service
 }
@@ -42,6 +42,7 @@ func (rs *RelayService) Start() error {
 	rs.localNode.AddMessageHandler(pb.MessageType_RELAY, rs.relayMessageHandler)
 	rs.localNode.AddMessageHandler(pb.MessageType_PIN_SIGNATURE_CHAIN, rs.pinSigChainMessageHandler)
 	rs.localNode.AddMessageHandler(pb.MessageType_BACKTRACK_SIGNATURE_CHAIN, rs.backtrackSigChainMessageHandler)
+	rs.localNode.AddMessageHandler(pb.MessageType_SIGNATURE_CHAIN_OBJECTION, rs.localNode.signatureChainObjectionMessageHandler)
 	return nil
 }
 
@@ -156,13 +157,13 @@ func (rs *RelayService) backtrackSigChainMessageHandler(remoteMessage *RemoteMes
 }
 
 func (rs *RelayService) pinSigChain(hash, senderPubkey []byte) error {
-	prevHash, prevNodeID, err := rs.porServer.PinSigChain(hash, senderPubkey)
+	prevHash, prevNodeID, err := por.GetPorServer().PinSigChain(hash, senderPubkey)
 	if err != nil {
 		return err
 	}
 
 	if prevNodeID == nil {
-		err = rs.porServer.PinSrcSigChain(prevHash)
+		err = por.GetPorServer().PinSrcSigChain(prevHash)
 		if err != nil {
 			return err
 		}
@@ -188,19 +189,19 @@ func (rs *RelayService) pinSigChain(hash, senderPubkey []byte) error {
 		}
 	}
 
-	rs.porServer.PinSigChainSuccess(hash)
+	por.GetPorServer().PinSigChainSuccess(hash)
 
 	return nil
 }
 
 func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, hash, senderPubkey []byte) error {
-	sigChainElems, prevHash, prevNodeID, err := rs.porServer.BacktrackSigChain(sigChainElems, hash, senderPubkey)
+	sigChainElems, prevHash, prevNodeID, err := por.GetPorServer().BacktrackSigChain(sigChainElems, hash, senderPubkey)
 	if err != nil {
 		return err
 	}
 
 	if prevNodeID == nil {
-		sigChain, err := rs.porServer.PopSrcSigChainFromCache(prevHash)
+		sigChain, err := por.GetPorServer().PopSrcSigChainFromCache(prevHash)
 		if err != nil {
 			return err
 		}
@@ -233,7 +234,7 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, hash
 		}
 	}
 
-	rs.porServer.BacktrackSigChainSuccess(hash)
+	por.GetPorServer().BacktrackSigChainSuccess(hash)
 
 	return nil
 }
@@ -312,7 +313,7 @@ func (rs *RelayService) updateRelayMessage(relayMessage *pb.Relay, nextHop, prev
 		prevNodeID = prevHop.Id
 	}
 
-	return rs.porServer.UpdateRelayMessage(relayMessage, nextPubkey, prevNodeID, mining)
+	return por.GetPorServer().UpdateRelayMessage(relayMessage, nextPubkey, prevNodeID, mining)
 }
 
 func (localNode *LocalNode) startRelayer() {
@@ -389,7 +390,7 @@ func (rs *RelayService) populateVRFCache(v interface{}) {
 	}
 
 	blockHash := block.Hash()
-	rs.porServer.GetOrComputeVrf(blockHash.ToArray())
+	por.GetPorServer().GetOrComputeVrf(blockHash.ToArray())
 }
 
 func (rs *RelayService) flushSigChain(v interface{}) {
@@ -404,5 +405,121 @@ func (rs *RelayService) flushSigChain(v interface{}) {
 	}
 	blockHash := chain.DefaultLedger.Store.GetHeaderHashByHeight(height)
 
-	rs.porServer.FlushSigChain(blockHash.ToArray())
+	por.GetPorServer().FlushSigChain(blockHash.ToArray())
+}
+
+// NewSignatureChainObjectionMessage creates a SIGNATURE_CHAIN_OBJECTION message
+func (localNode *LocalNode) NewSignatureChainObjectionMessage(height uint32, sigHash []byte) (*pb.UnsignedMessage, error) {
+	msgBody := &pb.SignatureChainObjectionUnsigned{
+		Height:         height,
+		SignatureHash:  sigHash,
+		ReporterPubkey: localNode.account.PublicKey,
+	}
+
+	buf, err := proto.Marshal(msgBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var signature []byte
+	hash := sha256.Sum256(buf)
+	signature, err = crypto.Sign(localNode.account.PrivateKey, hash[:])
+	if err != nil {
+		return nil, err
+	}
+
+	signedMsg := &pb.SignatureChainObjectionSigned{
+		Message:   buf,
+		Signature: signature,
+	}
+
+	buf, err = proto.Marshal(signedMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := &pb.UnsignedMessage{
+		MessageType: pb.MessageType_SIGNATURE_CHAIN_OBJECTION,
+		Message:     buf,
+	}
+
+	return msg, nil
+}
+
+// signatureChainObjection sends SIGNATURE_CHAIN_OBJECTION message to neighbors.
+func (localNode *LocalNode) signatureChainObjection(height uint32, sigHash []byte) error {
+	msg, err := localNode.NewSignatureChainObjectionMessage(height, sigHash)
+	if err != nil {
+		return err
+	}
+
+	buf, err := localNode.SerializeMessage(msg, false)
+	if err != nil {
+		return err
+	}
+
+	for _, neighbor := range localNode.GetNeighbors(nil) {
+		err = neighbor.SendBytesAsync(buf)
+		if err != nil {
+			log.Warningf("Send message to neighbor %v error: %v", neighbor, err)
+			continue
+		}
+	}
+
+	return nil
+}
+
+// signatureChainObjectionMessageHandler handles a SIGNATURE_CHAIN_OBJECTION
+// message
+func (localNode *LocalNode) signatureChainObjectionMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+	signedMsg := &pb.SignatureChainObjectionSigned{}
+	err := proto.Unmarshal(remoteMessage.Message, signedMsg)
+	if err != nil {
+		return nil, false, err
+	}
+
+	unsignedMsg := &pb.SignatureChainObjectionUnsigned{}
+	err = proto.Unmarshal(signedMsg.Message, unsignedMsg)
+	if err != nil {
+		return nil, false, err
+	}
+
+	hash := sha256.Sum256(signedMsg.Message)
+	err = crypto.Verify(unsignedMsg.ReporterPubkey, hash[:], signedMsg.Signature)
+	if err != nil {
+		return nil, false, err
+	}
+
+	added := por.GetPorServer().AddSigChainObjection(
+		chain.DefaultLedger.Store.GetHeight(),
+		unsignedMsg.Height,
+		unsignedMsg.SignatureHash,
+		unsignedMsg.ReporterPubkey,
+	)
+	if !added {
+		return nil, false, nil
+	}
+
+	msg := &pb.UnsignedMessage{
+		MessageType: pb.MessageType_SIGNATURE_CHAIN_OBJECTION,
+		Message:     remoteMessage.Message,
+	}
+
+	buf, err := localNode.SerializeMessage(msg, false)
+	if err != nil {
+		return nil, false, err
+	}
+
+	for _, neighbor := range localNode.GetNeighbors(nil) {
+		if neighbor.GetID() == remoteMessage.Sender.GetID() {
+			continue
+		}
+		err = neighbor.SendBytesAsync(buf)
+		if err != nil {
+			log.Warningf("Send message to neighbor %v error: %v", neighbor, err)
+			continue
+		}
+	}
+
+	return nil, false, nil
 }
