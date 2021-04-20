@@ -97,7 +97,7 @@ func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage
 	}
 
 	if shouldVerify {
-		err = VerifyID(sigChain)
+		err = VerifyID(sigChain, height)
 		if err != nil {
 			return nil, err
 		}

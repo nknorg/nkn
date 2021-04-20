@@ -341,15 +341,14 @@ func SignerCheck(header *block.Header) error {
 	if len(chordID) > 0 && !bytes.Equal(header.UnsignedHeader.SignerId, chordID) {
 		return fmt.Errorf("invalid block signer chord ID %x, should be %x", header.UnsignedHeader.SignerId, chordID)
 	}
-
-	id, err := DefaultLedger.Store.GetID(publicKey)
+	id, err := DefaultLedger.Store.GetID(publicKey, currentHeight)
 	if err != nil {
 		return fmt.Errorf("get ID of signer %x error: %v", publicKey, err)
 	}
 	if len(id) == 0 {
 		return fmt.Errorf("ID of signer %x is empty", publicKey)
 	}
-	if !bytes.Equal(header.UnsignedHeader.SignerId, id) {
+	if !bytes.Equal(header.UnsignedHeader.SignerId, id) && config.NewIDGeneretionStage.GetValueAtHeight(currentHeight) == config.GenerateID2NotStarted {
 		return fmt.Errorf("ID of signer %x should be %x, got %x", publicKey, id, header.UnsignedHeader.SignerId)
 	}
 
@@ -667,7 +666,17 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		}
 	case pb.PayloadType_GENERATE_ID_TYPE:
 		pld := payload.(*pb.GenerateID)
-		id, err := DefaultLedger.Store.GetID(pld.PublicKey)
+		id, err := DefaultLedger.Store.GetID(pld.PublicKey, height)
+		if err != nil {
+			return err
+		}
+		if len(id) != 0 {
+			return ErrIDRegistered
+		}
+		amount += pld.RegistrationFee
+	case pb.PayloadType_GENERATE_ID_2_TYPE:
+		pld := payload.(*pb.GenerateID2)
+		id, err := DefaultLedger.Store.GetID(pld.PublicKey, height)
 		if err != nil {
 			return err
 		}

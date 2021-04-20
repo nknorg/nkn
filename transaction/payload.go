@@ -117,10 +117,18 @@ func NewUnsubscribe(subscriber []byte, id, topic string) *pb.Unsubscribe {
 	}
 }
 
-func NewGenerateID(publicKey []byte, regFee common.Fixed64) *pb.GenerateID {
+func NewGenerateID(publicKey []byte, sender common.Uint160, regFee common.Fixed64) *pb.GenerateID {
 	return &pb.GenerateID{
 		PublicKey:       publicKey,
 		RegistrationFee: int64(regFee),
+	}
+}
+
+func NewGenerateID2(publicKey []byte, sender common.Uint160, regFee common.Fixed64) *pb.GenerateID2 {
+	return &pb.GenerateID2{
+		PublicKey:       publicKey,
+		RegistrationFee: int64(regFee),
+		Sender:          sender.ToArray(),
 	}
 }
 

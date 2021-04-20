@@ -54,7 +54,7 @@ const (
 	DonationAddress                = "NKNaaaaaaaaaaaaaaaaaaaaaaaaaaaeJ6gxa"
 	DonationAdjustDividendFactor   = 1
 	DonationAdjustDivisorFactor    = 2
-	MinGenIDRegistrationFee        = 0
+	MinGenIDRegistrationFee        = 10 * common.StorageFactor
 	GenerateIDBlockDelay           = 8
 	RandomBeaconUniqueLength       = VRFSize
 	RandomBeaconLength             = VRFSize + VRFProofSize
@@ -85,6 +85,12 @@ const (
 	defaultSyncBatchWindowSize        = 64
 	defaultTxPoolMaxMemoryPercent     = 0.4
 	defaultTxPoolMaxMemorySize        = 32
+)
+
+const (
+	GenerateID2NotStarted = iota
+	GenerateID2Allowed
+	GenerateID1Expired
 )
 
 var (
@@ -164,6 +170,10 @@ var (
 	SigChainBitShiftMaxLength = HeightDependentInt32{
 		heights: []uint32{2543000, 0},
 		values:  []int32{14, 0},
+	}
+	NewIDGeneretionStage = HeightDependentInt32{
+		heights: []uint32{20, 10, 0},
+		values:  []int32{GenerateID1Expired, GenerateID2Allowed, GenerateID2NotStarted},
 	}
 )
 

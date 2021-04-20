@@ -16,6 +16,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/nknorg/nkn/v2/program"
+
 	"github.com/rdegges/go-ipify"
 
 	"github.com/nknorg/nkn/v2/api/certs"
@@ -237,7 +239,7 @@ func nknMain(c *cli.Context) error {
 	// if InitLedger return err, chain.DefaultLedger is uninitialized.
 	defer chain.DefaultLedger.Store.Close()
 
-	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, common.Fixed64(config.Parameters.RegisterIDRegFee), common.Fixed64(config.Parameters.RegisterIDTxnFee))
+	id, err := GetOrCreateID(config.Parameters.SeedList, wallet, common.Fixed64(config.Parameters.RegisterIDRegFee), common.Fixed64(config.Parameters.RegisterIDTxnFee), 2)
 	if err != nil {
 		log.Fatalf("Get or create id error: %v", err)
 	}
@@ -502,9 +504,20 @@ func main() {
 }
 
 func GetID(seeds []string, publickey []byte) ([]byte, error) {
-	id, err := chain.DefaultLedger.Store.GetID(publickey)
-	if err == nil && len(id) != 0 {
-		return id, nil
+	pg, err := program.CreateProgramHash(publickey)
+	if err != nil {
+		return nil, nil
+	}
+	addr, err := pg.ToAddress()
+	if err != nil {
+		return nil, nil
+	}
+	for i := 0; i < len(seeds); i++ {
+		_, height, err := client.GetNonceByAddr(seeds[i], addr)
+		id, err := chain.DefaultLedger.Store.GetID(publickey, height)
+		if err == nil && len(id) != 0 {
+			return id, nil
+		}
 	}
 
 	if err != nil {
@@ -544,7 +557,7 @@ func GetID(seeds []string, publickey []byte) ([]byte, error) {
 	return nil, fmt.Errorf("failed to get ID from majority of %d seeds", n)
 }
 
-func CreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed64) error {
+func CreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed64, version uint64) error {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return err
@@ -595,7 +608,7 @@ func CreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed6
 	return errors.New("create ID failed")
 }
 
-func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed64) ([]byte, error) {
+func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed64, version uint64) ([]byte, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -608,7 +621,7 @@ func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.F
 			log.Warningf("Get id from neighbors error: %v", err)
 		}
 		serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_CREATE_ID
-		if err := CreateID(seeds, wallet, regFee, txnFee); err != nil {
+		if err := CreateID(seeds, wallet, regFee, txnFee, version); err != nil {
 			return nil, err
 		}
 	} else if len(id) != config.NodeIDBytes {

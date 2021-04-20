@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"errors"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
@@ -157,31 +156,7 @@ func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee
 	}
 	pubkey := account.PubKey()
 
-	var txn *transaction.Transaction
-	var txnHash common.Uint256
-	var i uint64
-	maxUint64 := ^uint64(0)
-	for i = uint64(0); i < maxUint64; i++ {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		txn, err = transaction.NewGenerateIDTransaction(pubkey, regFee, nonce, txnFee, proto.EncodeVarint(i))
-		if err != nil {
-			return nil, err
-		}
-
-		txnHash = txn.Hash()
-		if txnHash.CompareTo(maxTxnHash) <= 0 {
-			break
-		}
-	}
-
-	if i == maxUint64 {
-		return nil, errors.New("No available hash found for all uint64 attrs")
-	}
+	txn, err := transaction.NewGenerateIDTransaction(pubkey, account.ProgramHash, regFee, nonce, txnFee, proto.EncodeVarint(0))
 
 	// sign transaction contract
 	err = wallet.Sign(txn)

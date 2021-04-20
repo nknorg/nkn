@@ -31,6 +31,7 @@ enum PayloadType {
 	GENERATE_ID_TYPE    = 8;
 	NANO_PAY_TYPE       = 9;
 	ISSUE_ASSET_TYPE    = 10;
+	GENERATE_ID_2_TYPE  = 11;
 }
 
 message Payload {
@@ -92,6 +93,12 @@ message GenerateID {
 	int64 registration_fee = 2;
 }
 
+message GenerateID2 {
+	bytes public_key       = 1;
+	int64 registration_fee = 2;
+	bytes sender           = 3;
+}
+
 message NanoPay {
 	bytes sender = 1;
 	bytes recipient = 2;
@@ -108,3 +115,5 @@ message IssueAsset {
 	int64 total_supply = 4;
 	uint32 precision   = 5;
 }
+
+option go_package = "github.com/nknorg/nkn/pb";

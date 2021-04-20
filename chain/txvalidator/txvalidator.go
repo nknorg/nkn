@@ -213,6 +213,20 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 		if txnHash.CompareTo(config.MaxGenerateIDTxnHash.GetValueAtHeight(height)) > 0 {
 			return errors.New("txn hash is greater than MaxGenerateIDTxnHash")
 		}
+	case pb.PayloadType_GENERATE_ID_2_TYPE:
+		pld := payload.(*pb.GenerateID2)
+		err := crypto.CheckPublicKey(pld.PublicKey)
+		if err != nil {
+			return fmt.Errorf("decode pubkey error: %v", err)
+		}
+
+		if err = CheckAmount(pld.RegistrationFee); err != nil {
+			return err
+		}
+
+		if common.Fixed64(pld.RegistrationFee) < common.Fixed64(config.MinGenIDRegistrationFee) {
+			return errors.New("registration fee is lower than MinGenIDRegistrationFee")
+		}
 	case pb.PayloadType_NANO_PAY_TYPE:
 		pld := payload.(*pb.NanoPay)
 

@@ -553,7 +553,7 @@ func getId(s Serverer, params map[string]interface{}) map[string]interface{} {
 		return respPacking(errcode.INVALID_PARAMS, err.Error())
 	}
 
-	id, err := chain.DefaultLedger.Store.GetID(pkSlice)
+	id, err := chain.DefaultLedger.Store.GetID(pkSlice, chain.DefaultLedger.Store.GetHeight())
 	if err != nil {
 		return respPacking(errcode.INVALID_PARAMS, err.Error())
 	}
