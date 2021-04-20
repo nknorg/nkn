@@ -17,7 +17,7 @@ func VerifySigChain(sc *pb.SigChain, height uint32) error {
 		return err
 	}
 
-	if err := VerifySigChainPath(sc); err != nil {
+	if err := VerifySigChainPath(sc, height); err != nil {
 		return err
 	}
 
@@ -146,7 +146,7 @@ func VerifySigChainSignatures(sc *pb.SigChain) error {
 	return nil
 }
 
-func VerifySigChainPath(sc *pb.SigChain) error {
+func VerifySigChainPath(sc *pb.SigChain, height uint32) error {
 	var t big.Int
 	lastNodeID := sc.Elems[sc.Length()-2].Id
 	prevDistance := chord.Distance(sc.Elems[1].Id, lastNodeID, config.NodeIDBytes*8)
@@ -160,6 +160,27 @@ func VerifySigChainPath(sc *pb.SigChain) error {
 			return fmt.Errorf("signature chain path is invalid")
 		}
 		prevDistance = dist
+	}
+
+	if config.SigChainVerifyFingerTableRange.GetValueAtHeight(height) {
+		// only needs to verify node to node hop, and no need to check last node to
+		// node hop because it could be successor
+		for i := 1; i < sc.Length()-3; i++ {
+			dist := chord.Distance(sc.Elems[i].Id, sc.DestId, config.NodeIDBytes*8)
+			fingerIdx := dist.BitLen() - 1
+			if fingerIdx < 0 {
+				return fmt.Errorf("invalid finger table index")
+			}
+			fingerStartID := chord.PowerOffset(sc.Elems[i].Id, uint32(fingerIdx), config.NodeIDBytes*8)
+			fingerEndID := chord.PowerOffset(sc.Elems[i].Id, uint32(fingerIdx+1), config.NodeIDBytes*8)
+			if !chord.BetweenLeftIncl(fingerStartID, fingerEndID, sc.Elems[sc.Length()-2].Id) && fingerIdx > 1 {
+				fingerStartID = chord.PowerOffset(sc.Elems[i].Id, uint32(fingerIdx-1), config.NodeIDBytes*8)
+				fingerEndID = chord.PowerOffset(sc.Elems[i].Id, uint32(fingerIdx), config.NodeIDBytes*8)
+			}
+			if !chord.BetweenLeftIncl(fingerStartID, fingerEndID, sc.Elems[i+1].Id) {
+				return fmt.Errorf("next hop is not in finger table range")
+			}
+		}
 	}
 
 	return nil

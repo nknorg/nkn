@@ -15,6 +15,7 @@ import (
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/util"
 	"github.com/nknorg/nkn/v2/util/address"
 	"github.com/nknorg/nkn/v2/util/log"
@@ -184,20 +185,20 @@ func (localNode *LocalNode) connectToRandomNeighbors(rn *randomNeighbors, numRan
 
 		succs, err := c.FindSuccessors(randID, 1)
 		if err != nil {
-			log.Errorf("Find random neighbor at key %x error: %v", randID, err)
+			log.Warningf("Find random neighbor at key %x error: %v", randID, err)
 			time.Sleep(time.Second)
 			continue
 		}
 
 		if len(succs) == 0 {
-			log.Errorf("Find no random neighbor at key %x", randID)
+			log.Warningf("Find no random neighbor at key %x", randID)
 			time.Sleep(time.Second)
 			continue
 		}
 
 		err = c.Connect(succs[0])
 		if err != nil {
-			log.Errorf("Connect to random neighbor at key %x error: %v", randID, err)
+			log.Warningf("Connect to random neighbor at key %x error: %v", randID, err)
 			time.Sleep(time.Second)
 			continue
 		}
@@ -333,7 +334,7 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 		}
 	}
 
-	if address.ShouldRejectAddr(localNode.GetAddr(), n.GetAddr()) {
+	if ShouldRejectAddr(localNode.GetAddr(), n.GetAddr()) {
 		return errors.New("remote port is different from local port")
 	}
 
@@ -423,4 +424,86 @@ func (localNode *LocalNode) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) 
 	}
 
 	return nil
+}
+
+func (localNode *LocalNode) VerifySigChain(sc *pb.SigChain, height uint32) error {
+	c, ok := localNode.nnet.Network.(*chord.Chord)
+	if !ok {
+		log.Fatal("Overlay is not chord")
+	}
+
+	if config.SigChainVerifySkipNode.GetValueAtHeight(height) {
+		// only needs to verify node to node hop, and no need to check last node to
+		// node hop because it could be successor
+		for i := 1; i < sc.Length()-3; i++ {
+			dist := chord.Distance(sc.Elems[i].Id, sc.Elems[i+1].Id, config.NodeIDBytes*8)
+			fingerIdx := dist.BitLen() - 1
+			fingerStartID := chord.PowerOffset(sc.Elems[i].Id, uint32(fingerIdx), config.NodeIDBytes*8)
+			if !chord.BetweenLeftIncl(fingerStartID, sc.Elems[i+1].Id, localNode.Id) {
+				continue
+			}
+			skipped := 1
+			for _, succ := range c.Successors() {
+				if skipped >= por.MaxNextHopChoice {
+					break
+				}
+				if chord.BetweenLeftIncl(fingerStartID, sc.Elems[i+1].Id, succ.Id) {
+					skipped++
+				}
+			}
+			for _, pred := range c.Predecessors() {
+				if skipped >= por.MaxNextHopChoice {
+					break
+				}
+				if chord.BetweenLeftIncl(fingerStartID, sc.Elems[i+1].Id, pred.Id) {
+					skipped++
+				}
+			}
+			if skipped >= por.MaxNextHopChoice {
+				return fmt.Errorf("skipped nodes")
+			}
+		}
+	}
+
+	return nil
+}
+
+func (localNode *LocalNode) VerifySigChainObjection(sc *pb.SigChain, reporterID []byte, height uint32) error {
+	if !config.SigChainObjection.GetValueAtHeight(height) {
+		return fmt.Errorf("sigchain objection is not enabled")
+	}
+
+	if config.SigChainVerifySkipNode.GetValueAtHeight(height) {
+		// only needs to verify node to node hop, and no need to check last node to
+		// node hop because it could be successor
+		for i := 1; i < sc.Length()-3; i++ {
+			dist := chord.Distance(sc.Elems[i].Id, sc.DestId, config.NodeIDBytes*8)
+			fingerIdx := dist.BitLen() - 1
+			fingerStartID := chord.PowerOffset(sc.Elems[i].Id, uint32(fingerIdx), config.NodeIDBytes*8)
+			if !chord.BetweenLeftIncl(fingerStartID, sc.Elems[i+1].Id, reporterID) {
+				return fmt.Errorf("reporter is not skipped")
+			}
+		}
+	}
+
+	return nil
+}
+
+// ShouldRejectAddr returns if remoteAddr should be rejected by localAddr
+func ShouldRejectAddr(localAddr, remoteAddr string) bool {
+	localAddress, err := url.Parse(localAddr)
+	if err != nil {
+		return false
+	}
+
+	remoteAddress, err := url.Parse(remoteAddr)
+	if err != nil {
+		return false
+	}
+
+	if localAddress.Hostname() != remoteAddress.Hostname() && localAddress.Port() != remoteAddress.Port() {
+		return true
+	}
+
+	return false
 }

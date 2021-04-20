@@ -73,7 +73,6 @@ func InitLedger(account *vault.Account) error {
 		Blockchain: blockChain,
 		Store:      store,
 	}
-	por.Store = chain.DefaultLedger.Store
 
 	return nil
 }
@@ -276,14 +275,14 @@ func nknMain(c *cli.Context) error {
 		return true
 	}, 0})
 
-	err = por.InitPorServer(account, id)
-	if err != nil {
-		return errors.New("PorServer initialization error")
-	}
-
 	localNode, err := node.NewLocalNode(wallet, nn)
 	if err != nil {
 		return err
+	}
+
+	err = por.InitPorServer(account, id, chain.DefaultLedger.Store, localNode)
+	if err != nil {
+		return errors.New("porServer initialization error")
 	}
 
 	err = localNode.Start()
@@ -345,7 +344,7 @@ func nknMain(c *cli.Context) error {
 
 	signal.Notify(signalChan, os.Interrupt)
 	for range signalChan {
-		fmt.Println("\nReceived an interrupt, stopping services...\n")
+		fmt.Printf("\nReceived an interrupt, stopping services...\n")
 		return nil
 	}
 

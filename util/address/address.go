@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net"
-	"net/url"
 	"strings"
 
 	"github.com/nknorg/nkn/v2/util/log"
@@ -74,23 +73,4 @@ func AssembleClientAddress(identifier string, pubkey []byte) string {
 		addr = identifier + "." + addr
 	}
 	return addr
-}
-
-// ShouldRejectAddr returns if remoteAddr should be rejected by localAddr
-func ShouldRejectAddr(localAddr, remoteAddr string) bool {
-	localAddress, err := url.Parse(localAddr)
-	if err != nil {
-		return false
-	}
-
-	remoteAddress, err := url.Parse(remoteAddr)
-	if err != nil {
-		return false
-	}
-
-	if localAddress.Hostname() != remoteAddress.Hostname() && localAddress.Port() != remoteAddress.Port() {
-		return true
-	}
-
-	return false
 }

@@ -56,7 +56,7 @@ func (consensus *Consensus) vote(height uint32, blockHash common.Uint256) error 
 	for _, neighbor := range consensus.localNode.GetNeighbors(nil) {
 		err = neighbor.SendBytesAsync(buf)
 		if err != nil {
-			log.Errorf("Send vote to neighbor %v error: %v", neighbor, err)
+			log.Warningf("Send message to neighbor %v error: %v", neighbor, err)
 		}
 	}
 
