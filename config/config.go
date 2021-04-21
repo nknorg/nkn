@@ -54,7 +54,6 @@ const (
 	DonationAddress                = "NKNaaaaaaaaaaaaaaaaaaaaaaaaaaaeJ6gxa"
 	DonationAdjustDividendFactor   = 1
 	DonationAdjustDivisorFactor    = 2
-	MinGenIDRegistrationFee        = 0
 	GenerateIDBlockDelay           = 8
 	RandomBeaconUniqueLength       = VRFSize
 	RandomBeaconLength             = VRFSize + VRFProofSize
@@ -137,8 +136,9 @@ var (
 	}
 	MaxSubscriptionsCount = 0 // 0 for unlimited
 	MaxGenerateIDTxnHash  = HeightDependentUint256{
-		heights: []uint32{245000, 0},
+		heights: []uint32{99999, 9999, 0},
 		values: []common.Uint256{
+			common.MaxUint256,
 			{
 				0x00, 0x00, 0x00, 0x07, 0xff, 0xff, 0xff, 0xff,
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -164,6 +164,22 @@ var (
 	SigChainBitShiftMaxLength = HeightDependentInt32{
 		heights: []uint32{2543000, 0},
 		values:  []int32{14, 0},
+	}
+	AllowTxnGenerateID1 = HeightDependentBool{
+		heights: []uint32{99999, 0},
+		values:  []bool{false, true},
+	}
+	AllowTxnGenerateID2 = HeightDependentBool{
+		heights: []uint32{99999, 0},
+		values:  []bool{true, false},
+	}
+	AllowGetID1 = HeightDependentBool{
+		heights: []uint32{99999, 0},
+		values:  []bool{false, true},
+	}
+	MinGenIDRegistrationFee = HeightDependentInt32{
+		heights: []uint32{99999, 0},
+		values:  []int32{10, 0},
 	}
 )
 

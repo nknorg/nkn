@@ -48,6 +48,11 @@ func TxnUnmarshal(m map[string]interface{}) (interface{}, error) {
 		if err = proto.Unmarshal(buf, genID); err == nil { // bin to pb struct of Coinbase txn
 			m["payloadData"] = genID.ToMap()
 		}
+	case pb.PayloadType_name[int32(pb.PayloadType_GENERATE_ID_2_TYPE)]:
+		genID2 := &pb.GenerateID2{}
+		if err = proto.Unmarshal(buf, genID2); err == nil { // bin to pb struct of Coinbase txn
+			m["payloadData"] = genID2.ToMap()
+		}
 	case pb.PayloadType_name[int32(pb.PayloadType_REGISTER_NAME_TYPE)]:
 		regName := &pb.RegisterName{}
 		if err = proto.Unmarshal(buf, regName); err == nil { // bin to pb struct of Coinbase txn

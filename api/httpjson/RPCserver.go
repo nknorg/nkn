@@ -2,6 +2,7 @@ package httpjson
 
 import (
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
 	"net"
@@ -167,20 +168,38 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 						// This panic will be recovered by handler
 						panic(err)
 					}
-					data, err := json.Marshal(map[string]interface{}{
+					data := map[string]interface{}{
 						"jsonrpc": "2.0",
 						"error": map[string]interface{}{
 							"code":    -code,
 							"message": errcode.ErrMessage[code],
 						},
 						"id": id,
-					})
+					}
+					if code == errcode.ErrNullID {
+						acc, err := s.wallet.GetDefaultAccount()
+						if err != nil {
+							log.Error("HTTP JSON RPC GetDefaultAccount error: ", err)
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+						pubkey := acc.PubKey()
+						data["publicKey"] = hex.EncodeToString(pubkey)
+						walletAddress, err := acc.ProgramHash.ToAddress()
+						if err != nil {
+							log.Error("HTTP JSON RPC ProgramHash ToAddress error: ", err)
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+						data["walletAddress"] = walletAddress
+					}
+					jsonData, err := json.Marshal(data)
 					if err != nil {
 						log.Error("HTTP JSON RPC JSON Marshal error: ", err)
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
-					w.Write(data)
+					w.Write(jsonData)
 				}
 			}()
 			var data []byte

@@ -37,6 +37,8 @@ func Unpack(payload *pb.Payload) (proto.Message, error) {
 		m = new(pb.Unsubscribe)
 	case pb.PayloadType_GENERATE_ID_TYPE:
 		m = new(pb.GenerateID)
+	case pb.PayloadType_GENERATE_ID_2_TYPE:
+		m = new(pb.GenerateID2)
 	case pb.PayloadType_NANO_PAY_TYPE:
 		m = new(pb.NanoPay)
 	case pb.PayloadType_ISSUE_ASSET_TYPE:
@@ -121,6 +123,14 @@ func NewGenerateID(publicKey []byte, regFee common.Fixed64) *pb.GenerateID {
 	return &pb.GenerateID{
 		PublicKey:       publicKey,
 		RegistrationFee: int64(regFee),
+	}
+}
+
+func NewGenerateID2(publicKey []byte, sender common.Uint160, regFee common.Fixed64) *pb.GenerateID2 {
+	return &pb.GenerateID2{
+		PublicKey:       publicKey,
+		RegistrationFee: int64(regFee),
+		Sender:          sender.ToArray(),
 	}
 }
 

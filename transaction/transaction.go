@@ -166,6 +166,9 @@ func (tx *Transaction) GetProgramHashes() ([]common.Uint160, error) {
 			return nil, err
 		}
 		hashes = append(hashes, programhash)
+	case pb.PayloadType_GENERATE_ID_2_TYPE:
+		sender := payload.(*pb.GenerateID2).Sender
+		hashes = append(hashes, common.BytesToUint160(sender))
 	case pb.PayloadType_NANO_PAY_TYPE:
 		sender := payload.(*pb.NanoPay).Sender
 		hashes = append(hashes, common.BytesToUint160(sender))
