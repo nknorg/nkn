@@ -58,7 +58,7 @@ type PorServer struct {
 // Store interface is used to avoid cyclic dependency
 var Store interface {
 	GetHeightByBlockHash(hash common.Uint256) (uint32, error)
-	GetID(publicKey []byte) ([]byte, error)
+	GetID(publicKey []byte, height uint32) ([]byte, error)
 }
 
 type vrfResult struct {
@@ -294,14 +294,14 @@ func (ps *PorServer) ShouldAddSigChainToCache(currentHeight, voteForHeight uint3
 	return true
 }
 
-func VerifyID(sc *pb.SigChain) error {
+func VerifyID(sc *pb.SigChain, height uint32) error {
 	for i := range sc.Elems {
 		if i == 0 || (sc.IsComplete() && i == sc.Length()-1) {
 			continue
 		}
 
 		pk := sc.Elems[i-1].NextPubkey
-		id, err := Store.GetID(pk)
+		id, err := Store.GetID(pk, height)
 		if err != nil {
 			return fmt.Errorf("get id of pk %x error: %v", pk, err)
 		}
@@ -328,7 +328,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 		return nil, nil
 	}
 
-	err = VerifyID(porPkg.SigChain)
+	err = VerifyID(porPkg.SigChain, porPkg.Height)
 	if err != nil {
 		return nil, err
 	}

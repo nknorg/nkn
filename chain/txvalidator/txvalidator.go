@@ -195,6 +195,9 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return err
 		}
 	case pb.PayloadType_GENERATE_ID_TYPE:
+		if ok := config.AllowTxnGenerateID1.GetValueAtHeight(height); !ok {
+			return errors.New("generateID1 transaction not supported")
+		}
 		pld := payload.(*pb.GenerateID)
 		err := crypto.CheckPublicKey(pld.PublicKey)
 		if err != nil {
@@ -205,7 +208,32 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return err
 		}
 
-		if common.Fixed64(pld.RegistrationFee) < common.Fixed64(config.MinGenIDRegistrationFee) {
+		if common.Fixed64(pld.RegistrationFee) < common.Fixed64(config.MinGenIDRegistrationFee.GetValueAtHeight(height)) {
+			return errors.New("registration fee is lower than MinGenIDRegistrationFee")
+		}
+
+		txnHash := txn.Hash()
+		if txnHash.CompareTo(config.MaxGenerateIDTxnHash.GetValueAtHeight(height)) > 0 {
+			return errors.New("txn hash is greater than MaxGenerateIDTxnHash")
+		}
+	case pb.PayloadType_GENERATE_ID_2_TYPE:
+		if ok := config.AllowTxnGenerateID2.GetValueAtHeight(height); !ok {
+			return errors.New("generateID2 transaction not supported")
+		}
+		pld := payload.(*pb.GenerateID2)
+		if len(pld.Sender) != common.UINT160SIZE {
+			return errors.New("length of programhash error")
+		}
+		err := crypto.CheckPublicKey(pld.PublicKey)
+		if err != nil {
+			return fmt.Errorf("decode pubkey error: %v", err)
+		}
+
+		if err = CheckAmount(pld.RegistrationFee); err != nil {
+			return err
+		}
+
+		if common.Fixed64(pld.RegistrationFee) < common.Fixed64(config.MinGenIDRegistrationFee.GetValueAtHeight(height)) {
 			return errors.New("registration fee is lower than MinGenIDRegistrationFee")
 		}
 

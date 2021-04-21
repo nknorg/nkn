@@ -97,6 +97,14 @@ func (m *GenerateID) ToMap() map[string]interface{} {
 	}
 }
 
+func (m *GenerateID2) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"publicKey":       common.HexStr(m.PublicKey),
+		"registrationFee": m.RegistrationFee,
+		"sender":          common.BytesToUint160(m.Sender),
+	}
+}
+
 func (m *RegisterName) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"registrant": common.HexStr(m.Registrant),

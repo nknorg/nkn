@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -109,6 +110,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	log.Infof("Init node ID to %v", localNode.GetID())
 
 	event.Queue.Subscribe(event.BlockPersistCompleted, localNode.cleanupTransactions)
+	event.Queue.Subscribe(event.BlockPersistCompleted, localNode.CheckIDChange)
 
 	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{func(n *nnetpb.Node) (bool, bool) {
 		err := localNode.shouldConnectToNode(n)
@@ -338,4 +340,15 @@ func (localNode *LocalNode) FindWsAddr(key []byte) (string, string, []byte, []by
 
 func (localNode *LocalNode) FindWssAddr(key []byte) (string, string, []byte, []byte, error) {
 	return localNode.findAddrForClient(key, true)
+}
+
+func (LocalNode *LocalNode) CheckIDChange(v interface{}) {
+	localHeight := chain.DefaultLedger.Store.GetHeight()
+	id, err := chain.DefaultLedger.Store.GetID(LocalNode.PublicKey, localHeight)
+	if err != nil {
+		log.Fatalf("local node has no id:%v", err)
+	}
+	if bytes.Equal(LocalNode.Id, id) {
+		log.Fatalf("local node id has changed")
+	}
 }

@@ -3,6 +3,9 @@ package common
 import (
 	"context"
 	"errors"
+	"fmt"
+
+	"github.com/nknorg/nkn/v2/config"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
@@ -150,7 +153,9 @@ func MakeUnsubscribeTransaction(wallet *vault.Wallet, identifier string, topic s
 	return txn, nil
 }
 
-func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee common.Fixed64, nonce uint64, txnFee common.Fixed64, maxTxnHash common.Uint256) (*transaction.Transaction, error) {
+func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee common.Fixed64, nonce uint64, txnFee common.Fixed64, height uint32) (*transaction.Transaction, error) {
+	maxTxnHash := config.MaxGenerateIDTxnHash.GetValueAtHeight(height + 1)
+
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -161,6 +166,7 @@ func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee
 	var txnHash common.Uint256
 	var i uint64
 	maxUint64 := ^uint64(0)
+
 	for i = uint64(0); i < maxUint64; i++ {
 		select {
 		case <-ctx.Done():
@@ -168,7 +174,13 @@ func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee
 		default:
 		}
 
-		txn, err = transaction.NewGenerateIDTransaction(pubkey, regFee, nonce, txnFee, proto.EncodeVarint(i))
+		if config.AllowTxnGenerateID2.GetValueAtHeight(height) {
+			txn, err = transaction.NewGenerateID2Transaction(pubkey, account.ProgramHash, regFee, nonce, txnFee, proto.EncodeVarint(i))
+		} else if config.AllowTxnGenerateID1.GetValueAtHeight(height) {
+			txn, err = transaction.NewGenerateIDTransaction(pubkey, regFee, nonce, txnFee, proto.EncodeVarint(i))
+		} else {
+			err = fmt.Errorf("can not generate id at height: %d", height)
+		}
 		if err != nil {
 			return nil, err
 		}

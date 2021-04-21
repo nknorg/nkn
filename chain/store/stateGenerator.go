@@ -150,6 +150,29 @@ func (cs *ChainStore) spendTransaction(states *StateDB, txn *transaction.Transac
 		if err = states.UpdateBalance(donationAddress, config.NKNAssetID, common.Fixed64(genID.RegistrationFee), Addition); err != nil {
 			return err
 		}
+	case pb.PayloadType_GENERATE_ID_2_TYPE:
+		genID := pl.(*pb.GenerateID2)
+
+		if err = states.UpdateBalance(pg[0], config.NKNAssetID, common.Fixed64(genID.RegistrationFee), Subtraction); err != nil {
+			return err
+		}
+
+		idPg, err := program.CreateProgramHash(genID.PublicKey)
+		if err != nil {
+			return err
+		}
+		if err = states.UpdateID2(idPg, crypto.Sha256ZeroHash); err != nil {
+			return err
+		}
+
+		donationAddress, err := common.ToScriptHash(config.DonationAddress)
+		if err != nil {
+			return err
+		}
+
+		if err = states.UpdateBalance(donationAddress, config.NKNAssetID, common.Fixed64(genID.RegistrationFee), Addition); err != nil {
+			return err
+		}
 	case pb.PayloadType_NANO_PAY_TYPE:
 		nanoPay := pl.(*pb.NanoPay)
 
@@ -248,10 +271,11 @@ func (cs *ChainStore) generateStateRoot(ctx context.Context, b *block.Block, gen
 		preBlockHash := prevBlock.Hash()
 
 		for _, txn := range prevBlock.Transactions {
-			if txn.UnsignedTx.Payload.Type == pb.PayloadType_GENERATE_ID_TYPE {
+			switch txn.UnsignedTx.Payload.Type {
+			case pb.PayloadType_GENERATE_ID_TYPE:
 				select {
 				case <-ctx.Done():
-					return nil, common.EmptyUint256, errors.New("context deadline exceeded")
+					return nil, common.EmptyUint256, ctx.Err()
 				default:
 				}
 
@@ -264,6 +288,28 @@ func (cs *ChainStore) generateStateRoot(ctx context.Context, b *block.Block, gen
 				}
 
 				if err = states.UpdateID(pg[0], id); err != nil {
+					return nil, common.EmptyUint256, err
+				}
+
+			case pb.PayloadType_GENERATE_ID_2_TYPE:
+				select {
+				case <-ctx.Done():
+					return nil, common.EmptyUint256, ctx.Err()
+				default:
+				}
+
+				id := block.ComputeID(preBlockHash, txn.Hash(), b.Header.UnsignedHeader.RandomBeacon[:config.RandomBeaconUniqueLength])
+
+				pl, err := transaction.Unpack(txn.UnsignedTx.Payload)
+				if err != nil {
+					return nil, common.EmptyUint256, err
+				}
+				publicKey := pl.(*pb.GenerateID2).PublicKey
+				idPg, err := program.CreateProgramHash(publicKey)
+				if err != nil {
+					return nil, common.EmptyUint256, err
+				}
+				if err = states.UpdateID2(idPg, id); err != nil {
 					return nil, common.EmptyUint256, err
 				}
 			}

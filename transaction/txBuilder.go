@@ -122,6 +122,20 @@ func NewGenerateIDTransaction(publicKey []byte, regFee common.Fixed64, nonce uin
 	}, nil
 }
 
+func NewGenerateID2Transaction(publicKey []byte, sender common.Uint160, regFee common.Fixed64, nonce uint64, fee common.Fixed64, attrs []byte) (*Transaction, error) {
+	payload := NewGenerateID2(publicKey, sender, regFee)
+	pl, err := Pack(pb.PayloadType_GENERATE_ID_2_TYPE, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := NewMsgTx(pl, nonce, fee, attrs)
+
+	return &Transaction{
+		Transaction: tx,
+	}, nil
+}
+
 func NewNanoPayTransaction(sender, recipient common.Uint160, id uint64, amount common.Fixed64, txnExpiration, nanoPayExpiration uint32) (*Transaction, error) {
 	payload := NewNanoPay(sender, recipient, id, amount, txnExpiration, nanoPayExpiration)
 	pl, err := Pack(pb.PayloadType_NANO_PAY_TYPE, payload)
