@@ -258,14 +258,16 @@ func (cs *ChainStore) GetSubscription(topic string, bucket uint32, subscriber []
 	return cs.States.getSubscription(topic, bucket, subscriber, identifier)
 }
 
-func (sdb *StateDB) getSubscribers(topic string, bucket, offset, limit uint32) (map[string]string, error) {
+func (sdb *StateDB) getSubscribers(topic string, bucket, offset, limit uint32, subscriberHashPrefix []byte) (map[string]string, error) {
 	subscribers := make(map[string]string, 0)
 
-	prefix := string(append(PubSubPrefix, getTopicBucketId(topic, bucket)...))
-	iter := trie.NewIterator(sdb.trie.NodeIterator([]byte(prefix)))
+	prefixBytes := append(PubSubPrefix, getTopicBucketId(topic, bucket)...)
+	prefixBytes = append(prefixBytes, subscriberHashPrefix...)
+	prefixString := string(prefixBytes)
+	iter := trie.NewIterator(sdb.trie.NodeIterator(prefixBytes))
 	i := uint32(0)
 	for ; iter.Next(); i++ {
-		if !strings.HasPrefix(string(iter.Key), prefix) {
+		if !strings.HasPrefix(string(iter.Key), prefixString) {
 			break
 		}
 		if i < offset {
@@ -289,8 +291,8 @@ func (sdb *StateDB) getSubscribers(topic string, bucket, offset, limit uint32) (
 	return subscribers, nil
 }
 
-func (cs *ChainStore) GetSubscribers(topic string, bucket, offset, limit uint32) ([]string, error) {
-	subscribersWithMeta, err := cs.States.getSubscribers(topic, bucket, offset, limit)
+func (cs *ChainStore) GetSubscribers(topic string, bucket, offset, limit uint32, subscriberHashPrefix []byte) ([]string, error) {
+	subscribersWithMeta, err := cs.States.getSubscribers(topic, bucket, offset, limit, subscriberHashPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -301,17 +303,19 @@ func (cs *ChainStore) GetSubscribers(topic string, bucket, offset, limit uint32)
 	return subscribers, nil
 }
 
-func (cs *ChainStore) GetSubscribersWithMeta(topic string, bucket, offset, limit uint32) (map[string]string, error) {
-	return cs.States.getSubscribers(topic, bucket, offset, limit)
+func (cs *ChainStore) GetSubscribersWithMeta(topic string, bucket, offset, limit uint32, subscriberHashPrefix []byte) (map[string]string, error) {
+	return cs.States.getSubscribers(topic, bucket, offset, limit, subscriberHashPrefix)
 }
 
-func (sdb *StateDB) getSubscribersCount(topic string, bucket uint32) int {
+func (sdb *StateDB) getSubscribersCount(topic string, bucket uint32, subscriberHashPrefix []byte) int {
 	subscribers := 0
 
-	prefix := string(append(PubSubPrefix, getTopicBucketId(topic, bucket)...))
-	iter := trie.NewIterator(sdb.trie.NodeIterator([]byte(prefix)))
+	prefixBytes := append(PubSubPrefix, getTopicBucketId(topic, bucket)...)
+	prefixBytes = append(prefixBytes, subscriberHashPrefix...)
+	prefixString := string(prefixBytes)
+	iter := trie.NewIterator(sdb.trie.NodeIterator(prefixBytes))
 	for iter.Next() {
-		if !strings.HasPrefix(string(iter.Key), prefix) {
+		if !strings.HasPrefix(string(iter.Key), prefixString) {
 			break
 		}
 
@@ -321,8 +325,8 @@ func (sdb *StateDB) getSubscribersCount(topic string, bucket uint32) int {
 	return subscribers
 }
 
-func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32) int {
-	return cs.States.getSubscribersCount(topic, bucket)
+func (cs *ChainStore) GetSubscribersCount(topic string, bucket uint32, subscriberHashPrefix []byte) int {
+	return cs.States.getSubscribersCount(topic, bucket, subscriberHashPrefix)
 }
 
 func (sdb *StateDB) deletePubSub(id string) error {
