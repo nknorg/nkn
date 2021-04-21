@@ -348,7 +348,7 @@ func (LocalNode *LocalNode) CheckIDChange(v interface{}) {
 	if err != nil {
 		log.Fatalf("local node has no id:%v", err)
 	}
-	if bytes.Equal(LocalNode.Id, id) {
+	if !bytes.Equal(LocalNode.Id, id) {
 		log.Fatalf("local node id has changed")
 	}
 }
