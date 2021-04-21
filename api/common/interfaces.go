@@ -698,16 +698,28 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 	}
 
 	txPool, _ := params["txPool"].(bool)
+	meta, _ := params["meta"].(bool)
+
+	var subscriberHashPrefix []byte
+	var err error
+	if _, ok := params["subscriberHashPrefix"]; ok {
+		subscriberHashPrefixHex, ok := params["subscriberHashPrefix"].(string)
+		if !ok {
+			return respPacking(errcode.INVALID_PARAMS, "subscriberHashPrefix should be a string")
+		}
+		subscriberHashPrefix, err = hex.DecodeString(subscriberHashPrefixHex)
+		if err != nil {
+			return respPacking(errcode.INVALID_PARAMS, "subscriberHashPrefix should be a hex string")
+		}
+	}
 
 	response := make(map[string]interface{})
 
-	meta, _ := params["meta"].(bool)
 	var subscribers interface{}
-	var err error
 	if !meta {
-		subscribers, err = chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket), uint32(offset), uint32(limit))
+		subscribers, err = chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket), uint32(offset), uint32(limit), subscriberHashPrefix)
 	} else {
-		subscribers, err = chain.DefaultLedger.Store.GetSubscribersWithMeta(topic, uint32(bucket), uint32(offset), uint32(limit))
+		subscribers, err = chain.DefaultLedger.Store.GetSubscribersWithMeta(topic, uint32(bucket), uint32(offset), uint32(limit), subscriberHashPrefix)
 	}
 	if err != nil {
 		return respPacking(errcode.INTERNAL_ERROR, err.Error())
@@ -746,7 +758,20 @@ func getSubscribersCount(s Serverer, params map[string]interface{}) map[string]i
 		}
 	}
 
-	count := chain.DefaultLedger.Store.GetSubscribersCount(topic, uint32(bucket))
+	var subscriberHashPrefix []byte
+	var err error
+	if _, ok := params["subscriberHashPrefix"]; ok {
+		subscriberHashPrefixHex, ok := params["subscriberHashPrefix"].(string)
+		if !ok {
+			return respPacking(errcode.INVALID_PARAMS, "subscriberHashPrefix should be a string")
+		}
+		subscriberHashPrefix, err = hex.DecodeString(subscriberHashPrefixHex)
+		if err != nil {
+			return respPacking(errcode.INVALID_PARAMS, "subscriberHashPrefix should be a hex string")
+		}
+	}
+
+	count := chain.DefaultLedger.Store.GetSubscribersCount(topic, uint32(bucket), subscriberHashPrefix)
 	return respPacking(errcode.SUCCESS, count)
 }
 
