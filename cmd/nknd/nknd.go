@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
@@ -508,21 +509,24 @@ func main() {
 }
 
 func GetID(seeds []string, publickey []byte, createMode bool) ([]byte, error) {
-	localHeight := chain.DefaultLedger.Store.GetHeight()
-	if !config.AllowGetID1.GetValueAtHeight(localHeight) || createMode {
-		id, err := chain.DefaultLedger.Store.GetID(publickey, localHeight)
-		if err == nil && len(id) != 0 {
-			return id, nil
-		}
+	// Get future ID assuming ID will not expire
+	height := uint32(math.MaxUint32)
+	if createMode {
+		height = chain.DefaultLedger.Store.GetHeight()
+	}
 
-		if err != nil {
-			log.Errorf("get ID from local ledger error: %v", err)
-		} else {
-			log.Infof("get no ID from local ledger")
-		}
-		if createMode {
-			return nil, errors.New("no ID in local ledger")
-		}
+	id, err := chain.DefaultLedger.Store.GetID(publickey, height)
+	if err == nil && len(id) != 0 {
+		return id, nil
+	}
+
+	if err != nil {
+		log.Errorf("get ID from local ledger error: %v", err)
+	} else {
+		log.Infof("get no ID from local ledger")
+	}
+	if createMode {
+		return nil, errors.New("no ID in local ledger")
 	}
 
 	rand.Shuffle(len(seeds), func(i int, j int) {

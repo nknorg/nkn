@@ -174,13 +174,18 @@ func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee
 		default:
 		}
 
-		if config.AllowTxnGenerateID2.GetValueAtHeight(height) {
-			txn, err = transaction.NewGenerateID2Transaction(pubkey, account.ProgramHash, regFee, nonce, txnFee, proto.EncodeVarint(i))
-		} else if config.AllowTxnGenerateID1.GetValueAtHeight(height) {
-			txn, err = transaction.NewGenerateIDTransaction(pubkey, regFee, nonce, txnFee, proto.EncodeVarint(i))
-		} else {
-			err = fmt.Errorf("can not generate id at height: %d", height)
+		minVersion := config.AllowTxnGenerateIDMinVersion.GetValueAtHeight(height + 1)
+		maxVersion := config.AllowTxnGenerateIDMaxVersion.GetValueAtHeight(height + 1)
+		if maxVersion < minVersion {
+			return nil, fmt.Errorf("no available ID version at height %d", height+1)
 		}
+
+		var sender []byte
+		if config.AllowGenerateIDSender.GetValueAtHeight(height + 1) {
+			sender = account.ProgramHash.ToArray()
+		}
+
+		txn, err = transaction.NewGenerateIDTransaction(pubkey, sender, regFee, maxVersion, nonce, txnFee, proto.EncodeVarint(i))
 		if err != nil {
 			return nil, err
 		}

@@ -38,7 +38,6 @@ type BlockValidationState struct {
 	registeredNames         map[string]struct{}
 	nameRegistrants         map[string]struct{}
 	generateIDs             map[string]struct{}
-	generateID2s            map[string]struct{}
 	subscriptions           map[subscription]subscriptionInfo
 	subscriptionCount       map[string]int
 	subscriptionCountChange map[string]int
@@ -61,7 +60,6 @@ func (bvs *BlockValidationState) initBlockValidationState() {
 	bvs.registeredNames = make(map[string]struct{}, 0)
 	bvs.nameRegistrants = make(map[string]struct{}, 0)
 	bvs.generateIDs = make(map[string]struct{}, 0)
-	bvs.generateID2s = make(map[string]struct{}, 0)
 	bvs.subscriptions = make(map[subscription]subscriptionInfo, 0)
 	bvs.subscriptionCount = make(map[string]int, 0)
 	bvs.subscriptionCountChange = make(map[string]int, 0)
@@ -76,7 +74,6 @@ func (bvs *BlockValidationState) Close() {
 	bvs.registeredNames = nil
 	bvs.nameRegistrants = nil
 	bvs.generateIDs = nil
-	bvs.generateID2s = nil
 	bvs.subscriptions = nil
 	bvs.subscriptionCount = nil
 	bvs.nanoPays = nil
@@ -295,21 +292,6 @@ func (bvs *BlockValidationState) VerifyTransactionWithBlock(txn *transaction.Tra
 				})
 			}
 		}()
-	case pb.PayloadType_GENERATE_ID_2_TYPE:
-		generateIDPayload := payload.(*pb.GenerateID2)
-		amount = common.Fixed64(generateIDPayload.RegistrationFee)
-		publicKey := hex.EncodeToString(generateIDPayload.PublicKey)
-		if _, ok := bvs.generateID2s[publicKey]; ok {
-			return ErrDuplicateGenerateIDTxn
-		}
-
-		defer func() {
-			if e == nil {
-				bvs.addChange(func() {
-					bvs.generateID2s[publicKey] = struct{}{}
-				})
-			}
-		}()
 	case pb.PayloadType_NANO_PAY_TYPE:
 		npPayload := payload.(*pb.NanoPay)
 		if height > npPayload.TxnExpiration {
@@ -445,11 +427,6 @@ func (bvs *BlockValidationState) CleanSubmittedTransactions(txns []*transaction.
 			amount = common.Fixed64(generateIDPayload.RegistrationFee)
 			publicKey := hex.EncodeToString(generateIDPayload.PublicKey)
 			delete(bvs.generateIDs, publicKey)
-		case pb.PayloadType_GENERATE_ID_2_TYPE:
-			generateIDPayload := payload.(*pb.GenerateID2)
-			amount = common.Fixed64(generateIDPayload.RegistrationFee)
-			publicKey := hex.EncodeToString(generateIDPayload.PublicKey)
-			delete(bvs.generateID2s, publicKey)
 		case pb.PayloadType_NANO_PAY_TYPE:
 			npPayload := payload.(*pb.NanoPay)
 			key := nanoPay{hex.EncodeToString(npPayload.Sender), hex.EncodeToString(npPayload.Recipient), npPayload.Id}

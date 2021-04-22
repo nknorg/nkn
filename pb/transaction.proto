@@ -91,12 +91,8 @@ message TransferAsset {
 message GenerateID {
 	bytes public_key       = 1;
 	int64 registration_fee = 2;
-}
-
-message GenerateID2 {
-	bytes public_key       = 1;
-	int64 registration_fee = 2;
 	bytes sender           = 3;
+	int32 version          = 4;
 }
 
 message NanoPay {
@@ -115,5 +111,3 @@ message IssueAsset {
 	int64 total_supply = 4;
 	uint32 precision   = 5;
 }
-
-option go_package = "github.com/nknorg/nkn/pb";

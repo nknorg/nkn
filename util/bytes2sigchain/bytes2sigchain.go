@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/pb"
 )
 
@@ -23,7 +24,7 @@ func Base64ToHex(in []byte) (out []byte, err error) { // input format should be 
 	bin := make([]byte, base64.StdEncoding.DecodedLen(end-start))
 	n, err := base64.StdEncoding.Decode(bin, in[start:end])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "base64 decode %s met erro %v\n", in[start:end], err)
+		fmt.Fprintf(os.Stderr, "base64 decode %s error %v\n", in[start:end], err)
 		return []byte{}, err
 	}
 
@@ -73,10 +74,10 @@ func main() {
 		var buf, jStr []byte
 		if buf, err = hex.DecodeString(strings.TrimRight(l, "\n")); err == nil { // hexStr to bin
 			sigChainTxn := &pb.SigChainTxn{}
-			if err = sigChainTxn.Unmarshal(buf); err == nil { // bin to pb struct of SigChainTxnType txn
+			if err = proto.Unmarshal(buf, sigChainTxn); err == nil { // bin to pb struct of SigChainTxnType txn
 				// submitter, _ := new(common.Uint160).SetBytes(sigChainTxn.Submitter).ToAddress()
 				sc := &pb.SigChain{}
-				if err = sc.Unmarshal(sigChainTxn.SigChain); err == nil { // bin to pb struct of sigChain
+				if err = proto.Unmarshal(sigChainTxn.SigChain, sc); err == nil { // bin to pb struct of sigChain
 					js := map[string]interface{}{"SigChain": sc, "Submitter": sigChainTxn.Submitter}
 					if jStr, err = json.Marshal(js); err == nil { // to json string
 						Base64Handler(re, os.Stdout, jStr) // replace all in jStr to stdout

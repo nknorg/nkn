@@ -3,7 +3,6 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 )
@@ -78,7 +77,7 @@ func (u *Uint256) ToHexString() string {
 func Uint256ParseFromBytes(f []byte) (hash Uint256, err error) {
 	copy(hash[:], f)
 	if len(f) != UINT256SIZE {
-		err = errors.New("[Common]: Uint256ParseFromBytes err, len != 32")
+		err = fmt.Errorf("uint256 bytes wrong size %d, expecting %d", len(f), UINT256SIZE)
 	}
 
 	return hash, err

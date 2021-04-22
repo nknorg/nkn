@@ -136,7 +136,7 @@ var (
 	}
 	MaxSubscriptionsCount = 0 // 0 for unlimited
 	MaxGenerateIDTxnHash  = HeightDependentUint256{
-		heights: []uint32{99999, 9999, 0},
+		heights: []uint32{2560000, 245000, 0},
 		values: []common.Uint256{
 			common.MaxUint256,
 			{
@@ -165,21 +165,29 @@ var (
 		heights: []uint32{2543000, 0},
 		values:  []int32{14, 0},
 	}
-	AllowTxnGenerateID1 = HeightDependentBool{
-		heights: []uint32{99999, 0},
-		values:  []bool{false, true},
+	MinGenIDRegistrationFee = HeightDependentInt32{
+		heights: []uint32{2560000, 0},
+		values:  []int32{10 * common.StorageFactor, 0},
 	}
-	AllowTxnGenerateID2 = HeightDependentBool{
-		heights: []uint32{99999, 0},
+	AllowGenerateIDSender = HeightDependentBool{
+		heights: []uint32{2560000, 0},
 		values:  []bool{true, false},
 	}
-	AllowGetID1 = HeightDependentBool{
-		heights: []uint32{99999, 0},
-		values:  []bool{false, true},
+	AllowTxnGenerateIDMinVersion = HeightDependentInt32{
+		heights: []uint32{2560000, 0},
+		values:  []int32{1, 0},
 	}
-	MinGenIDRegistrationFee = HeightDependentInt32{
-		heights: []uint32{99999, 0},
-		values:  []int32{10, 0},
+	AllowTxnGenerateIDMaxVersion = HeightDependentInt32{
+		heights: []uint32{2560000, 0},
+		values:  []int32{1, 0},
+	}
+	AllowGetIDMinVersion = HeightDependentInt32{
+		heights: []uint32{2600000, 0},
+		values:  []int32{1, 0},
+	}
+	AllowGetIDMaxVersion = HeightDependentInt32{
+		heights: []uint32{2600000, 0},
+		values:  []int32{1, 0},
 	}
 )
 
@@ -227,7 +235,7 @@ var (
 		TxPoolPerAccountTxCap:        32,
 		TxPoolTotalTxCap:             0,
 		TxPoolMaxMemorySize:          0,
-		RegisterIDRegFee:             0,
+		RegisterIDRegFee:             10 * common.StorageFactor,
 		RegisterIDTxnFee:             0,
 		LogPath:                      "Log",
 		ChainDBPath:                  "ChainDB",

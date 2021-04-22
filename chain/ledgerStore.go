@@ -28,8 +28,7 @@ type ILedgerStore interface {
 	GetSubscribersWithMeta(topic string, bucket, offset, limit uint32, subscriberHashPrefix []byte) (map[string]string, error)
 	GetSubscribersCount(topic string, bucket uint32, subscriberHashPrefix []byte) int
 	GetID(publicKey []byte, height uint32) ([]byte, error)
-	GetID1(publicKey []byte) ([]byte, error)
-	GetID2(publicKey []byte) ([]byte, error)
+	GetIDVersion(publicKey []byte) ([]byte, byte, error)
 	GetBalance(addr common.Uint160) common.Fixed64
 	GetBalanceByAssetID(addr common.Uint160, assetID common.Uint256) common.Fixed64
 	GetNonce(addr common.Uint160) uint64

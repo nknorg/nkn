@@ -70,8 +70,18 @@ func generateIDAction(c *cli.Context) error {
 			nonce = remoteNonce
 		}
 
-		txn, _ := api.MakeGenerateIDTransaction(context.Background(), myWallet, regFee, nonce, txnFee, height)
-		buff, _ := txn.Marshal()
+		txn, err := api.MakeGenerateIDTransaction(context.Background(), myWallet, regFee, nonce, txnFee, height+1)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
+
+		buff, err := txn.Marshal()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
+
 		resp, err = client.Call(nknc.Address(), "sendrawtransaction", 0, map[string]interface{}{"tx": hex.EncodeToString(buff)})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)

@@ -525,22 +525,14 @@ func (cs *ChainStore) GetID(publicKey []byte, height uint32) ([]byte, error) {
 	return cs.States.GetID(programHash, height), nil
 }
 
-func (cs *ChainStore) GetID1(publicKey []byte) ([]byte, error) {
+func (cs *ChainStore) GetIDVersion(publicKey []byte) ([]byte, byte, error) {
 	programHash, err := program.CreateProgramHash(publicKey)
 	if err != nil {
-		return nil, fmt.Errorf("GetID1 error: %v", err)
+		return nil, 0, fmt.Errorf("GetID error: %v", err)
 	}
 
-	return cs.States.GetID1(programHash), nil
-}
-
-func (cs *ChainStore) GetID2(publicKey []byte) ([]byte, error) {
-	programHash, err := program.CreateProgramHash(publicKey)
-	if err != nil {
-		return nil, fmt.Errorf("GetID2 error: %v", err)
-	}
-
-	return cs.States.GetID2(programHash), nil
+	id, version := cs.States.GetIDVersion(programHash)
+	return id, version, nil
 }
 
 func (cs *ChainStore) GetNanoPay(addr common.Uint160, recipient common.Uint160, nonce uint64) (common.Fixed64, uint32, error) {

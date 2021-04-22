@@ -557,10 +557,14 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 			return err
 		}
 
-		donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
-		amount := DefaultLedger.Store.GetBalance(donationProgramhash)
-		if amount < donationAmount {
-			return errors.New("not sufficient funds in doation account")
+		donationProgramhash, err := common.ToScriptHash(config.DonationAddress)
+		if err != nil {
+			return err
+		}
+
+		donationBalance := DefaultLedger.Store.GetBalance(donationProgramhash)
+		if donationBalance < donationAmount {
+			return errors.New("not sufficient funds in donation account")
 		}
 	case pb.PayloadType_TRANSFER_ASSET_TYPE:
 		pld := payload.(*pb.TransferAsset)
@@ -666,21 +670,11 @@ func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) er
 		}
 	case pb.PayloadType_GENERATE_ID_TYPE:
 		pld := payload.(*pb.GenerateID)
-		id, err := DefaultLedger.Store.GetID1(pld.PublicKey)
+		id, idVersion, err := DefaultLedger.Store.GetIDVersion(pld.PublicKey)
 		if err != nil {
 			return err
 		}
-		if len(id) != 0 {
-			return ErrIDRegistered
-		}
-		amount += pld.RegistrationFee
-	case pb.PayloadType_GENERATE_ID_2_TYPE:
-		pld := payload.(*pb.GenerateID2)
-		id, err := DefaultLedger.Store.GetID2(pld.PublicKey)
-		if err != nil {
-			return err
-		}
-		if len(id) != 0 {
+		if len(id) > 0 && pld.Version <= int32(idVersion) {
 			return ErrIDRegistered
 		}
 		amount += pld.RegistrationFee
