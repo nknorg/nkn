@@ -628,11 +628,11 @@ func GetOrCreateID(seeds []string, wallet *vault.Wallet, txnFee common.Fixed64, 
 			serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_CREATE_ID
 			if err := CreateID(seeds, wallet, txnFee); err != nil {
 				log.Warningf("Create ID error: %v", err)
+				log.Warningf("Failed to create ID. Make sure node's wallet address has enough balance for generate ID fee, or use another wallet to generate ID for this node's public key.")
 				time.Sleep(10 * time.Minute)
-			} else {
-				time.Sleep(time.Minute)
+				continue
 			}
-			continue
+			break
 		} else if len(id) != config.NodeIDBytes {
 			return nil, fmt.Errorf("Got ID %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
 		} else if bytes.Equal(id, crypto.Sha256ZeroHash) {
