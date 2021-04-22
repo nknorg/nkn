@@ -516,7 +516,7 @@ func GetID(seeds []string, publickey []byte, createMode bool) ([]byte, error) {
 	}
 
 	id, err := chain.DefaultLedger.Store.GetID(publickey, height)
-	if err == nil && len(id) != 0 {
+	if err == nil && len(id) > 0 && !bytes.Equal(id, crypto.Sha256ZeroHash) {
 		return id, nil
 	}
 
@@ -624,7 +624,7 @@ func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.F
 				return nil, err
 			}
 			if err != nil {
-				log.Warningf("Get id from neighbors error: %v", err)
+				log.Warningf("Get ID from neighbors error: %v", err)
 			}
 			serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_CREATE_ID
 			if err := CreateID(seeds, wallet, regFee, txnFee); err != nil {
@@ -633,9 +633,9 @@ func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.F
 			time.Sleep(10 * time.Minute)
 			continue
 		} else if len(id) != config.NodeIDBytes {
-			return nil, fmt.Errorf("Got id %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
+			return nil, fmt.Errorf("Got ID %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
 		} else if bytes.Equal(id, crypto.Sha256ZeroHash) {
-			log.Info("waiting id generation complete: %v", err)
+			log.Info("Waiting for ID generation to complete")
 			break
 		}
 		return id, nil
@@ -649,13 +649,13 @@ out:
 	for {
 		select {
 		case <-timer.C:
-			log.Warningf("try to get ID from local ledger and remoteNode...")
+			log.Infof("Try to get ID from local ledger and remoteNode...")
 			if id, err := GetID(seeds, pk, false); err == nil && id != nil {
 				if !bytes.Equal(id, crypto.Sha256ZeroHash) {
 					return id, nil
 				}
 			} else if err != nil {
-				log.Warningf("Get id from neighbors error: %v", err)
+				log.Warningf("Get ID from neighbors error: %v", err)
 			}
 			timer.Reset(config.ConsensusDuration)
 		case <-timeout:

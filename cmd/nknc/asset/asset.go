@@ -128,6 +128,14 @@ func assetAction(c *cli.Context) error {
 			return err
 		}
 
+		if nonce == 0 {
+			remoteNonce, _, err := client.GetNonceByAddr(nknc.Address(), myWallet.Address)
+			if err != nil {
+				return err
+			}
+			nonce = remoteNonce
+		}
+
 		txn, err := api.MakeTransferTransaction(myWallet, receipt, nonce, amount, txnFee)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
