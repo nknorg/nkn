@@ -1,6 +1,7 @@
 package common
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -153,14 +154,33 @@ func MakeUnsubscribeTransaction(wallet *vault.Wallet, identifier string, topic s
 	return txn, nil
 }
 
-func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee common.Fixed64, nonce uint64, txnFee common.Fixed64, height uint32) (*transaction.Transaction, error) {
-	maxTxnHash := config.MaxGenerateIDTxnHash.GetValueAtHeight(height + 1)
+func MakeGenerateIDTransaction(ctx context.Context, pubkey []byte, wallet *vault.Wallet, regFee common.Fixed64, nonce uint64, txnFee common.Fixed64, height uint32) (*transaction.Transaction, error) {
+	minVersion := config.AllowTxnGenerateIDMinVersion.GetValueAtHeight(height + 1)
+	maxVersion := config.AllowTxnGenerateIDMaxVersion.GetValueAtHeight(height + 1)
+	if maxVersion < minVersion {
+		return nil, fmt.Errorf("no available ID version at height %d", height+1)
+	}
 
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
 	}
-	pubkey := account.PubKey()
+	myPubkey := account.PubKey()
+
+	if len(pubkey) == 0 {
+		pubkey = myPubkey
+	}
+
+	var sender []byte
+	if config.AllowGenerateIDSender.GetValueAtHeight(height + 1) {
+		sender = account.ProgramHash.ToArray()
+	} else {
+		if !bytes.Equal(pubkey, myPubkey) {
+			return nil, errors.New("cannot generate ID for another pubkey at this height")
+		}
+	}
+
+	maxTxnHash := config.MaxGenerateIDTxnHash.GetValueAtHeight(height + 1)
 
 	var txn *transaction.Transaction
 	var txnHash common.Uint256
@@ -172,17 +192,6 @@ func MakeGenerateIDTransaction(ctx context.Context, wallet *vault.Wallet, regFee
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		default:
-		}
-
-		minVersion := config.AllowTxnGenerateIDMinVersion.GetValueAtHeight(height + 1)
-		maxVersion := config.AllowTxnGenerateIDMaxVersion.GetValueAtHeight(height + 1)
-		if maxVersion < minVersion {
-			return nil, fmt.Errorf("no available ID version at height %d", height+1)
-		}
-
-		var sender []byte
-		if config.AllowGenerateIDSender.GetValueAtHeight(height + 1) {
-			sender = account.ProgramHash.ToArray()
 		}
 
 		txn, err = transaction.NewGenerateIDTransaction(pubkey, sender, regFee, maxVersion, nonce, txnFee, proto.EncodeVarint(i))

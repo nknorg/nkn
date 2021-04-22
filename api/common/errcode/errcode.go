@@ -83,8 +83,8 @@ var ErrMessage = map[ErrCode]string{
 	ErrSummaryAsset:         "INTERNAL ERROR, ErrSummaryAsset",
 	ErrXmitFail:             "INTERNAL ERROR, ErrXmitFail",
 	ErrAppendTxnPool:        "INTERNAL ERROR, can not append tx to txpool",
-	ErrNullID:               "INTERNAL ERROR, there is no ID in account",
-	ErrZeroID:               "INTERNAL ERROR, it's zero ID in account",
+	ErrNullID:               "No ID in this account, waiting for generate ID fee or generate ID transaction",
+	ErrZeroID:               "Generate ID transaction is on chain, ID will be computed in a few blocks",
 	ErrNullDB:               "INTERNAL ERROR, DB service is unavailable",
 }
 

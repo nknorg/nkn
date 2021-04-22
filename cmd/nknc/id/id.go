@@ -22,6 +22,13 @@ func generateIDAction(c *cli.Context) error {
 		return nil
 	}
 
+	pubkeyHex := c.String("pubkey")
+	pubkey, err := hex.DecodeString(pubkeyHex)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	walletName := c.String("wallet")
 	passwd := c.String("password")
 	myWallet, err := vault.OpenWallet(walletName, nknc.GetPassword(passwd))
@@ -35,7 +42,11 @@ func generateIDAction(c *cli.Context) error {
 	if fee == "" {
 		txnFee = common.Fixed64(0)
 	} else {
-		txnFee, _ = common.StringToFixed64(fee)
+		txnFee, err = common.StringToFixed64(fee)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 
 	var regFee common.Fixed64
@@ -43,7 +54,11 @@ func generateIDAction(c *cli.Context) error {
 	if fee == "" {
 		regFee = common.Fixed64(0)
 	} else {
-		regFee, _ = common.StringToFixed64(fee)
+		regFee, err = common.StringToFixed64(fee)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 
 	nonce := c.Uint64("nonce")
@@ -70,7 +85,7 @@ func generateIDAction(c *cli.Context) error {
 			nonce = remoteNonce
 		}
 
-		txn, err := api.MakeGenerateIDTransaction(context.Background(), myWallet, regFee, nonce, txnFee, height+1)
+		txn, err := api.MakeGenerateIDTransaction(context.Background(), pubkey, myWallet, regFee, nonce, txnFee, height+1)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
@@ -106,6 +121,10 @@ func NewCommand() *cli.Command {
 			cli.BoolFlag{
 				Name:  "genid",
 				Usage: "generate id",
+			},
+			cli.StringFlag{
+				Name:  "pubkey",
+				Usage: "pubkey to generate id for, leave empty for local wallet pubkey",
 			},
 			cli.StringFlag{
 				Name:  "wallet, w",

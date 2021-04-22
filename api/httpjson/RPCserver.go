@@ -184,14 +184,14 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						pubkey := acc.PubKey()
-						data["publicKey"] = hex.EncodeToString(pubkey)
+						data["error"].(map[string]interface{})["publicKey"] = hex.EncodeToString(pubkey)
 						walletAddress, err := acc.ProgramHash.ToAddress()
 						if err != nil {
 							log.Error("HTTP JSON RPC ProgramHash ToAddress error: ", err)
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
-						data["walletAddress"] = walletAddress
+						data["error"].(map[string]interface{})["walletAddress"] = walletAddress
 					}
 					jsonData, err := json.Marshal(data)
 					if err != nil {
