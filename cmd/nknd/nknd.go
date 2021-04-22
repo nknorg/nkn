@@ -241,7 +241,6 @@ func nknMain(c *cli.Context) error {
 	id, err := GetOrCreateID(
 		config.Parameters.SeedList,
 		wallet,
-		common.Fixed64(config.Parameters.RegisterIDRegFee),
 		common.Fixed64(config.Parameters.RegisterIDTxnFee),
 		createMode,
 	)
@@ -560,7 +559,7 @@ func GetID(seeds []string, publickey []byte, createMode bool) ([]byte, error) {
 	return nil, fmt.Errorf("failed to get ID from majority of %d seeds", n)
 }
 
-func CreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed64) error {
+func CreateID(seeds []string, wallet *vault.Wallet, txnFee common.Fixed64) error {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return err
@@ -586,7 +585,7 @@ func CreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed6
 		}
 
 		if txn == nil || nonce != prevNonce {
-			txn, err = api.MakeGenerateIDTransaction(context.Background(), nil, wallet, regFee, nonce, txnFee, height)
+			txn, err = api.MakeGenerateIDTransaction(context.Background(), nil, wallet, 0, nonce, txnFee, height)
 			if err != nil {
 				return err
 			}
@@ -610,7 +609,7 @@ func CreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed6
 	return errors.New("create ID failed")
 }
 
-func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed64, createMode bool) ([]byte, error) {
+func GetOrCreateID(seeds []string, wallet *vault.Wallet, txnFee common.Fixed64, createMode bool) ([]byte, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
@@ -627,7 +626,7 @@ func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.F
 				log.Warningf("Get ID from neighbors error: %v", err)
 			}
 			serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_CREATE_ID
-			if err := CreateID(seeds, wallet, regFee, txnFee); err != nil {
+			if err := CreateID(seeds, wallet, txnFee); err != nil {
 				log.Warningf("Create ID error: %v", err)
 				time.Sleep(10 * time.Minute)
 			} else {
