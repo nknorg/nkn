@@ -169,15 +169,7 @@ func CreateID(remote string, genIdTxn string) (string, error) {
 		log.Error(err)
 		return "", err
 	}
-	if len(ret.Err) != 0 { // resp.error NOT empty
-		code, ok := ret.Err["code"].(float64)
-		if !ok {
-			return "", fmt.Errorf("CreateID resp error,interface conversion faild")
-		}
-
-		if int64(code) == -int64(errcode.ErrDuplicatedTx) {
-			return "", nil
-		}
+	if len(ret.Err) != 0 {
 		return "", fmt.Errorf("CreateID(%s) resp error: %v", remote, string(resp))
 	}
 

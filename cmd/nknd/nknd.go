@@ -126,7 +126,7 @@ func AskMyIP(seeds []string) (string, error) {
 		if err == nil {
 			return addr, err
 		}
-		log.Warningf("Ask my ID from %s met error: %v", seed, err)
+		log.Warningf("Ask my ID from %s error: %v", seed, err)
 	}
 	return "", errors.New("Tried all seeds but can't got my external IP and nknID")
 }
@@ -581,13 +581,12 @@ func CreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed6
 	for _, seed := range seeds {
 		nonce, height, err := client.GetNonceByAddr(seed, addr)
 		if err != nil {
-			log.Warningf("get nonce from %s met error: %v", seed, err)
+			log.Warningf("get nonce from %s error: %v", seed, err)
 			continue
 		}
 
 		if txn == nil || nonce != prevNonce {
-			log.Info("Creating generate ID txn. This process may take quite a few minutes...")
-			txn, err = api.MakeGenerateIDTransaction(context.Background(), wallet, regFee, nonce, txnFee, height)
+			txn, err = api.MakeGenerateIDTransaction(context.Background(), nil, wallet, regFee, nonce, txnFee, height)
 			if err != nil {
 				return err
 			}
@@ -601,7 +600,7 @@ func CreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.Fixed6
 
 		_, err = client.CreateID(seed, hex.EncodeToString(buff))
 		if err != nil {
-			log.Warningf("create ID from %s met error: %v", seed, err)
+			log.Warningf("create ID from %s error: %v", seed, err)
 			continue
 		}
 
@@ -620,7 +619,7 @@ func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.F
 
 	for {
 		id, err := GetID(seeds, pk, createMode)
-		if err != nil || id == nil {
+		if err != nil || len(id) == 0 {
 			if createMode {
 				return nil, err
 			}
@@ -629,17 +628,17 @@ func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.F
 			}
 			serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_CREATE_ID
 			if err := CreateID(seeds, wallet, regFee, txnFee); err != nil {
-				time.Sleep(time.Minute * 10)
-				continue
+				log.Warningf("Create ID error: %v", err)
 			}
+			time.Sleep(10 * time.Minute)
+			continue
 		} else if len(id) != config.NodeIDBytes {
 			return nil, fmt.Errorf("Got id %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
-		} else if !bytes.Equal(id, crypto.Sha256ZeroHash) {
-			return id, nil
-		} else {
+		} else if bytes.Equal(id, crypto.Sha256ZeroHash) {
 			log.Info("waiting id generation complete: %v", err)
 			break
 		}
+		return id, nil
 	}
 
 	timer := time.NewTimer((config.GenerateIDBlockDelay + 4) * config.ConsensusDuration)
