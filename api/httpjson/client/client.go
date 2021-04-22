@@ -170,6 +170,16 @@ func CreateID(remote string, genIdTxn string) (string, error) {
 		return "", err
 	}
 	if len(ret.Err) != 0 {
+		code, ok := ret.Err["code"].(float64)
+		if !ok {
+			return "", fmt.Errorf("CreateID resp parse failed")
+		}
+
+		// generate ID txn is already in txpool, should not be considered as error
+		if int64(code) == -int64(errcode.ErrDuplicatedTx) {
+			return "", nil
+		}
+
 		return "", fmt.Errorf("CreateID(%s) resp error: %v", remote, string(resp))
 	}
 
