@@ -110,7 +110,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	log.Infof("Init node ID to %v", localNode.GetID())
 
 	event.Queue.Subscribe(event.BlockPersistCompleted, localNode.cleanupTransactions)
-	event.Queue.Subscribe(event.BlockPersistCompleted, localNode.CheckIDChange)
+	event.Queue.Subscribe(event.NewBlockProduced, localNode.CheckIDChange)
 
 	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{func(n *nnetpb.Node) (bool, bool) {
 		err := localNode.shouldConnectToNode(n)

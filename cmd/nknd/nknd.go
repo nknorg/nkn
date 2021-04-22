@@ -629,8 +629,10 @@ func GetOrCreateID(seeds []string, wallet *vault.Wallet, regFee, txnFee common.F
 			serviceConfig.Status = serviceConfig.Status | serviceConfig.SERVICE_STATUS_CREATE_ID
 			if err := CreateID(seeds, wallet, regFee, txnFee); err != nil {
 				log.Warningf("Create ID error: %v", err)
+				time.Sleep(10 * time.Minute)
+			} else {
+				time.Sleep(time.Minute)
 			}
-			time.Sleep(10 * time.Minute)
 			continue
 		} else if len(id) != config.NodeIDBytes {
 			return nil, fmt.Errorf("Got ID %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
