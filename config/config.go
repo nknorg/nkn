@@ -182,12 +182,12 @@ var (
 		values:  []int32{1, 0},
 	}
 	AllowGetIDMinVersion = HeightDependentInt32{
-		heights: []uint32{2600000, 0},
-		values:  []int32{1, 0},
+		heights: []uint32{2600000, 2560000, 0},
+		values:  []int32{1, 0, 0},
 	}
 	AllowGetIDMaxVersion = HeightDependentInt32{
-		heights: []uint32{2600000, 0},
-		values:  []int32{1, 0},
+		heights: []uint32{2600000, 2560000, 0},
+		values:  []int32{1, 1, 0},
 	}
 )
 
