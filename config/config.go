@@ -165,9 +165,9 @@ var (
 		heights: []uint32{2543000, 0},
 		values:  []int32{14, 0},
 	}
-	MinGenIDRegistrationFee = HeightDependentInt32{
+	MinGenIDRegistrationFee = HeightDependentInt64{
 		heights: []uint32{2560000, 0},
-		values:  []int32{10 * common.StorageFactor, 0},
+		values:  []int64{10 * common.StorageFactor, 0},
 	}
 	AllowGenerateIDSender = HeightDependentBool{
 		heights: []uint32{2560000, 0},
@@ -235,7 +235,7 @@ var (
 		TxPoolPerAccountTxCap:        32,
 		TxPoolTotalTxCap:             0,
 		TxPoolMaxMemorySize:          0,
-		RegisterIDRegFee:             10 * common.StorageFactor,
+		RegisterIDRegFee:             0,
 		RegisterIDTxnFee:             0,
 		LogPath:                      "Log",
 		ChainDBPath:                  "ChainDB",

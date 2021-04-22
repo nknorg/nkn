@@ -180,6 +180,9 @@ func MakeGenerateIDTransaction(ctx context.Context, pubkey []byte, wallet *vault
 		}
 	}
 
+	if regFee == 0 {
+		regFee = common.Fixed64(config.MinGenIDRegistrationFee.GetValueAtHeight(height + 1))
+	}
 	maxTxnHash := config.MaxGenerateIDTxnHash.GetValueAtHeight(height + 1)
 
 	var txn *transaction.Transaction

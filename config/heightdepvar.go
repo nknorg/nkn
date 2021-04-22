@@ -16,6 +16,20 @@ func (hdi *HeightDependentInt32) GetValueAtHeight(height uint32) int32 {
 	return 0
 }
 
+type HeightDependentInt64 struct {
+	heights []uint32
+	values  []int64
+}
+
+func (hdi *HeightDependentInt64) GetValueAtHeight(height uint32) int64 {
+	for i, h := range hdi.heights {
+		if height >= h {
+			return hdi.values[i]
+		}
+	}
+	return 0
+}
+
 type HeightDependentUint256 struct {
 	heights []uint32
 	values  []common.Uint256
