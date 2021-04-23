@@ -136,7 +136,7 @@ var (
 	}
 	MaxSubscriptionsCount = 0 // 0 for unlimited
 	MaxGenerateIDTxnHash  = HeightDependentUint256{
-		heights: []uint32{2560000, 245000, 0},
+		heights: []uint32{2570000, 245000, 0},
 		values: []common.Uint256{
 			common.MaxUint256,
 			{
@@ -166,39 +166,39 @@ var (
 		values:  []int32{14, 0},
 	}
 	SigChainVerifyFingerTableRange = HeightDependentBool{
-		heights: []uint32{2560000, 0},
+		heights: []uint32{2570000, 0},
 		values:  []bool{true, false},
 	}
 	SigChainVerifySkipNode = HeightDependentBool{
-		heights: []uint32{2560000, 0},
+		heights: []uint32{2570000, 0},
 		values:  []bool{true, false},
 	}
 	SigChainObjection = HeightDependentBool{
-		heights: []uint32{2560000, 0},
+		heights: []uint32{2570000, 0},
 		values:  []bool{true, false},
 	}
 	MinGenIDRegistrationFee = HeightDependentInt64{
-		heights: []uint32{2560000, 0},
+		heights: []uint32{2570000, 0},
 		values:  []int64{10 * common.StorageFactor, 0},
 	}
 	AllowGenerateIDSender = HeightDependentBool{
-		heights: []uint32{2560000, 0},
+		heights: []uint32{2570000, 0},
 		values:  []bool{true, false},
 	}
 	AllowTxnGenerateIDMinVersion = HeightDependentInt32{
-		heights: []uint32{2560000, 0},
+		heights: []uint32{2570000, 0},
 		values:  []int32{1, 0},
 	}
 	AllowTxnGenerateIDMaxVersion = HeightDependentInt32{
-		heights: []uint32{2560000, 0},
+		heights: []uint32{2570000, 0},
 		values:  []int32{1, 0},
 	}
 	AllowGetIDMinVersion = HeightDependentInt32{
-		heights: []uint32{2600000, 2560000, 0},
+		heights: []uint32{2600000, 2570000, 0},
 		values:  []int32{1, 0, 0},
 	}
 	AllowGetIDMaxVersion = HeightDependentInt32{
-		heights: []uint32{2600000, 2560000, 0},
+		heights: []uint32{2600000, 2570000, 0},
 		values:  []int32{1, 1, 0},
 	}
 )
