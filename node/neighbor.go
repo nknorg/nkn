@@ -468,9 +468,9 @@ func (localNode *LocalNode) VerifySigChain(sc *pb.SigChain, height uint32) error
 	return nil
 }
 
-func (localNode *LocalNode) VerifySigChainObjection(sc *pb.SigChain, reporterID []byte, height uint32) error {
+func (localNode *LocalNode) VerifySigChainObjection(sc *pb.SigChain, reporterID []byte, height uint32) (int, error) {
 	if !config.SigChainObjection.GetValueAtHeight(height) {
-		return fmt.Errorf("sigchain objection is not enabled")
+		return 0, fmt.Errorf("sigchain objection is not enabled")
 	}
 
 	if config.SigChainVerifySkipNode.GetValueAtHeight(height) {
@@ -480,13 +480,14 @@ func (localNode *LocalNode) VerifySigChainObjection(sc *pb.SigChain, reporterID 
 			dist := chord.Distance(sc.Elems[i].Id, sc.DestId, config.NodeIDBytes*8)
 			fingerIdx := dist.BitLen() - 1
 			fingerStartID := chord.PowerOffset(sc.Elems[i].Id, uint32(fingerIdx), config.NodeIDBytes*8)
-			if !chord.BetweenLeftIncl(fingerStartID, sc.Elems[i+1].Id, reporterID) {
-				return fmt.Errorf("reporter is not skipped")
+			if chord.BetweenLeftIncl(fingerStartID, sc.Elems[i+1].Id, reporterID) {
+				return i, nil
 			}
 		}
+		return 0, fmt.Errorf("reporter is not skipped")
 	}
 
-	return nil
+	return 0, nil
 }
 
 // ShouldRejectAddr returns if remoteAddr should be rejected by localAddr

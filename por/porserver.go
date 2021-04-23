@@ -69,7 +69,7 @@ var store Store
 
 // LocalNode interface is used to avoid cyclic dependency
 type LocalNode interface {
-	VerifySigChainObjection(sc *pb.SigChain, reporterID []byte, height uint32) error
+	VerifySigChainObjection(sc *pb.SigChain, reporterID []byte, height uint32) (int, error)
 }
 
 var localNode LocalNode
@@ -113,7 +113,7 @@ type BacktrackSigChainInfo struct {
 type sigChainObjection struct {
 	reporterPubkey []byte
 	reporterID     []byte
-	isVerified     bool
+	skippedHop     int
 }
 
 type sigChainObjections []*sigChainObjection
@@ -268,7 +268,7 @@ func (ps *PorServer) GetMiningSigChainTxnHash(voteForHeight uint32) (common.Uint
 				if v, ok := ps.sigChainObjectionCache.Get(porPkg.SigHash); ok {
 					if scos, ok := v.(sigChainObjections); ok {
 						if len(scos) >= MaxNextHopChoice {
-							verifiedCount := 0
+							verifiedCount := make(map[int]int)
 							for _, sco := range scos {
 								if len(sco.reporterID) == 0 {
 									id, err := store.GetID(sco.reporterPubkey, height)
@@ -276,20 +276,27 @@ func (ps *PorServer) GetMiningSigChainTxnHash(voteForHeight uint32) (common.Uint
 										continue
 									}
 									sco.reporterID = id
-									err = localNode.VerifySigChainObjection(porPkg.SigChain, id, height)
+									i, err := localNode.VerifySigChainObjection(porPkg.SigChain, id, height)
 									if err != nil {
 										continue
 									}
-									sco.isVerified = true
+									sco.skippedHop = i
 								}
-								if sco.isVerified {
-									verifiedCount++
+								if sco.skippedHop > 0 {
+									verifiedCount[sco.skippedHop]++
 								}
-								if verifiedCount >= MaxNextHopChoice {
+								if verifiedCount[sco.skippedHop] >= MaxNextHopChoice {
 									break
 								}
 							}
-							if verifiedCount >= MaxNextHopChoice {
+							isSigChainInvalid := false
+							for _, count := range verifiedCount {
+								if count >= MaxNextHopChoice {
+									isSigChainInvalid = true
+									break
+								}
+							}
+							if isSigChainInvalid {
 								continue
 							}
 						}
@@ -703,50 +710,61 @@ func (ps *PorServer) AddSigChainObjection(currentHeight, voteForHeight uint32, s
 			return false
 		}
 		sco.reporterID = reporterID
-		err = localNode.VerifySigChainObjection(porPkg.SigChain, reporterID, porPkg.Height)
+		i, err := localNode.VerifySigChainObjection(porPkg.SigChain, reporterID, porPkg.Height)
 		if err != nil {
 			return false
 		}
-		sco.isVerified = true
+		sco.skippedHop = i
 	}
 
 	var scos sigChainObjections
 	if v, ok := ps.sigChainObjectionCache.Get(sigHash); ok {
 		var ok bool
 		if scos, ok = v.(sigChainObjections); ok {
-			verifiedCount := 0
+			verifiedCount := make(map[int]int)
+			needVerify := false
 			for _, s := range scos {
-				if bytes.Compare(s.reporterPubkey, reporterPubkey) == 0 {
+				if bytes.Equal(s.reporterPubkey, reporterPubkey) {
 					return false
 				}
-				if s.isVerified {
-					verifiedCount++
+				if s.skippedHop > 0 {
+					verifiedCount[s.skippedHop]++
+				}
+				if len(s.reporterID) == 0 {
+					needVerify = true
 				}
 			}
 
-			if verifiedCount >= MaxNextHopChoice {
-				return false
+			for _, count := range verifiedCount {
+				if count >= MaxNextHopChoice {
+					return false
+				}
 			}
 
-			if porPkg != nil && len(scos) >= verifiedCount {
+			if porPkg != nil && needVerify {
 				verifiedScos := sigChainObjections{}
+				verifiedCount := make(map[int]int)
 				for _, s := range scos {
 					reporterID, err := store.GetID(s.reporterPubkey, porPkg.Height)
 					if err != nil {
 						continue
 					}
 					s.reporterID = reporterID
-					err = localNode.VerifySigChainObjection(porPkg.SigChain, reporterID, porPkg.Height)
+					i, err := localNode.VerifySigChainObjection(porPkg.SigChain, reporterID, porPkg.Height)
 					if err != nil {
 						continue
 					}
-					s.isVerified = true
+					s.skippedHop = i
 					verifiedScos = append(verifiedScos, s)
+					verifiedCount[s.skippedHop]++
 				}
 				scos = verifiedScos
-				if len(scos) >= MaxNextHopChoice {
-					ps.sigChainObjectionCache.Set(sigHash, scos)
-					return false
+
+				for _, count := range verifiedCount {
+					if count >= MaxNextHopChoice {
+						ps.sigChainObjectionCache.Set(sigHash, scos)
+						return false
+					}
 				}
 			}
 
