@@ -257,10 +257,14 @@ func (ps *PorServer) CreateSigChainForClient(nonce, dataSize uint32, blockHash [
 }
 
 func (ps *PorServer) GetMiningSigChainTxnHash(voteForHeight uint32) (common.Uint256, error) {
+	ps.RLock()
+	defer ps.RUnlock()
+
 	var height uint32
 	if voteForHeight > SigChainMiningHeightOffset+config.SigChainBlockDelay {
 		height = voteForHeight - SigChainMiningHeightOffset - config.SigChainBlockDelay
 	}
+
 	if v, ok := ps.miningPorPackageCache.Get([]byte(strconv.Itoa(int(voteForHeight)))); ok {
 		if p, ok := v.(*porPackageHeap); ok {
 			for i := 0; i < p.Len(); i++ {
@@ -355,6 +359,12 @@ func (ps *PorServer) GetSigChainTxnByShortHash(shortHash []byte) (*transaction.T
 }
 
 func (ps *PorServer) ShouldAddSigChainToCache(currentHeight, voteForHeight uint32, sigHash []byte, replace bool) bool {
+	ps.RLock()
+	defer ps.RUnlock()
+	return ps.shouldAddSigChainToCache(currentHeight, voteForHeight, sigHash, replace)
+}
+
+func (ps *PorServer) shouldAddSigChainToCache(currentHeight, voteForHeight uint32, sigHash []byte, replace bool) bool {
 	if voteForHeight < currentHeight+SigChainPropagationHeightOffset {
 		return false
 	}
@@ -405,7 +415,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 	ps.Lock()
 	defer ps.Unlock()
 
-	if !ps.ShouldAddSigChainToCache(currentHeight, porPkg.VoteForHeight, porPkg.SigHash, false) {
+	if !ps.shouldAddSigChainToCache(currentHeight, porPkg.VoteForHeight, porPkg.SigHash, false) {
 		return nil, nil
 	}
 
@@ -463,6 +473,12 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 }
 
 func (ps *PorServer) ShouldSignDestSigChainElem(blockHash, lastHash []byte, sigChainLen int) bool {
+	ps.RLock()
+	defer ps.RUnlock()
+	return ps.shouldSignDestSigChainElem(blockHash, lastHash, sigChainLen)
+}
+
+func (ps *PorServer) shouldSignDestSigChainElem(blockHash, lastHash []byte, sigChainLen int) bool {
 	if _, ok := ps.finalizedBlockCache.Get(blockHash); ok {
 		return false
 	}
@@ -492,7 +508,7 @@ func (ps *PorServer) AddDestSigChainElem(blockHash, lastHash []byte, sigChainLen
 	ps.Lock()
 	defer ps.Unlock()
 
-	if !ps.ShouldSignDestSigChainElem(blockHash, lastHash, sigChainLen) {
+	if !ps.shouldSignDestSigChainElem(blockHash, lastHash, sigChainLen) {
 		return false, nil
 	}
 
@@ -683,12 +699,12 @@ func (ps *PorServer) FlushSigChain(blockHash []byte) {
 }
 
 func (ps *PorServer) AddSigChainObjection(currentHeight, voteForHeight uint32, sigHash, reporterPubkey []byte) bool {
-	if !ps.ShouldAddSigChainToCache(currentHeight, voteForHeight, sigHash, true) {
-		return false
-	}
-
 	ps.Lock()
 	defer ps.Unlock()
+
+	if !ps.shouldAddSigChainToCache(currentHeight, voteForHeight, sigHash, true) {
+		return false
+	}
 
 	sco := &sigChainObjection{reporterPubkey: reporterPubkey}
 
