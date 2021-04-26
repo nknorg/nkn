@@ -432,7 +432,7 @@ func (localNode *LocalNode) VerifySigChain(sc *pb.SigChain, height uint32) error
 		log.Fatal("Overlay is not chord")
 	}
 
-	if config.SigChainVerifySkipNode.GetValueAtHeight(height) {
+	if config.SigChainVerifySkipNode.GetValueAtHeight(height) && localNode.GetSyncState() == pb.SyncState_PERSIST_FINISHED {
 		// only needs to verify node to node hop, and no need to check last node to
 		// node hop because it could be successor
 		for i := 1; i < sc.Length()-3; i++ {
@@ -447,6 +447,13 @@ func (localNode *LocalNode) VerifySigChain(sc *pb.SigChain, height uint32) error
 				if skipped >= por.MaxNextHopChoice {
 					break
 				}
+				rn := localNode.getNeighborByNNetNode(succ)
+				if rn == nil {
+					continue
+				}
+				if rn.GetSyncState() != pb.SyncState_PERSIST_FINISHED {
+					continue
+				}
 				if chord.BetweenLeftIncl(fingerStartID, sc.Elems[i+1].Id, succ.Id) {
 					skipped++
 				}
@@ -454,6 +461,13 @@ func (localNode *LocalNode) VerifySigChain(sc *pb.SigChain, height uint32) error
 			for _, pred := range c.Predecessors() {
 				if skipped >= por.MaxNextHopChoice {
 					break
+				}
+				rn := localNode.getNeighborByNNetNode(pred)
+				if rn == nil {
+					continue
+				}
+				if rn.GetSyncState() != pb.SyncState_PERSIST_FINISHED {
+					continue
 				}
 				if chord.BetweenLeftIncl(fingerStartID, sc.Elems[i+1].Id, pred.Id) {
 					skipped++
