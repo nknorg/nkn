@@ -3,6 +3,7 @@ package node
 import (
 	"crypto/sha256"
 	"fmt"
+	"math/rand"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -510,7 +511,11 @@ func (localNode *LocalNode) signatureChainObjectionMessageHandler(remoteMessage 
 		return nil, false, err
 	}
 
-	for _, neighbor := range localNode.GetNeighbors(nil) {
+	neighbors := localNode.GetNeighbors(func(rn *RemoteNode) bool {
+		return rand.Float32() < config.SigChainObjectionSampleNeighbor
+	})
+
+	for _, neighbor := range neighbors {
 		if neighbor.GetID() == remoteMessage.Sender.GetID() {
 			continue
 		}
