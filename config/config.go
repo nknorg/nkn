@@ -171,12 +171,12 @@ var (
 		values:  []bool{true, false},
 	}
 	SigChainVerifySkipNode = HeightDependentBool{
-		heights: []uint32{2570000, 0},
-		values:  []bool{true, false},
+		heights: []uint32{2570120, 2570000, 0},
+		values:  []bool{false, true, false},
 	}
 	SigChainObjection = HeightDependentBool{
-		heights: []uint32{2570000, 0},
-		values:  []bool{true, false},
+		heights: []uint32{2570120, 2570000, 0},
+		values:  []bool{false, true, false},
 	}
 	MinGenIDRegistrationFee = HeightDependentInt64{
 		heights: []uint32{2570000, 0},
