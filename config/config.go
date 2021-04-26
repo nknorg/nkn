@@ -58,9 +58,9 @@ const (
 	GenerateIDBlockDelay            = 8
 	RandomBeaconUniqueLength        = VRFSize
 	RandomBeaconLength              = VRFSize + VRFProofSize
-	ProtocolVersion                 = 30
-	MinCompatibleProtocolVersion    = 30
-	MaxCompatibleProtocolVersion    = 39
+	ProtocolVersion                 = 40
+	MinCompatibleProtocolVersion    = 40
+	MaxCompatibleProtocolVersion    = 49
 	TxPoolCleanupInterval           = ConsensusDuration
 	ShortHashSize                   = uint32(8)
 	MaxAssetPrecision               = uint32(8)
