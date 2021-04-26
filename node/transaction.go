@@ -224,9 +224,17 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 				err = localNode.VerifySigChain(porPkg.SigChain, porPkg.Height)
 				if err != nil {
 					log.Infof("Local node verify sigchain failed: %v", err)
-					err = localNode.signatureChainObjection(porPkg.VoteForHeight, porPkg.SigHash)
-					if err != nil {
-						log.Warningf("Send sigchain objection error: %v", err)
+					added := por.GetPorServer().AddSigChainObjection(
+						chain.DefaultLedger.Store.GetHeight(),
+						porPkg.VoteForHeight,
+						porPkg.SigHash,
+						localNode.GetPubKey(),
+					)
+					if added {
+						err = localNode.signatureChainObjection(porPkg.VoteForHeight, porPkg.SigHash)
+						if err != nil {
+							log.Warningf("Send sigchain objection error: %v", err)
+						}
 					}
 				}
 			}
