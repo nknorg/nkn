@@ -427,6 +427,10 @@ func (localNode *LocalNode) maybeAddRemoteNode(remoteNode *nnetnode.RemoteNode) 
 }
 
 func (localNode *LocalNode) VerifySigChain(sc *pb.SigChain, height uint32) error {
+	if !config.SigChainObjection.GetValueAtHeight(height) {
+		return nil
+	}
+
 	c, ok := localNode.nnet.Network.(*chord.Chord)
 	if !ok {
 		log.Fatal("Overlay is not chord")
@@ -491,7 +495,7 @@ func (localNode *LocalNode) VerifySigChainObjection(sc *pb.SigChain, reporterID 
 		// only needs to verify node to node hop, and no need to check last node to
 		// node hop because it could be successor
 		for i := 1; i < sc.Length()-3; i++ {
-			dist := chord.Distance(sc.Elems[i].Id, sc.DestId, config.NodeIDBytes*8)
+			dist := chord.Distance(sc.Elems[i].Id, sc.Elems[i+1].Id, config.NodeIDBytes*8)
 			fingerIdx := dist.BitLen() - 1
 			fingerStartID := chord.PowerOffset(sc.Elems[i].Id, uint32(fingerIdx), config.NodeIDBytes*8)
 			if chord.BetweenLeftIncl(fingerStartID, sc.Elems[i+1].Id, reporterID) {
