@@ -224,14 +224,14 @@ func callerLocation() string {
 }
 
 func Debug(a ...interface{}) {
-	if Log.GetLevel() > debugLog {
+	if Log != nil && Log.GetLevel() > debugLog {
 		return
 	}
 	Log.Debug(append([]interface{}{callerLocation()}, a...)...)
 }
 
 func Debugf(format string, a ...interface{}) {
-	if Log.GetLevel() > debugLog {
+	if Log != nil && Log.GetLevel() > debugLog {
 		return
 	}
 	Log.Debugf("%s "+format, append([]interface{}{callerLocation()}, a...)...)
