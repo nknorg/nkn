@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"sort"
@@ -18,7 +19,6 @@ import (
 	"github.com/nknorg/nkn/v2/cmd/nknc/pubsub"
 	"github.com/nknorg/nkn/v2/cmd/nknc/service"
 	"github.com/nknorg/nkn/v2/cmd/nknc/wallet"
-	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/urfave/cli"
 )
 
@@ -27,11 +27,6 @@ func init() {
 }
 
 func main() {
-	err := log.Init()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			log.Fatalf("Panic: %+v", r)
