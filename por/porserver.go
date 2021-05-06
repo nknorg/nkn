@@ -699,6 +699,14 @@ func (ps *PorServer) FlushSigChain(blockHash []byte) {
 }
 
 func (ps *PorServer) AddSigChainObjection(currentHeight, voteForHeight uint32, sigHash, reporterPubkey []byte) bool {
+	var height uint32
+	if voteForHeight > SigChainMiningHeightOffset+config.SigChainBlockDelay {
+		height = voteForHeight - SigChainMiningHeightOffset - config.SigChainBlockDelay
+	}
+	if !config.SigChainObjection.GetValueAtHeight(height) {
+		return false
+	}
+
 	ps.Lock()
 	defer ps.Unlock()
 
