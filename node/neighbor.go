@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"net"
 	"net/url"
@@ -322,7 +323,12 @@ func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
 			return fmt.Errorf("remote node has protocol version %d, which is not compatible with local node protocol version %d", nodeData.ProtocolVersion, config.ProtocolVersion)
 		}
 
-		id, err := chain.DefaultLedger.Store.GetID(nodeData.PublicKey, localNode.GetHeight())
+		height := localNode.GetHeight()
+		if localNode.GetSyncState() != pb.SyncState_PERSIST_FINISHED {
+			height = uint32(math.MaxUint32)
+		}
+
+		id, err := chain.DefaultLedger.Store.GetID(nodeData.PublicKey, height)
 		if err != nil || len(id) == 0 || bytes.Equal(id, crypto.Sha256ZeroHash) {
 			if localNode.GetSyncState() == pb.SyncState_PERSIST_FINISHED {
 				return fmt.Errorf("remote node id can not be found in local ledger: err-%v, id-%v", err, id)
