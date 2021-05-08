@@ -109,7 +109,7 @@ func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage
 	}
 
 	txHash := txn.Hash()
-	sigHash, err := sigChain.SignatureHash(height)
+	sigHash, err := SignatureHashWithPenalty(sigChain)
 	if err != nil {
 		return nil, err
 	}
