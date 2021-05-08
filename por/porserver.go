@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
@@ -62,6 +63,7 @@ type PorServer struct {
 // Store interface is used to avoid cyclic dependency
 type Store interface {
 	GetHeightByBlockHash(hash common.Uint256) (uint32, error)
+	GetHeaderWithCache(hash common.Uint256) (*block.Header, error)
 	GetID(publicKey []byte, height uint32) ([]byte, error)
 }
 
@@ -206,7 +208,8 @@ func (ps *PorServer) UpdateRelayMessage(relayMessage *pb.Relay, nextPubkey, prev
 	}
 
 	sigAlgo := pb.SigAlgo_HASH
-	if height, err := store.GetHeightByBlockHash(blockHash); err == nil {
+	height, err := store.GetHeightByBlockHash(blockHash)
+	if err == nil {
 		if !config.AllowSigChainHashSignature.GetValueAtHeight(height) {
 			sigAlgo = pb.SigAlgo_SIGNATURE
 		}
@@ -495,7 +498,7 @@ func (ps *PorServer) shouldSignDestSigChainElem(blockHash, lastHash []byte, sigC
 
 	if v, ok := ps.destSigChainElemCache.Get(blockHash); ok {
 		if currentDestSigChainElem, ok := v.(*destSigChainElem); ok {
-			sigHash := pb.ComputeSignatureHash(lastHash, sigChainLen, height)
+			sigHash := pb.ComputeSignatureHash(lastHash, sigChainLen, height, 0)
 			if bytes.Compare(sigHash, currentDestSigChainElem.sigHash) >= 0 {
 				return false
 			}
@@ -523,7 +526,7 @@ func (ps *PorServer) AddDestSigChainElem(blockHash, lastHash []byte, sigChainLen
 	}
 
 	err = ps.destSigChainElemCache.Set(blockHash, &destSigChainElem{
-		sigHash:      pb.ComputeSignatureHash(lastHash, sigChainLen, height),
+		sigHash:      pb.ComputeSignatureHash(lastHash, sigChainLen, height, 0),
 		sigChainElem: destElem,
 		prevHash:     lastHash,
 	})

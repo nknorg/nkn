@@ -3,9 +3,11 @@ package por
 import (
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
@@ -184,4 +186,37 @@ func VerifySigChainPath(sc *pb.SigChain, height uint32) error {
 	}
 
 	return nil
+}
+
+func SignatureHashWithPenalty(sc *pb.SigChain) ([]byte, error) {
+	blockHash, err := common.Uint256ParseFromBytes(sc.BlockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if blockHash == common.EmptyUint256 {
+		return nil, errors.New("block hash in sigchain is empty")
+	}
+
+	height, err := store.GetHeightByBlockHash(blockHash)
+	if err != nil {
+		return nil, err
+	}
+
+	leftShiftBit := 0
+	if config.SigChainRecentMinerBitShift.GetValueAtHeight(height) > 0 && config.SigChainRecentMinerBlocks > 0 {
+		rm, err := GetRecentMiner(sc.BlockHash)
+		if err != nil {
+			return nil, err
+		}
+
+		count := 0
+		for i := 0; i < sc.Length()-2; i++ {
+			count += rm[string(sc.Elems[i].NextPubkey)]
+		}
+
+		leftShiftBit += count * int(config.SigChainRecentMinerBitShift.GetValueAtHeight(height))
+	}
+
+	return sc.SignatureHash(height, leftShiftBit)
 }

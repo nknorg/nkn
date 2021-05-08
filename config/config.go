@@ -202,6 +202,12 @@ var (
 		heights: []uint32{2600000, 2570000, 0},
 		values:  []int32{1, 1, 0},
 	}
+	SigChainBitShiftPerElement  = 4
+	SigChainRecentMinerBlocks   = 4096
+	SigChainRecentMinerBitShift = HeightDependentInt32{
+		heights: []uint32{0},
+		values:  []int32{0},
+	}
 )
 
 var (
@@ -443,6 +449,10 @@ func Init() error {
 			Parameters.TxPoolMaxMemorySize = defaultTxPoolMaxMemorySize
 		}
 		log.Printf("Set TxPoolMaxMemorySize to %v", Parameters.TxPoolMaxMemorySize)
+	}
+
+	if Parameters.BlockHeaderCacheSize < uint32(SigChainRecentMinerBlocks+64) {
+		Parameters.BlockHeaderCacheSize = uint32(SigChainRecentMinerBlocks + 64)
 	}
 
 	err = Parameters.verify()

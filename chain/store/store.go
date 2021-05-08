@@ -106,12 +106,17 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 		return 0, err
 	}
 
-	currentHeader, err := cs.GetHeader(cs.currentBlockHash)
-	if err != nil {
-		return 0, err
+	var minHeight uint32
+	if cs.currentBlockHeight >= config.Parameters.BlockHeaderCacheSize {
+		minHeight = cs.currentBlockHeight - config.Parameters.BlockHeaderCacheSize + 1
 	}
-
-	cs.headerCache.AddHeaderToCache(currentHeader)
+	for height := cs.currentBlockHeight; height >= minHeight; height-- {
+		header, err := cs.GetHeaderByHeight(height)
+		if err != nil {
+			return 0, err
+		}
+		cs.headerCache.AddHeaderToCache(header)
+	}
 
 	root, err := cs.GetCurrentBlockStateRoot()
 	if err != nil {
@@ -397,7 +402,7 @@ func (cs *ChainStore) SaveBlock(b *block.Block, pruning bool) error {
 	cs.currentBlockHash = b.Hash()
 	cs.mu.Unlock()
 
-	if cs.currentBlockHeight > config.Parameters.BlockHeaderCacheSize {
+	if cs.currentBlockHeight >= config.Parameters.BlockHeaderCacheSize {
 		cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - config.Parameters.BlockHeaderCacheSize)
 	}
 	cs.headerCache.AddHeaderToCache(b.Header)
