@@ -113,7 +113,7 @@ func (consensus *Consensus) getAllNeighborsConsensusState() (map[string]*pb.GetC
 			defer wg.Done()
 			consensusState, err := consensus.getNeighborConsensusState(neighbor)
 			if err != nil {
-				log.Warningf("Get consensus state from neighbor %v error: %v", neighbor.GetID(), err)
+				log.Debugf("Get consensus state from neighbor %v error: %v", neighbor.GetID(), err)
 				return
 			}
 			lock.Lock()
