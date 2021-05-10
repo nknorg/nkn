@@ -103,7 +103,10 @@ func (consensus *Consensus) getNeighborConsensusState(neighbor *node.RemoteNode)
 // getAllNeighborsConsensusState returns the latest block info of all neighbors
 // by calling getNeighborConsensusState on all of them concurrently.
 func (consensus *Consensus) getAllNeighborsConsensusState() (map[string]*pb.GetConsensusStateReply, error) {
-	allNeighbors := consensus.localNode.GetNeighbors(nil)
+	allNeighbors := consensus.localNode.GetVotingNeighbors(nil)
+	if len(allNeighbors) < minConsensusStateNeighbors {
+		allNeighbors = consensus.localNode.GetNeighbors(nil)
+	}
 	allStates := make(map[string]*pb.GetConsensusStateReply, len(allNeighbors))
 	var wg sync.WaitGroup
 	var lock sync.Mutex
