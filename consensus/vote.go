@@ -32,6 +32,10 @@ func (consensus *Consensus) receiveVote(neighborID string, height uint32, blockH
 		return err
 	}
 
+	if elc.IsStopped() {
+		return nil
+	}
+
 	err = elc.ReceiveVote(neighborID, blockHash)
 	if err != nil {
 		return fmt.Errorf("receive vote at %d for %s error: %v", height, blockHash.ToHexString(), err)

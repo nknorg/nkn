@@ -44,7 +44,7 @@ func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, si
 func (remoteNode *RemoteNode) SendBytesAsync(buf []byte) error {
 	err := remoteNode.localNode.nnet.SendBytesDirectAsync(buf, remoteNode.nnetNode)
 	if err != nil {
-		log.Warningf("Error sending async messge to node %v, removing node.", err.Error())
+		log.Debugf("Error sending async messge to node %v, removing node.", err.Error())
 		remoteNode.CloseConn()
 		remoteNode.localNode.removeNeighborNode(remoteNode.GetID())
 	}
@@ -58,7 +58,7 @@ func (remoteNode *RemoteNode) SendBytesSync(buf []byte) ([]byte, error) {
 func (remoteNode *RemoteNode) SendBytesSyncWithTimeout(buf []byte, replyTimeout time.Duration) ([]byte, error) {
 	reply, _, err := remoteNode.localNode.nnet.SendBytesDirectSyncWithTimeout(buf, remoteNode.nnetNode, replyTimeout)
 	if err != nil {
-		log.Warningf("Error sending sync messge to node: %v", err.Error())
+		log.Debugf("Error sending sync messge to node: %v", err.Error())
 	}
 	return reply, err
 }
@@ -66,7 +66,7 @@ func (remoteNode *RemoteNode) SendBytesSyncWithTimeout(buf []byte, replyTimeout 
 func (remoteNode *RemoteNode) SendBytesReply(replyToID, buf []byte) error {
 	err := remoteNode.localNode.nnet.SendBytesDirectReply(replyToID, buf, remoteNode.nnetNode)
 	if err != nil {
-		log.Warningf("Error sending async messge to node: %v, removing node.", err.Error())
+		log.Debugf("Error sending async messge to node: %v, removing node.", err.Error())
 		remoteNode.CloseConn()
 		remoteNode.localNode.removeNeighborNode(remoteNode.GetID())
 	}
@@ -228,14 +228,14 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				var reply []byte
 				reply, err = localNode.receiveMessage(senderNode, unsignedMsg)
 				if err != nil {
-					log.Warningf("Error handling msg: %v", err)
+					log.Infof("Error handling msg: %v", err)
 					return nil, nil, nil, false
 				}
 
 				if len(reply) > 0 && senderRemoteNode != nil {
 					err = senderRemoteNode.SendBytesReply(remoteMessage.Msg.MessageId, reply)
 					if err != nil {
-						log.Errorf("Error sending reply: %v", err)
+						log.Infof("Error sending reply: %v", err)
 						return nil, nil, nil, false
 					}
 				}
