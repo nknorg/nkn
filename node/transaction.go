@@ -194,7 +194,7 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 
 				txn, err = localNode.requestSignatureChainTransaction(neighbor, info.hash)
 				if err != nil {
-					log.Warningf("Request sigchain txn error: %v", err)
+					log.Infof("Request sigchain txn error: %v", err)
 					continue
 				}
 
@@ -202,13 +202,13 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 
 				err = txvalidator.VerifyTransaction(txn, currentHeight+1)
 				if err != nil {
-					log.Warningf("Verify sigchain txn error: %v", err)
+					log.Infof("Verify sigchain txn error: %v", err)
 					continue
 				}
 
 				porPkg, err = por.GetPorServer().AddSigChainFromTx(txn, chain.DefaultLedger.Store.GetHeight())
 				if err != nil {
-					log.Warningf("Add sigchain from txn error: %v", err)
+					log.Infof("Add sigchain from txn error: %v", err)
 					continue
 				}
 				if porPkg == nil {
@@ -217,7 +217,7 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 
 				err = localNode.iHaveSignatureChainTransaction(porPkg.VoteForHeight, porPkg.SigHash, &info.neighborID)
 				if err != nil {
-					log.Warningf("Send I have sigchain txn error: %v", err)
+					log.Infof("Send I have sigchain txn error: %v", err)
 					continue
 				}
 
@@ -233,7 +233,7 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 					if added {
 						err = localNode.signatureChainObjection(porPkg.VoteForHeight, porPkg.SigHash)
 						if err != nil {
-							log.Warningf("Send sigchain objection error: %v", err)
+							log.Infof("Send sigchain objection error: %v", err)
 						}
 					}
 				}
@@ -254,7 +254,7 @@ func (localNode *LocalNode) startReceivingTxnMsg() {
 
 				shouldPropagate, err = localNode.handleTransactionsMessage(info.txnMsg)
 				if err != nil {
-					log.Warningf("Handle transactions msg error: %v", err)
+					log.Infof("Handle transactions msg error: %v", err)
 					continue
 				}
 
@@ -265,7 +265,7 @@ func (localNode *LocalNode) startReceivingTxnMsg() {
 				for _, remoteNode = range info.nextRemoteNodes {
 					_, err = remoteNode.SendMessage(info.remoteMessage.Msg, false, 0)
 					if err != nil {
-						log.Warningf("Sending txn msg to neighbor %v error: %v", remoteNode, err)
+						log.Infof("Sending txn msg to neighbor %v error: %v", remoteNode, err)
 						continue
 					}
 				}
@@ -487,7 +487,7 @@ func (localNode *LocalNode) iHaveSignatureChainTransaction(height uint32, sigHas
 		}
 		err = neighbor.SendBytesAsync(buf)
 		if err != nil {
-			log.Warningf("Send message to neighbor %v error: %v", neighbor, err)
+			log.Infof("Send message to neighbor %v error: %v", neighbor, err)
 			continue
 		}
 	}

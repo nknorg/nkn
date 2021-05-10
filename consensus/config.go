@@ -19,7 +19,7 @@ const (
 	proposingTimeout              = chain.ProposingTimeTolerance * 4 / 5
 	cacheExpiration               = 3600 * time.Second
 	cacheCleanupInterval          = 600 * time.Second
-	proposingStartDelay           = 2*config.ConsensusTimeout + time.Second
+	proposingStartDelay           = 4*config.ConsensusTimeout + time.Second
 	proposalPropagationDelay      = time.Second
 	getConsensusStateInterval     = config.ConsensusDuration / 4
 	getConsensusStateRetries      = 3
@@ -31,4 +31,5 @@ const (
 	syncMinRelativeWeight         = 1.0 / 2.0
 	defaultRequestTransactionType = pb.RequestTransactionType_REQUEST_TRANSACTION_SHORT_HASH
 	acceptVoteHeightRange         = 32
+	minConsensusStateNeighbors    = 16
 )

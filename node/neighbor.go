@@ -186,7 +186,7 @@ func (localNode *LocalNode) connectToRandomNeighbors(rn *randomNeighbors, numRan
 
 		succs, err := c.FindSuccessors(randID, 1)
 		if err != nil {
-			log.Warningf("Find random neighbor at key %x error: %v", randID, err)
+			log.Infof("Find random neighbor at key %x error: %v", randID, err)
 			time.Sleep(time.Second)
 			continue
 		}
@@ -199,7 +199,7 @@ func (localNode *LocalNode) connectToRandomNeighbors(rn *randomNeighbors, numRan
 
 		err = c.Connect(succs[0])
 		if err != nil {
-			log.Warningf("Connect to random neighbor at key %x error: %v", randID, err)
+			log.Infof("Connect to random neighbor at key %x error: %v", randID, err)
 			time.Sleep(time.Second)
 			continue
 		}
