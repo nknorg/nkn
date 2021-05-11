@@ -15,16 +15,14 @@ import (
 	"github.com/nknorg/nnet/overlay/chord"
 )
 
-func VerifySigChain(sc *pb.SigChain, height uint32) error {
+// VerifySigChainLight performs light-weighted sigchain verification without
+// verifying signature (CPU intensive) and ID (IO intensive).
+func VerifySigChainLight(sc *pb.SigChain, height uint32) error {
 	if err := VerifySigChainMeta(sc, height); err != nil {
 		return err
 	}
 
 	if err := VerifySigChainPath(sc, height); err != nil {
-		return err
-	}
-
-	if err := VerifySigChainSignatures(sc); err != nil {
 		return err
 	}
 

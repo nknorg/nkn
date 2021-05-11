@@ -54,7 +54,7 @@ func (c PorPackages) Less(i, j int) bool {
 	return false
 }
 
-func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage, error) {
+func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	if txn.UnsignedTx.Payload.Type != pb.PayloadType_SIG_CHAIN_TXN_TYPE {
 		return nil, errors.New("Transaction type should be sigchain")
 	}
@@ -96,16 +96,9 @@ func NewPorPackage(txn *transaction.Transaction, shouldVerify bool) (*PorPackage
 		return nil, err
 	}
 
-	if shouldVerify {
-		err = VerifyID(sigChain, height)
-		if err != nil {
-			return nil, err
-		}
-
-		err = VerifySigChain(sigChain, height)
-		if err != nil {
-			return nil, err
-		}
+	err = VerifySigChainLight(sigChain, height)
+	if err != nil {
+		return nil, err
 	}
 
 	txHash := txn.Hash()

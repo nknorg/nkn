@@ -528,7 +528,7 @@ func (localNode *LocalNode) requestSignatureChainTransaction(neighbor *RemoteNod
 		return nil, err
 	}
 
-	porPkg, err := por.NewPorPackage(txn, false)
+	porPkg, err := por.NewPorPackage(txn)
 	if err != nil {
 		return nil, fmt.Errorf("create por package from txn error: %v", err)
 	}
