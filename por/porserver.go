@@ -64,6 +64,7 @@ type PorServer struct {
 type Store interface {
 	GetHeightByBlockHash(hash common.Uint256) (uint32, error)
 	GetHeaderWithCache(hash common.Uint256) (*block.Header, error)
+	GetSigChainWithCache(hash common.Uint256) (*pb.SigChain, error)
 	GetID(publicKey []byte, height uint32) ([]byte, error)
 }
 

@@ -280,7 +280,10 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 
 			sigChainTxn := payload.(*pb.SigChainTxn)
 			sigChain := &pb.SigChain{}
-			proto.Unmarshal(sigChainTxn.SigChain, sigChain)
+			err = proto.Unmarshal(sigChainTxn.SigChain, sigChain)
+			if err != nil {
+				return nil, nil, 0, err
+			}
 
 			blockHash, err := common.Uint256ParseFromBytes(sigChain.BlockHash)
 			if err != nil {

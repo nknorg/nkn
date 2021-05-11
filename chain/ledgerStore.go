@@ -5,6 +5,7 @@ import (
 
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/transaction"
 )
 
@@ -40,6 +41,7 @@ type ILedgerStore interface {
 	GetHeightByBlockHash(hash common.Uint256) (uint32, error)
 	GetHeaderHashByHeight(height uint32) common.Uint256
 	GetHeaderWithCache(hash common.Uint256) (*block.Header, error)
+	GetSigChainWithCache(hash common.Uint256) (*pb.SigChain, error)
 	InitLedgerStoreWithGenesisBlock(genesisblock *block.Block) (uint32, error)
 	GetDonation() (common.Fixed64, error)
 	IsTxHashDuplicate(txhash common.Uint256) bool

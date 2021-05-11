@@ -9,6 +9,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain/db"
 	"github.com/nknorg/nkn/v2/common"
@@ -23,10 +24,11 @@ import (
 type ChainStore struct {
 	st db.IStore
 
-	mu          sync.RWMutex
-	blockCache  map[common.Uint256]*block.Block
-	headerCache *HeaderCache
-	States      *StateDB
+	mu            sync.RWMutex
+	blockCache    map[common.Uint256]*block.Block
+	headerCache   *HeaderCache
+	sigChainCache *SigChainCache
+	States        *StateDB
 
 	currentBlockHash   common.Uint256
 	currentBlockHeight uint32
@@ -42,6 +44,7 @@ func NewLedgerStore() (*ChainStore, error) {
 		st:                 st,
 		blockCache:         map[common.Uint256]*block.Block{},
 		headerCache:        NewHeaderCache(),
+		sigChainCache:      NewSigChainCache(),
 		currentBlockHeight: 0,
 		currentBlockHash:   common.EmptyUint256,
 	}
@@ -116,6 +119,20 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 			return 0, err
 		}
 		cs.headerCache.AddHeaderToCache(header)
+	}
+
+	if cs.currentBlockHeight >= config.Parameters.SigChainCacheSize {
+		minHeight = cs.currentBlockHeight - config.Parameters.SigChainCacheSize + 1
+	}
+	for height := cs.currentBlockHeight; height >= minHeight; height-- {
+		header, err := cs.GetHeaderByHeight(height)
+		if err != nil {
+			return 0, err
+		}
+		err = cs.addHeaderSigChainToCache(header)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	root, err := cs.GetCurrentBlockStateRoot()
@@ -393,7 +410,7 @@ func (cs *ChainStore) persist(b *block.Block) error {
 func (cs *ChainStore) SaveBlock(b *block.Block, pruning bool) error {
 	err := cs.persist(b)
 	if err != nil {
-		log.Errorf("error to persist block: %v", err)
+		log.Errorf("Persist block error: %v", err)
 		return err
 	}
 
@@ -402,10 +419,25 @@ func (cs *ChainStore) SaveBlock(b *block.Block, pruning bool) error {
 	cs.currentBlockHash = b.Hash()
 	cs.mu.Unlock()
 
+	if cs.currentBlockHeight >= config.Parameters.SigChainCacheSize {
+		hash := cs.headerCache.GetCachedHeaderHashByHeight(cs.currentBlockHeight - config.Parameters.SigChainCacheSize)
+		header, err := cs.headerCache.GetCachedHeader(hash)
+		if err == nil {
+			cs.sigChainCache.RemoveCachedSigChain(header.UnsignedHeader.WinnerHash)
+		}
+	}
+
 	if cs.currentBlockHeight >= config.Parameters.BlockHeaderCacheSize {
 		cs.headerCache.RemoveCachedHeader(cs.currentBlockHeight - config.Parameters.BlockHeaderCacheSize)
 	}
+
 	cs.headerCache.AddHeaderToCache(b.Header)
+
+	err = cs.addHeaderSigChainToCache(b.Header)
+	if err != nil {
+		log.Errorf("Add header sigchain to cache: %v", err)
+		return err
+	}
 
 	if pruning {
 		switch config.Parameters.StatePruningMode {
@@ -468,6 +500,41 @@ func (cs *ChainStore) GetHeaderWithCache(hash common.Uint256) (*block.Header, er
 
 func (cs *ChainStore) getHeaderWithCache(hash common.Uint256) (*block.Header, error) {
 	return cs.headerCache.GetCachedHeader(hash)
+}
+
+func (cs *ChainStore) GetSigChainWithCache(hash common.Uint256) (*pb.SigChain, error) {
+	return cs.sigChainCache.GetCachedSigChain(hash)
+}
+
+func (cs *ChainStore) addHeaderSigChainToCache(header *block.Header) error {
+	hash, err := common.Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
+	if err != nil {
+		return err
+	}
+
+	if hash == common.EmptyUint256 {
+		return nil
+	}
+
+	txn, err := cs.GetTransaction(hash)
+	if err != nil {
+		return fmt.Errorf("sigchain txn %s not found in ledger", hash)
+	}
+
+	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
+	if err != nil {
+		return err
+	}
+
+	sc := &pb.SigChain{}
+	err = proto.Unmarshal(payload.(*pb.SigChainTxn).SigChain, sc)
+	if err != nil {
+		return err
+	}
+
+	cs.sigChainCache.AddSigChainToCache(hash, sc)
+
+	return nil
 }
 
 func (cs *ChainStore) IsDoubleSpend(tx *transaction.Transaction) bool {

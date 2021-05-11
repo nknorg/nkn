@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
@@ -204,6 +205,7 @@ func SignatureHashWithPenalty(sc *pb.SigChain) ([]byte, error) {
 	}
 
 	leftShiftBit := 0
+
 	if config.SigChainRecentMinerBitShift.GetValueAtHeight(height) > 0 && config.SigChainRecentMinerBlocks > 0 {
 		rm, err := GetRecentMiner(sc.BlockHash)
 		if err != nil {
@@ -218,5 +220,37 @@ func SignatureHashWithPenalty(sc *pb.SigChain) ([]byte, error) {
 		leftShiftBit += count * int(config.SigChainRecentMinerBitShift.GetValueAtHeight(height))
 	}
 
+	if config.SigChainSkipMinerBitShift.GetValueAtHeight(height) > 0 && config.SigChainSkipMinerBlocks > 0 {
+		sm, err := GetSkipMiner(sc.BlockHash)
+		if err != nil {
+			return nil, err
+		}
+
+		count := 0
+		for i := 1; i < sc.Length()-2; i++ {
+			skipped := skipCount(sc.Elems[i].Id, sc.Elems[i+1].Id, sm)
+			if skipped > config.SigChainSkipMinerMaxAllowed {
+				count += skipped - config.SigChainSkipMinerMaxAllowed
+			}
+		}
+
+		leftShiftBit += count * int(config.SigChainSkipMinerBitShift.GetValueAtHeight(height))
+	}
+
 	return sc.SignatureHash(height, leftShiftBit)
+}
+
+func skipCount(from, to []byte, sm SkipMiner) int {
+	dist := chord.Distance(from, to, config.NodeIDBytes*8)
+	fingerIdx := dist.BitLen() - 1
+	fingerStartID := chord.PowerOffset(from, uint32(fingerIdx), config.NodeIDBytes*8)
+	beg := sort.Search(len(sm), func(i int) bool { return chord.CompareID(sm[i], fingerStartID) >= 0 })
+	end := sort.Search(len(sm), func(i int) bool { return chord.CompareID(sm[i], to) >= 0 })
+	skipped := 0
+	if chord.CompareID(fingerStartID, to) <= 0 {
+		skipped = end - beg
+	} else {
+		skipped = beg - end + len(sm)
+	}
+	return skipped
 }
