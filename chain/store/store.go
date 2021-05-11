@@ -113,19 +113,22 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 	if cs.currentBlockHeight >= config.Parameters.BlockHeaderCacheSize {
 		minHeight = cs.currentBlockHeight - config.Parameters.BlockHeaderCacheSize + 1
 	}
-	for height := cs.currentBlockHeight; height >= minHeight; height-- {
-		header, err := cs.GetHeaderByHeight(height)
+	// Use int to prevent uint underflow
+	for height := int(cs.currentBlockHeight); height >= int(minHeight); height-- {
+		header, err := cs.GetHeaderByHeight(uint32(height))
 		if err != nil {
 			return 0, err
 		}
 		cs.headerCache.AddHeaderToCache(header)
 	}
 
+	minHeight = 1
 	if cs.currentBlockHeight >= config.Parameters.SigChainCacheSize {
 		minHeight = cs.currentBlockHeight - config.Parameters.SigChainCacheSize + 1
 	}
-	for height := cs.currentBlockHeight; height >= minHeight; height-- {
-		header, err := cs.GetHeaderByHeight(height)
+	// Use int to prevent uint underflow
+	for height := int(cs.currentBlockHeight); height >= int(minHeight); height-- {
+		header, err := cs.GetHeaderByHeight(uint32(height))
 		if err != nil {
 			return 0, err
 		}
@@ -210,6 +213,7 @@ func (cs *ChainStore) GetHeader(hash common.Uint256) (*block.Header, error) {
 }
 
 func (cs *ChainStore) GetHeaderByHeight(height uint32) (*block.Header, error) {
+
 	hash, err := cs.GetBlockHash(height)
 	if err != nil {
 		return nil, err

@@ -52,6 +52,9 @@ func GetRecentMiner(blockHash []byte) (RecentMiner, error) {
 		if err != nil {
 			return nil, err
 		}
+		if header.UnsignedHeader.Height == 0 {
+			break
+		}
 		rm[string(header.UnsignedHeader.SignerPk)]++
 		hash = header.UnsignedHeader.PrevBlockHash
 	}
@@ -88,6 +91,9 @@ func GetSkipMiner(blockHash []byte) (SkipMiner, error) {
 		header, err := store.GetHeaderWithCache(hashUint256)
 		if err != nil {
 			return nil, err
+		}
+		if header.UnsignedHeader.Height == 0 {
+			break
 		}
 		winnerHash, err := common.Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
 		if err != nil {
