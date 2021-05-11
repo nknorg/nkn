@@ -311,22 +311,33 @@ func ComputeSignatureHash(lastRelayHash []byte, sigChainLen int, height uint32, 
 	if maxSigChainLen > 0 && sigChainLen > maxSigChainLen {
 		sigChainLen = maxSigChainLen
 	}
-	rightShiftBit := config.SigChainBitShiftPerElement * sigChainLen
-	rightShiftBit -= leftShiftBit
-	if rightShiftBit > 0 {
-		rightShiftBytes(sigHash, rightShiftBit)
-	}
+	rightShiftBytes(sigHash, config.SigChainBitShiftPerElement*sigChainLen-leftShiftBit)
 	return sigHash
 }
 
 func rightShiftBytes(b []byte, n int) {
-	for k := 0; k < n; k++ {
-		b[len(b)-1] >>= 1
-		for i := len(b) - 2; i >= 0; i-- {
-			if b[i]&0x1 == 0x1 {
-				b[i+1] |= 0x80
+	if n > 0 {
+		for k := 0; k < n; k++ {
+			b[len(b)-1] >>= 1
+			for i := len(b) - 2; i >= 0; i-- {
+				if b[i]&0x1 == 0x1 {
+					b[i+1] |= 0x80
+				}
+				b[i] >>= 1
 			}
-			b[i] >>= 1
+		}
+	} else if n < 0 {
+		for k := 0; k < -n; k++ {
+			if b[0]&0x80 == 0x80 {
+				break
+			}
+			b[0] <<= 1
+			for i := 1; i < len(b); i++ {
+				if b[i]&0x80 == 0x80 {
+					b[i-1] |= 0x1
+				}
+				b[i] <<= 1
+			}
 		}
 	}
 }

@@ -163,8 +163,8 @@ var (
 		values:  []bool{false, true},
 	}
 	SigChainBitShiftMaxLength = HeightDependentInt32{
-		heights: []uint32{2543000, 0},
-		values:  []int32{14, 0},
+		heights: []uint32{2630000, 2543000, 0},
+		values:  []int32{16, 14, 0},
 	}
 	SigChainVerifyFingerTableRange = HeightDependentBool{
 		heights: []uint32{2570000, 0},
@@ -205,8 +205,14 @@ var (
 	SigChainBitShiftPerElement  = 4
 	SigChainRecentMinerBlocks   = 4096
 	SigChainRecentMinerBitShift = HeightDependentInt32{
-		heights: []uint32{0},
-		values:  []int32{0},
+		heights: []uint32{2630000, 0},
+		values:  []int32{4, 0},
+	}
+	SigChainSkipMinerBlocks     = 4096
+	SigChainSkipMinerMaxAllowed = 3
+	SigChainSkipMinerBitShift   = HeightDependentInt32{
+		heights: []uint32{2630000, 0},
+		values:  []int32{10, 0},
 	}
 )
 
@@ -282,7 +288,6 @@ var (
 		SyncBlockHeaderRateBurst:     32768,
 		SyncBlockRateLimit:           256,
 		SyncBlockRateBurst:           1024,
-		BlockHeaderCacheSize:         1024,
 	}
 )
 
@@ -358,6 +363,7 @@ type Configuration struct {
 	SyncBlockRateLimit           float64       `json:"SyncBlockRateLimit"` // blocks per second
 	SyncBlockRateBurst           uint32        `json:"SyncBlockRateBurst"`
 	BlockHeaderCacheSize         uint32        `json:"BlockHeaderCacheSize"`
+	SigChainCacheSize            uint32        `json:"SigChainCacheSize"`
 }
 
 func Init() error {
@@ -453,6 +459,14 @@ func Init() error {
 
 	if Parameters.BlockHeaderCacheSize < uint32(SigChainRecentMinerBlocks+64) {
 		Parameters.BlockHeaderCacheSize = uint32(SigChainRecentMinerBlocks + 64)
+	}
+
+	if Parameters.BlockHeaderCacheSize < uint32(SigChainSkipMinerBlocks+64) {
+		Parameters.BlockHeaderCacheSize = uint32(SigChainSkipMinerBlocks + 64)
+	}
+
+	if Parameters.SigChainCacheSize < uint32(SigChainSkipMinerBlocks+64) {
+		Parameters.SigChainCacheSize = uint32(SigChainSkipMinerBlocks + 64)
 	}
 
 	err = Parameters.verify()

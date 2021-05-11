@@ -1,22 +1,28 @@
 package por
 
 import (
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nnet/overlay/chord"
 )
 
 var (
 	recentMinerLock  sync.Mutex
 	recentMinerCache common.Cache
+	skipMinerLock    sync.Mutex
+	skipMinerCache   common.Cache
 )
 
 type RecentMiner map[string]int
+type SkipMiner [][]byte
 
 func init() {
 	recentMinerCache = common.NewGoCache(5*time.Minute, time.Minute)
+	skipMinerCache = common.NewGoCache(5*time.Minute, time.Minute)
 }
 
 func GetRecentMiner(blockHash []byte) (RecentMiner, error) {
@@ -53,4 +59,64 @@ func GetRecentMiner(blockHash []byte) (RecentMiner, error) {
 	recentMinerCache.Set(blockHash, rm)
 
 	return rm, nil
+}
+
+func GetSkipMiner(blockHash []byte) (SkipMiner, error) {
+	if v, ok := skipMinerCache.Get(blockHash); ok {
+		if sm, ok := v.(SkipMiner); ok {
+			return sm, nil
+		}
+	}
+
+	skipMinerLock.Lock()
+	defer skipMinerLock.Unlock()
+
+	if v, ok := skipMinerCache.Get(blockHash); ok {
+		if sm, ok := v.(SkipMiner); ok {
+			return sm, nil
+		}
+	}
+
+	hash := blockHash
+	sm := make(SkipMiner, 0, config.SigChainSkipMinerBlocks)
+	minerSet := make(map[common.Uint256]struct{}, config.SigChainSkipMinerBlocks)
+	for i := 0; i < config.SigChainSkipMinerBlocks; i++ {
+		hashUint256, err := common.Uint256ParseFromBytes(hash)
+		if err != nil {
+			return nil, err
+		}
+		header, err := store.GetHeaderWithCache(hashUint256)
+		if err != nil {
+			return nil, err
+		}
+		winnerHash, err := common.Uint256ParseFromBytes(header.UnsignedHeader.WinnerHash)
+		if err != nil {
+			return nil, err
+		}
+		if winnerHash != common.EmptyUint256 {
+			sc, err := store.GetSigChainWithCache(winnerHash)
+			if err != nil {
+				return nil, err
+			}
+			for i := 1; i < sc.Length()-1; i++ {
+				id, err := common.Uint256ParseFromBytes(sc.Elems[i].Id)
+				if err != nil {
+					return nil, err
+				}
+				if _, ok := minerSet[id]; !ok {
+					minerSet[id] = struct{}{}
+					sm = append(sm, sc.Elems[i].Id)
+				}
+			}
+		}
+		hash = header.UnsignedHeader.PrevBlockHash
+	}
+
+	sort.Slice(sm, func(i int, j int) bool {
+		return chord.CompareID(sm[i], sm[j]) < 0
+	})
+
+	skipMinerCache.Set(blockHash, sm)
+
+	return sm, nil
 }

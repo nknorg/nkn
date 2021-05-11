@@ -51,6 +51,10 @@ func (cs *ChainStore) Rollback(b *block.Block) error {
 		return err
 	}
 
+	if err := cs.rollbackSigChainCache(b); err != nil {
+		return err
+	}
+
 	if err := cs.rollbackRefCounts(b); err != nil {
 		return err
 	}
@@ -139,6 +143,11 @@ func (cs *ChainStore) rollbackStates(b *block.Block) error {
 
 func (cs *ChainStore) rollbackHeaderCache(b *block.Block) error {
 	cs.headerCache.RollbackHeader(b.Header)
+	return nil
+}
+
+func (cs *ChainStore) rollbackSigChainCache(b *block.Block) error {
+	cs.sigChainCache.RollbackSigChain(b.Header)
 	return nil
 }
 
