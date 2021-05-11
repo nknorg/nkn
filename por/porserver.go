@@ -411,7 +411,7 @@ func VerifyID(sc *pb.SigChain, height uint32) error {
 }
 
 func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeight uint32) (*PorPackage, error) {
-	porPkg, err := NewPorPackage(txn, false)
+	porPkg, err := NewPorPackage(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +428,7 @@ func (ps *PorServer) AddSigChainFromTx(txn *transaction.Transaction, currentHeig
 		return nil, err
 	}
 
-	err = VerifySigChain(porPkg.SigChain, porPkg.Height)
+	err = VerifySigChainSignatures(porPkg.SigChain)
 	if err != nil {
 		return nil, err
 	}

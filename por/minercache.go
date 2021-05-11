@@ -3,7 +3,6 @@ package por
 import (
 	"sort"
 	"sync"
-	"time"
 
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
@@ -21,8 +20,8 @@ type RecentMiner map[string]int
 type SkipMiner [][]byte
 
 func init() {
-	recentMinerCache = common.NewGoCache(5*time.Minute, time.Minute)
-	skipMinerCache = common.NewGoCache(5*time.Minute, time.Minute)
+	recentMinerCache = common.NewGoCache(10*config.ConsensusDuration, config.ConsensusDuration)
+	skipMinerCache = common.NewGoCache(10*config.ConsensusDuration, config.ConsensusDuration)
 }
 
 func GetRecentMiner(blockHash []byte) (RecentMiner, error) {
