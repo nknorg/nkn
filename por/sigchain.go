@@ -227,8 +227,8 @@ func SignatureHashWithPenalty(sc *pb.SigChain) ([]byte, error) {
 		count := 0
 		for i := 1; i < sc.Length()-2; i++ {
 			skipped := skipCount(sc.Elems[i].Id, sc.Elems[i+1].Id, sm)
-			if skipped > config.SigChainSkipMinerMaxAllowed {
-				count += skipped - config.SigChainSkipMinerMaxAllowed
+			if skipped > int(config.SigChainSkipMinerMaxAllowed.GetValueAtHeight(height)) {
+				count += skipped - int(config.SigChainSkipMinerMaxAllowed.GetValueAtHeight(height))
 			}
 		}
 
