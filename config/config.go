@@ -163,8 +163,8 @@ var (
 		values:  []bool{false, true},
 	}
 	SigChainBitShiftMaxLength = HeightDependentInt32{
-		heights: []uint32{2633000, 2543000, 0},
-		values:  []int32{16, 14, 0},
+		heights: []uint32{2651000, 2633000, 2543000, 0},
+		values:  []int32{18, 16, 14, 0},
 	}
 	SigChainVerifyFingerTableRange = HeightDependentBool{
 		heights: []uint32{2570000, 0},
@@ -202,15 +202,21 @@ var (
 		heights: []uint32{2600000, 2570000, 0},
 		values:  []int32{1, 1, 0},
 	}
-	SigChainBitShiftPerElement  = 4
+	SigChainBitShiftPerElement = HeightDependentInt32{
+		heights: []uint32{2651000, 0},
+		values:  []int32{8, 4},
+	}
 	SigChainRecentMinerBlocks   = 4096
 	SigChainRecentMinerBitShift = HeightDependentInt32{
-		heights: []uint32{2633000, 0},
-		values:  []int32{4, 0},
+		heights: []uint32{2651000, 2633000, 0},
+		values:  []int32{10, 4, 0},
 	}
 	SigChainSkipMinerBlocks     = 4096
-	SigChainSkipMinerMaxAllowed = 3
-	SigChainSkipMinerBitShift   = HeightDependentInt32{
+	SigChainSkipMinerMaxAllowed = HeightDependentInt32{
+		heights: []uint32{2651000, 0},
+		values:  []int32{2, 3},
+	}
+	SigChainSkipMinerBitShift = HeightDependentInt32{
 		heights: []uint32{2633000, 0},
 		values:  []int32{10, 0},
 	}

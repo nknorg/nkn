@@ -311,7 +311,7 @@ func ComputeSignatureHash(lastRelayHash []byte, sigChainLen int, height uint32, 
 	if maxSigChainLen > 0 && sigChainLen > maxSigChainLen {
 		sigChainLen = maxSigChainLen
 	}
-	rightShiftBytes(sigHash, config.SigChainBitShiftPerElement*sigChainLen-leftShiftBit)
+	rightShiftBytes(sigHash, int(config.SigChainBitShiftPerElement.GetValueAtHeight(height))*sigChainLen-leftShiftBit)
 	return sigHash
 }
 
