@@ -24,7 +24,7 @@ import (
 
 const (
 	requestTxnSaltSize                  = 32
-	requestTxnChanLen                   = 1000
+	requestTxnChanLen                   = 10000
 	requestSigChainTxnWorkerPoolSize    = 10
 	requestSigChainCacheExpiration      = 50 * config.ConsensusTimeout
 	requestSigChainCacheCleanupInterval = config.ConsensusDuration
