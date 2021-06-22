@@ -89,8 +89,8 @@ func copyBytes(b []byte) (copiedBytes []byte) {
 	return
 }
 
-func hash256(bs []byte) []byte {
-	temp := sha256.Sum256([]byte(bs))
+func Sha256Key(bs []byte) []byte {
+	temp := sha256.Sum256(bs)
 	u256 := sha256.Sum256(temp[:])
 	return u256[:]
 }

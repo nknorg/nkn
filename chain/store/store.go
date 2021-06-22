@@ -716,11 +716,7 @@ func (cs *ChainStore) GetStateRoots(fromHeight, toHeight uint32) ([]common.Uint2
 	roots := make([]common.Uint256, 0, toHeight-fromHeight+1)
 
 	for i := fromHeight; i <= toHeight; i++ {
-		headerHash, err := cs.GetBlockHash(i)
-		if err != nil {
-			return nil, err
-		}
-		header, err := cs.GetHeader(headerHash)
+		header, err := cs.GetHeaderByHeight(i)
 		if err != nil {
 			return nil, err
 		}
