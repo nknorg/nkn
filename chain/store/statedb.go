@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/nknorg/nkn/v2/chain/db"
+
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
@@ -471,4 +473,20 @@ func (sdb *StateDB) VerifyState() error {
 	}
 
 	return nil
+}
+
+// GetState retrieves an encoded cached trie node from memory. If it cannot be found
+// cached, the method queries the persistent database for the content.
+func (sdb *StateDB) GetState(hash common.Uint256) ([]byte, error) {
+	padd := db.TrieNodeKey(hash.ToArray())
+	ctr := sdb.trie.(cachedTrie)
+	enc, err := ctr.Get(padd)
+	if err != nil {
+		return nil, err
+	}
+	return enc, nil
+}
+
+func (sdb *StateDB) NewBatch() error {
+	return sdb.db.db.NewBatch()
 }

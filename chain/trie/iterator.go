@@ -106,7 +106,7 @@ func (it *nodeIterator) LeafKey() []byte {
 			return hexToKeyBytes(it.path)
 		}
 	}
-	log.Fatal("Node iterator not at leaf")
+	log.Fatal("node iterator not at leaf")
 	return nil
 }
 
@@ -116,7 +116,7 @@ func (it *nodeIterator) LeafBlob() []byte {
 			return []byte(node)
 		}
 	}
-	log.Fatal("Node iterator not at leaf")
+	log.Fatal("node iterator not at leaf")
 	return nil
 }
 

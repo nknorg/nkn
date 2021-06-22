@@ -66,3 +66,7 @@ func (c cachedTrie) CommitTo() (common.Uint256, error) {
 	c.cachingDB.pushTrie(c.Trie)
 	return root, nil
 }
+
+func (c *cachedTrie) Get(key []byte) ([]byte, error) {
+	return c.cachingDB.db.Get(key)
+}
