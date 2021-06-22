@@ -3,6 +3,8 @@ package chain
 import (
 	"context"
 
+	"github.com/nknorg/nkn/v2/chain/db"
+
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/pb"
@@ -49,6 +51,6 @@ type ILedgerStore interface {
 	Rollback(b *block.Block) error
 	GenerateStateRoot(ctx context.Context, b *block.Block, genesisBlockInitialized, needBeCommitted bool) (common.Uint256, error)
 	GetAsset(assetID common.Uint256) (name, symbol string, totalSupply common.Fixed64, precision uint32, err error)
-
+	GetDatabase() db.IStore
 	Close()
 }

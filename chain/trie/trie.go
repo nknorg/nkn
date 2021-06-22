@@ -2,6 +2,7 @@ package trie
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"reflect"
 
@@ -312,7 +313,7 @@ func (t *Trie) resolve(n node) (node, error) {
 }
 
 func (t *Trie) resolveHash(n hashNode, needFlags bool) (node, error) {
-	enc, err := t.db.Get(db.TrieNodeKey([]byte(n)))
+	enc, err := t.db.Get(db.TrieNodeKey(n))
 	if err != nil {
 		return nil, err
 	}
@@ -341,8 +342,7 @@ func (t *Trie) traverse(n node, needPrint bool) error {
 	case *shortNode:
 		if needPrint {
 			hash, _ := n.cache()
-			hs, _ := common.Uint256ParseFromBytes(hash)
-			fmt.Println(hs.ToHexString())
+			fmt.Println(hex.EncodeToString(hash))
 		}
 		if err := t.traverse(n.Val, needPrint); err != nil {
 			return err
@@ -351,8 +351,7 @@ func (t *Trie) traverse(n node, needPrint bool) error {
 	case *fullNode:
 		if needPrint {
 			hash, _ := n.cache()
-			hs, _ := common.Uint256ParseFromBytes(hash)
-			fmt.Println(hs.ToHexString())
+			fmt.Println(hex.EncodeToString(hash))
 		}
 		for i := 0; i < LenOfChildrenNodes; i++ {
 			if n.Children[i] != nil {
@@ -365,8 +364,7 @@ func (t *Trie) traverse(n node, needPrint bool) error {
 		return nil
 	case hashNode:
 		if needPrint {
-			hs, _ := common.Uint256ParseFromBytes(n)
-			fmt.Println(hs.ToHexString())
+			fmt.Println(hex.EncodeToString(n))
 		}
 		child, err := t.resolveHash(n, needPrint)
 		if err != nil {
@@ -380,8 +378,7 @@ func (t *Trie) traverse(n node, needPrint bool) error {
 		return nil
 	case valueNode:
 		if needPrint {
-			hs, _ := common.Uint256ParseFromBytes(n)
-			fmt.Println(hs.ToHexString())
+			fmt.Println(hex.EncodeToString(n))
 		}
 		return nil
 	default:
@@ -392,4 +389,10 @@ func (t *Trie) traverse(n node, needPrint bool) error {
 
 func (t *Trie) NewRefCounts(targetRefCountHeight, targetPruningHeight uint32) (*RefCounts, error) {
 	return NewRefCounts(t, targetRefCountHeight, targetPruningHeight)
+}
+
+// Reset drops the referenced root node and cleans all internal state.
+func (t *Trie) Reset() {
+	t.root = nil
+	t.originalRoot = common.EmptyUint256
 }

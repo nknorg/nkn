@@ -99,11 +99,10 @@ func (h *hasher) store(n node, st Database, force bool) (node, error) {
 	}
 	hs, _ := n.cache()
 	if hs == nil {
-		u256 := hash256(h.tmp.Bytes())
-		hs = hashNode(u256[:])
+		hs = Sha256Key(h.tmp.Bytes())
 	}
 	if st != nil {
-		return hs, st.BatchPut(db.TrieNodeKey([]byte(hs)), h.tmp.Bytes())
+		return hs, st.BatchPut(db.TrieNodeKey(hs), h.tmp.Bytes())
 	}
 	return hs, nil
 }
