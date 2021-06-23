@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option go_package = "./pb";
+
 package pb;
 
 import "pb/node.proto";
@@ -29,6 +31,8 @@ enum MessageType {
   REQUEST_SIGNATURE_CHAIN_TRANSACTION_REPLY = 18;
   PIN_SIGNATURE_CHAIN = 19;
   SIGNATURE_CHAIN_OBJECTION = 20;
+  GET_STATES = 21;
+  GET_STATES_REPLY = 22;
 }
 
 // Message type that can be signed message
@@ -61,6 +65,8 @@ enum AllowedUnsignedMessageType {
   ALLOW_UNSIGNED_REQUEST_SIGNATURE_CHAIN_TRANSACTION_REPLY = 18;
   ALLOW_UNSIGNED_PIN_SIGNATURE_CHAIN = 19;
   ALLOW_UNSIGNED_SIGNATURE_CHAIN_OBJECTION = 20;
+  ALLOW_UNSIGNED_GET_STATES = 21;
+  ALLOW_UNSIGNED_GET_STATES_REPLY = 22;
 }
 
 // Message type that can be sent as direct message
@@ -85,6 +91,8 @@ enum AllowedDirectMessageType {
   ALLOW_DIRECT_REQUEST_SIGNATURE_CHAIN_TRANSACTION_REPLY = 18;
   ALLOW_DIRECT_PIN_SIGNATURE_CHAIN = 19;
   ALLOW_DIRECT_SIGNATURE_CHAIN_OBJECTION = 20;
+  ALLOW_DIRECT_GET_STATES = 21;
+  ALLOW_DIRECT_GET_STATES_REPLY = 22;
 }
 
 // Message type that can be sent as relay message
@@ -191,6 +199,22 @@ message GetBlocks {
 
 message GetBlocksReply {
   repeated Block blocks = 1;
+}
+
+message StateRequest {
+  bytes hash = 1;
+}
+
+message StateNode {
+  bytes node = 1;
+}
+
+message GetStates {
+  repeated StateRequest reqs = 1;
+}
+
+message GetStatesReply {
+  repeated StateNode nodes = 1;
 }
 
 message Relay {
