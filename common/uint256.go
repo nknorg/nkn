@@ -82,3 +82,7 @@ func Uint256ParseFromBytes(f []byte) (hash Uint256, err error) {
 
 	return hash, err
 }
+
+func U256Equal(a, b Uint256) bool {
+	return bytes.Equal(a[:], b[:])
+}
