@@ -342,13 +342,13 @@ func (localNode *LocalNode) FindWssAddr(key []byte) (string, string, []byte, []b
 	return localNode.findAddrForClient(key, true)
 }
 
-func (LocalNode *LocalNode) CheckIDChange(v interface{}) {
+func (localNode *LocalNode) CheckIDChange(v interface{}) {
 	localHeight := chain.DefaultLedger.Store.GetHeight()
-	id, err := chain.DefaultLedger.Store.GetID(LocalNode.PublicKey, localHeight)
+	id, err := chain.DefaultLedger.Store.GetID(localNode.PublicKey, localHeight)
 	if err != nil {
 		log.Fatalf("local node has no id:%v", err)
 	}
-	if !bytes.Equal(LocalNode.Id, id) {
+	if !bytes.Equal(localNode.Id, id) {
 		log.Fatalf("local node id has changed")
 	}
 }

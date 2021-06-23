@@ -361,6 +361,7 @@ func (localNode *LocalNode) getNeighborsMajorityBlockHashByHeight(height uint32,
 func (localNode *LocalNode) initSyncing() {
 	localNode.AddMessageHandler(pb.MessageType_GET_BLOCK_HEADERS, localNode.getBlockHeadersMessageHandler)
 	localNode.AddMessageHandler(pb.MessageType_GET_BLOCKS, localNode.getBlocksMessageHandler)
+	localNode.AddMessageHandler(pb.MessageType_GET_STATES, localNode.getStatesMessageHandler)
 	localNode.ResetSyncing()
 }
 
