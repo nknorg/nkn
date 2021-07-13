@@ -357,7 +357,7 @@ type NetVer struct {
 
 func GetRemoteVersionNum() (int, error) {
 	var myClient = &http.Client{Timeout: 10 * time.Second}
-	r, err := myClient.Get("https://nkn.org/mainnet.runtime.version")
+	r, err := myClient.Get("https://mainnet.nkn.org/version.json")
 	if err != nil {
 		return 0, err
 	}
