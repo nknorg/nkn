@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 
 	"github.com/nknorg/nkn/v2/common"
@@ -222,7 +223,18 @@ func (sc *SigChain) GetMiner(height uint32, randomBeacon []byte) ([]byte, []byte
 				index: i,
 				elem:  e,
 			}
-			minerElems = append(minerElems, t)
+			base := config.SigChainMinerWeightBase.GetValueAtHeight(height)
+			exp := int(config.SigChainMinerWeightMaxExponent.GetValueAtHeight(height))
+			if exp > i-1 {
+				exp = i - 1
+			}
+			if exp > sc.Length()-2-i {
+				exp = sc.Length() - 2 - i
+			}
+			count := int(math.Pow(float64(base), float64(exp)))
+			for i := 0; i < count; i++ {
+				minerElems = append(minerElems, t)
+			}
 		}
 	}
 	elemLen := len(minerElems)

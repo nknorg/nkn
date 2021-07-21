@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	NetVersionNum = 25 // This is temporary and will be removed soon after mainnet is stabilized
+	NetVersionNum = 26 // This is temporary and will be removed soon after mainnet is stabilized
 )
 
 var (
