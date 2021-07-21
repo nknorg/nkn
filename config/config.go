@@ -224,6 +224,14 @@ var (
 		heights: []uint32{2900000, 0},
 		values:  []bool{true, false},
 	}
+	SigChainMinerWeightBase = HeightDependentInt32{
+		heights: []uint32{2900000, 0},
+		values:  []int32{2, 1},
+	}
+	SigChainMinerWeightMaxExponent = HeightDependentInt32{
+		heights: []uint32{2900000, 0},
+		values:  []int32{4, 0},
+	}
 )
 
 var (
