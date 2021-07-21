@@ -295,7 +295,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 				return nil, nil, 0, err
 			}
 
-			publicKey, chordID, err = sigChain.GetMiner(height)
+			publicKey, chordID, err = sigChain.GetMiner(height, header.UnsignedHeader.RandomBeacon)
 			if err != nil {
 				return nil, nil, 0, err
 			}
