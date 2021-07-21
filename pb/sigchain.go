@@ -201,7 +201,7 @@ func (sc *SigChain) GetSignerIndex(pubkey []byte) (int, error) {
 	return idx, err
 }
 
-func (sc *SigChain) GetMiner(height uint32) ([]byte, []byte, error) {
+func (sc *SigChain) GetMiner(height uint32, randomBeacon []byte) ([]byte, []byte, error) {
 	if !sc.IsComplete() {
 		return nil, nil, errors.New("sigchain is not complete")
 	}
@@ -235,15 +235,21 @@ func (sc *SigChain) GetMiner(height uint32) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
+	h := sigHash
+	if config.SigChainMinerSalt.GetValueAtHeight(height) {
+		hs := sha256.Sum256(append(sigHash, randomBeacon...))
+		h = hs[:]
+	}
+
 	x := big.NewInt(0)
-	x.SetBytes(sigHash)
+	x.SetBytes(h)
 	y := big.NewInt(int64(elemLen))
 	newIndex := big.NewInt(0)
 	newIndex.Mod(x, y)
 
 	originalIndex := minerElems[newIndex.Int64()].index
 	if originalIndex == 0 {
-		return sc.SrcPubkey, sc.Elems[0].Id, nil
+		return nil, nil, errors.New("invalid miner index")
 	}
 
 	return sc.Elems[originalIndex-1].NextPubkey, sc.Elems[originalIndex].Id, nil

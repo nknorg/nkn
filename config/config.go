@@ -220,6 +220,10 @@ var (
 		heights: []uint32{2633000, 0},
 		values:  []int32{10, 0},
 	}
+	SigChainMinerSalt = HeightDependentBool{
+		heights: []uint32{2900000, 0},
+		values:  []bool{true, false},
+	}
 )
 
 var (
