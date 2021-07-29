@@ -232,6 +232,10 @@ var (
 		heights: []uint32{2900000, 0},
 		values:  []int32{4, 0},
 	}
+	NewCoinbaseDonation = HeightDependentBool{
+		heights: []uint32{3000000, 0},
+		values:  []bool{true, false},
+	}
 )
 
 var (

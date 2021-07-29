@@ -665,6 +665,13 @@ func (cs *ChainStore) GetDonation() (common.Fixed64, error) {
 }
 
 func (cs *ChainStore) getDonation() (*Donation, error) {
+	if config.NewCoinbaseDonation.GetValueAtHeight(cs.currentBlockHeight + 1) {
+		donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
+		totalDonationAmount := cs.GetBalance(donationProgramhash)
+		donationAmount := totalDonationAmount * 11 / 25000000
+		d := &Donation{cs.currentBlockHeight + 1, donationAmount}
+		return d, nil
+	}
 	currentDonationHeight := cs.currentBlockHeight / uint32(config.RewardAdjustInterval) * uint32(config.RewardAdjustInterval)
 	data, err := cs.st.Get(db.DonationKey(currentDonationHeight))
 	if err != nil {
