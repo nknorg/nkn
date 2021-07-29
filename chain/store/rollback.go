@@ -152,7 +152,7 @@ func (cs *ChainStore) rollbackSigChainCache(b *block.Block) error {
 }
 
 func (cs *ChainStore) rollbackDonation(b *block.Block) error {
-	if b.Header.UnsignedHeader.Height%uint32(config.RewardAdjustInterval) != 0 {
+	if b.Header.UnsignedHeader.Height%uint32(config.RewardAdjustInterval) != 0 || config.DonationNoDelay.GetValueAtHeight(b.Header.UnsignedHeader.Height) {
 		return nil
 	}
 
