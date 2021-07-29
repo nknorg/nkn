@@ -373,8 +373,8 @@ func (cs *ChainStore) persist(b *block.Block) error {
 	}
 
 	// batch put donation
-	if b.Header.UnsignedHeader.Height%uint32(config.RewardAdjustInterval) == 0 {
-		donation, err := cs.CalcNextDonation(b.Header.UnsignedHeader.Height)
+	if b.Header.UnsignedHeader.Height%uint32(config.RewardAdjustInterval) == 0 && !config.DonationNoDelay.GetValueAtHeight(b.Header.UnsignedHeader.Height) {
+		donation, err := cs.CalcNextDonation_legacy(b.Header.UnsignedHeader.Height)
 		if err != nil {
 			return err
 		}
@@ -665,6 +665,13 @@ func (cs *ChainStore) GetDonation() (common.Fixed64, error) {
 }
 
 func (cs *ChainStore) getDonation() (*Donation, error) {
+	if config.DonationNoDelay.GetValueAtHeight(cs.currentBlockHeight + 1) {
+		donationProgramhash, _ := common.ToScriptHash(config.DonationAddress)
+		totalDonationAmount := cs.GetBalance(donationProgramhash)
+		donationAmount := totalDonationAmount * 11 / 25000000
+		d := NewDonation(cs.currentBlockHeight+1, donationAmount)
+		return d, nil
+	}
 	currentDonationHeight := cs.currentBlockHeight / uint32(config.RewardAdjustInterval) * uint32(config.RewardAdjustInterval)
 	data, err := cs.st.Get(db.DonationKey(currentDonationHeight))
 	if err != nil {
@@ -681,7 +688,7 @@ func (cs *ChainStore) getDonation() (*Donation, error) {
 	return donation, nil
 }
 
-func (cs *ChainStore) CalcNextDonation(height uint32) (*Donation, error) {
+func (cs *ChainStore) CalcNextDonation_legacy(height uint32) (*Donation, error) {
 	if height == 0 {
 		return NewDonation(0, 0), nil
 	}
