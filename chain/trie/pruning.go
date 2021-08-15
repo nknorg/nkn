@@ -127,7 +127,7 @@ func (ref *RefCounts) createRefCounts(n node, inMemory bool) error {
 		count, ok := ref.counts[hs]
 		if !inMemory {
 			if !ok {
-				v, err := ref.trie.db.Get(db.TrieRefCountKey([]byte(n)))
+				v, err := ref.trie.db.Get(db.TrieRefCountKey(n))
 				if err == nil {
 					count = binary.LittleEndian.Uint32(v)
 				}
@@ -195,9 +195,9 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 		}
 
 		delete(ref.counts, hs)
-		ref.trie.db.BatchDelete(db.TrieNodeKey([]byte(hash)))
+		ref.trie.db.BatchDelete(db.TrieNodeKey(hash))
 		if !inMemory {
-			ref.trie.db.BatchDelete(db.TrieRefCountKey([]byte(hash)))
+			ref.trie.db.BatchDelete(db.TrieRefCountKey(hash))
 		}
 		return ref.prune(n.Val, inMemory)
 
@@ -226,9 +226,9 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 		}
 
 		delete(ref.counts, hs)
-		ref.trie.db.BatchDelete(db.TrieNodeKey([]byte(hash)))
+		ref.trie.db.BatchDelete(db.TrieNodeKey(hash))
 		if !inMemory {
-			ref.trie.db.BatchDelete(db.TrieRefCountKey([]byte(hash)))
+			ref.trie.db.BatchDelete(db.TrieRefCountKey(hash))
 		}
 		for i := 0; i < LenOfChildrenNodes; i++ {
 			if n.Children[i] != nil {
