@@ -25,11 +25,14 @@ const (
 	CFG_Version DataEntryPrefix = 0xf0
 
 	//TRIE
-	TRIE_Node           DataEntryPrefix = 0xa0
-	TRIE_RefCount       DataEntryPrefix = 0xa1
-	TRIE_RefCountHeight DataEntryPrefix = 0xa2
-	TRIE_PrunedHeight   DataEntryPrefix = 0xa3
-	TRIE_CompactHeight  DataEntryPrefix = 0xa4
+	TRIE_Node               DataEntryPrefix = 0xa0
+	TRIE_RefCount           DataEntryPrefix = 0xa1
+	TRIE_RefCountHeight     DataEntryPrefix = 0xa2
+	TRIE_PrunedHeight       DataEntryPrefix = 0xa3
+	TRIE_CompactHeight      DataEntryPrefix = 0xa4
+	TRIE_FastSyncStatus     DataEntryPrefix = 0xa5
+	TRIE_FastSyncRoot       DataEntryPrefix = 0xa6
+	TRIE_FastSyncRootHeight DataEntryPrefix = 0xa7
 )
 
 func paddingKey(prefix DataEntryPrefix, key []byte) []byte {
@@ -52,6 +55,10 @@ func DonationKey(height uint32) []byte {
 
 func CurrentStateTrie() []byte {
 	return paddingKey(ST_StateTrie, nil)
+}
+
+func CurrentFastSyncRoot() []byte {
+	return paddingKey(TRIE_FastSyncRoot, nil)
 }
 
 func PrepaidKey(programHash common.Uint160) []byte {
@@ -91,4 +98,12 @@ func TriePrunedHeightKey() []byte {
 
 func TrieCompactHeightKey() []byte {
 	return paddingKey(TRIE_CompactHeight, nil)
+}
+
+func TrieFastSyncRootHeightKey() []byte {
+	return paddingKey(TRIE_FastSyncRootHeight, nil)
+}
+
+func TrieFastSyncStatusKey() []byte {
+	return paddingKey(TRIE_FastSyncStatus, nil)
 }

@@ -13,7 +13,7 @@ import (
 
 // ILedgerStore provides func with store package.
 type ILedgerStore interface {
-	SaveBlock(b *block.Block, pruning bool) error
+	SaveBlock(b *block.Block, pruning, fastSync bool) error
 	GetBlock(hash common.Uint256) (*block.Block, error)
 	GetBlockByHeight(height uint32) (*block.Block, error)
 	GetBlockHash(height uint32) (common.Uint256, error)
@@ -52,5 +52,10 @@ type ILedgerStore interface {
 	GenerateStateRoot(ctx context.Context, b *block.Block, genesisBlockInitialized, needBeCommitted bool) (common.Uint256, error)
 	GetAsset(assetID common.Uint256) (name, symbol string, totalSupply common.Fixed64, precision uint32, err error)
 	GetDatabase() db.IStore
+	ShouldFastSync() bool
+	GetSyncRootHeight() (uint32, error)
+	GetFastSyncStateRoot() (common.Uint256, error)
+	PrepareFastSync(fastSyncHeight uint32, fastSyncRootHash common.Uint256) error
+	FastSyncDone(syncRootHash common.Uint256, fastSyncHeight uint32) error
 	Close()
 }
