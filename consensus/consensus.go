@@ -203,7 +203,7 @@ func (consensus *Consensus) loadOrCreateElection(height uint32) (*election.Elect
 		return weights[neighborID]
 	}
 
-	config := &election.Config{
+	c := &election.Config{
 		Duration:                    electionDuration,
 		MinVotingInterval:           minVotingInterval,
 		MaxVotingInterval:           maxVotingInterval,
@@ -212,7 +212,7 @@ func (consensus *Consensus) loadOrCreateElection(height uint32) (*election.Elect
 		GetWeight:                   getWeight,
 	}
 
-	elc, err := election.NewElection(config)
+	elc, err := election.NewElection(c)
 	if err != nil {
 		return nil, false, err
 	}
@@ -298,7 +298,7 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		if syncState == pb.SyncState_WAIT_FOR_SYNCING {
 			consensus.localNode.SetSyncState(pb.SyncState_PERSIST_FINISHED)
 		}
-		err = chain.DefaultLedger.Blockchain.AddBlock(block, config.LivePruning)
+		err = chain.DefaultLedger.Blockchain.AddBlock(block, config.LivePruning, false)
 		if err != nil {
 			return err
 		}
@@ -330,12 +330,12 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 		return false
 	})
 	if len(neighbors) == 0 {
-		return fmt.Errorf("Cannot get neighbors voted for block hash %s", electedBlockHash.ToHexString())
+		return fmt.Errorf("cannot get neighbors voted for block hash %s", electedBlockHash.ToHexString())
 	}
 
 	go func() {
-		prevhash, _ := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.PrevBlockHash)
-		started, err := consensus.localNode.StartSyncing(prevhash, block.Header.UnsignedHeader.Height-1, neighbors)
+		prevHash, _ := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.PrevBlockHash)
+		started, err := consensus.localNode.StartSyncing(prevHash, block.Header.UnsignedHeader.Height-1, neighbors)
 		if err != nil {
 			if started {
 				log.Fatalf("Error syncing blocks: %v", err)
@@ -394,7 +394,7 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 			return err
 		}
 
-		err = chain.DefaultLedger.Blockchain.AddBlock(block, config.LivePruning)
+		err = chain.DefaultLedger.Blockchain.AddBlock(block, config.LivePruning, false)
 		if err != nil {
 			return err
 		}
