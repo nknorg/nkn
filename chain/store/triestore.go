@@ -14,7 +14,7 @@ type ITrie interface {
 	TryGet(key []byte) ([]byte, error)
 	TryUpdate(key, value []byte) error
 	TryDelete(key []byte) error
-	TryTraverse() error
+	TryTraverse(needPrint bool) error
 	Hash() common.Uint256
 	CommitTo() (common.Uint256, error)
 	NodeIterator(start []byte) trie.NodeIterator

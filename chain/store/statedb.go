@@ -398,8 +398,8 @@ func (sdb *StateDB) SequentialPrune() error {
 	return nil
 }
 
-func (sdb *StateDB) TrieTraverse() error {
-	return sdb.trie.TryTraverse()
+func (sdb *StateDB) TrieTraverse(needPrint bool) error {
+	return sdb.trie.TryTraverse(needPrint)
 }
 
 func (sdb *StateDB) RollbackPruning(b *block.Block) error {
