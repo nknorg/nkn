@@ -333,8 +333,8 @@ func (t *Trie) Copy() *Trie {
 	return &cpy
 }
 
-func (t *Trie) TryTraverse() error {
-	return t.traverse(t.root, true)
+func (t *Trie) TryTraverse(needPrint bool) error {
+	return t.traverse(t.root, needPrint)
 }
 
 func (t *Trie) traverse(n node, needPrint bool) error {
