@@ -149,13 +149,13 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				if err = chain.TimestampCheck(proposal.Header, true); err != nil {
 					log.Warningf("Proposal fails to pass soft timestamp check: %v", err)
 					acceptProposal = false
-				} else if err = chain.HeaderCheck(proposal); err != nil {
+				} else if err = chain.HeaderCheck(proposal, false); err != nil {
 					log.Warningf("Proposal fails to pass header check: %v", err)
 					acceptProposal = false
 				} else if err = chain.NextBlockProposerCheck(proposal.Header); err != nil {
 					log.Warningf("Proposal fails to pass next block proposal check: %v", err)
 					acceptProposal = false
-				} else if err = chain.TransactionCheck(verifyCtx, proposal); err != nil {
+				} else if err = chain.TransactionCheck(verifyCtx, proposal, false); err != nil {
 					log.Warningf("Proposal fails to pass transaction check: %v", err)
 					acceptProposal = false
 				}
@@ -365,7 +365,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		}
 	}
 
-	if err = chain.SignatureCheck(b.Header); err != nil {
+	if err = b.Header.VerifySignature(); err != nil {
 		err = fmt.Errorf("proposal fails to pass signature check: %v", err)
 		consensus.neighborBlocklist.Store(neighbor.GetID(), err)
 		log.Infof("Add neighbor %s to blocklist because: %v", neighbor.GetID(), err)

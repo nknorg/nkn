@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/nknorg/nkn/v2/crypto"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/common/serialization"
@@ -17,7 +19,8 @@ import (
 
 type Header struct {
 	*pb.Header
-	hash *common.Uint256
+	hash                *common.Uint256
+	isSignatureVerified bool
 }
 
 func (h *Header) Marshal() (buf []byte, err error) {
@@ -142,4 +145,17 @@ func (h *Header) GetInfo() ([]byte, error) {
 		return nil, err
 	}
 	return marshaledInfo, nil
+}
+
+func (h *Header) VerifySignature() error {
+	if h.isSignatureVerified {
+		return nil
+	}
+	err := crypto.Verify(h.UnsignedHeader.SignerPk, signature.GetHashForSigning(h), h.Signature)
+	if err != nil {
+		return err
+	}
+	h.isSignatureVerified = true
+
+	return nil
 }
