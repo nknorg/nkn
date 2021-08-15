@@ -58,7 +58,7 @@ func pruningAction(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		err = cs.TrieTraverse()
+		err = cs.TrieTraverse(true)
 		if err != nil {
 			return err
 		}

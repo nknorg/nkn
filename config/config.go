@@ -74,6 +74,8 @@ const (
 	MaxClientMessageSize            = 4 * 1024 * 1024
 	MinNameRegistrationFee          = 10 * common.StorageFactor
 	DefaultNameDuration             = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
+	FastSyncMaxBatchSize            = 100 * 1024
+	FastSyncMaxStateReqSize         = 500
 )
 
 const (
@@ -310,6 +312,7 @@ var (
 		SyncBlockHeaderRateBurst:     32768,
 		SyncBlockRateLimit:           256,
 		SyncBlockRateBurst:           1024,
+		SyncMode:                     "",
 	}
 )
 
@@ -386,6 +389,7 @@ type Configuration struct {
 	SyncBlockRateBurst           uint32        `json:"SyncBlockRateBurst"`
 	BlockHeaderCacheSize         uint32        `json:"BlockHeaderCacheSize"`
 	SigChainCacheSize            uint32        `json:"SigChainCacheSize"`
+	SyncMode                     string        `json:"SyncMode"`
 }
 
 func Init() error {
