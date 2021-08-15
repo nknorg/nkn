@@ -21,6 +21,12 @@ import (
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
+const (
+	beforeFastSync byte = 0x01
+	beginFastSync  byte = 0x02
+	postFastSync   byte = 0x03
+)
+
 type ChainStore struct {
 	st db.IStore
 
@@ -50,6 +56,81 @@ func NewLedgerStore() (*ChainStore, error) {
 	}
 
 	return chain, nil
+}
+
+func (cs *ChainStore) PrepareFastSync(fastSyncHeight uint32, fastSyncRootHash common.Uint256) error {
+	err := cs.persistSyncRootHeight(fastSyncHeight)
+	if err != nil {
+		return err
+	}
+
+	err = cs.persistSyncStatus(beginFastSync)
+	if err != nil {
+		return err
+	}
+
+	err = cs.st.BatchPut(db.CurrentFastSyncRoot(), fastSyncRootHash.ToArray())
+	if err != nil {
+		return err
+	}
+
+	err = cs.st.BatchCommit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cs *ChainStore) FastSyncDone(syncRootHash common.Uint256, fastSyncHeight uint32) error {
+	sdb, err := NewStateDB(syncRootHash, cs)
+	if err != nil {
+		return err
+	}
+
+	err = sdb.trie.TryTraverse(false)
+	if err != nil {
+		return err
+	}
+
+	hs := sdb.trie.Hash()
+	if syncRootHash.CompareTo(hs) != 0 {
+		return fmt.Errorf("state root not equal, should be: %v, we got: %v", syncRootHash.ToHexString(), hs.ToHexString())
+	}
+	cs.States = sdb
+
+	refCount, err := sdb.trie.NewRefCounts(fastSyncHeight-1, fastSyncHeight-1)
+	if err != nil {
+		return err
+	}
+	err = refCount.PersistRefCountHeights()
+	if err != nil {
+		return err
+	}
+	err = refCount.PersistPrunedHeights()
+	if err != nil {
+		return err
+	}
+
+	err = cs.persistCompactHeight(fastSyncHeight)
+	if err != nil {
+		return err
+	}
+	err = cs.persistSyncStatus(postFastSync)
+	if err != nil {
+		return err
+	}
+
+	err = cs.st.BatchPut(db.CurrentStateTrie(), syncRootHash.ToArray())
+	if err != nil {
+		return err
+	}
+
+	err = cs.st.BatchCommit()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (cs *ChainStore) Close() {
@@ -86,7 +167,7 @@ func (cs *ChainStore) InitLedgerStoreWithGenesisBlock(genesisBlock *block.Block)
 			return 0, err
 		}
 
-		if err := cs.persist(genesisBlock); err != nil {
+		if err := cs.persist(genesisBlock, false); err != nil {
 			return 0, err
 		}
 
@@ -213,7 +294,6 @@ func (cs *ChainStore) GetHeader(hash common.Uint256) (*block.Header, error) {
 }
 
 func (cs *ChainStore) GetHeaderByHeight(height uint32) (*block.Header, error) {
-
 	hash, err := cs.GetBlockHash(height)
 	if err != nil {
 		return nil, err
@@ -289,7 +369,7 @@ func (cs *ChainStore) IsBlockInStore(hash common.Uint256) bool {
 	return true
 }
 
-func (cs *ChainStore) persist(b *block.Block) error {
+func (cs *ChainStore) persist(b *block.Block, fastSync bool) error {
 	err := cs.st.NewBatch()
 	if err != nil {
 		return err
@@ -354,39 +434,42 @@ func (cs *ChainStore) persist(b *block.Block) error {
 	}
 
 	//StateRoot
-	states, root, err := cs.generateStateRoot(context.Background(), b, b.Header.UnsignedHeader.Height != 0, true)
-	if err != nil {
-		return err
-	}
-
-	headerRoot, err := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
-	if err != nil {
-		return err
-	}
-	if ok := root.CompareTo(headerRoot); ok != 0 {
-		return fmt.Errorf("state root not equal:%v, %v", root.ToHexString(), headerRoot.ToHexString())
-	}
-
-	err = cs.st.BatchPut(db.CurrentStateTrie(), root.ToArray())
-	if err != nil {
-		return err
-	}
-
-	// batch put donation
-	if b.Header.UnsignedHeader.Height%uint32(config.RewardAdjustInterval) == 0 && !config.DonationNoDelay.GetValueAtHeight(b.Header.UnsignedHeader.Height) {
-		donation, err := cs.CalcNextDonation_legacy(b.Header.UnsignedHeader.Height)
+	var states *StateDB
+	var root common.Uint256
+	if !fastSync {
+		states, root, err = cs.generateStateRoot(context.Background(), b, b.Header.UnsignedHeader.Height != 0, true)
 		if err != nil {
 			return err
 		}
 
-		w := bytes.NewBuffer(nil)
-		err = donation.Serialize(w)
+		headerRoot, err := common.Uint256ParseFromBytes(b.Header.UnsignedHeader.StateRoot)
 		if err != nil {
 			return err
 		}
+		if ok := root.CompareTo(headerRoot); ok != 0 {
+			return fmt.Errorf("state root not equal:%v, %v", root.ToHexString(), headerRoot.ToHexString())
+		}
 
-		if err := cs.st.BatchPut(db.DonationKey(b.Header.UnsignedHeader.Height), w.Bytes()); err != nil {
+		err = cs.st.BatchPut(db.CurrentStateTrie(), root.ToArray())
+		if err != nil {
 			return err
+		}
+		// batch put donation
+		if b.Header.UnsignedHeader.Height%uint32(config.RewardAdjustInterval) == 0 && !config.DonationNoDelay.GetValueAtHeight(b.Header.UnsignedHeader.Height) {
+			donation, err := cs.CalcNextDonation_legacy(b.Header.UnsignedHeader.Height)
+			if err != nil {
+				return err
+			}
+
+			w := bytes.NewBuffer(nil)
+			err = donation.Serialize(w)
+			if err != nil {
+				return err
+			}
+
+			if err := cs.st.BatchPut(db.DonationKey(b.Header.UnsignedHeader.Height), w.Bytes()); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -406,13 +489,15 @@ func (cs *ChainStore) persist(b *block.Block) error {
 		return err
 	}
 
-	cs.States = states
+	if !fastSync {
+		cs.States = states
+	}
 
 	return nil
 }
 
-func (cs *ChainStore) SaveBlock(b *block.Block, pruning bool) error {
-	err := cs.persist(b)
+func (cs *ChainStore) SaveBlock(b *block.Block, pruning, fastSync bool) error {
+	err := cs.persist(b, fastSync)
 	if err != nil {
 		log.Errorf("Persist block error: %v", err)
 		return err
@@ -443,7 +528,7 @@ func (cs *ChainStore) SaveBlock(b *block.Block, pruning bool) error {
 		return err
 	}
 
-	if pruning {
+	if pruning && !fastSync {
 		switch config.Parameters.StatePruningMode {
 		case "lowmem":
 			err = cs.PruneStatesLowMemory(false)
@@ -564,6 +649,20 @@ func (cs *ChainStore) getCurrentBlockHashFromDB() (common.Uint256, uint32, error
 
 func (cs *ChainStore) GetCurrentBlockStateRoot() (common.Uint256, error) {
 	currentState, err := cs.st.Get(db.CurrentStateTrie())
+	if err != nil {
+		return common.EmptyUint256, err
+	}
+
+	hash, err := common.Uint256ParseFromBytes(currentState)
+	if err != nil {
+		return common.EmptyUint256, err
+	}
+
+	return hash, nil
+}
+
+func (cs *ChainStore) GetFastSyncStateRoot() (common.Uint256, error) {
+	currentState, err := cs.st.Get(db.CurrentFastSyncRoot())
 	if err != nil {
 		return common.EmptyUint256, err
 	}
@@ -779,6 +878,52 @@ func (cs *ChainStore) persistCompactHeight(height uint32) error {
 	return cs.st.Put(db.TrieCompactHeightKey(), heightBuffer)
 }
 
+func (cs *ChainStore) persistSyncRootHeight(height uint32) error {
+	heightBuffer := make([]byte, 4)
+	binary.LittleEndian.PutUint32(heightBuffer[:], height)
+	return cs.st.Put(db.TrieFastSyncRootHeightKey(), heightBuffer)
+}
+
+func (cs *ChainStore) persistSyncStatus(status byte) error {
+	return cs.st.Put(db.TrieFastSyncStatusKey(), []byte{status})
+}
+
+func (cs *ChainStore) GetSyncRootHeight() (uint32, error) {
+	return cs.getSyncRootHeight()
+}
+
+func (cs *ChainStore) getSyncRootHeight() (uint32, error) {
+	heightBuffer, err := cs.st.Get(db.TrieFastSyncRootHeightKey())
+	if err != nil {
+		return 0, err
+	}
+	return binary.LittleEndian.Uint32(heightBuffer), nil
+}
+
+func (cs *ChainStore) getFastSyncStatus() byte {
+	status, err := cs.st.Get(db.TrieFastSyncStatusKey())
+	if err != nil {
+		log.Info("no previous fast sync status found")
+		return beforeFastSync
+	}
+	return status[0]
+}
+
+func (cs *ChainStore) ShouldFastSync() bool {
+	status := cs.getFastSyncStatus()
+	switch status {
+	case beforeFastSync:
+		if cs.GetHeight() == 0 {
+			return true
+		}
+	case beginFastSync:
+		return true
+	case postFastSync:
+		return false
+	}
+	return false
+}
+
 func (cs *ChainStore) PruneStatesLowMemory(full bool) error {
 	state, err := NewStateDB(common.EmptyUint256, cs)
 	if err != nil {
@@ -810,7 +955,7 @@ func (cs *ChainStore) SequentialPrune() error {
 	return state.SequentialPrune()
 }
 
-func (cs *ChainStore) TrieTraverse() error {
+func (cs *ChainStore) TrieTraverse(needPrint bool) error {
 	_, currentHeight, err := cs.getCurrentBlockHashFromDB()
 	if err != nil {
 		return err
@@ -826,7 +971,7 @@ func (cs *ChainStore) TrieTraverse() error {
 		return err
 	}
 
-	return states.TrieTraverse()
+	return states.TrieTraverse(needPrint)
 }
 
 func (cs *ChainStore) VerifyState() error {
