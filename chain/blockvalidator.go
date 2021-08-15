@@ -9,19 +9,18 @@ import (
 	"hash/fnv"
 	"time"
 
+	"github.com/nknorg/nkn/v2/chain/txvalidator"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
-	"github.com/nknorg/nkn/v2/chain/txvalidator"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/program"
-	"github.com/nknorg/nkn/v2/signature"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/util/log"
 )
 
 const (
@@ -57,7 +56,7 @@ func (iterable TransactionArray) Iterate(handler func(item *transaction.Transact
 	return nil
 }
 
-func TransactionCheck(ctx context.Context, block *block.Block) error {
+func TransactionCheck(ctx context.Context, block *block.Block, fastSync bool) error {
 	if block.IsTxnsChecked {
 		return nil
 	}
@@ -91,31 +90,22 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		txnsHash[i] = txn.Hash()
 	}
 
-	winnerHash, err := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
-	if err != nil {
-		return err
-	}
-	if winnerHash != common.EmptyUint256 {
-		found := false
-		for _, txnHash := range txnsHash {
-			if txnHash == winnerHash {
-				found = true
-				break
-			}
-		}
-		if !found {
-			if _, err = DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
-				return fmt.Errorf("mining sigchain txn %s not found in block", winnerHash)
-			}
-		}
-	}
-
 	txnsRoot, err := crypto.ComputeRoot(txnsHash)
 	if err != nil {
 		return fmt.Errorf("compute txns root error: %v", err)
 	}
 	if !bytes.Equal(txnsRoot.ToArray(), block.Header.UnsignedHeader.TransactionsRoot) {
 		return fmt.Errorf("computed txn root %x is different from txn root in header %x", txnsRoot.ToArray(), block.Header.UnsignedHeader.TransactionsRoot)
+	}
+
+	if fastSync {
+		for _, txn := range block.Transactions {
+			err = txn.VerifySignature()
+			if err != nil {
+				return fmt.Errorf("[VerifyTransaction] %v", err)
+			}
+		}
+		return nil
 	}
 
 	bvs := NewBlockValidationState()
@@ -129,7 +119,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 		}
 
 		if i != 0 && txn.UnsignedTx.Payload.Type == pb.PayloadType_COINBASE_TYPE {
-			return errors.New("Coinbase transaction order is incorrect")
+			return errors.New("coinbase transaction order is incorrect")
 		}
 		if err := txvalidator.VerifyTransaction(txn, block.Header.UnsignedHeader.Height); err != nil {
 			return fmt.Errorf("transaction sanity check failed: %v", err)
@@ -168,6 +158,25 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 
 	bvs.Close()
 
+	winnerHash, err := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.WinnerHash)
+	if err != nil {
+		return err
+	}
+	if winnerHash != common.EmptyUint256 {
+		found := false
+		for _, txnHash := range txnsHash {
+			if txnHash == winnerHash {
+				found = true
+				break
+			}
+		}
+		if !found {
+			if _, err = DefaultLedger.Store.GetTransaction(winnerHash); err != nil {
+				return fmt.Errorf("mining sigchain txn %s not found in block", winnerHash.ToHexString())
+			}
+		}
+	}
+
 	// state root check
 	root, err := DefaultLedger.Store.GenerateStateRoot(ctx, block, true, false)
 	if err != nil {
@@ -176,7 +185,7 @@ func TransactionCheck(ctx context.Context, block *block.Block) error {
 
 	headerRoot, _ := common.Uint256ParseFromBytes(block.Header.UnsignedHeader.StateRoot)
 	if ok := root.CompareTo(headerRoot); ok != 0 {
-		return fmt.Errorf("[TransactionCheck]state root not equal:%v, %v", root, headerRoot)
+		return fmt.Errorf("[TransactionCheck]state root not equal:%v, %v", root.ToHexString(), headerRoot.ToString())
 	}
 
 	block.IsTxnsChecked = true
@@ -306,7 +315,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 	return publicKey, chordID, winnerType, nil
 }
 
-// GetWinner returns the winner hash and winner type of a block height using
+// GetNextMiningSigChainTxnHash returns the winner hash and winner type of a block height using
 // sigchain from PoR server.
 func GetNextMiningSigChainTxnHash(height uint32) (common.Uint256, pb.WinnerType, error) {
 	if height < NumGenesisBlocks {
@@ -358,16 +367,7 @@ func SignerCheck(header *block.Header) error {
 	return nil
 }
 
-func SignatureCheck(header *block.Header) error {
-	err := crypto.Verify(header.UnsignedHeader.SignerPk, signature.GetHashForSigning(header), header.Signature)
-	if err != nil {
-		return fmt.Errorf("invalid header signature %x: %v", header.Signature, err)
-	}
-
-	return nil
-}
-
-func HeaderCheck(b *block.Block) error {
+func HeaderCheck(b *block.Block, fastSync bool) error {
 	if b.IsHeaderChecked {
 		return nil
 	}
@@ -383,14 +383,18 @@ func HeaderCheck(b *block.Block) error {
 		return fmt.Errorf("block height %d is different from expected height %d", header.UnsignedHeader.Height, expectedHeight)
 	}
 
-	err := SignerCheck(header)
+	err := header.VerifySignature()
 	if err != nil {
-		return fmt.Errorf("signer check failed: %v", err)
+		return fmt.Errorf("invalid header signature %x: %v", header.Signature, err)
 	}
 
-	err = SignatureCheck(header)
+	if fastSync {
+		return nil
+	}
+
+	err = SignerCheck(header)
 	if err != nil {
-		return fmt.Errorf("signature check failed: %v", err)
+		return fmt.Errorf("signer check failed: %v", err)
 	}
 
 	currentHash := DefaultLedger.Store.GetCurrentBlockHash()
@@ -495,31 +499,6 @@ func NextBlockProposerCheck(header *block.Header) error {
 
 func CanVerifyHeight(height uint32) bool {
 	return height == DefaultLedger.Store.GetHeight()+1
-}
-
-func VerifyHeader(header *block.Header) bool {
-	if header.UnsignedHeader.Height != DefaultLedger.Store.GetHeaderHeight()+1 {
-		log.Error("[VerifyHeader] failed, header height error.")
-		return false
-	}
-	prevHash, _ := common.Uint256ParseFromBytes(header.UnsignedHeader.PrevBlockHash)
-	prevHeader, err := DefaultLedger.Store.GetHeaderWithCache(prevHash)
-	if err != nil || prevHeader == nil {
-		log.Error("[VerifyHeader] failed, not found prevHeader.")
-		return false
-	}
-
-	if prevHeader.UnsignedHeader.Height+1 != header.UnsignedHeader.Height {
-		log.Error("[VerifyHeader] failed, prevHeader.Height + 1 != header.Height")
-		return false
-	}
-
-	if prevHeader.UnsignedHeader.Timestamp >= header.UnsignedHeader.Timestamp {
-		log.Error("[VerifyHeader] failed, prevHeader.Timestamp >= header.Timestamp")
-		return false
-	}
-
-	return true
 }
 
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger

@@ -51,11 +51,11 @@ func NewBlockchainWithGenesisBlock(store ILedgerStore) (*Blockchain, error) {
 	return blockchain, nil
 }
 
-func (bc *Blockchain) AddBlock(block *block.Block, pruning bool) error {
+func (bc *Blockchain) AddBlock(block *block.Block, pruning, fastSync bool) error {
 	bc.mutex.Lock()
 	defer bc.mutex.Unlock()
 
-	err := bc.SaveBlock(block, pruning)
+	err := bc.SaveBlock(block, pruning, fastSync)
 	if err != nil {
 		log.Errorf("AddBlock error: %v", err)
 		return err
@@ -72,18 +72,18 @@ func (bc *Blockchain) GetHeader(hash common.Uint256) (*block.Header, error) {
 	return header, nil
 }
 
-func (bc *Blockchain) SaveBlock(block *block.Block, pruning bool) error {
-	err := HeaderCheck(block)
+func (bc *Blockchain) SaveBlock(block *block.Block, pruning, fastSync bool) error {
+	err := HeaderCheck(block, fastSync)
 	if err != nil {
 		return err
 	}
 
-	err = TransactionCheck(context.Background(), block)
+	err = TransactionCheck(context.Background(), block, fastSync)
 	if err != nil {
 		return err
 	}
 
-	err = DefaultLedger.Store.SaveBlock(block, pruning)
+	err = DefaultLedger.Store.SaveBlock(block, pruning, fastSync)
 	if err != nil {
 		return err
 	}
