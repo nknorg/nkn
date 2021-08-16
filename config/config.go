@@ -233,7 +233,7 @@ var (
 		values:  []int32{4, 0},
 	}
 	DonationNoDelay = HeightDependentBool{
-		heights: []uint32{3000000, 0},
+		heights: []uint32{3030000, 0},
 		values:  []bool{true, false},
 	}
 )
