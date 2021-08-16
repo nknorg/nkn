@@ -126,20 +126,20 @@ func (remoteNode *RemoteNode) GetStates(hashes []common.Uint256) ([][]byte, erro
 	if err != nil {
 		return nil, err
 	}
-	var states [][]byte
+	states := make([][]byte, len(hashes))
 	nodes := replyMsg.GetNodes()
 	if len(nodes) != len(hashes) {
-		return states, errInvalidAmount
+		return nil, errInvalidAmount
 	}
 	for i, s := range nodes {
 		h, err := common.Uint256ParseFromBytes(trie.Sha256Key(s.Node))
 		if err != nil {
-			return states, err
+			return nil, err
 		}
 		if !common.U256Equal(h, hashes[i]) {
-			return states, errInvalidData
+			return nil, errInvalidData
 		}
-		states = append(states, s.GetNode())
+		states[i] = s.GetNode()
 	}
 	return states, nil
 }
