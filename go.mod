@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/gin-contrib/sessions v0.0.0-20190512062852-3cb4c4f2d615
-	github.com/gin-gonic/gin v1.4.0
+	github.com/gin-gonic/gin v1.7.0
 	github.com/go-acme/lego/v3 v3.8.0
 	github.com/golang/protobuf v1.5.0
 	github.com/gorilla/securecookie v1.1.1
@@ -24,5 +24,4 @@ require (
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	google.golang.org/protobuf v1.26.0
-	gopkg.in/karalabe/cookiejar.v2 v2.0.0-20150724131613-8dcd6a7f4951
 )
