@@ -426,12 +426,8 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 			return
 		}
 
-		if config.Parameters.SyncMode == "fast" && cs.ShouldFastSync() {
+		if config.Parameters.SyncMode == "fast" && cs.ShouldFastSync(syncStopHeight) {
 			if fastSyncHeight == 0 {
-				if syncStopHeight < config.Parameters.RecentStateCount {
-					err = fmt.Errorf("not enough height to use fast sync %d/%d", syncStopHeight, config.Parameters.RecentStateCount)
-					return
-				}
 				fastSyncHeight = syncStopHeight - config.Parameters.RecentStateCount
 			}
 			fastSyncRootHash, err := cs.GetFastSyncStateRoot()
