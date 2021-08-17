@@ -52,7 +52,7 @@ type ILedgerStore interface {
 	GenerateStateRoot(ctx context.Context, b *block.Block, genesisBlockInitialized, needBeCommitted bool) (common.Uint256, error)
 	GetAsset(assetID common.Uint256) (name, symbol string, totalSupply common.Fixed64, precision uint32, err error)
 	GetDatabase() db.IStore
-	ShouldFastSync() bool
+	ShouldFastSync(syncStopHeight uint32) bool
 	GetSyncRootHeight() (uint32, error)
 	GetFastSyncStateRoot() (common.Uint256, error)
 	PrepareFastSync(fastSyncHeight uint32, fastSyncRootHash common.Uint256) error

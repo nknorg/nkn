@@ -909,10 +909,13 @@ func (cs *ChainStore) getFastSyncStatus() byte {
 	return status[0]
 }
 
-func (cs *ChainStore) ShouldFastSync() bool {
+func (cs *ChainStore) ShouldFastSync(syncStopHeight uint32) bool {
 	status := cs.getFastSyncStatus()
 	switch status {
 	case beforeFastSync:
+		if syncStopHeight <= config.Parameters.RecentStateCount {
+			return false
+		}
 		if cs.GetHeight() == 0 {
 			return true
 		}
