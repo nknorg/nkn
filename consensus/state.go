@@ -100,14 +100,21 @@ func (consensus *Consensus) getNeighborConsensusState(neighbor *node.RemoteNode)
 	return replyMsg, nil
 }
 
-// getAllNeighborsConsensusState returns the latest block info of all neighbors
-// by calling getNeighborConsensusState on all of them concurrently.
-func (consensus *Consensus) getAllNeighborsConsensusState() (map[string]*pb.GetConsensusStateReply, error) {
-	allNeighbors := consensus.localNode.GetVotingNeighbors(nil)
-	if len(allNeighbors) < minConsensusStateNeighbors {
-		allNeighbors = consensus.localNode.GetNeighbors(nil)
+// getVotingNeighborsConsensusState returns the latest block info of voting
+// neighbors by calling getNeighborConsensusState on all of them concurrently.
+// It will also update the consensus state of non-voting neighbors.
+func (consensus *Consensus) getVotingNeighborsConsensusState() (map[string]*pb.GetConsensusStateReply, error) {
+	allNeighbors := consensus.localNode.GetNeighbors(nil)
+	votingNeighbors := consensus.localNode.GetVotingNeighbors(nil)
+	if len(votingNeighbors) < minConsensusStateNeighbors {
+		votingNeighbors = allNeighbors
 	}
-	allStates := make(map[string]*pb.GetConsensusStateReply, len(allNeighbors))
+	votingNeighborsMap := make(map[string]struct{}, len(votingNeighbors))
+	for _, neighbor := range votingNeighbors {
+		votingNeighborsMap[neighbor.GetID()] = struct{}{}
+	}
+
+	states := make(map[string]*pb.GetConsensusStateReply, len(votingNeighbors))
 	var wg sync.WaitGroup
 	var lock sync.Mutex
 	for _, neighbor := range allNeighbors {
@@ -119,13 +126,16 @@ func (consensus *Consensus) getAllNeighborsConsensusState() (map[string]*pb.GetC
 				log.Debugf("Get consensus state from neighbor %v error: %v", neighbor.GetID(), err)
 				return
 			}
-			lock.Lock()
-			allStates[neighbor.GetID()] = consensusState
-			lock.Unlock()
+			neighborID := neighbor.GetID()
+			if _, ok := votingNeighborsMap[neighborID]; ok {
+				lock.Lock()
+				states[neighborID] = consensusState
+				lock.Unlock()
+			}
 		}(neighbor)
 	}
 	wg.Wait()
-	return allStates, nil
+	return states, nil
 }
 
 // getNeighborsMajorConsensusHeight returns the majority of neighbors' nonzero
@@ -137,7 +147,7 @@ func (consensus *Consensus) getNeighborsMajorityConsensusState() (uint32, uint32
 			time.Sleep(getConsensusStateRetryDelay)
 		}
 
-		allStates, err := consensus.getAllNeighborsConsensusState()
+		allStates, err := consensus.getVotingNeighborsConsensusState()
 		if err != nil {
 			log.Warningf("Get neighbors latest block info error: %v", err)
 			continue
