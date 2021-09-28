@@ -255,6 +255,7 @@ var (
 	WebGuiCreateWallet           bool
 	PasswordFile                 string
 	StatePruningMode             string
+	SyncMode                     string
 	Parameters                   = &Configuration{
 		Version:                      1,
 		Transport:                    "tcp",
@@ -312,7 +313,7 @@ var (
 		SyncBlockHeaderRateBurst:     32768,
 		SyncBlockRateLimit:           256,
 		SyncBlockRateBurst:           1024,
-		SyncMode:                     "",
+		SyncMode:                     "full",
 	}
 )
 
@@ -451,6 +452,10 @@ func Init() error {
 		Parameters.StatePruningMode = StatePruningMode
 	}
 
+	if len(SyncMode) > 0 {
+		Parameters.SyncMode = SyncMode
+	}
+
 	if Parameters.SyncHeaderMaxSize == 0 {
 		syncHeaderMaxMemorySize := uint64(Parameters.SyncHeaderMaxMemorySize) * 1024 * 1024
 		if syncHeaderMaxMemorySize == 0 {
@@ -544,6 +549,13 @@ func (config *Configuration) verify() error {
 	case "none":
 	default:
 		return fmt.Errorf("unknown state pruning mode %v", config.StatePruningMode)
+	}
+
+	switch config.SyncMode {
+	case "fast":
+	case "full":
+	default:
+		return fmt.Errorf("unknown sync mode %v", config.SyncMode)
 	}
 
 	return nil
