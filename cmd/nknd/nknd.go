@@ -442,6 +442,11 @@ func main() {
 			Destination: &config.StatePruningMode,
 		},
 		cli.StringFlag{
+			Name:        "sync",
+			Usage:       "sync mode: full, fast",
+			Destination: &config.SyncMode,
+		},
+		cli.StringFlag{
 			Name:        "pprof-port",
 			Usage:       "The port used for pprof in debug mode",
 			Destination: &config.PprofPort,
