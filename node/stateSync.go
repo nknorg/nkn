@@ -50,12 +50,12 @@ func (s *stateSync) loop() error {
 
 	go func() {
 		for {
-			log.Info("pending states:", s.sched.Pending())
-			time.Sleep(3 * time.Second)
+			log.Info("Pending states:", s.sched.Pending())
 			select {
 			case <-s.done:
+				log.Info("Done with pending states:", s.sched.Pending())
 				return
-			default:
+			case <-time.After(3 * time.Second):
 			}
 		}
 	}()

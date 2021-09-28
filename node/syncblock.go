@@ -365,7 +365,9 @@ func (localNode *LocalNode) getNeighborsMajorityBlockByHeight(height uint32, nei
 				counter[header.Hash()]++
 				if _, ok := headers[header.Hash()]; !ok {
 					h := value.(*block.Header)
-					err = h.VerifySignature()
+					if h.UnsignedHeader.Height > 0 {
+						err = h.VerifySignature()
+					}
 					if err == nil {
 						headers[header.Hash()] = h
 					} else {
@@ -417,7 +419,8 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 		started = true
 		localNode.SetSyncState(pb.SyncState_SYNC_STARTED)
 		cs := chain.DefaultLedger.Store
-		fastSyncHeight, err := cs.GetSyncRootHeight()
+		var fastSyncHeight uint32
+		fastSyncHeight, err = cs.GetSyncRootHeight()
 		if err != nil {
 			log.Info("local sync root height not found:", err)
 		}
@@ -430,7 +433,8 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 			if fastSyncHeight == 0 {
 				fastSyncHeight = syncStopHeight - config.Parameters.RecentStateCount
 			}
-			fastSyncRootHash, err := cs.GetFastSyncStateRoot()
+			var fastSyncRootHash common.Uint256
+			fastSyncRootHash, err = cs.GetFastSyncStateRoot()
 			if err != nil {
 				fastSyncRootHash = localNode.GetNeighborsMajorityStateRootByHeight(fastSyncHeight, neighbors)
 				if fastSyncRootHash == common.EmptyUint256 {
