@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net"
 	"strings"
 
@@ -771,7 +772,18 @@ func getSubscribersCount(s Serverer, params map[string]interface{}) map[string]i
 		}
 	}
 
+	key := []byte(fmt.Sprintf("%s-%d-%s", topic, int(bucket), string(subscriberHashPrefix)))
+
+	if v, ok := rpcResultCache.Get(key); ok {
+		if count, ok := v.(int); ok {
+			return respPacking(errcode.SUCCESS, count)
+		}
+	}
+
 	count := chain.DefaultLedger.Store.GetSubscribersCount(topic, uint32(bucket), subscriberHashPrefix)
+
+	rpcResultCache.Set(key, count)
+
 	return respPacking(errcode.SUCCESS, count)
 }
 
