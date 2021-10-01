@@ -222,7 +222,7 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 			return nil, nil, 0, err
 		}
 
-		publicKey, chordID, err = genesisBlock.GetSigner()
+		publicKey, chordID, err = genesisBlock.Header.GetSigner()
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -253,11 +253,11 @@ func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.Winn
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		proposerBlock, err := DefaultLedger.Store.GetBlock(proposerBlockHash)
+		proposerBlockHeader, err := DefaultLedger.Store.GetHeader(proposerBlockHash)
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		publicKey, chordID, err = proposerBlock.GetSigner()
+		publicKey, chordID, err = proposerBlockHeader.GetSigner()
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -367,19 +367,17 @@ func SignerCheck(header *block.Header) error {
 	return nil
 }
 
-func HeaderCheck(b *block.Block, fastSync bool) error {
-	if b.IsHeaderChecked {
+func HeaderCheck(header *block.Header, fastSync bool) error {
+	if header.IsHeaderChecked {
 		return nil
 	}
-
-	header := b.Header
 
 	if header.UnsignedHeader.Height == 0 {
 		return nil
 	}
 
 	expectedHeight := DefaultLedger.Store.GetHeight() + 1
-	if header.UnsignedHeader.Height != expectedHeight {
+	if !fastSync && header.UnsignedHeader.Height != expectedHeight {
 		return fmt.Errorf("block height %d is different from expected height %d", header.UnsignedHeader.Height, expectedHeight)
 	}
 
@@ -433,7 +431,7 @@ func HeaderCheck(b *block.Block, fastSync bool) error {
 		return fmt.Errorf("invalid header RandomBeacon %x", header.UnsignedHeader.RandomBeacon)
 	}
 
-	b.IsHeaderChecked = true
+	header.IsHeaderChecked = true
 
 	return nil
 }

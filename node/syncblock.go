@@ -405,6 +405,16 @@ func (localNode *LocalNode) initSyncing() {
 	localNode.ResetSyncing()
 }
 
+func removeStoppedNeighbors(neighbors []*RemoteNode) []*RemoteNode {
+	availableNeighbors := make([]*RemoteNode, 0, len(neighbors))
+	for _, n := range neighbors {
+		if !n.IsStopped() {
+			availableNeighbors = append(availableNeighbors, n)
+		}
+	}
+	return availableNeighbors
+}
+
 // StartSyncing starts block syncing from current local ledger until it gets to
 // block height stopHeight with block hash stopHash from given neighbors
 func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHeight uint32, neighbors []*RemoteNode) (bool, error) {
@@ -418,25 +428,28 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 	syncOnce.Do(func() {
 		started = true
 		localNode.SetSyncState(pb.SyncState_SYNC_STARTED)
+
 		cs := chain.DefaultLedger.Store
+
 		var fastSyncHeight uint32
 		fastSyncHeight, err = cs.GetSyncRootHeight()
 		if err != nil {
 			log.Info("local sync root height not found:", err)
 		}
-		if config.Parameters.SyncMode != "fast" && fastSyncHeight > cs.GetHeight() {
+
+		if !config.Parameters.IsFastSync() && fastSyncHeight > cs.GetHeight() {
 			err = fmt.Errorf("invalid sync mode %s at height %d", config.Parameters.SyncMode, cs.GetHeight())
 			return
 		}
 
-		if config.Parameters.SyncMode == "fast" && cs.ShouldFastSync(syncStopHeight) {
+		if config.Parameters.IsFastSync() && cs.ShouldFastSync(syncStopHeight) {
 			if fastSyncHeight == 0 {
 				fastSyncHeight = syncStopHeight - config.Parameters.RecentStateCount
 			}
 			var fastSyncRootHash common.Uint256
 			fastSyncRootHash, err = cs.GetFastSyncStateRoot()
 			if err != nil {
-				fastSyncRootHash = localNode.GetNeighborsMajorityStateRootByHeight(fastSyncHeight, neighbors)
+				fastSyncRootHash = localNode.GetNeighborsMajorityStateRootByHeight(fastSyncHeight, removeStoppedNeighbors(neighbors))
 				if fastSyncRootHash == common.EmptyUint256 {
 					err = fmt.Errorf("get neighbors majority state root of height %d failed", fastSyncHeight)
 					return
@@ -448,7 +461,7 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 				err = fmt.Errorf("prepare fast sync err: %v", err)
 				return
 			}
-			err = localNode.StartFastSyncing(fastSyncRootHash, neighbors)
+			err = localNode.StartFastSyncing(fastSyncRootHash, removeStoppedNeighbors(neighbors))
 			if err != nil {
 				err = fmt.Errorf("start fast syncing err: %v", err)
 				return
@@ -461,18 +474,13 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 			log.Info("fast sync done")
 		}
 
-		currentHeight := chain.DefaultLedger.Store.GetHeight()
+		currentHeight := cs.GetHeight()
 		if syncStopHeight <= currentHeight {
 			err = fmt.Errorf("sync stop height %d is not higher than current height %d", syncStopHeight, currentHeight)
 			return
 		}
 
-		if len(neighbors) == 0 {
-			err = fmt.Errorf("no neighbors to sync from")
-			return
-		}
-
-		_, err = localNode.maybeRollback(neighbors)
+		_, err = localNode.maybeRollback(removeStoppedNeighbors(neighbors))
 		if err != nil {
 			err = fmt.Errorf("rollback error: %v", err)
 			return
@@ -484,7 +492,7 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 				stopHeight = syncStopHeight
 			}
 
-			startPrevHash := chain.DefaultLedger.Store.GetHeaderHashByHeight(startHeight - 1)
+			startPrevHash := cs.GetHeaderHashByHeight(startHeight - 1)
 			if startPrevHash == common.EmptyUint256 {
 				err = fmt.Errorf("get block hash of height %d failed", startHeight-1)
 				return
@@ -492,7 +500,7 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 
 			stopHash := syncStopHash
 			if stopHeight < syncStopHeight {
-				stopHash = localNode.getNeighborsMajorityBlockHashByHeight(stopHeight, neighbors)
+				stopHash = localNode.getNeighborsMajorityBlockHashByHeight(stopHeight, removeStoppedNeighbors(neighbors))
 				if stopHash == common.EmptyUint256 {
 					err = fmt.Errorf("get neighbors majority block hash of height %d failed", stopHeight)
 					return
@@ -501,7 +509,9 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 
 			startTime := time.Now()
 			var headersHash []common.Uint256
-			headersHash, err = localNode.syncBlockHeaders(startHeight, stopHeight, startPrevHash, stopHash, neighbors)
+			var headers []*block.Header
+			needFullHeaders := config.Parameters.IsLightSync() && startHeight < fastSyncHeight
+			headersHash, headers, err = localNode.syncBlockHeaders(startHeight, stopHeight, startPrevHash, stopHash, removeStoppedNeighbors(neighbors), needFullHeaders)
 			if err != nil {
 				err = fmt.Errorf("sync block headers error: %v", err)
 				return
@@ -509,12 +519,31 @@ func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHe
 
 			log.Infof("Synced %d block headers in %s", stopHeight-startHeight+1, time.Since(startTime))
 
+			var fullBlockStartHeight uint32
+			if config.Parameters.IsLightSync() && fastSyncHeight > config.Parameters.RecentBlockCount {
+				fullBlockStartHeight = fastSyncHeight - config.Parameters.RecentBlockCount
+
+				for height := startHeight; height <= stopHeight && height < fullBlockStartHeight; height++ {
+					err = chain.DefaultLedger.Blockchain.AddHeader(headers[height-startHeight], true)
+					if err != nil {
+						return
+					}
+				}
+
+				if fullBlockStartHeight > stopHeight {
+					continue
+				}
+			}
+
 			startTime = time.Now()
 			for syncBlocksBatchSize := config.Parameters.SyncBlocksBatchSize; syncBlocksBatchSize > 0; syncBlocksBatchSize /= 2 {
-				numSyncedBlocks := chain.DefaultLedger.Store.GetHeight() - startHeight + 1
-				err = localNode.syncBlocks(startHeight+numSyncedBlocks, stopHeight, syncBlocksBatchSize, neighbors, headersHash[numSyncedBlocks:], fastSyncHeight)
+				batchStartHeight := cs.GetHeight() + 1
+				if batchStartHeight < fullBlockStartHeight {
+					batchStartHeight = fullBlockStartHeight
+				}
+				err = localNode.syncBlocks(batchStartHeight, stopHeight, syncBlocksBatchSize, removeStoppedNeighbors(neighbors), headersHash[batchStartHeight-startHeight:], fastSyncHeight)
 				if err == nil {
-					log.Infof("Synced %d blocks in %s", stopHeight-startHeight+1, time.Since(startTime))
+					log.Infof("Synced %d blocks in %s", stopHeight-batchStartHeight+1, time.Since(startTime))
 					break
 				}
 				log.Errorf("Sync blocks error with batch size %d: %v", syncBlocksBatchSize, err)
@@ -539,9 +568,13 @@ func (localNode *LocalNode) ResetSyncing() {
 	localNode.syncOnce = new(sync.Once)
 }
 
-func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, startPrevHash, stopHash common.Uint256, neighbors []*RemoteNode) ([]common.Uint256, error) {
+func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, startPrevHash, stopHash common.Uint256, neighbors []*RemoteNode, fullHeader bool) ([]common.Uint256, []*block.Header, error) {
 	var nextHeader *block.Header
 	headersHash := make([]common.Uint256, stopHeight-startHeight+1, stopHeight-startHeight+1)
+	var headers []*block.Header
+	if fullHeader {
+		headers = make([]*block.Header, stopHeight-startHeight+1, stopHeight-startHeight+1)
+	}
 	numBatches := (stopHeight-startHeight)/config.Parameters.SyncBlockHeadersBatchSize + 1
 	numWorkers := uint32(len(neighbors)) * concurrentSyncRequestPerNeighbor
 
@@ -596,6 +629,9 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 				return false
 			}
 			headersHash[height-startHeight] = headerHash
+			if fullHeader {
+				headers[height-startHeight] = header
+			}
 			nextHeader = header
 		}
 		return true
@@ -612,15 +648,15 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		FinishJob:           saveHeader,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	err = cs.Start(context.Background())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return headersHash, nil
+	return headersHash, headers, nil
 }
 
 func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchSize uint32, neighbors []*RemoteNode, headersHash []common.Uint256, fastSyncHeight uint32) error {

@@ -64,16 +64,8 @@ func (bc *Blockchain) AddBlock(block *block.Block, pruning, fastSync bool) error
 	return nil
 }
 
-func (bc *Blockchain) GetHeader(hash common.Uint256) (*block.Header, error) {
-	header, err := DefaultLedger.Store.GetHeader(hash)
-	if err != nil {
-		return nil, err
-	}
-	return header, nil
-}
-
 func (bc *Blockchain) SaveBlock(block *block.Block, pruning, fastSync bool) error {
-	err := HeaderCheck(block, fastSync)
+	err := HeaderCheck(block.Header, fastSync)
 	if err != nil {
 		return err
 	}
@@ -93,6 +85,33 @@ func (bc *Blockchain) SaveBlock(block *block.Block, pruning, fastSync bool) erro
 	bc.BlockHeight = block.Header.UnsignedHeader.Height
 
 	event.Queue.Notify(event.BlockPersistCompleted, block)
+
+	return nil
+}
+
+func (bc *Blockchain) GetHeader(hash common.Uint256) (*block.Header, error) {
+	header, err := DefaultLedger.Store.GetHeader(hash)
+	if err != nil {
+		return nil, err
+	}
+	return header, nil
+}
+
+func (bc *Blockchain) AddHeader(header *block.Header, fastSync bool) error {
+	bc.mutex.Lock()
+	defer bc.mutex.Unlock()
+
+	err := HeaderCheck(header, fastSync)
+	if err != nil {
+		return err
+	}
+
+	err = DefaultLedger.Store.AddHeader(header)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("# current header height: %d, header hash: %x", header.UnsignedHeader.Height, header.Hash())
 
 	return nil
 }

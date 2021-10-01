@@ -18,10 +18,9 @@ import (
 )
 
 type Block struct {
-	Header          *Header
-	Transactions    []*transaction.Transaction
-	IsHeaderChecked bool
-	IsTxnsChecked   bool
+	Header        *Header
+	Transactions  []*transaction.Transaction
+	IsTxnsChecked bool
 }
 
 func (b *Block) FromMsgBlock(msgBlock *pb.Block) {
@@ -70,13 +69,12 @@ func (b *Block) GetTxsSize() int {
 	return txnSize
 }
 
-func (b *Block) GetSigner() ([]byte, []byte, error) {
-	return b.Header.UnsignedHeader.SignerPk, b.Header.UnsignedHeader.SignerId, nil
-}
-
 func (b *Block) Trim(w io.Writer) error {
-	dt, _ := b.Header.Marshal()
-	err := serialization.WriteVarBytes(w, dt)
+	dt, err := b.Header.Marshal()
+	if err != nil {
+		return err
+	}
+	err = serialization.WriteVarBytes(w, dt)
 	if err != nil {
 		return err
 	}
@@ -111,7 +109,10 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 	var txhash common.Uint256
 	var tharray []common.Uint256
 	for i = 0; i < Len; i++ {
-		txhash.Deserialize(r)
+		err = txhash.Deserialize(r)
+		if err != nil {
+			return err
+		}
 		transaction := new(transaction.Transaction)
 		transaction.SetHash(txhash)
 		b.Transactions = append(b.Transactions, transaction)

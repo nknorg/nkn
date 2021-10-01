@@ -103,3 +103,7 @@ func (remoteNode *RemoteNode) CloseConn() {
 func (remoteNode *RemoteNode) String() string {
 	return remoteNode.nnetNode.String()
 }
+
+func (remoteNode *RemoteNode) IsStopped() bool {
+	return remoteNode.nnetNode.IsStopped()
+}

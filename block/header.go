@@ -21,6 +21,7 @@ type Header struct {
 	*pb.Header
 	hash                *common.Uint256
 	isSignatureVerified bool
+	IsHeaderChecked     bool
 }
 
 func (h *Header) Marshal() (buf []byte, err error) {
@@ -36,33 +37,111 @@ func (h *Header) Unmarshal(buf []byte) error {
 
 //Serialize the blockheader data without program
 func (h *Header) SerializeUnsigned(w io.Writer) error {
-	serialization.WriteUint32(w, h.UnsignedHeader.Version)
-	serialization.WriteVarBytes(w, h.UnsignedHeader.PrevBlockHash)
-	serialization.WriteVarBytes(w, h.UnsignedHeader.TransactionsRoot)
-	serialization.WriteVarBytes(w, h.UnsignedHeader.StateRoot)
-	serialization.WriteUint64(w, uint64(h.UnsignedHeader.Timestamp))
-	serialization.WriteUint32(w, h.UnsignedHeader.Height)
-	serialization.WriteUint32(w, uint32(h.UnsignedHeader.WinnerType))
-	serialization.WriteVarBytes(w, h.UnsignedHeader.SignerPk)
-	serialization.WriteVarBytes(w, h.UnsignedHeader.SignerId)
+	err := serialization.WriteUint32(w, h.UnsignedHeader.Version)
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteVarBytes(w, h.UnsignedHeader.PrevBlockHash)
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteVarBytes(w, h.UnsignedHeader.TransactionsRoot)
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteVarBytes(w, h.UnsignedHeader.StateRoot)
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteUint64(w, uint64(h.UnsignedHeader.Timestamp))
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteUint32(w, h.UnsignedHeader.Height)
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteUint32(w, uint32(h.UnsignedHeader.WinnerType))
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteVarBytes(w, h.UnsignedHeader.SignerPk)
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteVarBytes(w, h.UnsignedHeader.SignerId)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func (h *Header) DeserializeUnsigned(r io.Reader) error {
-	h.UnsignedHeader.Version, _ = serialization.ReadUint32(r)
-	h.UnsignedHeader.PrevBlockHash, _ = serialization.ReadVarBytes(r)
-	h.UnsignedHeader.TransactionsRoot, _ = serialization.ReadVarBytes(r)
-	h.UnsignedHeader.StateRoot, _ = serialization.ReadVarBytes(r)
-	timestamp, _ := serialization.ReadUint64(r)
+	var err error
+
+	h.UnsignedHeader.Version, err = serialization.ReadUint32(r)
+	if err != nil {
+		return err
+	}
+
+	h.UnsignedHeader.PrevBlockHash, err = serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+
+	h.UnsignedHeader.TransactionsRoot, err = serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+
+	h.UnsignedHeader.StateRoot, err = serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+
+	timestamp, err := serialization.ReadUint64(r)
+	if err != nil {
+		return err
+	}
+
 	h.UnsignedHeader.Timestamp = int64(timestamp)
-	h.UnsignedHeader.Height, _ = serialization.ReadUint32(r)
-	winnerType, _ := serialization.ReadUint32(r)
+
+	h.UnsignedHeader.Height, err = serialization.ReadUint32(r)
+	if err != nil {
+		return err
+	}
+
+	winnerType, err := serialization.ReadUint32(r)
+	if err != nil {
+		return err
+	}
+
 	h.UnsignedHeader.WinnerType = pb.WinnerType(winnerType)
-	h.UnsignedHeader.SignerPk, _ = serialization.ReadVarBytes(r)
-	h.UnsignedHeader.SignerId, _ = serialization.ReadVarBytes(r)
+
+	h.UnsignedHeader.SignerPk, err = serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
+
+	h.UnsignedHeader.SignerId, err = serialization.ReadVarBytes(r)
+	if err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func (h *Header) GetSigner() ([]byte, []byte, error) {
+	return h.UnsignedHeader.SignerPk, h.UnsignedHeader.SignerId, nil
 }
 
 func (h *Header) GetProgramHashes() ([]common.Uint160, error) {
