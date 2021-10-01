@@ -305,7 +305,8 @@ var (
 		WebGuiCreateWallet:           false,
 		PasswordFile:                 "",
 		StatePruningMode:             "lowmem",
-		RecentStateCount:             1024,
+		RecentStateCount:             32768,
+		RecentBlockCount:             32768,
 		MinPruningCompactHeights:     32768,
 		RPCRateLimit:                 1024,
 		RPCRateBurst:                 4096,
@@ -381,6 +382,7 @@ type Configuration struct {
 	PasswordFile                 string        `json:"PasswordFile"`
 	StatePruningMode             string        `json:"StatePruningMode"`
 	RecentStateCount             uint32        `json:"RecentStateCount"`
+	RecentBlockCount             uint32        `json:"RecentBlockCount"`
 	MinPruningCompactHeights     uint32        `json:"MinPruningCompactHeights"`
 	RPCRateLimit                 float64       `json:"RPCRateLimit"` // requests per second
 	RPCRateBurst                 uint32        `json:"RPCRateBurst"`
@@ -552,13 +554,30 @@ func (config *Configuration) verify() error {
 	}
 
 	switch config.SyncMode {
+	case "light":
 	case "fast":
 	case "full":
 	default:
 		return fmt.Errorf("unknown sync mode %v", config.SyncMode)
 	}
 
+	if config.RecentBlockCount <= GenerateIDBlockDelay {
+		return fmt.Errorf("RecentBlockCount should be > %d", GenerateIDBlockDelay)
+	}
+
+	if config.RecentBlockCount <= config.SigChainCacheSize {
+		return fmt.Errorf("RecentBlockCount should be > %d", config.SigChainCacheSize)
+	}
+
 	return nil
+}
+
+func (config *Configuration) IsFastSync() bool {
+	return config.SyncMode == "fast" || config.SyncMode == "light"
+}
+
+func (config *Configuration) IsLightSync() bool {
+	return config.SyncMode == "light"
 }
 
 func findMinMaxPort(array []uint16) (uint16, uint16) {

@@ -86,7 +86,6 @@ func (ref *RefCounts) createRefCounts(n node, inMemory bool) error {
 				}
 			}
 			ref.counts[hs] = count
-
 		}
 		if count == 0 {
 			if err := ref.createRefCounts(n.Val, inMemory); err != nil {

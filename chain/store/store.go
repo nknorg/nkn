@@ -353,12 +353,12 @@ func (cs *ChainStore) GetHeightByBlockHash(hash common.Uint256) (uint32, error) 
 		return header.UnsignedHeader.Height, nil
 	}
 
-	block, err := cs.GetBlock(hash)
+	header, err = cs.GetHeader(hash)
 	if err != nil {
 		return 0, err
 	}
 
-	return block.Header.UnsignedHeader.Height, nil
+	return header.UnsignedHeader.Height, nil
 }
 
 func (cs *ChainStore) IsBlockInStore(hash common.Uint256) bool {
@@ -367,6 +367,50 @@ func (cs *ChainStore) IsBlockInStore(hash common.Uint256) bool {
 	}
 
 	return true
+}
+
+func (cs *ChainStore) persistHeader(h *block.Header) error {
+	err := cs.st.NewBatch()
+	if err != nil {
+		return err
+	}
+
+	headerHash := h.Hash()
+
+	headerBuffer := bytes.NewBuffer(nil)
+	headerBytes, err := h.Marshal()
+	if err != nil {
+		return err
+	}
+
+	err = serialization.WriteVarBytes(headerBuffer, headerBytes)
+	if err != nil {
+		return err
+	}
+
+	err = cs.st.BatchPut(db.HeaderKey(headerHash), headerBuffer.Bytes())
+	if err != nil {
+		return err
+	}
+
+	//batch put headerhash
+	headerHashBuffer := bytes.NewBuffer(nil)
+	_, err = headerHash.Serialize(headerHashBuffer)
+	if err != nil {
+		return err
+	}
+
+	err = cs.st.BatchPut(db.BlockhashKey(h.UnsignedHeader.Height), headerHashBuffer.Bytes())
+	if err != nil {
+		return err
+	}
+
+	err = cs.st.BatchCommit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (cs *ChainStore) persist(b *block.Block, fastSync bool) error {
@@ -557,6 +601,15 @@ func (cs *ChainStore) GetHeight() uint32 {
 }
 
 func (cs *ChainStore) AddHeader(header *block.Header) error {
+	err := cs.persistHeader(header)
+	if err != nil {
+		return err
+	}
+
+	if header.UnsignedHeader.Height >= config.Parameters.BlockHeaderCacheSize {
+		cs.headerCache.RemoveCachedHeader(header.UnsignedHeader.Height - config.Parameters.BlockHeaderCacheSize)
+	}
+
 	cs.headerCache.AddHeaderToCache(header)
 
 	return nil
