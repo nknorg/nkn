@@ -59,7 +59,12 @@ func NewLedgerStore() (*ChainStore, error) {
 }
 
 func (cs *ChainStore) PrepareFastSync(fastSyncHeight uint32, fastSyncRootHash common.Uint256) error {
-	err := cs.persistSyncRootHeight(fastSyncHeight)
+	err := cs.st.NewBatch()
+	if err != nil {
+		return err
+	}
+
+	err = cs.persistSyncRootHeight(fastSyncHeight)
 	if err != nil {
 		return err
 	}
@@ -103,11 +108,28 @@ func (cs *ChainStore) FastSyncDone(syncRootHash common.Uint256, fastSyncHeight u
 	if err != nil {
 		return err
 	}
+
 	err = refCount.PersistRefCountHeights()
 	if err != nil {
 		return err
 	}
+
 	err = refCount.PersistPrunedHeights()
+	if err != nil {
+		return err
+	}
+
+	err = refCount.PersistNeedReset()
+	if err != nil {
+		return err
+	}
+
+	err = refCount.Commit()
+	if err != nil {
+		return err
+	}
+
+	err = cs.st.NewBatch()
 	if err != nil {
 		return err
 	}
@@ -116,6 +138,7 @@ func (cs *ChainStore) FastSyncDone(syncRootHash common.Uint256, fastSyncHeight u
 	if err != nil {
 		return err
 	}
+
 	err = cs.persistSyncStatus(postFastSync)
 	if err != nil {
 		return err
@@ -928,17 +951,17 @@ func (cs *ChainStore) getCompactHeight() uint32 {
 func (cs *ChainStore) persistCompactHeight(height uint32) error {
 	heightBuffer := make([]byte, 4)
 	binary.LittleEndian.PutUint32(heightBuffer[:], height)
-	return cs.st.Put(db.TrieCompactHeightKey(), heightBuffer)
+	return cs.st.BatchPut(db.TrieCompactHeightKey(), heightBuffer)
 }
 
 func (cs *ChainStore) persistSyncRootHeight(height uint32) error {
 	heightBuffer := make([]byte, 4)
 	binary.LittleEndian.PutUint32(heightBuffer[:], height)
-	return cs.st.Put(db.TrieFastSyncRootHeightKey(), heightBuffer)
+	return cs.st.BatchPut(db.TrieFastSyncRootHeightKey(), heightBuffer)
 }
 
 func (cs *ChainStore) persistSyncStatus(status byte) error {
-	return cs.st.Put(db.TrieFastSyncStatusKey(), []byte{status})
+	return cs.st.BatchPut(db.TrieFastSyncStatusKey(), []byte{status})
 }
 
 func (cs *ChainStore) GetSyncRootHeight() (uint32, error) {

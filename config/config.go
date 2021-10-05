@@ -74,14 +74,12 @@ const (
 	MaxClientMessageSize            = 4 * 1024 * 1024
 	MinNameRegistrationFee          = 10 * common.StorageFactor
 	DefaultNameDuration             = 365 * 24 * 60 * 60 / int(ConsensusDuration/time.Second)
-	FastSyncMaxBatchSize            = 100 * 1024
-	FastSyncMaxStateReqSize         = 500
 )
 
 const (
 	defaultConfigFile                 = "config.json"
 	estimatedHeaderSize               = 418
-	defaultSyncHeaderMaxMemoryPercent = 0.5
+	defaultSyncHeaderMaxMemoryPercent = 2.0
 	defaultSyncHeaderMaxSize          = 32768
 	defaultSyncMaxMemoryPercent       = 25
 	defaultSyncBatchWindowSize        = 64
@@ -305,7 +303,7 @@ var (
 		WebGuiCreateWallet:           false,
 		PasswordFile:                 "",
 		StatePruningMode:             "lowmem",
-		RecentStateCount:             32768,
+		RecentStateCount:             16384,
 		RecentBlockCount:             32768,
 		MinPruningCompactHeights:     32768,
 		RPCRateLimit:                 1024,
