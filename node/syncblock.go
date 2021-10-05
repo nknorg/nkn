@@ -640,7 +640,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 	cs, err := consequential.NewConSequential(&consequential.Config{
 		StartJobID:          numBatches - 1,
 		EndJobID:            0,
-		JobBufSize:          config.Parameters.SyncBatchWindowSize,
+		JobBufSize:          numBatches,
 		WorkerPoolSize:      numWorkers,
 		MaxWorkerFails:      maxSyncWorkerFails,
 		WorkerStartInterval: syncWorkerStartInterval,

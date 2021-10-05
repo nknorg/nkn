@@ -7,8 +7,12 @@ import (
 	"github.com/nknorg/nkn/v2/chain/db"
 	"github.com/nknorg/nkn/v2/chain/trie"
 	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
+)
+
+const (
+	fastSyncMaxBatchSize    = 100 * 1024
+	fastSyncMaxStateReqSize = 500
 )
 
 type stateSync struct {
@@ -68,7 +72,7 @@ func (s *stateSync) loop() error {
 				return
 			}
 			for {
-				jobs, _ := s.sched.Pop(config.FastSyncMaxStateReqSize)
+				jobs, _ := s.sched.Pop(fastSyncMaxStateReqSize)
 				if len(jobs) == 0 {
 					break
 				}
@@ -102,7 +106,7 @@ func (s *stateSync) loop() error {
 }
 
 func (s *stateSync) commit(force bool) error {
-	if !force && s.bytesUncommitted < config.FastSyncMaxBatchSize {
+	if !force && s.bytesUncommitted < fastSyncMaxBatchSize {
 		return nil
 	}
 	s.db.NewBatch()

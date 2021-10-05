@@ -10,6 +10,10 @@ import (
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
+const (
+	maxRefCountKeysInMemory = 32768
+)
+
 type RefCounts struct {
 	trie   *Trie
 	counts map[common.Uint256]uint32
@@ -53,18 +57,42 @@ func (ref *RefCounts) RebuildRefCount() error {
 	return nil
 }
 
+func (ref *RefCounts) RemoveAllRefCount() error {
+	err := ref.trie.db.NewBatch()
+	if err != nil {
+		return err
+	}
+
+	iter := ref.trie.db.NewIterator([]byte{byte(db.TRIE_RefCount)})
+	deleted := 0
+	for iter.Next() {
+		ref.trie.db.BatchDelete(iter.Key())
+		deleted++
+	}
+	iter.Release()
+
+	err = ref.trie.db.BatchCommit()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Delete %d ref count", deleted)
+
+	return nil
+}
+
 func (ref *RefCounts) LengthOfCounts() int {
 	return len(ref.counts)
 }
 
-func (ref *RefCounts) CreateRefCounts(hash common.Uint256, inMemory bool) error {
+func (ref *RefCounts) CreateRefCounts(hash common.Uint256, inMemory, persistIntermediate bool) error {
 	root, err := ref.trie.resolveHash(hash.ToArray(), true)
 	if err != nil {
 		return err
 	}
 
 	ref.trie.root = root
-	err = ref.createRefCounts(ref.trie.root, inMemory)
+	err = ref.createRefCounts(ref.trie.root, inMemory, persistIntermediate)
 	if err != nil {
 		return err
 	}
@@ -72,7 +100,30 @@ func (ref *RefCounts) CreateRefCounts(hash common.Uint256, inMemory bool) error 
 	return nil
 }
 
-func (ref *RefCounts) createRefCounts(n node, inMemory bool) error {
+func (ref *RefCounts) createRefCounts(n node, inMemory, persistIntermediate bool) error {
+	if persistIntermediate && len(ref.counts) >= maxRefCountKeysInMemory {
+		err := ref.PersistRefCounts()
+		if err != nil {
+			return err
+		}
+
+		err = ref.Commit()
+		if err != nil {
+			return err
+		}
+
+		log.Infof("Persist %d ref count", len(ref.counts))
+
+		for k := range ref.counts {
+			delete(ref.counts, k)
+		}
+
+		err = ref.NewBatch()
+		if err != nil {
+			return err
+		}
+	}
+
 	switch n := n.(type) {
 	case *shortNode:
 		hash, _ := n.cache()
@@ -88,7 +139,7 @@ func (ref *RefCounts) createRefCounts(n node, inMemory bool) error {
 			ref.counts[hs] = count
 		}
 		if count == 0 {
-			if err := ref.createRefCounts(n.Val, inMemory); err != nil {
+			if err := ref.createRefCounts(n.Val, inMemory, persistIntermediate); err != nil {
 				return err
 			}
 		}
@@ -111,7 +162,7 @@ func (ref *RefCounts) createRefCounts(n node, inMemory bool) error {
 		if count == 0 {
 			for i := 0; i < LenOfChildrenNodes; i++ {
 				if n.Children[i] != nil {
-					err := ref.createRefCounts(n.Children[i], inMemory)
+					err := ref.createRefCounts(n.Children[i], inMemory, persistIntermediate)
 					if err != nil {
 						return err
 					}
@@ -141,7 +192,7 @@ func (ref *RefCounts) createRefCounts(n node, inMemory bool) error {
 		if err != nil {
 			return err
 		}
-		return ref.createRefCounts(child, inMemory)
+		return ref.createRefCounts(child, inMemory, persistIntermediate)
 	case nil:
 		return nil
 	case valueNode:
@@ -317,6 +368,18 @@ func (ref *RefCounts) PersistPrunedHeights() error {
 	heightBuffer := make([]byte, 4)
 	binary.LittleEndian.PutUint32(heightBuffer[:], ref.targetPruningHeight)
 	return ref.trie.db.BatchPut(db.TriePrunedHeightKey(), heightBuffer)
+}
+
+func (ref *RefCounts) PersistNeedReset() error {
+	return ref.trie.db.BatchPut(db.TrieRefCountNeedResetKey(), []byte{1})
+}
+
+func (ref *RefCounts) ClearNeedReset() error {
+	return ref.trie.db.BatchDelete(db.TrieRefCountNeedResetKey())
+}
+
+func (ref *RefCounts) NeedReset() (bool, error) {
+	return ref.trie.db.Has(db.TrieRefCountNeedResetKey())
 }
 
 func (ref *RefCounts) Verify(hash common.Uint256) error {

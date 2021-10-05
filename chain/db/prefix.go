@@ -33,6 +33,7 @@ const (
 	TRIE_FastSyncStatus     DataEntryPrefix = 0xa5
 	TRIE_FastSyncRoot       DataEntryPrefix = 0xa6
 	TRIE_FastSyncRootHeight DataEntryPrefix = 0xa7
+	TRIE_RefCountNeedReset  DataEntryPrefix = 0xa8
 )
 
 func paddingKey(prefix DataEntryPrefix, key []byte) []byte {
@@ -90,6 +91,10 @@ func TrieRefCountKey(key []byte) []byte {
 
 func TrieRefCountHeightKey() []byte {
 	return paddingKey(TRIE_RefCountHeight, nil)
+}
+
+func TrieRefCountNeedResetKey() []byte {
+	return paddingKey(TRIE_RefCountNeedReset, nil)
 }
 
 func TriePrunedHeightKey() []byte {

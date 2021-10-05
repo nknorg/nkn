@@ -94,9 +94,32 @@ func (sdb *StateDB) IntermediateRoot() (common.Uint256, error) {
 	return sdb.trie.Hash(), nil
 }
 
+func (sdb *StateDB) maybeResetRefCount() (bool, error) {
+	refCounts, err := sdb.trie.NewRefCounts(0, 0)
+	if err != nil {
+		return false, err
+	}
+
+	needReset, err := refCounts.NeedReset()
+	if err != nil {
+		return false, err
+	}
+
+	if needReset {
+		return true, refCounts.RemoveAllRefCount()
+	}
+
+	return false, nil
+}
+
 func (sdb *StateDB) PruneStatesLowMemory(full bool) error {
 	if full {
 		log.Infof("Start pruning...")
+	}
+
+	reset, err := sdb.maybeResetRefCount()
+	if err != nil {
+		return err
 	}
 
 	refCountStartHeight, pruningStartHeight := sdb.cs.getPruningStartHeight()
@@ -125,7 +148,7 @@ func (sdb *StateDB) PruneStatesLowMemory(full bool) error {
 				return err
 			}
 
-			err = refCounts.CreateRefCounts(refStateRoots[0], false)
+			err = refCounts.CreateRefCounts(refStateRoots[0], false, reset)
 			if err != nil {
 				return err
 			}
@@ -138,6 +161,14 @@ func (sdb *StateDB) PruneStatesLowMemory(full bool) error {
 			err = refCounts.PersistRefCountHeights()
 			if err != nil {
 				return err
+			}
+
+			if reset {
+				err = refCounts.ClearNeedReset()
+				if err != nil {
+					return err
+				}
+				reset = false
 			}
 
 			err = refCounts.Commit()
@@ -208,6 +239,11 @@ func (sdb *StateDB) PruneStatesLowMemory(full bool) error {
 				return err
 			}
 
+			err = sdb.cs.st.NewBatch()
+			if err != nil {
+				return err
+			}
+
 			err = sdb.cs.persistCompactHeight(targetCompactHeight)
 			if err != nil {
 				return err
@@ -269,7 +305,7 @@ func (sdb *StateDB) PruneStates() error {
 	refCounts.RebuildRefCount()
 
 	for idx, hash := range refStateRoots {
-		err = refCounts.CreateRefCounts(hash, true)
+		err = refCounts.CreateRefCounts(hash, true, false)
 		if err != nil {
 			return err
 		}
@@ -350,7 +386,7 @@ func (sdb *StateDB) SequentialPrune() error {
 	}
 
 	for idx, hash := range refStateRoots {
-		err := refCounts.CreateRefCounts(hash, true)
+		err := refCounts.CreateRefCounts(hash, true, false)
 		if err != nil {
 			return err
 		}
