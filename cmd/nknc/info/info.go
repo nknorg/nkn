@@ -19,6 +19,8 @@ func infoAction(c *cli.Context) (err error) {
 	txhash := c.String("txhash")
 	latestblockhash := c.Bool("latestblockhash")
 	height := c.Int("height")
+	header := c.Int("header")
+	headerHash := c.String("headerhash")
 	blockcount := c.Bool("blockcount")
 	connections := c.Bool("connections")
 	neighbor := c.Bool("neighbor")
@@ -32,7 +34,7 @@ func infoAction(c *cli.Context) (err error) {
 
 	var resp []byte
 	var output [][]byte
-	if height != -1 {
+	if height >= 0 {
 		resp, err = client.Call(nknc.Address(), "getblock", 0, map[string]interface{}{"height": height})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -48,7 +50,7 @@ func infoAction(c *cli.Context) (err error) {
 		output = append(output, resp)
 	}
 
-	if c.String("blockhash") != "" {
+	if len(blockhash) > 0 {
 		resp, err = client.Call(nknc.Address(), "getblock", 0, map[string]interface{}{"hash": blockhash})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -60,6 +62,24 @@ func infoAction(c *cli.Context) (err error) {
 			} else {
 				fmt.Fprintln(os.Stderr, "Fallback to original resp due to PrettyPrint fail: ", err)
 			}
+		}
+		output = append(output, resp)
+	}
+
+	if header >= 0 {
+		resp, err = client.Call(nknc.Address(), "getheader", 0, map[string]interface{}{"height": header})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
+		}
+		output = append(output, resp)
+	}
+
+	if len(headerHash) > 0 {
+		resp, err = client.Call(nknc.Address(), "getheader", 0, map[string]interface{}{"hash": headerHash})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return err
 		}
 		output = append(output, resp)
 	}
@@ -205,6 +225,15 @@ func NewCommand() *cli.Command {
 				Name:  "height",
 				Usage: "block height for querying a block",
 				Value: -1,
+			},
+			cli.IntFlag{
+				Name:  "header",
+				Usage: "get block header by height",
+				Value: -1,
+			},
+			cli.StringFlag{
+				Name:  "headerhash",
+				Usage: "get block header by hash",
 			},
 			cli.BoolFlag{
 				Name:  "blockcount, c",
