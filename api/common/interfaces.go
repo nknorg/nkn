@@ -111,6 +111,49 @@ func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} 
 	return respPacking(errcode.SUCCESS, b)
 }
 
+// getHeader gets block header by height or hash
+// params: {"height":<height> | "hash":<hash>}
+// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
+func getHeader(s Serverer, params map[string]interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
+	}
+
+	var hash common.Uint256
+	if index, ok := params["height"].(float64); ok {
+		var err error
+		height := uint32(index)
+		if hash, err = chain.DefaultLedger.Store.GetBlockHash(height); err != nil {
+			return respPacking(errcode.UNKNOWN_HASH, err.Error())
+		}
+	} else if str, ok := params["hash"].(string); ok {
+		hex, err := hex.DecodeString(str)
+		if err != nil {
+			return respPacking(errcode.INVALID_PARAMS, err.Error())
+		}
+		if err := hash.Deserialize(bytes.NewReader(hex)); err != nil {
+			return respPacking(errcode.UNKNOWN_HASH, err.Error())
+		}
+	} else {
+		return respPacking(errcode.INVALID_PARAMS, "parameter should be height or hash")
+	}
+
+	header, err := chain.DefaultLedger.Store.GetHeader(hash)
+	if err != nil {
+		return respPacking(errcode.UNKNOWN_BLOCK, err.Error())
+	}
+
+	var b interface{}
+	info, err := header.GetInfo()
+	if err != nil {
+		return respPacking(errcode.INTERNAL_ERROR, err.Error())
+	}
+
+	json.Unmarshal(info, &b)
+
+	return respPacking(errcode.SUCCESS, b)
+}
+
 // getBlockCount return The total number of blocks
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
@@ -909,6 +952,7 @@ func findSuccessorAddr(s Serverer, params map[string]interface{}) map[string]int
 var InitialAPIHandlers = map[string]APIHandler{
 	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
 	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC},
+	"getheader":            {Handler: getHeader, AccessCtrl: BIT_JSONRPC},
 	"getblockcount":        {Handler: getBlockCount, AccessCtrl: BIT_JSONRPC},
 	"getlatestblockheight": {Handler: getLatestBlockHeight, AccessCtrl: BIT_JSONRPC},
 	"getblocktxsbyheight":  {Handler: getBlockTxsByHeight, AccessCtrl: BIT_JSONRPC},
