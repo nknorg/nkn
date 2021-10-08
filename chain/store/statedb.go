@@ -249,6 +249,11 @@ func (sdb *StateDB) PruneStatesLowMemory(full bool) error {
 				return err
 			}
 
+			err = sdb.cs.st.BatchCommit()
+			if err != nil {
+				return err
+			}
+
 			log.Infof("Start verifying database at height %d", targetCompactHeight)
 
 			latestStateRoots, err := sdb.cs.GetStateRoots(targetCompactHeight, targetCompactHeight)
