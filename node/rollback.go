@@ -31,15 +31,15 @@ func (localNode *LocalNode) maybeRollback(neighbors []*RemoteNode) (bool, error)
 		return false, nil
 	}
 
-	if config.MaxRollbackBlocks == 0 {
+	if config.Parameters.MaxRollbackBlocks == 0 {
 		return false, errors.New("rollback needed but MaxRollbackBlocks is 0")
 	}
 
 	log.Warningf("Local block hash %s is different from neighbors' majority block hash %s at height %d, rollback needed", currentHash.ToHexString(), majorityBlockHash.ToHexString(), currentHeight)
 
 	var rollbackToHeight uint32
-	if currentHeight > config.MaxRollbackBlocks {
-		rollbackToHeight = currentHeight - config.MaxRollbackBlocks
+	if currentHeight > config.Parameters.MaxRollbackBlocks {
+		rollbackToHeight = currentHeight - config.Parameters.MaxRollbackBlocks
 	}
 
 	majorityBlockHash = localNode.getNeighborsMajorityBlockHashByHeight(rollbackToHeight, neighbors)
@@ -49,7 +49,7 @@ func (localNode *LocalNode) maybeRollback(neighbors []*RemoteNode) (bool, error)
 
 	rollbackHash, _ := chain.DefaultLedger.Store.GetBlockHash(rollbackToHeight)
 	if majorityBlockHash != rollbackHash {
-		return false, fmt.Errorf("local ledger has forked for more than %d blocks", config.MaxRollbackBlocks)
+		return false, fmt.Errorf("local ledger has forked for more than %d blocks", config.Parameters.MaxRollbackBlocks)
 	}
 
 	for rollbackHeight := currentHeight; rollbackHeight > rollbackToHeight; rollbackHeight-- {

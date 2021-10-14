@@ -29,7 +29,6 @@ const (
 	ConsensusDuration               = 20 * time.Second
 	ConsensusTimeout                = 60 * time.Second
 	NodeIDBytes                     = 32
-	MaxRollbackBlocks               = 180
 	SigChainBlockDelay              = 1
 	SigChainPropogationTime         = 2
 	MinNumSuccessors                = 8
@@ -313,6 +312,7 @@ var (
 		SyncBlockRateLimit:           256,
 		SyncBlockRateBurst:           1024,
 		SyncMode:                     "full",
+		MaxRollbackBlocks:            180,
 	}
 )
 
@@ -391,6 +391,7 @@ type Configuration struct {
 	BlockHeaderCacheSize         uint32        `json:"BlockHeaderCacheSize"`
 	SigChainCacheSize            uint32        `json:"SigChainCacheSize"`
 	SyncMode                     string        `json:"SyncMode"`
+	MaxRollbackBlocks            uint32        `json:"MaxRollbackBlocks"`
 }
 
 func Init() error {
@@ -565,6 +566,10 @@ func (config *Configuration) verify() error {
 
 	if config.RecentBlockCount <= config.SigChainCacheSize {
 		return fmt.Errorf("RecentBlockCount should be > %d", config.SigChainCacheSize)
+	}
+
+	if config.RecentBlockCount <= config.MaxRollbackBlocks {
+		return fmt.Errorf("RecentBlockCount should be > %d", config.MaxRollbackBlocks)
 	}
 
 	return nil
