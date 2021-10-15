@@ -443,7 +443,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "sync",
-			Usage:       "sync mode: full, fast",
+			Usage:       "sync mode: full, fast, light",
 			Destination: &config.SyncMode,
 		},
 		cli.StringFlag{
