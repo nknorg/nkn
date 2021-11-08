@@ -142,6 +142,9 @@ func NewMessageBuffer() *MessageBuffer {
 }
 
 func (messageBuffer *MessageBuffer) removeOldestMessage() {
+	if messageBuffer.length == 0 {
+		return
+	}
 	var oldest *MessageQueue = nil
 	var client string = ""
 	for id, queue := range messageBuffer.buffer {
@@ -193,13 +196,18 @@ func (messageBuffer *MessageBuffer) AddMessage(clientID []byte, msg *pb.Relay) {
 		select {
 		case <-timer: // expiration
 			messageBuffer.Lock()
-			messageQueue.delete(relayMessage)
-			delete(messageBuffer.abortChannels, sn)
-			if messageQueue.length == 0 {
-				delete(messageBuffer.buffer, clientIDStr)
+			select {
+			case <- abort:
+				delete(messageBuffer.abortChannels, sn)
+			default:
+				messageQueue.delete(relayMessage)
+				delete(messageBuffer.abortChannels, sn)
+				if messageQueue.length == 0 {
+					delete(messageBuffer.buffer, clientIDStr)
+				}
+				messageBuffer.length--
 			}
-			messageBuffer.length--
-			messageBuffer.Unlock()
+			messageBuffer.Unlock()	
 		case <-abort: // consumed or removed
 			messageBuffer.Lock()
 			delete(messageBuffer.abortChannels, sn)
