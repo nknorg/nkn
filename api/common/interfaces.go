@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -25,7 +26,7 @@ const (
 	BIT_WEBSOCKET byte = 2
 )
 
-type Handler func(Serverer, map[string]interface{}) map[string]interface{}
+type Handler func(Serverer, map[string]interface{}, context.Context) map[string]interface{}
 
 type APIHandler struct {
 	Handler    Handler
@@ -55,7 +56,7 @@ func (ah *APIHandler) IsAccessableByWebsocket() bool {
 // getLatestBlockHash gets the latest block hash
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getLatestBlockHash(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getLatestBlockHash(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	height := chain.DefaultLedger.Store.GetHeight()
 	hash, err := chain.DefaultLedger.Store.GetBlockHash(height)
 	if err != nil {
@@ -71,7 +72,7 @@ func getLatestBlockHash(s Serverer, params map[string]interface{}) map[string]in
 // getBlock gets block by height or hash
 // params: {"height":<height> | "hash":<hash>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getBlock(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -114,7 +115,7 @@ func getBlock(s Serverer, params map[string]interface{}) map[string]interface{} 
 // getHeader gets block header by height or hash
 // params: {"height":<height> | "hash":<hash>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getHeader(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getHeader(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -157,21 +158,21 @@ func getHeader(s Serverer, params map[string]interface{}) map[string]interface{}
 // getBlockCount return The total number of blocks
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getBlockCount(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getBlockCount(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	return respPacking(errcode.SUCCESS, chain.DefaultLedger.Store.GetHeight()+1)
 }
 
 // getChordRingInfo gets the information of Chord
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getChordRingInfo(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getChordRingInfo(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	return respPacking(errcode.SUCCESS, s.GetNetNode().GetChordInfo())
 }
 
 // getLatestBlockHeight gets the latest block height
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getLatestBlockHeight(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getLatestBlockHeight(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	return respPacking(errcode.SUCCESS, chain.DefaultLedger.Store.GetHeight())
 }
 
@@ -198,7 +199,7 @@ func GetBlockTransactions(block *block.Block) interface{} {
 // getBlockTxsByHeight gets the transactions of block referenced by height
 // params: {"height":<height>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getBlockTxsByHeight(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getBlockTxsByHeight(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -227,14 +228,14 @@ func getBlockTxsByHeight(s Serverer, params map[string]interface{}) map[string]i
 // getConnectionCount gets the the number of Connections
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getConnectionCount(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getConnectionCount(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	return respPacking(errcode.SUCCESS, s.GetNetNode().GetConnectionCnt())
 }
 
 // getRawMemPool gets the transactions in txpool
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getRawMemPool(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getRawMemPool(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -299,7 +300,7 @@ func getRawMemPool(s Serverer, params map[string]interface{}) map[string]interfa
 // getTransaction gets the transaction by hash
 // params: {"hash":<hash>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getTransaction(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getTransaction(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -339,7 +340,7 @@ func getTransaction(s Serverer, params map[string]interface{}) map[string]interf
 // sendRawTransaction  sends raw transaction to the block chain
 // params: {"tx":<transaction>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]interface{} {
+func sendRawTransaction(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -369,14 +370,14 @@ func sendRawTransaction(s Serverer, params map[string]interface{}) map[string]in
 // getNeighbor gets neighbors of this node
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getNeighbor(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getNeighbor(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	return respPacking(errcode.SUCCESS, s.GetNetNode().GetNeighborInfo())
 }
 
 // getNodeState gets the state of this node
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getNodeState(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getNodeState(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	n := s.GetNetNode()
 	if n == nil {
 		// will be recovered by handler
@@ -388,7 +389,7 @@ func getNodeState(s Serverer, params map[string]interface{}) map[string]interfac
 // setDebugInfo sets log level
 // params: {"level":<log leverl>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func setDebugInfo(s Serverer, params map[string]interface{}) map[string]interface{} {
+func setDebugInfo(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -407,7 +408,7 @@ func setDebugInfo(s Serverer, params map[string]interface{}) map[string]interfac
 // getVersion gets version of this server
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getVersion(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getVersion(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	return respPacking(errcode.SUCCESS, config.Version)
 }
 
@@ -423,7 +424,7 @@ func NodeInfo(wsAddr, rpcAddr string, pubkey, id []byte) map[string]string {
 // getWsAddr get a websocket address
 // params: {"address":<address>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getWsAddr(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -446,7 +447,7 @@ func getWsAddr(s Serverer, params map[string]interface{}) map[string]interface{}
 	return respPacking(errcode.SUCCESS, NodeInfo(wsAddr, rpcAddr, pubkey, id))
 }
 
-func getWssAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getWssAddr(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -472,7 +473,7 @@ func getWssAddr(s Serverer, params map[string]interface{}) map[string]interface{
 // getBalanceByAddr gets balance by address
 // params: {"address":<address>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getBalanceByAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getBalanceByAddr(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -499,7 +500,7 @@ func getBalanceByAddr(s Serverer, params map[string]interface{}) map[string]inte
 // getBalanceByAssetID gets balance by address
 // params: {"address":<address>, "assetid":<assetid>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func GetBalanceByAssetID(s Serverer, params map[string]interface{}) map[string]interface{} {
+func GetBalanceByAssetID(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 2 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 2")
 	}
@@ -547,7 +548,7 @@ func GetBalanceByAssetID(s Serverer, params map[string]interface{}) map[string]i
 // getNonceByAddr gets balance by address
 // params: {"address":<address>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getNonceByAddr(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -582,7 +583,7 @@ func getNonceByAddr(s Serverer, params map[string]interface{}) map[string]interf
 // getId gets id by publick key
 // params: {"publickey":<publickey>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getId(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getId(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -638,7 +639,7 @@ func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) (e
 // getSubscription get subscription
 // params: {"topic":<topic>, "bucket":<bucket>, "subscriber":<subscriber>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getSubscription(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getSubscription(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 2 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 2")
 	}
@@ -679,7 +680,7 @@ func getSubscription(s Serverer, params map[string]interface{}) map[string]inter
 	})
 }
 
-func getRegistrant(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getRegistrant(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -705,7 +706,7 @@ func getRegistrant(s Serverer, params map[string]interface{}) map[string]interfa
 // getSubscribers get subscribers by topic
 // params: {"topic":<topic>, "bucket":<bucket>, "offset":<offset>, "limit":<limit>, "meta":<meta>, "txPool":<txPool>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getSubscribers(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getSubscribers(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 2 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 2")
 	}
@@ -761,9 +762,9 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 
 	var subscribers interface{}
 	if !meta {
-		subscribers, err = chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket), uint32(offset), uint32(limit), subscriberHashPrefix)
+		subscribers, err = chain.DefaultLedger.Store.GetSubscribers(topic, uint32(bucket), uint32(offset), uint32(limit), subscriberHashPrefix, ctx)
 	} else {
-		subscribers, err = chain.DefaultLedger.Store.GetSubscribersWithMeta(topic, uint32(bucket), uint32(offset), uint32(limit), subscriberHashPrefix)
+		subscribers, err = chain.DefaultLedger.Store.GetSubscribersWithMeta(topic, uint32(bucket), uint32(offset), uint32(limit), subscriberHashPrefix, ctx)
 	}
 	if err != nil {
 		return respPacking(errcode.INTERNAL_ERROR, err.Error())
@@ -784,7 +785,7 @@ func getSubscribers(s Serverer, params map[string]interface{}) map[string]interf
 // getSubscribersCount get subscribers count by topic
 // params: {"topic":<topic>, "bucket":<bucket>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getSubscribersCount(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getSubscribersCount(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -823,7 +824,10 @@ func getSubscribersCount(s Serverer, params map[string]interface{}) map[string]i
 		}
 	}
 
-	count := chain.DefaultLedger.Store.GetSubscribersCount(topic, uint32(bucket), subscriberHashPrefix)
+	count, err := chain.DefaultLedger.Store.GetSubscribersCount(topic, uint32(bucket), subscriberHashPrefix, ctx)
+	if err != nil {
+		return respPacking(errcode.INTERNAL_ERROR, err.Error())
+	}
 
 	rpcResultCache.Set(key, count)
 
@@ -833,7 +837,7 @@ func getSubscribersCount(s Serverer, params map[string]interface{}) map[string]i
 // getAsset get subscribers by topic
 // params: {"assetid":<id>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getAsset(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getAsset(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -871,7 +875,7 @@ func getAsset(s Serverer, params map[string]interface{}) map[string]interface{} 
 // getMyExtIP get RPC client's external IP
 // params: {"address":<address>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func getMyExtIP(s Serverer, params map[string]interface{}) map[string]interface{} {
+func getMyExtIP(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -898,7 +902,7 @@ func getMyExtIP(s Serverer, params map[string]interface{}) map[string]interface{
 // findSuccessorAddrs find the successors of a key
 // params: {"address":<address>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
-func findSuccessorAddrs(s Serverer, params map[string]interface{}) map[string]interface{} {
+func findSuccessorAddrs(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}
@@ -924,7 +928,7 @@ func findSuccessorAddrs(s Serverer, params map[string]interface{}) map[string]in
 }
 
 // Depracated, use findSuccessorAddrs instead
-func findSuccessorAddr(s Serverer, params map[string]interface{}) map[string]interface{} {
+func findSuccessorAddr(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")
 	}

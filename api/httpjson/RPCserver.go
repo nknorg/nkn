@@ -204,7 +204,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			}()
 			var data []byte
 			var err error
-			response := function(s, params)
+			response := function(s, params, r.Context())
 			code := response["error"].(errcode.ErrCode)
 			if code != errcode.SUCCESS {
 				result := map[string]interface{}{
