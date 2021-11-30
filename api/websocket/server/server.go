@@ -133,23 +133,23 @@ func (ws *WsServer) Start(wssCertReady chan struct{}) error {
 }
 
 func (ws *WsServer) registryMethod() {
-	gettxhashmap := func(s api.Serverer, cmd map[string]interface{}) map[string]interface{} {
+	gettxhashmap := func(s api.Serverer, cmd map[string]interface{}, ctx context.Context) map[string]interface{} {
 		ws.Lock()
 		defer ws.Unlock()
 		resp := api.RespPacking(len(ws.TxHashMap), errcode.SUCCESS)
 		return resp
 	}
 
-	heartbeat := func(s api.Serverer, cmd map[string]interface{}) map[string]interface{} {
+	heartbeat := func(s api.Serverer, cmd map[string]interface{}, ctx context.Context) map[string]interface{} {
 		return api.RespPacking(cmd["Userid"], errcode.SUCCESS)
 
 	}
 
-	getsessioncount := func(s api.Serverer, cmd map[string]interface{}) map[string]interface{} {
+	getsessioncount := func(s api.Serverer, cmd map[string]interface{}, ctx context.Context) map[string]interface{} {
 		return api.RespPacking(ws.SessionList.GetSessionCount(), errcode.SUCCESS)
 	}
 
-	setClient := func(s api.Serverer, cmd map[string]interface{}) map[string]interface{} {
+	setClient := func(s api.Serverer, cmd map[string]interface{}, ctx context.Context) map[string]interface{} {
 		addrStr, ok := cmd["Addr"].(string)
 		if !ok {
 			return api.RespPacking(nil, errcode.INVALID_PARAMS)
@@ -411,7 +411,7 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 	}
 	req["Userid"] = curSession.GetSessionId()
 	req["IsTls"] = r.TLS != nil
-	ret := action.handler(ws, req)
+	ret := action.handler(ws, req, r.Context())
 	resp := api.ResponsePack(ret["error"].(errcode.ErrCode))
 	resp["Action"] = actionName
 	resp["Result"] = ret["resultOrData"]
