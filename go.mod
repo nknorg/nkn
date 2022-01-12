@@ -13,7 +13,7 @@ require (
 	github.com/itchyny/base58-go v0.0.5
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a
-	github.com/nknorg/nnet v0.0.0-20210516000534-f80d3763d1bd
+	github.com/nknorg/nnet v0.0.0-20220112093001-f125c811090c
 	github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pbnjay/memory v0.0.0-20190104145345-974d429e7ae4

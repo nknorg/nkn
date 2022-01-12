@@ -60,11 +60,10 @@ func (crn *ChordRemoteNodeInfo) MarshalJSON() ([]byte, error) {
 	out["roundTripTime"] = crn.remoteNode.GetRoundTripTime() / time.Millisecond
 	out["protocolVersion"] = nodeData.ProtocolVersion
 
+	out["connTime"] = 0
 	nbr := crn.localNode.getNeighborByNNetNode(crn.remoteNode)
 	if nbr != nil {
 		out["connTime"] = time.Since(nbr.Node.startTime) / time.Second
-	} else {
-		out["connTime"] = 0
 	}
 
 	return json.Marshal(out)
