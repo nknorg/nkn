@@ -38,6 +38,7 @@ func (remoteNode *RemoteNode) MarshalJSON() ([]byte, error) {
 	out["height"] = remoteNode.GetHeight()
 	out["isOutbound"] = remoteNode.nnetNode.IsOutbound
 	out["roundTripTime"] = remoteNode.nnetNode.GetRoundTripTime() / time.Millisecond
+	out["connTime"] = time.Since(remoteNode.Node.startTime) / time.Second
 
 	return json.Marshal(out)
 }

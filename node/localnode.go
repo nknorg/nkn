@@ -43,9 +43,8 @@ type LocalNode struct {
 
 	mu                sync.RWMutex
 	syncOnce          *sync.Once
-	relayMessageCount uint64    // count how many messages node has relayed since start
-	startTime         time.Time // Time of localNode init
-	proposalSubmitted uint32    // Count of localNode submitted proposal
+	relayMessageCount uint64 // count how many messages node has relayed since start
+	proposalSubmitted uint32 // Count of localNode submitted proposal
 }
 
 func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
@@ -97,7 +96,6 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		syncBlockLimiter:    rate.NewLimiter(rate.Limit(config.Parameters.SyncBlockRateLimit), int(config.Parameters.SyncBlockRateBurst)),
 		messageHandlerStore: newMessageHandlerStore(),
 		nnet:                nn,
-		startTime:           time.Now(),
 	}
 
 	localNode.relayer = NewRelayService(wallet, localNode)
@@ -185,7 +183,7 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 	}
 
 	out["height"] = localNode.GetHeight()
-	out["uptime"] = time.Since(localNode.startTime).Truncate(time.Second).Seconds()
+	out["uptime"] = time.Since(localNode.Node.startTime) / time.Second
 	out["version"] = config.Version
 	out["relayMessageCount"] = localNode.GetRelayMessageCount()
 	if config.Parameters.MiningDebug {
