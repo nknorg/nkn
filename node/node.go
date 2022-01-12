@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/nknorg/nkn/v2/crypto"
@@ -16,6 +17,7 @@ type Node struct {
 	*nnetpb.Node
 	*pb.NodeData
 	publicKey []byte
+	startTime time.Time
 
 	sync.RWMutex
 	syncState           pb.SyncState
@@ -50,7 +52,7 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	out["publicKey"] = hex.EncodeToString(n.NodeData.PublicKey)
+	out["publicKey"] = hex.EncodeToString(n.GetPublicKey())
 	out["syncState"] = n.GetSyncState().String()
 
 	return json.Marshal(out)
@@ -66,6 +68,7 @@ func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
 		Node:      nnetNode,
 		NodeData:  nodeData,
 		publicKey: nodeData.PublicKey,
+		startTime: time.Now(),
 		syncState: pb.SyncState_WAIT_FOR_SYNCING,
 	}
 
