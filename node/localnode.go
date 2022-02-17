@@ -166,6 +166,16 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	nn.MustApplyMiddleware(routing.RemoteMessageRouted{localNode.remoteMessageRouted, 0})
 
+	nn.MustApplyMiddleware(chord.RelayPriority{func(rn *nnetnode.RemoteNode, priority float64) (float64, bool) {
+		var connTime time.Duration
+		nbr := localNode.getNeighborByNNetNode(rn)
+		if nbr != nil {
+			connTime = time.Since(nbr.Node.startTime)
+		}
+		priority = relayPriority(priority, connTime)
+		return priority, true
+	}, 0})
+
 	return localNode, nil
 }
 
