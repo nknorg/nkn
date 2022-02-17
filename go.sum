@@ -267,8 +267,8 @@ github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a h1:DXTCQnVV2E
 github.com/nknorg/consequential v0.0.0-20190823093205-a45aff4a218a/go.mod h1:H7XeI/XOPpWVmqM+ScT75RLMn7jWnlZDwHRahSxNxo0=
 github.com/nknorg/go-nat v1.0.1 h1:4dFK0oDyqkIE0it03Y4pMgBQpl1Y0mrYHEp+j/nZ910=
 github.com/nknorg/go-nat v1.0.1/go.mod h1:dblX1Ac2j08rTUGs5CKCAfjHGN5eDFhbeqt2rccSP3Y=
-github.com/nknorg/nnet v0.0.0-20220112093001-f125c811090c h1:jPM6SupswGGsecysALiL3bjXTW1JTLqxquVj8845Wq4=
-github.com/nknorg/nnet v0.0.0-20220112093001-f125c811090c/go.mod h1:4DHEQEMhlRGIKGSyhATdjeusdqaHafDatadtpeHBpvI=
+github.com/nknorg/nnet v0.0.0-20220217113219-4d27780990b1 h1:X8tbQoV6Yjy+DGtyO9mim6KFwXzsIQVF4q3XGzizaRo=
+github.com/nknorg/nnet v0.0.0-20220217113219-4d27780990b1/go.mod h1:4DHEQEMhlRGIKGSyhATdjeusdqaHafDatadtpeHBpvI=
 github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283 h1:uS3/DvxCbi0zZau66ggQAgEjyGmql2mj77UQFgumq1I=
 github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283/go.mod h1:dL4PQJ4670oTO6LqvkjrBQEkD+iMiOYjlKRBBw55Csg=
 github.com/nrdcg/auroradns v1.0.1/go.mod h1:y4pc0i9QXYlFCWrhWrUSIETnZgrf4KuwjDIWmmXo3JI=

@@ -3,8 +3,10 @@ package node
 import (
 	"crypto/sha256"
 	"fmt"
+	"math"
 	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
@@ -20,6 +22,22 @@ import (
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 )
+
+const (
+	maxConnTime = float64(72 * time.Hour)
+	maxPenalty  = 10
+)
+
+func relayPriority(priority float64, connTime time.Duration) float64 {
+	x := float64(connTime) / maxConnTime
+	if x < 0 {
+		x = 0
+	}
+	if x > 1 {
+		x = 1
+	}
+	return (1 + (maxPenalty-1)*(1-math.Sqrt(1-(x-1)*(x-1)))) * priority
+}
 
 type RelayService struct {
 	sync.Mutex
