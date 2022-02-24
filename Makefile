@@ -61,7 +61,7 @@ all: ## Build binaries for all available architectures
 	${MAKE} crossbuild GOOS=linux GOARCH=mips
 	${MAKE} crossbuild GOOS=linux GOARCH=mipsle
 	${MAKE} crossbuild GOOS=darwin GOARCH=amd64
-	${MAKE} crossbuild GOOS=darwin GOARCH=386
+	${MAKE} crossbuild GOOS=darwin GOARCH=arm64
 	${MAKE} crossbuild GOOS=windows GOARCH=amd64 EXT=.exe
 	${MAKE} crossbuild GOOS=windows GOARCH=386 EXT=.exe
 
