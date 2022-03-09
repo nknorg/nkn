@@ -284,6 +284,7 @@ var (
 		TxPoolMaxMemorySize:          0,
 		RegisterIDRegFee:             0,
 		RegisterIDTxnFee:             0,
+		RegisterIDReplaceTxPool:      false,
 		LogPath:                      "Log",
 		ChainDBPath:                  "ChainDB",
 		WalletFile:                   "wallet.json",
@@ -347,6 +348,7 @@ type Configuration struct {
 	MinTxnFee                    int64         `json:"MinTxnFee"`
 	RegisterIDRegFee             int64         `json:"RegisterIDRegFee"`
 	RegisterIDTxnFee             int64         `json:"RegisterIDTxnFee"`
+	RegisterIDReplaceTxPool      bool          `json:"RegisterIDReplaceTxPool"`
 	Hostname                     string        `json:"Hostname"`
 	Transport                    string        `json:"Transport"`
 	NAT                          bool          `json:"NAT"`
