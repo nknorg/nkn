@@ -582,7 +582,7 @@ func CreateID(seeds []string, wallet *vault.Wallet, txnFee common.Fixed64) error
 	var txn *transaction.Transaction
 
 	for _, seed := range seeds {
-		nonce, height, err := client.GetNonceByAddr(seed, addr)
+		nonce, height, err := client.GetNonceByAddr(seed, addr, !config.Parameters.RegisterIDReplaceTxPool)
 		if err != nil {
 			log.Warningf("get nonce from %s error: %v", seed, err)
 			continue

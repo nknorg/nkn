@@ -76,7 +76,7 @@ func generateIDAction(c *cli.Context) error {
 			return err
 		}
 
-		remoteNonce, height, err := client.GetNonceByAddr(nknc.Address(), walletAddr)
+		remoteNonce, height, err := client.GetNonceByAddr(nknc.Address(), walletAddr, true)
 		if err != nil {
 			return err
 		}

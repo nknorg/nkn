@@ -129,7 +129,7 @@ func assetAction(c *cli.Context) error {
 		}
 
 		if nonce == 0 {
-			remoteNonce, _, err := client.GetNonceByAddr(nknc.Address(), myWallet.Address)
+			remoteNonce, _, err := client.GetNonceByAddr(nknc.Address(), myWallet.Address, true)
 			if err != nil {
 				return err
 			}
