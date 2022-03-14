@@ -396,7 +396,17 @@ func (tp *TxnPool) GetAllTransactionsBySender(programHash common.Uint160) []*tra
 		}
 	}
 	tp.NanoPayTxs.Range(func(k, v interface{}) bool {
-		txns = append(txns, v.(*transaction.Transaction))
+		txn := v.(*transaction.Transaction)
+		payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
+		if err != nil {
+			log.Error(err)
+			return true
+		}
+		pld := payload.(*pb.NanoPay)
+		sender := common.BytesToUint160(pld.Sender)
+		if sender == programHash {
+			txns = append(txns, txn)
+		}
 		return true
 	})
 
