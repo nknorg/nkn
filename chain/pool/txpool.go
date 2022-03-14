@@ -51,7 +51,18 @@ func (s *dropTxnsHeap) Pop() interface{} {
 var (
 	ErrDuplicatedTx      = errors.New("duplicate transaction check failed")
 	ErrRejectLowPriority = errors.New("txpool full, rejecting transaction with low priority")
+	ErrNanoPayReplace    = errors.New("cannot replace nano pay txn with lower amount or expiration")
 )
+
+type nanoPay struct {
+	sender    string
+	recipient string
+	nonce     uint64
+}
+
+func nanoPayKey(sender, recipient string, nonce uint64) nanoPay {
+	return nanoPay{sender, recipient, nonce}
+}
 
 // TxnPool is a list of txns that need to by add to ledger sent by user.
 type TxnPool struct {
@@ -149,10 +160,16 @@ func (tp *TxnPool) DropTxns() {
 
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.PayloadType_NANO_PAY_TYPE:
-			if _, ok := tp.NanoPayTxs.Load(txn.Hash()); !ok {
+			payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
 				continue
 			}
-			tp.NanoPayTxs.Delete(txn.Hash())
+			npPayload := payload.(*pb.NanoPay)
+			key := nanoPayKey(string(npPayload.Sender), string(npPayload.Recipient), npPayload.Id)
+			if _, ok := tp.NanoPayTxs.Load(key); !ok {
+				continue
+			}
+			tp.NanoPayTxs.Delete(key)
 		default:
 			account, err := txn.GetProgramHashes()
 			if err != nil {
@@ -294,7 +311,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		return ErrDuplicatedTx
 	}
 
-	_, err = transaction.Unpack(txn.UnsignedTx.Payload)
+	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 	if err != nil {
 		return err
 	}
@@ -309,29 +326,40 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 		// sigchain txn should not be added to txn pool
 		return nil
 	case pb.PayloadType_NANO_PAY_TYPE:
-		if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
-			tp.blockValidationState.Reset()
-			return err
-		}
-		tp.NanoPayTxs.Store(txn.Hash(), txn)
-	default:
-		if oldTxn, err := list.GetByNonce(txn.UnsignedTx.Nonce); err == nil {
-			log.Debug("replace old tx")
-			if err := tp.CleanBlockValidationState([]*transaction.Transaction{oldTxn}); err != nil {
+		npPayload := payload.(*pb.NanoPay)
+		key := nanoPayKey(string(npPayload.Sender), string(npPayload.Recipient), npPayload.Id)
+		if v, ok := tp.NanoPayTxs.Load(key); ok {
+			oldTxn := v.(*transaction.Transaction)
+			oldPayload, err := transaction.Unpack(oldTxn.UnsignedTx.Payload)
+			if err != nil {
 				return err
 			}
+			oldNpPayload := oldPayload.(*pb.NanoPay)
+			if npPayload.Amount < oldNpPayload.Amount || npPayload.TxnExpiration < oldNpPayload.TxnExpiration || npPayload.NanoPayExpiration < oldNpPayload.NanoPayExpiration {
+				return ErrNanoPayReplace
+			}
+			err = tp.preReplaceTxn(oldTxn, txn)
+			if err != nil {
+				return err
+			}
+			tp.NanoPayTxs.Store(key, txn)
+		} else {
 			if err := tp.blockValidationState.VerifyTransactionWithBlock(txn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
 				tp.blockValidationState.Reset()
+				return err
+			}
+			tp.NanoPayTxs.Store(key, txn)
+		}
+	default:
+		if oldTxn, err := list.GetByNonce(txn.UnsignedTx.Nonce); err == nil {
+			err = tp.preReplaceTxn(oldTxn, txn)
+			if err != nil {
 				return err
 			}
 
 			if err := list.Replace(txn); err != nil {
 				return err
 			}
-
-			tp.deleteTransactionFromMap(oldTxn)
-			atomic.AddInt32(&tp.txnCount, -1)
-			atomic.AddInt64(&tp.txnSize, -int64(oldTxn.GetSize()))
 		} else if list.Full() {
 			return errors.New("txpool per account list is full")
 		} else {
@@ -369,6 +397,25 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 	return nil
 }
 
+func (tp *TxnPool) preReplaceTxn(oldTxn, newTxn *transaction.Transaction) error {
+	log.Debug("replace old tx")
+
+	if err := tp.CleanBlockValidationState([]*transaction.Transaction{oldTxn}); err != nil {
+		return err
+	}
+
+	if err := tp.blockValidationState.VerifyTransactionWithBlock(newTxn, chain.DefaultLedger.Store.GetHeight()+1); err != nil {
+		tp.blockValidationState.Reset()
+		return err
+	}
+
+	tp.deleteTransactionFromMap(oldTxn)
+	atomic.AddInt32(&tp.txnCount, -1)
+	atomic.AddInt64(&tp.txnSize, -int64(oldTxn.GetSize()))
+
+	return nil
+}
+
 func (tp *TxnPool) GetAddressList() map[common.Uint160]int {
 	programHashes := make(map[common.Uint160]int)
 	tp.TxLists.Range(func(k, v interface{}) bool {
@@ -395,7 +442,7 @@ func (tp *TxnPool) GetAllTransactionsBySender(programHash common.Uint160) []*tra
 			}
 		}
 	}
-	tp.NanoPayTxs.Range(func(k, v interface{}) bool {
+	tp.NanoPayTxs.Range(func(_, v interface{}) bool {
 		txn := v.(*transaction.Transaction)
 		payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
 		if err != nil {
@@ -419,10 +466,6 @@ func (tp *TxnPool) GetTransaction(hash common.Uint256) *transaction.Transaction 
 		if txn, ok := v.(*transaction.Transaction); ok && txn != nil {
 			return txn
 		}
-	}
-
-	if np, ok := tp.NanoPayTxs.Load(hash); ok {
-		return np.(*transaction.Transaction)
 	}
 
 	var found *transaction.Transaction
@@ -466,7 +509,7 @@ func (tp *TxnPool) getTxsFromPool() []*transaction.Transaction {
 		}
 		return true
 	})
-	tp.NanoPayTxs.Range(func(k, v interface{}) bool {
+	tp.NanoPayTxs.Range(func(_, v interface{}) bool {
 		txs = append(txs, v.(*transaction.Transaction))
 		return true
 	})
@@ -486,7 +529,7 @@ func (tp *TxnPool) GetAllTransactions() []*transaction.Transaction {
 		return true
 	})
 
-	tp.NanoPayTxs.Range(func(k, v interface{}) bool {
+	tp.NanoPayTxs.Range(func(_, v interface{}) bool {
 		txs = append(txs, v.(*transaction.Transaction))
 		return true
 	})
@@ -522,7 +565,7 @@ func (tp *TxnPool) GetAllTransactionLists() map[common.Uint160][]*transaction.Tr
 		return true
 	})
 
-	tp.NanoPayTxs.Range(func(k, v interface{}) bool {
+	tp.NanoPayTxs.Range(func(_, v interface{}) bool {
 		tx := v.(*transaction.Transaction)
 		addr, _ := common.ToCodeHash(tx.Programs[0].Code)
 		if _, ok := txs[addr]; !ok {
@@ -549,8 +592,14 @@ func (tp *TxnPool) removeTransactions(txns []*transaction.Transaction) []*transa
 		case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
 			continue
 		case pb.PayloadType_NANO_PAY_TYPE:
-			if _, ok := tp.NanoPayTxs.Load(txn.Hash()); ok {
-				tp.NanoPayTxs.Delete(txn.Hash())
+			payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
+			if err != nil {
+				continue
+			}
+			npPayload := payload.(*pb.NanoPay)
+			key := nanoPayKey(string(npPayload.Sender), string(npPayload.Recipient), npPayload.Id)
+			if _, ok := tp.NanoPayTxs.Load(key); ok {
+				tp.NanoPayTxs.Delete(key)
 				txnsToRemove = append(txnsToRemove, txn)
 			}
 		default:
