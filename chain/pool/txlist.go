@@ -14,18 +14,6 @@ var (
 	ErrNonceOutofRange     = errors.New("nonce is not in range")
 )
 
-type sortTxnsByNonce []*transaction.Transaction
-
-func (s sortTxnsByNonce) Len() int      { return len(s) }
-func (s sortTxnsByNonce) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s sortTxnsByNonce) Less(i, j int) bool {
-	if s[i].UnsignedTx.Nonce > s[j].UnsignedTx.Nonce {
-		return false
-	} else {
-		return true
-	}
-}
-
 // NonceSortedTxs store the txns that can be add into blockchain.
 // The txns are sorted by nonce in Increasing order.
 type NonceSortedTxs struct {
