@@ -18,36 +18,6 @@ import (
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
-func compareTxnPriority(txn1, txn2 *transaction.Transaction) int {
-	if txn1.UnsignedTx.Fee > txn2.UnsignedTx.Fee {
-		return 1
-	}
-	if txn1.UnsignedTx.Fee < txn2.UnsignedTx.Fee {
-		return -1
-	}
-	if txn1.GetSize() > txn2.GetSize() {
-		return -1
-	}
-	if txn1.GetSize() < txn2.GetSize() {
-		return 1
-	}
-	return 0
-}
-
-type dropTxnsHeap []*transaction.Transaction
-
-func (s dropTxnsHeap) Len() int            { return len(s) }
-func (s dropTxnsHeap) Swap(i, j int)       { s[i], s[j] = s[j], s[i] }
-func (s dropTxnsHeap) Less(i, j int) bool  { return compareTxnPriority(s[i], s[j]) < 0 }
-func (s *dropTxnsHeap) Push(x interface{}) { *s = append(*s, x.(*transaction.Transaction)) }
-func (s *dropTxnsHeap) Pop() interface{} {
-	old := *s
-	n := len(old)
-	x := old[n-1]
-	*s = old[0 : n-1]
-	return x
-}
-
 var (
 	ErrDuplicatedTx      = errors.New("duplicate transaction check failed")
 	ErrRejectLowPriority = errors.New("txpool full, rejecting transaction with low priority")
@@ -149,14 +119,14 @@ func (tp *TxnPool) DropTxns() {
 		return true
 	})
 
-	heap.Init((*dropTxnsHeap)(&dropList))
+	heap.Init(transaction.DefaultHeap(dropList))
 
 	for {
 		if len(dropList) == 0 {
 			break
 		}
 
-		txn := heap.Pop((*dropTxnsHeap)(&dropList)).(*transaction.Transaction)
+		txn := heap.Pop(transaction.DefaultHeap(dropList)).(*transaction.Transaction)
 
 		switch txn.UnsignedTx.Payload.Type {
 		case pb.PayloadType_NANO_PAY_TYPE:
@@ -196,7 +166,7 @@ func (tp *TxnPool) DropTxns() {
 				if err != nil {
 					continue
 				}
-				heap.Push((*dropTxnsHeap)(&dropList), nextTxn)
+				heap.Push(transaction.DefaultHeap(dropList), nextTxn)
 			}
 
 			if !dropped {
@@ -240,7 +210,7 @@ func (tp *TxnPool) DropTxns() {
 
 func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 	lastDroppedTxn := tp.getLastDroppedTxn()
-	if lastDroppedTxn != nil && compareTxnPriority(txn, lastDroppedTxn) <= 0 {
+	if lastDroppedTxn != nil && transaction.DefaultCompare(txn, lastDroppedTxn) <= 0 {
 		return ErrRejectLowPriority
 	}
 
@@ -457,7 +427,7 @@ func (tp *TxnPool) GetAllTransactionsBySender(programHash common.Uint160) []*tra
 		return true
 	})
 
-	sort.Sort(sortTxnsByNonce(txns))
+	sort.Sort(transaction.SortTxnsByNonce(txns))
 	return txns
 }
 
