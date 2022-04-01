@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/dashboard/helpers"
 	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
@@ -39,7 +39,7 @@ func StatusRouter(router *gin.RouterGroup) {
 		out["registerIDTxnFee"] = config.Parameters.RegisterIDTxnFee
 		out["numLowFeeTxnPerBlock"] = config.Parameters.NumLowFeeTxnPerBlock
 		out["lowFeeTxnSizePerBlock"] = config.Parameters.LowFeeTxnSizePerBlock
-		out["minTxnFee"] = config.Parameters.MinTxnFee
+		out["minTxnFee"] = config.Parameters.LowTxnFee
 
 		data := helpers.EncryptData(context, true, out)
 

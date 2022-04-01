@@ -106,7 +106,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 			break
 		}
 
-		if txn.UnsignedTx.Fee < config.Parameters.MinTxnFee && isLowFeeTxnFull(lowFeeTxCount+1, lowFeeTxSize+txn.GetSize()) {
+		if transaction.DefaultIsLowFeeTxn(txn) && isLowFeeTxnFull(lowFeeTxCount+1, lowFeeTxSize+txn.GetSize()) {
 			log.Info("Low fee transaction full in block")
 			break
 		}
@@ -139,7 +139,7 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 		bvs.Commit()
 		totalTxCount++
 		totalTxSize += txn.GetSize()
-		if txn.UnsignedTx.Fee < int64(config.Parameters.MinTxnFee) {
+		if transaction.DefaultIsLowFeeTxn(txn) {
 			lowFeeTxCount++
 			lowFeeTxSize += txn.GetSize()
 		}

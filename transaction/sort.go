@@ -3,6 +3,8 @@ package transaction
 import (
 	"container/heap"
 	"sort"
+
+	"github.com/nknorg/nkn/v2/config"
 )
 
 var DefaultCompare = CompareTxnsByFeePerSize
@@ -13,6 +15,10 @@ func DefaultSort(s []*Transaction) sort.Interface {
 
 func DefaultHeap(s []*Transaction) heap.Interface {
 	return (*SortTxnsByFeePerSize)(&s)
+}
+
+func DefaultIsLowFeeTxn(txn *Transaction) bool {
+	return IsLowFeePerSizeTxn(txn)
 }
 
 type SortTxnsByNonce []*Transaction
@@ -37,6 +43,10 @@ func CompareTxnsByFee(txn1, txn2 *Transaction) int {
 	return 0
 }
 
+func IsLowFeeTxn(txn *Transaction) bool {
+	return txn.UnsignedTx.Fee < config.Parameters.LowTxnFee
+}
+
 type SortTxnsByFee []*Transaction
 
 func (s SortTxnsByFee) Len() int            { return len(s) }
@@ -52,8 +62,13 @@ func (s *SortTxnsByFee) Pop() interface{} {
 }
 
 func CompareTxnsByFeePerSize(txn1, txn2 *Transaction) int {
-	feePerSize1 := float64(txn1.UnsignedTx.Fee) / (float64(txn1.GetSize()) + 0.01)
-	feePerSize2 := float64(txn2.UnsignedTx.Fee) / (float64(txn2.GetSize()) + 0.01)
+	var feePerSize1, feePerSize2 float64
+	if txn1.GetSize() > 0 {
+		feePerSize1 = float64(txn1.UnsignedTx.Fee) / float64(txn1.GetSize())
+	}
+	if txn2.GetSize() > 0 {
+		feePerSize2 = float64(txn2.UnsignedTx.Fee) / float64(txn2.GetSize())
+	}
 	if feePerSize1 > feePerSize2 {
 		return 1
 	}
@@ -61,6 +76,13 @@ func CompareTxnsByFeePerSize(txn1, txn2 *Transaction) int {
 		return -1
 	}
 	return 0
+}
+
+func IsLowFeePerSizeTxn(txn *Transaction) bool {
+	if txn.GetSize() == 0 {
+		return true
+	}
+	return float64(txn.UnsignedTx.Fee)/float64(txn.GetSize()) < config.Parameters.LowTxnFeePerSize
 }
 
 type SortTxnsByFeePerSize []*Transaction
