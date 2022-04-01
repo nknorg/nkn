@@ -296,7 +296,8 @@ var (
 		DBFilesCacheCapacity:         100,
 		NumLowFeeTxnPerBlock:         0,
 		LowFeeTxnSizePerBlock:        2048,
-		MinTxnFee:                    10000000,
+		LowTxnFee:                    10000000,
+		LowTxnFeePerSize:             50000,
 		AllowEmptyBeneficiaryAddress: false,
 		WebGuiListenAddress:          "127.0.0.1",
 		WebGuiPort:                   30000,
@@ -345,7 +346,8 @@ type Configuration struct {
 	GenesisBlockProposer         string        `json:"GenesisBlockProposer"`
 	NumLowFeeTxnPerBlock         uint32        `json:"NumLowFeeTxnPerBlock"`
 	LowFeeTxnSizePerBlock        uint32        `json:"LowFeeTxnSizePerBlock"` // in bytes
-	MinTxnFee                    int64         `json:"MinTxnFee"`
+	LowTxnFee                    int64         `json:"LowTxnFee"`
+	LowTxnFeePerSize             float64       `json:"LowTxnFeePerSize"`
 	RegisterIDRegFee             int64         `json:"RegisterIDRegFee"`
 	RegisterIDTxnFee             int64         `json:"RegisterIDTxnFee"`
 	RegisterIDReplaceTxPool      bool          `json:"RegisterIDReplaceTxPool"`

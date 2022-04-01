@@ -265,6 +265,7 @@ func (tx *Transaction) GetInfo() ([]byte, error) {
 		Attributes  string        `json:"attributes"`
 		Programs    []programInfo `json:"programs"`
 		Hash        string        `json:"hash"`
+		Size        uint32        `json:"size"`
 	}
 
 	tx.Hash()
@@ -276,6 +277,7 @@ func (tx *Transaction) GetInfo() ([]byte, error) {
 		Attributes:  hex.EncodeToString(tx.UnsignedTx.Attributes),
 		Programs:    make([]programInfo, 0),
 		Hash:        tx.hash.ToHexString(),
+		Size:        tx.GetSize(),
 	}
 
 	for _, v := range tx.Programs {

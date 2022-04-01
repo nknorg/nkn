@@ -2,12 +2,13 @@ package node
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/dashboard/auth"
 	"github.com/nknorg/nkn/v2/dashboard/helpers"
-	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
-	"net/http"
 )
 
 type SetConfigData struct {
@@ -57,7 +58,7 @@ func NodeConfigRouter(router *gin.RouterGroup) {
 		config.Parameters.RegisterIDTxnFee = data.RegisterIDTxnFee
 		config.Parameters.NumLowFeeTxnPerBlock = data.NumLowFeeTxnPerBlock
 		config.Parameters.LowFeeTxnSizePerBlock = data.LowFeeTxnSizePerBlock
-		config.Parameters.MinTxnFee = data.MinTxnFee
+		config.Parameters.LowTxnFee = data.MinTxnFee
 
 		context.JSON(http.StatusOK, "")
 		return
