@@ -1,8 +1,8 @@
 export default {
-  BENEFICIARY_TOOLTIP: 'New amount will auto transfer to this address.',
-  Register_ID_Txn_Fee_TOOLTIP: 'Fee when registering ID.',
-  Low_Fee_Txn_Size_Per_Block_TOOLTIP: 'Packing block size below the minimum handling fee.',
-  Num_Low_Fee_Txn_Per_Block_TOOLTIP: 'The number of packed blocks below the minimum handling fee.',
-  Low_Txn_Fee_TOOLTIP: 'Minimum handling fee for packaged transactions.',
-  Low_Txn_Fee_Per_Size_TOOLTIP: 'Each Byte unit fee for packaged transactions.'
+  BENEFICIARY_TOOLTIP: 'Mining rewards will be deposited to this address.',
+  Register_ID_Txn_Fee_TOOLTIP: 'Generate ID transaction fee.',
+  Low_Fee_Txn_Size_Per_Block_TOOLTIP: 'Total transaction size per block of low fee transactions.',
+  Num_Low_Fee_Txn_Per_Block_TOOLTIP: 'The number of low fee transactions per block.',
+  Low_Txn_Fee_TOOLTIP: 'Transaction fee threshold of low fee transactions.',
+  Low_Txn_Fee_Per_Size_TOOLTIP: 'Transaction fee per byte threshold of low fee transactions.'
 }
