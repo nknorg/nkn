@@ -118,16 +118,32 @@
                         <v-flex xs12>
                             <v-layout class="text" align-center>
                                 <v-flex shrink class="label">
-                                    <span>{{$t('config.Min_Txn_Fee')}}
+                                    <span>{{$t('config.Low_Txn_Fee')}}
                                         <v-tooltip top>
                                           <template v-slot:activator="{ on }">
                                             <v-icon color="grey darken-3" dark small v-on="on">mdi-help-circle</v-icon>
                                           </template>
-                                          <span>{{$t('tooltip.Min_Txn_Fee_TOOLTIP')}}</span>
+                                          <span>{{$t('tooltip.Low_Txn_Fee_TOOLTIP')}}</span>
                                         </v-tooltip>: </span>
                                 </v-flex>
                                 <v-flex d-flex algin-center>
-                                    <Balance :balance="formatFee(nodeStatus.minTxnFee)"></Balance>
+                                    <Balance :balance="formatFee(nodeStatus.lowTxnFee)"></Balance>
+                                </v-flex>
+                            </v-layout>
+                        </v-flex>
+                        <v-flex xs12>
+                            <v-layout class="text" align-center>
+                                <v-flex shrink class="label">
+                                    <span>{{$t('config.Low_Txn_Fee_Per_Size')}}
+                                        <v-tooltip top>
+                                          <template v-slot:activator="{ on }">
+                                            <v-icon color="grey darken-3" dark small v-on="on">mdi-help-circle</v-icon>
+                                          </template>
+                                          <span>{{$t('tooltip.Low_Txn_Fee_Per_Size_TOOLTIP')}}</span>
+                                        </v-tooltip>: </span>
+                                </v-flex>
+                                <v-flex d-flex algin-center>
+                                  <Balance :balance="formatFee(nodeStatus.lowTxnFeePerSize)"></Balance>/Byte
                                 </v-flex>
                             </v-layout>
                         </v-flex>

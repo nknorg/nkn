@@ -12,10 +12,11 @@ import (
 )
 
 type SetConfigData struct {
-	RegisterIDTxnFee      int64  `form:"registerIDTxnFee" binding:"required"`
-	NumLowFeeTxnPerBlock  uint32 `form:"numLowFeeTxnPerBlock" binding:"required"`
-	LowFeeTxnSizePerBlock uint32 `form:"lowFeeTxnSizePerBlock" binding:"required"`
-	MinTxnFee             int64  `form:"minTxnFee" binding:"required"`
+	RegisterIDTxnFee      int64   `form:"registerIDTxnFee" binding:"required"`
+	NumLowFeeTxnPerBlock  uint32  `form:"numLowFeeTxnPerBlock" binding:"required"`
+	LowFeeTxnSizePerBlock uint32  `form:"lowFeeTxnSizePerBlock" binding:"required"`
+	LowTxnFee             int64   `form:"lowTxnFee" binding:"required"`
+	LowTxnFeePerSize      float64 `form:"lowTxnFeePerSize" binding:"required"`
 }
 
 func NodeConfigRouter(router *gin.RouterGroup) {
@@ -47,7 +48,8 @@ func NodeConfigRouter(router *gin.RouterGroup) {
 		configuration["RegisterIDTxnFee"] = data.RegisterIDTxnFee
 		configuration["NumLowFeeTxnPerBlock"] = data.NumLowFeeTxnPerBlock
 		configuration["LowFeeTxnSizePerBlock"] = data.LowFeeTxnSizePerBlock
-		configuration["MinTxnFee"] = data.MinTxnFee
+		configuration["LowTxnFee"] = data.LowTxnFee
+		configuration["LowTxnFeePerSize"] = data.LowTxnFeePerSize
 		err = config.WriteConfigFile(configuration)
 		if err != nil {
 			log.WebLog.Error(err)
@@ -58,7 +60,8 @@ func NodeConfigRouter(router *gin.RouterGroup) {
 		config.Parameters.RegisterIDTxnFee = data.RegisterIDTxnFee
 		config.Parameters.NumLowFeeTxnPerBlock = data.NumLowFeeTxnPerBlock
 		config.Parameters.LowFeeTxnSizePerBlock = data.LowFeeTxnSizePerBlock
-		config.Parameters.LowTxnFee = data.MinTxnFee
+		config.Parameters.LowTxnFee = data.LowTxnFee
+		config.Parameters.LowTxnFeePerSize = data.LowTxnFeePerSize
 
 		context.JSON(http.StatusOK, "")
 		return
