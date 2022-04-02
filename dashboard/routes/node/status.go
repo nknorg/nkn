@@ -39,7 +39,8 @@ func StatusRouter(router *gin.RouterGroup) {
 		out["registerIDTxnFee"] = config.Parameters.RegisterIDTxnFee
 		out["numLowFeeTxnPerBlock"] = config.Parameters.NumLowFeeTxnPerBlock
 		out["lowFeeTxnSizePerBlock"] = config.Parameters.LowFeeTxnSizePerBlock
-		out["minTxnFee"] = config.Parameters.LowTxnFee
+		out["lowTxnFee"] = config.Parameters.LowTxnFee
+		out["lowTxnFeePerSize"] = config.Parameters.LowTxnFeePerSize
 
 		data := helpers.EncryptData(context, true, out)
 
