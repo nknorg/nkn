@@ -10,6 +10,7 @@ const (
 	INVALID_METHOD           ErrCode = 42001
 	INVALID_PARAMS           ErrCode = 42002
 	INVALID_TOKEN            ErrCode = 42003
+	INVALID_JSON             ErrCode = 42004
 	INVALID_TRANSACTION      ErrCode = 43001
 	INVALID_ASSET            ErrCode = 43002
 	INVALID_BLOCK            ErrCode = 43003
@@ -58,6 +59,7 @@ var ErrMessage = map[ErrCode]string{
 	INVALID_METHOD:          "INVALID METHOD",
 	INVALID_PARAMS:          "INVALID PARAMS",
 	INVALID_TOKEN:           "VERIFY TOKEN ERROR",
+	INVALID_JSON:            "INVALID JSON",
 	INVALID_TRANSACTION:     "INVALID TRANSACTION",
 	INVALID_ASSET:           "INVALID ASSET",
 	INVALID_BLOCK:           "INVALID BLOCK",
