@@ -94,37 +94,42 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	if r.Method == "POST" {
 		defer r.Body.Close()
+
 		// read the body of the request
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Error("HTTP JSON RPC Handle - ioutil.ReadAll: ", err)
 			return
 		}
+
+		var code errcode.ErrCode
+		var id, method string
+		var params map[string]interface{}
+
 		request := make(map[string]interface{})
 		err = json.Unmarshal(body, &request)
-		if err != nil {
-			log.Error("HTTP JSON RPC Handle - json.Unmarshal: ", err)
-			return
+		if err == nil {
+			code = errcode.SUCCESS
+			var ok bool
+			id, ok = request["id"].(string)
+			if !ok {
+				// set default if not in request
+				id = "1"
+			}
+			method, ok = request["method"].(string)
+			if !ok {
+				code = errcode.INVALID_METHOD
+			}
+			if request["params"] != nil {
+				params, ok = request["params"].(map[string]interface{})
+				if !ok {
+					code = errcode.INVALID_PARAMS
+				}
+			}
+		} else {
+			code = errcode.INVALID_JSON
 		}
 
-		// Check the input request
-		code := errcode.SUCCESS
-		id, ok := request["id"].(string)
-		if !ok {
-			// set default if not in request
-			id = "1"
-		}
-		method, ok := request["method"].(string)
-		if !ok {
-			code = errcode.INVALID_METHOD
-		}
-		var params map[string]interface{}
-		if request["params"] != nil {
-			params, ok = request["params"].(map[string]interface{})
-			if !ok {
-				code = errcode.INVALID_PARAMS
-			}
-		}
 		if code != errcode.SUCCESS {
 			data, err := json.Marshal(map[string]interface{}{
 				"jsonrpc": "2.0",
@@ -142,6 +147,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			w.Write(data)
 			return
 		}
+
 		// if params["RemoteAddr"] set but empty, used request.RemoteAddr
 		if addr, ok := params["RemoteAddr"]; ok {
 			switch addr.(type) {
