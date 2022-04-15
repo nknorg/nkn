@@ -118,9 +118,12 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			code = errcode.INVALID_METHOD
 		}
-		params, ok := request["params"].(map[string]interface{})
-		if !ok {
-			code = errcode.INVALID_PARAMS
+		var params map[string]interface{}
+		if request["params"] != nil {
+			params, ok = request["params"].(map[string]interface{})
+			if !ok {
+				code = errcode.INVALID_PARAMS
+			}
 		}
 		if code != errcode.SUCCESS {
 			data, err := json.Marshal(map[string]interface{}{
