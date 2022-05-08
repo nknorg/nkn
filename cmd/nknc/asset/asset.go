@@ -79,7 +79,7 @@ func assetAction(c *cli.Context) error {
 		}
 
 		symbol := c.String("symbol")
-		if name == "" {
+		if symbol == "" {
 			fmt.Println("asset symbol is required with [--symbol]")
 			return nil
 		}

@@ -264,7 +264,7 @@ func CheckTransactionPayload(txn *transaction.Transaction, height uint32) error 
 			return err
 		}
 		if !match {
-			return fmt.Errorf("name %s should start with a letter, contain a-z0-9 and have length 3-9", pld.Name)
+			return fmt.Errorf("symbol %s should start with a letter, contain a-z0-9 and have length 3-9", pld.Symbol)
 		}
 
 		if pld.TotalSupply < 0 {
