@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"bytes"
@@ -16,8 +16,6 @@ import (
 	"os/signal"
 	"runtime"
 	"time"
-
-	"github.com/rdegges/go-ipify"
 
 	"github.com/nknorg/nkn/v2/api/certs"
 	api "github.com/nknorg/nkn/v2/api/common"
@@ -43,94 +41,69 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay"
 	"github.com/nknorg/nnet/overlay/chord"
-	"github.com/urfave/cli"
+	"github.com/rdegges/go-ipify"
+	"github.com/spf13/cobra"
 )
 
 const (
 	NetVersionNum = 29 // This is temporary and will be removed soon after mainnet is stabilized
 )
 
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use:     "nknd",
+	Version: config.Version,
+	Short:   "nknd - The official NKN daemon for the NKN blockchain",
+	Long:    "",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := nknMain(); err != nil {
+			log.Error(err)
+		}
+		return nil
+	},
+}
+
 var (
 	createMode bool
 )
 
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	err := rootCmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
+}
+
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().UnixNano())
+
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	rootCmd.Flags().BoolVarP(&createMode, "create", "c", false, "Create Mode")
+	rootCmd.Flags().StringVar(&config.SeedList, "seed", "", "Seed node address to join, multiple seeds should be split by comma")
+	rootCmd.Flags().StringVar(&password.Passwd, "passwd", "", "Password of Your wallet private Key")
+	rootCmd.Flags().BoolVar(&config.SkipNAT, "no-nat", false, "Skip NAT traversal for UPnP and NAT-PMP")
+	rootCmd.Flags().BoolVar(&config.Debug, "debug", false, "Provide runtime profiling data of NKN")
+	rootCmd.Flags().StringVar(&config.StatePruningMode, "pruning", "", "state pruning mode: none, lowmem")
+	rootCmd.Flags().StringVar(&config.SyncMode, "sync", "", "sync mode: full, fast, light")
+	rootCmd.Flags().StringVar(&config.PprofPort, "pprof-port", "", "The port used for pprof in debug mode")
+	rootCmd.Flags().StringVar(&config.ConfigFile, "config", "", "config file name")
+	rootCmd.Flags().StringVar(&config.LogPath, "log", "", "directory where your log file will be generated")
+	rootCmd.Flags().StringVar(&config.ChainDBPath, "chaindb", "", "directory where your blockchain data will be stored")
+	rootCmd.Flags().StringVar(&config.WalletFile, "wallet", "", "wallet file")
+	rootCmd.Flags().StringVar(&config.BeneficiaryAddr, "beneficiaryaddr", "", "beneficiary address where your mining reward will go to")
+	rootCmd.Flags().StringVar(&config.GenesisBlockProposer, "genesisblockproposer", "", "public key of genesis block proposer")
+	rootCmd.Flags().BoolVar(&config.AllowEmptyBeneficiaryAddress, "allow-empty-beneficiary-address", false, "beneficiary address is forced unless --allow-empty-beneficiary-address is true")
+	rootCmd.Flags().StringVar(&config.WebGuiListenAddress, "web-gui-listen-address", "", "web gui will listen this address (default: 127.0.0.1)")
+	rootCmd.Flags().BoolVar(&config.WebGuiCreateWallet, "web-gui-create-wallet", false, "web gui create/open wallet")
+	rootCmd.Flags().StringVar(&config.PasswordFile, "password-file", "", "read password from file, save password to file when --web-gui-create-wallet arguments be true and password file does not exist")
+
+	rootCmd.Flags().MarkHidden("passwd")
 }
 
-func InitLedger(account *vault.Account) error {
-	var err error
-	store, err := store.NewLedgerStore()
-	if err != nil {
-		return err
-	}
-	blockChain, err := chain.NewBlockchainWithGenesisBlock(store)
-	if err != nil {
-		return err
-	}
-	chain.DefaultLedger = &chain.Ledger{
-		Blockchain: blockChain,
-		Store:      store,
-	}
-
-	return nil
-}
-
-func printMemStats() {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	log.Infof("Alloc = %v TotalAlloc = %v Sys = %v NumGC = %v\n", m.Alloc/1024, m.TotalAlloc/1024, m.Sys/1024, m.NumGC)
-	log.Infof("HeapAlloc = %v HeapSys = %v HeapIdle = %v HeapInuse = %v HeapReleased = %v HeapObjects = %v\n", m.HeapAlloc/1024, m.HeapSys/1024, m.HeapIdle/1024, m.HeapInuse/1024, m.HeapReleased/1024, m.HeapObjects/1024)
-	log.Infof("StackInuse = %v StackSys = %v MCacheInuse = %v MCacheSys = %v\n", m.StackInuse/1024, m.StackSys/1024, m.MCacheInuse/1024, m.MCacheSys/1024)
-}
-
-func JoinNet(nn *nnet.NNet) error {
-	seeds := config.Parameters.SeedList
-	rand.Shuffle(len(seeds), func(i int, j int) {
-		seeds[i], seeds[j] = seeds[j], seeds[i]
-	})
-
-	for _, seed := range seeds {
-		randAddrs, err := client.FindSuccessorAddrs(seed, util.RandomBytes(config.NodeIDBytes))
-		if err != nil {
-			log.Warningf("Can't get successor address from [%s]", seed)
-			continue
-		}
-
-		for _, randAddr := range randAddrs {
-			if randAddr == nn.GetLocalNode().Addr {
-				log.Warning("Skipping self...")
-				continue
-			}
-			err = nn.Join(randAddr)
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-			return nil
-		}
-	}
-	return errors.New("Failed to join the network")
-}
-
-// AskMyIP request to seeds randomly, in order to obtain self's externIP and corresponding chordID
-func AskMyIP(seeds []string) (string, error) {
-	rand.Shuffle(len(seeds), func(i int, j int) {
-		seeds[i], seeds[j] = seeds[j], seeds[i]
-	})
-
-	for _, seed := range seeds {
-		addr, err := client.GetMyExtIP(seed, []byte{})
-		if err == nil {
-			return addr, err
-		}
-		log.Warningf("Ask my ID from %s error: %v", seed, err)
-	}
-	return "", errors.New("Tried all seeds but can't got my external IP and nknID")
-}
-
-func nknMain(c *cli.Context) error {
+func nknMain() error {
 	if config.Debug {
 		//pprof
 		go func() {
@@ -267,13 +240,16 @@ func nknMain(c *cli.Context) error {
 		return err
 	}
 
-	nn.MustApplyMiddleware(overlay.NetworkStopped{func(network overlay.Network) bool {
-		select {
-		case signalChan <- os.Interrupt:
-		default:
-		}
-		return true
-	}, 0})
+	nn.MustApplyMiddleware(overlay.NetworkStopped{
+		Func: func(network overlay.Network) bool {
+			select {
+			case signalChan <- os.Interrupt:
+			default:
+			}
+			return true
+		},
+		Priority: 0,
+	})
 
 	localNode, err := node.NewLocalNode(wallet, nn)
 	if err != nil {
@@ -299,12 +275,15 @@ func nknMain(c *cli.Context) error {
 	// start websocket server
 	ws := websocket.NewServer(localNode, wallet)
 
-	nn.MustApplyMiddleware(chord.SuccessorAdded{func(remoteNode *nnetnode.RemoteNode, index int) bool {
-		if index == 0 {
-			ws.NotifyWrongClients()
-		}
-		return true
-	}, 0})
+	nn.MustApplyMiddleware(chord.SuccessorAdded{
+		Func: func(remoteNode *nnetnode.RemoteNode, index int) bool {
+			if index == 0 {
+				ws.NotifyWrongClients()
+			}
+			return true
+		},
+		Priority: 0,
+	})
 
 	err = nn.Start(createMode)
 	if err != nil {
@@ -351,6 +330,77 @@ func nknMain(c *cli.Context) error {
 	return nil
 }
 
+func InitLedger(account *vault.Account) error {
+	var err error
+	store, err := store.NewLedgerStore()
+	if err != nil {
+		return err
+	}
+	blockChain, err := chain.NewBlockchainWithGenesisBlock(store)
+	if err != nil {
+		return err
+	}
+	chain.DefaultLedger = &chain.Ledger{
+		Blockchain: blockChain,
+		Store:      store,
+	}
+
+	return nil
+}
+
+func printMemStats() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	log.Infof("Alloc = %v TotalAlloc = %v Sys = %v NumGC = %v\n", m.Alloc/1024, m.TotalAlloc/1024, m.Sys/1024, m.NumGC)
+	log.Infof("HeapAlloc = %v HeapSys = %v HeapIdle = %v HeapInuse = %v HeapReleased = %v HeapObjects = %v\n", m.HeapAlloc/1024, m.HeapSys/1024, m.HeapIdle/1024, m.HeapInuse/1024, m.HeapReleased/1024, m.HeapObjects/1024)
+	log.Infof("StackInuse = %v StackSys = %v MCacheInuse = %v MCacheSys = %v\n", m.StackInuse/1024, m.StackSys/1024, m.MCacheInuse/1024, m.MCacheSys/1024)
+}
+
+func JoinNet(nn *nnet.NNet) error {
+	seeds := config.Parameters.SeedList
+	rand.Shuffle(len(seeds), func(i int, j int) {
+		seeds[i], seeds[j] = seeds[j], seeds[i]
+	})
+
+	for _, seed := range seeds {
+		randAddrs, err := client.FindSuccessorAddrs(seed, util.RandomBytes(config.NodeIDBytes))
+		if err != nil {
+			log.Warningf("Can't get successor address from [%s]", seed)
+			continue
+		}
+
+		for _, randAddr := range randAddrs {
+			if randAddr == nn.GetLocalNode().Addr {
+				log.Warning("Skipping self...")
+				continue
+			}
+			err = nn.Join(randAddr)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			return nil
+		}
+	}
+	return errors.New("failed to join the network")
+}
+
+// AskMyIP request to seeds randomly, in order to obtain self's externIP and corresponding chordID
+func AskMyIP(seeds []string) (string, error) {
+	rand.Shuffle(len(seeds), func(i int, j int) {
+		seeds[i], seeds[j] = seeds[j], seeds[i]
+	})
+
+	for _, seed := range seeds {
+		addr, err := client.GetMyExtIP(seed, []byte{})
+		if err == nil {
+			return addr, err
+		}
+		log.Warningf("Ask my ID from %s error: %v", seed, err)
+	}
+	return "", errors.New("tried all seeds but can't got my external IP and nknID")
+}
+
 type NetVer struct {
 	Ver int `json:"version"`
 }
@@ -375,139 +425,18 @@ func GetRemoteVersionNum() (int, error) {
 
 // This is temporary and will be removed soon after mainnet is stabilized
 func netVersion(timer *time.Timer) {
-	for {
-		select {
-		case <-timer.C:
-			verNum, err := GetRemoteVersionNum()
-			if err != nil {
-				log.Warningf("Get the remote version number error: %v", err)
-				timer.Reset(30 * time.Minute)
-				break
-			}
-			if verNum > NetVersionNum {
-				log.Fatal("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
-			}
-
+	for range timer.C {
+		verNum, err := GetRemoteVersionNum()
+		if err != nil {
+			log.Warningf("Get the remote version number error: %v", err)
 			timer.Reset(30 * time.Minute)
+			continue
 		}
-	}
-}
-
-func main() {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Fatalf("Panic: %+v", r)
+		if verNum > NetVersionNum {
+			log.Fatal("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
 		}
-	}()
 
-	// This is temporary and will be removed soon after mainnet is stabilized
-	timer := time.NewTimer(1 * time.Second)
-	go netVersion(timer)
-
-	app := cli.NewApp()
-	app.Name = "nknd"
-	app.Version = config.Version
-	app.HelpName = "nknd"
-	app.Usage = "full node of NKN blockchain"
-	app.Flags = []cli.Flag{
-		cli.BoolFlag{
-			Name:        "create, c",
-			Usage:       "Create Mode",
-			Destination: &createMode,
-		},
-		cli.StringFlag{
-			Name:        "seed",
-			Usage:       "Seed node address to join, multiple seeds should be split by comma",
-			Destination: &config.SeedList,
-		},
-		cli.StringFlag{
-			Name:        "passwd, p",
-			Usage:       "Password of Your wallet private Key",
-			Hidden:      true,
-			Destination: &password.Passwd,
-		},
-		cli.BoolFlag{
-			Name:        "no-nat",
-			Usage:       "Skip NAT traversal for UPnP and NAT-PMP",
-			Destination: &config.SkipNAT,
-		},
-		cli.BoolFlag{
-			Name:        "debug",
-			Usage:       "Provide runtime profiling data of NKN",
-			Destination: &config.Debug,
-		},
-		cli.StringFlag{
-			Name:        "pruning",
-			Usage:       "state pruning mode: none, lowmem",
-			Destination: &config.StatePruningMode,
-		},
-		cli.StringFlag{
-			Name:        "sync",
-			Usage:       "sync mode: full, fast, light",
-			Destination: &config.SyncMode,
-		},
-		cli.StringFlag{
-			Name:        "pprof-port",
-			Usage:       "The port used for pprof in debug mode",
-			Destination: &config.PprofPort,
-		},
-		cli.StringFlag{
-			Name:        "config",
-			Usage:       "config file name",
-			Destination: &config.ConfigFile,
-		},
-		cli.StringFlag{
-			Name:        "log",
-			Usage:       "directory where your log file will be generated",
-			Destination: &config.LogPath,
-		},
-		cli.StringFlag{
-			Name:        "chaindb",
-			Usage:       "directory where your blockchain data will be stored",
-			Destination: &config.ChainDBPath,
-		},
-		cli.StringFlag{
-			Name:        "wallet",
-			Usage:       "wallet file",
-			Destination: &config.WalletFile,
-		},
-		cli.StringFlag{
-			Name:        "beneficiaryaddr",
-			Usage:       "beneficiary address where your mining reward will go to",
-			Destination: &config.BeneficiaryAddr,
-		},
-		cli.StringFlag{
-			Name:        "genesisblockproposer",
-			Usage:       "public key of genesis block proposer",
-			Destination: &config.GenesisBlockProposer,
-		},
-		cli.BoolFlag{
-			Name:        "allow-empty-beneficiary-address",
-			Usage:       "beneficiary address is forced unless --allow-empty-beneficiary-address is true",
-			Destination: &config.AllowEmptyBeneficiaryAddress,
-		},
-		cli.StringFlag{
-			Name:        "web-gui-listen-address",
-			Usage:       "web gui will listen this address (default: 127.0.0.1)",
-			Destination: &config.WebGuiListenAddress,
-		},
-		cli.BoolFlag{
-			Name:        "web-gui-create-wallet",
-			Usage:       "web gui create/open wallet",
-			Destination: &config.WebGuiCreateWallet,
-		},
-		cli.StringFlag{
-			Name:        "password-file",
-			Usage:       "read password from file, save password to file when --web-gui-create-wallet arguments be true and password file does not exist",
-			Destination: &config.PasswordFile,
-		},
-	}
-	app.Action = nknMain
-
-	// app.Run will shutdown graceful.
-	if err := app.Run(os.Args); err != nil {
-		log.Errorf("%v", err)
-		os.Exit(1)
+		timer.Reset(30 * time.Minute)
 	}
 }
 
@@ -638,7 +567,7 @@ func GetOrCreateID(seeds []string, wallet *vault.Wallet, txnFee common.Fixed64, 
 			}
 			break
 		} else if len(id) != config.NodeIDBytes {
-			return nil, fmt.Errorf("Got ID %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
+			return nil, fmt.Errorf("got ID %x from neighbors with wrong size, expecting %d bytes", id, config.NodeIDBytes)
 		} else if bytes.Equal(id, crypto.Sha256ZeroHash) {
 			log.Info("Waiting for ID generation to complete")
 			break

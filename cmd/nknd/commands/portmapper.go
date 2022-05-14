@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"github.com/nknorg/nkn/v2/config"

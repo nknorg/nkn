@@ -1,4 +1,4 @@
-package service
+package commands
 
 import (
 	"encoding/json"
@@ -7,21 +7,35 @@ import (
 	"net/http"
 	"time"
 
-	nknc "github.com/nknorg/nkn/v2/cmd/nknc/common"
 	"github.com/nknorg/nkn/v2/util/log"
-	"github.com/urfave/cli"
+	"github.com/spf13/cobra"
 )
 
 const requestTimeout = 5 * time.Second
 
-func serviceAction(c *cli.Context) error {
-	if c.NumFlags() == 0 {
-		cli.ShowSubcommandHelp(c)
-		return nil
-	}
+// serviceCmd represents the service command
+var serviceCmd = &cobra.Command{
+	Use:   "service",
+	Short: "NKN-based service",
+	Long:  "NKN-based service.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return serviceAction(cmd)
+	},
+}
 
+var (
+	list bool
+)
+
+func init() {
+	rootCmd.AddCommand(serviceCmd)
+
+	serviceCmd.Flags().BoolVarP(&list, "list", "l", false, "show nkn service list")
+}
+
+func serviceAction(cmd *cobra.Command) error {
 	switch {
-	case c.Bool("list"):
+	case list:
 		var netClient = &http.Client{
 			Timeout: requestTimeout,
 		}
@@ -46,29 +60,8 @@ func serviceAction(c *cli.Context) error {
 
 		fmt.Println(out["post_stream"].(map[string]interface{})["posts"].([]interface{})[0].(map[string]interface{})["raw"])
 	default:
-		cli.ShowSubcommandHelp(c)
-		return nil
+		return cmd.Usage()
 	}
 
 	return nil
-}
-
-func NewCommand() *cli.Command {
-	return &cli.Command{
-		Name:        "service",
-		Usage:       "NKN-based service",
-		Description: "NKN-based service.",
-		ArgsUsage:   "[args]",
-		Flags: []cli.Flag{
-			cli.BoolFlag{
-				Name:  "list, ls",
-				Usage: "show nkn service list",
-			},
-		},
-		Action: serviceAction,
-		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			nknc.PrintError(c, err, "service")
-			return cli.NewExitError("", 1)
-		},
-	}
 }
