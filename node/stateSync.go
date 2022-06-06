@@ -1,6 +1,7 @@
 package node
 
 import (
+	"github.com/nknorg/nkn/v2/config"
 	"math"
 	"time"
 
@@ -171,10 +172,14 @@ func (s *stateSync) run() error {
 
 func (s *stateSync) startWorkerThread() {
 	var workerId uint32
-	peersNum := len(s.peers)
-	for workerId = 0; workerId < uint32(peersNum*concurrentSyncRequestPerNeighbor); workerId++ {
+	peersNum := uint32(len(s.peers))
+	workerNum := peersNum * concurrentSyncRequestPerNeighbor
+	if workerNum > config.Parameters.SyncStateMaxThread {
+		workerNum = config.Parameters.SyncStateMaxThread
+	}
+	for workerId = 0; workerId < workerNum; workerId++ {
 		go func(workerId uint32) {
-			s.startWorker(s.peers[workerId%uint32(peersNum)])
+			s.startWorker(s.peers[workerId%peersNum])
 		}(workerId)
 	}
 }

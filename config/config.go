@@ -78,6 +78,8 @@ const (
 const (
 	defaultConfigFile                 = "config.json"
 	estimatedHeaderSize               = 418
+	defaultSyncStateMaxThread         = 10
+	defaultSyncStateThreadMemory      = 30 * 1024 * 1024
 	defaultSyncHeaderMaxMemoryPercent = 2.0
 	defaultSyncHeaderMaxSize          = 32768
 	defaultSyncMaxMemoryPercent       = 25
@@ -267,6 +269,7 @@ var (
 		LogLevel:                     1,
 		MaxLogFileSize:               20,
 		MaxLogFileTotalSize:          100,
+		SyncStateMaxThread:           0,
 		SyncHeaderMaxSize:            0,
 		SyncHeaderMaxMemorySize:      0,
 		SyncBatchWindowSize:          0,
@@ -357,6 +360,7 @@ type Configuration struct {
 	Mining                       bool          `json:"Mining"`
 	MiningDebug                  bool          `json:"MiningDebug"`
 	BeneficiaryAddr              string        `json:"BeneficiaryAddr"`
+	SyncStateMaxThread           uint32        `json:"SyncStateMaxThread"`
 	SyncHeaderMaxSize            uint32        `json:"SyncHeaderMaxSize"`
 	SyncHeaderMaxMemorySize      uint32        `json:"SyncHeaderMaxMemorySize"`
 	SyncBatchWindowSize          uint32        `json:"SyncBatchWindowSize"`
@@ -459,6 +463,15 @@ func Init() error {
 
 	if len(SyncMode) > 0 {
 		Parameters.SyncMode = SyncMode
+	}
+
+	if Parameters.SyncStateMaxThread == 0 {
+		syncStateMaxPeer := uint32(float64(memory.TotalMemory() / defaultSyncStateThreadMemory))
+		Parameters.SyncStateMaxThread = syncStateMaxPeer
+		if Parameters.SyncStateMaxThread == 0 {
+			Parameters.SyncStateMaxThread = defaultSyncStateMaxThread
+		}
+		log.Printf("Set SyncStateMaxThread to %v", Parameters.SyncStateMaxThread)
 	}
 
 	if Parameters.SyncHeaderMaxSize == 0 {
