@@ -13,6 +13,7 @@ import (
 
 	"github.com/nknorg/nkn/v2/api/common"
 	"github.com/nknorg/nkn/v2/api/common/errcode"
+	"github.com/nknorg/nkn/v2/api/ratelimiter"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/node"
@@ -59,7 +60,18 @@ func NewServer(localNode *node.LocalNode, wallet *vault.Wallet) *RPCServer {
 // Handle is the funciton that should be called in order to answer an rpc call
 // should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
 func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		limiter := ratelimiter.GetLimiter("rpc:"+host, config.Parameters.RPCIPRateLimit, int(config.Parameters.RPCIPRateBurst))
+		if !limiter.Allow() {
+			log.Infof("RPC connection limit of %s reached", host)
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+	}
+
 	if !s.limiter.Allow() {
+		log.Infof("RPC connection limit reached")
 		w.WriteHeader(http.StatusTooManyRequests)
 		return
 	}
