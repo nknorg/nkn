@@ -83,7 +83,7 @@ func init() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.Flags().BoolVarP(&createMode, "create", "c", false, "Create Mode")
 	rootCmd.Flags().StringVar(&config.SeedList, "seed", "", "Seed node address to join, multiple seeds should be split by comma")
-	rootCmd.Flags().StringVar(&password.Passwd, "passwd", "", "Password of Your wallet private Key")
+	rootCmd.Flags().StringVarP(&password.Passwd, "passwd", "p", "", "Password of Your wallet private Key")
 	rootCmd.Flags().BoolVar(&config.SkipNAT, "no-nat", false, "Skip NAT traversal for UPnP and NAT-PMP")
 	rootCmd.Flags().BoolVar(&config.Debug, "debug", false, "Provide runtime profiling data of NKN")
 	rootCmd.Flags().StringVar(&config.StatePruningMode, "pruning", "", "state pruning mode: none, lowmem")
