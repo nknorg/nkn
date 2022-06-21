@@ -19,6 +19,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	api "github.com/nknorg/nkn/v2/api/common"
 	"github.com/nknorg/nkn/v2/api/common/errcode"
+	"github.com/nknorg/nkn/v2/api/ratelimiter"
 	"github.com/nknorg/nkn/v2/api/websocket/messagebuffer"
 	"github.com/nknorg/nkn/v2/api/websocket/session"
 	"github.com/nknorg/nkn/v2/chain"
@@ -247,6 +248,16 @@ func (ws *WsServer) Stop() {
 
 //websocketHandler
 func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		limiter := ratelimiter.GetLimiter("ws:"+host, config.Parameters.WsIPRateLimit, int(config.Parameters.WsIPRateBurst))
+		if !limiter.Allow() {
+			log.Infof("Ws connection limit of %s reached", host)
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+	}
+
 	wsConn, err := ws.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error("websocket Upgrader: ", err)

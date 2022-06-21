@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/nknorg/nkn/v2/api/ratelimiter"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/pool"
 	"github.com/nknorg/nkn/v2/config"
@@ -109,6 +111,18 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	event.Queue.Subscribe(event.BlockPersistCompleted, localNode.cleanupTransactions)
 	event.Queue.Subscribe(event.NewBlockProduced, localNode.CheckIDChange)
+
+	nn.MustApplyMiddleware(nnetnode.ConnectionAccepted{func(conn net.Conn) (bool, bool) {
+		host, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+		if err == nil {
+			limiter := ratelimiter.GetLimiter("node:"+host, config.Parameters.NodeIPRateLimit, int(config.Parameters.NodeIPRateBurst))
+			if !limiter.Allow() {
+				log.Infof("Node connection limit of %s reached", host)
+				return false, false
+			}
+		}
+		return true, true
+	}, 0})
 
 	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{func(n *nnetpb.Node) (bool, bool) {
 		err := localNode.shouldConnectToNode(n)

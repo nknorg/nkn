@@ -310,6 +310,12 @@ var (
 		RecentStateCount:             16384,
 		RecentBlockCount:             32768,
 		MinPruningCompactHeights:     32768,
+		NodeIPRateLimit:              1,
+		NodeIPRateBurst:              10,
+		WsIPRateLimit:                10,
+		WsIPRateBurst:                100,
+		RPCIPRateLimit:               10,
+		RPCIPRateBurst:               100,
 		RPCRateLimit:                 1024,
 		RPCRateBurst:                 4096,
 		SyncBlockHeaderRateLimit:     8192,
@@ -390,6 +396,12 @@ type Configuration struct {
 	RecentStateCount             uint32        `json:"RecentStateCount"`
 	RecentBlockCount             uint32        `json:"RecentBlockCount"`
 	MinPruningCompactHeights     uint32        `json:"MinPruningCompactHeights"`
+	NodeIPRateLimit              float64       `json:"NodeIPRateLimit"` // requests per second
+	NodeIPRateBurst              uint32        `json:"NodeIPRateBurst"`
+	WsIPRateLimit                float64       `json:"WsIPRateLimit"` // requests per second
+	WsIPRateBurst                uint32        `json:"WsIPRateBurst"`
+	RPCIPRateLimit               float64       `json:"RPCIPRateLimit"` // requests per second
+	RPCIPRateBurst               uint32        `json:"RPCIPRateBurst"`
 	RPCRateLimit                 float64       `json:"RPCRateLimit"` // requests per second
 	RPCRateBurst                 uint32        `json:"RPCRateBurst"`
 	SyncBlockHeaderRateLimit     float64       `json:"SyncBlockHeaderRateLimit"` // headers per second
