@@ -255,6 +255,7 @@ var (
 	PasswordFile                 string
 	StatePruningMode             string
 	SyncMode                     string
+	MaxMessageCacheSize          uint32
 	Parameters                   = &Configuration{
 		Version:                      1,
 		Transport:                    "tcp",
@@ -324,6 +325,7 @@ var (
 		SyncBlockRateBurst:           1024,
 		SyncMode:                     "full",
 		MaxRollbackBlocks:            180,
+		MaxMessageCacheSize:          MaxClientMessageSize * 10, // 40MiB
 	}
 )
 
@@ -412,6 +414,7 @@ type Configuration struct {
 	SigChainCacheSize            uint32        `json:"SigChainCacheSize"`
 	SyncMode                     string        `json:"SyncMode"`
 	MaxRollbackBlocks            uint32        `json:"MaxRollbackBlocks"`
+	MaxMessageCacheSize          uint32        `json:"MaxMessageCacheSize"`
 }
 
 func Init() error {
@@ -528,6 +531,10 @@ func Init() error {
 
 	if Parameters.SigChainCacheSize < uint32(SigChainSkipMinerBlocks+64) {
 		Parameters.SigChainCacheSize = uint32(SigChainSkipMinerBlocks + 64)
+	}
+
+	if MaxMessageCacheSize > 0 {
+		Parameters.MaxMessageCacheSize = MaxMessageCacheSize
 	}
 
 	err = Parameters.verify()

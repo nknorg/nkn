@@ -201,6 +201,7 @@ func (ws *WsServer) registryMethod() {
 		session.SetClient(clientID, pubKey, &addrStr, isTlsClient)
 
 		go func() {
+			log.Debugf(ws.messageBuffer.Metrics())
 			messages := ws.messageBuffer.PopMessages(clientID)
 			for _, message := range messages {
 				ws.sendInboundRelayMessage(message)
