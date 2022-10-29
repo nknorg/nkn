@@ -405,6 +405,13 @@ func setDebugInfo(s Serverer, params map[string]interface{}, ctx context.Context
 	return respPacking(errcode.SUCCESS, nil)
 }
 
+// getSyncMode gets sync mode of node
+// params: {}
+// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
+func getSyncMode(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
+	return respPacking(errcode.SUCCESS, config.Parameters.SyncMode)
+}
+
 // getVersion gets version of this server
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
@@ -980,6 +987,7 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"getsubscriberscount":  {Handler: getSubscribersCount, AccessCtrl: BIT_JSONRPC},
 	"getasset":             {Handler: getAsset, AccessCtrl: BIT_JSONRPC},
 	"getmyextip":           {Handler: getMyExtIP, AccessCtrl: BIT_JSONRPC},
+	"getsyncmode":          {Handler: getSyncMode, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddr":    {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddrs":   {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},
 	"getregistrant":        {Handler: getRegistrant, AccessCtrl: BIT_JSONRPC},
