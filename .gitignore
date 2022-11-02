@@ -21,6 +21,9 @@ cscope*
 
 /nknd
 /nknc
+/cmd/nknd/nknd
+/cmd/nknc/nknc
 /wallet.json
 /wallet.pswd
 /config.json
+/test.json

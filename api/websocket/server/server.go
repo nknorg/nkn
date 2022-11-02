@@ -64,7 +64,7 @@ type WsServer struct {
 	TxHashMap             map[string]string //key: txHash   value:sessionid
 	localNode             *node.LocalNode
 	wallet                *vault.Wallet
-	messageBuffer         *messagebuffer.MessageBuffer
+	messageBuffer         *messagebuffer.Buffer
 	messageDeliveredCache *DelayedChan
 	sigChainCache         common.Cache
 }
@@ -76,7 +76,7 @@ func InitWsServer(localNode *node.LocalNode, wallet *vault.Wallet) *WsServer {
 		TxHashMap:             make(map[string]string),
 		localNode:             localNode,
 		wallet:                wallet,
-		messageBuffer:         messagebuffer.NewMessageBuffer(),
+		messageBuffer:         messagebuffer.New(),
 		messageDeliveredCache: NewDelayedChan(messageDeliveredCacheSize, pongTimeout),
 		sigChainCache:         common.NewGoCache(sigChainCacheExpiration, sigChainCacheCleanupInterval),
 	}
@@ -201,7 +201,7 @@ func (ws *WsServer) registryMethod() {
 		session.SetClient(clientID, pubKey, &addrStr, isTlsClient)
 
 		go func() {
-			messages := ws.messageBuffer.PopMessages(clientID)
+			messages := ws.messageBuffer.PopMessages(hex.EncodeToString(clientID))
 			for _, message := range messages {
 				ws.sendInboundRelayMessage(message)
 			}

@@ -116,8 +116,8 @@ func (ws *WsServer) sendInboundRelayMessage(relayMessage *pb.Relay) {
 	if shouldSign {
 		msg.PrevHash = relayMessage.LastHash
 	}
-
-	success := ws.sendInboundMessage(hex.EncodeToString(clientID), msg)
+	clientIDStr := hex.EncodeToString(clientID)
+	success := ws.sendInboundMessage(clientIDStr, msg)
 	if success {
 		if shouldSign {
 			ws.sigChainCache.Add(relayMessage.LastHash, &sigChainInfo{
@@ -131,8 +131,11 @@ func (ws *WsServer) sendInboundRelayMessage(relayMessage *pb.Relay) {
 				log.Warningf("MessageDeliveredCache full, discarding messages.")
 			}
 		}
-	} else if relayMessage.MaxHoldingSeconds > 0 {
-		ws.messageBuffer.AddMessage(clientID, relayMessage)
+	} else {
+		err := ws.messageBuffer.AddMessage(clientIDStr, relayMessage)
+		if err != nil {
+			log.Errorf("Error adding message to message cache: %v", err)
+		}
 	}
 }
 
@@ -144,7 +147,8 @@ func (ws *WsServer) startCheckingLostMessages() {
 		}
 		if relayMessage, ok := v.(*pb.Relay); ok {
 			clientID := relayMessage.DestId
-			clients := ws.SessionList.GetSessionsById(hex.EncodeToString(clientID))
+			clientIDStr := hex.EncodeToString(clientID)
+			clients := ws.SessionList.GetSessionsById(clientIDStr)
 			if len(clients) > 0 {
 				threshold := time.Now().Add(-pongTimeout)
 				success := false
@@ -158,7 +162,10 @@ func (ws *WsServer) startCheckingLostMessages() {
 					continue
 				}
 			}
-			ws.messageBuffer.AddMessage(clientID, relayMessage)
+			err := ws.messageBuffer.AddMessage(clientIDStr, relayMessage)
+			if err != nil {
+				log.Errorf("Error adding message to message cache: %v", err)
+			}
 		}
 	}
 }
