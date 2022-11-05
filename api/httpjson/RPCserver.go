@@ -27,7 +27,7 @@ type RPCServer struct {
 	mainMux       ServeMux
 	httpListener  string
 	httpsListener string
-	localNode     *node.LocalNode
+	localNode     node.ILocalNode
 	wallet        *vault.Wallet
 	limiter       *rate.Limiter
 	httpServer    *http.Server
@@ -44,7 +44,7 @@ type ServeMux struct {
 }
 
 // NewServer will create a new RPC server instance.
-func NewServer(localNode *node.LocalNode, wallet *vault.Wallet) *RPCServer {
+func NewServer(localNode node.ILocalNode, wallet *vault.Wallet) *RPCServer {
 	return &RPCServer{
 		mainMux: ServeMux{
 			m: make(map[string]common.Handler),
@@ -344,18 +344,18 @@ func (s *RPCServer) Start(httpsCertReady chan struct{}) {
 	}(httpsCertReady)
 }
 
-func (s *RPCServer) GetLocalNode() *node.LocalNode {
+func (s *RPCServer) GetLocalNode() node.ILocalNode {
 	s.mainMux.RLock()
 	defer s.mainMux.RUnlock()
 	return s.localNode
 }
 
-func (s *RPCServer) SetLocalNode(ln *node.LocalNode) {
+func (s *RPCServer) SetLocalNode(ln node.ILocalNode) {
 	s.mainMux.Lock()
 	defer s.mainMux.Unlock()
 	s.localNode = ln
 }
 
-func (s *RPCServer) GetNetNode() *node.LocalNode {
+func (s *RPCServer) GetNetNode() node.ILocalNode {
 	return s.GetLocalNode()
 }

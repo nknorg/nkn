@@ -1,4 +1,4 @@
-package node
+package lnode
 
 import (
 	"crypto/sha256"
@@ -7,6 +7,10 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/nknorg/nkn/v2/util"
+
+	"github.com/nknorg/nkn/v2/node"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
@@ -131,7 +135,7 @@ func NewBacktrackSigChainMessage(sigChainElems []*pb.SigChainElem, hash []byte) 
 }
 
 // relayMessageHandler handles a RELAY message
-func (rs *RelayService) relayMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+func (rs *RelayService) relayMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	msgBody := &pb.Relay{}
 	err := proto.Unmarshal(remoteMessage.Message, msgBody)
 	if err != nil {
@@ -144,7 +148,7 @@ func (rs *RelayService) relayMessageHandler(remoteMessage *RemoteMessage) ([]byt
 }
 
 // pinSigChainMessageHandler handles a PIN_SIGNATURE_CHAIN message
-func (rs *RelayService) pinSigChainMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+func (rs *RelayService) pinSigChainMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	msgBody := &pb.PinSignatureChain{}
 	err := proto.Unmarshal(remoteMessage.Message, msgBody)
 	if err != nil {
@@ -160,7 +164,7 @@ func (rs *RelayService) pinSigChainMessageHandler(remoteMessage *RemoteMessage) 
 }
 
 // backtrackSigChainMessageHandler handles a BACKTRACK_SIGNATURE_CHAIN message
-func (rs *RelayService) backtrackSigChainMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+func (rs *RelayService) backtrackSigChainMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	msgBody := &pb.BacktrackSignatureChain{}
 	err := proto.Unmarshal(remoteMessage.Message, msgBody)
 	if err != nil {
@@ -187,7 +191,7 @@ func (rs *RelayService) pinSigChain(hash, senderPubkey []byte) error {
 			return err
 		}
 	} else {
-		nextHop := rs.localNode.GetNeighborNode(chordIDToNodeID(prevNodeID))
+		nextHop := rs.localNode.GetNeighborNode(util.ChordIDToNodeID(prevNodeID))
 		if nextHop == nil {
 			return fmt.Errorf("cannot find next hop with id %x", prevNodeID)
 		}
@@ -232,7 +236,7 @@ func (rs *RelayService) backtrackSigChain(sigChainElems []*pb.SigChainElem, hash
 			return err
 		}
 	} else {
-		nextHop := rs.localNode.GetNeighborNode(chordIDToNodeID(prevNodeID))
+		nextHop := rs.localNode.GetNeighborNode(util.ChordIDToNodeID(prevNodeID))
 		if nextHop == nil {
 			return fmt.Errorf("cannot find next hop with id %x", prevNodeID)
 		}
@@ -319,7 +323,7 @@ func (rs *RelayService) backtrackDestSigChain(v interface{}) {
 	}
 }
 
-func (rs *RelayService) updateRelayMessage(relayMessage *pb.Relay, nextHop, prevHop *RemoteNode) error {
+func (rs *RelayService) updateRelayMessage(relayMessage *pb.Relay, nextHop, prevHop *node.RemoteNode) error {
 	var nextPubkey []byte
 	if nextHop != nil {
 		nextPubkey = nextHop.GetPubKey()
@@ -490,7 +494,7 @@ func (localNode *LocalNode) signatureChainObjection(height uint32, sigHash []byt
 
 // signatureChainObjectionMessageHandler handles a SIGNATURE_CHAIN_OBJECTION
 // message
-func (localNode *LocalNode) signatureChainObjectionMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+func (localNode *LocalNode) signatureChainObjectionMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	signedMsg := &pb.SignatureChainObjectionSigned{}
 	err := proto.Unmarshal(remoteMessage.Message, signedMsg)
 	if err != nil {
@@ -529,7 +533,7 @@ func (localNode *LocalNode) signatureChainObjectionMessageHandler(remoteMessage 
 		return nil, false, err
 	}
 
-	neighbors := localNode.GetNeighbors(func(rn *RemoteNode) bool {
+	neighbors := localNode.GetNeighbors(func(rn *node.RemoteNode) bool {
 		return rand.Float32() < config.SigChainObjectionSampleNeighbor
 	})
 

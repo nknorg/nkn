@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/dashboard/helpers"
-	"github.com/nknorg/nkn/v2/node"
+	"github.com/nknorg/nkn/v2/lnode"
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
@@ -19,7 +19,7 @@ func StatusRouter(router *gin.RouterGroup) {
 		localNode, exists := context.Get("localNode")
 
 		if exists {
-			buf, err := localNode.(*node.LocalNode).MarshalJSON()
+			buf, err := localNode.(*lnode.LocalNode).MarshalJSON()
 			if err != nil {
 				log.WebLog.Error(err)
 				context.AbortWithError(http.StatusInternalServerError, err)

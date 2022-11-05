@@ -1,10 +1,13 @@
-package node
+package lnode
 
 import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"time"
+
+	//	"time"
+
+	"github.com/nknorg/nkn/v2/node"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/crypto"
@@ -41,6 +44,7 @@ func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, si
 	return proto.Marshal(signedMsg)
 }
 
+/*
 func (remoteNode *RemoteNode) SendBytesAsync(buf []byte) error {
 	err := remoteNode.localNode.nnet.SendBytesDirectAsync(buf, remoteNode.nnetNode)
 	if err != nil {
@@ -72,6 +76,7 @@ func (remoteNode *RemoteNode) SendBytesReply(replyToID, buf []byte) error {
 	}
 	return err
 }
+*/
 
 func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, nnetLocalNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
 	if remoteMessage.Msg.MessageType == nnetpb.BYTES {
@@ -87,8 +92,8 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 			}
 		}
 
-		var senderNode *Node
-		senderRemoteNode := localNode.getNeighborByNNetNode(remoteMessage.RemoteNode)
+		var senderNode *node.Node
+		senderRemoteNode := localNode.GetNeighborByNNetNode(remoteMessage.RemoteNode)
 		if senderRemoteNode != nil {
 			senderNode = senderRemoteNode.Node
 		} else if remoteMessage.RemoteNode == nil {
@@ -170,9 +175,9 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				return nil, nil, nil, false
 			}
 
-			var nextHop *RemoteNode
+			var nextHop *node.RemoteNode
 			if len(remoteNodes) > 0 {
-				nextHop = localNode.getNeighborByNNetNode(remoteNodes[0])
+				nextHop = localNode.GetNeighborByNNetNode(remoteNodes[0])
 				if nextHop == nil {
 					log.Errorf("cannot get next hop neighbor node")
 					return nil, nil, nil, false
@@ -259,8 +264,8 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 	return remoteMessage, nnetLocalNode, remoteNodes, true
 }
 
-func (localNode *LocalNode) receiveMessage(sender *Node, unsignedMsg *pb.UnsignedMessage) ([]byte, error) {
-	remoteMessage := &RemoteMessage{
+func (localNode *LocalNode) receiveMessage(sender *node.Node, unsignedMsg *pb.UnsignedMessage) ([]byte, error) {
+	remoteMessage := &node.RemoteMessage{
 		Sender:  sender,
 		Message: unsignedMsg.Message,
 	}

@@ -618,7 +618,7 @@ func getId(s Serverer, params map[string]interface{}, ctx context.Context) map[s
 	return respPacking(errcode.SUCCESS, ret)
 }
 
-func VerifyAndSendTx(localNode *node.LocalNode, txn *transaction.Transaction) (errcode.ErrCode, error) {
+func VerifyAndSendTx(localNode node.ILocalNode, txn *transaction.Transaction) (errcode.ErrCode, error) {
 	if err := localNode.AppendTxnPool(txn); err != nil {
 		log.Debugf("Add transaction to TxnPool error: %v", err)
 

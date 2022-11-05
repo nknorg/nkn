@@ -1,4 +1,4 @@
-package node
+package lnode
 
 import (
 	"crypto/rand"
@@ -20,7 +20,7 @@ const (
 
 var emptyNonce [nonceSize]byte
 
-func (localNode *LocalNode) computeSharedKey(remotePublicKey []byte) (*[sharedKeySize]byte, error) {
+func (localNode *LocalNode) ComputeSharedKey(remotePublicKey []byte) (*[sharedKeySize]byte, error) {
 	if len(remotePublicKey) != ed25519.PublicKeySize {
 		return nil, fmt.Errorf("public key length is %d, expecting %d", len(remotePublicKey), ed25519.PublicKeySize)
 	}
@@ -43,21 +43,21 @@ func (localNode *LocalNode) computeSharedKey(remotePublicKey []byte) (*[sharedKe
 
 func (localNode *LocalNode) encryptMessage(msg []byte, rn *nnetnode.RemoteNode) []byte {
 	var sharedKey *[sharedKeySize]byte
-	if remoteNode := localNode.getNeighborByNNetNode(rn); remoteNode != nil {
-		sharedKey = remoteNode.sharedKey
+	if remoteNode := localNode.GetNeighborByNNetNode(rn); remoteNode != nil {
+		sharedKey = remoteNode.SharedKey
 	}
 	return encryptMessage(msg, sharedKey)
 }
 
 func (localNode *LocalNode) decryptMessage(msg []byte, rn *nnetnode.RemoteNode) ([]byte, error) {
 	var sharedKey *[sharedKeySize]byte
-	if remoteNode := localNode.getNeighborByNNetNode(rn); remoteNode != nil {
-		sharedKey = remoteNode.sharedKey
+	if remoteNode := localNode.GetNeighborByNNetNode(rn); remoteNode != nil {
+		sharedKey = remoteNode.SharedKey
 	} else if rn.Data != nil {
 		nodeData := &pb.NodeData{}
 		if err := proto.Unmarshal(rn.Data, nodeData); err == nil {
 			if len(nodeData.PublicKey) > 0 {
-				sharedKey, err = localNode.computeSharedKey(nodeData.PublicKey)
+				sharedKey, err = localNode.ComputeSharedKey(nodeData.PublicKey)
 				if err != nil {
 					log.Warningf("Compute shared key for pk %x error: %v", nodeData.PublicKey, err)
 				}

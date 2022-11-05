@@ -1,7 +1,9 @@
-package node
+package lnode
 
 import (
 	"errors"
+
+	"github.com/nknorg/nkn/v2/node"
 
 	"github.com/nknorg/nkn/v2/chain/trie"
 
@@ -65,7 +67,7 @@ func NewGetStatesReply(nodes [][]byte) (*pb.UnsignedMessage, error) {
 	return msg, nil
 }
 
-func (localNode *LocalNode) getStatesMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+func (localNode *LocalNode) getStatesMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	replyMsg, err := NewGetStatesReply(nil)
 	if err != nil {
 		return nil, false, err
@@ -108,12 +110,12 @@ func (localNode *LocalNode) getStatesMessageHandler(remoteMessage *RemoteMessage
 	return replyBuf, false, nil
 }
 
-func (remoteNode *RemoteNode) GetStates(hashes []common.Uint256) ([][]byte, error) {
+func (localNode *LocalNode) GetStates(remoteNode *node.RemoteNode, hashes []common.Uint256) ([][]byte, error) {
 	msg, err := NewGetStateMessage(hashes)
 	if err != nil {
 		return nil, err
 	}
-	buf, err := remoteNode.localNode.SerializeMessage(msg, false)
+	buf, err := localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return nil, err
 	}

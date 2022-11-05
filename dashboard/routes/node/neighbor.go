@@ -1,10 +1,11 @@
 package node
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/nknorg/nkn/v2/dashboard/helpers"
-	"github.com/nknorg/nkn/v2/node"
-	"net/http"
+	"github.com/nknorg/nkn/v2/lnode"
 )
 
 func NeighborRouter(router *gin.RouterGroup) {
@@ -12,7 +13,7 @@ func NeighborRouter(router *gin.RouterGroup) {
 		localNode, exists := context.Get("localNode")
 
 		if exists {
-			list := localNode.(*node.LocalNode).GetNeighborInfo()
+			list := localNode.(*lnode.LocalNode).GetNeighborInfo()
 
 			data := helpers.EncryptData(context, true, list)
 			context.JSON(http.StatusOK, gin.H{

@@ -1,4 +1,4 @@
-package node
+package lnode
 
 import (
 	"bytes"
@@ -10,6 +10,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/nknorg/nkn/v2/node"
+
+	"github.com/nknorg/nkn/v2/util"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/api/ratelimiter"
@@ -29,11 +33,11 @@ import (
 )
 
 type LocalNode struct {
-	*Node
+	*node.Node
 	*neighborNodes // neighbor nodes
 	*pool.TxnPool  // transaction pool of local node
 	*hashCache     // txn hash cache
-	*messageHandlerStore
+	*node.MessageHandlerStore
 	account            *vault.Account // local node wallet account
 	nnet               *nnet.NNet     // nnet instance
 	relayer            *RelayService  // relay service
@@ -60,11 +64,11 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return nil, err
 	}
 
-	httpsDomain, err := GetDefaultDomainFromIP(addr.Hostname(), config.Parameters.HttpsJsonDomain)
+	httpsDomain, err := util.GetDefaultDomainFromIP(addr.Hostname(), config.Parameters.HttpsJsonDomain)
 	if err != nil {
 		return nil, err
 	}
-	wssDomain, err := GetDefaultDomainFromIP(addr.Hostname(), config.Parameters.HttpWssDomain)
+	wssDomain, err := util.GetDefaultDomainFromIP(addr.Hostname(), config.Parameters.HttpWssDomain)
 	if err != nil {
 		return nil, err
 	}
@@ -80,13 +84,13 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		TlsJsonRpcPort:     uint32(config.Parameters.HttpsJsonPort),
 	}
 
-	node, err := NewNode(nn.GetLocalNode().Node.Node, nodeData)
+	node1, err := node.NewNode(nn.GetLocalNode().Node.Node, nodeData)
 	if err != nil {
 		return nil, err
 	}
 
 	localNode := &LocalNode{
-		Node:                node,
+		Node:                node1,
 		neighborNodes:       newNeighborNodes(),
 		account:             account,
 		TxnPool:             pool.NewTxPool(),
@@ -96,7 +100,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		receiveTxnMsg:       newReceiveTxnMsg(receiveTxnMsgWorkerPoolSize, nil),
 		syncHeaderLimiter:   rate.NewLimiter(rate.Limit(config.Parameters.SyncBlockHeaderRateLimit), int(config.Parameters.SyncBlockHeaderRateBurst)),
 		syncBlockLimiter:    rate.NewLimiter(rate.Limit(config.Parameters.SyncBlockRateLimit), int(config.Parameters.SyncBlockRateBurst)),
-		messageHandlerStore: newMessageHandlerStore(),
+		MessageHandlerStore: node.NewMessageHandlerStore(),
 		nnet:                nn,
 	}
 
@@ -154,9 +158,9 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	}, 0})
 
 	nn.MustApplyMiddleware(chord.NeighborRemoved{func(remoteNode *nnetnode.RemoteNode) bool {
-		nbr := localNode.getNeighborByNNetNode(remoteNode)
+		nbr := localNode.GetNeighborByNNetNode(remoteNode)
 		if nbr != nil {
-			localNode.removeNeighborNode(nbr.GetID())
+			localNode.RemoveNeighborNode(nbr.GetID())
 		}
 		return true
 	}, 0})
@@ -168,7 +172,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	nn.MustApplyMiddleware(nnetnode.MessageWillDecode{func(rn *nnetnode.RemoteNode, msg []byte) ([]byte, bool) {
 		decrypted, err := localNode.decryptMessage(msg, rn)
 		if err != nil {
-			if localNode.getNeighborByNNetNode(rn) != nil {
+			if localNode.GetNeighborByNNetNode(rn) != nil {
 				rn.Stop(err)
 			} else {
 				log.Warningf("Decrypt message from %v error: %v", rn, err)
@@ -182,9 +186,9 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 
 	nn.MustApplyMiddleware(chord.RelayPriority{func(rn *nnetnode.RemoteNode, priority float64) (float64, bool) {
 		var connTime time.Duration
-		nbr := localNode.getNeighborByNNetNode(rn)
+		nbr := localNode.GetNeighborByNNetNode(rn)
 		if nbr != nil {
-			connTime = time.Since(nbr.Node.startTime)
+			connTime = time.Since(nbr.Node.StartTime)
 		}
 		priority = relayPriority(priority, connTime)
 		return priority, true
@@ -207,7 +211,7 @@ func (localNode *LocalNode) MarshalJSON() ([]byte, error) {
 	}
 
 	out["height"] = localNode.GetHeight()
-	out["uptime"] = time.Since(localNode.Node.startTime) / time.Second
+	out["uptime"] = time.Since(localNode.Node.StartTime) / time.Second
 	out["version"] = config.Version
 	out["relayMessageCount"] = localNode.GetRelayMessageCount()
 	if config.Parameters.MiningDebug {
@@ -231,6 +235,10 @@ func (localNode *LocalNode) GetProposalSubmitted() uint32 {
 
 func (localNode *LocalNode) IncrementProposalSubmitted() {
 	atomic.AddUint32(&localNode.proposalSubmitted, 1)
+}
+
+func (localNode *LocalNode) GetNnet() *nnet.NNet {
+	return localNode.nnet
 }
 
 func (localNode *LocalNode) GetRelayMessageCount() uint64 {

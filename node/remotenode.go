@@ -8,14 +8,15 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/pb"
+	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 )
 
 type RemoteNode struct {
 	*Node
-	localNode *LocalNode
-	nnetNode  *nnetnode.RemoteNode
-	sharedKey *[sharedKeySize]byte
+	localNode ILocalNode
+	NnetNode  *nnetnode.RemoteNode
+	SharedKey *[SharedKeySize]byte
 
 	sync.RWMutex
 	height         uint32
@@ -36,14 +37,14 @@ func (remoteNode *RemoteNode) MarshalJSON() ([]byte, error) {
 	}
 
 	out["height"] = remoteNode.GetHeight()
-	out["isOutbound"] = remoteNode.nnetNode.IsOutbound
-	out["roundTripTime"] = remoteNode.nnetNode.GetRoundTripTime() / time.Millisecond
-	out["connTime"] = time.Since(remoteNode.Node.startTime) / time.Second
+	out["isOutbound"] = remoteNode.NnetNode.IsOutbound
+	out["roundTripTime"] = remoteNode.NnetNode.GetRoundTripTime() / time.Millisecond
+	out["connTime"] = time.Since(remoteNode.Node.StartTime) / time.Second
 
 	return json.Marshal(out)
 }
 
-func NewRemoteNode(localNode *LocalNode, nnetNode *nnetnode.RemoteNode) (*RemoteNode, error) {
+func NewRemoteNode(localNode ILocalNode, nnetNode *nnetnode.RemoteNode) (*RemoteNode, error) {
 	nodeData := &pb.NodeData{}
 	err := proto.Unmarshal(nnetNode.Node.Data, nodeData)
 	if err != nil {
@@ -58,7 +59,7 @@ func NewRemoteNode(localNode *LocalNode, nnetNode *nnetnode.RemoteNode) (*Remote
 	if len(node.PublicKey) == 0 {
 		return nil, errors.New("nil public key")
 	}
-	sharedKey, err := localNode.computeSharedKey(node.PublicKey)
+	sharedKey, err := localNode.ComputeSharedKey(node.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +67,8 @@ func NewRemoteNode(localNode *LocalNode, nnetNode *nnetnode.RemoteNode) (*Remote
 	remoteNode := &RemoteNode{
 		Node:      node,
 		localNode: localNode,
-		nnetNode:  nnetNode,
-		sharedKey: sharedKey,
+		NnetNode:  nnetNode,
+		SharedKey: sharedKey,
 	}
 
 	return remoteNode, nil
@@ -98,13 +99,45 @@ func (remoteNode *RemoteNode) SetLastUpdateTime(lastUpdateTime time.Time) {
 }
 
 func (remoteNode *RemoteNode) CloseConn() {
-	remoteNode.nnetNode.Stop(nil)
+	remoteNode.NnetNode.Stop(nil)
 }
 
 func (remoteNode *RemoteNode) String() string {
-	return remoteNode.nnetNode.String()
+	return remoteNode.NnetNode.String()
 }
 
 func (remoteNode *RemoteNode) IsStopped() bool {
-	return remoteNode.nnetNode.IsStopped()
+	return remoteNode.NnetNode.IsStopped()
+}
+
+func (remoteNode *RemoteNode) SendBytesAsync(buf []byte) error {
+	err := remoteNode.localNode.GetNnet().SendBytesDirectAsync(buf, remoteNode.NnetNode)
+	if err != nil {
+		log.Debugf("Error sending async messge to node %v, removing node.", err.Error())
+		remoteNode.CloseConn()
+		remoteNode.localNode.RemoveNeighborNode(remoteNode.GetID())
+	}
+	return err
+}
+
+func (remoteNode *RemoteNode) SendBytesSync(buf []byte) ([]byte, error) {
+	return remoteNode.SendBytesSyncWithTimeout(buf, 0)
+}
+
+func (remoteNode *RemoteNode) SendBytesSyncWithTimeout(buf []byte, replyTimeout time.Duration) ([]byte, error) {
+	reply, _, err := remoteNode.localNode.GetNnet().SendBytesDirectSyncWithTimeout(buf, remoteNode.NnetNode, replyTimeout)
+	if err != nil {
+		log.Debugf("Error sending sync messge to node: %v", err.Error())
+	}
+	return reply, err
+}
+
+func (remoteNode *RemoteNode) SendBytesReply(replyToID, buf []byte) error {
+	err := remoteNode.localNode.GetNnet().SendBytesDirectReply(replyToID, buf, remoteNode.NnetNode)
+	if err != nil {
+		log.Debugf("Error sending async messge to node: %v, removing node.", err.Error())
+		remoteNode.CloseConn()
+		remoteNode.localNode.RemoveNeighborNode(remoteNode.GetID())
+	}
+	return err
 }

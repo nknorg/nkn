@@ -1,8 +1,10 @@
-package node
+package lnode
 
 import (
 	"errors"
 	"fmt"
+
+	"github.com/nknorg/nkn/v2/node"
 
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
@@ -14,7 +16,7 @@ const (
 	rollbackMinRelativeWeight = 1.0 / 2.0
 )
 
-func (localNode *LocalNode) maybeRollback(neighbors []*RemoteNode) (bool, error) {
+func (localNode *LocalNode) maybeRollback(neighbors []*node.RemoteNode) (bool, error) {
 	currentHeight := chain.DefaultLedger.Store.GetHeight()
 	currentHash, err := chain.DefaultLedger.Store.GetBlockHash(currentHeight)
 	if err != nil {

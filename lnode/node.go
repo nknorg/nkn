@@ -1,6 +1,6 @@
-// ln: abbr. of local node
-package node
+package lnode
 
+/*
 import (
 	"encoding/hex"
 	"encoding/json"
@@ -11,7 +11,6 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util"
 	nnetpb "github.com/nknorg/nnet/protobuf"
 )
 
@@ -19,7 +18,7 @@ type Node struct {
 	*nnetpb.Node
 	*pb.NodeData
 	publicKey []byte
-	StartTime time.Time
+	startTime time.Time
 
 	sync.RWMutex
 	syncState           pb.SyncState
@@ -70,7 +69,7 @@ func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
 		Node:      nnetNode,
 		NodeData:  nodeData,
 		publicKey: nodeData.PublicKey,
-		StartTime: time.Now(),
+		startTime: time.Now(),
 		syncState: pb.SyncState_WAIT_FOR_SYNCING,
 	}
 
@@ -82,7 +81,7 @@ func (n *Node) GetChordID() []byte {
 }
 
 func (n *Node) GetID() string {
-	return util.ChordIDToNodeID(n.GetChordID())
+	return chordIDToNodeID(n.GetChordID())
 }
 
 func (n *Node) GetPubKey() []byte {
@@ -121,3 +120,4 @@ func (n *Node) SetMinVerifiableHeight(height uint32) {
 	defer n.Unlock()
 	n.minVerifiableHeight = height
 }
+*/
