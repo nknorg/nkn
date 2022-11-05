@@ -1,4 +1,4 @@
-package node
+package lnode
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util/log"
 )
@@ -116,7 +117,7 @@ func NewGetBlocksReply(blocks []*block.Block) (*pb.UnsignedMessage, error) {
 }
 
 // getBlockHeadersMessageHandler handles a GET_BLOCK_HEADERS message
-func (localNode *LocalNode) getBlockHeadersMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+func (localNode *LocalNode) getBlockHeadersMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	replyMsg, err := NewGetBlockHeadersReply(nil)
 	if err != nil {
 		return nil, false, err
@@ -169,7 +170,7 @@ func (localNode *LocalNode) getBlockHeadersMessageHandler(remoteMessage *RemoteM
 }
 
 // getBlocksMessageHandler handles a GET_BLOCKS message
-func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	replyMsg, err := NewGetBlocksReply(nil)
 	if err != nil {
 		return nil, false, err
@@ -223,7 +224,7 @@ func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *RemoteMessage
 
 // GetBlockHeaders requests a range of consecutive block headers from a neighbor
 // using GET_BLOCK_HEADERS message
-func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]*block.Header, error) {
+func (localNode *LocalNode) GetNeighborBlockHeaders(remoteNode *node.RemoteNode, startHeight, endHeight uint32) ([]*block.Header, error) {
 	if startHeight > endHeight {
 		return nil, fmt.Errorf("start height %d is higher than end height %d", startHeight, endHeight)
 	}
@@ -233,7 +234,7 @@ func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]
 		return nil, err
 	}
 
-	buf, err := remoteNode.localNode.SerializeMessage(msg, false)
+	buf, err := localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +264,7 @@ func (remoteNode *RemoteNode) GetBlockHeaders(startHeight, endHeight uint32) ([]
 
 // GetBlocks requests a range of consecutive blocks from a neighbor using
 // GET_BLOCKS message
-func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*block.Block, error) {
+func (localNode *LocalNode) GetNeighborBlocks(remoteNode *node.RemoteNode, startHeight, endHeight uint32) ([]*block.Block, error) {
 	if startHeight > endHeight {
 		return nil, fmt.Errorf("start height %d is higher than end height %d", startHeight, endHeight)
 	}
@@ -273,7 +274,7 @@ func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*block
 		return nil, err
 	}
 
-	buf, err := remoteNode.localNode.SerializeMessage(msg, false)
+	buf, err := localNode.SerializeMessage(msg, false)
 	if err != nil {
 		return nil, err
 	}
@@ -304,14 +305,14 @@ func (remoteNode *RemoteNode) GetBlocks(startHeight, endHeight uint32) ([]*block
 
 // getNeighborsBlockHeaderByHeight returns the block header at a given height
 // from given neighbors by calling GetBlockHeaders on all of them concurrently.
-func (localNode *LocalNode) getNeighborsBlockHeaderByHeight(height uint32, neighbors []*RemoteNode) (*sync.Map, error) {
+func (localNode *LocalNode) getNeighborsBlockHeaderByHeight(height uint32, neighbors []*node.RemoteNode) (*sync.Map, error) {
 	var allHeaders sync.Map
 	var wg sync.WaitGroup
 	for _, neighbor := range neighbors {
 		wg.Add(1)
-		go func(neighbor *RemoteNode) {
+		go func(neighbor *node.RemoteNode) {
 			defer wg.Done()
-			headers, err := neighbor.GetBlockHeaders(height, height)
+			headers, err := localNode.GetNeighborBlockHeaders(neighbor, height, height)
 			if err != nil {
 				log.Warningf("Get block header at height %d from neighbor %v error: %v", height, neighbor.GetID(), err)
 				return
@@ -325,7 +326,7 @@ func (localNode *LocalNode) getNeighborsBlockHeaderByHeight(height uint32, neigh
 
 // getNeighborsMajorityBlockHashByHeight returns the majority of given
 // neighbors' block hash at a give height
-func (localNode *LocalNode) getNeighborsMajorityBlockHashByHeight(height uint32, neighbors []*RemoteNode) common.Uint256 {
+func (localNode *LocalNode) getNeighborsMajorityBlockHashByHeight(height uint32, neighbors []*node.RemoteNode) common.Uint256 {
 	header := localNode.getNeighborsMajorityBlockByHeight(height, neighbors)
 	if header == nil {
 		return common.EmptyUint256
@@ -335,7 +336,7 @@ func (localNode *LocalNode) getNeighborsMajorityBlockHashByHeight(height uint32,
 
 // getNeighborsMajorityStateRootByHeight returns the majority of given
 // neighbors' block hash at a give height
-func (localNode *LocalNode) getNeighborsMajorityStateRootByHeight(height uint32, neighbors []*RemoteNode) common.Uint256 {
+func (localNode *LocalNode) getNeighborsMajorityStateRootByHeight(height uint32, neighbors []*node.RemoteNode) common.Uint256 {
 	header := localNode.getNeighborsMajorityBlockByHeight(height, neighbors)
 	if header == nil {
 		return common.EmptyUint256
@@ -349,7 +350,7 @@ func (localNode *LocalNode) getNeighborsMajorityStateRootByHeight(height uint32,
 
 // getNeighborsMajorityBlockByHeight returns the majority of given
 // neighbors' block hash at a give height
-func (localNode *LocalNode) getNeighborsMajorityBlockByHeight(height uint32, neighbors []*RemoteNode) *block.Header {
+func (localNode *LocalNode) getNeighborsMajorityBlockByHeight(height uint32, neighbors []*node.RemoteNode) *block.Header {
 	for i := 0; i < 3; i++ {
 		allHeaders, err := localNode.getNeighborsBlockHeaderByHeight(height, neighbors)
 		if err != nil {
@@ -393,7 +394,7 @@ func (localNode *LocalNode) getNeighborsMajorityBlockByHeight(height uint32, nei
 	return nil
 }
 
-func (localNode *LocalNode) GetNeighborsMajorityStateRootByHeight(height uint32, neighbors []*RemoteNode) common.Uint256 {
+func (localNode *LocalNode) GetNeighborsMajorityStateRootByHeight(height uint32, neighbors []*node.RemoteNode) common.Uint256 {
 	return localNode.getNeighborsMajorityStateRootByHeight(height, neighbors)
 }
 
@@ -405,8 +406,8 @@ func (localNode *LocalNode) initSyncing() {
 	localNode.ResetSyncing()
 }
 
-func removeStoppedNeighbors(neighbors []*RemoteNode) []*RemoteNode {
-	availableNeighbors := make([]*RemoteNode, 0, len(neighbors))
+func removeStoppedNeighbors(neighbors []*node.RemoteNode) []*node.RemoteNode {
+	availableNeighbors := make([]*node.RemoteNode, 0, len(neighbors))
 	for _, n := range neighbors {
 		if !n.IsStopped() {
 			availableNeighbors = append(availableNeighbors, n)
@@ -417,7 +418,7 @@ func removeStoppedNeighbors(neighbors []*RemoteNode) []*RemoteNode {
 
 // StartSyncing starts block syncing from current local ledger until it gets to
 // block height stopHeight with block hash stopHash from given neighbors
-func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHeight uint32, neighbors []*RemoteNode) (bool, error) {
+func (localNode *LocalNode) StartSyncing(syncStopHash common.Uint256, syncStopHeight uint32, neighbors []*node.RemoteNode) (bool, error) {
 	var err error
 	started := false
 
@@ -568,7 +569,7 @@ func (localNode *LocalNode) ResetSyncing() {
 	localNode.syncOnce = new(sync.Once)
 }
 
-func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, startPrevHash, stopHash common.Uint256, neighbors []*RemoteNode, fullHeader bool) ([]common.Uint256, []*block.Header, error) {
+func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, startPrevHash, stopHash common.Uint256, neighbors []*node.RemoteNode, fullHeader bool) ([]common.Uint256, []*block.Header, error) {
 	var nextHeader *block.Header
 	headersHash := make([]common.Uint256, stopHeight-startHeight+1, stopHeight-startHeight+1)
 	var headers []*block.Header
@@ -591,7 +592,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		neighbor := neighbors[workerID%uint32(len(neighbors))]
 		batchStartHeight, batchEndHeight := getBatchHeightRange(batchID)
 
-		batchHeaders, err := neighbor.GetBlockHeaders(batchStartHeight, batchEndHeight)
+		batchHeaders, err := localNode.GetNeighborBlockHeaders(neighbor, batchStartHeight, batchEndHeight)
 		if err != nil {
 			log.Warningf("Get block headers error: %v", err)
 			return nil, false
@@ -659,7 +660,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 	return headersHash, headers, nil
 }
 
-func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchSize uint32, neighbors []*RemoteNode, headersHash []common.Uint256, fastSyncHeight uint32) error {
+func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchSize uint32, neighbors []*node.RemoteNode, headersHash []common.Uint256, fastSyncHeight uint32) error {
 	numBatches := (stopHeight-startHeight)/syncBlocksBatchSize + 1
 	numWorkers := uint32(len(neighbors)) * concurrentSyncRequestPerNeighbor
 
@@ -676,7 +677,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchS
 		neighbor := neighbors[workerID%uint32(len(neighbors))]
 		batchStartHeight, batchEndHeight := getBatchHeightRange(batchID)
 
-		batchBlocks, err := neighbor.GetBlocks(batchStartHeight, batchEndHeight)
+		batchBlocks, err := localNode.GetNeighborBlocks(neighbor, batchStartHeight, batchEndHeight)
 		if err != nil {
 			log.Warningf("Get blocks error: %v", err)
 			return nil, false
@@ -738,8 +739,8 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchS
 }
 
 // StartFastSyncing quickly download the headers, full sync only at the chain
-func (localNode *LocalNode) StartFastSyncing(syncRootHash common.Uint256, peers []*RemoteNode) error {
+func (localNode *LocalNode) StartFastSyncing(syncRootHash common.Uint256, peers []*node.RemoteNode) error {
 	db := chain.DefaultLedger.Store.GetDatabase()
 	s := newStateSync(db, syncRootHash, peers)
-	return s.run()
+	return s.run(localNode)
 }

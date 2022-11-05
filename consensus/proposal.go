@@ -410,7 +410,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		for i := range txnsHash {
 			if txn := blockTxns[txnsHash[i]]; txn != nil {
 				existingTxns = append(existingTxns, txn)
-			} else if txn = consensus.localNode.TxnPool.GetTxnByHash(txnsHash[i]); txn != nil {
+			} else if txn = consensus.localNode.GetTxnPool().GetTxnByHash(txnsHash[i]); txn != nil {
 				existingTxns = append(existingTxns, txn)
 			} else if txn, err = por.GetPorServer().GetSigChainTxn(txnsHash[i]); err == nil && txn != nil {
 				existingTxns = append(existingTxns, txn)
@@ -427,7 +427,7 @@ func (consensus *Consensus) requestProposal(neighbor *node.RemoteNode, blockHash
 		for i := range replyMsg.TransactionsHash {
 			if txn := blockTxns[string(replyMsg.TransactionsHash[i])]; txn != nil {
 				existingTxns = append(existingTxns, txn)
-			} else if txn := consensus.localNode.TxnPool.GetTxnByShortHash(replyMsg.TransactionsHash[i]); txn != nil {
+			} else if txn := consensus.localNode.GetTxnPool().GetTxnByShortHash(replyMsg.TransactionsHash[i]); txn != nil {
 				existingTxns = append(existingTxns, txn)
 			} else if txn, err = por.GetPorServer().GetSigChainTxnByShortHash(replyMsg.TransactionsHash[i]); err == nil && txn != nil {
 				existingTxns = append(existingTxns, txn)

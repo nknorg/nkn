@@ -6,10 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nknorg/nkn/v2/config"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/vault"
 )
