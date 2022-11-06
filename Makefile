@@ -14,9 +14,9 @@ NKND_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/v2/config.Version=$(VE
 #NKNC_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/v2/cmd/nknc/common.Version=$(VERSION)"
 NKNC_BUILD_PARAM=$(NKND_BUILD_PARAM)
 NKND_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknd$(EXT)
-NKNC_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknc$(EXT)
+# NKNC_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknc$(EXT)
 NKND_MAIN=./cmd/nknd/
-NKNC_MAIN=./cmd/nknc/
+# NKNC_MAIN=./cmd/nknc/
 
 help:  ## Show available options with this Makefile
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -v grep | awk 'BEGIN { FS = ":.*?##" }; { printf "%-15s  %s\n", $$1,$$2 }'
@@ -98,6 +98,30 @@ pb:
 .PHONY: test
 test:
 	go test -v ./chain/store
+
+dev:
+	cp nknd nknc ../bin/n1
+	cp nknd nknc ../bin/n2
+	cp nknd nknc ../bin/n3
+	cp nknd nknc ../bin/n4
+	cp nknd nknc ../bin/n5
+	cp nknd nknc ../bin/n6
+	cp nknd nknc ../bin/n7
+	cp nknd nknc ../bin/n8
+	cp nknd nknc ../bin/n9
+	cp nknd nknc ../bin/n10
+
+devconfig:
+	cp config.json abc ../bin/n1
+	cp config.json  abc ../bin/n2
+	cp config.json abc ../bin/n3
+	cp config.json abc ../bin/n4
+	cp config.json abc ../bin/n5
+	cp config.json abc ../bin/n6
+	cp config.json abc ../bin/n7
+	cp config.json abc ../bin/n8
+	cp config.json abc ../bin/n9
+	cp config.json abc ../bin/n10
 
 .PHONY: docker
 docker:
