@@ -110,7 +110,7 @@ func (localNode *LocalNode) getStatesMessageHandler(remoteMessage *node.RemoteMe
 	return replyBuf, false, nil
 }
 
-func (localNode *LocalNode) GetStates(remoteNode *node.RemoteNode, hashes []common.Uint256) ([][]byte, error) {
+func (localNode *LocalNode) GetNeighborStates(remoteNode *node.RemoteNode, hashes []common.Uint256) ([][]byte, error) {
 	msg, err := NewGetStateMessage(hashes)
 	if err != nil {
 		return nil, err

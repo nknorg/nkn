@@ -147,7 +147,7 @@ func (s *stateSync) startWorker(localNode *LocalNode, remoteNode *node.RemoteNod
 			return
 		}
 
-		resp, err := localNode.GetStates(remoteNode, hashes)
+		resp, err := localNode.GetNeighborStates(remoteNode, hashes)
 
 		if err != nil {
 			s.sched.Push(hashes, math.MaxInt64)

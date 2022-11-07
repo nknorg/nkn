@@ -225,7 +225,7 @@ func (localNode *LocalNode) getBlocksMessageHandler(remoteMessage *node.RemoteMe
 
 // GetBlockHeaders requests a range of consecutive block headers from a neighbor
 // using GET_BLOCK_HEADERS message
-func (localNode *LocalNode) GetBlockHeaders(remoteNode *node.RemoteNode, startHeight, endHeight uint32) ([]*block.Header, error) {
+func (localNode *LocalNode) GetNeighborBlockHeaders(remoteNode *node.RemoteNode, startHeight, endHeight uint32) ([]*block.Header, error) {
 	if startHeight > endHeight {
 		return nil, fmt.Errorf("start height %d is higher than end height %d", startHeight, endHeight)
 	}
@@ -265,7 +265,7 @@ func (localNode *LocalNode) GetBlockHeaders(remoteNode *node.RemoteNode, startHe
 
 // GetBlocks requests a range of consecutive blocks from a neighbor using
 // GET_BLOCKS message
-func (localNode *LocalNode) GetBlocks(remoteNode *node.RemoteNode, startHeight, endHeight uint32) ([]*block.Block, error) {
+func (localNode *LocalNode) GetNeighborBlocks(remoteNode *node.RemoteNode, startHeight, endHeight uint32) ([]*block.Block, error) {
 	if startHeight > endHeight {
 		return nil, fmt.Errorf("start height %d is higher than end height %d", startHeight, endHeight)
 	}
@@ -313,7 +313,7 @@ func (localNode *LocalNode) getNeighborsBlockHeaderByHeight(height uint32, neigh
 		wg.Add(1)
 		go func(neighbor *node.RemoteNode) {
 			defer wg.Done()
-			headers, err := localNode.GetBlockHeaders(neighbor, height, height)
+			headers, err := localNode.GetNeighborBlockHeaders(neighbor, height, height)
 			if err != nil {
 				log.Warningf("Get block header at height %d from neighbor %v error: %v", height, neighbor.GetID(), err)
 				return
@@ -593,7 +593,7 @@ func (localNode *LocalNode) syncBlockHeaders(startHeight, stopHeight uint32, sta
 		neighbor := neighbors[workerID%uint32(len(neighbors))]
 		batchStartHeight, batchEndHeight := getBatchHeightRange(batchID)
 
-		batchHeaders, err := localNode.GetBlockHeaders(neighbor, batchStartHeight, batchEndHeight)
+		batchHeaders, err := localNode.GetNeighborBlockHeaders(neighbor, batchStartHeight, batchEndHeight)
 		if err != nil {
 			log.Warningf("Get block headers error: %v", err)
 			return nil, false
@@ -678,7 +678,7 @@ func (localNode *LocalNode) syncBlocks(startHeight, stopHeight, syncBlocksBatchS
 		neighbor := neighbors[workerID%uint32(len(neighbors))]
 		batchStartHeight, batchEndHeight := getBatchHeightRange(batchID)
 
-		batchBlocks, err := localNode.GetBlocks(neighbor, batchStartHeight, batchEndHeight)
+		batchBlocks, err := localNode.GetNeighborBlocks(neighbor, batchStartHeight, batchEndHeight)
 		if err != nil {
 			log.Warningf("Get blocks error: %v", err)
 			return nil, false
