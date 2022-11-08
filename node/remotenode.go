@@ -27,11 +27,7 @@ type RemoteNode struct {
 	*Node
 	localNode ILocalNode
 	NnetNode  *nnetnode.RemoteNode
-<<<<<<< HEAD
 	sharedKey *[SharedKeySize]byte
-=======
-	SharedKey *[SharedKeySize]byte
->>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517
 
 	sync.RWMutex
 	height         uint32
@@ -83,11 +79,7 @@ func NewRemoteNode(localNode ILocalNode, nnetNode *nnetnode.RemoteNode) (*Remote
 		Node:      node,
 		localNode: localNode,
 		NnetNode:  nnetNode,
-<<<<<<< HEAD
 		sharedKey: sharedKey,
-=======
-		SharedKey: sharedKey,
->>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517
 	}
 
 	return remoteNode, nil
@@ -159,7 +151,6 @@ func (remoteNode *RemoteNode) SendBytesReply(replyToID, buf []byte) error {
 		remoteNode.localNode.RemoveNeighborNode(remoteNode.GetID())
 	}
 	return err
-<<<<<<< HEAD
 }
 
 func (remoteNode *RemoteNode) EncryptMessage(message []byte) []byte {
@@ -214,6 +205,4 @@ func DecryptMessage(message []byte, sharedKey *[SharedKeySize]byte) ([]byte, boo
 	}
 
 	return decrypted, true, nil
-=======
->>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517
 }
