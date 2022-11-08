@@ -8,12 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 
-<<<<<<< HEAD
-=======
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/util"
-
->>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517
 	"github.com/go-acme/lego/v3/registration"
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util"
