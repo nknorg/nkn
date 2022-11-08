@@ -3,6 +3,13 @@ package lnode
 import (
 	"errors"
 
+<<<<<<< HEAD:lnode/stateHandler.go
+=======
+	"github.com/nknorg/nkn/v2/node"
+
+	"github.com/nknorg/nkn/v2/chain/trie"
+
+>>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517:node/stateHandler.go
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/store"

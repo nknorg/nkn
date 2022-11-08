@@ -10,6 +10,15 @@ import (
 	nnetnode "github.com/nknorg/nnet/node"
 )
 
+<<<<<<< HEAD
+=======
+// for encryption
+const (
+	NonceSize     = 24
+	SharedKeySize = 32
+)
+
+>>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517
 type IChordInfo interface{}
 
 type ILocalNode interface {

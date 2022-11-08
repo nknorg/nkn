@@ -11,6 +11,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/nknorg/nkn/v2/node"
+
+	"github.com/nknorg/nkn/v2/util"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/api/ratelimiter"
 	"github.com/nknorg/nkn/v2/chain"
@@ -82,13 +86,21 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		TlsJsonRpcPort:     uint32(config.Parameters.HttpsJsonPort),
 	}
 
+<<<<<<< HEAD:lnode/localnode.go
 	n, err := node.NewNode(nn.GetLocalNode().Node.Node, nodeData)
+=======
+	node1, err := node.NewNode(nn.GetLocalNode().Node.Node, nodeData)
+>>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517:node/localnode.go
 	if err != nil {
 		return nil, err
 	}
 
 	localNode := &LocalNode{
+<<<<<<< HEAD:lnode/localnode.go
 		Node:                n,
+=======
+		Node:                node1,
+>>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517:node/localnode.go
 		neighborNodes:       newNeighborNodes(),
 		account:             account,
 		TxnPool:             pool.NewTxPool(),

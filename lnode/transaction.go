@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"github.com/nknorg/nkn/v2/node"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"

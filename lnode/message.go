@@ -4,6 +4,13 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+<<<<<<< HEAD:lnode/message.go
+=======
+
+	//	"time"
+
+	"github.com/nknorg/nkn/v2/node"
+>>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517:node/message.go
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/crypto"
@@ -41,6 +48,43 @@ func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, si
 	return proto.Marshal(signedMsg)
 }
 
+<<<<<<< HEAD:lnode/message.go
+=======
+/*
+func (remoteNode *RemoteNode) SendBytesAsync(buf []byte) error {
+	err := remoteNode.localNode.nnet.SendBytesDirectAsync(buf, remoteNode.nnetNode)
+	if err != nil {
+		log.Debugf("Error sending async messge to node %v, removing node.", err.Error())
+		remoteNode.CloseConn()
+		remoteNode.localNode.removeNeighborNode(remoteNode.GetID())
+	}
+	return err
+}
+
+func (remoteNode *RemoteNode) SendBytesSync(buf []byte) ([]byte, error) {
+	return remoteNode.SendBytesSyncWithTimeout(buf, 0)
+}
+
+func (remoteNode *RemoteNode) SendBytesSyncWithTimeout(buf []byte, replyTimeout time.Duration) ([]byte, error) {
+	reply, _, err := remoteNode.localNode.nnet.SendBytesDirectSyncWithTimeout(buf, remoteNode.nnetNode, replyTimeout)
+	if err != nil {
+		log.Debugf("Error sending sync messge to node: %v", err.Error())
+	}
+	return reply, err
+}
+
+func (remoteNode *RemoteNode) SendBytesReply(replyToID, buf []byte) error {
+	err := remoteNode.localNode.nnet.SendBytesDirectReply(replyToID, buf, remoteNode.nnetNode)
+	if err != nil {
+		log.Debugf("Error sending async messge to node: %v, removing node.", err.Error())
+		remoteNode.CloseConn()
+		remoteNode.localNode.removeNeighborNode(remoteNode.GetID())
+	}
+	return err
+}
+*/
+
+>>>>>>> 595e7a737e474cb689dd655dd14db03bd4e1d517:node/message.go
 func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, nnetLocalNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
 	if remoteMessage.Msg.MessageType == nnetpb.BYTES {
 		err := localNode.maybeAddRemoteNode(remoteMessage.RemoteNode)

@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nknorg/nkn/v2/node"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/consequential"
 	"github.com/nknorg/nkn/v2/block"

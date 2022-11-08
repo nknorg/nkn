@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/nknorg/nkn/v2/node"
+
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"

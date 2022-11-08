@@ -4,6 +4,9 @@ import (
 	"math"
 	"time"
 
+	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/node"
+
 	"github.com/nknorg/nkn/v2/chain/db"
 	"github.com/nknorg/nkn/v2/chain/trie"
 	"github.com/nknorg/nkn/v2/common"
