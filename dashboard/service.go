@@ -13,19 +13,19 @@ import (
 	"github.com/nknorg/nkn/v2/dashboard/auth"
 	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
 	"github.com/nknorg/nkn/v2/dashboard/routes"
-	"github.com/nknorg/nkn/v2/node"
+	"github.com/nknorg/nkn/v2/lnode"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 	"github.com/pborman/uuid"
 )
 
 var (
-	localNode *node.LocalNode
+	localNode *lnode.LocalNode
 	wallet    *vault.Wallet
 	id        []byte
 )
 
-func Init(ln *node.LocalNode, w *vault.Wallet, d []byte) {
+func Init(ln *lnode.LocalNode, w *vault.Wallet, d []byte) {
 	if ln != nil {
 		localNode = ln
 		serviceConfig.IsNodeInit = true

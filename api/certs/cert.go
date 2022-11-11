@@ -14,8 +14,8 @@ import (
 	"github.com/go-acme/lego/v3/lego"
 
 	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/util"
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
@@ -113,7 +113,7 @@ func CertExists() (bool, bool, bool) {
 	if err != nil {
 		log.Error(err)
 	}
-	defaultDomain, err := node.GetDefaultDomainFromIP(config.Parameters.Hostname, config.Parameters.DefaultTlsDomainTmpl)
+	defaultDomain, err := util.GetDefaultDomainFromIP(config.Parameters.Hostname, config.Parameters.DefaultTlsDomainTmpl)
 	if err != nil {
 		log.Error(err)
 	}
@@ -204,7 +204,7 @@ func prepareCerts(wssCertExists, httpsCertExists bool, wssCertReady, httpsCertRe
 }
 
 func ChangeToDefault(https, wss bool) {
-	defaultDomain, err := node.GetDefaultDomainFromIP(config.Parameters.Hostname, config.Parameters.DefaultTlsDomainTmpl)
+	defaultDomain, err := util.GetDefaultDomainFromIP(config.Parameters.Hostname, config.Parameters.DefaultTlsDomainTmpl)
 	if err != nil {
 		log.Error(err)
 	}

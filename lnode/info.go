@@ -1,9 +1,11 @@
-package node
+package lnode
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"time"
+
+	"github.com/nknorg/nkn/v2/node"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/pb"
@@ -31,7 +33,7 @@ type ChordInfo struct {
 	FingerTable  map[int][]*ChordRemoteNodeInfo `json:"fingerTable"`
 }
 
-func (localNode *LocalNode) GetNeighborInfo() []*RemoteNode {
+func (localNode *LocalNode) GetNeighborInfo() []*node.RemoteNode {
 	return localNode.GetNeighbors(nil)
 }
 
@@ -61,15 +63,15 @@ func (crn *ChordRemoteNodeInfo) MarshalJSON() ([]byte, error) {
 	out["protocolVersion"] = nodeData.ProtocolVersion
 
 	out["connTime"] = 0
-	nbr := crn.localNode.getNeighborByNNetNode(crn.remoteNode)
+	nbr := crn.localNode.GetNeighborByNNetNode(crn.remoteNode)
 	if nbr != nil {
-		out["connTime"] = time.Since(nbr.Node.startTime) / time.Second
+		out["connTime"] = time.Since(nbr.Node.StartTime) / time.Second
 	}
 
 	return json.Marshal(out)
 }
 
-func (localNode *LocalNode) GetChordInfo() *ChordInfo {
+func (localNode *LocalNode) GetChordInfo() node.IChordInfo {
 	c, ok := localNode.nnet.Network.(*chord.Chord)
 	if !ok {
 		log.Errorf("Overlay is not chord")

@@ -24,7 +24,7 @@ var (
 	pushBlockTxsFlag bool = false
 )
 
-func NewServer(localNode *node.LocalNode, w *vault.Wallet) *server.WsServer {
+func NewServer(localNode node.ILocalNode, w *vault.Wallet) *server.WsServer {
 	//	common.SetNode(n)
 	event.Queue.Subscribe(event.NewBlockProduced, SendBlock2WSclient)
 	ws = server.InitWsServer(localNode, w)

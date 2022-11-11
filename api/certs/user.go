@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/util"
 
 	"github.com/go-acme/lego/v3/registration"
 )
@@ -64,7 +64,7 @@ func GetUser() (*User, error) {
 		u.Key = privateKey
 	}
 	// get domain name
-	commonName, err := node.GetDefaultDomainFromIP(config.Parameters.Hostname, config.Parameters.DefaultTlsDomainTmpl)
+	commonName, err := util.GetDefaultDomainFromIP(config.Parameters.Hostname, config.Parameters.DefaultTlsDomainTmpl)
 	if err != nil {
 		return nil, err
 	}
