@@ -1,4 +1,4 @@
-package node
+package util
 
 import (
 	"bytes"
@@ -40,7 +40,7 @@ func GetDefaultDomainFromIP(hostname string, domainTemplate string) (string, err
 	return domainName, nil
 }
 
-func chordIDToNodeID(chordID []byte) string {
+func ChordIDToNodeID(chordID []byte) string {
 	return hex.EncodeToString(chordID)
 }
 

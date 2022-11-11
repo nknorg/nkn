@@ -1,4 +1,4 @@
-package node
+package lnode
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"github.com/nknorg/nkn/v2/chain/txvalidator"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/transaction"
@@ -165,7 +166,7 @@ func (localNode *LocalNode) startRequestingSigChainTxn() {
 	for _, ch := range localNode.requestSigChainTxn.chans {
 		go func(ch requestTxnChan) {
 			var info *requestTxnInfo
-			var neighbor *RemoteNode
+			var neighbor *node.RemoteNode
 			var txn *transaction.Transaction
 			var porPkg *por.PorPackage
 			var ok bool
@@ -389,7 +390,7 @@ func (localNode *LocalNode) handleTransactionsMessage(txnMsg *pb.Transactions) (
 
 // iHaveSignatureChainTransactionMessageHandler handles a
 // I_HAVE_SIGNATURE_CHAIN_TRANSACTION message
-func (localNode *LocalNode) iHaveSignatureChainTransactionMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+func (localNode *LocalNode) iHaveSignatureChainTransactionMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	msgBody := &pb.IHaveSignatureChainTransaction{}
 	err := proto.Unmarshal(remoteMessage.Message, msgBody)
 	if err != nil {
@@ -410,7 +411,7 @@ func (localNode *LocalNode) iHaveSignatureChainTransactionMessageHandler(remoteM
 
 // SignatureChainTransactionMessageHandler handles a
 // REQUEST_SIGNATURE_CHAIN_TRANSACTION message
-func (localNode *LocalNode) requestSignatureChainTransactionMessageHandler(remoteMessage *RemoteMessage) ([]byte, bool, error) {
+func (localNode *LocalNode) requestSignatureChainTransactionMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	replyMsg, err := NewRequestSignatureChainTransactionReply(nil)
 	if err != nil {
 		return nil, false, err
@@ -495,7 +496,7 @@ func (localNode *LocalNode) iHaveSignatureChainTransaction(height uint32, sigHas
 	return nil
 }
 
-func (localNode *LocalNode) requestSignatureChainTransaction(neighbor *RemoteNode, sigHash []byte) (*transaction.Transaction, error) {
+func (localNode *LocalNode) requestSignatureChainTransaction(neighbor *node.RemoteNode, sigHash []byte) (*transaction.Transaction, error) {
 	msg, err := NewRequestSignatureChainTransactionMessage(sigHash)
 	if err != nil {
 		return nil, err

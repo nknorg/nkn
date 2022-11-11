@@ -10,7 +10,7 @@ import (
 )
 
 type Serverer interface {
-	GetNetNode() *node.LocalNode
+	GetNetNode() node.ILocalNode
 }
 
 // Response for json API.

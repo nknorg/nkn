@@ -5,72 +5,20 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/nknorg/nkn/v2/crypto/ed25519"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util/log"
-	nnetnode "github.com/nknorg/nnet/node"
 	"golang.org/x/crypto/nacl/box"
 )
 
+// for encryption
 const (
 	nonceSize     = 24
-	sharedKeySize = 32
+	SharedKeySize = 32
 )
 
-var emptyNonce [nonceSize]byte
+var EmptyNonce [nonceSize]byte
 
-func (localNode *LocalNode) computeSharedKey(remotePublicKey []byte) (*[sharedKeySize]byte, error) {
-	if len(remotePublicKey) != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("public key length is %d, expecting %d", len(remotePublicKey), ed25519.PublicKeySize)
-	}
-
-	var pk [ed25519.PublicKeySize]byte
-	copy(pk[:], remotePublicKey)
-	curve25519PublicKey, ok := ed25519.PublicKeyToCurve25519PublicKey(&pk)
-	if !ok {
-		return nil, fmt.Errorf("converting public key %x to curve25519 public key failed", remotePublicKey)
-	}
-
-	var sk [ed25519.PrivateKeySize]byte
-	copy(sk[:], localNode.account.PrivateKey)
-	curve25519PrivateKey := ed25519.PrivateKeyToCurve25519PrivateKey(&sk)
-
-	var sharedKey [sharedKeySize]byte
-	box.Precompute(&sharedKey, curve25519PublicKey, curve25519PrivateKey)
-	return &sharedKey, nil
-}
-
-func (localNode *LocalNode) encryptMessage(msg []byte, rn *nnetnode.RemoteNode) []byte {
-	var sharedKey *[sharedKeySize]byte
-	if remoteNode := localNode.getNeighborByNNetNode(rn); remoteNode != nil {
-		sharedKey = remoteNode.sharedKey
-	}
-	return encryptMessage(msg, sharedKey)
-}
-
-func (localNode *LocalNode) decryptMessage(msg []byte, rn *nnetnode.RemoteNode) ([]byte, error) {
-	var sharedKey *[sharedKeySize]byte
-	if remoteNode := localNode.getNeighborByNNetNode(rn); remoteNode != nil {
-		sharedKey = remoteNode.sharedKey
-	} else if rn.Data != nil {
-		nodeData := &pb.NodeData{}
-		if err := proto.Unmarshal(rn.Data, nodeData); err == nil {
-			if len(nodeData.PublicKey) > 0 {
-				sharedKey, err = localNode.computeSharedKey(nodeData.PublicKey)
-				if err != nil {
-					log.Warningf("Compute shared key for pk %x error: %v", nodeData.PublicKey, err)
-				}
-			}
-		}
-	}
-	decrypted, _, err := decryptMessage(msg, sharedKey)
-	return decrypted, err
-}
-
-func encryptMessage(message []byte, sharedKey *[sharedKeySize]byte) []byte {
+func EncryptMessage(message []byte, sharedKey *[SharedKeySize]byte) []byte {
 	if sharedKey == nil {
-		return append(emptyNonce[:], message...)
+		return append(EmptyNonce[:], message...)
 	}
 
 	var nonce [nonceSize]byte
@@ -86,14 +34,14 @@ func encryptMessage(message []byte, sharedKey *[sharedKeySize]byte) []byte {
 	return encrypted
 }
 
-func decryptMessage(message []byte, sharedKey *[sharedKeySize]byte) ([]byte, bool, error) {
+func DecryptMessage(message []byte, sharedKey *[SharedKeySize]byte) ([]byte, bool, error) {
 	if len(message) < nonceSize {
 		return nil, false, fmt.Errorf("encrypted message should have at least %d bytes", nonceSize)
 	}
 
 	var nonce [nonceSize]byte
 	copy(nonce[:], message[:nonceSize])
-	if nonce == emptyNonce {
+	if nonce == EmptyNonce {
 		return message[nonceSize:], false, nil
 	}
 

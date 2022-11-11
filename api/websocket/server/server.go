@@ -62,14 +62,14 @@ type WsServer struct {
 	SessionList           *session.SessionList
 	ActionMap             map[string]Handler
 	TxHashMap             map[string]string //key: txHash   value:sessionid
-	localNode             *node.LocalNode
+	localNode             node.ILocalNode
 	wallet                *vault.Wallet
 	messageBuffer         *messagebuffer.MessageBuffer
 	messageDeliveredCache *DelayedChan
 	sigChainCache         common.Cache
 }
 
-func InitWsServer(localNode *node.LocalNode, wallet *vault.Wallet) *WsServer {
+func InitWsServer(localNode node.ILocalNode, wallet *vault.Wallet) *WsServer {
 	ws := &WsServer{
 		Upgrader:              websocket.Upgrader{},
 		SessionList:           session.NewSessionList(),
@@ -519,7 +519,7 @@ func (ws *WsServer) GetClientsById(cliendID []byte) []*session.Session {
 	return sessions
 }
 
-func (ws *WsServer) GetNetNode() *node.LocalNode {
+func (ws *WsServer) GetNetNode() node.ILocalNode {
 	return ws.localNode
 }
 

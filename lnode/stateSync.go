@@ -1,13 +1,14 @@
-package node
+package lnode
 
 import (
-	"github.com/nknorg/nkn/v2/config"
 	"math"
 	"time"
 
 	"github.com/nknorg/nkn/v2/chain/db"
 	"github.com/nknorg/nkn/v2/chain/trie"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
+	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
@@ -26,15 +27,15 @@ type stateSync struct {
 	hashesCh chan []common.Uint256
 	stateCh  chan [][]byte // Response states channel
 
-	peers []*RemoteNode // Set of active peers from which download can proceed
-	db    db.IStore     // Database to state sync into
+	peers []*node.RemoteNode // Set of active peers from which download can proceed
+	db    db.IStore          // Database to state sync into
 
 	bytesUncommitted int
 }
 
 // newStateSync creates a new state trie download scheduler. This method does not
 // yet start the sync. The user needs to call run to initiate.
-func newStateSync(db db.IStore, root common.Uint256, peers []*RemoteNode) *stateSync {
+func newStateSync(db db.IStore, root common.Uint256, peers []*node.RemoteNode) *stateSync {
 	return &stateSync{
 		db:       db,
 		root:     root,
@@ -50,8 +51,8 @@ func newStateSync(db db.IStore, root common.Uint256, peers []*RemoteNode) *state
 // loop is the main event loop of a state trie sync. It is responsible for the
 // assignment of new tasks to peers (including sending it to them) as well as
 // for the processing of inbound data.
-func (s *stateSync) loop() error {
-	go s.startWorkerThread()
+func (s *stateSync) loop(localNode *LocalNode) error {
+	go s.startWorkerThread(localNode)
 
 	go func() {
 		for {
@@ -135,7 +136,7 @@ func (s *stateSync) processNodeData(blob []byte) (common.Uint256, error) {
 	return res.Hash, err
 }
 
-func (s *stateSync) startWorker(p *RemoteNode) {
+func (s *stateSync) startWorker(localNode *LocalNode, remoteNode *node.RemoteNode) {
 	var hashes []common.Uint256
 	fail := 0
 	for {
@@ -145,7 +146,7 @@ func (s *stateSync) startWorker(p *RemoteNode) {
 			return
 		}
 
-		resp, err := p.GetStates(hashes)
+		resp, err := localNode.GetNeighborStates(remoteNode, hashes)
 
 		if err != nil {
 			s.sched.Push(hashes, math.MaxInt64)
@@ -164,13 +165,13 @@ func (s *stateSync) startWorker(p *RemoteNode) {
 // run starts the task assignment and response processing loop, blocking until
 // it finishes, and finally notifying any goroutines waiting for the loop to
 // finish.
-func (s *stateSync) run() error {
-	err := s.loop()
+func (s *stateSync) run(localNode *LocalNode) error {
+	err := s.loop(localNode)
 	close(s.done)
 	return err
 }
 
-func (s *stateSync) startWorkerThread() {
+func (s *stateSync) startWorkerThread(localNode *LocalNode) {
 	var workerId uint32
 	peersNum := uint32(len(s.peers))
 	workerNum := peersNum * concurrentSyncRequestPerNeighbor
@@ -179,7 +180,7 @@ func (s *stateSync) startWorkerThread() {
 	}
 	for workerId = 0; workerId < workerNum; workerId++ {
 		go func(workerId uint32) {
-			s.startWorker(s.peers[workerId%peersNum])
+			s.startWorker(localNode, s.peers[workerId%peersNum])
 		}(workerId)
 	}
 }

@@ -20,7 +20,7 @@ import (
 // Consensus is the Majority vOte Cellular Automata (MOCA) consensus layer
 type Consensus struct {
 	account             *vault.Account
-	localNode           *node.LocalNode
+	localNode           node.ILocalNode
 	startOnce           sync.Once
 	proposals           common.Cache
 	requestProposalChan chan *requestProposalInfo
@@ -43,7 +43,7 @@ type Consensus struct {
 }
 
 // NewConsensus creates a MOCA consensus
-func NewConsensus(account *vault.Account, localNode *node.LocalNode) (*Consensus, error) {
+func NewConsensus(account *vault.Account, localNode node.ILocalNode) (*Consensus, error) {
 	txnCollector := chain.NewTxnCollector(localNode.GetTxnPool(), int(config.Parameters.NumTxnPerBlock))
 	consensus := &Consensus{
 		account:             account,

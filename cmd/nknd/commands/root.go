@@ -30,7 +30,7 @@ import (
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/dashboard"
 	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
-	"github.com/nknorg/nkn/v2/node"
+	"github.com/nknorg/nkn/v2/lnode"
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
@@ -251,7 +251,7 @@ func nknMain() error {
 		Priority: 0,
 	})
 
-	localNode, err := node.NewLocalNode(wallet, nn)
+	localNode, err := lnode.NewLocalNode(wallet, nn)
 	if err != nil {
 		return err
 	}

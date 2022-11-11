@@ -1,13 +1,13 @@
-package node
+package lnode
 
 import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/crypto"
+	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
@@ -41,38 +41,6 @@ func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, si
 	return proto.Marshal(signedMsg)
 }
 
-func (remoteNode *RemoteNode) SendBytesAsync(buf []byte) error {
-	err := remoteNode.localNode.nnet.SendBytesDirectAsync(buf, remoteNode.nnetNode)
-	if err != nil {
-		log.Debugf("Error sending async messge to node %v, removing node.", err.Error())
-		remoteNode.CloseConn()
-		remoteNode.localNode.removeNeighborNode(remoteNode.GetID())
-	}
-	return err
-}
-
-func (remoteNode *RemoteNode) SendBytesSync(buf []byte) ([]byte, error) {
-	return remoteNode.SendBytesSyncWithTimeout(buf, 0)
-}
-
-func (remoteNode *RemoteNode) SendBytesSyncWithTimeout(buf []byte, replyTimeout time.Duration) ([]byte, error) {
-	reply, _, err := remoteNode.localNode.nnet.SendBytesDirectSyncWithTimeout(buf, remoteNode.nnetNode, replyTimeout)
-	if err != nil {
-		log.Debugf("Error sending sync messge to node: %v", err.Error())
-	}
-	return reply, err
-}
-
-func (remoteNode *RemoteNode) SendBytesReply(replyToID, buf []byte) error {
-	err := remoteNode.localNode.nnet.SendBytesDirectReply(replyToID, buf, remoteNode.nnetNode)
-	if err != nil {
-		log.Debugf("Error sending async messge to node: %v, removing node.", err.Error())
-		remoteNode.CloseConn()
-		remoteNode.localNode.removeNeighborNode(remoteNode.GetID())
-	}
-	return err
-}
-
 func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, nnetLocalNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
 	if remoteMessage.Msg.MessageType == nnetpb.BYTES {
 		err := localNode.maybeAddRemoteNode(remoteMessage.RemoteNode)
@@ -87,8 +55,8 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 			}
 		}
 
-		var senderNode *Node
-		senderRemoteNode := localNode.getNeighborByNNetNode(remoteMessage.RemoteNode)
+		var senderNode *node.Node
+		senderRemoteNode := localNode.GetNeighborByNNetNode(remoteMessage.RemoteNode)
 		if senderRemoteNode != nil {
 			senderNode = senderRemoteNode.Node
 		} else if remoteMessage.RemoteNode == nil {
@@ -170,9 +138,9 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 				return nil, nil, nil, false
 			}
 
-			var nextHop *RemoteNode
+			var nextHop *node.RemoteNode
 			if len(remoteNodes) > 0 {
-				nextHop = localNode.getNeighborByNNetNode(remoteNodes[0])
+				nextHop = localNode.GetNeighborByNNetNode(remoteNodes[0])
 				if nextHop == nil {
 					log.Errorf("cannot get next hop neighbor node")
 					return nil, nil, nil, false
@@ -259,8 +227,8 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 	return remoteMessage, nnetLocalNode, remoteNodes, true
 }
 
-func (localNode *LocalNode) receiveMessage(sender *Node, unsignedMsg *pb.UnsignedMessage) ([]byte, error) {
-	remoteMessage := &RemoteMessage{
+func (localNode *LocalNode) receiveMessage(sender *node.Node, unsignedMsg *pb.UnsignedMessage) ([]byte, error) {
+	remoteMessage := &node.RemoteMessage{
 		Sender:  sender,
 		Message: unsignedMsg.Message,
 	}
