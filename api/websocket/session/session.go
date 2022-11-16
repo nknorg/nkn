@@ -24,6 +24,8 @@ type Session struct {
 
 	wsLock sync.Mutex
 	ws     *websocket.Conn
+
+	Challenge []byte // client auth, authorization challenge
 }
 
 func (s *Session) GetSessionId() string {

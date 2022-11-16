@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"compress/zlib"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
@@ -192,6 +194,50 @@ func (ws *WsServer) registryMethod() {
 			return api.RespPacking(api.NodeInfo(wsAddr, rpcAddr, pubkey, id), errcode.WRONG_NODE)
 		}
 
+		// client auth
+		signature, okSig := cmd["Signature"]
+		clientSalt, okSalt := cmd["ClientSalt"]
+
+		if okSig && okSalt { // if client send ClientSalt and Signature, then check it
+			strSignature, typeOk := signature.(string) // interface type assertion
+			if !typeOk {
+				return api.RespPacking(err.Error(), errcode.INVALID_PARAMS)
+			}
+			byteSignature, err := hex.DecodeString(strSignature)
+			if err != nil {
+				return api.RespPacking(err.Error(), errcode.ILLEGAL_DATAFORMAT)
+			}
+
+			strClientSalt, typeOk := clientSalt.(string) // interface type assertion
+			if !typeOk {
+				return api.RespPacking(err.Error(), errcode.INVALID_PARAMS)
+			}
+			byteClientSalt, err := hex.DecodeString(strClientSalt)
+			if err != nil {
+				return api.RespPacking(err.Error(), errcode.ILLEGAL_DATAFORMAT)
+			}
+
+			sess := cmd["session"].(*session.Session)
+			challenge := sess.Challenge[:]
+			challenge = append(challenge, byteClientSalt...)
+			hash := sha256.Sum256(challenge)
+
+			err = crypto.Verify(pubKey, hash[:], byteSignature)
+			if err != nil { // fail verify challenge signature
+				go func() {
+					log.Warning("Client signature is not right, close its conneciton now")
+					time.Sleep(3 * time.Second)       // sleep several second, let response reach client
+					ws.SessionList.CloseSession(sess) // close this session
+				}()
+
+				return api.RespPacking(nil, errcode.INVALID_SIGNATURE)
+			} else {
+				log.Infof("client auth pass")
+			}
+		} else {
+			log.Infof("client doesn't send signature, it should be old version sdk")
+		}
+
 		newSessionID := hex.EncodeToString(clientID)
 		session, err := ws.SessionList.ChangeSessionToClient(cmd["Userid"].(string), newSessionID)
 		if err != nil {
@@ -286,6 +332,13 @@ func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
 		sess.UpdateLastReadTime()
 		return nil
 	})
+
+	// client auth
+	err = ws.sendClientAuthChallenge(sess)
+	if err != nil {
+		log.Error("send client auth challenge: ", err)
+		return
+	}
 
 	done := make(chan struct{})
 	defer close(done)
@@ -422,6 +475,7 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 	}
 	req["Userid"] = curSession.GetSessionId()
 	req["IsTls"] = r.TLS != nil
+	req["session"] = curSession
 	ret := action.handler(ws, req, r.Context())
 	resp := api.ResponsePack(ret["error"].(errcode.ErrCode))
 	resp["Action"] = actionName
@@ -452,14 +506,15 @@ func (ws *WsServer) deleteTxHashs(sSessionId string) {
 	}
 }
 
-func (ws *WsServer) respondToSession(session *session.Session, resp map[string]interface{}) {
+func (ws *WsServer) respondToSession(session *session.Session, resp map[string]interface{}) error {
 	resp["Desc"] = errcode.ErrMessage[resp["Error"].(errcode.ErrCode)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Error("Websocket response:", err)
-		return
+		return err
 	}
-	session.SendText(data)
+	err = session.SendText(data)
+	return err
 }
 
 func (ws *WsServer) respondToId(sSessionId string, resp map[string]interface{}) {
@@ -569,4 +624,18 @@ func (ws *WsServer) sendInboundRelayMessageToClient(v interface{}) {
 	} else {
 		log.Error("Decode relay message failed")
 	}
+}
+
+// client auth, generate challenge
+func (ws *WsServer) sendClientAuthChallenge(sess *session.Session) error {
+	resp := api.ResponsePack(errcode.SUCCESS)
+	resp["Action"] = "authChallenge"
+
+	challenge := make([]byte, 32)
+	rand.Reader.Read(challenge)
+	resp["Challenge"] = hex.EncodeToString(challenge)
+	sess.Challenge = challenge // save this challenge for verifying later.
+
+	err := ws.respondToSession(sess, resp)
+	return err
 }
