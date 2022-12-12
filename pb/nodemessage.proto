@@ -33,6 +33,19 @@ enum MessageType {
   SIGNATURE_CHAIN_OBJECTION = 20;
   GET_STATES = 21;
   GET_STATES_REPLY = 22;
+
+  // sync txn pool
+  REQ_TXN_POOL_HASH = 23;	// request txn pool hash
+  RPL_TXN_POOL_HASH = 24;	// reply txn pool hash
+  REQ_SYNC_TXN_POOL = 25;	// request to sync txn pool 
+  RPL_SYNC_TXN_POOL = 26;	// reply to sync txn pool
+
+  // sync random address transaction
+  REQ_ADDR_NONCE = 27; // reques for random address and nonce
+  RPL_ADDR_NONCE = 28; // reply random address and nonce in txn pool
+  REQ_SYNC_ADDR_TXN = 29; // request for syncing this address transactions
+  RPL_SYNC_ADDR_TXN = 30; // reply this address' transactions
+
 }
 
 // Message type that can be signed message
@@ -67,6 +80,19 @@ enum AllowedUnsignedMessageType {
   ALLOW_UNSIGNED_SIGNATURE_CHAIN_OBJECTION = 20;
   ALLOW_UNSIGNED_GET_STATES = 21;
   ALLOW_UNSIGNED_GET_STATES_REPLY = 22;
+  
+  // sync txn pool
+  ALLOW_UNSIGNED_REQ_TXN_POOL_HASH = 23;	// request txn pool hash
+  ALLOW_UNSIGNED_RPL_TXN_POOL_HASH = 24;	// reply txn pool hash
+  ALLOW_UNSIGNED_REQ_SYNC_TXN_POOL = 25;	// request to sync txn pool
+  ALLOW_UNSIGNED_RPL_SYNC_TXN_POOL = 26;	// reply to sync txn pool
+
+  // sync random address transaction
+  ALLOW_UNSIGNED_REQ_ADDR_NONCE = 27; // reques for random address and nonce
+  ALLOW_UNSIGNED_RPL_ADDR_NONCE = 28; // reply random address and nonce in txn pool
+  ALLOW_UNSIGNED_REQ_SYNC_ADDR_TXN = 29; // request for syncing this address transactions
+  ALLOW_UNSIGNED_RPL_SYNC_ADDR_TXN = 30; // reply this address' transactions
+
 }
 
 // Message type that can be sent as direct message
@@ -93,6 +119,19 @@ enum AllowedDirectMessageType {
   ALLOW_DIRECT_SIGNATURE_CHAIN_OBJECTION = 20;
   ALLOW_DIRECT_GET_STATES = 21;
   ALLOW_DIRECT_GET_STATES_REPLY = 22;
+
+  // sync txn pool
+  ALLOW_DIRECT_REQ_TXN_POOL_HASH = 23;	// request txn pool hash
+  ALLOW_DIRECT_RPL_TXN_POOL_HASH = 24;	// reply txn pool hash
+  ALLOW_DIRECT_REQ_SYNC_TXN_POOL = 25;	// request to sync txn pool
+  ALLOW_DIRECT_RPL_SYNC_TXN_POOL = 26;	// reply to sync txn pool
+
+  // sync random address transaction
+  ALLOW_DIRECT_REQ_ADDR_NONCE = 27; 	// reques for random address and nonce
+  ALLOW_DIRECT_RPL_ADDR_NONCE = 28; 	// reply random address and nonce in txn pool
+  ALLOW_DIRECT_REQ_SYNC_ADDR_TXN = 29; 	// request for syncing this address transactions
+  ALLOW_DIRECT_RPL_SYNC_ADDR_TXN = 30; 	// reply this address' transactions
+
 }
 
 // Message type that can be sent as relay message
@@ -266,3 +305,21 @@ message SignatureChainObjectionSigned {
   bytes message = 1;
   bytes signature = 2;
 }
+
+// sync txn pool
+message TxnPoolHashAndCount {
+  bytes  pool_hash 	= 1;
+  uint32 txn_count 	= 2;
+}
+
+message AddrNonce {
+  bytes  address 	= 1;
+  uint64 nonce 		= 2;
+}
+
+message RequestSyncTxnPool {
+  int64    duration 			= 1;
+  repeated AddrNonce addrNonce 	= 2;
+}
+
+

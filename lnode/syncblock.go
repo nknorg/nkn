@@ -404,6 +404,15 @@ func (localNode *LocalNode) initSyncing() {
 	localNode.AddMessageHandler(pb.MessageType_GET_BLOCKS, localNode.getBlocksMessageHandler)
 	localNode.AddMessageHandler(pb.MessageType_GET_STATES, localNode.getStatesMessageHandler)
 	localNode.ResetSyncing()
+
+	// sync txn poo
+	localNode.AddMessageHandler(pb.MessageType_REQ_TXN_POOL_HASH, localNode.requestTxnPoolHashHandler)
+	localNode.AddMessageHandler(pb.MessageType_REQ_SYNC_TXN_POOL, localNode.requestSyncTxnPoolHandler)
+	go localNode.StartSyncTxnPool()
+	// sync txn, random address
+	localNode.AddMessageHandler(pb.MessageType_REQ_ADDR_NONCE, localNode.requestAddrNonceHandler)
+	localNode.AddMessageHandler(pb.MessageType_REQ_SYNC_ADDR_TXN, localNode.requestSyncAddrTxnHandler)
+	go localNode.StartSyncRandAddrTxn()
 }
 
 func removeStoppedNeighbors(neighbors []*node.RemoteNode) []*node.RemoteNode {
