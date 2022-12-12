@@ -16,6 +16,7 @@ import (
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util/log"
+	om "github.com/wk8/go-ordered-map"
 )
 
 var (
@@ -46,12 +47,20 @@ type TxnPool struct {
 
 	sync.RWMutex
 	lastDroppedTxn *transaction.Transaction
+
+	// sync txn
+	lastSyncTime   int64          // last sync time in milli-second
+	twtMap         *om.OrderedMap // txn with time ordered map, FIFO txn of last MaxSyncTxnInterval milli-seconds
+	twtMapMu       sync.RWMutex   // concurrent mutex for twtMap
+	twtCount       int            // counter of twtMap
+	twtFingerprint []byte         // xor of txn hash of twtMap
 }
 
 func NewTxPool() *TxnPool {
 	tp := &TxnPool{
 		blockValidationState: chain.NewBlockValidationState(),
 		txnCount:             0,
+		twtMap:               om.New(),
 	}
 
 	go func() {
@@ -224,7 +233,8 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 		return err
 	}
 
-	if _, err := list.GetByNonce(txn.UnsignedTx.Nonce); err != nil && list.Full() {
+	var oldTxn *transaction.Transaction
+	if oldTxn, err = list.GetByNonce(txn.UnsignedTx.Nonce); err != nil && list.Full() {
 		return errors.New("account txpool full, too many transaction in list")
 	}
 
@@ -241,6 +251,16 @@ func (tp *TxnPool) AppendTxnPool(txn *transaction.Transaction) error {
 	// 4. process txn
 	if err := tp.processTx(txn); err != nil {
 		return err
+	}
+
+	// 5. sync txn, add to txn with time map
+	if oldTxn != nil {
+		oldHash := oldTxn.Hash()
+		if oldHash.CompareTo(txn.Hash()) != 0 {
+			tp.replaceTwt(oldTxn, txn)
+		}
+	} else {
+		tp.appendTwt(txn)
 	}
 
 	return nil
@@ -609,6 +629,10 @@ func (tp *TxnPool) removeTransactions(txns []*transaction.Transaction) []*transa
 
 func (tp *TxnPool) CleanSubmittedTransactions(txns []*transaction.Transaction) error {
 	txnsRemoved := tp.removeTransactions(txns)
+
+	// sync txn
+	tp.removeFromTwtMap(txnsRemoved)
+
 	tp.blockValidationState.Lock()
 	defer tp.blockValidationState.Unlock()
 	return tp.CleanBlockValidationState(txnsRemoved)
