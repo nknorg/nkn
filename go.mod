@@ -3,6 +3,7 @@ module github.com/nknorg/nkn/v2
 go 1.13
 
 require (
+	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/gin-contrib/sessions v0.0.0-20190512062852-3cb4c4f2d615
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-acme/lego/v3 v3.8.0

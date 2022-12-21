@@ -78,7 +78,7 @@ func InitWsServer(localNode node.ILocalNode, wallet *vault.Wallet) *WsServer {
 		TxHashMap:             make(map[string]string),
 		localNode:             localNode,
 		wallet:                wallet,
-		messageBuffer:         messagebuffer.NewMessageBuffer(),
+		messageBuffer:         messagebuffer.NewMessageBuffer(true),
 		messageDeliveredCache: NewDelayedChan(messageDeliveredCacheSize, pongTimeout),
 		sigChainCache:         common.NewGoCache(sigChainCacheExpiration, sigChainCacheCleanupInterval),
 	}

@@ -86,6 +86,8 @@ const (
 	defaultSyncBatchWindowSize        = 64
 	defaultTxPoolMaxMemoryPercent     = 0.4
 	defaultTxPoolMaxMemorySize        = 32
+	defaultClientMsgCachePercent      = 1.0 // client msg cache, default is 1% of total memory
+	defaultClientMsgCacheSize         = 32  // default client msg cache size in mega bytes
 )
 
 var (
@@ -324,6 +326,7 @@ var (
 		SyncBlockRateBurst:           1024,
 		SyncMode:                     "full",
 		MaxRollbackBlocks:            180,
+		ClientMsgCacheSize:           0, // client relay messag cache mega bytes
 	}
 )
 
@@ -412,6 +415,7 @@ type Configuration struct {
 	SigChainCacheSize            uint32        `json:"SigChainCacheSize"`
 	SyncMode                     string        `json:"SyncMode"`
 	MaxRollbackBlocks            uint32        `json:"MaxRollbackBlocks"`
+	ClientMsgCacheSize           uint32        `json:"ClientMsgCacheSize"` // in mega bytes (MB), 32 means 32MB
 }
 
 func Init() error {
@@ -528,6 +532,17 @@ func Init() error {
 
 	if Parameters.SigChainCacheSize < uint32(SigChainSkipMinerBlocks+64) {
 		Parameters.SigChainCacheSize = uint32(SigChainSkipMinerBlocks + 64)
+	}
+
+	// config for client relay message cache, config in percent or mega bytes. change it into bytes.
+	if Parameters.ClientMsgCacheSize <= 0 {
+		Parameters.ClientMsgCacheSize = uint32(float64(memory.TotalMemory()) * defaultClientMsgCachePercent / 100.0)
+		if Parameters.ClientMsgCacheSize == 0 {
+			Parameters.ClientMsgCacheSize = defaultClientMsgCacheSize * 1024 * 1024 // use bytes in program
+		}
+		log.Printf("Set ClientMsgCacheSize to %v", Parameters.ClientMsgCacheSize)
+	} else {
+		Parameters.ClientMsgCacheSize = Parameters.ClientMsgCacheSize * 1024 * 1024 // convert it to bytes.
 	}
 
 	err = Parameters.verify()
