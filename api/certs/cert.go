@@ -113,7 +113,7 @@ func CertExists() (bool, bool, bool) {
 	if err != nil {
 		log.Error(err)
 	}
-	defaultDomain, err := util.GetDefaultDomainFromIP(config.Parameters.Hostname, config.Parameters.DefaultTlsDomainTmpl)
+	defaultDomain, err := util.GetDefaultDomainFromIP(config.Parameters.CertDomainName, config.Parameters.DefaultTlsDomainTmpl)
 	if err != nil {
 		log.Error(err)
 	}
@@ -204,7 +204,7 @@ func prepareCerts(wssCertExists, httpsCertExists bool, wssCertReady, httpsCertRe
 }
 
 func ChangeToDefault(https, wss bool) {
-	defaultDomain, err := util.GetDefaultDomainFromIP(config.Parameters.Hostname, config.Parameters.DefaultTlsDomainTmpl)
+	defaultDomain, err := util.GetDefaultDomainFromIP(config.Parameters.CertDomainName, config.Parameters.DefaultTlsDomainTmpl)
 	if err != nil {
 		log.Error(err)
 	}

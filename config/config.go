@@ -351,6 +351,7 @@ type Configuration struct {
 	CertRenewBefore              uint16        `json:"CertRenewBefore"`   //in hours
 	CertCheckInterval            time.Duration `json:"CertCheckInterval"` // in seconds
 	CertDirectory                string        `json:"CertDirectory"`
+	CertDomainName               string        `json:"CertDomainName"`
 	NodePort                     uint16        `json:"-"`
 	LogLevel                     int           `json:"LogLevel"`
 	MaxLogFileSize               uint32        `json:"MaxLogSize"`

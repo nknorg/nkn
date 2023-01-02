@@ -62,11 +62,16 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return nil, err
 	}
 
-	httpsDomain, err := util.GetDefaultDomainFromIP(addr.Hostname(), config.Parameters.HttpsJsonDomain)
+	hostName := addr.Hostname()
+	if len(config.Parameters.CertDomainName) > 0 {
+		hostName = config.Parameters.CertDomainName
+	}
+
+	httpsDomain, err := util.GetDefaultDomainFromIP(hostName, config.Parameters.HttpsJsonDomain)
 	if err != nil {
 		return nil, err
 	}
-	wssDomain, err := util.GetDefaultDomainFromIP(addr.Hostname(), config.Parameters.HttpWssDomain)
+	wssDomain, err := util.GetDefaultDomainFromIP(hostName, config.Parameters.HttpWssDomain)
 	if err != nil {
 		return nil, err
 	}
