@@ -64,7 +64,7 @@ func GetUser() (*User, error) {
 		u.Key = privateKey
 	}
 	// get domain name
-	commonName, err := util.GetDefaultDomainFromIP(config.Parameters.Hostname, config.Parameters.DefaultTlsDomainTmpl)
+	commonName, err := util.GetDefaultDomainFromIP(config.Parameters.CertDomainName, config.Parameters.DefaultTlsDomainTmpl)
 	if err != nil {
 		return nil, err
 	}
