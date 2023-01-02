@@ -183,6 +183,17 @@ random password saved to `/nkn/data/wallet.pswd` if not exists on nknd launch.
 `nknd` uses Let's Encrypt to apply and renew TLS certificate and put in into
 `cert/` directory.
 
+By default `nknd` will generate certificate with `x-x-x-x.ipv4.nknlabs.io` domain name which `x-x-x-x` is your ipv4
+address, replace dot with dash.
+
+If you would like to use your own domain name, simply set `CertDomainName` with your domain name in `config.json`, `nknd` will
+automatically apply or renew certificate from Let's Encrypt and deploy it.
+
+If you already have certificate and want to use it in `nknd`, you can put it in the `certs` directory then set
+`HttpsJsonDomain` `HttpWssDomain` with your domain name, `HttpsJsonCert` `HttpsJsonKey` `HttpWssCert` `HttpWssKey`
+with your certificate full chain file and private key file.
+
+
 #### Data and Logs
 
 After `nknd` starts, it will creates two directories: `ChainDB` to store
