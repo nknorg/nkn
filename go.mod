@@ -3,7 +3,7 @@ module github.com/nknorg/nkn/v2
 go 1.13
 
 require (
-	github.com/emirpasic/gods v1.18.1 // indirect
+	github.com/emirpasic/gods v1.18.1
 	github.com/gin-contrib/sessions v0.0.0-20190512062852-3cb4c4f2d615
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-acme/lego/v3 v3.8.0
@@ -22,10 +22,11 @@ require (
 	github.com/rdegges/go-ipify v0.0.0-20150526035502-2d94a6a86c40
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.1 // indirect
+	github.com/stretchr/testify v1.8.1
 	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
-	github.com/wk8/go-ordered-map v1.0.0 // indirect
+	github.com/wk8/go-ordered-map v1.0.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	google.golang.org/protobuf v1.26.0
 )
