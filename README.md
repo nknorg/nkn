@@ -94,18 +94,24 @@ This command should be run once every time you update the code base.
 
 ### Building from source
 
-To build from source, you need a properly configured Go environment (Go 1.13+,
-see [Go Official Installation Documentation](https://golang.org/doc/install) for
-more details).
-
-```shell
-$ git clone https://github.com/nknorg/nkn.git
-```
+To build from source, you need a properly configured Go environment (lookup the required version within [go.mod](https://github.com/nknorg/nkn/blob/master/go.mod#L3), and 
+see [Go Official Installation Documentation](https://golang.org/doc/install) for install instructions).
 
 Build the source code with make
 
 ```shell
+$ git clone https://github.com/nknorg/nkn.git
+$ cd nkn
 $ make
+```
+
+Run Unit Tests
+```sh
+# run all tests
+$ go test -v ./...
+
+# run only specific tests
+go test -v ./chain/store
 ```
 
 After building is successful, you should see two executables:
