@@ -2,6 +2,7 @@ package chain
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/common"
@@ -37,11 +38,11 @@ func GetDefaultLedger() (*Ledger, error) {
 //	return asset, nil
 //}
 
-//Get Block With Height.
+// Get Block With Height.
 func (l *Ledger) GetBlockWithHeight(height uint32) (*block.Block, error) {
 	temp, err := l.Store.GetBlockHash(height)
 	if err != nil {
-		return nil, errors.New("[Ledger] GetBlockWithHeight failed with height=" + string(height))
+		return nil, errors.New("[Ledger] GetBlockWithHeight failed with height=" + strconv.Itoa(int(height)))
 	}
 	bk, err := DefaultLedger.Store.GetBlock(temp)
 	if err != nil {
@@ -50,7 +51,7 @@ func (l *Ledger) GetBlockWithHeight(height uint32) (*block.Block, error) {
 	return bk, nil
 }
 
-//Get block with block hash.
+// Get block with block hash.
 func (l *Ledger) GetBlockWithHash(hash common.Uint256) (*block.Block, error) {
 	bk, err := l.Store.GetBlock(hash)
 	if err != nil {
@@ -59,12 +60,12 @@ func (l *Ledger) GetBlockWithHash(hash common.Uint256) (*block.Block, error) {
 	return bk, nil
 }
 
-//BlockInLedger checks if the block existed in ledger
+// BlockInLedger checks if the block existed in ledger
 func (l *Ledger) BlockInLedger(hash common.Uint256) bool {
 	return l.Store.IsBlockInStore(hash)
 }
 
-//Get transaction with hash.
+// Get transaction with hash.
 func (l *Ledger) GetTransactionWithHash(hash common.Uint256) (*transaction.Transaction, error) {
 	tx, err := l.Store.GetTransaction(hash)
 	if err != nil {
@@ -73,7 +74,7 @@ func (l *Ledger) GetTransactionWithHash(hash common.Uint256) (*transaction.Trans
 	return tx, nil
 }
 
-//Get local block chain height.
+// Get local block chain height.
 func (l *Ledger) GetLocalBlockChainHeight() uint32 {
 	return l.Blockchain.BlockHeight
 }

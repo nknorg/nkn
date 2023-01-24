@@ -111,37 +111,37 @@ var (
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 	}
 	AllowSubscribeTopicRegex = HeightDependentString{
-		heights: []uint32{980000, 0},
-		values:  []string{"(^[A-Za-z0-9][A-Za-z0-9-_.+]{2,254}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
+		Height: []uint32{980000, 0},
+		Values: []string{"(^[A-Za-z0-9][A-Za-z0-9-_.+]{2,254}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
 	}
 	AllowNameRegex = HeightDependentString{
-		heights: []uint32{980000, 0},
-		values:  []string{"(^[A-Za-z0-9][A-Za-z0-9-_+]{5,62}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
+		Height: []uint32{980000, 0},
+		Values: []string{"(^[A-Za-z0-9][A-Za-z0-9-_+]{5,62}$)", "(^[A-Za-z][A-Za-z0-9-_.+]{2,254}$)"},
 	}
 	LegacyNameService = HeightDependentBool{
-		heights: []uint32{980000, 0},
-		values:  []bool{false, true},
+		Heights: []uint32{980000, 0},
+		Values:  []bool{false, true},
 	}
 	MaxSubscribeIdentifierLen = HeightDependentInt32{
-		heights: []uint32{133400, 0},
-		values:  []int32{64, math.MaxInt32},
+		Height: []uint32{133400, 0},
+		Values: []int32{64, math.MaxInt32},
 	}
 	MaxSubscribeMetaLen = HeightDependentInt32{
-		heights: []uint32{133400, 0},
-		values:  []int32{1024, math.MaxInt32},
+		Height: []uint32{133400, 0},
+		Values: []int32{1024, math.MaxInt32},
 	}
 	MaxSubscribeBucket = HeightDependentInt32{
-		heights: []uint32{245000, 0},
-		values:  []int32{0, 1000},
+		Height: []uint32{245000, 0},
+		Values: []int32{0, 1000},
 	}
 	MaxSubscribeDuration = HeightDependentInt32{
-		heights: []uint32{245000, 0},
-		values:  []int32{400000, 65535},
+		Height: []uint32{245000, 0},
+		Values: []int32{400000, 65535},
 	}
 	MaxSubscriptionsCount = 0 // 0 for unlimited
 	MaxGenerateIDTxnHash  = HeightDependentUint256{
-		heights: []uint32{2570000, 245000, 0},
-		values: []common.Uint256{
+		Height: []uint32{2570000, 245000, 0},
+		Values: []common.Uint256{
 			common.MaxUint256,
 			{
 				0x00, 0x00, 0x00, 0x07, 0xff, 0xff, 0xff, 0xff,
@@ -154,90 +154,90 @@ var (
 	}
 	MaxTxnAttributesLen  = 100
 	AllowTxnRegisterName = HeightDependentBool{
-		heights: []uint32{980000, 7500, 0},
-		values:  []bool{true, false, true},
+		Heights: []uint32{980000, 7500, 0},
+		Values:  []bool{true, false, true},
 	}
 	ChargeNanoPayTxnFee = HeightDependentBool{
-		heights: []uint32{1072500, 0},
-		values:  []bool{true, false},
+		Heights: []uint32{1072500, 0},
+		Values:  []bool{true, false},
 	}
 	AllowSigChainHashSignature = HeightDependentBool{
-		heights: []uint32{1200000, 0},
-		values:  []bool{false, true},
+		Heights: []uint32{1200000, 0},
+		Values:  []bool{false, true},
 	}
 	SigChainBitShiftMaxLength = HeightDependentInt32{
-		heights: []uint32{2651000, 2633000, 2543000, 0},
-		values:  []int32{18, 16, 14, 0},
+		Height: []uint32{2651000, 2633000, 2543000, 0},
+		Values: []int32{18, 16, 14, 0},
 	}
 	SigChainVerifyFingerTableRange = HeightDependentBool{
-		heights: []uint32{2570000, 0},
-		values:  []bool{true, false},
+		Heights: []uint32{2570000, 0},
+		Values:  []bool{true, false},
 	}
 	SigChainVerifySkipNode = HeightDependentBool{
-		heights: []uint32{2570120, 2570000, 0},
-		values:  []bool{false, true, false},
+		Heights: []uint32{2570120, 2570000, 0},
+		Values:  []bool{false, true, false},
 	}
 	SigChainObjection = HeightDependentBool{
-		heights: []uint32{2570120, 2570000, 0},
-		values:  []bool{false, true, false},
+		Heights: []uint32{2570120, 2570000, 0},
+		Values:  []bool{false, true, false},
 	}
 	MinGenIDRegistrationFee = HeightDependentInt64{
-		heights: []uint32{2570000, 0},
-		values:  []int64{10 * common.StorageFactor, 0},
+		Height: []uint32{2570000, 0},
+		Values: []int64{10 * common.StorageFactor, 0},
 	}
 	AllowGenerateIDSender = HeightDependentBool{
-		heights: []uint32{2570000, 0},
-		values:  []bool{true, false},
+		Heights: []uint32{2570000, 0},
+		Values:  []bool{true, false},
 	}
 	AllowTxnGenerateIDMinVersion = HeightDependentInt32{
-		heights: []uint32{2570000, 0},
-		values:  []int32{1, 0},
+		Height: []uint32{2570000, 0},
+		Values: []int32{1, 0},
 	}
 	AllowTxnGenerateIDMaxVersion = HeightDependentInt32{
-		heights: []uint32{2570000, 0},
-		values:  []int32{1, 0},
+		Height: []uint32{2570000, 0},
+		Values: []int32{1, 0},
 	}
 	AllowGetIDMinVersion = HeightDependentInt32{
-		heights: []uint32{2600000, 2570000, 0},
-		values:  []int32{1, 0, 0},
+		Height: []uint32{2600000, 2570000, 0},
+		Values: []int32{1, 0, 0},
 	}
 	AllowGetIDMaxVersion = HeightDependentInt32{
-		heights: []uint32{2600000, 2570000, 0},
-		values:  []int32{1, 1, 0},
+		Height: []uint32{2600000, 2570000, 0},
+		Values: []int32{1, 1, 0},
 	}
 	SigChainBitShiftPerElement = HeightDependentInt32{
-		heights: []uint32{2651000, 0},
-		values:  []int32{8, 4},
+		Height: []uint32{2651000, 0},
+		Values: []int32{8, 4},
 	}
 	SigChainRecentMinerBlocks   = 4096
 	SigChainRecentMinerBitShift = HeightDependentInt32{
-		heights: []uint32{2651000, 2633000, 0},
-		values:  []int32{10, 4, 0},
+		Height: []uint32{2651000, 2633000, 0},
+		Values: []int32{10, 4, 0},
 	}
 	SigChainSkipMinerBlocks     = 4096
 	SigChainSkipMinerMaxAllowed = HeightDependentInt32{
-		heights: []uint32{2651000, 0},
-		values:  []int32{2, 3},
+		Height: []uint32{2651000, 0},
+		Values: []int32{2, 3},
 	}
 	SigChainSkipMinerBitShift = HeightDependentInt32{
-		heights: []uint32{2633000, 0},
-		values:  []int32{10, 0},
+		Height: []uint32{2633000, 0},
+		Values: []int32{10, 0},
 	}
 	SigChainMinerSalt = HeightDependentBool{
-		heights: []uint32{2900000, 0},
-		values:  []bool{true, false},
+		Heights: []uint32{2900000, 0},
+		Values:  []bool{true, false},
 	}
 	SigChainMinerWeightBase = HeightDependentInt32{
-		heights: []uint32{2900000, 0},
-		values:  []int32{2, 1},
+		Height: []uint32{2900000, 0},
+		Values: []int32{2, 1},
 	}
 	SigChainMinerWeightMaxExponent = HeightDependentInt32{
-		heights: []uint32{2900000, 0},
-		values:  []int32{4, 0},
+		Height: []uint32{2900000, 0},
+		Values: []int32{4, 0},
 	}
 	DonationNoDelay = HeightDependentBool{
-		heights: []uint32{3030000, 0},
-		values:  []bool{true, false},
+		Heights: []uint32{3030000, 0},
+		Values:  []bool{true, false},
 	}
 )
 
