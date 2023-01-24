@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"encoding/hex"
+	"os"
 	"testing"
 
 	"github.com/nknorg/nkn/v2/config"
@@ -10,7 +11,16 @@ import (
 	"github.com/nknorg/nkn/v2/common"
 )
 
-var sdb, _ = defaultStateDB()
+var sdb = new(StateDB)
+
+func TestMain(m *testing.M) {
+	sdb, _ = defaultStateDB()
+	config.LegacyNameService = config.HeightDependentBool{
+		Heights: []uint32{0, 0},
+		Values:  []bool{false, false},
+	}
+	os.Exit(m.Run())
+}
 
 func TestStateDB_registerName(t *testing.T) {
 	name := "nknorg"
@@ -105,9 +115,9 @@ func defaultStateDB() (*StateDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	sdb, err := NewStateDB(common.EmptyUint256, cs)
+	db, err := NewStateDB(common.EmptyUint256, cs)
 	if err != nil {
 		return nil, err
 	}
-	return sdb, nil
+	return db, nil
 }
