@@ -85,6 +85,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		TlsWebsocketPort:   uint32(config.Parameters.HttpWssPort),
 		TlsJsonRpcDomain:   httpsDomain,
 		TlsJsonRpcPort:     uint32(config.Parameters.HttpsJsonPort),
+		SyncMode:           config.Parameters.SyncMode,
 	}
 
 	n, err := node.NewNode(nn.GetLocalNode().Node.Node, nodeData)
