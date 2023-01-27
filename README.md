@@ -1,10 +1,15 @@
+[![NKN](https://github.com/nknorg/nkn/wiki/img/nkn_logo.png)](https://nkn.org)
+
 # NKN Full Node
+
+### *Official Go implementation of NKN full node.*
+<br/>
 
 [![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/nknorg/nkn)](https://goreportcard.com/report/github.com/nknorg/nkn) [![Build Status](https://travis-ci.org/nknorg/nkn.svg?branch=master)](https://travis-ci.org/nknorg/nkn) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
-[![NKN](https://github.com/nknorg/nkn/wiki/img/nkn_logo.png)](https://nkn.org)
-
-Official Go implementation of NKN full node.
+### Dev Status: V2 line, Production (Stable and Feature-Complete)
+---
+<br/>
 
 > NKN, short for New Kind of Network, is a project aiming to rebuild the
 > Internet that will be truly open, decentralized, dynamic, safe, shared and
