@@ -76,6 +76,21 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return nil, err
 	}
 
+	var ledgerMode pb.LedgerMode
+	if chain.DefaultLedger.Store.GetHeight() > 0 {
+		if _, err = chain.DefaultLedger.Store.GetBlockByHeight(1); err != nil {
+			ledgerMode = pb.LedgerMode_light
+		} else {
+			ledgerMode = pb.LedgerMode_full
+		}
+	} else {
+		if config.Parameters.IsLightSync() {
+			ledgerMode = pb.LedgerMode_light
+		} else {
+			ledgerMode = pb.LedgerMode_full
+		}
+	}
+
 	nodeData := &pb.NodeData{
 		PublicKey:          account.PublicKey,
 		WebsocketPort:      uint32(config.Parameters.HttpWsPort),
@@ -85,6 +100,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		TlsWebsocketPort:   uint32(config.Parameters.HttpWssPort),
 		TlsJsonRpcDomain:   httpsDomain,
 		TlsJsonRpcPort:     uint32(config.Parameters.HttpsJsonPort),
+		LedgerMode:         ledgerMode,
 	}
 
 	n, err := node.NewNode(nn.GetLocalNode().Node.Node, nodeData)
