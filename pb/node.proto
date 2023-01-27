@@ -10,6 +10,11 @@ enum SyncState {
   PERSIST_FINISHED = 3;
 }
 
+enum LedgerMode {
+  full = 0;
+  light = 1;
+}
+
 message NodeData {
   bytes public_key = 1;
   uint32 websocket_port = 2;
@@ -19,4 +24,5 @@ message NodeData {
   uint32 tls_websocket_port = 6;
   string tls_json_rpc_domain = 7;
   uint32 tls_json_rpc_port = 8;
+  LedgerMode ledger_mode = 9;
 }
