@@ -3,7 +3,6 @@ package certs
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -54,7 +53,7 @@ func NewCertManager() (*certManager, error) {
 		return nil, err
 	}
 	cache := certCache{}
-	resBytes, err := ioutil.ReadFile(config.Parameters.ACMEResourceFile)
+	resBytes, err := os.ReadFile(config.Parameters.ACMEResourceFile)
 	if err == nil {
 		err = json.Unmarshal(resBytes, &cache)
 		if err != nil {
@@ -167,19 +166,19 @@ func saveCertToDisk(cert *certificate.Resource) error {
 	}
 	_ = os.MkdirAll(config.Parameters.CertDirectory, certDirMode)
 	// write certificate resource to disk
-	err = ioutil.WriteFile(config.Parameters.ACMEResourceFile, b, certFileMode)
+	err = os.WriteFile(config.Parameters.ACMEResourceFile, b, certFileMode)
 	if err != nil {
 		return err
 	}
 
 	// write certificate PEM to disk
-	err = ioutil.WriteFile(config.Parameters.DefaultTlsCert, cert.Certificate, certFileMode)
+	err = os.WriteFile(config.Parameters.DefaultTlsCert, cert.Certificate, certFileMode)
 	if err != nil {
 		return err
 	}
 
 	// write private Key PEM to disk
-	err = ioutil.WriteFile(config.Parameters.DefaultTlsKey, cert.PrivateKey, certFileMode)
+	err = os.WriteFile(config.Parameters.DefaultTlsKey, cert.PrivateKey, certFileMode)
 	if err != nil {
 		return err
 	}

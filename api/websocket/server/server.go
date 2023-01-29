@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -410,7 +409,7 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 			return fmt.Errorf("Unsupported message compression type %v", msg.CompressionType)
 		}
 
-		b, err := ioutil.ReadAll(io.LimitReader(r, config.MaxClientMessageSize+1))
+		b, err := io.ReadAll(io.LimitReader(r, config.MaxClientMessageSize+1))
 		if err != nil {
 			return fmt.Errorf("ReadAll from reader error: %v", err)
 		}

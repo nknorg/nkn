@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -100,7 +99,7 @@ func ReadPasswordFile() ([]byte, error) {
 		return nil, err
 	}
 
-	file, err = ioutil.ReadFile(passwordFile)
+	file, err = os.ReadFile(passwordFile)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +117,7 @@ func SavePassword(pwd string) error {
 			return errors.New("wallet password file exists")
 		}
 
-		return ioutil.WriteFile(config.Parameters.PasswordFile, []byte(pwd), 0666)
+		return os.WriteFile(config.Parameters.PasswordFile, []byte(pwd), 0666)
 	}
 
 	return nil

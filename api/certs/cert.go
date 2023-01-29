@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -79,7 +78,7 @@ func VerifyCertificate(certPath, keyPath, domain string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	bundle, err := ioutil.ReadFile(certPath)
+	bundle, err := os.ReadFile(certPath)
 	if err != nil {
 		return false, err
 	}

@@ -3,7 +3,6 @@ package vault
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -35,7 +34,7 @@ func LoadWalletStore(fullPath string) (*WalletStore, error) {
 		return nil, errors.New("wallet store doesn't exists")
 	}
 
-	fileData, err := ioutil.ReadFile(fullPath)
+	fileData, err := os.ReadFile(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,7 @@ func (s *WalletStore) read() ([]byte, error) {
 	s.RLock()
 	defer s.RUnlock()
 
-	return ioutil.ReadFile(s.Path)
+	return os.ReadFile(s.Path)
 }
 
 func (s *WalletStore) write(data []byte) error {
@@ -64,7 +63,7 @@ func (s *WalletStore) write(data []byte) error {
 	defer s.Unlock()
 
 	dir, name := path.Split(s.Path)
-	f, err := ioutil.TempFile(dir, name)
+	f, err := os.CreateTemp(dir, name)
 	if err != nil {
 		return err
 	}

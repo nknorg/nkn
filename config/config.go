@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
 	"net"
@@ -703,7 +702,7 @@ func OpenConfigFile() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	file, err = ioutil.ReadFile(configFile)
+	file, err = os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
 	}
@@ -720,7 +719,7 @@ func WriteConfigFile(configuration map[string]interface{}) error {
 		return err
 	}
 	configFile := GetConfigFile()
-	return ioutil.WriteFile(configFile, bytes, 0666)
+	return os.WriteFile(configFile, bytes, 0666)
 }
 
 func SetBeneficiaryAddr(addr string, allowEmpty bool) error {
