@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 
 	"github.com/nknorg/nkn/v2/config"
@@ -38,7 +37,7 @@ func (u *User) SaveToDisk() error {
 	}
 	_ = os.MkdirAll(config.Parameters.CertDirectory, certDirMode)
 	userFile, _, _, _ := GetACMEFileNames(u.Domain, config.Parameters.CertDirectory)
-	err = ioutil.WriteFile(userFile, b, certFileMode)
+	err = os.WriteFile(userFile, b, certFileMode)
 	if err != nil {
 		return err
 	}
@@ -48,7 +47,7 @@ func (u *User) SaveToDisk() error {
 func GetUser() (*User, error) {
 	u := User{}
 	// do we have a user
-	b, err := ioutil.ReadFile(config.Parameters.ACMEUserFile)
+	b, err := os.ReadFile(config.Parameters.ACMEUserFile)
 	if err == nil {
 		// user exists
 		err = json.Unmarshal(b, &u)

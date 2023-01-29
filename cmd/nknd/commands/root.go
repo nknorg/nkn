@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"math/rand"
 	"net/http"
@@ -413,7 +413,7 @@ func GetRemoteVersionNum() (int, error) {
 	}
 	defer r.Body.Close()
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return 0, err
 	}

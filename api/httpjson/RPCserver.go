@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -108,9 +108,9 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
 		// read the body of the request
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Error("HTTP JSON RPC Handle - ioutil.ReadAll: ", err)
+			log.Error("HTTP JSON RPC Handle - io.ReadAll: ", err)
 			return
 		}
 

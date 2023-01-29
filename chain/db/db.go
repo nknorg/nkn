@@ -2,8 +2,8 @@ package db
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"math/rand"
+	"os"
 
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/util/log"
@@ -52,7 +52,7 @@ const (
 
 func NewLevelDBConfig(file string) *LevelDBConfig {
 	c := &LevelDBConfig{}
-	if b, err := ioutil.ReadFile(file); err == nil {
+	if b, err := os.ReadFile(file); err == nil {
 		if err = json.Unmarshal(b, c); err == nil {
 			return c
 		}
@@ -80,7 +80,7 @@ func NewLevelDBConfig(file string) *LevelDBConfig {
 		return c
 	}
 
-	err = ioutil.WriteFile(file, b, 0666)
+	err = os.WriteFile(file, b, 0666)
 	if err != nil {
 		log.Errorf("Save leveldb opts error: %v", err)
 		return c

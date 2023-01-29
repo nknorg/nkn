@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -272,7 +271,7 @@ func Fatalf(format string, a ...interface{}) {
 }
 
 func PruneLogFiles(logPath string) error {
-	files, err := ioutil.ReadDir(logPath)
+	files, err := os.ReadDir(logPath)
 	if err != nil {
 		return err
 	}
@@ -280,7 +279,11 @@ func PruneLogFiles(logPath string) error {
 	logFiles := make([]os.FileInfo, 0, len(files))
 	for _, file := range files {
 		if filepath.Ext(file.Name()) == LogFileExt {
-			logFiles = append(logFiles, file)
+			info, err := file.Info()
+			if err != nil {
+				return err
+			}
+			logFiles = append(logFiles, info)
 		}
 	}
 
@@ -336,11 +339,11 @@ func OpenLogFile(path string, name string) (*os.File, error) {
 }
 
 func getWritterAndFile(name string, outputs ...interface{}) (io.Writer, *os.File, error) {
-	writers := []io.Writer{}
+	var writers []io.Writer
 	var logFile *os.File
 	var err error
 	if len(outputs) == 0 {
-		writers = append(writers, ioutil.Discard)
+		writers = append(writers, io.Discard)
 	} else {
 		for _, o := range outputs {
 			switch o.(type) {
