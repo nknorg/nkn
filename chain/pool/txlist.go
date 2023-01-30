@@ -10,11 +10,11 @@ import (
 )
 
 var (
-	ErrNonceSortedTxsEmpty = errors.New("Empty NonceSortedTxs")
+	ErrNonceSortedTxsEmpty = errors.New("empty NonceSortedTxs")
 	ErrNonceOutofRange     = errors.New("nonce is not in range")
 )
 
-// NonceSortedTxs store the txns that can be add into blockchain.
+// NonceSortedTxs store the txns that can be added into blockchain.
 // The txns are sorted by nonce in Increasing order.
 type NonceSortedTxs struct {
 	mu      sync.RWMutex

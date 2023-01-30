@@ -182,19 +182,19 @@ func (bm *BuiltinMining) BuildBlock(ctx context.Context, height uint32, chordID 
 		},
 	}
 
-	block := &block.Block{
+	b := &block.Block{
 		Header:       header,
 		Transactions: txnList,
 	}
 
-	curStateHash, err := DefaultLedger.Store.GenerateStateRoot(ctx, block, true, false)
+	curStateHash, err := DefaultLedger.Store.GenerateStateRoot(ctx, b, true, false)
 	if err != nil {
 		return nil, err
 	}
 
 	header.UnsignedHeader.StateRoot = curStateHash.ToArray()
 
-	return block, nil
+	return b, nil
 }
 
 func (bm *BuiltinMining) SignBlock(b *block.Block, timestamp int64) error {

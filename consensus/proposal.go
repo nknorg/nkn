@@ -42,12 +42,12 @@ func (consensus *Consensus) getBlockProposal(blockHash common.Uint256) (*block.B
 		return nil, fmt.Errorf("block %s not found in local cache", blockHash.ToHexString())
 	}
 
-	block, ok := value.(*block.Block)
+	b, ok := value.(*block.Block)
 	if !ok {
 		return nil, fmt.Errorf("convert block %s from proposal cache error", blockHash.ToHexString())
 	}
 
-	return block, nil
+	return b, nil
 }
 
 func (consensus *Consensus) canVerifyHeight(height uint32) bool {

@@ -48,13 +48,13 @@ func NewMsgTx(payload *pb.Payload, nonce uint64, fee common.Fixed64, attrs []byt
 	return tx
 }
 
-//Serialize the Transaction data without contracts
+// Serialize the Transaction data without contracts
 func (tx *Transaction) SerializeUnsigned(w io.Writer) error {
 	if err := tx.UnsignedTx.Payload.Serialize(w); err != nil {
 		return err
 	}
 
-	err := serialization.WriteUint64(w, uint64(tx.UnsignedTx.Nonce))
+	err := serialization.WriteUint64(w, tx.UnsignedTx.Nonce)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (tx *Transaction) GetMessage() []byte {
 func (tx *Transaction) Hash() common.Uint256 {
 	if tx.hash == nil {
 		d := signature.GetHashData(tx)
-		temp := sha256.Sum256([]byte(d))
+		temp := sha256.Sum256(d)
 		f := common.Uint256(sha256.Sum256(temp[:]))
 		tx.hash = &f
 	}
@@ -222,20 +222,20 @@ func (tx *Transaction) SetHash(hash common.Uint256) {
 	tx.hash = &hash
 }
 
-func (txn *Transaction) VerifySignature() error {
-	if txn.UnsignedTx.Payload.Type == pb.PayloadType_COINBASE_TYPE {
+func (tx *Transaction) VerifySignature() error {
+	if tx.UnsignedTx.Payload.Type == pb.PayloadType_COINBASE_TYPE {
 		return nil
 	}
 
-	if txn.isSignatureVerified {
+	if tx.isSignatureVerified {
 		return nil
 	}
 
-	if err := signature.VerifySignableData(txn); err != nil {
+	if err := signature.VerifySignableData(tx); err != nil {
 		return err
 	}
 
-	txn.isSignatureVerified = true
+	tx.isSignatureVerified = true
 
 	return nil
 }

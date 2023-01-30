@@ -17,7 +17,7 @@ var (
 		}
 		temp := sha256.Sum256(b.Bytes())
 		f := sha256.Sum256(temp[:])
-		return common.Uint256(f)
+		return f
 	}
 )
 
@@ -36,7 +36,7 @@ func (t *MerkleTreeNode) IsLeaf() bool {
 	return t.Left == nil && t.Right == nil
 }
 
-//use []Uint256 to create a new MerkleTree
+// use []Uint256 to create a new MerkleTree
 func NewMerkleTree(hashes []common.Uint256) (*MerkleTree, error) {
 	if len(hashes) == 0 {
 		return nil, errors.New("NewMerkleTree input no item error.")
@@ -57,7 +57,7 @@ func NewMerkleTree(hashes []common.Uint256) (*MerkleTree, error) {
 
 }
 
-//Generate the leaves nodes
+// Generate the leaves nodes
 func generateLeaves(hashes []common.Uint256) []*MerkleTreeNode {
 	var leaves []*MerkleTreeNode
 	for _, d := range hashes {
@@ -69,7 +69,7 @@ func generateLeaves(hashes []common.Uint256) []*MerkleTreeNode {
 	return leaves
 }
 
-//calc the next level's hash use double sha256
+// calc the next level's hash use double sha256
 func levelUp(nodes []*MerkleTreeNode) []*MerkleTreeNode {
 	var nextLevel []*MerkleTreeNode
 	for i := 0; i < len(nodes)/2; i++ {
@@ -99,10 +99,10 @@ func levelUp(nodes []*MerkleTreeNode) []*MerkleTreeNode {
 	return nextLevel
 }
 
-//input a []uint256, create a MerkleTree & calc the root hash
+// input a []uint256, create a MerkleTree & calc the root hash
 func ComputeRoot(hashes []common.Uint256) (common.Uint256, error) {
 	if len(hashes) == 0 {
-		return common.Uint256{}, errors.New("NewMerkleTree input no item error.")
+		return common.Uint256{}, errors.New("newMerkleTree input no item error")
 	}
 	if len(hashes) == 1 {
 		return hashes[0], nil

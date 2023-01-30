@@ -135,7 +135,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 	event.Queue.Subscribe(event.BlockPersistCompleted, localNode.cleanupTransactions)
 	event.Queue.Subscribe(event.NewBlockProduced, localNode.CheckIDChange)
 
-	nn.MustApplyMiddleware(nnetnode.ConnectionAccepted{func(conn net.Conn) (bool, bool) {
+	nn.MustApplyMiddleware(nnetnode.ConnectionAccepted{Func: func(conn net.Conn) (bool, bool) {
 		host, _, err := net.SplitHostPort(conn.RemoteAddr().String())
 		if err == nil {
 			limiter := ratelimiter.GetLimiter("node:"+host, config.Parameters.NodeIPRateLimit, int(config.Parameters.NodeIPRateBurst))
@@ -145,28 +145,28 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 			}
 		}
 		return true, true
-	}, 0})
+	}})
 
-	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{func(n *nnetpb.Node) (bool, bool) {
+	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{Func: func(n *nnetpb.Node) (bool, bool) {
 		err := localNode.shouldConnectToNode(n)
 		if err != nil {
 			log.Infof("stop connect to node because: %v", err)
 			return false, false
 		}
 		return true, true
-	}, 0})
+	}})
 
-	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady{func(remoteNode *nnetnode.RemoteNode) bool {
+	nn.MustApplyMiddleware(nnetnode.RemoteNodeReady{Func: func(remoteNode *nnetnode.RemoteNode) bool {
 		err := localNode.verifyRemoteNode(remoteNode)
 		if err != nil {
 			remoteNode.Stop(err)
 			return false
 		}
 		return true
-	}, 1000})
+	}, Priority: 1000})
 
 	var startOnce sync.Once
-	nn.MustApplyMiddleware(chord.NeighborAdded{func(remoteNode *nnetnode.RemoteNode, index int) bool {
+	nn.MustApplyMiddleware(chord.NeighborAdded{Func: func(remoteNode *nnetnode.RemoteNode, index int) bool {
 		startOnce.Do(localNode.startConnectingToRandomNeighbors)
 		err := localNode.maybeAddRemoteNode(remoteNode)
 		if err != nil {
@@ -174,21 +174,21 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 			return false
 		}
 		return true
-	}, 0})
+	}})
 
-	nn.MustApplyMiddleware(chord.NeighborRemoved{func(remoteNode *nnetnode.RemoteNode) bool {
+	nn.MustApplyMiddleware(chord.NeighborRemoved{Func: func(remoteNode *nnetnode.RemoteNode) bool {
 		nbr := localNode.GetNeighborByNNetNode(remoteNode)
 		if nbr != nil {
 			localNode.RemoveNeighborNode(nbr.GetID())
 		}
 		return true
-	}, 0})
+	}})
 
-	nn.MustApplyMiddleware(nnetnode.MessageEncoded{func(rn *nnetnode.RemoteNode, msg []byte) ([]byte, bool) {
+	nn.MustApplyMiddleware(nnetnode.MessageEncoded{Func: func(rn *nnetnode.RemoteNode, msg []byte) ([]byte, bool) {
 		return localNode.encryptMessage(msg, rn), true
-	}, 0})
+	}})
 
-	nn.MustApplyMiddleware(nnetnode.MessageWillDecode{func(rn *nnetnode.RemoteNode, msg []byte) ([]byte, bool) {
+	nn.MustApplyMiddleware(nnetnode.MessageWillDecode{Func: func(rn *nnetnode.RemoteNode, msg []byte) ([]byte, bool) {
 		decrypted, err := localNode.decryptMessage(msg, rn)
 		if err != nil {
 			if localNode.GetNeighborByNNetNode(rn) != nil {
@@ -199,11 +199,11 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 			return nil, false
 		}
 		return decrypted, true
-	}, 0})
+	}})
 
-	nn.MustApplyMiddleware(routing.RemoteMessageRouted{localNode.remoteMessageRouted, 0})
+	nn.MustApplyMiddleware(routing.RemoteMessageRouted{Func: localNode.remoteMessageRouted})
 
-	nn.MustApplyMiddleware(chord.RelayPriority{func(rn *nnetnode.RemoteNode, priority float64) (float64, bool) {
+	nn.MustApplyMiddleware(chord.RelayPriority{Func: func(rn *nnetnode.RemoteNode, priority float64) (float64, bool) {
 		var connTime time.Duration
 		nbr := localNode.GetNeighborByNNetNode(rn)
 		if nbr != nil {
@@ -211,7 +211,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		}
 		priority = relayPriority(priority, connTime)
 		return priority, true
-	}, 0})
+	}})
 
 	return localNode, nil
 }
@@ -357,7 +357,7 @@ func (localNode *LocalNode) findAddrForClient(key []byte, tls bool) (string, str
 	if tls == true {
 		// We only check wss because https rpc is optional
 		if len(nodeData.TlsWebsocketDomain) == 0 || nodeData.TlsWebsocketPort == 0 {
-			return "", "", nil, nil, errors.New("Predecessor node doesn't support WSS protocol")
+			return "", "", nil, nil, errors.New("predecessor node doesn't support WSS protocol")
 		}
 		wsHost = nodeData.TlsWebsocketDomain
 		wsPort = uint16(nodeData.TlsWebsocketPort)

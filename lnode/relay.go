@@ -405,22 +405,22 @@ func MakeSigChainTransaction(wallet *vault.Wallet, sigChain []byte) (*transactio
 }
 
 func (rs *RelayService) populateVRFCache(v interface{}) {
-	block, ok := v.(*block.Block)
+	b, ok := v.(*block.Block)
 	if !ok {
 		return
 	}
 
-	blockHash := block.Hash()
+	blockHash := b.Hash()
 	por.GetPorServer().GetOrComputeVrf(blockHash.ToArray())
 }
 
 func (rs *RelayService) flushSigChain(v interface{}) {
-	block, ok := v.(*block.Block)
+	b, ok := v.(*block.Block)
 	if !ok {
 		return
 	}
 
-	height := block.Header.UnsignedHeader.Height - config.SigChainBlockDelay - 1
+	height := b.Header.UnsignedHeader.Height - config.SigChainBlockDelay - 1
 	if height < 0 {
 		height = 0
 	}

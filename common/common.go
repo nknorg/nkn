@@ -42,7 +42,7 @@ func BytesToInt16(b []byte) int16 {
 	bytesBuffer := bytes.NewBuffer(b)
 	var tmp int16
 	binary.Read(bytesBuffer, binary.BigEndian, &tmp)
-	return int16(tmp)
+	return tmp
 }
 
 func BytesToInt(b []byte) []int {
@@ -74,7 +74,7 @@ func GetUint16Array(source []byte) ([]uint16, error) {
 	}
 
 	if len(source)%2 != 0 {
-		return nil, errors.New("[Common] , GetUint16Array err, length of source is odd.")
+		return nil, errors.New("[Common] , GetUint16Array err, length of source is odd")
 	}
 
 	dst := make([]uint16, len(source)/2)

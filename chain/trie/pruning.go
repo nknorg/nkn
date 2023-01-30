@@ -290,11 +290,11 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 
 		return nil
 	case hashNode:
-		hs, _ := common.Uint256ParseFromBytes([]byte(n))
+		hs, _ := common.Uint256ParseFromBytes(n)
 		count, ok := ref.counts[hs]
 		if !inMemory {
 			if !ok {
-				v, err := ref.trie.db.Get(db.TrieRefCountKey([]byte(n)))
+				v, err := ref.trie.db.Get(db.TrieRefCountKey(n))
 				if err == nil {
 					count = binary.LittleEndian.Uint32(v)
 					ref.counts[hs] = count

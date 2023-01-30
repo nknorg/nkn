@@ -135,7 +135,7 @@ func (consensus *Consensus) prefillNeighborVotes(elc *election.Election, height 
 		if rn.GetHeight() < height && height < rn.GetMinVerifiableHeight() {
 			continue
 		}
-		// Neighbor's consensus state is not up to date
+		// Neighbor's consensus state is not up-to-date
 		if time.Since(rn.GetLastUpdateTime()) > getConsensusStateInterval*2 {
 			continue
 		}

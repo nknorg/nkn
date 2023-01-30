@@ -157,7 +157,7 @@ func (n hashNode) Serialize(w io.Writer) error {
 	if err := serialization.WriteVarUint(w, uint64(TagHashNode)); err != nil {
 		return err
 	}
-	if err := serialization.WriteVarBytes(w, []byte(n)); err != nil {
+	if err := serialization.WriteVarBytes(w, n); err != nil {
 		return err
 	}
 
@@ -169,7 +169,7 @@ func (n valueNode) Serialize(w io.Writer) error {
 		return err
 	}
 
-	if err := serialization.WriteVarBytes(w, []byte(n)); err != nil {
+	if err := serialization.WriteVarBytes(w, n); err != nil {
 		return err
 	}
 
@@ -213,7 +213,7 @@ func Deserialize(hash []byte, r io.Reader, needFlags bool) (node, error) {
 			return nil, err
 		}
 		if needFlags {
-			s.flags.hash = hashNode(hash)
+			s.flags.hash = hash
 			s.flags.dirty = false
 		}
 
@@ -235,7 +235,7 @@ func Deserialize(hash []byte, r io.Reader, needFlags bool) (node, error) {
 			f.Children[i] = n
 		}
 		if needFlags {
-			f.flags.hash = hashNode(hash)
+			f.flags.hash = hash
 			f.flags.dirty = false
 		}
 

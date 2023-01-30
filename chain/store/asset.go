@@ -91,7 +91,7 @@ func (sdb *StateDB) SetAsset(assetID common.Uint256, name string, symbol string,
 
 func (sdb *StateDB) setAsset(assetID common.Uint256, asset *Asset) error {
 	if asset, err := sdb.getAsset(assetID); err == nil && asset != nil {
-		return fmt.Errorf("asset %v has already exist.", assetID.ToHexString())
+		return fmt.Errorf("asset %v has already exist", assetID.ToHexString())
 	}
 
 	sdb.assets.Store(assetID, asset)

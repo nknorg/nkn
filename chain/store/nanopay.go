@@ -48,12 +48,12 @@ func (np *nanoPay) Serialize(w io.Writer) error {
 func (np *nanoPay) Deserialize(r io.Reader) error {
 	err := np.balance.Deserialize(r)
 	if err != nil {
-		return fmt.Errorf("Deserialize nanoPay error: %v", err)
+		return fmt.Errorf("deserialize nanoPay error: %v", err)
 	}
 
 	np.expiresAt, err = serialization.ReadUint32(r)
 	if err != nil {
-		return fmt.Errorf("Deserialize nanoPay error: %v", err)
+		return fmt.Errorf("deserialize nanoPay error: %v", err)
 	}
 
 	return nil

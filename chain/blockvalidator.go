@@ -198,7 +198,7 @@ func TransactionCheck(ctx context.Context, block *block.Block, fastSync bool) er
 func GetNextBlockSigner(height uint32, timestamp int64) ([]byte, []byte, pb.WinnerType, error) {
 	currentHeight := DefaultLedger.Store.GetHeight()
 	if height > currentHeight {
-		return nil, nil, 0, fmt.Errorf("Height %d is higher than current height %d", height, currentHeight)
+		return nil, nil, 0, fmt.Errorf("height %d is higher than current height %d", height, currentHeight)
 	}
 
 	headerHash := DefaultLedger.Store.GetHeaderHashByHeight(height)
