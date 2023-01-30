@@ -113,15 +113,15 @@ func (b *Block) FromTrimmedData(r io.Reader) error {
 		if err != nil {
 			return err
 		}
-		transaction := new(transaction.Transaction)
-		transaction.SetHash(txhash)
-		b.Transactions = append(b.Transactions, transaction)
+		tx := new(transaction.Transaction)
+		tx.SetHash(txhash)
+		b.Transactions = append(b.Transactions, tx)
 		tharray = append(tharray, txhash)
 	}
 
 	root, err := crypto.ComputeRoot(tharray)
 	if err != nil {
-		return fmt.Errorf("Block Deserialize merkleTree compute failed: %v", err)
+		return fmt.Errorf("block Deserialize merkleTree compute failed: %v", err)
 	}
 	b.Header.UnsignedHeader.TransactionsRoot = root.ToArray()
 
@@ -225,7 +225,7 @@ func GenesisBlockInit() (*Block, error) {
 
 func (b *Block) RebuildMerkleRoot() error {
 	txs := b.Transactions
-	transactionHashes := []common.Uint256{}
+	var transactionHashes []common.Uint256
 	for _, tx := range txs {
 		transactionHashes = append(transactionHashes, tx.Hash())
 	}

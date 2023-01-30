@@ -278,8 +278,8 @@ func (localNode *LocalNode) startReceivingTxnMsg() {
 // NewTransactionsMessage creates a TRANSACTIONS message
 func NewTransactionsMessage(transactions []*transaction.Transaction) (*pb.UnsignedMessage, error) {
 	msgTransactions := make([]*pb.Transaction, len(transactions))
-	for i, transaction := range transactions {
-		msgTransactions[i] = transaction.Transaction
+	for i, tx := range transactions {
+		msgTransactions[i] = tx.Transaction
 	}
 
 	msgBody := &pb.Transactions{

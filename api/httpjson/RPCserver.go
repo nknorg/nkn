@@ -57,7 +57,7 @@ func NewServer(localNode node.ILocalNode, wallet *vault.Wallet) *RPCServer {
 	}
 }
 
-// Handle is the funciton that should be called in order to answer an rpc call
+// Handle is the function that should be called in order to answer an rpc call
 // should be registered like "http.HandleFunc("/", httpjsonrpc.Handle)"
 func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)

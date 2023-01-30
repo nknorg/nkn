@@ -30,7 +30,7 @@ func (consensus *Consensus) startProposing() {
 
 				ctx, cancel = context.WithTimeout(context.Background(), proposingTimeout)
 
-				block, err := consensus.proposeBlock(ctx, expectedHeight)
+				b, err := consensus.proposeBlock(ctx, expectedHeight)
 				if err != nil {
 					log.Errorf("Propose block %d at %v error: %v", expectedHeight, timestamp, err)
 					break
@@ -43,13 +43,13 @@ func (consensus *Consensus) startProposing() {
 					log.Errorf("I'm no longer the block proposer at height %d at %v", expectedHeight, timestamp)
 					break
 				}
-				err = consensus.mining.SignBlock(block, timestamp)
+				err = consensus.mining.SignBlock(b, timestamp)
 				if err != nil {
 					log.Errorf("Sign block with timestamp %v error: %v", timestamp, err)
 					break
 				}
 
-				blockHash := block.Hash()
+				blockHash := b.Hash()
 				log.Infof("Propose block %s at height %d", blockHash.ToHexString(), expectedHeight)
 
 				consensus.localNode.IncrementProposalSubmitted()
@@ -57,7 +57,7 @@ func (consensus *Consensus) startProposing() {
 				// Prevent neighbor from receiving proposal before last consensus stops
 				time.Sleep(proposalPropagationDelay)
 
-				err = consensus.receiveProposal(block)
+				err = consensus.receiveProposal(b)
 				if err != nil {
 					log.Error(err)
 					break

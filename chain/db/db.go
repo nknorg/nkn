@@ -44,7 +44,7 @@ type LevelDBConfig struct {
 }
 
 const (
-	// used to compute the size of bloom filter bits array, too small will lead to
+	// BITSPERKEY used to compute the size of bloom filter bits array, too small will lead to
 	// high false positive rate.
 	BITSPERKEY     = 10
 	DBConfigSuffix = ".config"

@@ -145,14 +145,14 @@ func (w *Wallet) Sign(txn *transaction.Transaction) error {
 		return fmt.Errorf("no available account in wallet: %v", account)
 	}
 
-	signature, err := signature.SignBySigner(txn, account)
+	sig, err := signature.SignBySigner(txn, account)
 	if err != nil {
 		return err
 	}
 
-	program := contract.NewProgram(signature)
+	prog := contract.NewProgram(sig)
 
-	txn.SetPrograms([]*pb.Program{program})
+	txn.SetPrograms([]*pb.Program{prog})
 
 	return nil
 }

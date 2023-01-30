@@ -35,7 +35,7 @@ func (h *Header) Unmarshal(buf []byte) error {
 	return proto.Unmarshal(buf, h.Header)
 }
 
-//Serialize the blockheader data without program
+// Serialize the blockheader data without program
 func (h *Header) SerializeUnsigned(w io.Writer) error {
 	err := serialization.WriteUint32(w, h.UnsignedHeader.Version)
 	if err != nil {
@@ -145,7 +145,7 @@ func (h *Header) GetSigner() ([]byte, []byte, error) {
 }
 
 func (h *Header) GetProgramHashes() ([]common.Uint160, error) {
-	programHashes := []common.Uint160{}
+	var programHashes []common.Uint160
 
 	programHash, err := program.CreateProgramHash(h.UnsignedHeader.SignerPk)
 	if err != nil {
@@ -169,7 +169,7 @@ func (h *Header) Hash() common.Uint256 {
 		return *h.hash
 	}
 	d := signature.GetHashData(h)
-	temp := sha256.Sum256([]byte(d))
+	temp := sha256.Sum256(d)
 	f := sha256.Sum256(temp[:])
 	hash := common.Uint256(f)
 	h.hash = &hash

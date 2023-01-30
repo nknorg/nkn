@@ -10,7 +10,7 @@ import (
 )
 
 // sync txn
-const MaxSyncTxnInterval = 16000 // in milli seconds
+const MaxSyncTxnInterval = 16000 // in milliseconds
 
 type txnWithTime struct { // abbreviation is twt: txn with time
 	arriveTime int64

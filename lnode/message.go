@@ -16,7 +16,7 @@ import (
 
 func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) ([]byte, error) {
 	if localNode.account == nil {
-		return nil, errors.New("Account is nil")
+		return nil, errors.New("account is nil")
 	}
 
 	buf, err := proto.Marshal(unsignedMsg)

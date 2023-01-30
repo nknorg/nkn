@@ -56,7 +56,7 @@ func (c PorPackages) Less(i, j int) bool {
 
 func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 	if txn.UnsignedTx.Payload.Type != pb.PayloadType_SIG_CHAIN_TXN_TYPE {
-		return nil, errors.New("Transaction type should be sigchain")
+		return nil, errors.New("transaction type should be sigchain")
 	}
 
 	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
@@ -79,7 +79,7 @@ func NewPorPackage(txn *transaction.Transaction) (*PorPackage, error) {
 		}
 	}
 	if !found {
-		return nil, errors.New("No miner node in signature chain")
+		return nil, errors.New("no miner node in signature chain")
 	}
 
 	blockHash, err := common.Uint256ParseFromBytes(sigChain.BlockHash)

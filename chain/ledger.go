@@ -24,7 +24,7 @@ func (l *Ledger) IsDoubleSpend(Tx *transaction.Transaction) bool {
 // get the default ledger
 func GetDefaultLedger() (*Ledger, error) {
 	if DefaultLedger == nil {
-		return nil, errors.New("[Ledger] GetDefaultLedger failed, DefaultLedger not Exist.")
+		return nil, errors.New("[Ledger] GetDefaultLedger failed, DefaultLedger not Exist")
 	}
 	return DefaultLedger, nil
 }

@@ -43,13 +43,13 @@ func (u *Uint256) Serialize(w io.Writer) (int, error) {
 	b_buf := bytes.NewBuffer([]byte{})
 	binary.Write(b_buf, binary.LittleEndian, u)
 
-	len, err := w.Write(b_buf.Bytes())
+	length, err := w.Write(b_buf.Bytes())
 
 	if err != nil {
 		return 0, err
 	}
 
-	return len, nil
+	return length, nil
 }
 
 func (u *Uint256) Deserialize(r io.Reader) error {

@@ -22,7 +22,7 @@ func VerifySignableData(signableData SignableData) error {
 	for i := 0; i < len(programs); i++ {
 		temp, _ := common.ToCodeHash(programs[i].Code)
 		if hashes[i] != temp {
-			return fmt.Errorf("The data hashes %v is different with corresponding program code %v", hashes[i], temp)
+			return fmt.Errorf("the data hashes %v is different with corresponding program code %v", hashes[i], temp)
 		}
 
 		pk, err := program.GetPublicKeyFromCode(programs[i].Code)

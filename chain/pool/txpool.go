@@ -311,7 +311,7 @@ func (tp *TxnPool) processTx(txn *transaction.Transaction) error {
 
 	switch txn.UnsignedTx.Payload.Type {
 	case pb.PayloadType_COINBASE_TYPE:
-		return fmt.Errorf("Invalid txn type %v", txn.UnsignedTx.Payload.Type)
+		return fmt.Errorf("invalid txn type %v", txn.UnsignedTx.Payload.Type)
 	case pb.PayloadType_SIG_CHAIN_TXN_TYPE:
 		// sigchain txn should not be added to txn pool
 		return nil

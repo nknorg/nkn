@@ -121,7 +121,7 @@ func (l *Logger) GetLevel() int {
 
 func (l *Logger) SetDebugLevel(level int) error {
 	if level >= maxLevelLog || level < 0 {
-		return errors.New("Invalid Debug Level")
+		return errors.New("invalid Debug Level")
 	}
 
 	l.Lock()
