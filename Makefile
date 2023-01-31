@@ -97,7 +97,7 @@ pb:
 
 .PHONY: test
 test:
-	go test -v ./chain/store
+	go test -v ./...
 
 .PHONY: docker
 docker:
