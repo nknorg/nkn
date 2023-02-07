@@ -219,8 +219,8 @@ func (ref *RefCounts) Prune(hash common.Uint256, inMemory bool) error {
 }
 
 func (ref *RefCounts) prune(n node, inMemory bool) error {
-
-	decrementRefCount := func() bool {
+	switch n := n.(type) {
+	case *shortNode:
 		hash, _ := n.cache()
 		hs, _ := common.Uint256ParseFromBytes(hash)
 		count, ok := ref.counts[hs]
@@ -241,7 +241,7 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 
 		if count > 1 {
 			ref.counts[hs] = count - 1
-			return true
+			return nil
 		}
 
 		delete(ref.counts, hs)
@@ -249,19 +249,36 @@ func (ref *RefCounts) prune(n node, inMemory bool) error {
 		if !inMemory {
 			ref.trie.db.BatchDelete(db.TrieRefCountKey(hash))
 		}
-		return false
-	}
-
-	switch n := n.(type) {
-	case *shortNode:
-		if decrementRefCount() {
-			return nil
-		}
 		return ref.prune(n.Val, inMemory)
 
 	case *fullNode:
-		if decrementRefCount() {
+		hash, _ := n.cache()
+		hs, _ := common.Uint256ParseFromBytes(hash)
+		count, ok := ref.counts[hs]
+		if !inMemory {
+			if !ok {
+				v, err := ref.trie.db.Get(db.TrieRefCountKey(hash))
+				if err == nil {
+					count = binary.LittleEndian.Uint32(v)
+					ref.counts[hs] = count
+				} else {
+					log.Fatal("Trie get error: %v", err)
+				}
+			}
+		}
+		if count == 0 {
+			log.Fatalf("RefCount cannot be zero, %v", hs.ToHexString())
+		}
+
+		if count > 1 {
+			ref.counts[hs] = count - 1
 			return nil
+		}
+
+		delete(ref.counts, hs)
+		ref.trie.db.BatchDelete(db.TrieNodeKey(hash))
+		if !inMemory {
+			ref.trie.db.BatchDelete(db.TrieRefCountKey(hash))
 		}
 		for i := 0; i < LenOfChildrenNodes; i++ {
 			if n.Children[i] != nil {
