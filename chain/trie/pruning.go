@@ -218,9 +218,11 @@ func (ref *RefCounts) Prune(hs common.Uint256, inMemory bool) error {
 	return nil
 }
 
-// nodeRefHashHs returns hash and hs relevant for node RefCount processing
-func (ref *RefCounts) nodeRefHashHs(n node) (hash hashNode, hs common.Uint256) {
+// refCountsIndex returns the RefCounts index for a given node
+// n.cache() is used for short/full nodes, hashNode itself for hashNode types
+func (ref *RefCounts) refCountsIndex(n node) (hs common.Uint256) {
 
+	var hash hashNode
 	switch n := n.(type) {
 	case *shortNode:
 	case *fullNode:
@@ -238,7 +240,8 @@ func (ref *RefCounts) nodeRefHashHs(n node) (hash hashNode, hs common.Uint256) {
 // returns true if counter was decremented, else false
 // raises an error if counter cannot be retrieved or is 0
 func (ref *RefCounts) decrement(n node, inMemory bool) bool {
-	hash, hs := ref.nodeRefHashHs(n)
+	hs := ref.refCountsIndex(n)
+	hash := hs.ToArray()
 	count, ok := ref.counts[hs]
 	if !inMemory {
 		if !ok {
@@ -263,7 +266,8 @@ func (ref *RefCounts) decrement(n node, inMemory bool) bool {
 }
 
 func (ref *RefCounts) delete(n node, inMemory bool) {
-	hash, hs := ref.nodeRefHashHs(n)
+	hs := ref.refCountsIndex(n)
+	hash := hs.ToArray()
 	delete(ref.counts, hs)
 	ref.trie.db.BatchDelete(db.TrieNodeKey(hash))
 	if !inMemory {
