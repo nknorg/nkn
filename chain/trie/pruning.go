@@ -85,8 +85,8 @@ func (ref *RefCounts) LengthOfCounts() int {
 	return len(ref.counts)
 }
 
-func (ref *RefCounts) CreateRefCounts(hash common.Uint256, inMemory, persistIntermediate bool) error {
-	root, err := ref.trie.resolveHash(hash.ToArray(), true)
+func (ref *RefCounts) CreateRefCounts(hs common.Uint256, inMemory, persistIntermediate bool) error {
+	root, err := ref.trie.resolveHash(hs.ToArray(), true)
 	if err != nil {
 		return err
 	}
@@ -203,8 +203,8 @@ func (ref *RefCounts) createRefCounts(n node, inMemory, persistIntermediate bool
 	return nil
 }
 
-func (ref *RefCounts) Prune(hash common.Uint256, inMemory bool) error {
-	root, err := ref.trie.resolveHash(hash.ToArray(), true)
+func (ref *RefCounts) Prune(hs common.Uint256, inMemory bool) error {
+	root, err := ref.trie.resolveHash(hs.ToArray(), true)
 	if err != nil {
 		return err
 	}
@@ -371,8 +371,8 @@ func (ref *RefCounts) NeedReset() (bool, error) {
 	return ref.trie.db.Has(db.TrieRefCountNeedResetKey())
 }
 
-func (ref *RefCounts) Verify(hash common.Uint256) error {
-	root, err := ref.trie.resolveHash(hash.ToArray(), false)
+func (ref *RefCounts) Verify(hsRoot common.Uint256) error {
+	root, err := ref.trie.resolveHash(hsRoot.ToArray(), false)
 	if err != nil {
 		return err
 	}
@@ -385,8 +385,8 @@ func (ref *RefCounts) Verify(hash common.Uint256) error {
 	}
 
 	hs := ref.trie.Hash()
-	if hash.CompareTo(hs) != 0 {
-		return fmt.Errorf("state root not equal: %v, %v", hash.ToHexString(), hs.ToHexString())
+	if hsRoot.CompareTo(hs) != 0 {
+		return fmt.Errorf("state root not equal: %v, %v", hsRoot.ToHexString(), hs.ToHexString())
 	}
 
 	return nil
