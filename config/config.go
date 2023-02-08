@@ -292,7 +292,7 @@ var (
 		LogPath:                      "Log",
 		ChainDBPath:                  "ChainDB",
 		WalletFile:                   "wallet.json",
-		DefaultTlsDomainTmpl:         "{{.DashedIP}}.ipv4.nknlabs.io",
+		DefaultTlsDomainTmpl:         []string{"{{.DashedIP}}.ipv4.staticdns1.io", "{{.DashedIP}}.ipv4.staticdns2.io", "{{.DashedIP}}.ipv4.staticdns3.io"},
 		CertDirectory:                "certs",
 		CertRenewBefore:              720,
 		CertCheckInterval:            86400,
@@ -344,7 +344,7 @@ type Configuration struct {
 	HttpsJsonPort                uint16        `json:"HttpsJsonPort"`
 	DefaultTlsCert               string        `json:"DefaultTlsCert"`
 	DefaultTlsKey                string        `json:"DefaultTlsKey"`
-	DefaultTlsDomainTmpl         string        `json:"DefaultTlsDomainTmpl"`
+	DefaultTlsDomainTmpl         []string      `json:"DefaultTlsDomainTmpl"`
 	ACMEUserFile                 string        `json:"ACMEUserFile"`
 	ACMEResourceFile             string        `json:"ACMEResourceFile"`
 	CertRenewBefore              uint16        `json:"CertRenewBefore"`   //in hours

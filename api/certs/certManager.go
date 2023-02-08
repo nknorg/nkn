@@ -17,14 +17,14 @@ import (
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
-type certManager struct {
+type CertManager struct {
 	User       *User
 	LegoConfig *lego.Config
 	LegoClient *lego.Client
 	Resource   *certificate.Resource
 }
 
-func NewCertManager() (*certManager, error) {
+func NewCertManager() (*CertManager, error) {
 	u, err := GetUser()
 	if err != nil {
 		return nil, err
@@ -63,10 +63,10 @@ func NewCertManager() (*certManager, error) {
 		log.Info("read resourceFile err:", err)
 	}
 
-	return &certManager{User: u, LegoConfig: c, LegoClient: client, Resource: cache.toResource()}, nil
+	return &CertManager{User: u, LegoConfig: c, LegoClient: client, Resource: cache.toResource()}, nil
 }
 
-func (cm *certManager) ObtainNewCert() (*certificate.Resource, error) {
+func (cm *CertManager) ObtainNewCert() (*certificate.Resource, error) {
 	err := cm.LegoClient.Challenge.SetHTTP01Provider(http01.NewProviderServer("", "80"))
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (cm *certManager) ObtainNewCert() (*certificate.Resource, error) {
 	return cm.Resource, nil
 }
 
-func (cm *certManager) RenewCert() (*certificate.Resource, error) {
+func (cm *CertManager) RenewCert() (*certificate.Resource, error) {
 	certificates, err := certcrypto.ParsePEMBundle(cm.Resource.Certificate)
 	if err != nil {
 		return nil, err
@@ -111,14 +111,14 @@ func (cm *certManager) RenewCert() (*certificate.Resource, error) {
 	return cert, nil
 }
 
-func (cm *certManager) NeedObtain() bool {
+func (cm *CertManager) NeedObtain() bool {
 	if cm.Resource == nil || len(cm.Resource.Domain) == 0 {
 		return true
 	}
 	return false
 }
 
-func (cm *certManager) NeedRenew() bool {
+func (cm *CertManager) NeedRenew() bool {
 	certificates, err := certcrypto.ParsePEMBundle(cm.Resource.Certificate)
 	if err != nil {
 		log.Errorf("failed to parsePEMBundle: %s", err)

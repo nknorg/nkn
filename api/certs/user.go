@@ -7,10 +7,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/util"
-
 	"github.com/go-acme/lego/v3/registration"
+	"github.com/nknorg/nkn/v2/config"
 )
 
 // You'll need a User or account type that implements acme.User
@@ -62,12 +60,8 @@ func GetUser() (*User, error) {
 		}
 		u.Key = privateKey
 	}
-	// get domain name
-	commonName, err := util.GetDefaultDomainFromIP(config.Parameters.CertDomainName, config.Parameters.DefaultTlsDomainTmpl)
-	if err != nil {
-		return nil, err
-	}
-	u.Domain = commonName
+
+	u.Domain = config.Parameters.CertDomainName
 
 	return &u, nil
 }
