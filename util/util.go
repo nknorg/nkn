@@ -13,7 +13,7 @@ type TlsDomain struct {
 }
 
 func (w *TlsDomain) IpToDomain(domainTemplate string) (string, error) {
-	t := template.New("Wss Domain Template")
+	t := template.New("TLS Domain Template")
 	t, err := t.Parse(domainTemplate)
 	if err != nil {
 		return "", err
@@ -26,7 +26,7 @@ func (w *TlsDomain) IpToDomain(domainTemplate string) (string, error) {
 	return buf.String(), nil
 }
 
-func GetDefaultDomainFromIP(hostname string, domainTemplate string) (string, error) {
+func GetDefaultDomainFromIP(hostname, domainTemplate string) (string, error) {
 	addr := net.ParseIP(hostname)
 	if addr == nil {
 		return hostname, nil

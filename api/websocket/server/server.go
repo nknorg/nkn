@@ -108,6 +108,9 @@ func (ws *WsServer) Start(wssCertReady chan struct{}) error {
 	go ws.server.Serve(ws.listener)
 
 	go func(wssCertReady chan struct{}) {
+		if wssCertReady == nil {
+			return
+		}
 		for {
 			select {
 			case <-wssCertReady:
@@ -291,7 +294,7 @@ func (ws *WsServer) Stop() {
 	}
 }
 
-//websocketHandler
+// websocketHandler
 func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err == nil {

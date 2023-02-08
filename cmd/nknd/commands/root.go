@@ -191,8 +191,14 @@ func nknMain() error {
 		log.Infof("My IP address is %s", extIP)
 		config.Parameters.Hostname = extIP
 	}
+	if len(config.Parameters.CertDomainName) == 0 {
+		config.Parameters.CertDomainName = config.Parameters.Hostname
+	}
 
-	wssCertReady, httpsCertReady := certs.PrepareCerts()
+	wssCertReady, httpsCertReady, err := certs.PrepareCerts()
+	if err != nil {
+		log.Error(err)
+	}
 
 	// init web service
 	dashboard.Init(nil, wallet, nil)

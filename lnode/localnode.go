@@ -19,7 +19,6 @@ import (
 	"github.com/nknorg/nkn/v2/event"
 	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 	"github.com/nknorg/nnet"
@@ -57,25 +56,6 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		return nil, err
 	}
 
-	addr, err := url.Parse(nn.GetLocalNode().Node.Addr)
-	if err != nil {
-		return nil, err
-	}
-
-	hostName := addr.Hostname()
-	if len(config.Parameters.CertDomainName) > 0 {
-		hostName = config.Parameters.CertDomainName
-	}
-
-	httpsDomain, err := util.GetDefaultDomainFromIP(hostName, config.Parameters.HttpsJsonDomain)
-	if err != nil {
-		return nil, err
-	}
-	wssDomain, err := util.GetDefaultDomainFromIP(hostName, config.Parameters.HttpWssDomain)
-	if err != nil {
-		return nil, err
-	}
-
 	var ledgerMode pb.LedgerMode
 	if chain.DefaultLedger.Store.GetHeight() > 0 {
 		if _, err = chain.DefaultLedger.Store.GetBlockByHeight(1); err != nil {
@@ -96,9 +76,9 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
 		WebsocketPort:      uint32(config.Parameters.HttpWsPort),
 		JsonRpcPort:        uint32(config.Parameters.HttpJsonPort),
 		ProtocolVersion:    uint32(config.ProtocolVersion),
-		TlsWebsocketDomain: wssDomain,
+		TlsWebsocketDomain: config.Parameters.HttpWssDomain,
 		TlsWebsocketPort:   uint32(config.Parameters.HttpWssPort),
-		TlsJsonRpcDomain:   httpsDomain,
+		TlsJsonRpcDomain:   config.Parameters.HttpsJsonDomain,
 		TlsJsonRpcPort:     uint32(config.Parameters.HttpsJsonPort),
 		LedgerMode:         ledgerMode,
 	}

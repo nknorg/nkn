@@ -4,7 +4,9 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
+	"errors"
 	"fmt"
+	"net"
 	"os"
 	"time"
 
@@ -103,52 +105,74 @@ func VerifyLocalCertificate(certPath string, keyPath string, domain string) (boo
 	return false, nil
 }
 
-func CertExists() (bool, bool, bool) {
-	wssUserCertExists, err := VerifyLocalCertificate(config.Parameters.HttpWssCert, config.Parameters.HttpWssKey, config.Parameters.HttpWssDomain)
+func CheckUserCertAvailable() (bool, bool) {
+	// check preset user certificates
+	wssUserCertAvailable, err := VerifyLocalCertificate(config.Parameters.HttpWssCert, config.Parameters.HttpWssKey, config.Parameters.HttpWssDomain)
 	if err != nil {
 		log.Error(err)
 	}
-	httpsUserCertExists, err := VerifyLocalCertificate(config.Parameters.HttpsJsonCert, config.Parameters.HttpsJsonKey, config.Parameters.HttpsJsonDomain)
+	if wssUserCertAvailable {
+		ok, err := domainDNSCheck(config.Parameters.HttpWssDomain)
+		if err != nil {
+			log.Error(err)
+		}
+		wssUserCertAvailable = ok
+	}
+	httpsUserCertAvailable, err := VerifyLocalCertificate(config.Parameters.HttpsJsonCert, config.Parameters.HttpsJsonKey, config.Parameters.HttpsJsonDomain)
 	if err != nil {
 		log.Error(err)
 	}
-	defaultDomain, err := util.GetDefaultDomainFromIP(config.Parameters.CertDomainName, config.Parameters.DefaultTlsDomainTmpl)
-	if err != nil {
-		log.Error(err)
-	}
-	_, _, certFile, keyFile := GetACMEFileNames(defaultDomain, config.Parameters.CertDirectory)
-	defaultCertExists, err := VerifyLocalCertificate(certFile, keyFile, defaultDomain)
-	if err != nil {
-		log.Error(err)
+	if httpsUserCertAvailable {
+		ok, err := domainDNSCheck(config.Parameters.HttpsJsonDomain)
+		if err != nil {
+			log.Error(err)
+		}
+		httpsUserCertAvailable = ok
 	}
 
-	return wssUserCertExists, httpsUserCertExists, defaultCertExists
+	return wssUserCertAvailable, httpsUserCertAvailable
 }
 
-func PrepareCerts() (chan struct{}, chan struct{}) {
-	wssCertExists, httpsCertExists, defaultCertExists := CertExists()
-	ChangeToDefault(httpsCertExists, wssCertExists)
+func domainDNSCheck(domain string) (bool, error) {
+	if domain == config.Parameters.CertDomainName {
+		return true, nil
+	}
+	ip, err := net.LookupIP(domain)
+	if err != nil {
+		return false, err
+	}
+	if len(ip) == 0 {
+		return false, errors.New("incorrect dns record")
+	}
+	return ip[0].String() == config.Parameters.CertDomainName, nil
+}
 
+func PrepareCerts() (chan struct{}, chan struct{}, error) {
 	wssCertReady := make(chan struct{}, 1)
 	httpsCertReady := make(chan struct{}, 1)
+	wssCertAvailable, httpsCertAvailable := CheckUserCertAvailable()
+	if !httpsCertAvailable || !wssCertAvailable {
+		defaultCertAvailable, err := SetDefaultDomain(httpsCertAvailable, wssCertAvailable)
+		if err != nil {
+			return nil, nil, err
+		}
+		if wssCertAvailable || defaultCertAvailable {
+			go func() {
+				wssCertReady <- struct{}{}
+			}()
+		}
+		if httpsCertAvailable || defaultCertAvailable {
+			go func() {
+				httpsCertReady <- struct{}{}
+			}()
+		}
+		go prepareCerts(wssCertAvailable, httpsCertAvailable, wssCertReady, httpsCertReady)
+	}
 
-	if wssCertExists || defaultCertExists {
-		go func() {
-			wssCertReady <- struct{}{}
-		}()
-	}
-	if httpsCertExists || defaultCertExists {
-		go func() {
-			httpsCertReady <- struct{}{}
-		}()
-	}
-	if !(wssCertExists && httpsCertExists) {
-		go prepareCerts(wssCertExists, httpsCertExists, wssCertReady, httpsCertReady)
-	}
-	return wssCertReady, httpsCertReady
+	return wssCertReady, httpsCertReady, nil
 }
 
-func prepareCerts(wssCertExists, httpsCertExists bool, wssCertReady, httpsCertReady chan struct{}) {
+func prepareCerts(wssCertAvailable, httpsCertAvailable bool, wssCertReady, httpsCertReady chan struct{}) {
 	first := true
 	for {
 		cm, err := NewCertManager()
@@ -171,7 +195,7 @@ func prepareCerts(wssCertExists, httpsCertExists bool, wssCertReady, httpsCertRe
 				log.Errorf("save cert failed: %v", err)
 				continue
 			}
-			if !wssCertExists {
+			if !wssCertAvailable {
 				select {
 				case wssCertReady <- struct{}{}:
 					log.Info("wss cert ready")
@@ -179,7 +203,7 @@ func prepareCerts(wssCertExists, httpsCertExists bool, wssCertReady, httpsCertRe
 					log.Info("no wss cert available yet")
 				}
 			}
-			if !httpsCertExists {
+			if !httpsCertAvailable {
 				select {
 				case httpsCertReady <- struct{}{}:
 					log.Info("https cert ready")
@@ -202,14 +226,41 @@ func prepareCerts(wssCertExists, httpsCertExists bool, wssCertReady, httpsCertRe
 	}
 }
 
-func ChangeToDefault(https, wss bool) {
-	defaultDomain, err := util.GetDefaultDomainFromIP(config.Parameters.CertDomainName, config.Parameters.DefaultTlsDomainTmpl)
-	if err != nil {
-		log.Error(err)
+func SetDefaultDomain(https, wss bool) (bool, error) {
+	var domainList []string
+	var defaultCertAvailable bool
+	for _, d := range config.Parameters.DefaultTlsDomainTmpl {
+		domain, err := util.GetDefaultDomainFromIP(config.Parameters.CertDomainName, d)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		ok, err := domainDNSCheck(domain)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		if ok {
+			domainList = append(domainList, domain)
+			_, _, certFile, keyFile := GetACMEFileNames(domain, config.Parameters.CertDirectory)
+			defaultCertAvailable, err = VerifyLocalCertificate(certFile, keyFile, domain)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			if defaultCertAvailable {
+				domainList = domainList[len(domainList)-1:]
+				break
+			}
+		}
 	}
+	if len(domainList) == 0 {
+		return false, errors.New("no domain names available")
+	}
+	config.Parameters.CertDomainName = domainList[0]
 
-	userFile, resourceFile, certFile, keyFile := GetACMEFileNames(defaultDomain, config.Parameters.CertDirectory)
-	log.Infof("set default cert domain to: %s", defaultDomain)
+	userFile, resourceFile, certFile, keyFile := GetACMEFileNames(config.Parameters.CertDomainName, config.Parameters.CertDirectory)
+	log.Infof("set default cert domain to: %s", config.Parameters.CertDomainName)
 	config.Parameters.DefaultTlsCert = certFile
 	config.Parameters.DefaultTlsKey = keyFile
 	config.Parameters.ACMEUserFile = userFile
@@ -218,12 +269,13 @@ func ChangeToDefault(https, wss bool) {
 		log.Info("use default https certs")
 		config.Parameters.HttpsJsonCert = config.Parameters.DefaultTlsCert
 		config.Parameters.HttpsJsonKey = config.Parameters.DefaultTlsKey
-		config.Parameters.HttpsJsonDomain = config.Parameters.DefaultTlsDomainTmpl
+		config.Parameters.HttpsJsonDomain = config.Parameters.CertDomainName
 	}
 	if !wss {
 		log.Info("use default wss certs")
 		config.Parameters.HttpWssCert = config.Parameters.DefaultTlsCert
 		config.Parameters.HttpWssKey = config.Parameters.DefaultTlsKey
-		config.Parameters.HttpWssDomain = config.Parameters.DefaultTlsDomainTmpl
+		config.Parameters.HttpWssDomain = config.Parameters.CertDomainName
 	}
+	return defaultCertAvailable, nil
 }

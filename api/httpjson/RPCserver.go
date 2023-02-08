@@ -323,6 +323,9 @@ func (s *RPCServer) Start(httpsCertReady chan struct{}) {
 	go s.httpServer.Serve(listener)
 
 	go func(httpsCertReady chan struct{}) {
+		if httpsCertReady == nil {
+			return
+		}
 		for {
 			select {
 			case <-httpsCertReady:
