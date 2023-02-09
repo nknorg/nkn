@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/emirpasic/gods v1.18.1
 	github.com/gin-contrib/sessions v0.0.0-20190512062852-3cb4c4f2d615
-	github.com/gin-gonic/gin v1.7.0
+	github.com/gin-gonic/gin v1.7.7
 	github.com/go-acme/lego/v3 v3.8.0
 	github.com/golang/protobuf v1.5.0
 	github.com/gorilla/securecookie v1.1.1
