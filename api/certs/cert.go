@@ -92,8 +92,9 @@ func VerifyCertificate(certPath, keyPath, domain string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if certs[0].Subject.CommonName != domain {
-		return false, fmt.Errorf("inconsistent domain names")
+	err = certs[0].VerifyHostname(domain)
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 }
@@ -156,17 +157,19 @@ func PrepareCerts() (chan struct{}, chan struct{}, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		if wssCertAvailable || defaultCertAvailable {
-			go func() {
-				wssCertReady <- struct{}{}
-			}()
-		}
-		if httpsCertAvailable || defaultCertAvailable {
-			go func() {
-				httpsCertReady <- struct{}{}
-			}()
-		}
+		wssCertAvailable = wssCertAvailable || defaultCertAvailable
+		httpsCertAvailable = httpsCertAvailable || defaultCertAvailable
 		go prepareCerts(wssCertAvailable, httpsCertAvailable, wssCertReady, httpsCertReady)
+	}
+	if wssCertAvailable {
+		go func() {
+			wssCertReady <- struct{}{}
+		}()
+	}
+	if httpsCertAvailable {
+		go func() {
+			httpsCertReady <- struct{}{}
+		}()
 	}
 
 	return wssCertReady, httpsCertReady, nil
