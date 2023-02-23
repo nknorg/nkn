@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/nknorg/nkn/v2/pb"
 	"io"
 	"math"
 	"math/rand"
@@ -257,7 +258,22 @@ func nknMain() error {
 		Priority: 0,
 	})
 
-	localNode, err := lnode.NewLocalNode(wallet, nn)
+	var ledgerMode pb.LedgerMode
+	if chain.DefaultLedger.Store.GetHeight() > 0 {
+		if _, err = chain.DefaultLedger.Store.GetBlockByHeight(1); err != nil {
+			ledgerMode = pb.LedgerMode_light
+		} else {
+			ledgerMode = pb.LedgerMode_full
+		}
+	} else {
+		if config.Parameters.IsLightSync() {
+			ledgerMode = pb.LedgerMode_light
+		} else {
+			ledgerMode = pb.LedgerMode_full
+		}
+	}
+
+	localNode, err := lnode.NewLocalNode(wallet, nn, ledgerMode)
 	if err != nil {
 		return err
 	}

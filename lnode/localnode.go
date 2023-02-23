@@ -50,25 +50,10 @@ type LocalNode struct {
 	proposalSubmitted uint32 // Count of localNode submitted proposal
 }
 
-func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet) (*LocalNode, error) {
+func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet, ledgerMode pb.LedgerMode) (*LocalNode, error) {
 	account, err := wallet.GetDefaultAccount()
 	if err != nil {
 		return nil, err
-	}
-
-	var ledgerMode pb.LedgerMode
-	if chain.DefaultLedger.Store.GetHeight() > 0 {
-		if _, err = chain.DefaultLedger.Store.GetBlockByHeight(1); err != nil {
-			ledgerMode = pb.LedgerMode_light
-		} else {
-			ledgerMode = pb.LedgerMode_full
-		}
-	} else {
-		if config.Parameters.IsLightSync() {
-			ledgerMode = pb.LedgerMode_light
-		} else {
-			ledgerMode = pb.LedgerMode_full
-		}
 	}
 
 	nodeData := &pb.NodeData{
