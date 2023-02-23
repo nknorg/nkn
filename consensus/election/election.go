@@ -43,11 +43,11 @@ type Election struct {
 // NewElection creates an election using the config provided.
 func NewElection(config *Config) (*Election, error) {
 	if config.Duration == 0 {
-		return nil, errors.New("Election duration cannot be empty")
+		return nil, errors.New("election duration cannot be empty")
 	}
 
 	if config.MinVotingInterval > config.MaxVotingInterval {
-		return nil, fmt.Errorf("Min voting interval %v is greater than max voting interval %v", config.MinVotingInterval, config.MaxVotingInterval)
+		return nil, fmt.Errorf("min voting interval %v is greater than max voting interval %v", config.MinVotingInterval, config.MaxVotingInterval)
 	}
 
 	if config.GetWeight == nil {
@@ -68,7 +68,7 @@ func NewElection(config *Config) (*Election, error) {
 // returns error.
 func (election *Election) SetInitialVote(vote interface{}) error {
 	if election.HasStarted() {
-		return errors.New("Cannot set initial vote, election has started")
+		return errors.New("cannot set initial vote, election has started")
 	}
 
 	election.Lock()
@@ -100,7 +100,7 @@ func (election *Election) Start() bool {
 	return success
 }
 
-// Stop stops an election. Typically this should not be called directly.
+// Stop stops an election. Typically, this should not be called directly.
 func (election *Election) Stop() {
 	election.Lock()
 	election.state = stopped
@@ -129,7 +129,7 @@ func (election *Election) IsStopped() bool {
 // ReceiveVote receives and saves a vote from a neighbor.
 func (election *Election) ReceiveVote(neighborID, vote interface{}) error {
 	if election.IsStopped() {
-		return errors.New("Election has already stopped")
+		return errors.New("election has already stopped")
 	}
 
 	election.neighborVotes.Store(neighborID, vote)
@@ -142,7 +142,7 @@ func (election *Election) ReceiveVote(neighborID, vote interface{}) error {
 	return nil
 }
 
-// GetTxVoteChan returns the send vote channel, which should be used to send
+// GetTxVoteChan returns the sending vote channel, which should be used to send
 // votes to neighbors.
 func (election *Election) GetTxVoteChan() <-chan interface{} {
 	return election.txVoteChan
@@ -194,7 +194,7 @@ func (election *Election) NeighborVoteCount() uint32 {
 // PrefillNeighborVotes prefills vote for neighborIDs that don't have a vote yet
 func (election *Election) PrefillNeighborVotes(neighborIDs []interface{}, vote interface{}) error {
 	if election.IsStopped() {
-		return errors.New("Election has already stopped")
+		return errors.New("election has already stopped")
 	}
 
 	for _, neighborID := range neighborIDs {
