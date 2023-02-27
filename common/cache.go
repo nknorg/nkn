@@ -6,7 +6,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-// Cache is an anstract cache layer
+// Cache is an abstract cache layer
 type Cache interface {
 	Add(key []byte, value interface{}) error
 	Get(key []byte) (value interface{}, ok bool)

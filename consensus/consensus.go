@@ -171,7 +171,7 @@ func (consensus *Consensus) startElection(height uint32, elc *election.Election)
 
 	electedBlockHash, ok := result.(common.Uint256)
 	if !ok {
-		return common.EmptyUint256, fmt.Errorf("Convert election result to block hash error")
+		return common.EmptyUint256, fmt.Errorf("convert election result to block hash error")
 	}
 
 	log.Infof("Elected block hash %s got %d/%d neighbor votes, weight: %d (%.2f%%)", electedBlockHash.ToHexString(), len(elc.GetNeighborIDsByVote(electedBlockHash)), elc.NeighborVoteCount(), absWeight, relWeight*100)
@@ -314,10 +314,10 @@ func (consensus *Consensus) saveAcceptedBlock(electedBlockHash common.Uint256) e
 
 	elc, loaded, err := consensus.loadOrCreateElection(block.Header.UnsignedHeader.Height)
 	if err != nil {
-		return fmt.Errorf("Error load election: %v", err)
+		return fmt.Errorf("error load election: %v", err)
 	}
 	if !loaded {
-		return fmt.Errorf("Election is created instead of loaded")
+		return fmt.Errorf("election is created instead of loaded")
 	}
 
 	neighborIDs := elc.GetNeighborIDsByVote(electedBlockHash)
@@ -371,12 +371,12 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 		value, ok := consensus.elections.Get(heightToKey(height))
 		consensus.electionsLock.RUnlock()
 		if !ok || value == nil {
-			return fmt.Errorf("Election at height %d not found in local cache", height)
+			return fmt.Errorf("election at height %d not found in local cache", height)
 		}
 
 		elc, ok := value.(*election.Election)
 		if !ok || elc == nil {
-			return fmt.Errorf("Convert election at height %d from cache error", height)
+			return fmt.Errorf("convert election at height %d from cache error", height)
 		}
 
 		result, _, _, err := elc.GetResult()
@@ -386,7 +386,7 @@ func (consensus *Consensus) saveBlocksAcceptedDuringSync(startHeight uint32) err
 
 		electedBlockHash, ok := result.(common.Uint256)
 		if !ok {
-			return fmt.Errorf("Convert election result to block hash error")
+			return fmt.Errorf("convert election result to block hash error")
 		}
 
 		block, err := consensus.getBlockProposal(electedBlockHash)
