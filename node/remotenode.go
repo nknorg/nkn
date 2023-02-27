@@ -127,7 +127,7 @@ func (remoteNode *RemoteNode) SendBytesSync(buf []byte) ([]byte, error) {
 func (remoteNode *RemoteNode) SendBytesSyncWithTimeout(buf []byte, replyTimeout time.Duration) ([]byte, error) {
 	reply, _, err := remoteNode.localNode.GetNnet().SendBytesDirectSyncWithTimeout(buf, remoteNode.NnetNode, replyTimeout)
 	if err != nil {
-		log.Debugf("Error sending sync messge to node: %v", err.Error())
+		log.Debugf("Error sending sync message to node: %v", err.Error())
 	}
 	return reply, err
 }
