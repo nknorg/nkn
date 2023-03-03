@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nknorg/nkn/v2/pb"
 	"io"
 	"math"
 	"math/rand"
@@ -32,6 +31,7 @@ import (
 	"github.com/nknorg/nkn/v2/dashboard"
 	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
 	"github.com/nknorg/nkn/v2/lnode"
+	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	NetVersionNum = 30 // This is temporary and will be removed soon after mainnet is stabilized
+	NetVersionNum = 31 // This is temporary and will be removed soon after mainnet is stabilized
 )
 
 // rootCmd represents the base command when called without any subcommands

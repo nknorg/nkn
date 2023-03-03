@@ -172,8 +172,6 @@ func (ws *WsServer) registryMethod() {
 			return api.RespPacking(nil, errcode.INVALID_PARAMS)
 		}
 
-		// TODO: use signature (or better, with one-time challenge) to verify identity
-
 		localNode := s.GetNetNode()
 
 		isTlsClient := cmd["IsTls"].(bool)
@@ -231,13 +229,10 @@ func (ws *WsServer) registryMethod() {
 					time.Sleep(3 * time.Second)       // sleep several second, let response reach client
 					ws.SessionList.CloseSession(sess) // close this session
 				}()
-
 				return api.RespPacking(nil, errcode.INVALID_SIGNATURE)
-			} else {
-				log.Infof("client auth pass")
 			}
 		} else {
-			log.Infof("client doesn't send signature, it should be old version sdk")
+			log.Debugf("client didn't send signature")
 		}
 
 		newSessionID := hex.EncodeToString(clientID)
