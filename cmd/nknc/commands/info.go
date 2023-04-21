@@ -49,6 +49,7 @@ var (
 	state           bool
 	nodeversion     bool
 	balance         string
+	nonceAddr       string
 	idstr           string
 )
 
@@ -68,8 +69,8 @@ func init() {
 	infoCmd.Flags().BoolVar(&ring, "ring", false, "chord ring information of current node")
 	infoCmd.Flags().BoolVarP(&state, "state", "s", false, "current node state")
 	infoCmd.Flags().BoolVarP(&nodeversion, "nodeversion", "v", false, "version of connected remote node")
-	infoCmd.Flags().StringVar(&balance, "balance", "", "balance of a address")
-	infoCmd.Flags().Uint64Var(&nonce, "nonce", 0, "nonce of a address")
+	infoCmd.Flags().StringVar(&balance, "balance", "", "balance of an address")
+	infoCmd.Flags().StringVar(&nonceAddr, "nonce", "", "nonce of an address")
 	infoCmd.Flags().StringVar(&idstr, "id", "", "id from publickey")
 
 }
@@ -220,8 +221,8 @@ func infoAction() (err error) {
 		output = append(output, resp)
 	}
 
-	if nonce > 0 {
-		resp, err := client.Call(Address(), "getNoncebyaddr", 0, map[string]interface{}{"address": fmt.Sprintf("%d", nonce)})
+	if nonceAddr != "" {
+		resp, err := client.Call(Address(), "getnoncebyaddr", 0, map[string]interface{}{"address": nonceAddr})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return err
