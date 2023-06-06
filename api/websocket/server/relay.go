@@ -105,16 +105,18 @@ func (ws *WsServer) sendInboundMessage(clientID string, inboundMsg *pb.InboundMe
 	return success
 }
 
-func (ws *WsServer) sendInboundRelayMessage(relayMessage *pb.Relay) {
+func (ws *WsServer) sendInboundRelayMessage(relayMessage *pb.Relay, shouldSign bool) {
 	clientID := relayMessage.DestId
 	msg := &pb.InboundMessage{
 		Src:     address.AssembleClientAddress(relayMessage.SrcIdentifier, relayMessage.SrcPubkey),
 		Payload: relayMessage.Payload,
 	}
 
-	shouldSign := por.GetPorServer().ShouldSignDestSigChainElem(relayMessage.BlockHash, relayMessage.LastHash, int(relayMessage.SigChainLen))
 	if shouldSign {
-		msg.PrevHash = relayMessage.LastHash
+		shouldSign = por.GetPorServer().ShouldSignDestSigChainElem(relayMessage.BlockHash, relayMessage.LastHash, int(relayMessage.SigChainLen))
+		if shouldSign {
+			msg.PrevHash = relayMessage.LastHash
+		}
 	}
 
 	success := ws.sendInboundMessage(hex.EncodeToString(clientID), msg)
@@ -149,14 +151,15 @@ func (ws *WsServer) startCheckingLostMessages() {
 				threshold := time.Now().Add(-pongTimeout)
 				success := false
 				for _, client := range clients {
-					if client.GetLastReadTime().After(threshold) {
+					if client.GetLastReadTime().After(threshold) && client.GetConnectTime().Before(threshold) {
 						success = true
 						break
 					}
 				}
-				if success {
-					continue
+				if !success {
+					ws.sendInboundRelayMessage(relayMessage, false)
 				}
+				continue
 			}
 			ws.messageBuffer.AddMessage(clientID, relayMessage)
 		}

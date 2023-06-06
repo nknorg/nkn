@@ -246,7 +246,7 @@ func (ws *WsServer) registryMethod() {
 		go func() {
 			messages := ws.messageBuffer.PopMessages(clientID)
 			for _, message := range messages {
-				ws.sendInboundRelayMessage(message)
+				ws.sendInboundRelayMessage(message, true)
 			}
 		}()
 
@@ -617,7 +617,7 @@ func (ws *WsServer) startCheckingWrongClients() {
 
 func (ws *WsServer) sendInboundRelayMessageToClient(v interface{}) {
 	if msg, ok := v.(*pb.Relay); ok {
-		ws.sendInboundRelayMessage(msg)
+		ws.sendInboundRelayMessage(msg, true)
 	} else {
 		log.Error("Decode relay message failed")
 	}
