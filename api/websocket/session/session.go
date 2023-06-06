@@ -25,7 +25,8 @@ type Session struct {
 	wsLock sync.Mutex
 	ws     *websocket.Conn
 
-	Challenge []byte // client auth, authorization challenge
+	Challenge   []byte    // client auth, authorization challenge
+	connectTime time.Time // The time which the session is established.
 }
 
 func (s *Session) GetSessionId() string {
@@ -87,6 +88,7 @@ func (s *Session) SetClient(chordID, pubKey []byte, addrStr *string, isTls bool)
 	s.clientPubKey = pubKey
 	s.clientAddrStr = addrStr
 	s.isTlsClient = isTls
+	s.connectTime = time.Now()
 }
 
 func (s *Session) isClient() bool {
@@ -142,4 +144,10 @@ func (s *Session) UpdateLastReadTime() {
 	s.Lock()
 	s.lastReadTime = time.Now()
 	s.Unlock()
+}
+
+func (s *Session) GetConnectTime() time.Time {
+	s.RLock()
+	defer s.RUnlock()
+	return s.connectTime
 }
