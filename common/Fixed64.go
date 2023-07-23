@@ -15,7 +15,7 @@ const (
 	StorageFactor    = 100000000
 )
 
-//the 64 bit fixed-point number, precise 10^-8
+// the 64 bit fixed-point number, precise 10^-8
 type Fixed64 int64
 
 func (f *Fixed64) Serialize(w io.Writer) error {
@@ -59,7 +59,7 @@ func (f Fixed64) String() string {
 	if value > 0 {
 		buffer.WriteRune('.')
 		s := strconv.FormatUint(value, 10)
-		for i := len(s); i < 8; i++ {
+		for i := len(s); i < MaximumPrecision; i++ {
 			buffer.WriteRune('0')
 		}
 		buffer.WriteString(s)
