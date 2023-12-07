@@ -15,7 +15,7 @@
     "@nuxtjs/axios": "^5.13.6",
     "@nuxtjs/pwa": "^3.3.5",
     "@nuxtjs/vuetify": "^1.12.3",
-    "crypto-js": "^4.1.1",
+    "crypto-js": "^4.2.0",
     "decimal.js": "^10.3.1",
     "lodash": "^4.17.21",
     "nuxt": "^2.15.8",
