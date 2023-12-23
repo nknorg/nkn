@@ -18,7 +18,7 @@
     "crypto-js": "^4.1.1",
     "decimal.js": "^10.3.1",
     "lodash": "^4.17.21",
-    "nuxt": "^2.15.8",
+    "nuxt": "^3.4.3",
     "nuxt-i18n": "^6.28.1",
     "vue-clipboard2": "^0.3.3"
   },
