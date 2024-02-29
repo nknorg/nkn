@@ -5,7 +5,7 @@
 ### *Official Go implementation of NKN full node.*
 <br/>
 
-[![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/nknorg/nkn)](https://goreportcard.com/report/github.com/nknorg/nkn) [![Build Status](https://travis-ci.org/nknorg/nkn.svg?branch=master)](https://travis-ci.org/nknorg/nkn) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+[![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/nknorg/nkn)](https://goreportcard.com/report/github.com/nknorg/nkn) [![Build Status](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
 ### Dev Status: V2 line, Production (Stable and Feature-Complete)
 ---
@@ -99,7 +99,7 @@ This command should be run once every time you update the code base.
 
 ### Building from source
 
-To build from source, you need a properly configured Go environment (lookup the required version within [go.mod](https://github.com/nknorg/nkn/blob/master/go.mod#L3), and 
+To build from source, you need a properly configured Go environment (lookup the required version within [go.mod](https://github.com/nknorg/nkn/blob/master/go.mod#L3), and
 see [Go Official Installation Documentation](https://golang.org/doc/install) for install instructions).
 
 Build the source code with make
