@@ -900,7 +900,7 @@ func getMyExtIP(s Serverer, params map[string]interface{}, ctx context.Context) 
 }
 
 // findSuccessorAddrs find the successors of a key
-// params: {"address":<address>}
+// params: {"key":<key>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
 func findSuccessorAddrs(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
