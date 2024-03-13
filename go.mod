@@ -27,7 +27,7 @@ require (
 	golang.org/x/crypto v0.21.0
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require github.com/pion/webrtc/v4 v4.0.0-beta.17
