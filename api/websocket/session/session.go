@@ -13,6 +13,17 @@ const (
 	writeTimeout = 10 * time.Second
 )
 
+type Conn interface {
+	SetReadLimit(int64)
+	SetReadDeadline(t time.Time) error
+	SetWriteDeadline(t time.Time) error
+	WriteMessage(messageType int, data []byte) (err error)
+	WriteJSON(v interface{}) error
+	ReadMessage() (messageType int, data []byte, err error)
+	SetPongHandler(func(string) error)
+	Close() error
+}
+
 type Session struct {
 	sync.RWMutex
 	sessionID     string
@@ -23,7 +34,7 @@ type Session struct {
 	lastReadTime  time.Time
 
 	wsLock sync.Mutex
-	ws     *websocket.Conn
+	ws     Conn
 
 	Challenge   []byte    // client auth, authorization challenge
 	connectTime time.Time // The time which the session is established.
@@ -33,7 +44,7 @@ func (s *Session) GetSessionId() string {
 	return s.sessionID
 }
 
-func newSession(wsConn *websocket.Conn) (session *Session, err error) {
+func newSession(wsConn Conn) (session *Session, err error) {
 	sessionID := uuid.NewUUID().String()
 	session = &Session{
 		ws:           wsConn,

@@ -100,6 +100,7 @@ func init() {
 	rootCmd.Flags().StringVar(&config.WebGuiListenAddress, "web-gui-listen-address", "", "web gui will listen this address (default: 127.0.0.1)")
 	rootCmd.Flags().BoolVar(&config.WebGuiCreateWallet, "web-gui-create-wallet", false, "web gui create/open wallet")
 	rootCmd.Flags().StringVar(&config.PasswordFile, "password-file", "", "read password from file, save password to file when --web-gui-create-wallet arguments be true and password file does not exist")
+	rootCmd.Flags().StringVar(&config.StunList, "stun", "", "Webrtc stun servers, multiple servers should be split by comma")
 
 	rootCmd.Flags().MarkHidden("passwd")
 }

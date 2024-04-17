@@ -130,6 +130,7 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 			}
 			method, ok = request["method"].(string)
 			if !ok {
+				log.Warning("RPC Server - No function to call for ", method)
 				code = errcode.INVALID_METHOD
 			}
 			if request["params"] != nil {

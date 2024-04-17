@@ -7,9 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/nknorg/nkn/v2/api/common/errcode"
+	"github.com/nknorg/nkn/v2/api/httpjson/client"
+	"github.com/nknorg/nkn/v2/api/webrtc"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
@@ -412,12 +416,13 @@ func getVersion(s Serverer, params map[string]interface{}, ctx context.Context) 
 	return respPacking(errcode.SUCCESS, config.Version)
 }
 
-func NodeInfo(wsAddr, rpcAddr string, pubkey, id []byte) map[string]string {
+func NodeInfo(wsAddr, rpcAddr string, pubkey, id []byte, sdp string) map[string]string {
 	nodeInfo := make(map[string]string)
 	nodeInfo["addr"] = wsAddr
 	nodeInfo["rpcAddr"] = rpcAddr
 	nodeInfo["pubkey"] = hex.EncodeToString(pubkey)
 	nodeInfo["id"] = hex.EncodeToString(id)
+	nodeInfo["sdp"] = sdp
 	return nodeInfo
 }
 
@@ -444,7 +449,7 @@ func getWsAddr(s Serverer, params map[string]interface{}, ctx context.Context) m
 		return respPacking(errcode.INTERNAL_ERROR, err.Error())
 	}
 
-	return respPacking(errcode.SUCCESS, NodeInfo(wsAddr, rpcAddr, pubkey, id))
+	return respPacking(errcode.SUCCESS, NodeInfo(wsAddr, rpcAddr, pubkey, id, ""))
 }
 
 func getWssAddr(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
@@ -467,7 +472,7 @@ func getWssAddr(s Serverer, params map[string]interface{}, ctx context.Context) 
 		return respPacking(errcode.INTERNAL_ERROR, err.Error())
 	}
 
-	return respPacking(errcode.SUCCESS, NodeInfo(wsAddr, rpcAddr, pubkey, id))
+	return respPacking(errcode.SUCCESS, NodeInfo(wsAddr, rpcAddr, pubkey, id, ""))
 }
 
 // getBalanceByAddr gets balance by address
@@ -953,6 +958,59 @@ func findSuccessorAddr(s Serverer, params map[string]interface{}, ctx context.Co
 	return respPacking(errcode.SUCCESS, addrs[0])
 }
 
+// getPeerAddr get a node address
+// params: {"address":<address>}
+// return: {"resultOrData":<result>|<error data>, "error":<errcode>}
+func getPeerAddr(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
+	if len(params) < 1 {
+		return RespPacking("length of params is less than 1", errcode.INVALID_PARAMS)
+	}
+
+	str, ok := params["address"].(string)
+	if !ok {
+		return RespPacking("address should be a string", errcode.INTERNAL_ERROR)
+	}
+
+	clientID, _, _, err := address.ParseClientAddress(str)
+	if err != nil {
+		return RespPacking(err.Error(), errcode.INTERNAL_ERROR)
+	}
+
+	wsAddr, rpcAddr, pubkey, id, err := s.GetNetNode().FindWsAddr(clientID)
+	if err != nil {
+		return RespPacking(err.Error(), errcode.INTERNAL_ERROR)
+	}
+
+	n := s.GetNetNode()
+	if n == nil {
+		return nil
+	}
+
+	if n.GetWsAddr() == wsAddr {
+		offer := params["offer"].(string)
+		peer := webrtc.NewPeer(config.Parameters.StunList)
+
+		err = peer.Answer(offer)
+		if err != nil {
+			return RespPacking(err.Error(), errcode.INTERNAL_ERROR)
+		}
+		select {
+		case answer := <-peer.OnSdp:
+			return RespPacking(NodeInfo(wsAddr, rpcAddr, pubkey, id, answer), errcode.SUCCESS)
+		case <-time.After(10 * time.Second):
+			return RespPacking(fmt.Errorf("webrtc, wait for sdp time out"), errcode.INTERNAL_ERROR)
+		}
+	}
+
+	reqAddr := (&url.URL{Scheme: "http", Host: rpcAddr}).String()
+	wsAddr, rpcAddr, pubkey, id, sdp, err := client.GetPeerAddr(reqAddr, params)
+	if err != nil {
+		return RespPacking(err.Error(), errcode.INTERNAL_ERROR)
+	}
+
+	return RespPacking(NodeInfo(wsAddr, rpcAddr, pubkey, id, sdp), errcode.SUCCESS)
+}
+
 var InitialAPIHandlers = map[string]APIHandler{
 	"getlatestblockhash":   {Handler: getLatestBlockHash, AccessCtrl: BIT_JSONRPC},
 	"getblock":             {Handler: getBlock, AccessCtrl: BIT_JSONRPC},
@@ -983,4 +1041,5 @@ var InitialAPIHandlers = map[string]APIHandler{
 	"findsuccessoraddr":    {Handler: findSuccessorAddr, AccessCtrl: BIT_JSONRPC},
 	"findsuccessoraddrs":   {Handler: findSuccessorAddrs, AccessCtrl: BIT_JSONRPC},
 	"getregistrant":        {Handler: getRegistrant, AccessCtrl: BIT_JSONRPC},
+	"getpeeraddr":          {Handler: getPeerAddr, AccessCtrl: BIT_JSONRPC},
 }

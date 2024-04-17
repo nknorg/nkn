@@ -16,7 +16,7 @@ import (
 	"github.com/nknorg/nkn/v2/vault"
 )
 
-var ws *server.WsServer
+var ws *server.MsgServer
 
 var (
 	pushBlockFlag    bool = false
@@ -24,10 +24,10 @@ var (
 	pushBlockTxsFlag bool = false
 )
 
-func NewServer(localNode node.ILocalNode, w *vault.Wallet) *server.WsServer {
+func NewServer(localNode node.ILocalNode, w *vault.Wallet) *server.MsgServer {
 	//	common.SetNode(n)
 	event.Queue.Subscribe(event.NewBlockProduced, SendBlock2WSclient)
-	ws = server.InitWsServer(localNode, w)
+	ws = server.InitMsgServer(localNode, w)
 	return ws
 }
 
@@ -124,6 +124,6 @@ func PushSigChainBlockHash(v interface{}) {
 	}
 }
 
-func GetServer() *server.WsServer {
+func GetServer() *server.MsgServer {
 	return ws
 }

@@ -249,6 +249,7 @@ var (
 	WalletFile                   string
 	BeneficiaryAddr              string
 	SeedList                     string
+	StunList                     string
 	GenesisBlockProposer         string
 	AllowEmptyBeneficiaryAddress bool
 	WebGuiListenAddress          string
@@ -332,6 +333,7 @@ var (
 type Configuration struct {
 	Version                      int           `json:"Version"`
 	SeedList                     []string      `json:"SeedList"`
+	StunList                     []string      `json:"StunList"`
 	HttpWssDomain                string        `json:"HttpWssDomain"`
 	HttpWssCert                  string        `json:"HttpWssCert"`
 	HttpWssKey                   string        `json:"HttpWssKey"`
@@ -449,6 +451,10 @@ func Init() error {
 		Parameters.SeedList = strings.Split(SeedList, ",")
 	}
 
+	if len(StunList) > 0 {
+		Parameters.StunList = strings.Split(StunList, ",")
+	}
+
 	if len(GenesisBlockProposer) > 0 {
 		Parameters.GenesisBlockProposer = GenesisBlockProposer
 	}
@@ -556,6 +562,10 @@ func Init() error {
 func (config *Configuration) verify() error {
 	if len(config.SeedList) == 0 {
 		return errors.New("seed list in config file should not be blank")
+	}
+
+	if len(config.StunList) == 0 {
+		return errors.New("stun list in config file should not be blank")
 	}
 
 	if config.NumTxnPerBlock > MaxNumTxnPerBlock {
