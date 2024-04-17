@@ -20,7 +20,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	api "github.com/nknorg/nkn/v2/api/common"
 	"github.com/nknorg/nkn/v2/api/common/errcode"
-	"github.com/nknorg/nkn/v2/api/ratelimiter"
+	"github.com/nknorg/nkn/v2/api/webrtc"
 	"github.com/nknorg/nkn/v2/api/websocket/messagebuffer"
 	"github.com/nknorg/nkn/v2/api/websocket/session"
 	"github.com/nknorg/nkn/v2/chain"
@@ -53,13 +53,8 @@ type Handler struct {
 	pushFlag bool
 }
 
-type WsServer struct {
+type MsgServer struct {
 	sync.RWMutex
-	Upgrader              websocket.Upgrader
-	listener              net.Listener
-	tlsListener           net.Listener
-	server                *http.Server
-	tlsServer             *http.Server
 	SessionList           *session.SessionList
 	ActionMap             map[string]Handler
 	TxHashMap             map[string]string //key: txHash   value:sessionid
@@ -68,11 +63,11 @@ type WsServer struct {
 	messageBuffer         *messagebuffer.MessageBuffer
 	messageDeliveredCache *DelayedChan
 	sigChainCache         common.Cache
+	ws                    *wsServer
 }
 
-func InitWsServer(localNode node.ILocalNode, wallet *vault.Wallet) *WsServer {
-	ws := &WsServer{
-		Upgrader:              websocket.Upgrader{},
+func InitMsgServer(localNode node.ILocalNode, wallet *vault.Wallet) *MsgServer {
+	ws := &MsgServer{
 		SessionList:           session.NewSessionList(),
 		TxHashMap:             make(map[string]string),
 		localNode:             localNode,
@@ -80,68 +75,31 @@ func InitWsServer(localNode node.ILocalNode, wallet *vault.Wallet) *WsServer {
 		messageBuffer:         messagebuffer.NewMessageBuffer(true),
 		messageDeliveredCache: NewDelayedChan(messageDeliveredCacheSize, pongTimeout),
 		sigChainCache:         common.NewGoCache(sigChainCacheExpiration, sigChainCacheCleanupInterval),
+		ws:                    &wsServer{},
 	}
 	return ws
 }
 
-func (ws *WsServer) Start(wssCertReady chan struct{}) error {
-	if config.Parameters.HttpWsPort == 0 {
-		log.Error("Not configure HttpWsPort port ")
-		return nil
-	}
-	ws.registryMethod()
-	ws.Upgrader.CheckOrigin = func(r *http.Request) bool {
-		return true
-	}
+func (ms *MsgServer) Start(wssCertReady chan struct{}) error {
 
-	var err error
+	ms.ws.Start(ms, wssCertReady)
+	ms.registryMethod()
 
-	ws.listener, err = net.Listen("tcp", ":"+strconv.Itoa(int(config.Parameters.HttpWsPort)))
-	if err != nil {
-		log.Error("net.Listen: ", err.Error())
-		return err
-	}
+	go ms.startCheckingLostMessages()
+	go ms.startCheckingWrongClients()
 
-	event.Queue.Subscribe(event.SendInboundMessageToClient, ws.sendInboundRelayMessageToClient)
+	event.Queue.Subscribe(event.SendInboundMessageToClient, ms.sendInboundRelayMessageToClient)
 
-	ws.server = &http.Server{Handler: http.HandlerFunc(ws.websocketHandler)}
-	go ws.server.Serve(ws.listener)
-
-	go func(wssCertReady chan struct{}) {
-		if wssCertReady == nil {
-			return
-		}
-		for {
-			select {
-			case <-wssCertReady:
-				log.Info("wss cert received")
-				ws.tlsListener, err = ws.initTlsListen()
-				if err != nil {
-					log.Error("Https Cert: ", err.Error())
-				}
-				err = ws.server.Serve(ws.tlsListener)
-				if err != nil {
-					log.Error(err)
-				}
-				return
-			case <-time.After(300 * time.Second):
-				log.Info("wss server is unavailable yet")
-			}
-		}
-	}(wssCertReady)
-
-	go ws.startCheckingLostMessages()
-
-	go ws.startCheckingWrongClients()
+	webrtc.NewConnection = ms.newConnection
 
 	return nil
 }
 
-func (ws *WsServer) registryMethod() {
+func (ms *MsgServer) registryMethod() {
 	gettxhashmap := func(s api.Serverer, cmd map[string]interface{}, ctx context.Context) map[string]interface{} {
-		ws.Lock()
-		defer ws.Unlock()
-		resp := api.RespPacking(len(ws.TxHashMap), errcode.SUCCESS)
+		ms.Lock()
+		defer ms.Unlock()
+		resp := api.RespPacking(len(ms.TxHashMap), errcode.SUCCESS)
 		return resp
 	}
 
@@ -151,7 +109,7 @@ func (ws *WsServer) registryMethod() {
 	}
 
 	getsessioncount := func(s api.Serverer, cmd map[string]interface{}, ctx context.Context) map[string]interface{} {
-		return api.RespPacking(ws.SessionList.GetSessionCount(), errcode.SUCCESS)
+		return api.RespPacking(ms.SessionList.GetSessionCount(), errcode.SUCCESS)
 	}
 
 	setClient := func(s api.Serverer, cmd map[string]interface{}, ctx context.Context) map[string]interface{} {
@@ -191,7 +149,7 @@ func (ws *WsServer) registryMethod() {
 		}
 
 		if wsAddr != localAddr {
-			return api.RespPacking(api.NodeInfo(wsAddr, rpcAddr, pubkey, id), errcode.WRONG_NODE)
+			return api.RespPacking(api.NodeInfo(wsAddr, rpcAddr, pubkey, id, ""), errcode.WRONG_NODE)
 		}
 
 		// client auth
@@ -227,7 +185,7 @@ func (ws *WsServer) registryMethod() {
 				go func() {
 					log.Warning("Client signature is not right, close its conneciton now")
 					time.Sleep(3 * time.Second)       // sleep several second, let response reach client
-					ws.SessionList.CloseSession(sess) // close this session
+					ms.SessionList.CloseSession(sess) // close this session
 				}()
 				return api.RespPacking(nil, errcode.INVALID_SIGNATURE)
 			}
@@ -236,7 +194,7 @@ func (ws *WsServer) registryMethod() {
 		}
 
 		newSessionID := hex.EncodeToString(clientID)
-		session, err := ws.SessionList.ChangeSessionToClient(cmd["Userid"].(string), newSessionID)
+		session, err := ms.SessionList.ChangeSessionToClient(cmd["Userid"].(string), newSessionID)
 		if err != nil {
 			log.Error("Change session id error: ", err)
 			return api.RespPacking(nil, errcode.INTERNAL_ERROR)
@@ -244,9 +202,9 @@ func (ws *WsServer) registryMethod() {
 		session.SetClient(clientID, pubKey, &addrStr, isTlsClient)
 
 		go func() {
-			messages := ws.messageBuffer.PopMessages(clientID)
+			messages := ms.messageBuffer.PopMessages(clientID)
 			for _, message := range messages {
-				ws.sendInboundRelayMessage(message, true)
+				ms.sendInboundRelayMessage(message, true)
 			}
 		}()
 
@@ -260,7 +218,7 @@ func (ws *WsServer) registryMethod() {
 		}
 
 		res := make(map[string]interface{})
-		res["node"] = api.NodeInfo(wsAddr, rpcAddr, pubkey, id)
+		res["node"] = api.NodeInfo(wsAddr, rpcAddr, pubkey, id, "")
 		res["sigChainBlockHash"] = hex.EncodeToString(sigChainBlockHash.ToArray())
 
 		return api.RespPacking(res, errcode.SUCCESS)
@@ -279,101 +237,10 @@ func (ws *WsServer) registryMethod() {
 		}
 	}
 
-	ws.ActionMap = actionMap
+	ms.ActionMap = actionMap
 }
 
-func (ws *WsServer) Stop() {
-	if ws.server != nil {
-		ws.server.Shutdown(context.Background())
-		log.Error("Close websocket ")
-	}
-}
-
-// websocketHandler
-func (ws *WsServer) websocketHandler(w http.ResponseWriter, r *http.Request) {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err == nil {
-		limiter := ratelimiter.GetLimiter("ws:"+host, config.Parameters.WsIPRateLimit, int(config.Parameters.WsIPRateBurst))
-		if !limiter.Allow() {
-			log.Infof("Ws connection limit of %s reached", host)
-			w.WriteHeader(http.StatusTooManyRequests)
-			return
-		}
-	}
-
-	wsConn, err := ws.Upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Error("websocket Upgrader: ", err)
-		return
-	}
-	defer wsConn.Close()
-
-	sess, err := ws.SessionList.NewSession(wsConn)
-	if err != nil {
-		log.Error("websocket NewSession:", err)
-		return
-	}
-
-	defer func() {
-		ws.deleteTxHashs(sess.GetSessionId())
-		ws.SessionList.CloseSession(sess)
-		if err := recover(); err != nil {
-			log.Error("websocket recover:", err)
-		}
-	}()
-
-	wsConn.SetReadLimit(maxMessageSize)
-	wsConn.SetReadDeadline(time.Now().Add(pongTimeout))
-	wsConn.SetPongHandler(func(string) error {
-		wsConn.SetReadDeadline(time.Now().Add(pongTimeout))
-		sess.UpdateLastReadTime()
-		return nil
-	})
-
-	// client auth
-	err = ws.sendClientAuthChallenge(sess)
-	if err != nil {
-		log.Error("send client auth challenge: ", err)
-		return
-	}
-
-	done := make(chan struct{})
-	defer close(done)
-	go func() {
-		ticker := time.NewTicker(pingInterval)
-		defer ticker.Stop()
-		var err error
-		for {
-			select {
-			case <-ticker.C:
-				err = sess.Ping()
-				if err != nil {
-					return
-				}
-			case <-done:
-				return
-			}
-		}
-	}()
-
-	for {
-		messageType, bysMsg, err := wsConn.ReadMessage()
-		if err != nil {
-			log.Debugf("websocket read message error: %v", err)
-			break
-		}
-
-		wsConn.SetReadDeadline(time.Now().Add(pongTimeout))
-		sess.UpdateLastReadTime()
-
-		err = ws.OnDataHandle(sess, messageType, bysMsg, r)
-		if err != nil {
-			log.Error(err)
-		}
-	}
-}
-
-func (ws *WsServer) IsValidMsg(reqMsg map[string]interface{}) bool {
+func (ms *MsgServer) IsValidMsg(reqMsg map[string]interface{}) bool {
 	if _, ok := reqMsg["Hash"].(string); !ok && reqMsg["Hash"] != nil {
 		return false
 	}
@@ -386,7 +253,7 @@ func (ws *WsServer) IsValidMsg(reqMsg map[string]interface{}) bool {
 	return true
 }
 
-func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, bysMsg []byte, r *http.Request) error {
+func (ms *MsgServer) OnDataHandle(curSession *session.Session, messageType int, bysMsg []byte, httpr *http.Request) error {
 	if messageType == websocket.BinaryMessage {
 		msg := &pb.ClientMessage{}
 		err := proto.Unmarshal(bysMsg, msg)
@@ -422,14 +289,14 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 			if err != nil {
 				return fmt.Errorf("Unmarshal outbound message error: %v", err)
 			}
-			ws.sendOutboundRelayMessage(curSession.GetAddrStr(), outboundMsg)
+			ms.sendOutboundRelayMessage(curSession.GetAddrStr(), outboundMsg)
 		case pb.ClientMessageType_RECEIPT:
 			receipt := &pb.Receipt{}
 			err = proto.Unmarshal(b, receipt)
 			if err != nil {
 				return fmt.Errorf("Unmarshal receipt error: %v", err)
 			}
-			err = ws.handleReceipt(receipt)
+			err = ms.handleReceipt(receipt)
 			if err != nil {
 				return fmt.Errorf("Handle receipt error: %v", err)
 			}
@@ -444,24 +311,24 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 
 	if err := json.Unmarshal(bysMsg, &req); err != nil {
 		resp := api.ResponsePack(errcode.ILLEGAL_DATAFORMAT)
-		ws.respondToSession(curSession, resp)
+		ms.respondToSession(curSession, resp)
 		return fmt.Errorf("websocket OnDataHandle: %v", err)
 	}
 	actionName, ok := req["Action"].(string)
 	if !ok {
 		resp := api.ResponsePack(errcode.INVALID_METHOD)
-		ws.respondToSession(curSession, resp)
+		ms.respondToSession(curSession, resp)
 		return nil
 	}
-	action, ok := ws.ActionMap[actionName]
+	action, ok := ms.ActionMap[actionName]
 	if !ok {
 		resp := api.ResponsePack(errcode.INVALID_METHOD)
-		ws.respondToSession(curSession, resp)
+		ms.respondToSession(curSession, resp)
 		return nil
 	}
-	if !ws.IsValidMsg(req) {
+	if !ms.IsValidMsg(req) {
 		resp := api.ResponsePack(errcode.INVALID_PARAMS)
-		ws.respondToSession(curSession, resp)
+		ms.respondToSession(curSession, resp)
 		return nil
 	}
 	if height, ok := req["Height"].(float64); ok {
@@ -471,39 +338,45 @@ func (ws *WsServer) OnDataHandle(curSession *session.Session, messageType int, b
 		req["Raw"] = strconv.FormatInt(int64(raw), 10)
 	}
 	req["Userid"] = curSession.GetSessionId()
-	req["IsTls"] = r.TLS != nil
+	ctx := context.Background()
+	if httpr != nil {
+		req["IsTls"] = httpr.TLS != nil
+		ctx = httpr.Context()
+	} else {
+		req["IsTls"] = false
+	}
 	req["session"] = curSession
-	ret := action.handler(ws, req, r.Context())
+	ret := action.handler(ms, req, ctx)
 	resp := api.ResponsePack(ret["error"].(errcode.ErrCode))
 	resp["Action"] = actionName
 	resp["Result"] = ret["resultOrData"]
 	if txHash, ok := resp["Result"].(string); ok && action.pushFlag {
-		ws.Lock()
-		defer ws.Unlock()
-		ws.TxHashMap[txHash] = curSession.GetSessionId()
+		ms.Lock()
+		defer ms.Unlock()
+		ms.TxHashMap[txHash] = curSession.GetSessionId()
 	}
-	ws.respondToSession(curSession, resp)
+	ms.respondToSession(curSession, resp)
 
 	return nil
 }
 
-func (ws *WsServer) SetTxHashMap(txhash string, sessionid string) {
-	ws.Lock()
-	defer ws.Unlock()
-	ws.TxHashMap[txhash] = sessionid
+func (ms *MsgServer) SetTxHashMap(txhash string, sessionid string) {
+	ms.Lock()
+	defer ms.Unlock()
+	ms.TxHashMap[txhash] = sessionid
 }
 
-func (ws *WsServer) deleteTxHashs(sSessionId string) {
-	ws.Lock()
-	defer ws.Unlock()
-	for k, v := range ws.TxHashMap {
+func (ms *MsgServer) deleteTxHashs(sSessionId string) {
+	ms.Lock()
+	defer ms.Unlock()
+	for k, v := range ms.TxHashMap {
 		if v == sSessionId {
-			delete(ws.TxHashMap, k)
+			delete(ms.TxHashMap, k)
 		}
 	}
 }
 
-func (ws *WsServer) respondToSession(session *session.Session, resp map[string]interface{}) error {
+func (ms *MsgServer) respondToSession(session *session.Session, resp map[string]interface{}) error {
 	resp["Desc"] = errcode.ErrMessage[resp["Error"].(errcode.ErrCode)]
 	data, err := json.Marshal(resp)
 	if err != nil {
@@ -514,46 +387,46 @@ func (ws *WsServer) respondToSession(session *session.Session, resp map[string]i
 	return err
 }
 
-func (ws *WsServer) respondToId(sSessionId string, resp map[string]interface{}) {
-	sessions := ws.SessionList.GetSessionsById(sSessionId)
+func (ms *MsgServer) respondToId(sSessionId string, resp map[string]interface{}) {
+	sessions := ms.SessionList.GetSessionsById(sSessionId)
 	if sessions == nil {
 		log.Error("websocket sessionId Not Exist: " + sSessionId)
 		return
 	}
 	for _, session := range sessions {
-		ws.respondToSession(session, resp)
+		ms.respondToSession(session, resp)
 	}
 }
 
-func (ws *WsServer) PushTxResult(txHashStr string, resp map[string]interface{}) {
-	ws.Lock()
-	defer ws.Unlock()
-	sSessionId := ws.TxHashMap[txHashStr]
-	delete(ws.TxHashMap, txHashStr)
+func (ms *MsgServer) PushTxResult(txHashStr string, resp map[string]interface{}) {
+	ms.Lock()
+	defer ms.Unlock()
+	sSessionId := ms.TxHashMap[txHashStr]
+	delete(ms.TxHashMap, txHashStr)
 	if len(sSessionId) > 0 {
-		ws.respondToId(sSessionId, resp)
+		ms.respondToId(sSessionId, resp)
 	}
-	ws.PushResult(resp)
+	ms.PushResult(resp)
 }
 
-func (ws *WsServer) PushResult(resp map[string]interface{}) {
+func (ms *MsgServer) PushResult(resp map[string]interface{}) {
 	resp["Desc"] = errcode.ErrMessage[resp["Error"].(errcode.ErrCode)]
 	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Error("Websocket PushResult:", err)
 		return
 	}
-	ws.Broadcast(data)
+	ms.Broadcast(data)
 }
 
-func (ws *WsServer) Broadcast(data []byte) error {
-	ws.SessionList.ForEachSession(func(s *session.Session) {
+func (ms *MsgServer) Broadcast(data []byte) error {
+	ms.SessionList.ForEachSession(func(s *session.Session) {
 		s.SendText(data)
 	})
 	return nil
 }
 
-func (ws *WsServer) initTlsListen() (net.Listener, error) {
+func (ms *MsgServer) initTlsListen() (net.Listener, error) {
 	tlsConfig := &tls.Config{
 		GetCertificate: api.GetWssCertificate,
 	}
@@ -566,23 +439,23 @@ func (ws *WsServer) initTlsListen() (net.Listener, error) {
 	return listener, nil
 }
 
-func (ws *WsServer) GetClientsById(cliendID []byte) []*session.Session {
-	sessions := ws.SessionList.GetSessionsById(hex.EncodeToString(cliendID))
+func (ms *MsgServer) GetClientsById(cliendID []byte) []*session.Session {
+	sessions := ms.SessionList.GetSessionsById(hex.EncodeToString(cliendID))
 	return sessions
 }
 
-func (ws *WsServer) GetNetNode() node.ILocalNode {
-	return ws.localNode
+func (ms *MsgServer) GetNetNode() node.ILocalNode {
+	return ms.localNode
 }
 
-func (ws *WsServer) NotifyWrongClients() {
-	ws.SessionList.ForEachClient(func(client *session.Session) {
+func (ms *MsgServer) NotifyWrongClients() {
+	ms.SessionList.ForEachClient(func(client *session.Session) {
 		clientID := client.GetID()
 		if clientID == nil {
 			return
 		}
 
-		localNode := ws.GetNetNode()
+		localNode := ms.GetNetNode()
 
 		var wsAddr, rpcAddr, localAddr string
 		var pubkey, id []byte
@@ -602,29 +475,29 @@ func (ws *WsServer) NotifyWrongClients() {
 
 		if wsAddr != localAddr {
 			resp := api.ResponsePack(errcode.WRONG_NODE)
-			resp["Result"] = api.NodeInfo(wsAddr, rpcAddr, pubkey, id)
-			ws.respondToSession(client, resp)
+			resp["Result"] = api.NodeInfo(wsAddr, rpcAddr, pubkey, id, "")
+			ms.respondToSession(client, resp)
 		}
 	})
 }
 
-func (ws *WsServer) startCheckingWrongClients() {
+func (ms *MsgServer) startCheckingWrongClients() {
 	for {
 		time.Sleep(checkWrongClientsInterval)
-		ws.NotifyWrongClients()
+		ms.NotifyWrongClients()
 	}
 }
 
-func (ws *WsServer) sendInboundRelayMessageToClient(v interface{}) {
+func (ms *MsgServer) sendInboundRelayMessageToClient(v interface{}) {
 	if msg, ok := v.(*pb.Relay); ok {
-		ws.sendInboundRelayMessage(msg, true)
+		ms.sendInboundRelayMessage(msg, true)
 	} else {
 		log.Error("Decode relay message failed")
 	}
 }
 
 // client auth, generate challenge
-func (ws *WsServer) sendClientAuthChallenge(sess *session.Session) error {
+func (ms *MsgServer) sendClientAuthChallenge(sess *session.Session) error {
 	resp := api.ResponsePack(errcode.SUCCESS)
 	resp["Action"] = "authChallenge"
 
@@ -633,6 +506,71 @@ func (ws *WsServer) sendClientAuthChallenge(sess *session.Session) error {
 	resp["Challenge"] = hex.EncodeToString(challenge)
 	sess.Challenge = challenge // save this challenge for verifying later.
 
-	err := ws.respondToSession(sess, resp)
+	err := ms.respondToSession(sess, resp)
 	return err
+}
+
+func (ms *MsgServer) newConnection(conn session.Conn, r *http.Request) {
+	sess, err := ms.SessionList.NewSession(conn)
+	if err != nil {
+		log.Error("websocket NewSession:", err)
+		return
+	}
+
+	defer func() {
+		ms.deleteTxHashs(sess.GetSessionId())
+		ms.SessionList.CloseSession(sess)
+		if err := recover(); err != nil {
+			log.Error("websocket recover:", err)
+		}
+	}()
+
+	conn.SetReadLimit(maxMessageSize)
+	conn.SetReadDeadline(time.Now().Add(pongTimeout))
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(pongTimeout))
+		sess.UpdateLastReadTime()
+		return nil
+	})
+
+	// client auth
+	err = ms.sendClientAuthChallenge(sess)
+	if err != nil {
+		log.Error("send client auth challenge: ", err)
+		return
+	}
+
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		ticker := time.NewTicker(pingInterval)
+		defer ticker.Stop()
+		var err error
+		for {
+			select {
+			case <-ticker.C:
+				err = sess.Ping()
+				if err != nil {
+					return
+				}
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	for {
+		messageType, bysMsg, err := conn.ReadMessage()
+		if err != nil {
+			log.Errorf("websocket read message error: %v", err)
+			break
+		}
+		conn.SetReadDeadline(time.Now().Add(pongTimeout))
+		sess.UpdateLastReadTime()
+
+		err = ms.OnDataHandle(sess, messageType, bysMsg, r)
+		if err != nil {
+			log.Error(err)
+		}
+	}
 }

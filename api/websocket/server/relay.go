@@ -18,7 +18,7 @@ type sigChainInfo struct {
 	sigChainLen int
 }
 
-func (ws *WsServer) sendOutboundRelayMessage(srcAddrStrPtr *string, msg *pb.OutboundMessage) {
+func (ms *MsgServer) sendOutboundRelayMessage(srcAddrStrPtr *string, msg *pb.OutboundMessage) {
 	if srcAddrStrPtr == nil {
 		log.Warningf("src addr is nil")
 		return
@@ -56,15 +56,15 @@ func (ws *WsServer) sendOutboundRelayMessage(srcAddrStrPtr *string, msg *pb.Outb
 		} else {
 			payload = payloads[0]
 		}
-		err := ws.localNode.SendRelayMessage(*srcAddrStrPtr, dest, payload, msg.Signatures[i], msg.BlockHash, msg.Nonce, msg.MaxHoldingSeconds)
+		err := ms.localNode.SendRelayMessage(*srcAddrStrPtr, dest, payload, msg.Signatures[i], msg.BlockHash, msg.Nonce, msg.MaxHoldingSeconds)
 		if err != nil {
 			log.Error("Send relay message error:", err)
 		}
 	}
 }
 
-func (ws *WsServer) sendInboundMessage(clientID string, inboundMsg *pb.InboundMessage) bool {
-	clients := ws.SessionList.GetSessionsById(clientID)
+func (ms *MsgServer) sendInboundMessage(clientID string, inboundMsg *pb.InboundMessage) bool {
+	clients := ms.SessionList.GetSessionsById(clientID)
 	if clients == nil {
 		log.Debugf("Client Not Online: %s", clientID)
 		return false
@@ -105,7 +105,7 @@ func (ws *WsServer) sendInboundMessage(clientID string, inboundMsg *pb.InboundMe
 	return success
 }
 
-func (ws *WsServer) sendInboundRelayMessage(relayMessage *pb.Relay, shouldSign bool) {
+func (ms *MsgServer) sendInboundRelayMessage(relayMessage *pb.Relay, shouldSign bool) {
 	clientID := relayMessage.DestId
 	msg := &pb.InboundMessage{
 		Src:     address.AssembleClientAddress(relayMessage.SrcIdentifier, relayMessage.SrcPubkey),
@@ -119,34 +119,34 @@ func (ws *WsServer) sendInboundRelayMessage(relayMessage *pb.Relay, shouldSign b
 		}
 	}
 
-	success := ws.sendInboundMessage(hex.EncodeToString(clientID), msg)
+	success := ms.sendInboundMessage(hex.EncodeToString(clientID), msg)
 	if success {
 		if shouldSign {
-			ws.sigChainCache.Add(relayMessage.LastHash, &sigChainInfo{
+			ms.sigChainCache.Add(relayMessage.LastHash, &sigChainInfo{
 				blockHash:   relayMessage.BlockHash,
 				sigChainLen: int(relayMessage.SigChainLen),
 			})
 		}
 		if time.Duration(relayMessage.MaxHoldingSeconds) > pongTimeout/time.Second {
-			ok := ws.messageDeliveredCache.Push(relayMessage)
+			ok := ms.messageDeliveredCache.Push(relayMessage)
 			if !ok {
 				log.Warningf("MessageDeliveredCache full, discarding messages.")
 			}
 		}
 	} else if relayMessage.MaxHoldingSeconds > 0 {
-		ws.messageBuffer.AddMessage(clientID, relayMessage)
+		ms.messageBuffer.AddMessage(clientID, relayMessage)
 	}
 }
 
-func (ws *WsServer) startCheckingLostMessages() {
+func (ms *MsgServer) startCheckingLostMessages() {
 	for {
-		v, ok := ws.messageDeliveredCache.Pop()
+		v, ok := ms.messageDeliveredCache.Pop()
 		if !ok {
 			break
 		}
 		if relayMessage, ok := v.(*pb.Relay); ok {
 			clientID := relayMessage.DestId
-			clients := ws.SessionList.GetSessionsById(hex.EncodeToString(clientID))
+			clients := ms.SessionList.GetSessionsById(hex.EncodeToString(clientID))
 			if len(clients) > 0 {
 				threshold := time.Now().Add(-pongTimeout)
 				success := false
@@ -157,17 +157,17 @@ func (ws *WsServer) startCheckingLostMessages() {
 					}
 				}
 				if !success {
-					ws.sendInboundRelayMessage(relayMessage, false)
+					ms.sendInboundRelayMessage(relayMessage, false)
 				}
 				continue
 			}
-			ws.messageBuffer.AddMessage(clientID, relayMessage)
+			ms.messageBuffer.AddMessage(clientID, relayMessage)
 		}
 	}
 }
 
-func (ws *WsServer) handleReceipt(receipt *pb.Receipt) error {
-	v, ok := ws.sigChainCache.Get(receipt.PrevHash)
+func (ms *MsgServer) handleReceipt(receipt *pb.Receipt) error {
+	v, ok := ms.sigChainCache.Get(receipt.PrevHash)
 	if !ok {
 		return fmt.Errorf("sigchain info with last hash %x not found in cache", receipt.PrevHash)
 	}

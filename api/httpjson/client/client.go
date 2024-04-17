@@ -222,3 +222,36 @@ func GetNonceByAddr(remote, addr string, txPool bool) (uint64, uint32, error) {
 
 	return nonce, ret.Result.CurrentHeight, nil
 }
+
+func GetPeerAddr(remote string, params map[string]interface{}) (string, string, []byte, []byte, string, error) {
+	fmt.Println("......GetPeerAddr, remote: ", remote)
+	resp, err := Call(remote, "getpeeraddr", 0, params)
+	if err != nil {
+		return "", "", nil, nil, "", err
+	}
+
+	// log.Infof("Node-to-Node GetPeerAddr got resp: %v from %s\n", string(resp), remote)
+
+	var ret struct {
+		Result struct {
+			Addr    string `json:"addr"`
+			RpcAddr string `json:"rpcAddr"`
+			Pubkey  []byte `json:"pubkey"`
+			Id      []byte `json:"id"`
+			Sdp     string `json:"sdp"`
+		} `json:"result"`
+		Err map[string]interface{} `json:"error"`
+	}
+
+	if err := json.Unmarshal(resp, &ret); err != nil {
+		log.Error("Node-to-Node GetPeerAddr json.Unmarshal error: ", err)
+		return "", "", nil, nil, "", err
+	}
+	if len(ret.Err) != 0 { // resp.error NOT empty
+		log.Error("Node-to-Node GetPeerAddr ret.Err: ", ret.Err)
+		return "", "", nil, nil, "", fmt.Errorf("GetPeerAddr(%s) resp error: %v", remote, string(resp))
+	}
+
+	fmt.Printf("......GetPeerAddr got result: %+v\n", ret.Result)
+	return ret.Result.Addr, ret.Result.RpcAddr, ret.Result.Pubkey, ret.Result.Id, ret.Result.Sdp, nil
+}

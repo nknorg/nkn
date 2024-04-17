@@ -3,8 +3,6 @@ package session
 import (
 	"errors"
 	"sync"
-
-	"github.com/gorilla/websocket"
 )
 
 type SessionList struct {
@@ -18,7 +16,7 @@ func NewSessionList() *SessionList {
 	}
 }
 
-func (sl *SessionList) NewSession(wsConn *websocket.Conn) (*Session, error) {
+func (sl *SessionList) NewSession(wsConn Conn) (*Session, error) {
 	session, err := newSession(wsConn)
 	if err != nil {
 		return nil, err
