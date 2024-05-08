@@ -326,7 +326,23 @@ var (
 		SyncBlockRateBurst:           1024,
 		SyncMode:                     "full",
 		MaxRollbackBlocks:            180,
-		ClientMsgCacheSize:           0, // client relay messag cache mega bytes
+		ClientMsgCacheSize:           0,
+		GenesisBlockProposer:         "a0309f8280ca86687a30ca86556113a253762e40eb884fc6063cad2b1ebd7de5",
+		SeedList: []string{
+			"http://mainnet-seed-0001.nkn.org:30003",
+			"http://mainnet-seed-0002.nkn.org:30003",
+			"http://mainnet-seed-0003.nkn.org:30003",
+			"http://mainnet-seed-0004.nkn.org:30003",
+			"http://mainnet-seed-0005.nkn.org:30003",
+			"http://mainnet-seed-0006.nkn.org:30003",
+			"http://mainnet-seed-0007.nkn.org:30003",
+			"http://mainnet-seed-0008.nkn.org:30003",
+		},
+		StunList: []string{
+			"stun:stun.l.google.com:19302",
+			"stun:stun.cloudflare.com:3478",
+			"stun:stunserver.stunprotocol.org:3478",
+		},
 	}
 )
 

@@ -2,13 +2,16 @@
 
 # NKN Full Node
 
-### *Official Go implementation of NKN full node.*
+### _Official Go implementation of NKN full node._
+
 <br/>
 
 [![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/nknorg/nkn)](https://goreportcard.com/report/github.com/nknorg/nkn) [![Build Status](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
 ### Dev Status: V2 line, Production (Stable and Feature-Complete)
+
 ---
+
 <br/>
 
 > NKN, short for New Kind of Network, is a project aiming to rebuild the
@@ -21,9 +24,9 @@ Note: This is the official **full node** implementation of the NKN protocol,
 which relays data for clients and earn mining rewards. For **client**
 implementation which can send and receive data, please refer to:
 
-* [nkn-sdk-go](https://github.com/nknorg/nkn-sdk-go)
-* [nkn-sdk-js](https://github.com/nknorg/nkn-sdk-js)
-* [nkn-java-sdk](https://github.com/nknorg/nkn-java-sdk)
+- [nkn-sdk-go](https://github.com/nknorg/nkn-sdk-go)
+- [nkn-sdk-js](https://github.com/nknorg/nkn-sdk-js)
+- [nkn-java-sdk](https://github.com/nknorg/nkn-java-sdk)
 
 ## Introduction
 
@@ -50,13 +53,13 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 
 ## Technical Highlights
 
-* Transmit any data to any node/client without any centralized server.
-* Proof-of-Relay, a useful proof of work: mining is relaying data.
-* Extremely scalable consensus algorithm (billions of nodes within seconds).
-* Strong consistency rather than eventual consistency.
-* Dynamic, large-scale network.
-* Verifiable topology and routes.
-* Secure address scheme with public key embedded.
+- Transmit any data to any node/client without any centralized server.
+- Proof-of-Relay, a useful proof of work: mining is relaying data.
+- Extremely scalable consensus algorithm (billions of nodes within seconds).
+- Strong consistency rather than eventual consistency.
+- Dynamic, large-scale network.
+- Verifiable topology and routes.
+- Secure address scheme with public key embedded.
 
 ### Use pre-built binaries
 
@@ -68,7 +71,7 @@ a node.
 
 ### Use pre-built Docker image
 
-*Prerequirement*: Have working docker software installed. For help with that
+_Prerequirement_: Have working docker software installed. For help with that
 visit [official docker
 docs](https://docs.docker.com/install/#supported-platforms)
 
@@ -85,7 +88,7 @@ a node.
 
 ### Building using Docker
 
-*Prerequirement*: Have working docker software installed. For help with that
+_Prerequirement_: Have working docker software installed. For help with that
 visit [official docker
 docs](https://docs.docker.com/install/#supported-platforms)
 
@@ -111,6 +114,7 @@ $ make
 ```
 
 Run Unit Tests
+
 ```sh
 # run all tests
 $ go test -v ./...
@@ -121,8 +125,8 @@ go test -v ./chain/store
 
 After building is successful, you should see two executables:
 
-* `nknd`: the nkn node program
-* `nknc`: command line tool for nkn node control
+- `nknd`: the nkn node program
+- `nknc`: command line tool for nkn node control
 
 Now you can see [configuration](#configuration) for how to configure and run a
 node.
@@ -152,15 +156,16 @@ be specified by passing arguments to `nknd` or in `config.json`, run `nknd
 
 We provide a few sample `config.json`:
 
-* `config.mainnet.json`: join the mainnet
-* `config.testnet.json`: join the testnet
-* `config.local.json`: create and join a private chain on your localhost
+- `config.mainnet.json`: join the mainnet
+- `config.local.json`: create and join a private chain on your localhost
 
 You can copy the one you want to `config.json` or write your own.
 
 For convenience, we ship a copy of `config.mainnet.json` in release version (as
 `default.json`) and in docker image (under `/nkn/`). The docker container will
 copy this default one to `/nkn/data/config.json` if not exists on nknd launch.
+
+If config file is not provided, node will join the mainnet by default.
 
 #### `wallet.json`:
 
@@ -169,7 +174,7 @@ information will be saved at `wallet.json` and it's encrypted with the password
 you provided when creating the wallet. So please make sure you pick a strong
 password and remember it!
 
-``` shell
+```shell
 $ ./nknc wallet -c
 Password:
 Re-enter Password:
@@ -191,11 +196,7 @@ random password saved to `/nkn/data/wallet.pswd` if not exists on nknd launch.
 
 #### `certs/`
 
-`nknd` uses Let's Encrypt to apply and renew TLS certificate and put in into
-`cert/` directory.
-
-By default `nknd` will generate certificate with `x-x-x-x.ipv4.nknlabs.io` domain name which `x-x-x-x` is your ipv4
-address, replace dot with dash.
+`nknd` uses Let's Encrypt to apply and renew TLS certificate and put in into `cert/` directory. By default `nknd` will generate certificate with `x-x-x-x.ipv4.staticdns{1,2,3}.io` domain name which `x-x-x-x` is your ipv4 address, replace dot with dash. **The default cert domain is deprecated and will be removed in the future version. Please provide your own domain or cert if you need to use tls.**
 
 If you would like to use your own domain name, simply set `CertDomainName` with your domain name in `config.json`, `nknd` will
 automatically apply or renew certificate from Let's Encrypt and deploy it.
@@ -204,7 +205,6 @@ If you already have certificate and want to use it in `nknd`, you can put it in 
 `HttpsJsonDomain` `HttpWssDomain` with your domain name, `HttpsJsonCert` `HttpsJsonKey` `HttpWssCert` `HttpWssKey`
 with your certificate full chain file and private key file.
 
-
 #### Data and Logs
 
 After `nknd` starts, it will creates two directories: `ChainDB` to store
@@ -212,9 +212,7 @@ blockchain data, and `Log` to store logs. By default `nknd` will creates these
 directories in the current working directory, but it can be changed by passing
 `--chaindb` and `--log` arguments to `nknd` or specify in config.json.
 
-Now you can [join the mainnet](#join-the-mainnet), [join the
-testnet](#join-the-testnet) or [create a private
-chain](https://github.com/nknorg/nkn/wiki/Create-a-Private-Chain).
+Now you can [join the mainnet](#join-the-mainnet) or [create a private chain](https://github.com/nknorg/nkn/wiki/Create-a-Private-Chain).
 
 ### Join the MainNet
 
@@ -261,12 +259,12 @@ wrong. If the problem still persists, [create an
 issue](https://github.com/nknorg/nkn/issues/new) or ask us in our [Discord
 group](#community).
 
-### [Recommended] Using BeneficiaryAddr
+### [Recommended] Using Beneficiary Address
 
 By default, token mined by your node will be sent to the wallet your node is
 using, which is NOT as safe as you might think. The recommended way is to use
 another cold wallet (that is saved and backed up well) to store your token. You
-can use your code wallet address as `BeneficiaryAddr` in `config.json` such that
+can use your code wallet address as `beneficiaryAddr` in `config.json` such that
 token mined by your node will be sent directly to that beneficiary address. This
 is safer and more convenient because: 1. even if your node is hacked, or your
 node wallet is leaked, you will not lose any token; 2. if you run multiple
@@ -275,16 +273,7 @@ address.
 
 ### NAT traversal and port forwarding
 
-Most likely your node is behind a router and does not have a public IP address.
-By default, `nknd` will try to detect if your router supports UPnP or NAT-PMP
-protocol, and if success, it will try to set up port forwarding automatically.
-You can add `--no-nat` flag when starting nknd OR add `"NAT": false` in
-`config.json` to disable automatic port forwarding. If your router does not
-support such protocol, you **have to** setup port forwarding on your router for
-port 30001 as well as **all** other ports specified in `config.json`
-(30001-30005 by default), otherwise other nodes cannot establish connections to
-you and you will **NOT** be able to mine token even though your node can still
-run and sync blocks.
+By default, `nknd` will try to detect if your node is behind a router and if your router supports UPnP or NAT-PMP protocol, and if success, it will try to set up port forwarding automatically. You can add `--no-nat` flag when starting nknd OR add `"NAT": false` in `config.json` to disable automatic port forwarding. If your router does not support such protocol, you **have to** setup port forwarding on your router for port 30001 as well as **all** other ports specified in `config.json` (30001-30005 by default), otherwise other nodes cannot establish connections to you and you will **NOT** be able to earn mining rewards even though your node can still run and sync blocks.
 
 When setting up port forwarding, public port needs to be the same as private
 port mapped to your node. For example, you should map port 30001 on your
@@ -296,13 +285,6 @@ a web browser), then navigate to the port forwarding section, and create several
 mappings, one for each port. One of the easiest way to find out how to setup
 port forwarding on your router is to search "how to setup port forwarding" +
 your router model or name online.
-
-### Join the TestNet
-
-Joining the TestNet is the same as joining MainNet, except for using
-`config.testnet.json` as your config file instead of `config.mainnet.json`. Note
-that TestNet token is for testing purpose only (thus do not have value), and may
-be cleared at any time when TestNet upgrades.
 
 ## Contributing
 
@@ -330,8 +312,8 @@ git commit -s
 
 ## Community
 
-* [Forum](https://forum.nkn.org/)
-* [Discord](https://discord.gg/c7mTynX)
-* [Telegram](https://t.me/nknorg)
-* [Reddit](https://www.reddit.com/r/nknblockchain/)
-* [Twitter](https://twitter.com/NKN_ORG)
+- [Forum](https://forum.nkn.org/)
+- [Discord](https://discord.gg/c7mTynX)
+- [Telegram](https://t.me/nknorg)
+- [Reddit](https://www.reddit.com/r/nknblockchain/)
+- [Twitter](https://twitter.com/NKN_ORG)
