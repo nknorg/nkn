@@ -11,7 +11,7 @@ import (
 	"github.com/nknorg/nkn/v2/pb"
 )
 
-//SignableData describe the data need be signed.
+// SignableData describe the data need be signed.
 type SignableData interface {
 	GetProgramHashes() ([]common.Uint160, error)
 	SetPrograms([]*pb.Program)

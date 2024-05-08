@@ -184,7 +184,7 @@ func (ms *MsgServer) registryMethod() {
 			err = crypto.Verify(pubKey, hash[:], byteSignature)
 			if err != nil { // fail verify challenge signature
 				go func() {
-					log.Warning("Client signature is not right, close its conneciton now")
+					log.Warning("Client signature is not right, close its connection now")
 					time.Sleep(3 * time.Second)       // sleep several second, let response reach client
 					ms.SessionList.CloseSession(sess) // close this session
 				}()

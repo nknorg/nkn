@@ -10,7 +10,7 @@ import (
 var ErrRange = errors.New("value out of range")
 var ErrEof = errors.New("got EOF, can not get the next byte")
 
-//SerializableData describe the data need be serialized.
+// SerializableData describe the data need be serialized.
 type SerializableData interface {
 
 	//Write data to writer

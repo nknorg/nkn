@@ -99,7 +99,7 @@ func ByteToProgramContextParameterType(b []byte) []ProgramContextParameterType {
 	return c
 }
 
-//create a single signature program context for owner
+// create a single signature program context for owner
 func CreateSignatureProgramContext(ownerPubKey []byte) (*ProgramContext, error) {
 	code, err := CreateSignatureProgramCode(ownerPubKey)
 	if err != nil {
@@ -121,7 +121,7 @@ func CreateSignatureProgramContext(ownerPubKey []byte) (*ProgramContext, error) 
 	}, nil
 }
 
-//CODE: len(publickey) + publickey + CHECKSIG
+// CODE: len(publickey) + publickey + CHECKSIG
 func CreateSignatureProgramCode(pubKey []byte) ([]byte, error) {
 	code := bytes.NewBuffer(nil)
 	code.WriteByte(byte(len(pubKey)))
@@ -144,9 +144,9 @@ func CreateProgramHash(pubKey []byte) (common.Uint160, error) {
 	return programHash, err
 }
 
-//CODE: len(publickey) + publickey + CHECKSIG
-//--------------------------------------------
-//Size:      1             32            1
+// CODE: len(publickey) + publickey + CHECKSIG
+// --------------------------------------------
+// Size:      1             32            1
 func GetPublicKeyFromCode(code []byte) ([]byte, error) {
 	if len(code) != 34 {
 		return nil, fmt.Errorf("code length error, need 34, but got %v", len(code))
@@ -159,9 +159,9 @@ func GetPublicKeyFromCode(code []byte) ([]byte, error) {
 	return code[1:33], nil
 }
 
-//Parameter: len(signature) + signature
-//--------------------------------------------
-//Size:          1             64
+// Parameter: len(signature) + signature
+// --------------------------------------------
+// Size:          1             64
 func GetSignatureFromParameter(parameter []byte) ([]byte, error) {
 	if len(parameter) != 65 {
 		return nil, fmt.Errorf("parameter length error, need 65,but got %v", len(parameter))
@@ -174,7 +174,7 @@ func GetSignatureFromParameter(parameter []byte) ([]byte, error) {
 	return parameter[1:], nil
 }
 
-//Parameter: len(signature) + signature
+// Parameter: len(signature) + signature
 func (c *ProgramContext) NewProgram(signature []byte) *pb.Program {
 	size := len(signature)
 	parameter := append([]byte{byte(size)}, signature...)
