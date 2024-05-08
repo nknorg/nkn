@@ -15,10 +15,6 @@ import (
 	"github.com/nknorg/nkn/v2/util/log"
 )
 
-// type conn interface {
-// 	Start(s *MsgServer, wssCertReady chan struct{}) error
-// }
-
 type wsServer struct {
 	s           *MsgServer
 	Upgrader    websocket.Upgrader

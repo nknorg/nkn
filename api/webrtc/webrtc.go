@@ -100,7 +100,7 @@ func (c *Peer) Offer(label string) error {
 		return err
 	}
 	dc.OnOpen(func() {
-		log.Debugf("data channel %v has been opened\n", dc.Label())
+		log.Debugf("Data channel %v has been opened\n", dc.Label())
 		c.mutex.Lock()
 		defer c.mutex.Unlock()
 		c.isConnected = true
@@ -133,7 +133,7 @@ func (c *Peer) Offer(label string) error {
 	})
 
 	dc.OnError(func(err error) {
-		log.Errorf("Data Channel %s error: %s\n", dc.Label(), err.Error())
+		log.Debugf("Data channel %s error: %s\n", dc.Label(), err.Error())
 	})
 
 	offer, err := c.pc.CreateOffer(&webrtc.OfferOptions{ICERestart: false})
@@ -232,7 +232,7 @@ func (c *Peer) Answer(offerSdp string) error {
 		})
 
 		dc.OnError(func(err error) {
-			log.Errorf("Data Channel %v error: %s\n", dc.Label(), err.Error())
+			log.Debugf("Data channel %v error: %s\n", dc.Label(), err.Error())
 		})
 	})
 

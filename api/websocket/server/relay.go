@@ -95,7 +95,7 @@ func (ms *MsgServer) sendInboundMessage(clientID string, inboundMsg *pb.InboundM
 
 		err = client.SendBinary(buf)
 		if err != nil {
-			log.Error("Send to client error: ", err)
+			log.Debugf("Send to client error: %v", err)
 			continue
 		}
 
