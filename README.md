@@ -6,7 +6,7 @@
 
 <br/>
 
-[![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/nknorg/nkn)](https://goreportcard.com/report/github.com/nknorg/nkn) [![Build Status](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+[![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/nknorg/nkn/v2)](https://goreportcard.com/report/github.com/nknorg/nkn/v2) [![Build Status](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
 ### Dev Status: V2 line, Production (Stable and Feature-Complete)
 

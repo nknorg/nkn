@@ -10,7 +10,7 @@ import (
 	"github.com/nknorg/nkn/v2/common/serialization"
 )
 
-//Serialize the Program
+// Serialize the Program
 func (p *Program) Serialize(w io.Writer) error {
 	err := serialization.WriteVarBytes(w, p.Parameter)
 	if err != nil {
@@ -24,7 +24,7 @@ func (p *Program) Serialize(w io.Writer) error {
 	return nil
 }
 
-//Deserialize the Program
+// Deserialize the Program
 func (p *Program) Deserialize(w io.Reader) error {
 	val, err := serialization.ReadVarBytes(w)
 	if err != nil {
