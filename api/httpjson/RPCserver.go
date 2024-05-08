@@ -182,7 +182,8 @@ func (s *RPCServer) Handle(w http.ResponseWriter, r *http.Request) {
 				err := recover()
 				if err != nil {
 					var code errcode.ErrCode
-					if _, err = chain.GetDefaultLedger(); err != nil {
+					if _, e := chain.GetDefaultLedger(); e != nil {
+						err = e
 						code = errcode.ErrNullDB
 					} else if s.GetNetNode() == nil {
 						code = errcode.ErrNullID

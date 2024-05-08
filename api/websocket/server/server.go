@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -159,7 +160,7 @@ func (ms *MsgServer) registryMethod() {
 		if okSig && okSalt { // if client send ClientSalt and Signature, then check it
 			strSignature, typeOk := signature.(string) // interface type assertion
 			if !typeOk {
-				return api.RespPacking(err.Error(), errcode.INVALID_PARAMS)
+				return api.RespPacking(errors.New("invalid signature"), errcode.INVALID_PARAMS)
 			}
 			byteSignature, err := hex.DecodeString(strSignature)
 			if err != nil {
@@ -168,7 +169,7 @@ func (ms *MsgServer) registryMethod() {
 
 			strClientSalt, typeOk := clientSalt.(string) // interface type assertion
 			if !typeOk {
-				return api.RespPacking(err.Error(), errcode.INVALID_PARAMS)
+				return api.RespPacking(errors.New("invalid salt"), errcode.INVALID_PARAMS)
 			}
 			byteClientSalt, err := hex.DecodeString(strClientSalt)
 			if err != nil {
@@ -562,7 +563,7 @@ func (ms *MsgServer) newConnection(conn session.Conn, r *http.Request) {
 	for {
 		messageType, bysMsg, err := conn.ReadMessage()
 		if err != nil {
-			log.Errorf("websocket read message error: %v", err)
+			log.Debugf("websocket read message error: %v", err)
 			break
 		}
 		conn.SetReadDeadline(time.Now().Add(pongTimeout))
