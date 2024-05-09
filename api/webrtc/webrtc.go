@@ -37,12 +37,13 @@ type DataChannelMessage struct {
 }
 
 type Peer struct {
-	pc        *webrtc.PeerConnection
-	dc        *webrtc.DataChannel
-	offer     string
-	answer    string
-	OnSdp     chan string
-	OnMessage chan DataChannelMessage
+	pc               *webrtc.PeerConnection
+	dc               *webrtc.DataChannel
+	offer            string
+	answer           string
+	OnSdp            chan string
+	OnMessage        chan DataChannelMessage
+	OnOfferConnected chan struct{}
 
 	mutex         sync.RWMutex
 	isConnected   bool
@@ -54,9 +55,10 @@ type Peer struct {
 
 func NewPeer(urls []string) *Peer {
 	p := &Peer{
-		OnSdp:       make(chan string, 1),
-		isConnected: false,
-		OnMessage:   make(chan DataChannelMessage, 128),
+		OnSdp:            make(chan string, 1),
+		isConnected:      false,
+		OnMessage:        make(chan DataChannelMessage, 128),
+		OnOfferConnected: make(chan struct{}, 1),
 	}
 
 	config := webrtc.Configuration{
@@ -91,7 +93,10 @@ func (c *Peer) Offer(label string) error {
 				return
 			}
 			c.offer = encodedDescr
-			c.OnSdp <- encodedDescr
+			select {
+			case c.OnSdp <- encodedDescr:
+			default:
+			}
 		}
 	})
 
@@ -99,8 +104,13 @@ func (c *Peer) Offer(label string) error {
 	if err != nil {
 		return err
 	}
+
 	dc.OnOpen(func() {
 		log.Debugf("Data channel %v has been opened\n", dc.Label())
+		select {
+		case c.OnOfferConnected <- struct{}{}:
+		default:
+		}
 		c.mutex.Lock()
 		defer c.mutex.Unlock()
 		c.isConnected = true
@@ -186,7 +196,10 @@ func (c *Peer) Answer(offerSdp string) error {
 				return
 			}
 			c.answer = encodedDescr
-			c.OnSdp <- encodedDescr
+			select {
+			case c.OnSdp <- encodedDescr:
+			default:
+			}
 		}
 	})
 
@@ -362,6 +375,9 @@ func (c *Peer) SetReadLimit(l int64) {
 }
 
 func (c *Peer) Close() error {
+	close(c.OnSdp)
+	close(c.OnMessage)
+	close(c.OnOfferConnected)
 	if c.dc != nil {
 		if err := c.dc.Close(); err != nil {
 			return err
