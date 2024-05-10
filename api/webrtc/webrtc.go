@@ -106,7 +106,6 @@ func (c *Peer) Offer(label string) error {
 	}
 
 	dc.OnOpen(func() {
-		log.Debugf("Data channel %v has been opened\n", dc.Label())
 		select {
 		case c.OnOfferConnected <- struct{}{}:
 		default:
