@@ -224,7 +224,6 @@ func GetNonceByAddr(remote, addr string, txPool bool) (uint64, uint32, error) {
 }
 
 func GetPeerAddr(remote string, params map[string]interface{}) (string, string, []byte, []byte, string, error) {
-	fmt.Println("......GetPeerAddr, remote: ", remote)
 	resp, err := Call(remote, "getpeeraddr", 0, params)
 	if err != nil {
 		return "", "", nil, nil, "", err
