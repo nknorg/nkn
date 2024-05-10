@@ -375,9 +375,15 @@ func (c *Peer) SetReadLimit(l int64) {
 }
 
 func (c *Peer) Close() error {
-	close(c.OnSdp)
-	close(c.OnMessage)
-	close(c.OnOfferConnected)
+	if c.OnSdp != nil {
+		close(c.OnSdp)
+	}
+	if c.OnMessage != nil {
+		close(c.OnMessage)
+	}
+	if c.OnOfferConnected != nil {
+		close(c.OnOfferConnected)
+	}
 	if c.dc != nil {
 		if err := c.dc.Close(); err != nil {
 			return err
