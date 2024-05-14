@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	NetVersionNum = 31 // This is temporary and will be removed soon after mainnet is stabilized
+	NetVersionNum = 32 // This will be removed later
 )
 
 // rootCmd represents the base command when called without any subcommands
