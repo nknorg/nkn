@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"testing"
 )
 
@@ -23,7 +24,16 @@ func TestMarshalJSON(t *testing.T) {
 	// Expected value after Marshalling
 	expected := []byte(NKNADDRESS)
 
-	bytes, err := f.MarshalJSON()
+	bytes, err := json.Marshal(f)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if !bytesEqual(bytes, expected) {
+		t.Fatalf("Expected %v, got %v", expected, bytes)
+	}
+
+	bytes, err = json.Marshal(*f)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
