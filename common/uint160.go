@@ -89,7 +89,7 @@ func IsValidHexAddr(s []byte) bool {
 	return false
 }
 
-func (f *Uint160) MarshalJSON() ([]byte, error) {
+func (f Uint160) MarshalJSON() ([]byte, error) {
 	str, err := f.ToAddress()
 	return []byte("\"" + str + "\""), err
 }
