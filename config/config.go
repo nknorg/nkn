@@ -300,7 +300,7 @@ var (
 		MaxGetIDSeeds:                3,
 		DBFilesCacheCapacity:         100,
 		NumLowFeeTxnPerBlock:         0,
-		LowFeeTxnSizePerBlock:        2048,
+		LowFeeTxnSizePerBlock:        8192,
 		LowTxnFee:                    10000000,
 		LowTxnFeePerSize:             50000,
 		AllowEmptyBeneficiaryAddress: false,
