@@ -138,7 +138,7 @@ func (consensus *Consensus) getVotingNeighborsConsensusState() (map[string]*pb.G
 	return states, nil
 }
 
-// getNeighborsMajorConsensusHeight returns the majority of neighbors' nonzero
+// getNeighborsMajorityConsensusState returns the majority of neighbors' nonzero
 // consensus height, ledger height, ledger block hash, or empty value if no
 // majority can be found
 func (consensus *Consensus) getNeighborsMajorityConsensusState() (uint32, uint32, common.Uint256) {

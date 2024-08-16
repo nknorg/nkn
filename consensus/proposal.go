@@ -199,7 +199,7 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	}
 }
 
-// startRequestProposal starts the request proposal routine
+// startRequestingProposal starts the request proposal routine
 func (consensus *Consensus) startRequestingProposal() {
 	for {
 		requestProposal := <-consensus.requestProposalChan
