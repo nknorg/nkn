@@ -49,7 +49,7 @@ type MessageBuffer struct {
 	seqId           int64 // sequence id
 }
 
-// comparation function of red and black tree
+// compare function of red and black tree
 func compare(a, b interface{}) (res int) {
 	aInt := a.(int64)
 	bInt := b.(int64)
