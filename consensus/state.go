@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/node"
@@ -13,6 +12,7 @@ import (
 	"github.com/nknorg/nkn/v2/util"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/util/timer"
+	"google.golang.org/protobuf/proto"
 )
 
 // startGettingNeighborConsensusState periodically checks neighbors' majority

@@ -11,8 +11,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/pb"
+	"google.golang.org/protobuf/proto"
 )
 
 // Base64ToHex convert base64 string input to hex string output

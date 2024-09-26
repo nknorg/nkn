@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/pool"
 	"github.com/nknorg/nkn/v2/common"
@@ -15,6 +14,7 @@ import (
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
 	"github.com/nknorg/nkn/v2/util/log"
+	"google.golang.org/protobuf/proto"
 )
 
 // Number of random neighbors to sync rand addr

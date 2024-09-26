@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/common/serialization"
+	"google.golang.org/protobuf/proto"
 )
 
 // Serialize the Program

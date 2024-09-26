@@ -4,13 +4,13 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/transaction"
+	"google.golang.org/protobuf/proto"
 )
 
 // NewVoteMessage creates a VOTE message

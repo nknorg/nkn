@@ -9,7 +9,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain/db"
 	"github.com/nknorg/nkn/v2/common"
@@ -19,6 +18,7 @@ import (
 	"github.com/nknorg/nkn/v2/program"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util/log"
+	"google.golang.org/protobuf/proto"
 )
 
 const (

@@ -7,12 +7,12 @@ import (
 	"errors"
 	"io"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/common/serialization"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/program"
 	"github.com/nknorg/nkn/v2/signature"
+	"google.golang.org/protobuf/proto"
 )
 
 type Transaction struct {

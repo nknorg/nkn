@@ -11,7 +11,6 @@ import (
 
 	"github.com/nknorg/nkn/v2/chain/txvalidator"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
@@ -21,6 +20,7 @@ import (
 	"github.com/nknorg/nkn/v2/program"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/util"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
