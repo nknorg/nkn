@@ -9,7 +9,7 @@ import (
 	"io"
 	"math/big"
 
-	base58 "github.com/itchyny/base58-go"
+	"github.com/itchyny/base58-go"
 )
 
 // FOOLPROOFPREFIX used for fool-proof prefix
