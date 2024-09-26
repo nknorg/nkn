@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	pbmsg "github.com/nknorg/nnet/protobuf/message"
 	"hash/fnv"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/pool"
@@ -20,7 +20,7 @@ import (
 	"github.com/nknorg/nkn/v2/util"
 	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
-	nnetpb "github.com/nknorg/nnet/protobuf"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -459,7 +459,7 @@ func (localNode *LocalNode) BroadcastTransaction(txn *transaction.Transaction) e
 		return err
 	}
 
-	_, err = localNode.nnet.SendBytesBroadcastAsync(buf, nnetpb.BROADCAST_TREE)
+	_, err = localNode.nnet.SendBytesBroadcastAsync(buf, pbmsg.RoutingType_BROADCAST_TREE)
 	if err != nil {
 		return err
 	}
