@@ -4,19 +4,19 @@ package node
 import (
 	"encoding/hex"
 	"encoding/json"
+	pbnode "github.com/nknorg/nnet/protobuf/node"
 	"net/url"
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util"
-	nnetpb "github.com/nknorg/nnet/protobuf"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type Node struct {
-	*nnetpb.Node
+	*pbnode.Node
 	*pb.NodeData
 	publicKey []byte
 	StartTime time.Time
@@ -29,14 +29,12 @@ type Node struct {
 func (n *Node) MarshalJSON() ([]byte, error) {
 	var out map[string]interface{}
 
-	marshaler := &jsonpb.Marshaler{}
-
-	s, err := marshaler.MarshalToString(n.Node)
+	s, err := protojson.Marshal(n.Node)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(s), &out)
+	err = json.Unmarshal(s, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -44,12 +42,12 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 	delete(out, "data")
 	out["id"] = hex.EncodeToString(n.Node.Id)
 
-	s, err = marshaler.MarshalToString(n.NodeData)
+	s, err = protojson.Marshal(n.NodeData)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(s), &out)
+	err = json.Unmarshal(s, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +58,7 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
-func NewNode(nnetNode *nnetpb.Node, nodeData *pb.NodeData) (*Node, error) {
+func NewNode(nnetNode *pbnode.Node, nodeData *pb.NodeData) (*Node, error) {
 	err := crypto.CheckPublicKey(nodeData.PublicKey)
 	if err != nil {
 		return nil, err

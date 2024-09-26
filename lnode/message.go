@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/crypto"
 	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
-	nnetpb "github.com/nknorg/nnet/protobuf"
+	pbmsg "github.com/nknorg/nnet/protobuf/message"
+	"google.golang.org/protobuf/proto"
 )
 
 func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, sign bool) ([]byte, error) {
@@ -42,7 +42,7 @@ func (localNode *LocalNode) SerializeMessage(unsignedMsg *pb.UnsignedMessage, si
 }
 
 func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMessage, nnetLocalNode *nnetnode.LocalNode, remoteNodes []*nnetnode.RemoteNode) (*nnetnode.RemoteMessage, *nnetnode.LocalNode, []*nnetnode.RemoteNode, bool) {
-	if remoteMessage.Msg.MessageType == nnetpb.BYTES {
+	if remoteMessage.Msg.MessageType == pbmsg.MessageType_BYTES {
 		err := localNode.maybeAddRemoteNode(remoteMessage.RemoteNode)
 		if err != nil {
 			log.Warningf("Add remote node error: %v", err)
@@ -66,7 +66,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 			return nil, nil, nil, false
 		}
 
-		msgBody := &nnetpb.Bytes{}
+		msgBody := &pbmsg.Bytes{}
 		err = proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
 		if err != nil {
 			log.Errorf("Error unmarshal byte msg: %v", err)
@@ -106,7 +106,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 		}
 
 		if len(signedMsg.Signature) > 0 {
-			if remoteMessage.Msg.RoutingType != nnetpb.DIRECT {
+			if remoteMessage.Msg.RoutingType != pbmsg.RoutingType_DIRECT {
 				log.Errorf("Signature is only allowed on direct message")
 				return nil, nil, nil, false
 			}
@@ -272,25 +272,25 @@ func checkMessageSigned(messageType pb.MessageType, signed bool) error {
 }
 
 // checkMessageRoutingType checks if a message type has the allowed routing type
-func checkMessageRoutingType(messageType pb.MessageType, routingType nnetpb.RoutingType) error {
+func checkMessageRoutingType(messageType pb.MessageType, routingType pbmsg.RoutingType) error {
 	switch routingType {
-	case nnetpb.DIRECT:
+	case pbmsg.RoutingType_DIRECT:
 		if _, ok := pb.AllowedDirectMessageType_name[int32(messageType)]; ok {
 			return nil
 		}
-	case nnetpb.RELAY:
+	case pbmsg.RoutingType_RELAY:
 		if _, ok := pb.AllowedRelayMessageType_name[int32(messageType)]; ok {
 			return nil
 		}
-	case nnetpb.BROADCAST_PUSH:
+	case pbmsg.RoutingType_BROADCAST_PUSH:
 		if _, ok := pb.AllowedBroadcastPushMessageType_name[int32(messageType)]; ok {
 			return nil
 		}
-	case nnetpb.BROADCAST_PULL:
+	case pbmsg.RoutingType_BROADCAST_PULL:
 		if _, ok := pb.AllowedBroadcastPullMessageType_name[int32(messageType)]; ok {
 			return nil
 		}
-	case nnetpb.BROADCAST_TREE:
+	case pbmsg.RoutingType_BROADCAST_TREE:
 		if _, ok := pb.AllowedBroadcastTreeMessageType_name[int32(messageType)]; ok {
 			return nil
 		}

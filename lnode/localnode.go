@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	nnetnode "github.com/nknorg/nnet/node"
 	"net"
 	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/api/ratelimiter"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/pool"
@@ -22,11 +22,11 @@ import (
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
 	"github.com/nknorg/nnet"
-	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
 	"github.com/nknorg/nnet/overlay/routing"
-	nnetpb "github.com/nknorg/nnet/protobuf"
+	pbnode "github.com/nknorg/nnet/protobuf/node"
 	"golang.org/x/time/rate"
+	"google.golang.org/protobuf/proto"
 )
 
 type LocalNode struct {
@@ -112,7 +112,7 @@ func NewLocalNode(wallet *vault.Wallet, nn *nnet.NNet, ledgerMode pb.LedgerMode)
 		return true, true
 	}})
 
-	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{Func: func(n *nnetpb.Node) (bool, bool) {
+	nn.MustApplyMiddleware(nnetnode.WillConnectToNode{Func: func(n *pbnode.Node) (bool, bool) {
 		err := localNode.shouldConnectToNode(n)
 		if err != nil {
 			log.Infof("stop connect to node because: %v", err)

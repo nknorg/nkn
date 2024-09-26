@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
+	"google.golang.org/protobuf/proto"
 )
 
 type RemoteNode struct {
