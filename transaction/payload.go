@@ -3,9 +3,9 @@ package transaction
 import (
 	"errors"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/pb"
+	"google.golang.org/protobuf/proto"
 )
 
 func Pack(plType pb.PayloadType, payload proto.Message) (*pb.Payload, error) {

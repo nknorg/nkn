@@ -3,13 +3,13 @@ package lnode
 import (
 	"errors"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/store"
 	"github.com/nknorg/nkn/v2/chain/trie"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
+	"google.golang.org/protobuf/proto"
 )
 
 var (

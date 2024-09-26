@@ -18,7 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	api "github.com/nknorg/nkn/v2/api/common"
 	"github.com/nknorg/nkn/v2/api/common/errcode"
 	"github.com/nknorg/nkn/v2/api/webrtc"
@@ -34,6 +33,7 @@ import (
 	"github.com/nknorg/nkn/v2/util/address"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/gorilla/websocket"
 )

@@ -5,11 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/protobuf/encoding/protowire"
 
-	"github.com/nknorg/nkn/v2/config"
-
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/transaction"
 	"github.com/nknorg/nkn/v2/vault"
 )
@@ -197,7 +196,7 @@ func MakeGenerateIDTransaction(ctx context.Context, pubkey []byte, wallet *vault
 		default:
 		}
 
-		txn, err = transaction.NewGenerateIDTransaction(pubkey, sender, regFee, maxVersion, nonce, txnFee, proto.EncodeVarint(i))
+		txn, err = transaction.NewGenerateIDTransaction(pubkey, sender, regFee, maxVersion, nonce, txnFee, protowire.AppendVarint(nil, i))
 		if err != nil {
 			return nil, err
 		}

@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/common"
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/transaction"
+	"google.golang.org/protobuf/proto"
 )
 
 const (

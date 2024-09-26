@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/chain/txvalidator"
@@ -23,6 +22,7 @@ import (
 	"github.com/nknorg/nkn/v2/util/address"
 	"github.com/nknorg/nkn/v2/util/log"
 	"github.com/nknorg/nkn/v2/vault"
+	"google.golang.org/protobuf/proto"
 )
 
 const (

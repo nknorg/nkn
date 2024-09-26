@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	pbnode "github.com/nknorg/nnet/protobuf/node"
 	"math"
 	"math/rand"
 	"net"
@@ -11,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/crypto"
@@ -23,7 +23,7 @@ import (
 	"github.com/nknorg/nkn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
-	nnetpb "github.com/nknorg/nnet/protobuf"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -312,7 +312,7 @@ func (localNode *LocalNode) GetVotingNeighbors(filter func(*node.RemoteNode) boo
 	return localNode.getSampledNeighbors(localNode.votingNeighbors, config.VotingSampleChordNeighbor, config.VotingMinChordNeighbor, filter)
 }
 
-func (localNode *LocalNode) shouldConnectToNode(n *nnetpb.Node) error {
+func (localNode *LocalNode) shouldConnectToNode(n *pbnode.Node) error {
 	if n.GetData() != nil {
 		nodeData := &pb.NodeData{}
 		err := proto.Unmarshal(n.Data, nodeData)

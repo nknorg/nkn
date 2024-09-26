@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/nknorg/consequential"
 	"github.com/nknorg/nkn/v2/block"
 	"github.com/nknorg/nkn/v2/chain"
@@ -15,6 +14,7 @@ import (
 	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/util/log"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
