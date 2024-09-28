@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/websocket v1.5.3
 	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef
-	github.com/itchyny/base58-go v0.2.2
+	github.com/itchyny/base58-go v0.2.1
 	github.com/nknorg/consequential v0.0.0-20191113113929-5fd13b7f5984
 	github.com/nknorg/nnet v0.0.0-20240928081915-ecfc0d74d3b0
 	github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283
@@ -55,7 +55,7 @@ require (
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
-	github.com/klauspost/reedsolomon v1.12.4 // indirect
+	github.com/klauspost/reedsolomon v1.12.3 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/miekg/dns v1.1.27 // indirect
