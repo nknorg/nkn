@@ -2,8 +2,6 @@ module github.com/nknorg/nkn/v2
 
 go 1.20
 
-replace github.com/nknorg/nnet => ../nnet
-
 require (
 	github.com/emirpasic/gods v1.18.1
 	github.com/gin-contrib/sessions v1.0.1
@@ -14,7 +12,7 @@ require (
 	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef
 	github.com/itchyny/base58-go v0.2.2
 	github.com/nknorg/consequential v0.0.0-20191113113929-5fd13b7f5984
-	github.com/nknorg/nnet v0.0.0-00010101000000-000000000000
+	github.com/nknorg/nnet v0.0.0-20240928081915-ecfc0d74d3b0
 	github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58

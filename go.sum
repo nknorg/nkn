@@ -280,6 +280,8 @@ github.com/nknorg/consequential v0.0.0-20191113113929-5fd13b7f5984 h1:VY7EXvgxCK
 github.com/nknorg/consequential v0.0.0-20191113113929-5fd13b7f5984/go.mod h1:H7XeI/XOPpWVmqM+ScT75RLMn7jWnlZDwHRahSxNxo0=
 github.com/nknorg/go-nat v1.0.1 h1:4dFK0oDyqkIE0it03Y4pMgBQpl1Y0mrYHEp+j/nZ910=
 github.com/nknorg/go-nat v1.0.1/go.mod h1:dblX1Ac2j08rTUGs5CKCAfjHGN5eDFhbeqt2rccSP3Y=
+github.com/nknorg/nnet v0.0.0-20240928081915-ecfc0d74d3b0 h1:GlTEPJWbE59LxAy3quWDP++RrU0wM7oxB+Ry0Wy2lVU=
+github.com/nknorg/nnet v0.0.0-20240928081915-ecfc0d74d3b0/go.mod h1:xQBEGtRmEK3LwVNq92IzLqIDbmyILAnsqZO5uYF9Fek=
 github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283 h1:uS3/DvxCbi0zZau66ggQAgEjyGmql2mj77UQFgumq1I=
 github.com/nknorg/portmapper v0.0.0-20200114081049-1c03cdccc283/go.mod h1:dL4PQJ4670oTO6LqvkjrBQEkD+iMiOYjlKRBBw55Csg=
 github.com/nrdcg/auroradns v1.0.1/go.mod h1:y4pc0i9QXYlFCWrhWrUSIETnZgrf4KuwjDIWmmXo3JI=
