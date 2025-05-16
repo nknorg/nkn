@@ -821,7 +821,7 @@ func getSubscribersCount(s Serverer, params map[string]interface{}, ctx context.
 		}
 	}
 
-	key := []byte(fmt.Sprintf("%s-%d-%s", topic, int(bucket), string(subscriberHashPrefix)))
+	key := fmt.Appendf(nil, "%s-%d-%s", topic, int(bucket), string(subscriberHashPrefix))
 
 	if v, ok := rpcResultCache.Get(key); ok {
 		if count, ok := v.(int); ok {
