@@ -42,7 +42,7 @@ func WriteDataList(w io.Writer, list []SerializableData) error {
  *      uint32 =>  0xfe(1 byte) + (LittleEndian)num in 4 bytes = 5bytes
  *      uint64 =>  0xff(1 byte) + (LittleEndian)num in 8 bytes = 9bytes
  * 2. ReadVarUint  func, this func will read the first byte to determined
- *    the num length to read.and retrun the uint64
+ *    the num length to read.and return the uint64
  *      first byte = 0xfd, read the next 2 bytes as uint16
  *      first byte = 0xfe, read the next 4 bytes as uint32
  *      first byte = 0xff, read the next 8 bytes as uint64
@@ -57,7 +57,7 @@ func WriteDataList(w io.Writer, list []SerializableData) error {
  *    length of string, and use it to get the next bytes as a string.
  * 7. GetVarUintSize func, this func will return the length of a uint when it
  *    serialized by the WriteVarUint func.
- * 8. ReadBytes func, this func will read the specify lenth's bytes and retun.
+ * 8. ReadBytes func, this func will read the specify lenth's bytes and return.
  * 9. ReadUint8,16,32,64 read uint with fixed length
  * 10.WriteUint8,16,32,64 Write uint with fixed length
  * 11.ToArray SerializableData to ToArray() func.

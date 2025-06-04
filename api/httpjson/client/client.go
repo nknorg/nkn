@@ -131,7 +131,7 @@ func GetID(remote string, publicKey []byte) ([]byte, error) {
 	if len(ret.Err) != 0 { // resp.error NOT empty
 		code, ok := ret.Err["code"].(float64)
 		if !ok {
-			return nil, fmt.Errorf("GetID resp error,interface conversion faild")
+			return nil, fmt.Errorf("GetID resp error,interface conversion failed")
 		}
 		if int64(code) == -int64(errcode.ErrZeroID) {
 			return crypto.Sha256ZeroHash, nil

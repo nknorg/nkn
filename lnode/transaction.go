@@ -409,7 +409,7 @@ func (localNode *LocalNode) iHaveSignatureChainTransactionMessageHandler(remoteM
 	return nil, false, nil
 }
 
-// SignatureChainTransactionMessageHandler handles a
+// requestSignatureChainTransactionMessageHandler handles a
 // REQUEST_SIGNATURE_CHAIN_TRANSACTION message
 func (localNode *LocalNode) requestSignatureChainTransactionMessageHandler(remoteMessage *node.RemoteMessage) ([]byte, bool, error) {
 	replyMsg, err := NewRequestSignatureChainTransactionReply(nil)

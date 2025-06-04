@@ -502,11 +502,11 @@ func CanVerifyHeight(height uint32) bool {
 // VerifyTransactionWithLedger verifys a transaction with history transaction in ledger
 func VerifyTransactionWithLedger(txn *transaction.Transaction, height uint32) error {
 	if DefaultLedger.Store.IsDoubleSpend(txn) {
-		return errors.New("[VerifyTransactionWithLedger] IsDoubleSpend check faild")
+		return errors.New("[VerifyTransactionWithLedger] IsDoubleSpend check failed")
 	}
 
 	if DefaultLedger.Store.IsTxHashDuplicate(txn.Hash()) {
-		return errors.New("[VerifyTransactionWithLedger] duplicate transaction check faild")
+		return errors.New("[VerifyTransactionWithLedger] duplicate transaction check failed")
 	}
 
 	payload, err := transaction.Unpack(txn.UnsignedTx.Payload)
