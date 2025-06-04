@@ -585,7 +585,7 @@ func getNonceByAddr(s Serverer, params map[string]interface{}, ctx context.Conte
 	return respPacking(errcode.SUCCESS, ret)
 }
 
-// getId gets id by publick key
+// getId gets id by public key
 // params: {"publickey":<publickey>}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
 func getId(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
@@ -932,7 +932,7 @@ func findSuccessorAddrs(s Serverer, params map[string]interface{}, ctx context.C
 	return respPacking(errcode.SUCCESS, addrs)
 }
 
-// Depracated, use findSuccessorAddrs instead
+// Deprecated, use findSuccessorAddrs instead
 func findSuccessorAddr(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
 	if len(params) < 1 {
 		return respPacking(errcode.INVALID_PARAMS, "length of params is less than 1")

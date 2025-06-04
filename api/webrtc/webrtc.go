@@ -16,7 +16,7 @@ import (
 	"github.com/pion/webrtc/v4"
 )
 
-// compitable to websocket
+// compatible to websocket
 const (
 	UnknownMessage = 0
 	TextMessage    = 1
