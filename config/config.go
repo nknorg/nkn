@@ -324,7 +324,7 @@ var (
 		SyncBlockHeaderRateBurst:     32768,
 		SyncBlockRateLimit:           256,
 		SyncBlockRateBurst:           1024,
-		SyncMode:                     "full",
+		SyncMode:                     "light",
 		MaxRollbackBlocks:            180,
 		ClientMsgCacheSize:           0,
 		GenesisBlockProposer:         "a0309f8280ca86687a30ca86556113a253762e40eb884fc6063cad2b1ebd7de5",
