@@ -262,7 +262,7 @@ func (localNode *LocalNode) GetNeighborBlockHeaders(remoteNode *node.RemoteNode,
 	return headers, nil
 }
 
-// GetBlocks requests a range of consecutive blocks from a neighbor using
+// GetNeighborBlocks requests a range of consecutive blocks from a neighbor using
 // GET_BLOCKS message
 func (localNode *LocalNode) GetNeighborBlocks(remoteNode *node.RemoteNode, startHeight, endHeight uint32) ([]*block.Block, error) {
 	if startHeight > endHeight {
