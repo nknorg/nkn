@@ -4,10 +4,10 @@ option go_package = "./pb";
 
 package pb;
 
-import "pb/node.proto";
-import "pb/sigchain.proto";
-import "pb/block.proto";
-import "pb/transaction.proto";
+import "node.proto";
+import "sigchain.proto";
+import "block.proto";
+import "transaction.proto";
 
 enum MessageType {
   MESSAGE_TYPE_PLACEHOLDER_DO_NOT_USE = 0; // Placeholder, do not use or change

@@ -3,7 +3,7 @@ option go_package = "./pb";
 
 package pb;
 
-import "pb/transaction.proto";
+import "transaction.proto";
 
 enum WinnerType {
 	GENESIS_SIGNER  = 0;
