@@ -229,7 +229,7 @@ func getBlockTxsByHeight(s Serverer, params map[string]interface{}, ctx context.
 	return respPacking(errcode.SUCCESS, txs)
 }
 
-// getConnectionCount gets the the number of Connections
+// getConnectionCount gets the number of Connections
 // params: {}
 // return: {"resultOrData":<result>|<error data>, "error":<errcode>}
 func getConnectionCount(s Serverer, params map[string]interface{}, ctx context.Context) map[string]interface{} {
