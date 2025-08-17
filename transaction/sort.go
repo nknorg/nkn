@@ -4,7 +4,7 @@ import (
 	"container/heap"
 	"sort"
 
-	"github.com/nknorg/nkn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/config"
 )
 
 var DefaultCompare = CompareTxnsByFeePerSize

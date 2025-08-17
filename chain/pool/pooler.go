@@ -1,8 +1,8 @@
 package pool
 
 import (
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/transaction"
 )
 
 type TxPooler interface {

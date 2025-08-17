@@ -1,4 +1,4 @@
-[![NKN](https://github.com/nknorg/nkn/wiki/img/nkn_logo.png)](https://nkn.org)
+[![NKN](https://github.com/robertsarosi/rsvpn/wiki/img/nkn_logo.png)](https://nkn.org)
 
 # NKN Full Node
 
@@ -6,7 +6,7 @@
 
 <br/>
 
-[![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/nknorg/nkn/v2)](https://goreportcard.com/report/github.com/nknorg/nkn/v2) [![Build Status](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/nknorg/nkn/actions/workflows/build-ubuntu.yml) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+[![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/robertsarosi/rsvpn/v2)](https://goreportcard.com/report/github.com/robertsarosi/rsvpn/v2) [![Build Status](https://github.com/robertsarosi/rsvpn/actions/workflows/build-ubuntu.yml/badge.svg)](https://github.com/robertsarosi/rsvpn/actions/workflows/build-ubuntu.yml) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
 ### Dev Status: V2 line, Production (Stable and Feature-Complete)
 
@@ -24,9 +24,9 @@ Note: This is the official **full node** implementation of the NKN protocol,
 which relays data for clients and earn mining rewards. For **client**
 implementation which can send and receive data, please refer to:
 
-- [nkn-sdk-go](https://github.com/nknorg/nkn-sdk-go)
-- [nkn-sdk-js](https://github.com/nknorg/nkn-sdk-js)
-- [nkn-java-sdk](https://github.com/nknorg/nkn-java-sdk)
+- [nkn-sdk-go](https://github.com/robertsarosi/rsvpn-sdk-go)
+- [nkn-sdk-js](https://github.com/robertsarosi/rsvpn-sdk-js)
+- [nkn-java-sdk](https://github.com/robertsarosi/rsvpn-java-sdk)
 
 ## Introduction
 
@@ -49,7 +49,7 @@ massive nodes can be reached efficiently by only communicating with neighbors
 using our consensus algorithm based on Cellular Automata. Consensus is reached
 for every block to prevent fork.
 
-More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
+More details can be found in [our wiki](https://github.com/robertsarosi/rsvpn/wiki).
 
 ## Technical Highlights
 
@@ -64,7 +64,7 @@ More details can be found in [our wiki](https://github.com/nknorg/nkn/wiki).
 ### Use pre-built binaries
 
 You just need to download and decompress the correct version matching your OS
-and architecture from [github releases](https://github.com/nknorg/nkn/releases).
+and architecture from [github releases](https://github.com/robertsarosi/rsvpn/releases).
 
 Now you can jump to [configuration](#configuration) for how to configure and run
 a node.
@@ -102,13 +102,13 @@ This command should be run once every time you update the code base.
 
 ### Building from source
 
-To build from source, you need a properly configured Go environment (lookup the required version within [go.mod](https://github.com/nknorg/nkn/blob/master/go.mod#L3), and
+To build from source, you need a properly configured Go environment (lookup the required version within [go.mod](https://github.com/robertsarosi/rsvpn/blob/master/go.mod#L3), and
 see [Go Official Installation Documentation](https://golang.org/doc/install) for install instructions).
 
 Build the source code with make
 
 ```shell
-$ git clone https://github.com/nknorg/nkn.git
+$ git clone https://github.com/robertsarosi/rsvpn.git
 $ cd nkn
 $ make
 ```
@@ -212,7 +212,7 @@ blockchain data, and `Log` to store logs. By default `nknd` will creates these
 directories in the current working directory, but it can be changed by passing
 `--chaindb` and `--log` arguments to `nknd` or specify in config.json.
 
-Now you can [join the mainnet](#join-the-mainnet) or [create a private chain](https://github.com/nknorg/nkn/wiki/Create-a-Private-Chain).
+Now you can [join the mainnet](#join-the-mainnet) or [create a private chain](https://github.com/robertsarosi/rsvpn/wiki/Create-a-Private-Chain).
 
 ### Join the MainNet
 
@@ -256,7 +256,7 @@ $ docker exec -it nkn nknc wallet -l balance
 
 If there is a problem, you may want to check if any of the previous steps went
 wrong. If the problem still persists, [create an
-issue](https://github.com/nknorg/nkn/issues/new) or ask us in our [Discord
+issue](https://github.com/robertsarosi/rsvpn/issues/new) or ask us in our [Discord
 group](#community).
 
 ### [Recommended] Using Beneficiary Address
@@ -290,7 +290,7 @@ your router model or name online.
 
 **Can I submit a bug, suggestion or feature request?**
 
-Yes. Please [open an issue](https://github.com/nknorg/nkn/issues/new) for that.
+Yes. Please [open an issue](https://github.com/robertsarosi/rsvpn/issues/new) for that.
 
 **Can I contribute patches to NKN project?**
 
@@ -298,7 +298,7 @@ Yes, we appreciate your help! To make contributions, please fork the repo, push
 your changes to the forked repo with signed-off commits, and open a pull request
 here.
 
-Please follow our [Golang Style Guide](https://github.com/nknorg/nkn/wiki/NKN-Golang-Style-Guide)
+Please follow our [Golang Style Guide](https://github.com/robertsarosi/rsvpn/wiki/NKN-Golang-Style-Guide)
 for coding style.
 
 Please sign off your commit. This means adding a line "Signed-off-by: Name

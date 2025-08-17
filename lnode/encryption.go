@@ -3,10 +3,10 @@ package lnode
 import (
 	"fmt"
 
-	"github.com/nknorg/nkn/v2/crypto/ed25519"
-	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/crypto/ed25519"
+	"github.com/robertsarosi/rsvpn/v2/node"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	"golang.org/x/crypto/nacl/box"
 	"google.golang.org/protobuf/proto"

@@ -3,18 +3,18 @@ package chain
 import (
 	"context"
 
-	"github.com/nknorg/nkn/v2/block"
-	"github.com/nknorg/nkn/v2/chain/txvalidator"
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/crypto"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/por"
-	"github.com/nknorg/nkn/v2/signature"
-	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/util/log"
-	"github.com/nknorg/nkn/v2/vault"
+	"github.com/robertsarosi/rsvpn/v2/block"
+	"github.com/robertsarosi/rsvpn/v2/chain/txvalidator"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/crypto"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/por"
+	"github.com/robertsarosi/rsvpn/v2/signature"
+	"github.com/robertsarosi/rsvpn/v2/transaction"
+	"github.com/robertsarosi/rsvpn/v2/util"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/vault"
 )
 
 type Mining interface {

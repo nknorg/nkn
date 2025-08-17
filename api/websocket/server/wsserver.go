@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	api "github.com/nknorg/nkn/v2/api/common"
-	"github.com/nknorg/nkn/v2/api/ratelimiter"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/util/log"
+	api "github.com/robertsarosi/rsvpn/v2/api/common"
+	"github.com/robertsarosi/rsvpn/v2/api/ratelimiter"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 )
 
 type wsServer struct {

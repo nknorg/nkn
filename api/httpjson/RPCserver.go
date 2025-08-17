@@ -11,14 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/v2/api/common"
-	"github.com/nknorg/nkn/v2/api/common/errcode"
-	"github.com/nknorg/nkn/v2/api/ratelimiter"
-	"github.com/nknorg/nkn/v2/chain"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/util/log"
-	"github.com/nknorg/nkn/v2/vault"
+	"github.com/robertsarosi/rsvpn/v2/api/common"
+	"github.com/robertsarosi/rsvpn/v2/api/common/errcode"
+	"github.com/robertsarosi/rsvpn/v2/api/ratelimiter"
+	"github.com/robertsarosi/rsvpn/v2/chain"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/node"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/vault"
 	"golang.org/x/time/rate"
 )
 

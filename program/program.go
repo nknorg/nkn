@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/common/serialization"
-	"github.com/nknorg/nkn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common/serialization"
+	"github.com/robertsarosi/rsvpn/v2/pb"
 )
 
 type ProgramContextParameterType byte

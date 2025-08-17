@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/common/serialization"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common/serialization"
 )
 
 type Asset struct {

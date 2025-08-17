@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/howeyc/gopass"
-	"github.com/nknorg/nkn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/config"
 	"github.com/spf13/cobra"
 )
 

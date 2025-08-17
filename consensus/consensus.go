@@ -5,16 +5,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/v2/chain"
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/consensus/election"
-	"github.com/nknorg/nkn/v2/event"
-	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/por"
-	"github.com/nknorg/nkn/v2/util/log"
-	"github.com/nknorg/nkn/v2/vault"
+	"github.com/robertsarosi/rsvpn/v2/chain"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/consensus/election"
+	"github.com/robertsarosi/rsvpn/v2/event"
+	"github.com/robertsarosi/rsvpn/v2/node"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/por"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/vault"
 )
 
 // Consensus is the Majority vOte Cellular Automata (MOCA) consensus layer

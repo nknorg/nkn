@@ -9,9 +9,9 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/common/serialization"
-	"github.com/nknorg/nkn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common/serialization"
+	"github.com/robertsarosi/rsvpn/v2/config"
 )
 
 func NewSigChainElem(id, nextPubkey, signature, vrf, proof []byte, mining bool, sigAlgo SigAlgo) *SigChainElem {

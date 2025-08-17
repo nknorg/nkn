@@ -3,9 +3,9 @@ package consensus
 import (
 	"time"
 
-	"github.com/nknorg/nkn/v2/chain"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/chain"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/pb"
 )
 
 const (

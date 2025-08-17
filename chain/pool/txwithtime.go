@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/transaction"
 )
 
 // sync txn

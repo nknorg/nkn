@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/go-acme/lego/v3/registration"
-	"github.com/nknorg/nkn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/config"
 )
 
 // You'll need a User or account type that implements acme.User

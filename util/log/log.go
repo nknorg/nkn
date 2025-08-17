@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/config"
 )
 
 const (

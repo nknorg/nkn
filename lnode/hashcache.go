@@ -3,7 +3,7 @@ package lnode
 import (
 	"time"
 
-	"github.com/nknorg/nkn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common"
 )
 
 const (

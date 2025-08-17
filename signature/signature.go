@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/crypto"
-	"github.com/nknorg/nkn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/crypto"
+	"github.com/robertsarosi/rsvpn/v2/pb"
 )
 
 // SignableData describe the data need be signed.

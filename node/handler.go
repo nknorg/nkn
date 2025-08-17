@@ -1,7 +1,7 @@
 package node
 
 import (
-	"github.com/nknorg/nkn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/pb"
 )
 
 // RemoteMessage is the message received from remote nodes

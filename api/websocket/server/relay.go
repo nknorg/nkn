@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/por"
-	"github.com/nknorg/nkn/v2/util/address"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/por"
+	"github.com/robertsarosi/rsvpn/v2/util/address"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 	"google.golang.org/protobuf/proto"
 )
 

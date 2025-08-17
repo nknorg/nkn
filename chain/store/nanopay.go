@@ -6,8 +6,8 @@ import (
 	"io"
 	"sort"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/common/serialization"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common/serialization"
 )
 
 func getNanoPayId(sender, recipient common.Uint160, nonce uint64) string {

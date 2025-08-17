@@ -1,4 +1,4 @@
-module github.com/nknorg/nkn/v2
+module github.com/robertsarosi/rsvpn/v2
 
 go 1.20
 

@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/v2/crypto"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util"
+	"github.com/robertsarosi/rsvpn/v2/crypto"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/util"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nknorg/nkn/v2/api/httpjson/client"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/api/httpjson/client"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"google.golang.org/protobuf/proto"

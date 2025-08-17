@@ -4,14 +4,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/v2/chain"
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/por"
-	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/util/log"
-	"github.com/nknorg/nkn/v2/util/timer"
+	"github.com/robertsarosi/rsvpn/v2/chain"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/node"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/por"
+	"github.com/robertsarosi/rsvpn/v2/util"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/util/timer"
 	"google.golang.org/protobuf/proto"
 )
 

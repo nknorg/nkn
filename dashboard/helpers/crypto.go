@@ -14,9 +14,9 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
-	"github.com/nknorg/nkn/v2/util/log"
-	"github.com/nknorg/nkn/v2/vault"
+	serviceConfig "github.com/robertsarosi/rsvpn/v2/dashboard/config"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/vault"
 )
 
 func HmacSha256(data []byte, secret []byte) []byte {

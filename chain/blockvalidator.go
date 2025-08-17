@@ -9,17 +9,17 @@ import (
 	"hash/fnv"
 	"time"
 
-	"github.com/nknorg/nkn/v2/chain/txvalidator"
+	"github.com/robertsarosi/rsvpn/v2/chain/txvalidator"
 
-	"github.com/nknorg/nkn/v2/block"
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/crypto"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/por"
-	"github.com/nknorg/nkn/v2/program"
-	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/util"
+	"github.com/robertsarosi/rsvpn/v2/block"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/crypto"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/por"
+	"github.com/robertsarosi/rsvpn/v2/program"
+	"github.com/robertsarosi/rsvpn/v2/transaction"
+	"github.com/robertsarosi/rsvpn/v2/util"
 	"google.golang.org/protobuf/proto"
 )
 

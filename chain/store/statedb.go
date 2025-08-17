@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/nknorg/nkn/v2/chain/db"
+	"github.com/robertsarosi/rsvpn/v2/chain/db"
 
-	"github.com/nknorg/nkn/v2/block"
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/block"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 )
 
 var (

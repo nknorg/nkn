@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/nknorg/nkn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common"
 )
 
 func TestHash(t *testing.T) {

@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/common/serialization"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/crypto"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/signature"
-	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common/serialization"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/crypto"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/signature"
+	"github.com/robertsarosi/rsvpn/v2/transaction"
 	"google.golang.org/protobuf/proto"
 )
 

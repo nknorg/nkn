@@ -8,9 +8,9 @@ import (
 	"time"
 
 	rbt "github.com/emirpasic/gods/trees/redblacktree"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 )
 
 const maxSeqId int64 = 1000000 // should not be greater than 1 million, maximum 1 million msg per milli-second

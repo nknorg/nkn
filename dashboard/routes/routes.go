@@ -2,10 +2,10 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/nknorg/nkn/v2/dashboard/auth"
-	"github.com/nknorg/nkn/v2/dashboard/routes/common"
-	"github.com/nknorg/nkn/v2/dashboard/routes/node"
-	"github.com/nknorg/nkn/v2/dashboard/routes/wallet"
+	"github.com/robertsarosi/rsvpn/v2/dashboard/auth"
+	"github.com/robertsarosi/rsvpn/v2/dashboard/routes/common"
+	"github.com/robertsarosi/rsvpn/v2/dashboard/routes/node"
+	"github.com/robertsarosi/rsvpn/v2/dashboard/routes/wallet"
 )
 
 func Routes(app *gin.Engine) gin.HandlerFunc {

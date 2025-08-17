@@ -6,10 +6,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/dashboard/helpers"
-	"github.com/nknorg/nkn/v2/lnode"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/dashboard/helpers"
+	"github.com/robertsarosi/rsvpn/v2/lnode"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 )
 
 func StatusRouter(router *gin.RouterGroup) {

@@ -10,8 +10,8 @@ BIN_DIR=$(GOOS)-$(GOARCH)v$(GOARM)
 else
 BIN_DIR=$(GOOS)-$(GOARCH)
 endif
-NKND_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/v2/config.Version=$(VERSION)"
-#NKNC_BUILD_PARAM=-ldflags "-s -w -X github.com/nknorg/nkn/v2/cmd/nknc/common.Version=$(VERSION)"
+NKND_BUILD_PARAM=-ldflags "-s -w -X github.com/robertsarosi/rsvpn/v2/config.Version=$(VERSION)"
+#NKNC_BUILD_PARAM=-ldflags "-s -w -X github.com/robertsarosi/rsvpn/v2/cmd/nknc/common.Version=$(VERSION)"
 NKNC_BUILD_PARAM=$(NKND_BUILD_PARAM)
 NKND_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknd$(EXT)
 NKNC_OUTPUT=$(BUILD_DIR)/$(BIN_DIR)/nknc$(EXT)

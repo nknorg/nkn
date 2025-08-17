@@ -9,9 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/nknorg/nkn/v2/chain/trie"
-	"github.com/nknorg/nkn/v2/common/serialization"
-	"github.com/nknorg/nkn/v2/util/address"
+	"github.com/robertsarosi/rsvpn/v2/chain/trie"
+	"github.com/robertsarosi/rsvpn/v2/common/serialization"
+	"github.com/robertsarosi/rsvpn/v2/util/address"
 )
 
 const hashPrefixLength = 20

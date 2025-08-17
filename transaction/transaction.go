@@ -7,11 +7,11 @@ import (
 	"errors"
 	"io"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/common/serialization"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/program"
-	"github.com/nknorg/nkn/v2/signature"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common/serialization"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/program"
+	"github.com/robertsarosi/rsvpn/v2/signature"
 	"google.golang.org/protobuf/proto"
 )
 

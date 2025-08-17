@@ -8,9 +8,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/nknorg/nkn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/config"
 
-	"github.com/nknorg/nkn/v2/common/serialization"
+	"github.com/robertsarosi/rsvpn/v2/common/serialization"
 )
 
 type nameInfo struct {

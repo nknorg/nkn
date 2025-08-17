@@ -6,10 +6,10 @@ import (
 	"google.golang.org/protobuf/proto"
 	"time"
 
-	"github.com/nknorg/nkn/v2/node"
+	"github.com/robertsarosi/rsvpn/v2/node"
 
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay/chord"
 )

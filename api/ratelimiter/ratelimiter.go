@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common"
 	"golang.org/x/time/rate"
 )
 

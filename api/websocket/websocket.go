@@ -4,16 +4,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/nknorg/nkn/v2/api/common"
-	"github.com/nknorg/nkn/v2/api/common/errcode"
-	"github.com/nknorg/nkn/v2/api/websocket/server"
-	"github.com/nknorg/nkn/v2/block"
-	"github.com/nknorg/nkn/v2/chain"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/event"
-	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/util/log"
-	"github.com/nknorg/nkn/v2/vault"
+	"github.com/robertsarosi/rsvpn/v2/api/common"
+	"github.com/robertsarosi/rsvpn/v2/api/common/errcode"
+	"github.com/robertsarosi/rsvpn/v2/api/websocket/server"
+	"github.com/robertsarosi/rsvpn/v2/block"
+	"github.com/robertsarosi/rsvpn/v2/chain"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/event"
+	"github.com/robertsarosi/rsvpn/v2/node"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/vault"
 )
 
 var ws *server.MsgServer

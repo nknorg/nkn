@@ -3,10 +3,10 @@ package common
 import (
 	"crypto/tls"
 
-	"github.com/nknorg/nkn/v2/api/common/errcode"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/node"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/api/common/errcode"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/node"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 )
 
 type Serverer interface {

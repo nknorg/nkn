@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 )
 
 // receiveVote is called when a vote from neighbor is received

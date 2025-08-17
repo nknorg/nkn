@@ -1,9 +1,9 @@
 package store
 
 import (
-	"github.com/nknorg/nkn/v2/chain/db"
-	"github.com/nknorg/nkn/v2/chain/trie"
-	"github.com/nknorg/nkn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/chain/db"
+	"github.com/robertsarosi/rsvpn/v2/chain/trie"
+	"github.com/robertsarosi/rsvpn/v2/common"
 )
 
 const (

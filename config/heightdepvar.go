@@ -1,6 +1,6 @@
 package config
 
-import "github.com/nknorg/nkn/v2/common"
+import "github.com/robertsarosi/rsvpn/v2/common"
 
 type HeightDependentInt32 struct {
 	Height []uint32

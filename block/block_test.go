@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/nknorg/nkn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common"
 	"reflect"
 	"testing"
 )

@@ -3,7 +3,7 @@ package db
 import (
 	"encoding/binary"
 
-	"github.com/nknorg/nkn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/common"
 )
 
 type DataEntryPrefix byte

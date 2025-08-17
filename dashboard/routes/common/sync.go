@@ -2,8 +2,8 @@ package common
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/nknorg/nkn/v2/config"
-	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	serviceConfig "github.com/robertsarosi/rsvpn/v2/dashboard/config"
 	"net/http"
 	"time"
 )

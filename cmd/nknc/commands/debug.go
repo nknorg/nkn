@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nknorg/nkn/v2/api/httpjson/client"
+	"github.com/robertsarosi/rsvpn/v2/api/httpjson/client"
 	"github.com/spf13/cobra"
 )
 

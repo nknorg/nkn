@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nknorg/nkn/v2/api/ratelimiter"
-	"github.com/nknorg/nkn/v2/api/websocket/session"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/api/ratelimiter"
+	"github.com/robertsarosi/rsvpn/v2/api/websocket/session"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 	"github.com/pion/webrtc/v4"
 )
 

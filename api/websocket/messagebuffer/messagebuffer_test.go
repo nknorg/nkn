@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nknorg/nkn/v2/util"
+	"github.com/robertsarosi/rsvpn/v2/util"
 
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/pb"
 	"github.com/stretchr/testify/require"
 )
 

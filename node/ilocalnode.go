@@ -2,10 +2,10 @@
 package node
 
 import (
-	"github.com/nknorg/nkn/v2/chain/pool"
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/transaction"
+	"github.com/robertsarosi/rsvpn/v2/chain/pool"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/transaction"
 	"github.com/nknorg/nnet"
 	nnetnode "github.com/nknorg/nnet/node"
 )

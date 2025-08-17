@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nknorg/nkn/v2/crypto"
-	"github.com/nknorg/nkn/v2/program"
+	"github.com/robertsarosi/rsvpn/v2/crypto"
+	"github.com/robertsarosi/rsvpn/v2/program"
 )
 
 func Key2Address(key string) (addr string, err error) {

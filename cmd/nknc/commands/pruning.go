@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/nknorg/nkn/v2/chain/store"
+	"github.com/robertsarosi/rsvpn/v2/chain/store"
 	"github.com/spf13/cobra"
 )
 

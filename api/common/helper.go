@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"google.golang.org/protobuf/encoding/protowire"
 
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/vault"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/transaction"
+	"github.com/robertsarosi/rsvpn/v2/vault"
 )
 
 func MakeTransferTransaction(wallet *vault.Wallet, receipt common.Uint160, nonce uint64, value, fee common.Fixed64) (*transaction.Transaction, error) {

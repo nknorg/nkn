@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 	"github.com/spf13/cobra"
 )
 

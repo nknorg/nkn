@@ -11,7 +11,7 @@ import (
 	"crypto/sha512"
 	"testing"
 
-	"github.com/nknorg/nkn/v2/crypto/ed25519/edwards25519"
+	"github.com/robertsarosi/rsvpn/v2/crypto/ed25519/edwards25519"
 	"golang.org/x/crypto/curve25519"
 )
 

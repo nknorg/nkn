@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	api "github.com/nknorg/nkn/v2/api/common"
-	"github.com/nknorg/nkn/v2/api/httpjson/client"
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/vault"
+	api "github.com/robertsarosi/rsvpn/v2/api/common"
+	"github.com/robertsarosi/rsvpn/v2/api/httpjson/client"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/vault"
 	"github.com/spf13/cobra"
 )
 

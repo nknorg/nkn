@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nknorg/nkn/v2/crypto/ed25519/extra25519"
-	"github.com/nknorg/nkn/v2/crypto/ed25519/vrf"
+	"github.com/robertsarosi/rsvpn/v2/crypto/ed25519/extra25519"
+	"github.com/robertsarosi/rsvpn/v2/crypto/ed25519/vrf"
 )
 
 const PublicKeySize = ed25519.PublicKeySize

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nknorg/nkn/v2/api/common/errcode"
-	"github.com/nknorg/nkn/v2/crypto"
-	"github.com/nknorg/nkn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/api/common/errcode"
+	"github.com/robertsarosi/rsvpn/v2/crypto"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 )
 
 const requestTimeout = 10 * time.Second

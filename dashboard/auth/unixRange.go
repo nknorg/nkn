@@ -3,8 +3,8 @@ package auth
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
-	"github.com/nknorg/nkn/v2/util/log"
+	serviceConfig "github.com/robertsarosi/rsvpn/v2/dashboard/config"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
 	"math"
 	"net/http"
 	"strconv"

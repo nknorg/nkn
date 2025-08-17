@@ -17,27 +17,27 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/nknorg/nkn/v2/api/certs"
-	api "github.com/nknorg/nkn/v2/api/common"
-	"github.com/nknorg/nkn/v2/api/httpjson"
-	"github.com/nknorg/nkn/v2/api/httpjson/client"
-	"github.com/nknorg/nkn/v2/api/websocket"
-	"github.com/nknorg/nkn/v2/chain"
-	"github.com/nknorg/nkn/v2/chain/store"
-	"github.com/nknorg/nkn/v2/common"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/consensus"
-	"github.com/nknorg/nkn/v2/crypto"
-	"github.com/nknorg/nkn/v2/dashboard"
-	serviceConfig "github.com/nknorg/nkn/v2/dashboard/config"
-	"github.com/nknorg/nkn/v2/lnode"
-	"github.com/nknorg/nkn/v2/pb"
-	"github.com/nknorg/nkn/v2/por"
-	"github.com/nknorg/nkn/v2/transaction"
-	"github.com/nknorg/nkn/v2/util"
-	"github.com/nknorg/nkn/v2/util/log"
-	"github.com/nknorg/nkn/v2/util/password"
-	"github.com/nknorg/nkn/v2/vault"
+	"github.com/robertsarosi/rsvpn/v2/api/certs"
+	api "github.com/robertsarosi/rsvpn/v2/api/common"
+	"github.com/robertsarosi/rsvpn/v2/api/httpjson"
+	"github.com/robertsarosi/rsvpn/v2/api/httpjson/client"
+	"github.com/robertsarosi/rsvpn/v2/api/websocket"
+	"github.com/robertsarosi/rsvpn/v2/chain"
+	"github.com/robertsarosi/rsvpn/v2/chain/store"
+	"github.com/robertsarosi/rsvpn/v2/common"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/consensus"
+	"github.com/robertsarosi/rsvpn/v2/crypto"
+	"github.com/robertsarosi/rsvpn/v2/dashboard"
+	serviceConfig "github.com/robertsarosi/rsvpn/v2/dashboard/config"
+	"github.com/robertsarosi/rsvpn/v2/lnode"
+	"github.com/robertsarosi/rsvpn/v2/pb"
+	"github.com/robertsarosi/rsvpn/v2/por"
+	"github.com/robertsarosi/rsvpn/v2/transaction"
+	"github.com/robertsarosi/rsvpn/v2/util"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/util/password"
+	"github.com/robertsarosi/rsvpn/v2/vault"
 	"github.com/nknorg/nnet"
 	nnetnode "github.com/nknorg/nnet/node"
 	"github.com/nknorg/nnet/overlay"
@@ -456,7 +456,7 @@ func netVersion(timer *time.Timer) {
 			continue
 		}
 		if verNum > NetVersionNum {
-			log.Fatal("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/nknorg/nkn/releases")
+			log.Fatal("Your current nknd is deprecated, Please download the latest NKN software from https://github.com/robertsarosi/rsvpn/releases")
 		}
 
 		timer.Reset(30 * time.Minute)

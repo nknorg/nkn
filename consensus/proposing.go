@@ -5,11 +5,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/nknorg/nkn/v2/block"
-	"github.com/nknorg/nkn/v2/chain"
-	"github.com/nknorg/nkn/v2/config"
-	"github.com/nknorg/nkn/v2/util/log"
-	"github.com/nknorg/nkn/v2/util/timer"
+	"github.com/robertsarosi/rsvpn/v2/block"
+	"github.com/robertsarosi/rsvpn/v2/chain"
+	"github.com/robertsarosi/rsvpn/v2/config"
+	"github.com/robertsarosi/rsvpn/v2/util/log"
+	"github.com/robertsarosi/rsvpn/v2/util/timer"
 )
 
 // startProposing starts the proposing routing
