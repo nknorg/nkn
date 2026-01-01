@@ -26,3 +26,6 @@ cscope*
 /wallet.json
 /wallet.pswd
 /config.json
+
+local/
+*.log

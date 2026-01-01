@@ -33,7 +33,7 @@
     "babel-jest": "^27.5.1",
     "jest": "^27.5.1",
     "material-design-icons-iconfont": "^6.5.0",
-    "node-sass": "^7.0.1",
+    "sass": "^1.52.1",
     "nodemon": "^2.0.15",
     "sass-loader": "^10.2.1",
     "stylus": "^0.57.0",
