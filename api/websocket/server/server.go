@@ -571,7 +571,7 @@ func (ms *MsgServer) newConnection(conn session.Conn, r *http.Request) {
 
 		err = ms.OnDataHandle(sess, messageType, bysMsg, r)
 		if err != nil {
-			log.Error(err)
+			log.Debugf("websocket OnDataHandle error: %v", err)
 		}
 	}
 }
