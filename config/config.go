@@ -31,12 +31,12 @@ const (
 	SigChainBlockDelay              = 1
 	SigChainPropogationTime         = 2
 	MinNumSuccessors                = 8
-	NumRandomGossipNeighborsFactor  = 1
-	NumRandomVotingNeighborsFactor  = 3
+	NumRandomGossipNeighborsFactor  = 2
+	NumRandomVotingNeighborsFactor  = 4
 	MinNumRandomGossipNeighbors     = 8
 	MinNumRandomVotingNeighbors     = 24
 	MaxNumInboundRandomNeighbors    = 256
-	GossipSampleChordNeighbor       = 0.15
+	GossipSampleChordNeighbor       = 0.25
 	GossipMinChordNeighbor          = 8
 	VotingSampleChordNeighbor       = 0.0
 	VotingMinChordNeighbor          = 0
@@ -238,6 +238,11 @@ var (
 		Heights: []uint32{3030000, 0},
 		Values:  []bool{true, false},
 	}
+
+	// use these config for network restart
+	MinVerifiableHeightResetHeight = 8843191
+	MinVerifiableHeightResetTime   = time.Unix(1767441600, 0)
+	ProposingStartTime             = time.Unix(1767441600, 0)
 )
 
 var (
