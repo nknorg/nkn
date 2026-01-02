@@ -18,7 +18,14 @@ func (consensus *Consensus) startProposing() {
 	var timestamp int64
 	var ctx context.Context
 	var cancel context.CancelFunc
-	proposingTimer := time.NewTimer(proposingStartDelay)
+
+	var proposingTimer *time.Timer
+	if time.Now().Before(config.ProposingStartTime) {
+		proposingTimer = time.NewTimer(config.ProposingStartTime.Sub(time.Now()))
+	} else {
+		proposingTimer = time.NewTimer(proposingStartDelay)
+	}
+
 	for {
 		select {
 		case <-proposingTimer.C:

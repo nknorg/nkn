@@ -77,9 +77,11 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 	}
 
 	for {
-		if consensus.canVerifyHeight(consensusHeight) {
+		if consensus.canVerifyHeight(consensusHeight) || time.Now().Before(config.ProposingStartTime) {
 			break
 		}
+
+		log.Debugf("Cannot verify height %d, neighbor vote count %d", consensusHeight, elc.NeighborVoteCount())
 
 		if elc.NeighborVoteCount() > 0 {
 			timerStartOnce.Do(func() {
@@ -109,12 +111,21 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 			receivedTime := proposalInfo.receivedTime
 			blockHash := proposal.Hash()
 
-			if !consensus.canVerifyHeight(consensusHeight) {
-				err = consensus.iHaveBlockProposal(consensusHeight, blockHash)
-				if err != nil {
-					log.Errorf("Send I have block message error: %v", err)
+			log.Debugf("Process block proposal %s, proposal count %d", blockHash.ToHexString(), proposalCount)
+
+			acceptProposal := true
+
+			if time.Now().Before(config.ProposingStartTime) {
+				acceptProposal = false
+			} else {
+				if !consensus.canVerifyHeight(consensusHeight) {
+					log.Debugf("Cannot verify height %d, send I have block message", consensusHeight)
+					err = consensus.iHaveBlockProposal(consensusHeight, blockHash)
+					if err != nil {
+						log.Errorf("Send I have block message error: %v", err)
+					}
+					continue
 				}
-				continue
 			}
 
 			timerStartOnce.Do(func() {
@@ -123,8 +134,6 @@ func (consensus *Consensus) waitAndHandleProposal() (*election.Election, error) 
 				verifyDeadline = receivedTime.Add(proposalVerificationTimeout)
 				initialVoteDeadline = receivedTime.Add(initialVoteDelay)
 			})
-
-			acceptProposal := true
 
 			proposals[blockHash] = proposal
 			if len(proposals) > 2 {
@@ -248,7 +257,7 @@ func (consensus *Consensus) startRequestingProposal() {
 func (consensus *Consensus) receiveProposal(block *block.Block) error {
 	blockHash := block.Hash()
 
-	log.Infof("Receive block proposal %s (%d txn, %d bytes) by %x", blockHash.ToHexString(), len(block.Transactions), block.GetTxsSize(), block.Header.UnsignedHeader.SignerPk)
+	log.Infof("Receive block proposal %s (%d txn, %d bytes) by %x (height %d, timestamp %d)", blockHash.ToHexString(), len(block.Transactions), block.GetTxsSize(), block.Header.UnsignedHeader.SignerPk, block.Header.UnsignedHeader.Height, block.Header.UnsignedHeader.Timestamp)
 
 	consensus.proposalLock.RLock()
 	defer consensus.proposalLock.RUnlock()

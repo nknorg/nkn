@@ -6,6 +6,7 @@ import (
 
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/common"
+	"github.com/nknorg/nkn/v2/config"
 	"github.com/nknorg/nkn/v2/node"
 	"github.com/nknorg/nkn/v2/pb"
 	"github.com/nknorg/nkn/v2/por"
@@ -19,6 +20,15 @@ import (
 // consensus height and sets local height if fall behind
 func (consensus *Consensus) startGettingNeighborConsensusState() {
 	consensus.localNode.SetMinVerifiableHeight(chain.DefaultLedger.Store.GetHeight() + por.SigChainMiningHeightOffset)
+
+	if config.MinVerifiableHeightResetHeight > 0 && chain.DefaultLedger.Store.GetHeight() == uint32(config.MinVerifiableHeightResetHeight) && time.Now().Before(config.MinVerifiableHeightResetTime) {
+		go func() {
+			time.Sleep(time.Until(config.MinVerifiableHeightResetTime))
+			if chain.DefaultLedger.Store.GetHeight() == uint32(config.MinVerifiableHeightResetHeight) {
+				consensus.localNode.SetMinVerifiableHeight(uint32(config.MinVerifiableHeightResetHeight + 1))
+			}
+		}()
+	}
 
 	initialized := false
 	getNeighborConsensusStateTimer := time.NewTimer(proposingStartDelay / 2)
