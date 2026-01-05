@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	pbnode "github.com/nknorg/nnet/protobuf/node"
 	"math"
 	"math/rand"
 	"net"
 	"net/url"
 	"sync"
 	"time"
+
+	pbnode "github.com/nknorg/nnet/protobuf/node"
 
 	"github.com/nknorg/nkn/v2/chain"
 	"github.com/nknorg/nkn/v2/config"
@@ -305,7 +306,9 @@ func (localNode *LocalNode) getSampledNeighbors(rn *randomNeighbors, chordNeighb
 }
 
 func (localNode *LocalNode) GetGossipNeighbors(filter func(*node.RemoteNode) bool) []*node.RemoteNode {
-	return localNode.getSampledNeighbors(localNode.gossipNeighbors, config.GossipSampleChordNeighbor, config.GossipMinChordNeighbor, filter)
+	// we use all neighbors for gossip to minimize the chance of block proposal not propagating to all nodes when the majority of the network is falling behind
+	return localNode.GetNeighbors(filter)
+	// return localNode.getSampledNeighbors(localNode.gossipNeighbors, config.GossipSampleChordNeighbor, config.GossipMinChordNeighbor, filter)
 }
 
 func (localNode *LocalNode) GetVotingNeighbors(filter func(*node.RemoteNode) bool) []*node.RemoteNode {
