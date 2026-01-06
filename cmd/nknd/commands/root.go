@@ -368,6 +368,20 @@ func InitLedger(account *vault.Account) error {
 		Store:      store,
 	}
 
+	currentHeight := chain.DefaultLedger.Store.GetHeight()
+	if currentHeight > uint32(config.MinVerifiableHeightResetHeight) && time.Now().Before(config.MinVerifiableHeightResetTime) {
+		for height := currentHeight; height > uint32(config.MinVerifiableHeightResetHeight); height-- {
+			block, err := chain.DefaultLedger.Store.GetBlockByHeight(height)
+			if err != nil {
+				log.Fatalf("get block at height %d error: %v", height, err)
+			}
+			err = chain.DefaultLedger.Store.Rollback(block)
+			if err != nil {
+				log.Fatalf("ledger rollback error: %v", err)
+			}
+		}
+	}
+
 	return nil
 }
 
