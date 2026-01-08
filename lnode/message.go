@@ -69,7 +69,7 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 		msgBody := &pbmsg.Bytes{}
 		err = proto.Unmarshal(remoteMessage.Msg.Message, msgBody)
 		if err != nil {
-			log.Errorf("Error unmarshal byte msg: %v", err)
+			log.Debugf("Error unmarshal byte msg: %v", err)
 			return nil, nil, nil, false
 		}
 
@@ -77,50 +77,50 @@ func (localNode *LocalNode) remoteMessageRouted(remoteMessage *nnetnode.RemoteMe
 		unsignedMsg := &pb.UnsignedMessage{}
 		err = proto.Unmarshal(msgBody.Data, signedMsg)
 		if err != nil {
-			log.Errorf("Error unmarshal byte msg data: %v", err)
+			log.Debugf("Error unmarshal byte msg data: %v", err)
 			return nil, nil, nil, false
 		}
 
 		err = proto.Unmarshal(signedMsg.Message, unsignedMsg)
 		if err != nil {
-			log.Errorf("Error unmarshal signed unsigned msg: %v", err)
+			log.Debugf("Error unmarshal signed unsigned msg: %v", err)
 			return nil, nil, nil, false
 		}
 
 		err = checkMessageType(unsignedMsg.MessageType)
 		if err != nil {
-			log.Errorf("Error checking message type: %v", err)
+			log.Debugf("Error checking message type: %v", err)
 			return nil, nil, nil, false
 		}
 
 		err = checkMessageSigned(unsignedMsg.MessageType, len(signedMsg.Signature) > 0)
 		if err != nil {
-			log.Errorf("Error checking signed: %v", err)
+			log.Debugf("Error checking signed: %v", err)
 			return nil, nil, nil, false
 		}
 
 		err = checkMessageRoutingType(unsignedMsg.MessageType, remoteMessage.Msg.RoutingType)
 		if err != nil {
-			log.Errorf("Error checking routing type: %v", err)
+			log.Debugf("Error checking routing type: %v", err)
 			return nil, nil, nil, false
 		}
 
 		if len(signedMsg.Signature) > 0 {
 			if remoteMessage.Msg.RoutingType != pbmsg.RoutingType_DIRECT {
-				log.Errorf("Signature is only allowed on direct message")
+				log.Debugf("Signature is only allowed on direct message")
 				return nil, nil, nil, false
 			}
 
 			pubKey := senderNode.GetPubKey()
 			if pubKey == nil {
-				log.Errorf("Neighbor public key is nil")
+				log.Debugf("Neighbor public key is nil")
 				return nil, nil, nil, false
 			}
 
 			hash := sha256.Sum256(signedMsg.Message)
 			err = crypto.Verify(pubKey, hash[:], signedMsg.Signature)
 			if err != nil {
-				log.Errorf("Verify signature error: %v", err)
+				log.Debugf("Verify signature error: %v", err)
 				return nil, nil, nil, false
 			}
 		}

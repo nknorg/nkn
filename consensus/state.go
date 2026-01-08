@@ -25,6 +25,7 @@ func (consensus *Consensus) startGettingNeighborConsensusState() {
 		go func() {
 			time.Sleep(time.Until(config.MinVerifiableHeightResetTime))
 			if chain.DefaultLedger.Store.GetHeight() == uint32(config.MinVerifiableHeightResetHeight) {
+				consensus.setNextConsensusHeight(uint32(config.MinVerifiableHeightResetHeight + 1))
 				consensus.localNode.SetMinVerifiableHeight(uint32(config.MinVerifiableHeightResetHeight + 1))
 				consensus.localNode.SetSyncState(pb.SyncState_PERSIST_FINISHED)
 			}

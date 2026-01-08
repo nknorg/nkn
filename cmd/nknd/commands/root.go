@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	NetVersionNum = 33 // This will be removed later
+	NetVersionNum = 34 // This will be removed later
 )
 
 // rootCmd represents the base command when called without any subcommands

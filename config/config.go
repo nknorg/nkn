@@ -241,8 +241,8 @@ var (
 
 	// use these config for network restart
 	MinVerifiableHeightResetHeight = 8843191
-	MinVerifiableHeightResetTime   = time.Unix(1767758400, 0)
-	ProposingStartTime             = time.Unix(1767758400, 0)
+	MinVerifiableHeightResetTime   = time.Unix(1767794400, 0)
+	ProposingStartTime             = time.Unix(1767794400, 0)
 )
 
 var (
