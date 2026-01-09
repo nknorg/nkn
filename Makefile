@@ -101,17 +101,17 @@ test:
 
 .PHONY: docker
 docker:
-	docker build -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=amd64 BUILD_DIR=. BIN_DIR=." --build-arg base="amd64/" -t nknorg/nkn:latest-amd64 .
-	docker build -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=arm GOARM=6 BUILD_DIR=. BIN_DIR=." --build-arg base="arm32v6/" -t nknorg/nkn:latest-arm32v6 .
-	docker build -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=arm64 BUILD_DIR=. BIN_DIR=." --build-arg base="arm64v8/" -t nknorg/nkn:latest-arm64v8 .
+	docker build --platform linux/amd64 -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=amd64 BUILD_DIR=. BIN_DIR=." -t nknorg/nkn:latest-amd64 .
+	docker build --platform linux/arm/v6 -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=arm GOARM=6 BUILD_DIR=. BIN_DIR=." -t nknorg/nkn:latest-arm32v6 .
+	docker build --platform linux/arm64 -f docker/Dockerfile --build-arg build_args="build GOOS=linux GOARCH=arm64 BUILD_DIR=. BIN_DIR=." -t nknorg/nkn:latest-arm64v8 .
 
 .PHONY: docker_publish
 docker_publish:
 	docker push nknorg/nkn:latest-amd64
 	docker push nknorg/nkn:latest-arm32v6
 	docker push nknorg/nkn:latest-arm64v8
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create nknorg/nkn:latest nknorg/nkn:latest-amd64 nknorg/nkn:latest-arm32v6 nknorg/nkn:latest-arm64v8 --amend
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-amd64 --os linux --arch amd64
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-arm32v6 --os linux --arch arm
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-arm64v8 --os linux --arch arm64
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push -p nknorg/nkn:latest
+	docker manifest create nknorg/nkn:latest nknorg/nkn:latest-amd64 nknorg/nkn:latest-arm32v6 nknorg/nkn:latest-arm64v8 --amend
+	docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-amd64 --os linux --arch amd64
+	docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-arm32v6 --os linux --arch arm --variant v6
+	docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-arm64v8 --os linux --arch arm64 --variant v8
+	docker manifest push nknorg/nkn:latest
