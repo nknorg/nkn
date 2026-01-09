@@ -1,12 +1,11 @@
-ARG base
-FROM golang:1.19-alpine as builder
+FROM golang:1.23-alpine AS builder
 RUN apk add make git curl
 ADD . /nkn
 WORKDIR /nkn
 ARG build_args
 RUN make $build_args
 
-FROM ${base}alpine:latest
+FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 COPY --from=builder /nkn/nknd /nkn/
 COPY --from=builder /nkn/nknc /nkn/
