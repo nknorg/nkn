@@ -110,7 +110,8 @@ docker_publish:
 	docker push nknorg/nkn:latest-amd64
 	docker push nknorg/nkn:latest-arm32v6
 	docker push nknorg/nkn:latest-arm64v8
-	docker manifest create nknorg/nkn:latest nknorg/nkn:latest-amd64 nknorg/nkn:latest-arm32v6 nknorg/nkn:latest-arm64v8 --amend
+	docker manifest rm nknorg/nkn:latest || true
+	docker manifest create nknorg/nkn:latest nknorg/nkn:latest-amd64 nknorg/nkn:latest-arm32v6 nknorg/nkn:latest-arm64v8
 	docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-amd64 --os linux --arch amd64
 	docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-arm32v6 --os linux --arch arm --variant v6
 	docker manifest annotate nknorg/nkn:latest nknorg/nkn:latest-arm64v8 --os linux --arch arm64 --variant v8
