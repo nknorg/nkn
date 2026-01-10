@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/hex"
 	"encoding/json"
+	"slices"
 	"testing"
 )
 
@@ -29,7 +30,7 @@ func TestMarshalJSON(t *testing.T) {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	if !bytesEqual(bytes, expected) {
+	if !slices.Equal(bytes, expected) {
 		t.Fatalf("Expected %v, got %v", expected, bytes)
 	}
 
@@ -38,7 +39,7 @@ func TestMarshalJSON(t *testing.T) {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	if !bytesEqual(bytes, expected) {
+	if !slices.Equal(bytes, expected) {
 		t.Fatalf("Expected %v, got %v", expected, bytes)
 	}
 
@@ -61,22 +62,10 @@ func TestUnmarshalJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytesEqual(f.ToArray(), expected) {
+	if !slices.Equal(f.ToArray(), expected) {
 		t.Fatalf("Expected %v, got %v", expected, f.ToArray())
 	}
 
 	// TODO: If possible, create a scenario where ToScriptHash returns an error
 	// and verify that UnmarshalJSON also returns this error.
-}
-
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
 }
